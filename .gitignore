@@ -78,3 +78,6 @@ images/*/Dockerfile.dockerignore
 # Local Emacs files
 .dir-locals.el
 
+# Binary product
+bin
+

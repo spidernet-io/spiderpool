@@ -1,0 +1,15 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+
+permissions: read-all
+
+jobs:
+  build:
+    if: ${{ github.repository == 'spidernet-io/spiderpool' }}
+    environment: release
+    runs-on: ubuntu-latest

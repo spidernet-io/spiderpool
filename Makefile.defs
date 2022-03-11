@@ -1,0 +1,26 @@
+# Copyright Authors of Cilium
+# SPDX-License-Identifier: Apache-2.0
+
+SHELL := /bin/bash
+
+
+ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+RELATIVE_DIR := $(shell echo $(realpath .) | sed "s;$(ROOT_DIR)[/]*;;")
+include $(ROOT_DIR)/Makefile.quiet
+
+export GOARCH ?= $(shell $(GO) env GOARCH)
+GO ?= go
+GO_BUILD = CGO_ENABLED=0 $(GO) build
+
+GO_CLEAN_FLAGS += -mod=vendor
+GO_CLEAN = $(GO) clean $(GO_CLEAN_FLAGS)
+
+INSTALL = install
+
+PREFIX?=/usr
+BINDIR?=$(PREFIX)/bin
+TARGETARCH ?= amd64
+
+DESTDIR_BIN ?= $(ROOT_DIR)/output/$(TARGETARCH)/bin
+DESTDIR_BASH_COMPLETION ?= $(ROOT_DIR)/output/$(TARGETARCH)/bash-completion
+

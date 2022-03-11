@@ -1,13 +1,28 @@
-BUILD_TIME ?= $(shell date +%Y-%m-%d-%H%M-%Z)
-SHORT_SHA ?= $(shell git rev-parse --short HEAD)
+#!/usr/bin/make -f
 
-daemon:
-	CGO_ENABLED=0 go build -mod=readonly -o bin/spiderpool cmd/daemon/main.go
+include ./Makefile.defs
 
-test:
-	go test -v ./...
+all: build-bin install-bin
 
-image:
-	docker build . --file build/daemon/release.Dockerfile --tag daocloud.io/daocloud/spiderpool-ci:$(BUILD_TIME)-$(SHORT_SHA)
+.PHONY: all build install
 
-.PHONY: all daemon test
+SUBDIRS := cmd/spiderpool-agent cmd/spiderpool-controller
+
+
+build-bin: ## Builds components required for cilium-agent container.
+	for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i all; done
+
+install-bin:
+	$(QUIET)$(INSTALL) -m 0755 -d $(DESTDIR_BIN)
+	for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i install; done
+
+install-bash-completion: ## Install bash completion for all components required for cilium-agent container.
+	$(QUIET)$(INSTALL) -m 0755 -d $(DESTDIR_BIN)
+	for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i install-bash-completion; done
+
+clean:
+	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
+	-$(QUIET) rm -rf $(DESTDIR_BIN)
+	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)
+
+

@@ -15,7 +15,6 @@ cd /go/src/github.com/google
 
 export GOPROXY="https://goproxy.io|https://goproxy.cn|direct"
 
-
 git clone https://github.com/google/gops.git
 cd gops
 

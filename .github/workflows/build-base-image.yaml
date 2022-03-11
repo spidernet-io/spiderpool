@@ -11,6 +11,7 @@ env:
   ONLINE_REGISTER_USER: ${{ github.repository_owner }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
+
 # when PR commit the change for baseimage dockerfile, trigger the workflow
 on:
   pull_request_target:

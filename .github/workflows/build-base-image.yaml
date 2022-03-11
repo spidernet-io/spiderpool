@@ -9,7 +9,7 @@ env:
   IMAGE_ROOT_PATH: images
   BUILD_PLATFORM: linux/amd64,linux/arm64
   ONLINE_REGISTER_USER: ${{ github.actor }}
-  ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  ONLINE_REGISTER_PASSWORD: ${{ secrets.GHCR_PUSH_TOKEN }}
 
 
 # when PR commit the change for baseimage dockerfile, trigger the workflow

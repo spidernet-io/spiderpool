@@ -3,12 +3,12 @@ name: Base Image Release Build
 # final packed image : ${ONLINE_REGISTER}/${IMAGE_REPO}/${IMAGE_NAME}:${commit id of yaml path}
 # image dockerfile path on the repo: ${IMAGE_ROOT_PATH}/${IMAGE_NAME}/Dockerfile
 env:
-  IMAGE_NAME: baseimage
+  IMAGE_NAME: spiderpool-base
   IMAGE_REPO: ${{ github.repository_owner }}
   ONLINE_REGISTER: ghcr.io
   IMAGE_ROOT_PATH: images
   BUILD_PLATFORM: linux/amd64,linux/arm64
-  ONLINE_REGISTER_USER: ${{ github.actor }}
+  ONLINE_REGISTER_USER: ${{ github.repository_owner }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
 
@@ -21,7 +21,7 @@ on:
       - reopened
     paths:
       #can not use env here
-      - images/baseimage/**
+      - images/spiderpool-base/**
   push:
     branches:
       - main

@@ -4,7 +4,7 @@ name: Base Image Release Build
 # image dockerfile path on the repo: ${IMAGE_ROOT_PATH}/${IMAGE_NAME}/Dockerfile
 env:
   IMAGE_NAME: spiderpool-base
-  IMAGE_REPO: ${{ github.repository_owner }}
+  IMAGE_REPO: ${{ github.repository }}
   ONLINE_REGISTER: ghcr.io
   IMAGE_ROOT_PATH: images
   BUILD_PLATFORM: linux/amd64,linux/arm64

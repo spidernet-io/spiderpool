@@ -8,9 +8,8 @@ env:
   ONLINE_REGISTER: ghcr.io
   IMAGE_ROOT_PATH: images
   BUILD_PLATFORM: linux/amd64,linux/arm64
-  ONLINE_REGISTER_USER: ${{ github.actor }}
+  ONLINE_REGISTER_USER: ${{ github.repository_owner }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-
 
 # when PR commit the change for baseimage dockerfile, trigger the workflow
 on:
@@ -26,10 +25,7 @@ on:
     branches:
       - main
 
-
-permissions: read-all
-
-
+permissions: write-all
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}

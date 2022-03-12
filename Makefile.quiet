@@ -1,12 +1,19 @@
-# Copyright 2022 Authors of spidernet-io
-# SPDX-License-Identifier: Apache-2.0
-
 
 ifeq ($(ROOT_DIR),)
 	ROOT_DIR ?= $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 	RELATIVE_DIR ?= $(shell echo $(realpath .) | sed "s;$(ROOT_DIR)[/]*;;")
 endif
-ifeq ($(V),0)
+
+ifeq ($(QUIET_MAKE),)
+	# The whitespace at below EOLs is required for verbose case!
+	ECHO_CC=:
+	ECHO_GEN=:
+	ECHO_GO=:
+	ECHO_CHECK=:
+	ECHO_GINKGO=:
+	ECHO_CLEAN=:
+	SUBMAKEOPTS=
+else
 	QUIET=@
 	ECHO_CC=echo "  CC    $(RELATIVE_DIR)/$@"
 	ECHO_GEN=echo "  GEN   $(RELATIVE_DIR)/"
@@ -15,12 +22,4 @@ ifeq ($(V),0)
 	ECHO_GINKGO=echo "  GINKG $(RELATIVE_DIR)"
 	ECHO_CLEAN=echo "  CLEAN $(RELATIVE_DIR)"
 	SUBMAKEOPTS="-s"
-else
-	ECHO_CC=:
-	ECHO_GEN=:
-	ECHO_GO=:
-	ECHO_CHECK=:
-	ECHO_GINKGO=:
-	ECHO_CLEAN=:
-	SUBMAKEOPTS=
 endif

@@ -2,7 +2,10 @@ module github.com/spidernet-io/spiderpool
 
 go 1.17
 
-require k8s.io/code-generator v0.23.4
+require (
+	github.com/sasha-s/go-deadlock v0.3.1
+	k8s.io/code-generator v0.23.4
+)
 
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
@@ -17,6 +20,7 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect

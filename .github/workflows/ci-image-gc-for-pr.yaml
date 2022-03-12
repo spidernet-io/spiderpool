@@ -41,4 +41,4 @@ jobs:
           #untagged versions should be pruned
           untagged: true
           # if no tag-regex , all tag will be pruned
-          tag-regex: ${{ steps.tag.outputs.tag }}*
+          #tag-regex: ${{ steps.tag.outputs.tag }}*

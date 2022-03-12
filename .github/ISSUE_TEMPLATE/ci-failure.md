@@ -1,9 +1,9 @@
 ---
 name: CI failure
 about: Create a report to help us improve
-title: ''
+title: 'CI failure'
 labels: ci failed
-assignees: ''
+assignees: 'weizhoublue'
 
 ---
 

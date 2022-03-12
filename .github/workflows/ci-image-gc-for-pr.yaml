@@ -31,7 +31,7 @@ jobs:
         uses: vlaurin/action-ghcr-prune@v0.4.0
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
-          #organization: ${{ github.repository_owner }}
+          organization: ${{ github.repository_owner }}
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           dry-run: false # Dry-run first, then change to `false`
           # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container
@@ -41,4 +41,4 @@ jobs:
           #untagged versions should be pruned
           untagged: true
           # if no tag-regex , all tag will be pruned
-          tag-regex: ${{ steps.tag.outputs.tag }}.*
+          tag-regex: ${{ steps.tag.outputs.tag }}

@@ -30,7 +30,7 @@ jobs:
       - name: Delete CI image
         uses: vlaurin/action-ghcr-prune@v0.4.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GHCR_PASSWARD }}
           #organization: ${{ github.repository_owner }}
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           dry-run: false # Dry-run first, then change to `false`
@@ -41,4 +41,4 @@ jobs:
           #untagged versions should be pruned
           untagged: true
           # if no tag-regex , all tag will be pruned
-          #tag-regex: ${{ steps.tag.outputs.tag }}*
+          tag-regex: ${{ steps.tag.outputs.tag }}.*

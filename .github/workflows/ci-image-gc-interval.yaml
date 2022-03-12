@@ -25,7 +25,7 @@ jobs:
         uses: vlaurin/action-ghcr-prune@v0.4.0
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
-          organization: ${{ secrets.GHCR_USER }}
+          organization: ${{ github.repository_owner }}
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           dry-run: false # Dry-run first, then change to `false`
           # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container

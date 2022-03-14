@@ -35,7 +35,7 @@ GENS="$1"
 DEBUG="$2"
 
 if [ "$DEBUG"x == "true"x ]; then
-  DEBUG="-v 10"
+  DEBUG="-v 4"
 else
   DEBUG=""
 fi
@@ -70,7 +70,6 @@ if [ "${GENS}" = "all" ] || grep -qw "client" <<<"${GENS}"; then
       --input-base "" \
       --input "${MODUEL_NAME}/${INPUT_PATH_BASE}/${API_OPERATOR_NAME}/${API_VERSION}"  \
       --output-package "${MODUEL_NAME}/${OUTPUT_PATH_BASE}/${CLIENTSET_PKG_NAME}" \
-      --output-base "${PROJECT_ROOT_PATH}" \
       "$@" $DEBUG
 
   # https://github.com/kubernetes/code-generator/issues/106

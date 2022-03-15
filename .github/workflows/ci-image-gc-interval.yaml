@@ -53,7 +53,7 @@ jobs:
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
           organization: ${{ github.repository_owner }}
-          container: spiderpool-controller-ci
+          container: spiderpool/spiderpool-controller-ci
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}
           # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container

@@ -51,8 +51,8 @@ jobs:
         uses: vlaurin/action-ghcr-prune@v0.4.0
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
-          token: ${{ secrets.GHCR_PASSWARD }}
-          organization: ${{ secrets.GHCR_USER }}
+          token: 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
+          organization: weizhoublue
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}

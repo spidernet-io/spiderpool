@@ -52,7 +52,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
-          organization: ${{ github.repository_owner }}
+          #organization: ${{ github.repository_owner }}
           container: spiderpool/spiderpool-controller-ci
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}
@@ -65,7 +65,6 @@ jobs:
           untagged: true
           # if no tag-regex , all tag will be pruned
           tag-regex: "${{ github.event.inputs.tag_reg }}"
-
 
       - name: Delete CI image
         uses: vlaurin/action-ghcr-prune@v0.4.0

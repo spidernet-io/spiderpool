@@ -46,14 +46,13 @@ jobs:
               echo "error, dry_run must be true or false"
               exit 1
           fi
-          echo ${{ secrets.GHCR_PASSWARD }}
 
       - name: Delete CI image
         uses: vlaurin/action-ghcr-prune@v0.4.0
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
-          organization: ${{ github.repository_owner }}
+          organization: ${{ secrets.GHCR_USER }}
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}

@@ -46,6 +46,7 @@ jobs:
               echo "error, dry_run must be true or false"
               exit 1
           fi
+          echo ${{ secrets.GHCR_PASSWARD }}
 
       - name: Delete CI image
         uses: vlaurin/action-ghcr-prune@v0.4.0

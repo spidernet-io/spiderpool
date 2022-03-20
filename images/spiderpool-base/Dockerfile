@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-ARG GOLANG_IMAGE=docker.io/library/golang:1.17.8@sha256:c7c94588b6445f5254fbc34df941afa10de04706deb330e62831740c9f0f2030
+ARG GOLANG_IMAGE=docker.io/library/golang:1.18.0@sha256:03baa0921adf5fb547f48df8b16137de82b5ccc34986c22a967055379369f614
 ARG UBUNTU_IMAGE=docker.io/library/ubuntu:20.04@sha256:bea6d19168bbfd6af8d77c2cc3c572114eb5d113e6f422573c93cb605a0e2ffb
 
 #========= build gops ===============

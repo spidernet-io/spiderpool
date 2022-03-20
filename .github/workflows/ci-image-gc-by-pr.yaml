@@ -1,0 +1,46 @@
+# cleaner for ghcr image , when PR is closed
+name: Clean Image CI By PR
+
+env:
+  ONLINE_REGISTER: ghcr.io
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  purge-image:
+    name: Delete image from ghcr.io
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: spiderpool-agent
+          - name: spiderpool-controller
+    steps:
+      # commit sha is used for image tag
+      - name: Getting image tag
+        id: tag
+        run: |
+          if [ ${{ github.event.pull_request.head.sha }} != "" ]; then
+            echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
+          else
+            echo ::set-output name=tag::${{ github.sha }}
+          fi
+
+      - name: Delete CI image
+        uses: vlaurin/action-ghcr-prune@v0.4.0
+        with:
+          token: ${{ secrets.GHCR_PASSWARD }}
+          organization: ${{ github.repository_owner }}
+          container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
+          dry-run: false # Dry-run first, then change to `false`
+          # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container
+          older-than: 0 # days
+          # Count of most recent, matching containers to exclude from pruning
+          keep-last: 0
+          #untagged versions should be pruned
+          untagged: true
+          # if no tag-regex , all tag will be pruned
+          tag-regex: "${{ steps.tag.outputs.tag }}"
+

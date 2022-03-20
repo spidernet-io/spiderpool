@@ -1,0 +1,33 @@
+{
+  "categories": [
+    {
+      "title": "## New Features",
+      "labels": ["pr/release/feature-new"]
+    },
+    {
+      "title": "## Changed Features",
+      "labels": ["pr/release/feature-changed"]
+    },
+    {
+      "title": "## Fixes",
+      "labels": ["pr/release/bug"]
+    }
+  ],
+  "ignore_labels": [
+    "ignore"
+  ],
+  "sort": "ASC",
+  "template": "from tag ${{FROM_TAG}} to ${{TO_TAG}}\n\n${{CHANGELOG}}\n\ncategorized pr: ${{CATEGORIZED_COUNT}}\n\nuncategorized pr: ${{UNCATEGORIZED_COUNT}}\n\nignored pr: ${{IGNORED_COUNT}}\n\n<details>\n<summary>Total PR</summary>\n\n${{RELEASE_DIFF}}\n</details>",
+  "pr_template": "- ${{TITLE}} - PR: #${{NUMBER}}",
+  "empty_template": "- no changes",
+  "transformers": [],
+  "max_tags_to_fetch": 200,
+  "max_pull_requests": 1000,
+  "max_back_track_time_days": 365,
+  "tag_resolver": {
+    "method": "semver"
+  },
+  "base_branches": [
+    "main"
+  ]
+}

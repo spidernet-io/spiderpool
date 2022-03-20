@@ -5,6 +5,7 @@ SHELL := /bin/bash
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 RELATIVE_DIR := $(shell echo $(realpath .) | sed "s;$(ROOT_DIR)[/]*;;")
 include $(ROOT_DIR)/Makefile.quiet
+include $(ROOT_DIR)/Makefile.version
 
 INSTALL = install
 
@@ -20,6 +21,8 @@ ifeq ($(DOCKER_IMAGE_TAG),)
     DOCKER_IMAGE_TAG=latest
 endif
 
+GO_MAJOR_AND_MINOR_VERSION := $(shell  grep  -o -E '^[0-9]+\.[0-9]+'  <<< "${GO_VERSION}" )
+GO_IMAGE_VERSION := $(shell awk -F. '{ z=$$3; if (z == "") z=0; print $$1 "." $$2 "." z}' <<< "${GO_VERSION}" )
 
 
 #------------------
@@ -120,4 +123,9 @@ GO_TEST = $(GO) test $(GO_TEST_FLAGS)
 GO_CLEAN = $(GO) clean $(GO_CLEAN_FLAGS)
 GO_VET = $(GO) vet
 GO_LIST = $(GO) list
+
+
+GOFILES_EVAL := $(subst _$(ROOT_DIR)/,,$(shell $(GO_LIST) -find -e ./...))
+GOFILES ?= $(GOFILES_EVAL)
+
 

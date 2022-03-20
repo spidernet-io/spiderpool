@@ -1,0 +1,23 @@
+# make sure the pr is labled as wanted, case: we could generate changelog by the pr label
+name: PR Label Check For Realse
+
+# Trigger the workflow on pull requests only
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+env:
+  RELEASE_LABELS: "pr/release/bug, pr/release/feature-new, pr/release/feature-changed, pr/release/doc, pr/release/robot_changelog, pr/release/robot_chart, pr/release/chart, pr/release/changelog, pr/release/none-required"
+
+jobs:
+  check-label:
+    name: Check release-note label set
+    runs-on: ubuntu-latest
+    steps:
+      # must set one of required label, for release note generator
+      - uses: mheap/github-action-required-labels@v1.2.0
+        with:
+          mode: exactly
+          count: 1
+          labels: ${{ env.RELEASE_LABELS }}
+

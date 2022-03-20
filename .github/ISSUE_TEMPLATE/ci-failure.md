@@ -2,7 +2,7 @@
 name: CI failure
 about: Create a report to help us improve
 title: 'CI failure'
-labels: ci failed
+labels: issue/ci-fail, issue/not-assign
 assignees: 'weizhoublue'
 
 ---

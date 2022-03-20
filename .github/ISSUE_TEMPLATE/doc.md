@@ -2,7 +2,7 @@
 name: Documentation issue
 about: documentation is not right
 title: 'documentation issue'
-labels: documentation
+labels: issue/doc, issue/not-assign
 assignees: 'weizhoublue'
 
 ---

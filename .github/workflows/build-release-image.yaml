@@ -7,10 +7,17 @@ env:
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
-      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+#  push:
+#    tags:
+#      - v[0-9]+.[0-9]+.[0-9]+
+#      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: v1.0.0
+
 
 permissions: write-all
 
@@ -44,16 +51,28 @@ jobs:
       #get the pushed tag
       - name: Getting image tag
         id: tag
+        continue-on-error: false
         run: |
-          echo ::set-output name=tag::${GITHUB_REF##*/}
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+            tag_name=${{ github.event.inputs.tag }}
+            echo ::set-output name=tag::${tag_name}
+          else
+            # trigger by tag event
+            # GITHUB_REF： The branch or tag ref that triggered the workflow run. For branches this is the format refs/heads/<branch_name>, for tags it is refs/tags/<tag_name>, and for pull requests it is refs/pull/<pr_number>/merge
+            echo ::set-output name=tag::${GITHUB_REF##*/}
+          fi
+          
 
       - name: Checkout Source Code
         uses: actions/checkout@v2
+        continue-on-error: false
         with:
           persist-credentials: false
+          ref: ${{ steps.tag.outputs.tag }}
 
       - name: Release Build ${{ matrix.name }}
         uses: docker/build-push-action@v2
+        continue-on-error: false
         id: docker_build_release
         with:
           context: ${{ matrix.context }}

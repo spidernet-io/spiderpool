@@ -9,11 +9,12 @@ env:
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Docker Image Tag'
+      ref:
+        description: 'sha, ref'
         required: true
+        default: v1.0.0
       suffix:
-        description: 'Docker Image Suffix (e.g. "beta" )'
+        description: 'image name Suffix (e.g. "beta" )'
         required: true
         default: "beta"
 
@@ -44,32 +45,33 @@ jobs:
           password: ${{ env.ONLINE_REGISTER_PASSWORD }}
           registry: ${{ env.ONLINE_REGISTER }}
 
-      - name: Getting image tag
-        id: tag
-        run: |
-          echo ::set-output name=tag::${GITHUB_REF##*/}
-
-      - name: Checking if tag already exists
-        id: tag-in-repositories
+      - name: Checking Ref Exists
+        id: version
         shell: bash
         run: |
-          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }} &>/dev/null; then
-            echo "Tag already exists!"
-            exit 1
+          echo ::set-output name=version::${{ github.event.inputs.ref }}
+          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.ref }} &>/dev/null; then
+            echo ::set-output name=exists::"true"
+            echo "the target beta image exist , no need to build it "
+          else
+            echo ::set-output name=exists::"false"
+            echo "the target beta image do not exist, build it "
           fi
 
-      # checkout default branch
       - name: Checkout Source Code
+        if: ${{ steps.version.outputs.exists == 'false' }}
         uses: actions/checkout@v2
         with:
           persist-credentials: false
           # The branch, tag or SHA to checkout. When checking out the repository that
           # triggered a workflow, this defaults to the reference or SHA for that event.
           # Otherwise, uses the default branch.
-          # ref: ''
+          ref: ${{ steps.version.output.version }}
 
       - name: Release Build ${{ matrix.name }}
+        if: ${{ steps.version.outputs.exists == 'false' }}
         uses: docker/build-push-action@v2
+        continue-on-error: false
         id: docker_build_release
         with:
           context: ${{ matrix.context }}
@@ -77,19 +79,21 @@ jobs:
           push: true
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.ref }}
 
       - name: Image Release Digest
+        if: ${{ steps.version.outputs.exists == 'false' }}
         shell: bash
         run: |
           mkdir -p image-digest/
           echo "## ${{ matrix.name }}" > image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.ref }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
 
       # Upload artifact digests
       - name: Upload artifact digests
+        if: ${{ steps.version.outputs.exists == 'false' }}
         uses: actions/upload-artifact@v3.0.0
         with:
           name: image-digest ${{ matrix.name }}

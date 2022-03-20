@@ -109,6 +109,11 @@ update-authors: ## Update AUTHORS file for Cilium repository.
 licenses-all: ## Generate file with all the License from dependencies.
 	@$(GO) run ./contrib/licensegen > LICENSE.all || ( rm -f LICENSE.all ; false )
 
+.PHONY: licenses-check
+licenses-check:
+	@$(ECHO_CHECK) tools/scripts/check-miss-license.sh
+	$(QUIET) tools/scripts/check-miss-license.sh
+
 .PHONY: update-go-version
 update-go-version: ## Update Go version for all the components
 	@echo "GO_MAJOR_AND_MINOR_VERSION=${GO_MAJOR_AND_MINOR_VERSION}"

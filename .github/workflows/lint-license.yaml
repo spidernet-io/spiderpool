@@ -26,11 +26,5 @@ jobs:
       - name: Check GO License
         continue-on-error: false
         run: |
-          FILE_LIST=$( egrep -i "Apache-2.0|Copyright"  ./*  --exclude-dir=./vendor  -RHL --include=*.go  2>/dev/null )
-          (( $? != 0 )) && echo "error, failed to grep " && exit 1
-          if [ -n "$FILE_LIST" ]; then
-              echo "error, found go file who missing licecse announce "
-              echo "$FILE_LIST"
-              exit 1
-          fi
+          make licenses-check
           

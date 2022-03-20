@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2022 Authors of Cilium
+# SPDX-License-Identifier: Apache-2.0
+
+
 # Ensure sort order doesn't depend on locale
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8

@@ -1,0 +1,399 @@
+# build the release image with tag
+# 1 build the all images, push images to ghcr.io,
+# 2 package the chart , PR to docs/charts of branch chart for githupage , who used as chart registry and doc server( PR need approval by hand)
+# 3 create changelog filem PR to /changelogs of branch main ( PR need approval by hand)
+# 4 create a relase , attached with chart and changelog
+name: Auto Release Version
+
+env:
+  ONLINE_REGISTER: ghcr.io
+  BUILD_PLATFORM: linux/amd64,linux/arm64
+  ONLINE_REGISTER_USER: ${{ github.actor }}
+  ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  CHART_DEST_BRANCH: chart
+  CHANGELOG_DIR: changelogs
+  MERGE_TO_BRANCH: main
+  PR_LABEL: pr/release/robot_changelog
+  PR_REVIWER: weizhoublue
+  CHANGELOG_CONF: .github/changelog_builder_conf.json
+  CHANGELOG_RESULT_DIR: changelogs
+  CHANGELOG_TEMP_FILE: _temp_changelog
+  HELM_VERSION: v3.8.1
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: v1.0.0
+
+
+permissions: write-all
+
+jobs:
+  build-and-push:
+    name: build image
+    environment: release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: spiderpool-agent
+            dockerfile: ./images/spiderpool-agent/Dockerfile
+            context: ./
+          - name: spiderpool-controller
+            dockerfile: ./images/spiderpool-controller/Dockerfile
+            context: ./
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1.6.0
+
+      - name: Login to online register
+        uses: docker/login-action@v1.14.0
+        with:
+          username: ${{ env.ONLINE_REGISTER_USER }}
+          password: ${{ env.ONLINE_REGISTER_PASSWORD }}
+          registry: ${{ env.ONLINE_REGISTER }}
+
+      - name: Getting image tag
+        id: tag
+        continue-on-error: false
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo ::set-output name=tag::${{ github.event.inputs.tag }}
+          else
+            echo ::set-output name=tag::${GITHUB_REF##*/}
+          fi
+
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+        continue-on-error: false
+        with:
+          persist-credentials: false
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Release Build ${{ matrix.name }}
+        uses: docker/build-push-action@v2
+        continue-on-error: false
+        id: docker_build_release
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          platforms: ${{ env.BUILD_PLATFORM }}
+          tags: |
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}:${{ steps.tag.outputs.tag }}
+
+      - name: Image Release Digest
+        shell: bash
+        run: |
+          mkdir -p image-digest/
+          job_name=${{ matrix.name }}
+          job_name_capital=${job_name^^}
+          job_name_underscored=${job_name_capital//-/_}
+          echo "${job_name_underscored}_DIGEST := \"${{ steps.docker_build_release.outputs.digest }}\"" > image-digest/makefile-digest.txt
+
+          echo "### ${{ matrix.name }}" > image-digest/${{ matrix.name }}.txt
+          echo "" >> image-digest/${{ matrix.name }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
+          echo "" >> image-digest/${{ matrix.name }}.txt
+
+      - name: Upload artifact digests
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: image-digest ${{ matrix.name }}
+          path: image-digest
+          retention-days: 1
+
+  image-digests:
+    name: Display Digests
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Getting image tag
+        id: tag
+        continue-on-error: false
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo ::set-output name=tag::${{ github.event.inputs.tag }}
+          else
+            echo ::set-output name=tag::${GITHUB_REF##*/}
+          fi
+
+      - name: Downloading Image Digests
+        shell: bash
+        run: |
+          mkdir -p image-digest/
+
+      - name: Download digests of all images built
+        uses: actions/download-artifact@v3.0.0
+        with:
+          path: image-digest/
+
+      - name: Image Digests Output
+        shell: bash
+        run: |
+          cd image-digest/
+          echo "## Docker Manifests" > ../image-digest-output.txt
+          echo "" >> ../image-digest-output.txt
+          find -type f -not -name "makefile-digest.txt" | sort | xargs -d '\n' cat >> ../image-digest-output.txt
+
+      - name: Image Makefile Digests
+        shell: bash
+        run: |
+          cd image-digest/
+          echo "# File generated by .github/workflows/images-legacy-releases.yaml; DO NOT EDIT." > ../Makefile.digests
+          echo "# Copyright "$(date +'%Y')" " >> ../Makefile.digests
+          echo "# SPDX-License-Identifier: Apache-2.0" >> ../Makefile.digests
+          echo "" >> ../Makefile.digests
+          find -type f  -name "makefile-digest.txt" | sort | xargs -d '\n' cat >> ../Makefile.digests
+
+      - name: Upload artifact digests
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: image-digest-output.txt-${{ steps.tag.outputs.tag }}
+          path: image-digest-output.txt
+          retention-days: 1
+
+      - name: Upload artifact digests
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: Makefile.digests-${{ steps.tag.outputs.tag }}
+          path: Makefile.digests
+          retention-days: 1
+
+  release-chart:
+    name: package chart
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    strategy:
+      matrix:
+        include:
+          - chart_dir: charts/spiderpool
+
+    steps:
+      - name: Getting tag
+        id: tag
+        continue-on-error: false
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo ::set-output name=tag::${{ github.event.inputs.tag }}
+          else
+            echo ::set-output name=tag::${GITHUB_REF##*/}
+          fi
+          echo ::set-output name=dest::${{ env.CHART_DEST_BRANCH }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Get Base URL
+        id: get_base_url
+        run: |
+          name=${{ github.repository }}
+          proj=${name#*/}
+          url=https://${{ github.repository_owner }}.github.io/${proj}
+          echo "::set-output name=url::${url}"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v2.0
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Prepare Chart
+        continue-on-error: false
+        run: |
+          chart_dir=${{ matrix.chart_dir }}
+          [ ! -d "${chart_dir}" ] && echo "error, fail to find directory ${chart_dir}" && exit 1
+          mkdir _tmp
+          cd _tmp
+          helm package ../${chart_dir}
+          cd ..
+          mkdir -p docs/charts
+          mv _tmp/*.tgz docs/charts
+          rm -rf _tmp
+
+      - name: Prepare Index
+        continue-on-error: false
+        run: |
+          cd docs
+          helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
+          mv ./charts/index.yaml ./
+
+
+      - name: Upload chart
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: chart-package
+          path: docs/charts/*.tgz
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v3.14.0
+        with:
+          title: "robot Update chart from tag ${{ steps.tag.outputs.tag }} to branch ${{ steps.tag.outputs.dest }}"
+          commit-message: "robot Update chart from tag ${{ steps.tag.outputs.tag }} to branch ${{ steps.tag.outputs.dest }}"
+          branch-suffix: timestamp
+          branch: update_chart
+          delete-branch: true
+          base: ${{ steps.tag.outputs.dest }}
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ env.PR_LABEL }}
+          reviewers: ${{ env.PR_REVIWER }}
+
+
+  release-changelog:
+    needs: release-chart
+    name: create changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Getting image tag
+        id: tag
+        continue-on-error: false
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo ::set-output name=tag::${{ github.event.inputs.tag }}
+          else
+            echo ::set-output name=tag::${GITHUB_REF##*/}
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Build Changelog By Auto Tag
+        id: create_changelog_by_auto_tag
+        uses: mikepenz/release-changelog-builder-action@v2.9.0
+        with:
+          configuration: ${{ env.CHANGELOG_CONF }}
+          outputFile: ${{ env.CHANGELOG_RESULT_DIR }}/${{ env.CHANGELOG_TEMP_FILE }}
+          failOnError: true
+          toTag: ${{ steps.tag.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Changelog File
+        id: generate_changelog_file
+        continue-on-error: false
+        run: |
+          TEMP_FILE=${{ env.CHANGELOG_RESULT_DIR }}/${{ env.CHANGELOG_TEMP_FILE }}
+          if [ ! -f "$TEMP_FILE" ] ; then
+               echo "failed to find auto-generated changelog result file $TEMP_FILE"
+               exit 1
+          fi
+          CHANGELOG_FILE_NAME=CHANGELOG-${{ steps.create_changelog_by_auto_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_auto_tag.outputs.toTag }}.md
+          [ ! -d "${{ env.CHANGELOG_DIR }}" ] && mkdir -p ${{ env.CHANGELOG_DIR }}
+          DEST_FILE=${{ env.CHANGELOG_DIR }}/${CHANGELOG_FILE_NAME}
+          mv ${TEMP_FILE} ${DEST_FILE}
+
+      - name: Upload Changelog
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: changelog-result
+          path: ${{ env.CHANGELOG_DIR }}/CHANGELOG-${{ steps.create_changelog_by_auto_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_auto_tag.outputs.toTag }}.md
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v3.14.0
+        with:
+          title: "robot Update Changelog from tag ${{ steps.create_changelog_by_auto_tag.outputs.fromTag }} to tag ${{ steps.create_changelog_by_auto_tag.outputs.toTag }}"
+          commit-message: "robot update Changelog from tag ${{ steps.create_changelog_by_auto_tag.outputs.fromTag }} to tag ${{ steps.create_changelog_by_auto_tag.outputs.toTag }}"
+          branch-suffix: timestamp
+          branch: update_changelog
+          delete-branch: true
+          # merge to
+          base: ${{ env.MERGE_TO_BRANCH }}
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ env.PR_LABEL }}
+          reviewers: ${{ env.PR_REVIWER }}
+
+      - name: Check PR Outputs
+        if: ${{ steps.create_pr.outputs.pull-request-number }}
+        run: |
+          echo "Pull Request Number - ${{ steps.create_pr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.create_pr.outputs.pull-request-url }}"
+
+  create-release:
+    needs: release-changelog
+    name: create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Getting image tag
+        id: tag
+        continue-on-error: false
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo ::set-output name=tag::${{ github.event.inputs.tag }}
+          else
+            echo ::set-output name=tag::${GITHUB_REF##*/}
+          fi
+
+      - name: Prepare Directory
+        shell: bash
+        run: |
+          mkdir -p chart-package/
+          mkdir -p changelog-result/
+
+      - name: Download Chart
+        uses: actions/download-artifact@v3.0.0
+        with:
+          name: chart-package
+          path: chart-package/
+
+      - name: Download Changelog
+        uses: actions/download-artifact@v3.0.0
+        with:
+          name: changelog-result
+          path: changelog-result/
+
+      - name: Get Downloaded Files
+        id: download_file
+        continue-on-error: false
+        run: |
+          if ! ls chart-package/*.tgz &>/dev/null ; then
+              echo "error, failed to find any chart "
+              exit 1
+          fi
+          chart_path=$( ls chart-package/*.tgz )
+          echo ::set-output name=chart_path::${chart_path}
+          if ! ls changelog-result/*.md &>/dev/null ; then
+              echo "error, failed to find changelog "
+              exit 1
+          fi
+          ls changelog-result/
+          cat changelog-result/*.md
+          changelog_file=$( ls changelog-result/ )
+          changelog_path=./changelog-result/${changelog_file}
+          echo ::set-output name=changelog_path::${changelog_path}
+          cp ./changelog-result/${changelog_file} ./changelog-result/changelog.md
+
+      - name: Create Release
+        id: create_release
+        continue-on-error: false
+        uses: ncipollo/release-action@v1.9.0
+        with:
+          artifacts: "chart-package/*"
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          artifactErrorsFailBuild: true
+          bodyFile: "./changelog-result/changelog.md"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag:  ${{ steps.tag.outputs.tag }}
+          name: "Release ${{ steps.tag.outputs.tag }}"
+

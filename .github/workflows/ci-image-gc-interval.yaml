@@ -1,6 +1,6 @@
 # cleaner for ghcr image , each day
 # NOTE: at now only orgs is supported , for personal it fail
-name: GC Image CI Each day
+name: Clean Image CI At Interval
 
 env:
   ONLINE_REGISTER: ghcr.io
@@ -53,7 +53,7 @@ jobs:
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
           #organization: ${{ github.repository_owner }}
-          container: spiderpool-controller-ci
+          container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}
           # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container
@@ -82,3 +82,8 @@ jobs:
           keep-last: 0
           #untagged versions should be pruned
           untagged: true
+
+
+
+
+

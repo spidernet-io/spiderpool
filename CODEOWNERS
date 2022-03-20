@@ -1,19 +1,22 @@
 *  @weizhouBlue @lou-lan
 /.github/ @weizhoublue
 /api/ @weizhoublue
+/changelogs/ @weizhoublue
+/charts/ @weizhoublue
 /cmd/ @weizhoublue
+/contrib/ @weizhoublue
 /docs/ @weizhoublue
-/hack/ @weizhoublue
+/images/ @weizhoublue
 /pkg/ @weizhoublue
-/CODEOWNERS @weizhoublue
 /static/ @weizhoublue
+/test/ @weizhoublue
+/tools/ @weizhoublue
 /vendor/ @weizhoublue
 /.gitignore @weizhoublue
+/CODEOWNERS @weizhoublue
 /go.mod @weizhoublue
 /LICENSE @weizhoublue
 /Makefile* @weizhoublue
 /README.md @weizhoublue
 /go.sum @weizhoublue
-/images/ @weizhoublue
 /VERSION @lou-lan
-/charts/ @weizhoublue

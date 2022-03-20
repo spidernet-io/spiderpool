@@ -1,0 +1,36 @@
+name: Lint Licnese checks
+
+# Any change in triggers needs to be reflected in the concurrency group.
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+
+permissions: read-all
+
+# for each pr, queue all workflows
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.after }}
+  cancel-in-progress: true
+
+jobs:
+  go-mod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Check GO License
+        continue-on-error: false
+        run: |
+          FILE_LIST=$( egrep -i "Apache-2.0|Copyright"  ./*  --exclude-dir=./vendor  -RHL --include=*.go  2>/dev/null )
+          (( $? != 0 )) && echo "error, failed to grep " && exit 1
+          if [ -n "$FILE_LIST" ]; then
+              echo "error, found go file who missing licecse announce "
+              echo "$FILE_LIST"
+              exit 1
+          fi
+          

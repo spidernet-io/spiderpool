@@ -1,4 +1,4 @@
-name: Lint Go-lint checks
+name: Lint Go Vendor And golangci-lint
 
 # Any change in triggers needs to be reflected in the concurrency group.
 on:
@@ -16,7 +16,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  #filter changes base filt path , so step analyze can do less thing
+  filter_changes:
+    name: Deduce required tests from code changes
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    outputs:
+      go-changes: ${{ steps.go-changes.outputs.src }}
+    steps:
+      - name: Checkout code
+        if: ${{ !github.event.pull_request }}
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Check code changes
+        uses: dorny/paths-filter@v2.10.2
+        id: go-changes
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          filters: |
+            src:
+              - .github/workflows/lint-go.yaml
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+
   go-mod:
+    # run if filters.src was changed
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.go-changes == 'true' || github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -34,6 +64,9 @@ jobs:
           test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
 
   golangci:
+    # run if filters.src was changed
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.go-changes == 'true' || github.event_name != 'pull_request' }}
     name: lint
     runs-on: ubuntu-latest
     steps:
@@ -49,3 +82,9 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
+
+      - name: gokart
+        run: |
+          go install github.com/praetorian-inc/gokart@latest
+          gokart scan --globalsTainted
+

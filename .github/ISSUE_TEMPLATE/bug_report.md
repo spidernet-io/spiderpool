@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: 'software bug'
-labels: bug
+labels: issue/bug, issue/not-assign
 assignees: 'weizhoublue'
 
 ---

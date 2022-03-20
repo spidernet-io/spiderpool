@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-ARG GOLANG_IMAGE=docker.io/library/golang:1.17.8
-ARG UBUNTU_IMAGE=docker.io/library/ubuntu:20.04
+ARG GOLANG_IMAGE=docker.io/library/golang:1.17.8@sha256:c7c94588b6445f5254fbc34df941afa10de04706deb330e62831740c9f0f2030
+ARG UBUNTU_IMAGE=docker.io/library/ubuntu:20.04@sha256:bea6d19168bbfd6af8d77c2cc3c572114eb5d113e6f422573c93cb605a0e2ffb
 
 #========= build gops ===============
 FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as gops-cni-builder

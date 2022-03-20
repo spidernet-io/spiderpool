@@ -21,7 +21,15 @@ on:
     paths:
       #can not use env here
       - images/spiderpool-base/**
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'sha, Tag'
+        required: true
+        default: v1.0.0
 
+
+permissions: write-all
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -48,27 +56,44 @@ jobs:
         id: qemu
         uses: docker/setup-qemu-action@v1.2.0
 
+      - name: Get Code Version Before Checkout
+        id: get_event_version
+        continue-on-error: false
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+            ref=${{ github.event.inputs.ref }}
+            echo "use re $ref , by workflow_dispatch"
+            echo ::set-output name=event_ref::${ref}
+          else
+            #trigger by pr
+            echo "use sha ${{ github.event.pull_request.head.sha }} , by pr"
+            echo ::set-output name=event_ref::${{ github.event.pull_request.head.sha }}
+          fi
+
       - name: Checkout Source Code
         uses: actions/checkout@v2
         with:
           persist-credentials: false
-          ref: ${{ github.event.pull_request.head.sha }}
+          #fetch-depth: 0
+          ref: ${{ steps.get_event_version.outputs.event_ref }}
 
-      # get the commit id of path ./images/baseimage , used for image tag
-      - name: Generating image tag
-        id: tag
+      # after checkout code , could get the commit id of path ./images/baseimage , used for base image tag
+      - name: Generating Base Image Tag
+        id: base_tag
         run: |
-          echo ::set-output name=tag::"$(git ls-tree --full-tree HEAD -- ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }} | awk '{ print $3 }')"
+            echo ::set-output name=tag::"$(git ls-tree --full-tree HEAD -- ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }} | awk '{ print $3 }')"
 
-      #check whether we have upload the same tag image to online register
+      # check whether we have upload the same base image to online register , if so, we could not build it
       - name: Checking if tag already exists
         id: tag-in-repositories
         shell: bash
         run: |
-          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.tag.outputs.tag }} &>/dev/null; then
+          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.base_tag.outputs.tag }} &>/dev/null; then
             echo ::set-output name=exists::"true"
+            echo "the target base image exist , no need to build it "
           else
             echo ::set-output name=exists::"false"
+            echo "the target base image does not exist , build it "
           fi
 
       - name: Login to online register
@@ -89,7 +114,7 @@ jobs:
           push: true
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.base_tag.outputs.tag }}
 
       - name: Image Release Digest
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}

@@ -1,0 +1,18 @@
+# Checks for a sign-off in every commit in a pull request and adds a comment if a commit was detected without one
+# but this workflow will not fail the pr
+name: Lint signed off commits
+
+on:
+  pull_request_target:
+
+jobs:
+  check-sign-off:
+    name: Write comment if unsigned commits found
+    env:
+      FORCE_COLOR: 1
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: live627/check-pr-signoff-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

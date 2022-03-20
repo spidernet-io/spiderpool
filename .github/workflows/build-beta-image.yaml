@@ -71,6 +71,7 @@ jobs:
       - name: Release Build ${{ matrix.name }}
         if: ${{ steps.version.outputs.exists == 'false' }}
         uses: docker/build-push-action@v2
+        continue-on-error: false
         id: docker_build_release
         with:
           context: ${{ matrix.context }}

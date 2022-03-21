@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           filters: |
             src:
-              - .github/workflows/lint-go.yaml
+              - .github/workflows/lint-golang.yaml
               - '**/*.go'
               - 'go.mod'
               - 'go.sum'

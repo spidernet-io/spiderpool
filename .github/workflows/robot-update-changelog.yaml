@@ -1,14 +1,14 @@
-# auto generating changelog to directory /changelogs/*** of main branch
+# generating changelog to directory /changelogs/*** of main branch
 # when tag or dispatch by manual , auto generate changelog by the related-label history PR between tags,
 # then commit the pr to main branch , then auto approve it
 # commit changelog: changelogs/CHANGELOG-{begin_tag}-to-{end_tag}.md
-name: Robot Update Changelog For Release
+name: Update Changelog By Hand
 
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
-      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+#  push:
+#    tags:
+#      - v[0-9]+.[0-9]+.[0-9]+
+#      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
   # called by build release image
   workflow_call:
   # call by manual

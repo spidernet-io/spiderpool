@@ -9,11 +9,12 @@ package lock
 import (
 	"bytes"
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"os"
 	"runtime/debug"
 	"time"
+
+	deadlock "github.com/sasha-s/go-deadlock"
 )
 
 const (

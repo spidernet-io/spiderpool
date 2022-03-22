@@ -1,3 +1,6 @@
+// Copyright 2022 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package metrics
 
 import (
@@ -24,20 +27,19 @@ const (
 	ATTR_TYPE_FAIL    = "fail"
 )
 
+var meter = global.Meter("spiderpool_ipam")
+
+// Define instruments
+// The NodeAllocateIpDuration and NodeDeallocateIpDuration unit: second
 var (
-	meter = global.Meter("demo")
-
-	NodeAllocateIpCounts        = metric.Must(meter).NewInt64Counter("superpool_node_allocate_ip_total", metric.WithDescription("The summary counts of this node IP allocations"))
-	NodeAllocateIpSuccessCounts = metric.Must(meter).NewInt64Counter("superpool_node_allocate_ip_success_total", metric.WithDescription("The summary counts of this node IP success allocations"))
-	NodeAllocateIpFailCounts    = metric.Must(meter).NewInt64Counter("superpool_node_allocate_ip_fail_total", metric.WithDescription("The summary counts of this node IP fail allocations"))
-
-	NodeDeallocateIpCount         = metric.Must(meter).NewInt64Counter("superpool_node_deallocate_ip_total", metric.WithDescription("The summary counts of this node IP deallocations"))
-	NodeDeallocateIpSuccessCounts = metric.Must(meter).NewInt64Counter("superpool_node_deallocate_ip_success_total", metric.WithDescription("The summary counts of this node IP success deallocations"))
-	NodeDeallocateIpFailCounts    = metric.Must(meter).NewInt64Counter("superpool_node_deallocate_ip_fail_total", metric.WithDescription("The summary counts of this node IP fail deallocations"))
-
-	// allocate latency unit:second
-	NodeAllocateIpDuration   = metric.Must(meter).NewFloat64Histogram("superpool_node_allocate_ip_duration", metric.WithDescription("The duration of this node IP success allocations"))
-	NodeDeallocateIpDuration = metric.Must(meter).NewFloat64Histogram("superpool_node_deallocate_ip_duration", metric.WithDescription("The duration of this node IP success deallocations"))
+	NodeAllocatedIpTotalCounts     = metric.Must(meter).NewInt64Counter("superpool_node_allocate_ip_total", metric.WithDescription("The summary counts of this node IP allocations"))
+	NodeAllocatedIpSuccessCounts   = metric.Must(meter).NewInt64Counter("superpool_node_allocate_ip_success_total", metric.WithDescription("The summary counts of this node IP success allocations"))
+	NodeAllocatedIpFailCounts      = metric.Must(meter).NewInt64Counter("superpool_node_allocate_ip_fail_total", metric.WithDescription("The summary counts of this node IP fail allocations"))
+	NodeDeallocatedIpTotalCounts   = metric.Must(meter).NewInt64Counter("superpool_node_deallocate_ip_total", metric.WithDescription("The summary counts of this node IP deallocations"))
+	NodeDeallocatedIpSuccessCounts = metric.Must(meter).NewInt64Counter("superpool_node_deallocate_ip_success_total", metric.WithDescription("The summary counts of this node IP success deallocations"))
+	NodeDeallocatedIpFailCounts    = metric.Must(meter).NewInt64Counter("superpool_node_deallocate_ip_fail_total", metric.WithDescription("The summary counts of this node IP fail deallocations"))
+	NodeAllocatedIpDuration        = metric.Must(meter).NewFloat64Histogram("superpool_node_allocate_ip_duration", metric.WithDescription("The duration of this node IP success allocations"))
+	NodeDeallocatedIpDuration      = metric.Must(meter).NewFloat64Histogram("superpool_node_deallocate_ip_duration", metric.WithDescription("The duration of this node IP success deallocations"))
 )
 
 // attribute
@@ -48,14 +50,18 @@ var (
 	AttrReason   = attribute.Key("reason")
 )
 
+// SinceInSeconds returns the duration of time since the provide time as a float64.
 func SinceInSeconds(startTime time.Time) float64 {
 	return float64(time.Since(startTime)) / 1e9
 }
 
+// RecordIncWithAttr is a function that increments a counter with attributes.
 func RecordIncWithAttr(ctx context.Context, m metric.Int64Counter, attr []attribute.KeyValue) {
 	meter.RecordBatch(ctx, attr, m.Measurement(1))
 }
 
+// TimerWithAttr is a function stopwatch, calling it starts the timer,
+// calling the returned function will record the duration.
 func TimerWithAttr(ctx context.Context, m metric.Float64Histogram, attr []attribute.KeyValue) func() {
 	startTime := time.Now()
 	return func() {
@@ -63,6 +69,7 @@ func TimerWithAttr(ctx context.Context, m metric.Float64Histogram, attr []attrib
 	}
 }
 
+// TotalIpAttr returns the attribute for NodeAllocatedIpTotalCounts and NodeDeallocatedIpTotalCounts instrument.
 func TotalIpAttr(nodeName, poolName string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		AttrHostName.String(nodeName),
@@ -71,7 +78,8 @@ func TotalIpAttr(nodeName, poolName string) []attribute.KeyValue {
 	}
 }
 
-func IPSuccessAttr(nodeName, poolName string) []attribute.KeyValue {
+// SuccessIpAttr returns the attribute for NodeAllocatedIpSuccessCounts and NodeDeallocatedIpSuccessCounts instrument.
+func SuccessIpAttr(nodeName, poolName string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		AttrHostName.String(nodeName),
 		AttrType.String(ATTR_TYPE_SUCCESS),
@@ -79,7 +87,8 @@ func IPSuccessAttr(nodeName, poolName string) []attribute.KeyValue {
 	}
 }
 
-func IPFailAttr(nodeName, poolName, reason string) []attribute.KeyValue {
+// FailIpAttr returns the attribute for NodeAllocatedIpFailCounts and NodeDeallocatedIpFailCounts instrument.
+func FailIpAttr(nodeName, poolName, reason string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		AttrHostName.String(nodeName),
 		AttrType.String(ATTR_TYPE_FAIL),
@@ -88,13 +97,23 @@ func IPFailAttr(nodeName, poolName, reason string) []attribute.KeyValue {
 	}
 }
 
-func IPSuccessDurationAttr(nodeName string) []attribute.KeyValue {
+// SuccessIpDurationAttr returns the attribute for NodeAllocatedIpDuration instrument.
+func SuccessIpDurationAttr(nodeName string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		AttrHostName.String(nodeName),
 		AttrType.String(ATTR_TYPE_SUCCESS),
 	}
 }
 
+// FailIpDurationAttr returns the attribute for NodeDeallocatedIpDuration instrument.
+func FailIpDurationAttr(nodeName string) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		AttrHostName.String(nodeName),
+		AttrType.String(ATTR_TYPE_FAIL),
+	}
+}
+
+// SetupMetrics will set up an exporter for Prometheus collects.
 func SetupMetrics(ctx context.Context) error {
 	config := prometheus.Config{
 		DefaultHistogramBoundaries: []float64{1, 5, 7, 10, 15, 20, 30},
@@ -112,14 +131,15 @@ func SetupMetrics(ctx context.Context) error {
 		return err
 	}
 	global.SetMeterProvider(exporter.MeterProvider())
-	http.HandleFunc("/metrics", exporter.ServeHTTP)
+
+	http.HandleFunc("/", exporter.ServeHTTP)
 	go func() {
 		_ = http.ListenAndServe(":2222", nil)
 	}()
 	return nil
 }
 
-// for dvelopment
+// SetupMetricsWithStdout for development debug with console stdout output.
 func SetupMetricsWithStdout(ctx context.Context) (func(), error) {
 	exporter, err := stdoutmetric.New(stdoutmetric.WithPrettyPrint())
 	if nil != err {
@@ -142,16 +162,16 @@ func example() {
 	ctx := context.TODO()
 
 	// before real IP allocation, record the Total metric
-	RecordIncWithAttr(ctx, NodeAllocateIpCounts, TotalIpAttr("node1", "default/pool1"))
+	RecordIncWithAttr(ctx, NodeAllocatedIpTotalCounts, TotalIpAttr("node1", "default/pool1"))
 
 	// IP allocation success
-	RecordIncWithAttr(ctx, NodeAllocateIpSuccessCounts, IPSuccessAttr("node1", "default/pool1"))
+	RecordIncWithAttr(ctx, NodeAllocatedIpSuccessCounts, SuccessIpAttr("node1", "default/pool1"))
 
 	// IP allocation fail
 	err := fmt.Errorf("allocate IP overtime!")
-	RecordIncWithAttr(ctx, NodeAllocateIpFailCounts, IPFailAttr("node1", "default/pool1", err.Error()))
+	RecordIncWithAttr(ctx, NodeAllocatedIpFailCounts, FailIpAttr("node1", "default/pool1", err.Error()))
 
 	// record duration
-	stop := TimerWithAttr(ctx, NodeAllocateIpDuration, IPSuccessDurationAttr("node1"))
+	stop := TimerWithAttr(ctx, NodeAllocatedIpDuration, SuccessIpDurationAttr("node1"))
 	defer stop()
 }

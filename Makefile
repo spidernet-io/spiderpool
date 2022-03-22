@@ -10,7 +10,7 @@ all: build-bin install-bin
 
 .PHONY: all build install
 
-SUBDIRS := cmd/spiderpool-agent cmd/spiderpool-controller
+SUBDIRS := cmd/spiderpool-agent cmd/spiderpool-controller cmd/spiderpoolctl cmd/spiderpool
 
 
 build-bin:

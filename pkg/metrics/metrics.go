@@ -157,21 +157,3 @@ func SetupMetricsWithStdout(ctx context.Context) (func(), error) {
 		}
 	}, nil
 }
-
-func example() {
-	ctx := context.TODO()
-
-	// before real IP allocation, record the Total metric
-	RecordIncWithAttr(ctx, NodeAllocatedIpTotalCounts, TotalIpAttr("node1", "default/pool1"))
-
-	// IP allocation success
-	RecordIncWithAttr(ctx, NodeAllocatedIpSuccessCounts, SuccessIpAttr("node1", "default/pool1"))
-
-	// IP allocation fail
-	err := fmt.Errorf("allocate IP overtime!")
-	RecordIncWithAttr(ctx, NodeAllocatedIpFailCounts, FailIpAttr("node1", "default/pool1", err.Error()))
-
-	// record duration
-	stop := TimerWithAttr(ctx, NodeAllocatedIpDuration, SuccessIpDurationAttr("node1"))
-	defer stop()
-}

@@ -31,6 +31,15 @@
 - name: pr/stale
   description: This pull is inactive
   color: dfd6d7
+- name: pr/dependabot/docker
+  description: This pull is for dockerfile from dependabot
+  color: dfd6d7
+- name: pr/dependabot/gomod
+  description: This pull is for gomod from dependabot
+  color: dfd6d7
+- name: pr/dependabot/github-actions
+  description: This pull is for github-actions from dependabot
+  color: dfd6d7
 - name: pr/need-release-label
   description: This pull neel release label for merge
   color: df56d7

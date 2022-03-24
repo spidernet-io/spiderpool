@@ -46,7 +46,7 @@ jobs:
     name: Check CODEOWNERS consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           # Hard-code the path instead of using ${{ github.repository }}

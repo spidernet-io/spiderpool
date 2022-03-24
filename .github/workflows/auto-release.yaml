@@ -72,7 +72,7 @@ jobs:
           fi
 
       - name: Checkout Source Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         continue-on-error: false
         with:
           persist-credentials: false
@@ -190,7 +190,7 @@ jobs:
           echo ::set-output name=dest::${{ env.CHART_DEST_BRANCH }}
 
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ steps.tag.outputs.tag }}
 
@@ -268,7 +268,7 @@ jobs:
           fi
 
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           ref: ${{ steps.tag.outputs.tag }}

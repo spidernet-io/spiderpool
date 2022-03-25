@@ -60,7 +60,7 @@ jobs:
 
       - name: Checkout Source Code
         if: ${{ steps.version.outputs.exists == 'false' }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           persist-credentials: false
           # The branch, tag or SHA to checkout. When checking out the repository that

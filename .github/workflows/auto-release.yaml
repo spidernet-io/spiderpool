@@ -238,7 +238,7 @@ jobs:
 
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v3.14.0
+        uses: peter-evans/create-pull-request@v4
         with:
           title: "robot Update chart from tag ${{ steps.tag.outputs.tag }} to branch ${{ steps.tag.outputs.dest }}"
           commit-message: "robot Update chart from tag ${{ steps.tag.outputs.tag }} to branch ${{ steps.tag.outputs.dest }}"
@@ -308,7 +308,7 @@ jobs:
 
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v3.14.0
+        uses: peter-evans/create-pull-request@v4
         with:
           title: "robot Update Changelog from tag ${{ steps.create_changelog_by_auto_tag.outputs.fromTag }} to tag ${{ steps.create_changelog_by_auto_tag.outputs.toTag }}"
           commit-message: "robot update Changelog from tag ${{ steps.create_changelog_by_auto_tag.outputs.fromTag }} to tag ${{ steps.create_changelog_by_auto_tag.outputs.toTag }}"

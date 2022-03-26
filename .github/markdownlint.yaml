@@ -1,0 +1,15 @@
+# rules https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+# example https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+# example https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.jsonc
+
+# Default state for all rules
+default: true
+
+# Line length
+MD013: false
+
+# Fenced code blocks should have a language specified
+MD040: false
+
+# Dollar signs used before commands without showing output
+MD014: false

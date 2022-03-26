@@ -1,0 +1,21 @@
+{{- if .Values.spiderpoolController.podDisruptionBudget.enabled }}
+apiVersion: {{ include "capabilities.policy.apiVersion" . }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  minAvailable: {{ .Values.spiderpoolController.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "spiderpool.spiderpoolController.selectorLabels" . | nindent 6 }}
+{{- end }}

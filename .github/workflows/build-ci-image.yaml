@@ -30,7 +30,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  #filter changes base filt path , so can do less thing
+  filter_changes:
+    name: Deduce required tests from code changes
+    if: ${{ github.event_name == 'pull_request_target' }}
+    runs-on: ubuntu-latest
+    outputs:
+      go-changes: ${{ steps.go-changes.outputs.src }}
+    steps:
+      - name: Checkout code
+        if: ${{ !github.event.pull_request }}
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      # https://github.com/dorny/paths-filter
+      - name: Check code changes
+        uses: dorny/paths-filter@v2.10.2
+        id: go-changes
+        with:
+          base: ${{ github.event.pull_request_target.base.sha }}
+          ref: ${{ github.event.pull_request_target.head.sha }}
+          filters: |
+            src:
+              - api/**
+              - cmd/**
+              - contrib/**
+              - images/**
+              - pkg/**
+              - test/**
+              - tools/**
+              - vendor/**
+              - 'go.sum'
+              - 'go.mod'
+
   build-and-push-prs:
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.src == 'true' || github.event_name != 'pull_request_target' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:

@@ -10,7 +10,7 @@ env:
   BUILD_PLATFORM: linux/amd64,linux/arm64
   ONLINE_REGISTER_USER: ${{ github.actor }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-  CHART_DEST_BRANCH: chart
+  CHART_DEST_BRANCH: webserver
   CHANGELOG_DIR: changelogs
   MERGE_TO_BRANCH: main
   PR_LABEL: pr/release/robot_changelog
@@ -210,19 +210,22 @@ jobs:
       - name: Prepare Chart
         continue-on-error: false
         run: |
-          chart_dir=${{ matrix.chart_dir }}
-          [ ! -d "${chart_dir}" ] && echo "error, fail to find directory ${chart_dir}" && exit 1
-          mkdir _tmp
-          cd _tmp
-          helm package ../${chart_dir}
+          cd charts
+          make clean
+          make
+          if ! ls *.tgz &>/dev/null ; then
+            echo "failed to generate chart"
+            exit 1
+          fi
           cd ..
           mkdir -p docs/charts
-          mv _tmp/*.tgz docs/charts
-          rm -rf _tmp
+          mv charts/*.tgz docs/charts
+          git checkout -- charts
 
       - name: Prepare Index
         continue-on-error: false
         run: |
+          #rebuild index for docs/charts
           cd docs
           helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
           mv ./charts/index.yaml ./

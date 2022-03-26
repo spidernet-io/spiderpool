@@ -25,7 +25,7 @@ on:
 
 jobs:
   markdown-link-check:
-    name: Broken Links
+    name: Markdown Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -1,0 +1,15 @@
+# https://github.com/adrienverge/yamllint
+# config https://yamllint.readthedocs.io/en/stable/configuration.html
+# rule https://yamllint.readthedocs.io/en/stable/rules.html
+extends: default
+
+yaml-files:
+  - '*.yaml'
+  - '*.yml'
+
+# For all rules
+ignore: |
+  vendor/
+
+rules:
+  line-length: disable

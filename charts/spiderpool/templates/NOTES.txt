@@ -1,0 +1,5 @@
+Check that the {{ include "spiderpool.name" . }} is up and running:
+
+    kubectl get deployment/{{ include "spiderpool.spiderpoolController.name" . }} -n {{ .Release.Namespace }}
+    kubectl get daemonset/{{ include "spiderpool.spiderpoolAgent.name" . }} -n {{ .Release.Namespace }}
+

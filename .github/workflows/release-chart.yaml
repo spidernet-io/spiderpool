@@ -10,7 +10,7 @@ env:
   HELM_VERSION: v3.8.1
   PR_LABEL: pr/release/robot_chart
   PR_REVIWER: weizhoublue
-  MERGE_BRANCH: chart
+  MERGE_BRANCH: webserver
 
 on:
   workflow_dispatch:
@@ -61,19 +61,22 @@ jobs:
       - name: Prepare Chart
         continue-on-error: false
         run: |
-          chart_dir=${{ matrix.chart_dir }}
-          [ ! -d "${chart_dir}" ] && echo "error, fail to find directory ${chart_dir}" && exit 1
-          mkdir _tmp
-          cd _tmp
-          helm package ../${chart_dir}
+          cd charts
+          make clean
+          make
+          if ! ls *.tgz &>/dev/null ; then
+            echo "failed to generate chart"
+            exit 1
+          fi
           cd ..
           mkdir -p docs/charts
-          mv _tmp/*.tgz docs/charts
-          rm -rf _tmp
+          mv charts/*.tgz docs/charts
+          git checkout -- charts
 
       - name: Prepare Index
         continue-on-error: false
         run: |
+          #rebuild index for docs/charts
           cd docs
           helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
           mv ./charts/index.yaml ./

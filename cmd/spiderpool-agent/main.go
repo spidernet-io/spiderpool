@@ -3,8 +3,12 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func main() {
 	fmt.Println("I am spiderpool agent")
+	time.Sleep(100 * time.Hour)
 }

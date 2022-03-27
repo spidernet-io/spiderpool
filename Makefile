@@ -30,10 +30,19 @@ clean:
 	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)
 
 .PHONY: lint
-lint: ## Run golangci-lint and check if the helper headers in bpf/mock are up-to-date.
+lint-golang:
+	@$(ECHO_CHECK) contrib/scripts/check-go-fmt.sh
+	$(QUIET) contrib/scripts/check-go-fmt.sh
+	@$(ECHO_CHECK) contrib/scripts/lock-check.sh
+	$(QUIET) contrib/scripts/lock-check.sh
+	@$(ECHO_CHECK) vetting all GOFILES...
+	$(QUIET) $(GO_VET) \
+    ./cmd/... \
+    ./pkg/... \
+    ./test/...  \
+    ./contrib/...
 	@$(ECHO_CHECK) golangci-lint
 	$(QUIET) golangci-lint run
-
 
 .PHONY: lint-markdown
 lint-markdown:
@@ -77,33 +86,15 @@ generate-k8s-api: ## Generate Cilium k8s API client, deepcopy and deepequal Go s
 
 
 .PHONY: precheck
-precheck: logging-subsys-field ## Peform build precheck for the source code.
+precheck: ## Peform build precheck for the source code.
 ifeq ($(SKIP_K8S_CODE_GEN_CHECK),"false")
 	@$(ECHO_CHECK) tools/k8s-code-gen/verify-codegen.sh
 	$(QUIET) tools/k8s-code-gen/verify-codegen.sh
 endif
-	@$(ECHO_CHECK) contrib/scripts/check-go-fmt.sh
-	$(QUIET) contrib/scripts/check-go-fmt.sh
-	@$(ECHO_CHECK) contrib/scripts/lock-check.sh
-	$(QUIET) contrib/scripts/lock-check.sh
-
-
 
 .PHONY: gofmt
 gofmt: ## Run gofmt on Go source files in the repository.
 	$(QUIET)for pkg in $(GOFILES); do $(GO) fmt $$pkg; done
-
-
-.PHONY: govet
-govet: ## Run govet on Go source files in the repository.
-	@$(ECHO_CHECK) vetting all GOFILES...
-	$(QUIET) $(GO_VET) \
-    ./cmd/... \
-    ./pkg/... \
-    ./test/...  \
-    ./tools/...
-
-
 
 .PHONY: dev-doctor
 dev-doctor:

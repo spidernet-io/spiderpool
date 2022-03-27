@@ -68,6 +68,15 @@ jobs:
           # Otherwise, uses the default branch.
           ref: ${{ steps.version.output.version }}
 
+      - name: Getting Build Arg
+        id: arg
+        continue-on-error: false
+        run: |
+          GIT_COMMIT_VERSION=$( git show -s --format='format:%H')
+          GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
+          echo ::set-output name=commitver::${GIT_COMMIT_VERSION}
+          echo ::set-output name=committime::${GIT_COMMIT_TIME}
+
       - name: Release Build ${{ matrix.name }}
         if: ${{ steps.version.outputs.exists == 'false' }}
         uses: docker/build-push-action@v2
@@ -80,6 +89,10 @@ jobs:
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.ref }}
+          build-args: |
+            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
+            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
+            VERSION=${{ steps.version.output.version }}
 
       - name: Image Release Digest
         if: ${{ steps.version.outputs.exists == 'false' }}

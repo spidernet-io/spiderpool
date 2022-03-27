@@ -11,9 +11,12 @@ all: update-versions lint package
 #update version in chart
 update-versions:
 	$(ECHO_GEN) " Updating Chart version to $(VERSION)"
+	echo "VERSION_MAJOR=$(VERSION_MAJOR)"
+	echo "GIT_VERSION=$(GIT_VERSION)"
+	echo "FULL_BUILD_VERSION=$(FULL_BUILD_VERSION)"
 	@# Update chart versions to point to the current version.
 	$(QUIET) \
-		spiderpool_version="v$(VERSION)";		\
+		spiderpool_version="$(VERSION)";		\
 		sed -i 's/version: "*'$(VERSION_REGEX)'"*/version: '$$spiderpool_version'/g' $(CHART_FILE);		\
 		sed -i 's/appVersion: "*'$(VERSION_REGEX)'"*/appVersion: "'$$spiderpool_version'"/g' $(CHART_FILE);	\
 		sed -i 's/tag: .*/tag: '$$spiderpool_version'/g' $(VALUES_FILE);					\

@@ -78,6 +78,15 @@ jobs:
           persist-credentials: false
           ref: ${{ steps.tag.outputs.tag }}
 
+      - name: Getting Build Arg
+        id: arg
+        continue-on-error: false
+        run: |
+          GIT_COMMIT_VERSION=$( git show -s --format='format:%H')
+          GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
+          echo ::set-output name=commitver::${GIT_COMMIT_VERSION}
+          echo ::set-output name=committime::${GIT_COMMIT_TIME}
+
       - name: Release Build ${{ matrix.name }}
         uses: docker/build-push-action@v2
         continue-on-error: false
@@ -89,6 +98,10 @@ jobs:
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}:${{ steps.tag.outputs.tag }}
+          build-args: |
+            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
+            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
+            VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Image Release Digest
         shell: bash
@@ -212,7 +225,7 @@ jobs:
         run: |
           cd charts
           make clean
-          make
+          make -e VERSION=${{ steps.tag.outputs.tag }}
           if ! ls *.tgz &>/dev/null ; then
             echo "failed to generate chart"
             exit 1

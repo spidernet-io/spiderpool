@@ -29,15 +29,11 @@ CONTAINER_ENGINE?=docker
 #------------------
 
 VERSION = $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/VERSION)
-VERSION_MAJOR = $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/VERSION | cut -d. -f1)
 
-ifneq ($(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/.git),)
-    GIT_VERSION = $(shell git show -s --format='format:%h %aI')
-else
-    GIT_VERSION = $(shell cat $(ROOT_DIR)/GIT_VERSION)
-endif
+GIT_COMMIT_VERSION = $(shell git show -s --format='format:%H')
+GIT_COMMIT_TIME = $(shell git show -s --format='format:%aI')
 
-FULL_BUILD_VERSION = $(VERSION) $(GIT_VERSION)
+FULL_BUILD_VERSION = $(VERSION) $(GIT_COMMIT_VERSION)
 
 #------------------
 

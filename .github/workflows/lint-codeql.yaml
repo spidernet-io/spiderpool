@@ -9,13 +9,11 @@ on:
     branches:
       - main
       - release-*
-  #schedule:
-  #  - cron: "45 6 * * 3"
 
 permissions: read-all
 
 jobs:
-  #filter changes base filt path , so step analyze can do less thing
+  # filter changes base filt path , so step analyze can do less thing
   filter_changes:
     name: Deduce required tests from code changes
     if: ${{ github.event_name == 'pull_request' }}

@@ -190,7 +190,3 @@ spec:
       {{- if .Values.spiderpoolController.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}
-
-
-
-

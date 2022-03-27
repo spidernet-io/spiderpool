@@ -52,7 +52,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           token: ${{ secrets.GHCR_PASSWARD }}
-          #organization: ${{ github.repository_owner }}
+          # organization: ${{ github.repository_owner }}
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}
@@ -61,7 +61,7 @@ jobs:
           older-than: ${{ github.event.inputs.age_day }}
           # Count of most recent, matching containers to exclude from pruning
           keep-last: 0
-          #untagged versions should be pruned
+          # untagged versions should be pruned
           untagged: true
           # if no tag-regex , all tag will be pruned
           tag-regex: "${{ github.event.inputs.tag_reg }}"
@@ -80,10 +80,5 @@ jobs:
           older-than: 1
           # Count of most recent, matching containers to exclude from pruning
           keep-last: 0
-          #untagged versions should be pruned
+          # untagged versions should be pruned
           untagged: true
-
-
-
-
-

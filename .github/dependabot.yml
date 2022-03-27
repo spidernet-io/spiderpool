@@ -9,8 +9,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    #default to default branch
-    #target-branch: "main"
+    # default to default branch
+    # target-branch: "main"
     open-pull-requests-limit: 10
     rebase-strategy: "disabled"
     ignore:
@@ -27,8 +27,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    #default to default branch
-    #target-branch: "main"
+    # default to default branch
+    # target-branch: "main"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
     reviewers:

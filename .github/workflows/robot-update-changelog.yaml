@@ -5,10 +5,10 @@
 name: Update Changelog By Hand
 
 on:
-#  push:
-#    tags:
-#      - v[0-9]+.[0-9]+.[0-9]+
-#      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+  # push:
+  #  tags:
+  #    - v[0-9]+.[0-9]+.[0-9]+
+  #    - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
   # called by build release image
   workflow_call:
   # call by manual
@@ -46,8 +46,6 @@ jobs:
           # Only a single commit is fetched by default, for the ref/SHA that triggered the workflow
           # if Set fetch-depth: 0 to fetch all history for all branches and tags
           fetch-depth: 0
-
-
 
       - name: Check Tag
         id: check_tag
@@ -123,7 +121,7 @@ jobs:
           if ${{ steps.create_changelog_by_auto_tag.outputs.failed == 'false' }} ; then
               CHANGELOG_FILE_NAME=${{ steps.create_changelog_by_auto_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_auto_tag.outputs.toTag }}.md
           else
-              CHANGELOG_FILE_NAME=${{ steps.create_changelog_by_manul_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_manul_tag.outputs.toTag }}.md          
+              CHANGELOG_FILE_NAME=${{ steps.create_changelog_by_manul_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_manul_tag.outputs.toTag }}.md
           fi
           echo ::set-output name=changelog_path::${CHANGELOG_FILE_NAME}
           mv  _temp_changelog  ${CHANGELOG_FILE_NAME}
@@ -211,5 +209,3 @@ jobs:
         run: |
           echo "Pull Request Number - ${{ steps.create_pr.outputs.pr_number }}"
           echo "Pull Request URL - ${{ steps.create_pr.outputs.pr_url }}"
-
-

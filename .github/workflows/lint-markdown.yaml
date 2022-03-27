@@ -44,5 +44,3 @@ jobs:
           files: .
           config_file: '.github/markdownlint.yaml'
           ignore_path: '.github/markdownlintignore'
-
-

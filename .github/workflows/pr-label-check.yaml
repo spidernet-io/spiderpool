@@ -20,4 +20,3 @@ jobs:
           mode: exactly
           count: 1
           labels: ${{ env.RELEASE_LABELS }}
-

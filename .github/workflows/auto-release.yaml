@@ -410,6 +410,5 @@ jobs:
           artifactErrorsFailBuild: true
           bodyFile: "./changelog-result/changelog.md"
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag:  ${{ steps.tag.outputs.tag }}
+          tag: ${{ steps.tag.outputs.tag }}
           name: "Release ${{ steps.tag.outputs.tag }}"
-

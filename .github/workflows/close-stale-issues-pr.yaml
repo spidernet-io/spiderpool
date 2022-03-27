@@ -20,7 +20,7 @@ jobs:
       - name: Close stale issues
         uses: actions/stale@v5.0.0
         with:
-          #===== for issue
+          # ===== for issue
           stale-issue-label: ${{ env.STALE_ISSUE_LABEL }}
           # exclude all issues/PRs with milestones
           exempt-all-issue-assignees: true
@@ -38,7 +38,7 @@ jobs:
             This issue has not seen any activity since it was marked stale.
             Closing.
 
-          #====== for pr
+          # ====== for pr
           stale-pr-label: ${{ env.STALE_PR_LABEL }}
           exempt-pr-labels: pinned,security,good-first-issue
 

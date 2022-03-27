@@ -27,4 +27,3 @@ jobs:
         continue-on-error: false
         run: |
           make licenses-check
-          

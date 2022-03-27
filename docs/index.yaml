@@ -1,0 +1,24 @@
+apiVersion: v1
+entries:
+  spiderpool:
+  - apiVersion: v2
+    appVersion: v0.0.1
+    created: "2022-03-27T18:04:32.281422886Z"
+    description: ipam for kubernetes cni
+    digest: d5cc82daf6d189c73f4a25fa1a49c438af8552c6d32ce289ddb78e03a96479a4
+    home: https://spidernet-io.github.io/spiderpool
+    keywords:
+    - spiderpool
+    - ipam
+    kubeVersion: '>= 1.16.0-0'
+    maintainers:
+    - name: spidernet-io
+      url: https://github.com/spidernet-io
+    name: spiderpool
+    sources:
+    - https://github.com/spidernet-io/spiderpool
+    type: application
+    urls:
+    - https://spidernet-io.github.io/spiderpool/charts/spiderpool-v0.0.1.tgz
+    version: v0.0.1
+generated: "2022-03-27T18:04:32.278552345Z"

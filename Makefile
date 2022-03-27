@@ -35,6 +35,25 @@ lint: ## Run golangci-lint and check if the helper headers in bpf/mock are up-to
 	$(QUIET) golangci-lint run
 
 
+.PHONY: lint-markdown
+lint-markdown:
+	@$(CONTAINER_ENGINE) container run --rm \
+		--entrypoint sh -v $(ROOT_DIR):/workdir ghcr.io/igorshubovych/markdownlint-cli:latest \
+		-c '/usr/local/bin/markdownlint -c /workdir/.github/markdownlint.yaml -p /workdir/.github/markdownlintignore  /workdir/'
+
+.PHONY: fix-markdown
+fix-markdown:
+	@$(CONTAINER_ENGINE) container run --rm  \
+		--entrypoint sh -v $(ROOT_DIR):/workdir ghcr.io/igorshubovych/markdownlint-cli:latest \
+		-c '/usr/local/bin/markdownlint -f -c /workdir/.github/markdownlint.yaml -p /workdir/.github/markdownlintignore  /workdir/'
+
+.PHONY: lint-yaml
+lint-yaml:
+	@$(CONTAINER_ENGINE) container run --rm \
+		--entrypoint sh -v $(ROOT_DIR):/data cytopia/yamllint \
+		-c '/usr/bin/yamllint -c /data/.github/yamllint-conf.yml /data'
+
+
 
 .PHONY: integration-tests
 integration-tests:

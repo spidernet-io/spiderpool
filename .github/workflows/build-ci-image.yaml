@@ -30,7 +30,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  #filter changes base filt path , so can do less thing
+  # filter changes base filt path , so can do less thing
   filter_changes:
     name: Deduce required tests from code changes
     if: ${{ github.event_name == 'pull_request_target' }}
@@ -99,7 +99,7 @@ jobs:
             echo ::set-output name=tag::${{ github.sha }}
           fi
 
-      #checkout the changed code
+      # checkout the changed code
       - name: Checkout Source Code
         uses: actions/checkout@v3
         with:
@@ -123,8 +123,8 @@ jobs:
         uses: actions/cache@v3
         id: cache
         with:
-          #if find the cache mapping to "key" , will restore to "path"
-          #when the key doesn't match an existing cache. A list of restore-keys is useful when you are restoring a cache from another branch
+          # if find the cache mapping to "key" , will restore to "path"
+          # when the key doesn't match an existing cache. A list of restore-keys is useful when you are restoring a cache from another branch
           path: /tmp/.cache/${{ matrix.name }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.name }}-${{ github.sha }}
           restore-keys: |
@@ -154,7 +154,7 @@ jobs:
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.tag.outputs.tag }}
 
-      #build debug image who turn on race and deadlock detection
+      # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
         uses: docker/build-push-action@v2

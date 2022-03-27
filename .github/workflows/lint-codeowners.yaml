@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  #find all changed files from PR
+  # find all changed files from PR
   check_changes:
     name: Deduce required tests from code changes
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
             codeowners-changed:
               - 'CODEOWNERS'
 
-  #check whether there is owner relationship entry on CODEOWNERS for the changed file
+  # check whether there is owner relationship entry on CODEOWNERS for the changed file
   codeowners:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.added-files == 'true' || needs.check_changes.outputs.deleted-files == 'true' }}
@@ -53,7 +53,7 @@ jobs:
           # to make sure it works for forked repo as well.
           path: src/${{ env.REPOSITY_NAME }}
 
-      #for adding files on the PR , check whether there is relationship entry on the CODEOWNERS
+      # for adding files on the PR , check whether there is relationship entry on the CODEOWNERS
       - name: Check if all files have attributed code owners
         if: ${{ needs.check_changes.outputs.added-files == 'true' }}
         run: |
@@ -113,5 +113,3 @@ jobs:
               echo '::error title=stale_patterns::The patterns above should be removed from CODEOWNERS.'
               exit ${EXIT_STATUS}
           fi
-
-

@@ -10,6 +10,11 @@ yaml-files:
 # For all rules
 ignore: |
   vendor/
+  charts/
 
 rules:
   line-length: disable
+  document-start: disable
+  truthy:
+    ignore: |
+      .github/

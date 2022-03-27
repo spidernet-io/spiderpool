@@ -7,10 +7,10 @@ env:
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
 on:
-#  push:
-#    tags:
-#      - v[0-9]+.[0-9]+.[0-9]+
-#      - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
+  # push:
+  #  tags:
+  #    - v[0-9]+.[0-9]+.[0-9]+
+  #    - v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+
   workflow_dispatch:
     inputs:
       tag:
@@ -48,7 +48,7 @@ jobs:
           password: ${{ env.ONLINE_REGISTER_PASSWORD }}
           registry: ${{ env.ONLINE_REGISTER }}
 
-      #get the pushed tag
+      # get the pushed tag
       - name: Getting image tag
         id: tag
         continue-on-error: false

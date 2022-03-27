@@ -74,17 +74,40 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.17.8
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: false
+
       - name: Run golangci-lint
+        id: golangci-lint
+        continue-on-error: true
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
 
       - name: gokart
+        id: gokart
+        continue-on-error: true
         run: |
           go install github.com/praetorian-inc/gokart@latest
           gokart scan --globalsTainted
 
+      - name: Check Other
+        id: other
+        continue-on-error: true
+        run: |
+          make lint-golang
+
+      - name: Result
+        continue-on-error: false
+        run: |
+          result=${{ steps.golangci-lint.outcome }}
+          [ "${result}"x == "failure"x ] && exit 1
+          result=${{ steps.gokart.outcome }}
+          [ "${result}"x == "failure"x ] && exit 2
+          result=${{ steps.other.outcome }}
+          [ "${result}"x == "failure"x ] && exit 3
+          echo "all succeed"
+          exit 0

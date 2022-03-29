@@ -1,0 +1,88 @@
+name: Golang CI Ginkgo
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.after }}
+  cancel-in-progress: true
+
+jobs:
+  # filter changes base filt path , so can do less thing
+  filter_changes:
+    name: Deduce required tests from code changes
+    if: ${{ github.event_name == 'pull_request_target' }}
+    runs-on: ubuntu-latest
+    outputs:
+      unitest: ${{ steps.unitest-changes.outputs.src }}
+      e2e: ${{ steps.e2e-changes.outputs.src }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      # https://github.com/dorny/paths-filter
+      - name: Check Need Unitest
+        uses: dorny/paths-filter@v2.10.2
+        id: unitest-changes
+        with:
+          base: ${{ github.event.pull_request_target.base.sha }}
+          ref: ${{ github.event.pull_request_target.head.sha }}
+          filters: |
+            src:
+              - 'api/**'
+              - 'cmd/**'
+              - 'pkg/**'
+              - 'go.sum'
+              - 'go.mod'
+
+      - name: Check e2e Unitest
+        uses: dorny/paths-filter@v2.10.2
+        id: e2e-changes
+        with:
+          base: ${{ github.event.pull_request_target.base.sha }}
+          ref: ${{ github.event.pull_request_target.head.sha }}
+          filters: |
+            src:
+              - test/**
+              - 'go.sum'
+              - 'go.mod'
+
+  unitest:
+    runs-on: ubuntu-latest
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.unitest == 'true' }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18.0
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Run unitest
+        id: unitest
+        run: |
+          make unitest-tests
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: coverage.out
+          path: coverage.out
+          retention-days: 1
+
+      - name: Upload testreport
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: testreport.json
+          path: testreport.json
+          retention-days: 1

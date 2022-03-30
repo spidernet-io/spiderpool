@@ -63,12 +63,27 @@ lint-yaml:
 		-c '/usr/bin/yamllint -c /data/.github/yamllint-conf.yml /data'
 
 
+.PHONY: lint-openapi
+lint-openapi:
+	@$(CONTAINER_ENGINE) container run --rm \
+		-v $(ROOT_DIR):/spec redocly/openapi-cli lint api/v1/agent/openapi.yaml
+	@$(CONTAINER_ENGINE) container run --rm \
+		-v $(ROOT_DIR):/spec redocly/openapi-cli lint api/v1/controller/openapi.yaml
+
 
 .PHONY: integration-tests
 integration-tests:
 	@echo "run integration-tests"
 	$(QUIET) $(MAKE) -C test
 
+.PHONY: unitest-tests
+unitest-tests:
+	@echo "run unitest-tests"
+	$(QUIET) ./ginkgo.sh   \
+		--cover --coverprofile=./coverage.out --covermode set  \
+		--json-report ./testreport.json \
+		-vv  ./pkg/... ./cmd/...
+	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
 
 

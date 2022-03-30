@@ -39,7 +39,6 @@ jobs:
       go-changes: ${{ steps.go-changes.outputs.src }}
     steps:
       - name: Checkout code
-        if: ${{ !github.event.pull_request }}
         uses: actions/checkout@v2
         with:
           persist-credentials: false
@@ -66,7 +65,7 @@ jobs:
 
   build-and-push-prs:
     needs: filter_changes
-    if: ${{ needs.filter_changes.outputs.src == 'true' || github.event_name != 'pull_request_target' }}
+    if: ${{ needs.filter_changes.outputs.go-changes == 'true' || github.event_name != 'pull_request_target' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:

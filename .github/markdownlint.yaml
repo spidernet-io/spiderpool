@@ -8,6 +8,9 @@ default: true
 # Line length
 MD013: false
 
+# Multiple headings with the same content
+MD024: false
+
 # Fenced code blocks should have a language specified
 MD040: false
 

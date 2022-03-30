@@ -158,6 +158,8 @@ spec:
           value: {{ .Values.spiderpoolController.prometheus.enabled | quote }}
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolController.prometheus.port | quote }}
+        - name: SPIDERPOOL_HTTP_PORT
+          value: {{ .Values.spiderpoolController.httpPort | quote }}
         - name: SPIDERPOOL_GC_IPPOOL_ENABLED
           value: {{ .Values.spiderpoolController.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED

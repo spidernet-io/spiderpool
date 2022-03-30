@@ -42,6 +42,4 @@ data:
       "log_file_max_count": {{ .Values.ipamPlugin.logFileCount }},
       "ipam_bin_Path": {{ .Values.ipamPlugin.ipamBinPath | quote }},
       "unix_path": {{ .Values.configmap.config.ipamUnixSocketPath | quote }}
-      "ipv4_enabled": {{ .Values.configmap.config.enableIpv4 }},
-      "ipv6_enabled": {{ .Values.configmap.config.enableIpv6 }}
     }

@@ -79,10 +79,10 @@ integration-tests:
 .PHONY: unitest-tests
 unitest-tests:
 	@echo "run unitest-tests"
-	$(QUIET) ./ginkgo.sh   \
+	$(QUIET) $(ROOT_DIR)/ginkgo.sh   \
 		--cover --coverprofile=./coverage.out --covermode set  \
 		--json-report ./testreport.json \
-		-vv  ./pkg/... ./cmd/...
+		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
 

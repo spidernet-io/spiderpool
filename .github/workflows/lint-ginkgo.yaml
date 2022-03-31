@@ -71,10 +71,12 @@ jobs:
 
       - name: Run unitest
         id: unitest
+        continue-on-error: true
         run: |
           make unitest-tests
 
       - name: Upload coverage
+        if: ${{ steps.unitest.outcome == 'failure' }}
         uses: actions/upload-artifact@v3.0.0
         with:
           name: coverage.out
@@ -82,8 +84,15 @@ jobs:
           retention-days: 1
 
       - name: Upload testreport
+        if: ${{ steps.unitest.outcome == 'failure' }}
         uses: actions/upload-artifact@v3.0.0
         with:
           name: testreport.json
           path: testreport.json
           retention-days: 1
+
+      - name: Result
+        if: ${{ steps.unitest.outcome == 'failure' }}
+        run: |
+          echo "failed"
+          exit 1

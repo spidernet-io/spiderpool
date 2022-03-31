@@ -7,9 +7,11 @@ CURRENT_FILENAME=`basename $0`
 CURRENT_DIR_PATH=$(cd `dirname $0`; pwd)
 GINKGO_PKG_PATH=${GINKGO_PKG_PATH:-${CURRENT_DIR_PATH}/vendor/github.com/onsi/ginkgo/v2/ginkgo/main.go}
 
+#debug
 set -x
-
 ls pkg/lock
+git branch
+git show
 
 if which ginkgo &>/dev/null ; then
   ginkgo $@

@@ -26,6 +26,7 @@ var _ = Describe("LockFast", Label("unitest"), func() {
 		l.RLock()
 		time.Sleep(1 * time.Second)
 		l.RUnlock()
+
 		l.Lock()
 		time.Sleep(1 * time.Second)
 		l.Unlock()

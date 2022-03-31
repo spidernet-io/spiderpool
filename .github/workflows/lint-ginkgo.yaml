@@ -2,10 +2,7 @@ name: Golang CI Ginkgo
 
 on:
   pull_request: {}
-  push:
-    branches:
-      - main
-      - release-*
+
 
 permissions: read-all
 
@@ -66,18 +63,11 @@ jobs:
         with:
           go-version: 1.17.8
 
-      - name: Getting tag
-        id: tag
-        continue-on-error: false
-        run: |
-          echo ::set-output name=tag::${GITHUB_REF##*/}
-
       - name: Checkout Source Code
         uses: actions/checkout@v3
-        continue-on-error: false
         with:
           persist-credentials: false
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run unitest
         id: unitest

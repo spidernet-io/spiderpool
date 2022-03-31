@@ -32,5 +32,6 @@ var _ = Describe("LockFast", Label("unitest"), func() {
 		l.Lock()
 		time.Sleep(1 * time.Second)
 		l.Unlock()
+		Expect(1).To(Equal(52)
 	})
 })

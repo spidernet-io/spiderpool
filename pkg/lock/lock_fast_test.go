@@ -8,6 +8,7 @@ package lock_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"time"
 )
@@ -20,6 +21,7 @@ var _ = Describe("LockFast", Label("unitest"), func() {
 		l.Lock()
 		time.Sleep(1 * time.Second)
 		l.Unlock()
+		Expect(1).To(Equal(2))
 	})
 	It("test RWMutex lock", func() {
 		l := &lock.RWMutex{}

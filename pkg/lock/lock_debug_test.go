@@ -19,6 +19,7 @@ var _ = Describe("LockFast", Label("unitest"), func() {
 		l := &lock.Mutex{}
 
 		l.Lock()
+
 		l.Unlock()
 	})
 	It("test debug Rlock", func() {

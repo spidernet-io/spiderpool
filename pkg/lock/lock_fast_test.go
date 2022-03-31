@@ -21,7 +21,7 @@ var _ = Describe("LockFast", Label("unitest"), func() {
 		l.Lock()
 		time.Sleep(1 * time.Second)
 		l.Unlock()
-		Expect(1).To(Equal(2))
+		Expect(1).To(Equal(3))
 	})
 	It("test RWMutex lock", func() {
 		l := &lock.RWMutex{}

@@ -1,7 +1,6 @@
 *  @weizhouBlue @lou-lan
 /.github/ @weizhoublue
 /api/ @weizhoublue
-/changelogs/ @weizhoublue
 /charts/ @weizhoublue
 /cmd/ @weizhoublue
 /contrib/ @weizhoublue
@@ -22,3 +21,4 @@
 /VERSION @weizhoublue
 /AUTHORS @weizhoublue
 /ginkgo.sh @weizhoublue
+/.licenserc.yaml @weizhoublue

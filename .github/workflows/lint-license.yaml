@@ -1,11 +1,22 @@
 name: Lint Licnese checks
 
-# Any change in triggers needs to be reflected in the concurrency group.
 on:
-  pull_request: {}
+  pull_request:
+    paths:
+      - '**.go'
+      - '**.sh'
   push:
     branches:
       - main
+    paths:
+      - '**.go'
+      - '**.sh'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'sha, ref, branch'
+        required: true
+        default: main
 
 permissions: read-all
 
@@ -18,12 +29,23 @@ jobs:
   go-mod:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checking Ref
+        id: version
+        shell: bash
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+            tag_name=${{ github.event.inputs.ref }}
+            echo ::set-output name=ref::${tag_name}
+          else
+            echo ::set-output name=ref::${{ github.sha }}
+          fi
+
+      - name: Checkout Source Code
         uses: actions/checkout@v3
         with:
           persist-credentials: false
+          ref: ${{ steps.version.outputs.ref }}
 
-      - name: Check GO License
-        continue-on-error: false
-        run: |
-          make licenses-check
+      - name: Check License Header
+        id: checklicense
+        uses: apache/skywalking-eyes@main

@@ -4,7 +4,6 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge)](https://www.codefactor.io/repository/github/spidernet-io/spiderpool)
 
-
 ## License
 
 Spider pool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.

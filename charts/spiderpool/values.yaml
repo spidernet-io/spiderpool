@@ -53,7 +53,6 @@ configmap:
     enableIpv6: true
     clusterDefaultIpv4Ippool: []
     clusterDefaultIpv6Ippool: []
-    enableStatefulsetIp: false
 
 spiderpoolAgent:
   name: "spiderpool-agent"

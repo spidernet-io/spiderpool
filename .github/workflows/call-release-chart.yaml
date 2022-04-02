@@ -23,6 +23,11 @@ on:
       ref:
         required: true
         type: string
+    outputs:
+      artifact:
+        description: "name of chart artifact"
+        value: chart_package_artifact
+        # value: ${{ jobs.example_job.outputs.output1 }}
 
 jobs:
   get_ref:
@@ -67,6 +72,7 @@ jobs:
           cd charts
           make clean
           make
+          # make -e VERSION=${{ needs.get_ref.outputs.ref }}
           if ! ls *.tgz &>/dev/null ; then
             echo "failed to generate chart"
             exit 1
@@ -78,7 +84,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.0.0
         with:
-          name: chart-package
+          name: chart_package_artifact
           path: tmp/*
           retention-days: 1
           if-no-files-found: error
@@ -88,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [package_chart, get_ref]
     steps:
-      - name: Get Base URL
+      - name: Get Base Chart URL
         id: get_base_url
         run: |
           name=${{ github.repository }}
@@ -104,7 +110,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v3.0.0
         with:
-          name: chart-package
+          name: chart_package_artifact
           path: charts/
 
       - name: Update Chart Yaml

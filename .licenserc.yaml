@@ -1,0 +1,18 @@
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: spidernet-io
+    pattern: |
+      Copyright|Apache-2.0
+    content: |
+      Copyright 2022 Authors of spidernet-io
+      SPDX-License-Identifier: Apache-2.0
+
+  paths:
+    - '**/*.go'
+    - '**/*.sh'
+
+  paths-ignore:
+    - 'vendor'
+
+  comment: on-failure

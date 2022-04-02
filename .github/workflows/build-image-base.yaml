@@ -115,7 +115,7 @@ jobs:
           push: true
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.base_tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}
 
       - name: Image Release Digest
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
@@ -124,7 +124,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ env.IMAGE_NAME }}" > image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.tag.outputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests

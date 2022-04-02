@@ -1,0 +1,18 @@
+name: Build Image Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'tag, sha, branch'
+        required: true
+        default: v1.0.0
+
+permissions: write-all
+
+jobs:
+  call-workflow:
+    uses: ./.github/workflows/call-release-image.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      suffix: 'beta'

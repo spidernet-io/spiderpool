@@ -3,7 +3,7 @@
 # and deploy to "/charts" of branch "github_pages"
 # and on branch "github_pages", update '/index.yaml' for '/charts/*.tgz'
 
-name: Release Charts
+name: Call Release Charts
 
 env:
   HELM_VERSION: v3.8.1

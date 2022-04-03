@@ -51,9 +51,9 @@ jobs:
         uses: vlaurin/action-ghcr-prune@v0.4.0
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
-          token: ${{ secrets.GHCR_PASSWARD }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           # organization: ${{ github.repository_owner }}
-          container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
+          container: ${{ github.event.inputs.tag_reg }}
           # Dry-run first, then change to `false`
           dry-run: ${{ github.event.inputs.dry_run }}
           # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container
@@ -64,21 +64,4 @@ jobs:
           # untagged versions should be pruned
           untagged: true
           # if no tag-regex , all tag will be pruned
-          tag-regex: "${{ github.event.inputs.tag_reg }}"
-
-      - name: Delete CI image
-        uses: vlaurin/action-ghcr-prune@v0.4.0
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        with:
-          token: ${{ secrets.GHCR_PASSWARD }}
-          organization: ${{ github.repository_owner }}
-          container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
-          # Dry-run first, then change to `false`
-          dry-run: false
-          # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container
-          # longer than 1 days, will gc it
-          older-than: 1
-          # Count of most recent, matching containers to exclude from pruning
-          keep-last: 0
-          # untagged versions should be pruned
-          untagged: true
+          # tag-regex: "c"

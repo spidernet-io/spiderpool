@@ -155,6 +155,26 @@ jobs:
           go install github.com/praetorian-inc/gokart@latest
           gokart scan --globalsTainted
 
+  lint_build:
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.check == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.8
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ needs.filter_changes.outputs.ref }}
+
+      - name: Build Lint
+        run: |
+          make build-bin
+
   unitest:
     needs: filter_changes
     if: ${{ needs.filter_changes.outputs.check == 'true' }}

@@ -1,4 +1,4 @@
-name: Build Image CI
+name: Auto Build Image CI
 
 env:
   ONLINE_REGISTER: ghcr.io

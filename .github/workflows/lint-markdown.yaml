@@ -1,4 +1,4 @@
-name: Lint MarkDown File
+name: Auto MarkDown Lint
 
 on:
   push:

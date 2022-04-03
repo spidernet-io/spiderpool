@@ -1,6 +1,6 @@
 # Checks for a sign-off in every commit in a pull request and adds a comment if a commit was detected without one
 # but this workflow will not fail the pr
-name: Lint signed off commits
+name: Auto PR signed-off Lint
 
 on:
   pull_request_target:

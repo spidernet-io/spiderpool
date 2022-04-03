@@ -1,4 +1,4 @@
-name: Lint Openapi Yaml
+name: Auto Openapi Lint
 
 on:
   push:

@@ -1,5 +1,5 @@
 # auto label pr who is approved by 2 guys.
-name: Label Approved PR
+name: Auto Label PR
 
 env:
   LABEL: pr/approved,pr/need-release-label

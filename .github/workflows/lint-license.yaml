@@ -1,4 +1,4 @@
-name: Lint Licnese checks
+name: Auto Licnese Lint
 
 on:
   pull_request:

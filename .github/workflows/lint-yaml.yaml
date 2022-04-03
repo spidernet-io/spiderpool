@@ -1,4 +1,4 @@
-name: Lint Yaml File
+name: Auto Yaml Lint
 
 on:
   push:

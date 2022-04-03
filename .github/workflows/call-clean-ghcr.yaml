@@ -80,7 +80,8 @@ jobs:
         if: ${{ steps.args.outputs.tag_regex == '' }}
         uses: vlaurin/action-ghcr-prune@v0.4.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}
           container: ${{ steps.args.outputs.repo_name }}/${{ steps.args.outputs.image_name }}
           dry-run: ${{ steps.args.outputs.dry_run }}

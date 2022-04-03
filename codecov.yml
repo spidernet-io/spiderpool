@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        if_ci_failed: error
+    patch:
+      default:
+        target: auto
+        if_ci_failed: error
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default

@@ -70,7 +70,7 @@ jobs:
         uses: davahome/ghcr-cleanup@v1
         with:
           token: ${{ secrets.WELAN_PAT }}
-          package: ${{ steps.args.outputs.image_name }}
+          package: ${{ steps.args.outputs.repo_name }}/${{ steps.args.outputs.image_name }}
           owner: orgs/${{ github.repository_owner }}
           minimum_days: ${{ steps.args.outputs.older_than }}
           # should not be 100 or greater

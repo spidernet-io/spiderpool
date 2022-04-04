@@ -135,7 +135,7 @@ jobs:
       # build normal image
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.10.0
         continue-on-error: false
         id: docker_build_ci_master
         with:
@@ -156,7 +156,7 @@ jobs:
       # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.10.0
         continue-on-error: false
         id: docker_build_ci_master_detect_race_condition
         with:
@@ -186,7 +186,7 @@ jobs:
       # trigger by PR updates
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.10.0
         continue-on-error: false
         id: docker_build_ci_pr
         with:
@@ -210,7 +210,7 @@ jobs:
 
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.10.0
         continue-on-error: false
         id: docker_build_ci_pr_detect_race_condition
         with:

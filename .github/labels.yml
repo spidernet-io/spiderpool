@@ -10,15 +10,12 @@
 - name: pr/release/doc
   description: doc pr in a new release
   color: 0fd3d7
-- name: pr/release/robot_changelog
-  description: auto robot changelog pr in a new release
+- name: pr/release/robot_update_githubpage
+  description: auto robot update github page
   color: afd3d7
 - name: pr/release/changelog
   description: manual changelog pr in a new release
   color: bfd3d7
-- name: pr/release/robot_chart
-  description: auto robot chart pr in a new release
-  color: afd317
 - name: pr/release/chart
   description: manual chart pr in a new release
   color: bfd3d7

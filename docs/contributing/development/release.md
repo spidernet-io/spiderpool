@@ -26,10 +26,10 @@ if a tag vXX.XX.XX is puhed , the following will auto trigger:
 
 ### 2 generate the changelog by historical PR with "pr/release/*"
 
-and submit a PR commit to branch 'main', with PR label "pr/release/robot_changelog".
+and submit a PR commit to branch 'main', with PR label "pr/release/robot_update_githubpage".
 
 ### 3 build the chart package with the pushed tag, and submit a PR with new chart and index.yaml to branch 'webserver'
 
 ### 4 create a Github Realse attached with the chart and changelog
 
-### finnally, by hand, need approve the chart PR with label "pr/release/robot_changelog" , and changelog PR with label "pr/release/robot_changelog"
+### finnally, by hand, need approve the chart PR with label "pr/release/robot_update_githubpage" , and changelog PR with label "pr/release/robot_update_githubpage"

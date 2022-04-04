@@ -1,0 +1,107 @@
+name: Call Release Doc
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+  # --- call by manual
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'branch, tag, sha'
+        required: true
+        default: main
+
+env:
+  MERGE_BRANCH: github_pages
+  SRC_DIRECTORY: 'docs'
+  DEST_DIRECTORY: 'docs'
+  PR_LABEL: pr/release/robot_update_githubpage
+  PR_REVIWER: weizhoublue
+
+jobs:
+  prepare_doc:
+    name: prepare doc
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.get_ref.outputs.ref }}
+    steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          pwd
+          ls
+          if ${{ inputs.ref != '' }}; then
+              echo "call by workflow_call"
+              echo ::set-output name=ref::${{ inputs.ref }}
+          elif ${{ github.event_name == 'workflow_dispatch' }} ; then
+              echo "call by workflow_dispatch"
+              echo ::set-output name=ref::${{ github.event.inputs.ref }}
+          else
+              echo "unexpected event: ${{ github.event_name }}"
+              exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.get_ref.outputs.ref }}
+
+      - name: Tar Doc
+        run: |
+          cd ${{ env.SRC_DIRECTORY }}
+          tar -czvf _doc.tar.gz *
+          ls
+          tar -tf _doc.tar.gz
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: doc_artifact
+          path: ${{ env.SRC_DIRECTORY }}/_doc.tar.gz
+          retention-days: 0
+          if-no-files-found: error
+
+  create_pr:
+    name: Create PR
+    needs: prepare_doc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.MERGE_BRANCH }}
+
+      - name: Prepare
+        run: |
+          rm -rf ${{ env.DEST_DIRECTORY }}
+          mkdir ${{ env.DEST_DIRECTORY }}
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v3.0.0
+        with:
+          name: doc_artifact
+          path: ${{ env.DEST_DIRECTORY }}
+
+      - name: Untar Doc
+        run: |
+          cd ${{ env.DEST_DIRECTORY }}
+          tar -xzvf _doc.tar.gz
+          rm -f _doc.tar.gz
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v4
+        with:
+          title: "robot update doc from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          commit-message: "robot update chart from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          branch-suffix: timestamp
+          branch: robot/update_doc
+          delete-branch: true
+          base: ${{ env.MERGE_BRANCH }}
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ env.PR_LABEL }}
+          reviewers: ${{ env.PR_REVIWER }}

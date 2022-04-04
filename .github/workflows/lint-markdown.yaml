@@ -5,14 +5,14 @@ on:
     branches:
       - main
       - release-*
-      - webserver
+      - github_pages
     paths:
       - '**.md'
   pull_request:
     branches:
       - main
       - release-*
-      - webserver
+      - github_pages
     paths:
       - '**.md'
   # checkout all markdown

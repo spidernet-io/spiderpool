@@ -28,7 +28,7 @@ on:
 env:
   DEST_BRANCH: github_pages
   DEST_DIRECTORY: 'changelogs/'
-  PR_LABEL: pr/release/robot_changelog
+  PR_LABEL: pr/release/robot_update_githubpage
   PR_REVIWER: weizhoublue
   CHANGELOG_CONF: .github/changelog_builder_conf.json
 

@@ -9,7 +9,9 @@ import (
 )
 
 func main() {
+
 	fmt.Println("I am spiderpool ipam plugin")
+
 	time.Sleep(100 * time.Hour)
 
 }

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2022 Authors of spidernet-io
+# SPDX-License-Identifier: Apache-2.0
+
 CURRENT_DIR_PATH=$(cd `dirname $0`; pwd)
 PROJECT_ROOT_PATH="${CURRENT_DIR_PATH}/../.."
 

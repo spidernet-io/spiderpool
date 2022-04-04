@@ -66,15 +66,11 @@ jobs:
               exit 1
           fi
 
-      - name: Delete packages
-        uses: davahome/ghcr-cleanup@v1
+      - name: Clean GHCR packages
+        uses: cresh-io/action-ghcr-batch-delete-versions@v1
         with:
-          token: ${{ secrets.WELAN_PAT }}
-          package: ${{ steps.args.outputs.repo_name }}/${{ steps.args.outputs.image_name }}
-          owner: orgs/${{ github.repository_owner }}
-          minimum_days: ${{ steps.args.outputs.older_than }}
-          # should not be 100 or greater
-          keep_versions: ${{ steps.args.outputs.keep_last }}
-          delete_untagged: 1
-          # should not be 100 or greater
-          keep_versions_untagged: 0
+          github-access-token: "${{ secrets.WELAN_PAT }}"
+          org: "${{ github.repository_owner }}"
+          package_name: "${{ steps.args.outputs.repo_name }}/${{ steps.args.outputs.image_name }}"
+          package_type: "container"   # Default is container because the action was design only for containers at first
+          dry-run: "${{ steps.args.outputs.dry_run }}"

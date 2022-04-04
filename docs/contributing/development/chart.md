@@ -1,11 +1,11 @@
 # Chart Management
 
-the '/docs' of branch 'webserver' is used by github page
+the '/' of branch 'github_pages' is used as github page
 
 each version of chart package will be automatically created by CI,
-they will pushed to '/docs/chart' of branch 'webserver'.
+they will be pushed to '/chart' of branch 'github_pages'.
 
-the index.yaml of chart registry will also be updated by CI, and published to '/docs' of branch 'webserver'.
+the '/index.yaml' of branch 'github_pages' will also be updated by CI.
 
 so, you could use following command to get the chart
 

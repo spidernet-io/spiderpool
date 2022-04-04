@@ -1,9 +1,9 @@
-# build the release image under an clean env , and it is trigger by tag event
-# buid image like: ghcr.io/weizhoublue/github-action-test/controllerimage:v1.0.0
-# 1 build the all images, push images to ghcr.io,
-# 2 package the chart package, PR to '/charts' of branch 'github_pages' for githubPage , who used as chart registry and doc server( PR need approval by hand)
-# 3 create changelog file, PR to '/changelogs' of branch 'github_pages' for githubPage ( PR need approval by hand)
-# 4 create a release , attached with chart and changelog
+# it is trigger by tag event:
+# 1 build the release image, push images to ghcr.io, and buid image like: ghcr.io/weizhoublue/github-action-test/controllerimage:v1.0.0
+# 2 package the chart package, update index.yaml and commit to '/charts' of branch 'github_pages' ( PR with label pr/release/robot_update_githubpage )
+# 3 create changelog file, commit to '/changelogs' of branch 'github_pages' for githubPage ( PR with label pr/release/robot_update_githubpage )
+# 4 commit '/docs' to '/docs' of branch 'github_pages'
+# 5 create a release , attached with the chart and changelog
 
 name: Auto Release Version
 

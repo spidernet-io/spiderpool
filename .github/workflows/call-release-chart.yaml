@@ -7,7 +7,7 @@ name: Call Release Charts
 
 env:
   HELM_VERSION: v3.8.1
-  PR_LABEL: pr/release/robot_chart
+  PR_LABEL: pr/release/robot_update_githubpage
   PR_REVIWER: weizhoublue
   MERGE_BRANCH: github_pages
 

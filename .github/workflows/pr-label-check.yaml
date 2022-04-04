@@ -1,5 +1,5 @@
 # make sure the pr is labled as wanted, case: we could generate changelog by the pr label
-name: Auto PR Label Lint
+name: PR Label Check
 
 # Trigger the workflow on pull requests only
 on:
@@ -7,7 +7,7 @@ on:
     types: [opened, labeled, unlabeled, synchronize]
 
 env:
-  RELEASE_LABELS: "pr/release/bug, pr/release/feature-new, pr/release/feature-changed, pr/release/doc, pr/release/robot_changelog, pr/release/robot_chart, pr/release/chart, pr/release/changelog, pr/release/none-required"
+  RELEASE_LABELS: "pr/release/bug, pr/release/feature-new, pr/release/feature-changed, pr/release/doc, pr/release/robot_update_githubpage, pr/release/chart, pr/release/changelog, pr/release/none-required"
 
 jobs:
   check-label:

@@ -10,22 +10,6 @@ a PR may trigger following workflows, it should meet all of them for merging PR
 
 if a pr is not signed off, a robot comment will be update to prompted
 
-## action: check markdown file issue
-
-you could find the reported issue description <https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md>
-
-use following to find the issue on you local machine
-
-```
-make lint-markdown
-```
-
-use following the fix issue on you local machine
-
-```
-make fix-markdown
-```
-
 ## action: check yaml file issue
 
 you could find the reported issue description <https://yamllint.readthedocs.io/en/stable/rules.html>
@@ -36,35 +20,21 @@ use following to find the issue on you local machine
 make lint-yaml
 ```
 
-## action: build CI image
-
-With cache acceleration, build two ci image and push to ghcr
-
-(1) ****-ci:${ref} : the normal image
-
-(2) ****-ci:${ref}-rate : image who turns on 'go race' and 'deadlock detect'
-
-the CI will clean ci images at interval
-
-## action: lint CodeQL
-
-any go file updated, will check it with CodeQL
-
-## action: lint golang
+## action: go source code check
 
 any go file updated, will check it with following:
 
-(1) golangci-lint and go vet
+1 mod dependency updated, golangci-lint, gofmt updated, go vet, use internal lock pkg
 
-(2) gokart
+2 code quality check, like codeql and gokart
 
-(3) whether update go.mod and vendor
+3 build binary
 
-(4) whether gofmt the code
+4 unitest and upload coverage to codecov
 
-(5) wheterh use the pkg/lock
+5 action: lint license
 
-## action: lint license
+## action: license
 
 any go or shell file should be licensed
 
@@ -107,15 +77,15 @@ make lint-yaml
 
 ## action: lint chart
 
-any update about chart file under '/charts', will trigger this
+any update about chart file under '/charts'
 
 ## action: lint openapi.yaml
 
 any update about openapi.yaml, will be checked for the yaml validation
 
-## action: golang test
+## action: other github APP
 
-run ginkgo for any golang code
+check from <https://www.codefactor.io>
 
 ## need review
 

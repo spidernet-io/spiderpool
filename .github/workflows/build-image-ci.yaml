@@ -24,6 +24,12 @@ on:
       - release-*
     types:
       - completed
+  # called by daily build and push image
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.after }}
@@ -33,18 +39,19 @@ jobs:
   # filter changes base filt path , so can do less thing
   filter_changes:
     name: Deduce required tests from code changes
-    if: ${{ github.event_name == 'pull_request_target' }}
     runs-on: ubuntu-latest
     outputs:
-      go-changes: ${{ steps.go-changes.outputs.src }}
+      build: ${{ steps.result.outputs.result }}
     steps:
       - name: Checkout code
+        if: ${{ github.event_name == 'pull_request_target' || github.event_name == 'push' }}
         uses: actions/checkout@v3
         with:
           persist-credentials: false
 
       # https://github.com/dorny/paths-filter
       - name: Check code changes
+        if: ${{ github.event_name == 'pull_request_target' || github.event_name == 'push' }}
         uses: dorny/paths-filter@v2.10.2
         id: go-changes
         with:
@@ -63,10 +70,20 @@ jobs:
               - 'go.sum'
               - 'go.mod'
 
+      - name: Result
+        id: result
+        run: |
+          if ${{ github.event_name != 'pull_request_target' && github.event_name != 'push' }} ; then
+              echo ::set-output name=result::true
+          else
+              echo ::set-output name=result::${{ steps.go-changes.outputs.src }}
+          fi
+
   build-and-push-prs:
-    needs: filter_changes
-    if: ${{ needs.filter_changes.outputs.go-changes == 'true' || github.event_name != 'pull_request_target' }}
     runs-on: ubuntu-latest
+    # run if filters.src was changed
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.build == 'true' }}
     strategy:
       matrix:
         include:
@@ -92,10 +109,26 @@ jobs:
       - name: Getting image tag
         id: tag
         run: |
-          if [ ${{ github.event.pull_request.head.sha }} != "" ]; then
-            echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
+          if ${{ inputs.ref != '' }}; then
+              echo "trigger by workflow_call"
+              echo ::set-output name=tag::${{ inputs.ref }}
+              echo ::set-output name=push::true
+          elif ${{ github.event_name == 'push' }} ; then
+              echo "trigger by push"
+              echo ::set-output name=tag::${{ github.sha }}
+              echo ::set-output name=push::false
+          elif ${{ github.event_name == 'pull_request_target' }} ; then
+              echo "trigger by pull_request_target"
+              echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
+              echo ::set-output name=push::false
+          elif ${{ github.event_name == 'workflow_run' }} ; then
+              echo "trigger by workflow_run"
+              echo ::set-output name=tag::main
+              echo ::set-output name=push::false
           else
-            echo ::set-output name=tag::${{ github.sha }}
+              echo "trigger by ${{ github.event_name }}"
+              echo ::set-output name=tag::${{ github.sha }}
+              echo ::set-output name=push::false
           fi
 
       # checkout the changed code
@@ -114,6 +147,7 @@ jobs:
           echo ::set-output name=commitver::${GIT_COMMIT_VERSION}
           echo ::set-output name=committime::${GIT_COMMIT_TIME}
 
+      # =============  get cache ===========
       # Load Golang cache build from GitHub
       # Cache dependencies and build outputs in GitHub Actions
       # the github will keep the cache for 7 days at most
@@ -131,7 +165,23 @@ jobs:
             ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
             ${{ runner.os }}-go-
 
-      # main branch pushes
+      - name: Create ${{ matrix.name }} cache directory
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: |
+          mkdir -p /tmp/.cache/${{ matrix.name }}
+
+      # Import GitHub's cache build to docker cache
+      - name: Copy ${{ matrix.name }} Golang cache to docker cache
+        uses: docker/build-push-action@v2.10.0
+        with:
+          context: /tmp/.cache/${{ matrix.name }}
+          file: ./images/cache/Dockerfile
+          push: false
+          platforms: linux/amd64
+          target: import-cache
+
+      # ========== main branch pushes , build 2 images
       # build normal image
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
@@ -144,7 +194,7 @@ jobs:
           # Only push when the event name was a GitHub push, this is to avoid
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ steps.tag.outputs.push }}
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
@@ -165,7 +215,7 @@ jobs:
           # Only push when the event name was a GitHub push, this is to avoid
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ steps.tag.outputs.push }}
           platforms: linux/amd64
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
@@ -180,10 +230,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
-      # trigger by PR updates
+      # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
         uses: docker/build-push-action@v2
@@ -192,7 +242,7 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: true
+          push: ${{ steps.tag.outputs.push }}
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
@@ -200,13 +250,6 @@ jobs:
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.tag.outputs.tag }}
-
-      - name: CI Image Releases digests
-        if: ${{ github.event_name == 'pull_request_target' }}
-        shell: bash
-        run: |
-          mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
 
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
@@ -216,7 +259,7 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: true
+          push: ${{ steps.tag.outputs.push }}
           platforms: linux/amd64
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
@@ -231,7 +274,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
       # Upload artifact digests
@@ -241,6 +284,32 @@ jobs:
           name: image-digest ${{ matrix.name }}
           path: image-digest
           retention-days: 1
+
+      # =============  restore cache ===========
+      # Store docker's golang's cache build locally only on the main branch
+      - name: Store ${{ matrix.name }} Golang cache build locally
+        if: ${{ github.event_name != 'pull_request_target' && steps.cache.outputs.cache-hit != 'true' }}
+        uses: docker/build-push-action@v2.10.0
+        with:
+          context: .
+          file: ./images/cache/Dockerfile
+          push: false
+          outputs: type=local,dest=/tmp/docker-cache-${{ matrix.name }}
+          platforms: linux/amd64
+          target: export-cache
+
+      # Store docker's golang's cache build locally only on the main branch
+      - name: Store ${{ matrix.name }} Golang cache in GitHub cache path
+        if: ${{ github.event_name != 'pull_request_target' && steps.cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: |
+          mkdir -p /tmp/.cache/${{ matrix.name }}/
+          if [ -f /tmp/docker-cache-${{ matrix.name }}/tmp/go-build-cache.tar.gz ]; then
+            cp /tmp/docker-cache-${{ matrix.name }}/tmp/go-build-cache.tar.gz /tmp/.cache/${{ matrix.name }}/
+          fi
+          if [ -f /tmp/docker-cache-${{ matrix.name }}/tmp/go-pkg-cache.tar.gz ]; then
+            cp /tmp/docker-cache-${{ matrix.name }}/tmp/go-pkg-cache.tar.gz /tmp/.cache/${{ matrix.name }}/
+          fi
 
   image-digests:
     name: Display Digests

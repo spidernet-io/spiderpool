@@ -4,8 +4,8 @@ name: Image CI Cache Cleaner
 on:
   workflow_dispatch:
   schedule:
-    # Run the GC once for a week
-    - cron: "0 3 * * 1"
+    # once for a week
+    - cron: "0 20 * * 0"
 
 permissions: read-all
 

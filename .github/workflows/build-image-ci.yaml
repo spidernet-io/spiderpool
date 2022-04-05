@@ -121,7 +121,7 @@ jobs:
           if ${{ inputs.ref != '' }}; then
               echo "trigger by workflow_call"
               echo ::set-output name=tag::${{ inputs.ref }}
-              echo ::set-output name=push::true
+              echo ::set-output name=push::${{ inputs.push }}
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
               echo ::set-output name=tag::${{ github.sha }}

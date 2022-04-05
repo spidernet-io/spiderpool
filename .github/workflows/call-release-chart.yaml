@@ -12,15 +12,12 @@ env:
   MERGE_BRANCH: github_pages
 
 on:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: 'tag, sha, branch'
-        required: true
-        default: v1.0.0
   workflow_call:
     inputs:
       ref:
+        required: true
+        type: string
+      submit:
         required: true
         type: string
     outputs:
@@ -28,12 +25,20 @@ on:
         description: "name of chart artifact"
         value: chart_package_artifact
         # value: ${{ jobs.example_job.outputs.output1 }}
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'tag, sha, branch'
+        required: true
+        default: v1.0.0
+
 
 jobs:
   get_ref:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.get_original_ref.outputs.ref }}
+      submit: ${{ steps.get_original_ref.outputs.submit }}
     steps:
       - name: Get Original Ref
         id: get_original_ref
@@ -42,10 +47,12 @@ jobs:
               echo "call by workflow_call"
               ver=${{ inputs.ref }}
               echo ::set-output name=ref::${ver}
+              echo ::set-output name=submit::${{ inputs.submit }}
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "call by self workflow_dispatch"
               ver=${{ github.event.inputs.ref }}
               echo ::set-output name=ref::${ver}
+              echo ::set-output name=submit::true
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
@@ -93,6 +100,7 @@ jobs:
   update_githubpage:
     runs-on: ubuntu-latest
     needs: [package_chart, get_ref]
+    if: ${{ needs.get_ref.outputs.submit == 'true' }}
     steps:
       - name: Get Base Chart URL
         id: get_base_url

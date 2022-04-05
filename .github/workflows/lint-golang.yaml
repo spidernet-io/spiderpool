@@ -14,7 +14,7 @@ on:
         default: main
   workflow_call:
     inputs:
-      sha:
+      ref:
         required: true
         type: string
 
@@ -59,10 +59,10 @@ jobs:
               echo "::set-output name=check::${flag}"
               ref=${{ github.event.pull_request.head.sha }}
               echo "::set-output name=ref::${ref}"
-          elif ${{ inputs.sha != '' }} ; then
+          elif ${{ inputs.ref != '' }} ; then
               echo "trigger by workflow_call"
               echo "::set-output name=check::true"
-              echo "::set-output name=ref::${{ inputs.sha }}"
+              echo "::set-output name=ref::${{ inputs.ref }}"
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "trigger by workflow_dispatch"
               echo "::set-output name=check::true"

@@ -52,6 +52,7 @@ jobs:
     uses: ./.github/workflows/call-release-chart.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
+      submit: true
 
   release-changelog:
     needs: [build-release-image, get-tag]

@@ -11,16 +11,45 @@ on:
   pull_request:
     paths:
       - "charts/**"
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'sha, tag, branch'
+        required: true
+        default: main
 
 jobs:
   chart-lint-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          if ${{ inputs.ref != '' }} ; then
+              echo "trigger by workflow_call"
+              echo ::set-output name=ref::${{ inputs.ref }}
+          elif ${{ github.event_name == 'workflow_dispatch' }} ; then
+              echo "trigger by workflow_dispatch"
+              echo ::set-output name=ref::${{ github.event.inputs.ref }}
+          elif ${{ github.event_name == 'pull_request' }} ; then
+              echo "trigger by pull_request"
+              echo ::set-output name=ref::${{ github.sha }}
+          else
+              echo "error, trigger by unknow event ${{ github.event_name }}"
+              exit 1
+          fi
+
       # https://github.com/actions/checkout
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          ref: ${{ steps.get_ref.outputs.ref }}
 
       # The cached helm binary path is prepended to the PATH environment variable as well as stored in the helm-path output variable
       # https://github.com/Azure/setup-helm

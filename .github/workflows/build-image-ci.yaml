@@ -186,6 +186,7 @@ jobs:
         with:
           context: /tmp/.cache/${{ matrix.name }}
           file: ./images/cache/Dockerfile
+          github-token: ${{ secrets.WELAN_PAT }}
           push: false
           platforms: linux/amd64
           target: import-cache

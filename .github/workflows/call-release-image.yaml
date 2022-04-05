@@ -91,6 +91,7 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
+          github-token: ${{ secrets.WELAN_PAT }}
           push: true
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |

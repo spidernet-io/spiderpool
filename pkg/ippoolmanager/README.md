@@ -1,6 +1,6 @@
 # ippool CRD manager
 
-Throught informer, cache and manage ippool crd
+Through informer, cache and manage ippool crd
 
 ```
 

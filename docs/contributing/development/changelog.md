@@ -1,6 +1,6 @@
 # changelog
 
-## how automatically generate the verison changelog
+## how automatically generate the version changelog
 
 ### 1 all PR should be labeled with "pr/release/***" and could be merged
 
@@ -8,11 +8,11 @@
 
 the changelog content include:
 
-(1) New Features: it include all PR labeld with "pr/release/feature-new"
+(1) New Features: it include all PR labelled with "pr/release/feature-new"
 
-(2) Changed Features: it include all PR labeld with "pr/release/feature-changed"
+(2) Changed Features: it include all PR labelled with "pr/release/feature-changed"
 
-(3) Fixes: it include all PR labeld with "pr/release/bug"
+(3) Fixes: it include all PR labelled with "pr/release/bug"
 
 (4) all historical commit within this version
 

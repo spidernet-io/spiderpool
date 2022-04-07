@@ -33,7 +33,7 @@ try to release ip
 
 ## spiderpoolclt ip set
 
-set ip to be taken by a pod , this will udpate ippool and workloadendpoint resource
+set ip to be taken by a pod , this will update ippool and workloadendpoint resource
 
 ### Options
 

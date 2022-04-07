@@ -9,4 +9,3 @@ chart package of each version is stored on '/charts' and '/index.yaml' will be u
 ## it is used as gitbook
 
 documentation is store on '/docs' , the directory is set to gitbook
-

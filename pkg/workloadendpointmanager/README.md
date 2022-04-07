@@ -1,6 +1,6 @@
 # workloadendpoint CRD manager
 
-cach all workloadendpoint who locates on local host
+cache all workloadendpoint who locates on local host
 
 ```
 

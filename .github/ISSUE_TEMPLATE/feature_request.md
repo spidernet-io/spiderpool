@@ -9,7 +9,7 @@ assignees: 'weizhoublue'
 
 **1 Code requirement**
 
-necessary comment for your addtional code , and comment for goDoc
+necessary comment for your additional code , and comment for goDoc
 
 function and variable name must not be at will
 

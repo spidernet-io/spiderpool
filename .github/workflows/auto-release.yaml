@@ -1,5 +1,5 @@
 # it is trigger by tag event:
-# 1 build the release image, push images to ghcr.io, and buid image like: ghcr.io/weizhoublue/github-action-test/controllerimage:v1.0.0
+# 1 build the release image, push images to ghcr.io, and build image like: ghcr.io/weizhoublue/github-action-test/controllerimage:v1.0.0
 # 2 package the chart package, update index.yaml and commit to '/charts' of branch 'github_pages' ( PR with label pr/release/robot_update_githubpage )
 # 3 create changelog file, commit to '/changelogs' of branch 'github_pages' for githubPage ( PR with label pr/release/robot_update_githubpage )
 # 4 commit '/docs' to '/docs' of branch 'github_pages'

@@ -40,7 +40,7 @@ jobs:
               echo "trigger by pull_request"
               echo ::set-output name=ref::${{ github.sha }}
           else
-              echo "error, trigger by unknow event ${{ github.event_name }}"
+              echo "error, trigger by unknown event ${{ github.event_name }}"
               exit 1
           fi
 

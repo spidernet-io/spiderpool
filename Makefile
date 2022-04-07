@@ -89,7 +89,7 @@ fix-spell:
   					echo "error, miss tool codespell, install it: pip3 install codespell" ; \
   					exit 1 ;\
   				fi \
-  			fi \
+  			fi; \
   			codespell --config .github/codespell-config  --write-changes
 
 .PHONY: integration-tests
@@ -122,7 +122,7 @@ generate-k8s-api: ## Generate Cilium k8s API client, deepcopy and deepequal Go s
 
 
 .PHONY: precheck
-precheck: ## Peform build precheck for the source code.
+precheck: ## Perform build precheck for the source code.
 ifeq ($(SKIP_K8S_CODE_GEN_CHECK),"false")
 	@$(ECHO_CHECK) tools/k8s-code-gen/verify-codegen.sh
 	$(QUIET) tools/k8s-code-gen/verify-codegen.sh

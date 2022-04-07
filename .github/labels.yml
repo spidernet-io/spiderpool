@@ -62,7 +62,7 @@
   description: This issue request already exists
   color: 0fd3d7
 - name: issue/ignore
-  description: This issue or pull request will ingore
+  description: This issue or pull request will ignore
   color: 15d3d7
 - name: issue/stale
   description: This issue is inactive

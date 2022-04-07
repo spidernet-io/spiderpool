@@ -9,4 +9,3 @@ With cache acceleration, build two ci image and push to ghcr
 (2) ****-ci:${ref}-rate : image who turns on 'go race' and 'deadlock detect'
 
 the CI will clean ci images at interval
-

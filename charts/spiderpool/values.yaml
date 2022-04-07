@@ -370,7 +370,7 @@ spiderpoolController:
     pprofEnabled: false
 
   gc:
-    # gloabl enable
+    # global enable
     enabled: true
     # if enabled=false, ignore this
     gcTerminatingPodIpEnabled: true

@@ -90,11 +90,13 @@ check from <https://www.codefactor.io>
 ## action: check code spell error
 
 check on local machine
+
 ```
 make lint-spell
 ```
 
 fix on local machine
+
 ```
 make fix-spell
 ```

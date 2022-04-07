@@ -1,5 +1,4 @@
 [codespell]
-check-filenames =
 check-hidden =
 quiet-level = 2
 skip = vendor,go.sum,go.mod,codespell-ignorewords,.git,.idea

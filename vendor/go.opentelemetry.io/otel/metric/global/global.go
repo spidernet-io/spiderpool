@@ -15,31 +15,24 @@
 package global // import "go.opentelemetry.io/otel/metric/global"
 
 import (
-	"go.opentelemetry.io/otel/internal/metric/global"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/internal/global"
 )
 
-// Meter creates an implementation of the Meter interface from the global
-// MeterProvider. The instrumentationName must be the name of the library
-// providing instrumentation. This name may be the same as the instrumented
-// code only if that code provides built-in instrumentation. If the
-// instrumentationName is empty, then a implementation defined default name
-// will be used instead.
+// Meter returns a Meter from the global MeterProvider. The
+// instrumentationName must be the name of the library providing
+// instrumentation. This name may be the same as the instrumented code only if
+// that code provides built-in instrumentation. If the instrumentationName is
+// empty, then a implementation defined default name will be used instead.
 //
 // This is short for MeterProvider().Meter(name)
 func Meter(instrumentationName string, opts ...metric.MeterOption) metric.Meter {
-	return GetMeterProvider().Meter(instrumentationName, opts...)
+	return MeterProvider().Meter(instrumentationName, opts...)
 }
 
-// GetMeterProvider returns the registered global meter provider.  If
-// none is registered then a default meter provider is returned that
-// forwards the Meter interface to the first registered Meter.
-//
-// Use the meter provider to create a named meter. E.g.
-//     meter := global.MeterProvider().Meter("example.com/foo")
-// or
-//     meter := global.Meter("example.com/foo")
-func GetMeterProvider() metric.MeterProvider {
+// MeterProvider returns the registered global trace provider.
+// If none is registered then a No-op MeterProvider is returned.
+func MeterProvider() metric.MeterProvider {
 	return global.MeterProvider()
 }
 

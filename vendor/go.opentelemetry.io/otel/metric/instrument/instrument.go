@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metric // import "go.opentelemetry.io/otel/metric"
+package instrument // import "go.opentelemetry.io/otel/metric/instrument"
 
-type noopMeterProvider struct{}
-
-// NewNoopMeterProvider returns an implementation of MeterProvider that
-// performs no operations. The Meter and Instrument created from the returned
-// MeterProvider also perform no operations.
-func NewNoopMeterProvider() MeterProvider {
-	return noopMeterProvider{}
+// Asynchronous instruments are instruments that are updated within a Callback.
+// If an instrument is observed outside of it's callback it should be an error.
+//
+// This interface is used as a grouping mechanism.
+type Asynchronous interface {
+	asynchronous()
 }
 
-var _ MeterProvider = noopMeterProvider{}
-
-func (noopMeterProvider) Meter(instrumentationName string, opts ...MeterOption) Meter {
-	return Meter{}
+// Synchronous instruments are updated in line with application code.
+//
+// This interface is used as a grouping mechanism.
+type Synchronous interface {
+	synchronous()
 }

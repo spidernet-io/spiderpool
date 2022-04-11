@@ -12,20 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sdkapi // import "go.opentelemetry.io/otel/metric/sdkapi"
+package sdkapi // import "go.opentelemetry.io/otel/sdk/metric/sdkapi"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/number"
-)
+	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/sdk/metric/number"
+) // import (
+// 	"context"
+
+// 	"go.opentelemetry.io/otel/attribute"
+// 	"go.opentelemetry.io/otel/sdk/metric/number"
+// )
 
 type noopInstrument struct {
 	descriptor Descriptor
 }
-type noopSyncInstrument struct{ noopInstrument }
-type noopAsyncInstrument struct{ noopInstrument }
+type noopSyncInstrument struct {
+	noopInstrument
+
+	instrument.Synchronous
+}
+type noopAsyncInstrument struct {
+	noopInstrument
+
+	instrument.Asynchronous
+}
 
 var _ SyncImpl = noopSyncInstrument{}
 var _ AsyncImpl = noopAsyncInstrument{}
@@ -34,7 +48,7 @@ var _ AsyncImpl = noopAsyncInstrument{}
 // synchronous instrument interface.
 func NewNoopSyncInstrument() SyncImpl {
 	return noopSyncInstrument{
-		noopInstrument{
+		noopInstrument: noopInstrument{
 			descriptor: Descriptor{
 				instrumentKind: CounterInstrumentKind,
 			},
@@ -46,7 +60,7 @@ func NewNoopSyncInstrument() SyncImpl {
 // asynchronous instrument interface.
 func NewNoopAsyncInstrument() AsyncImpl {
 	return noopAsyncInstrument{
-		noopInstrument{
+		noopInstrument: noopInstrument{
 			descriptor: Descriptor{
 				instrumentKind: CounterObserverInstrumentKind,
 			},
@@ -63,4 +77,7 @@ func (n noopInstrument) Descriptor() Descriptor {
 }
 
 func (noopSyncInstrument) RecordOne(context.Context, number.Number, []attribute.KeyValue) {
+}
+
+func (noopAsyncInstrument) ObserveOne(ctx context.Context, number number.Number, labels []attribute.KeyValue) {
 }

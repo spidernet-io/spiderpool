@@ -29,12 +29,12 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/number"
-	"go.opentelemetry.io/otel/metric/sdkapi"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
+	"go.opentelemetry.io/otel/sdk/metric/number"
+	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
@@ -53,8 +53,6 @@ type Exporter struct {
 	// controllers (e.g., with different resources).
 	lock       sync.RWMutex
 	controller *controller.Controller
-
-	defaultHistogramBoundaries []float64
 }
 
 // ErrUnsupportedAggregator is returned for unrepresentable aggregator
@@ -104,11 +102,10 @@ func New(config Config, controller *controller.Controller) (*Exporter, error) {
 	}
 
 	e := &Exporter{
-		handler:                    promhttp.HandlerFor(config.Gatherer, promhttp.HandlerOpts{}),
-		registerer:                 config.Registerer,
-		gatherer:                   config.Gatherer,
-		controller:                 controller,
-		defaultHistogramBoundaries: config.DefaultHistogramBoundaries,
+		handler:    promhttp.HandlerFor(config.Gatherer, promhttp.HandlerOpts{}),
+		registerer: config.Registerer,
+		gatherer:   config.Gatherer,
+		controller: controller,
 	}
 
 	c := &collector{

@@ -20,4 +20,4 @@ This package is currently in a pre-GA phase. Backwards incompatible changes
 may be introduced in subsequent minor version releases as we work to track the
 evolving OpenTelemetry specification and user feedback.
 */
-package number // import "go.opentelemetry.io/otel/metric/number"
+package number // import "go.opentelemetry.io/otel/sdk/metric/number"

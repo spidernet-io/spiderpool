@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package registry // import "go.opentelemetry.io/otel/internal/metric/registry"
+package registry // import "go.opentelemetry.io/otel/sdk/metric/registry"
 
 import (
 	"context"
 	"fmt"
 	"sync"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/sdkapi"
+	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
 )
 
 // UniqueInstrumentMeterImpl implements the metric.MeterImpl interface, adding
@@ -51,11 +51,6 @@ func NewUniqueInstrumentMeterImpl(impl sdkapi.MeterImpl) *UniqueInstrumentMeterI
 // used by this UniqueInstrumentMeterImpl.
 func (u *UniqueInstrumentMeterImpl) MeterImpl() sdkapi.MeterImpl {
 	return u.impl
-}
-
-// RecordBatch implements sdkapi.MeterImpl.
-func (u *UniqueInstrumentMeterImpl) RecordBatch(ctx context.Context, labels []attribute.KeyValue, ms ...sdkapi.Measurement) {
-	u.impl.RecordBatch(ctx, labels, ms...)
 }
 
 // NewMetricKindMismatchError formats an error that describes a
@@ -115,10 +110,7 @@ func (u *UniqueInstrumentMeterImpl) NewSyncInstrument(descriptor sdkapi.Descript
 }
 
 // NewAsyncInstrument implements sdkapi.MeterImpl.
-func (u *UniqueInstrumentMeterImpl) NewAsyncInstrument(
-	descriptor sdkapi.Descriptor,
-	runner sdkapi.AsyncRunner,
-) (sdkapi.AsyncImpl, error) {
+func (u *UniqueInstrumentMeterImpl) NewAsyncInstrument(descriptor sdkapi.Descriptor) (sdkapi.AsyncImpl, error) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 
@@ -130,10 +122,17 @@ func (u *UniqueInstrumentMeterImpl) NewAsyncInstrument(
 		return impl.(sdkapi.AsyncImpl), nil
 	}
 
-	asyncInst, err := u.impl.NewAsyncInstrument(descriptor, runner)
+	asyncInst, err := u.impl.NewAsyncInstrument(descriptor)
 	if err != nil {
 		return nil, err
 	}
 	u.state[descriptor.Name()] = asyncInst
 	return asyncInst, nil
+}
+
+func (u *UniqueInstrumentMeterImpl) RegisterCallback(insts []instrument.Asynchronous, callback func(context.Context)) error {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+
+	return u.impl.RegisterCallback(insts, callback)
 }

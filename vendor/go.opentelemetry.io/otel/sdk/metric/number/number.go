@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package number // import "go.opentelemetry.io/otel/metric/number"
+package number // import "go.opentelemetry.io/otel/sdk/metric/number"
 
 //go:generate stringer -type=Kind
 

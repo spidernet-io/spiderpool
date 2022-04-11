@@ -11,6 +11,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -23,7 +26,7 @@ var meter metric.Meter
 
 // InitMetricController will set up meter with the input param(required) and create a prometheus exporter.
 // returns http handler and error
-func InitMetricController(meterName string) (func(w http.ResponseWriter, r *http.Request), error) {
+func InitMetricController(meterName string) (http.Handler, error) {
 	if len(meterName) == 0 {
 		return nil, fmt.Errorf("Failed to init metric controller, meter name is asked to be set!")
 	}
@@ -48,25 +51,25 @@ func InitMetricController(meterName string) (func(w http.ResponseWriter, r *http
 	m := global.Meter(meterName)
 	meter = m
 
-	return exporter.ServeHTTP, nil
+	return exporter, nil
 }
 
-// NewMetricInt64Counter will create otel Int64Counter metric. The first param metricName is required and
-// the second param is optional.
-func NewMetricInt64Counter(metricName string, description string) (metric.Int64Counter, error) {
+// NewMetricInt64Counter will create otel Int64Counter metric.
+// The first param metricName is required and the second param is optional.
+func NewMetricInt64Counter(metricName string, description string) (syncint64.Counter, error) {
 	if len(metricName) == 0 {
-		return metric.Int64Counter{}, fmt.Errorf("Failed to create metric Int64Counter, metric name is asked to be set.")
+		return nil, fmt.Errorf("Failed to create metric Int64Counter, metric name is asked to be set.")
 	}
-	return metric.Must(meter).NewInt64Counter(metricName, metric.WithDescription(description)), nil
+	return meter.SyncInt64().Counter(metricName, instrument.WithDescription(description))
 }
 
-// NewMetricFloat64Histogram will create otel Float64Histogram metric. The first param metricName is required and
-// the second param is optional.
-func NewMetricFloat64Histogram(metricName string, description string) (metric.Float64Histogram, error) {
+// NewMetricFloat64Histogram will create otel Float64Histogram metric.
+// The first param metricName is required and the second param is optional.
+func NewMetricFloat64Histogram(metricName string, description string) (syncfloat64.Histogram, error) {
 	if len(metricName) == 0 {
-		return metric.Float64Histogram{}, fmt.Errorf("Failed to create metric Float64Histogram, metric name is asked to be set.")
+		return nil, fmt.Errorf("Failed to create metric Float64Histogram, metric name is asked to be set.")
 	}
-	return metric.Must(meter).NewFloat64Histogram(metricName, metric.WithDescription(description)), nil
+	return meter.SyncFloat64().Histogram(metricName, instrument.WithDescription(description))
 }
 
 var _ TimeRecorder = &timeRecorder{}

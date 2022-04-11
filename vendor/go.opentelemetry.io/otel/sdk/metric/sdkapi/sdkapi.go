@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sdkapi // import "go.opentelemetry.io/otel/metric/sdkapi"
+package sdkapi // import "go.opentelemetry.io/otel/sdk/metric/sdkapi"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/number"
+	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/sdk/metric/number"
 )
 
 // MeterImpl is the interface an SDK must implement to supply a Meter
 // implementation.
 type MeterImpl interface {
-	// RecordBatch atomically records a batch of measurements.
-	RecordBatch(ctx context.Context, labels []attribute.KeyValue, measurement ...Measurement)
-
 	// NewSyncInstrument returns a newly constructed
 	// synchronous instrument implementation or an error, should
 	// one occur.
@@ -35,10 +33,10 @@ type MeterImpl interface {
 	// NewAsyncInstrument returns a newly constructed
 	// asynchronous instrument implementation or an error, should
 	// one occur.
-	NewAsyncInstrument(
-		descriptor Descriptor,
-		runner AsyncRunner,
-	) (AsyncImpl, error)
+	NewAsyncInstrument(descriptor Descriptor) (AsyncImpl, error)
+
+	// Etc.
+	RegisterCallback(insts []instrument.Asynchronous, callback func(context.Context)) error
 }
 
 // InstrumentImpl is a common interface for synchronous and
@@ -57,6 +55,7 @@ type InstrumentImpl interface {
 // synchronous instrument (e.g., Histogram and Counter instruments).
 type SyncImpl interface {
 	InstrumentImpl
+	instrument.Synchronous
 
 	// RecordOne captures a single synchronous metric event.
 	RecordOne(ctx context.Context, number number.Number, labels []attribute.KeyValue)
@@ -66,6 +65,10 @@ type SyncImpl interface {
 // asynchronous instrument (e.g., Observer instruments).
 type AsyncImpl interface {
 	InstrumentImpl
+	instrument.Asynchronous
+
+	// ObserveOne captures a single synchronous metric event.
+	ObserveOne(ctx context.Context, number number.Number, labels []attribute.KeyValue)
 }
 
 // AsyncRunner is expected to convert into an AsyncSingleRunner or an

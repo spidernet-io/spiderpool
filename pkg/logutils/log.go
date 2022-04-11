@@ -36,6 +36,16 @@ type FileOutputOption struct {
 	MaxBackups int
 }
 
+const (
+	DefaultLogFilePath = "/tmp/cni.log"
+	// MaxSize    = 100 // MB
+	DefaultLogFileMaxSize int = 100
+	// MaxAge     = 30 // days (no limit)
+	DefaultLogFileMaxAge = 30
+	// MaxBackups = 10 // no limit
+	DefaultLogFileMaxBackups = 10
+)
+
 // LogMode is a type help you choose the log output mode, which supports "stderr","stdout","file".
 type LogMode uint32
 
@@ -46,29 +56,29 @@ const (
 )
 
 // LogMode is a type help you choose the log level.
-type LogLevel string
+type LogLevel = zapcore.Level
 
-var (
-	LogDebug LogLevel = "debug"
-	LogInfo  LogLevel = "info"
-	LogWarn  LogLevel = "warn"
-	LogError LogLevel = "error"
-	LogPanic LogLevel = "panic"
-	LogFatal LogLevel = "fatal"
+const (
+	DebugLevel = zapcore.DebugLevel
+	InfoLevel  = zapcore.InfoLevel
+	WarnLevel  = zapcore.WarnLevel
+	ErrorLevel = zapcore.ErrorLevel
+	PanicLevel = zapcore.PanicLevel
+	FatalLevel = zapcore.FatalLevel
 )
 
 func init() {
-	err := InitStdoutLogger()
+	err := InitStdoutLogger(InfoLevel)
 	if nil != err {
 		panic(err)
 	}
 
-	err = InitStderrLogger()
+	err = InitStderrLogger(InfoLevel)
 	if nil != err {
 		panic(err)
 	}
 
-	err = InitFileLogger("/tmp/cni.log")
+	err = InitFileLogger(InfoLevel, DefaultLogFilePath, DefaultLogFileMaxSize, DefaultLogFileMaxAge, DefaultLogFileMaxBackups)
 	if nil != err {
 		panic(err)
 	}
@@ -78,16 +88,42 @@ func init() {
 // NewLoggerWithOption provides the ability to custom log with options.
 // You can choose 'output format', 'output mode' and decide to use 'time prefix', 'function caller suffix'
 // 'log level prefix' or not.
-// If you choose 'file output mode', you can use 'stdout and file' or 'stderr and file' together.
+// If you choose 'file output mode', you can use 'stdout and file' or 'stderr and file' together with '|'.
+// The param fileOutputOption should be a pointer for FileOutputOption , and it could be nill.
+// If the param isn't nil, the FileOutputOption.MaxSize, FileOutputOption.MaxAge,
+// and FileOutputOption.MaxBackups have to be nonnegative number, or they will be set to default value.
 func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption *FileOutputOption,
 	addTimePrefix, addLogLevelPrefix, addFuncCallerSuffix bool, logLevel LogLevel) (*zap.Logger, error) {
 
+	// MaxSize    = 100 // MB
+	// MaxAge     = 30 // days (no limit)
+	// MaxBackups = 10 // no limit
+	// LocalTime  = false // use computers local time, UTC by default
+	// Compress   = false // compress the rotated log in gzip format
 	var fileLoggerConf lumberjack.Logger
 	if fileOutputOption != nil {
 		fileLoggerConf.Filename = fileOutputOption.Filename
 		fileLoggerConf.MaxSize = fileOutputOption.MaxSize
 		fileLoggerConf.MaxAge = fileOutputOption.MaxAge
 		fileLoggerConf.MaxBackups = fileOutputOption.MaxBackups
+
+		if fileOutputOption.Filename == "" {
+			fileLoggerConf.Filename = DefaultLogFilePath
+		}
+		if fileOutputOption.MaxSize < 0 {
+			fileLoggerConf.MaxSize = DefaultLogFileMaxSize
+		}
+		if fileOutputOption.MaxAge < 0 {
+			fileLoggerConf.MaxAge = DefaultLogFileMaxAge
+		}
+		if fileOutputOption.MaxBackups < 0 {
+			fileLoggerConf.MaxBackups = DefaultLogFileMaxBackups
+		}
+
+		err := os.MkdirAll(filepath.Dir(fileOutputOption.Filename), 0755)
+		if nil != err {
+			return nil, fmt.Errorf("Failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
+		}
 	}
 
 	var ws zapcore.WriteSyncer
@@ -104,39 +140,50 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 		ws = zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stderr), zapcore.AddSync(&fileLoggerConf))
 	case OUTPUT_STDOUT | OUTPUT_STDERR:
 		return nil, fmt.Errorf("log output mode can't set to stdout with stderr together.")
+	default:
+		ws = zapcore.AddSync(os.Stdout)
 	}
 
 	// set zap encoder configuration
 	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.EncodeTime = nil
+	encoderConfig.EncodeCaller = nil
+	encoderConfig.EncodeLevel = nil
+
 	if addTimePrefix {
 		encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	} else {
-		encoderConfig.EncodeTime = nil
 	}
 
 	if addFuncCallerSuffix {
 		encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	} else {
-		encoderConfig.EncodeCaller = nil
 	}
 
 	if addLogLevelPrefix {
 		encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	} else {
-		encoderConfig.EncodeLevel = nil
+	}
+
+	var encoder zapcore.Encoder
+
+	switch format {
+	case JsonLogFormat:
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	case ConsoleLogFormat:
+		encoder = zapcore.NewConsoleEncoder(encoderConfig)
+	default:
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
 	}
 
 	logger := zap.New(zapcore.NewCore(
-		convertToZapFormatEncoder(format, encoderConfig),
+		encoder,
 		ws,
-		zap.NewAtomicLevelAt(ConvertToZapLevel(logLevel)),
+		zap.NewAtomicLevelAt(logLevel),
 	), zap.AddCaller())
 	return logger, nil
 }
 
 // InitStdoutLogger create  Logger instance with default configuration for 'stdout' usage, it's JsonLogFormat.
-func InitStdoutLogger() error {
-	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_STDOUT, nil, true, true, true, LogInfo)
+func InitStdoutLogger(logLevel LogLevel) error {
+	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_STDOUT, nil, true, true, true, logLevel)
 	if nil != err {
 		return fmt.Errorf("Failed to init logger for stdout: %v", err)
 	}
@@ -146,8 +193,8 @@ func InitStdoutLogger() error {
 
 // InitStderrLogger create LoggerStderr instance for 'stderr' usage, it's ConsoleLogFormat.
 // It wouldn't provide 'time prefix', 'function caller suffix' and 'log level prefix' in output.
-func InitStderrLogger() error {
-	l, err := NewLoggerWithOption(ConsoleLogFormat, OUTPUT_STDERR, nil, false, false, false, LogInfo)
+func InitStderrLogger(logLevel LogLevel) error {
+	l, err := NewLoggerWithOption(ConsoleLogFormat, OUTPUT_STDERR, nil, false, false, false, logLevel)
 	if nil != err {
 		return fmt.Errorf("Failed to init logger for stderr: %v", err)
 	}
@@ -156,52 +203,18 @@ func InitStderrLogger() error {
 }
 
 // InitFileLogger sets LoggerFile configuration for 'file output' usage.
-func InitFileLogger(filePath string) error {
-	err := os.MkdirAll(filepath.Dir(filePath), 0755)
-	if nil != err {
-		return fmt.Errorf("Failed to create path for CNI log file: %v", filepath.Dir(filePath))
-	}
-
-	// MaxSize    = 100 // MB
-	// MaxAge     = 30 // days (no limit)
-	// MaxBackups = 10 // no limit
-	// LocalTime  = false // use computers local time, UTC by default
-	// Compress   = false // compress the rotated log in gzip format
+// fileMaxSize unit MB, fileMaxAge unit days, fileMaxBackups unit counts.
+func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge, fileMaxBackups int) error {
 	fileLoggerConf := FileOutputOption{
 		Filename:   filePath,
-		MaxSize:    100,
-		MaxAge:     30,
-		MaxBackups: 10,
+		MaxSize:    fileMaxSize,
+		MaxAge:     fileMaxAge,
+		MaxBackups: fileMaxBackups,
 	}
-	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, LogInfo)
+	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, logLevel)
 	if nil != err {
 		return fmt.Errorf("Failed to init logger for file: %v", err)
 	}
 	LoggerFile = l
 	return nil
-}
-
-// ConvertToZapLevel converts log level string to zapcore.Level.
-// if error is not nil it will return the info log level
-func ConvertToZapLevel(level LogLevel) zapcore.Level {
-	var lvl zapcore.Level
-	if err := lvl.Set(string(level)); nil != err {
-		fmt.Fprintf(os.Stderr, "error setting log level %q: %s, and it will set as Info level\n", level, err)
-		return zapcore.InfoLevel
-	}
-	return lvl
-}
-
-// convertToZapFormatEncoder converts and validated log format string.
-func convertToZapFormatEncoder(format LogFormat, encoderConfig zapcore.EncoderConfig) zapcore.Encoder {
-	switch format {
-	case ConsoleLogFormat, "":
-		return zapcore.NewConsoleEncoder(encoderConfig)
-	case JsonLogFormat:
-		return zapcore.NewJSONEncoder(encoderConfig)
-	default:
-		fmt.Fprintf(os.Stderr, "unknown log format: %s, supported values json, console and it will be set as %s\n",
-			format, JsonLogFormat)
-		return zapcore.NewConsoleEncoder(encoderConfig)
-	}
 }

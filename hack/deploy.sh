@@ -98,8 +98,9 @@ kind load docker-image ghcr.io/k8snetworkplumbingwg/multus-cni:stable --name "wh
 retry kubectl -n kube-system wait --for=condition=ready -l name="multus" pod --timeout=$TIMEOUT_K8
 echo "## install CNIs"
 retry kubectl create -f $HERE/cni-install.yml
-# sleep 10s
+sleep 10s
 kubectl get ds install-cni-plugins -n kube-system -oyaml > $HERE/cni-plugins-new.yaml
+sleep 10s
 sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' $HERE/cni-plugins-mew.yaml
 kubectl delete ds install-cni-plugins -n kube-system
 retry kubectl create -f $HERE/cni-plugins-new.yaml

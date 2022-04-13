@@ -14,12 +14,12 @@ set -o errexit
 #fi
 
 # install ginkgo
-export PATH=$PATH:~/go/bin
-ginkgo version &> /dev/null
-if [ $? -eq 127 ]; then
- go install github.com/onsi/ginkgo/ginkgo@latest
- go get github.com/onsi/gomega/...
-fi
+# export PATH=$PATH:~/go/bin
+# ginkgo version &> /dev/null
+# if [ $? -eq 127 ]; then
+#  go install github.com/onsi/ginkgo/ginkgo@latest
+#  go get github.com/onsi/gomega/...
+# fi
 
 # kind
 which kind

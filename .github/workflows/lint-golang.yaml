@@ -225,6 +225,7 @@ jobs:
           name: my-codecov-umbrella
           fail_ci_if_error: true
           verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Result
         if: ${{ steps.unitest.outcome == 'failure' }}

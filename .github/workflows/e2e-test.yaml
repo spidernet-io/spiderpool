@@ -22,7 +22,7 @@ jobs:
       #     go-version: 1.17.8
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@e2e-test
+        uses: actions/checkout@v3
 
       - name: Install test tools
         run: sudo ./hack/get_test_tools.sh

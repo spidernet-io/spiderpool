@@ -21,8 +21,8 @@ jobs:
       #   with:
       #     go-version: 1.17.8
 
-      # - name: Checkout code into the Go module directory
-      #   uses: actions/checkout@v3
+      - name: Checkout code into the Go module directory
+        uses: actions/checkout@e2e-test
 
       - name: Install test tools
         run: sudo ./hack/get_test_tools.sh

@@ -1,6 +1,5 @@
 name: e2e-test
 env:
-  KIND_CLUSTER_NAME: e2e-kind
   NUMBER_OF_COMPUTE_NODES: 5
 on:
   push:
@@ -17,19 +16,19 @@ jobs:
     runs-on: ["self-hosted"]
     name: e2e-test
     steps:
-      - name: Set up Go version
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.17.8
+      # - name: Set up Go version
+      #   uses: actions/setup-go@v3
+      #   with:
+      #     go-version: 1.17.8
 
-      - name: Checkout code into the Go module directory
-        uses: actions/checkout@v3
+      # - name: Checkout code into the Go module directory
+      #   uses: actions/checkout@v3
 
       - name: Install test tools
         run: sudo ./hack/get_test_tools.sh
 
       - name: Deploy kind cluster && install-cni && multus-daemonset
-        run: sudo ./hack/deploy.sh
+        run: sudo ./hack/deploy.sh --number-of-compute 5
 
       - name: Clear test-cache
         run: go clean -testcache
@@ -38,5 +37,4 @@ jobs:
         run: echo "e2e test pass"
           
       # - name: Cleanup
-      #   run: |
-      #     echo "kind delete cluster ${{ env.KIND_CLUSTER_NAME }}"
+      #   run: echo "kind delete cluster ${{ env.KIND_CLUSTER_NAME }}"

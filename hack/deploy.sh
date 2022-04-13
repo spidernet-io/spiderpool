@@ -92,18 +92,18 @@ kind export kubeconfig --name $KIND_CLUSTER_NAME
 echo "## wait for coreDNS"
 kubectl -n kube-system wait --for=condition=available deploy/coredns --timeout=$TIMEOUT_K8
 echo "## install multus"
-retry kubectl create -f multus-daemonset.yml
+retry kubectl create -f $HERE/multus-daemonset.yml
 sleep 10s
 kind load docker-image ghcr.io/k8snetworkplumbingwg/multus-cni:stable --name "whereabouts"
 retry kubectl -n kube-system wait --for=condition=ready -l name="multus" pod --timeout=$TIMEOUT_K8
 echo "## install CNIs"
-retry kubectl create -f cni-install.yml
+retry kubectl create -f $HERE/cni-install.yml
 # sleep 10s
-# kubectl get ds install-cni-plugins -n kube-system -oyaml > cni-plugins.yaml
-# sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' cni-plugins.yaml
-# kubectl delete ds install-cni-plugins -n kube-system
-# retry kubectl create -f ./cni-plugins.yaml
-# docker pull docker.io/library/alpine:latest
+kubectl get ds install-cni-plugins -n kube-system -oyaml > cni-plugins-new.yaml
+sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' cni-plugins-mew.yaml
+kubectl delete ds install-cni-plugins -n kube-system
+retry kubectl create -f $HERE/cni-plugins-new.yaml
+docker pull docker.io/library/alpine:latest
 kind load docker-image alpine:latest --name "whereabouts"
 retry kubectl -n kube-system wait --for=condition=ready -l name="cni-plugins" pod --timeout=$TIMEOUT_K8
 
@@ -114,7 +114,7 @@ retry kubectl -n kube-system wait --for=condition=ready -l name="cni-plugins" po
 
 echo "## install whereabouts"
 for file in "daemonset-install.yaml" "ip-reconciler-job.yaml" "whereabouts.cni.cncf.io_ippools.yaml" "whereabouts.cni.cncf.io_overlappingrangeipreservations.yaml"; do
-  retry kubectl apply -f "$ROOT/whereabouts/$file"
+  retry kubectl apply -f "$HERE/whereabouts/$file"
 done
 
 retry kubectl wait -n kube-system --for=condition=ready -l app=whereabouts pod --timeout=$TIMEOUT_K8

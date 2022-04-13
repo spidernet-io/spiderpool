@@ -21,29 +21,29 @@ set -o errexit
 #fi
 
 # kind
-kind version
-if [ $? -eq 127 ]; then
+which kind
+if [ $? -ne 0 ]; then
   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-linux-amd64	
   chmod +x /usr/local/bin/kind
 fi 
 
 # kubectl
-kubectl version
-if [ $? -eq 127 ]; then
+which kubectl 
+if [ $? -ne 0 ]; then
   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
   chmod +x /usr/local/bin/kubectl
 fi
 
 # jq
-jq --version
-if [ $? -eq 127 ]; then
+which jq 
+if [ $? -ne 0 ]; then
   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
   chmod +x /usr/local/bin/jq
 fi
 
 # helm
-helm version
-if [ $? -eq 127 ]; then
+which helm 
+if [ $? -ne 0 ]; then
   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo helm.tar.gz "https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz"
   tar -xzvf helm.tar.gz && mv linux-amd64/helm /usr/local/bin
   chmod +x /usr/local/bin/helm

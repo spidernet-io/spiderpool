@@ -40,6 +40,9 @@ spec:
       - name: install-cni-plugins
         image: alpine
         command: ["/bin/sh", "/scripts/install_cni.sh"]
+      - image: alpine
+        imagePullPolicy: IfNotPresent
+        name: install-cni-plugins
         resources:
           requests:
             cpu: "100m"

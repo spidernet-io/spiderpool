@@ -6,25 +6,25 @@
 set -o errexit
 # ensure this file is sourced to add required components to PATH
 
-here="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
-root="$(readlink --canonicalize "$here/..")"
-VERSION="v0.11.0"
-KIND_BINARY_URL="https://github.com/kubernetes-sigs/kind/releases/download/${VERSION}/kind-$(uname)-amd64"
-K8_STABLE_RELEASE_URL="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
+# here="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
+# root="$(readlink --canonicalize "$here/..")"
+# VERSION="v0.11.0"
+# KIND_BINARY_URL="https://github.com/kubernetes-sigs/kind/releases/download/${VERSION}/kind-$(uname)-amd64"
+# K8_STABLE_RELEASE_URL="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
 
-if [ ! -d "${root}/bin" ]; then
-    mkdir "${root}/bin"
-fi
+# if [ ! -d "${root}/bin" ]; then
+#     mkdir "${root}/bin"
+# fi
 
-echo "retrieving kind"
-curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo "${root}/bin/kind" "${KIND_BINARY_URL}"
-chmod +x "${root}/bin/kind"
+# echo "retrieving kind"
+# curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo "${root}/bin/kind" "${KIND_BINARY_URL}"
+# chmod +x "${root}/bin/kind"
 
-echo "retrieving kubectl"
-curl -Lo "${root}/bin/kubectl" "https://storage.googleapis.com/kubernetes-release/release/$(curl -s ${K8_STABLE_RELEASE_URL})/bin/linux/amd64/kubectl"
-chmod +x "${root}/bin/kubectl"
+# echo "retrieving kubectl"
+# curl -Lo "${root}/bin/kubectl" "https://storage.googleapis.com/kubernetes-release/release/$(curl -s ${K8_STABLE_RELEASE_URL})/bin/linux/amd64/kubectl"
+# chmod +x "${root}/bin/kubectl"
 
-export PATH="$PATH:$root/bin"
+# export PATH="$PATH:$root/bin"
 
 #go version &> /dev/null
 #if [ $? -eq 127 ]; then
@@ -49,25 +49,29 @@ export PATH="$PATH:$root/bin"
 #   chmod +x /usr/local/bin/kind
 # fi 
 
-# # kubectl
-# which kubectl 
-# if [ $? -ne 0 ]; then
-#   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
-#   chmod +x /usr/local/bin/kubectl
-# fi
+# kubectl
+kubectl version &> /dev/null
+if [ $? -eq "127" ]; then
+  echo "11"
+  curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+  chmod +x /usr/local/bin/kubectl
+fi
+kubectl version --short
 
 # jq
-# which jq 
-# if [ $? -ne 0 ]; then
-#   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
-#   chmod +x /usr/local/bin/jq
-# fi
+jq --version &> /dev/null
+if [ $? -eq 127 ]; then
+  curl -Lo /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+  chmod +x /usr/local/bin/jq
+fi
+jq --version
 
-# # helm
-# which helm 
-# if [ $? -ne 0 ]; then
-#   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo helm.tar.gz "https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz"
-#   tar -xzvf helm.tar.gz && mv linux-amd64/helm /usr/local/bin
-#   chmod +x /usr/local/bin/helm
-#   rm -f helm.tar.gz
-# fi
+# helm
+helm version &> /dev/null
+if [ $? -eq 127 ]; then
+  curl -Lo helm.tar.gz "https://get.helm.sh/helm-v3.8.1-linux-amd64.tar.gz"
+  tar -xzvf helm.tar.gz && mv linux-amd64/helm /usr/local/bin
+  chmod +x /usr/local/bin/helm
+  rm -f helm.tar.gz
+fi
+helm version --short

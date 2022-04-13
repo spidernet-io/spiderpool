@@ -23,8 +23,8 @@ done
 
 HERE="$(dirname "$(readlink --canonicalize ${BASH_SOURCE[0]})")"
 ROOT="$(readlink --canonicalize "$HERE/..")"
-MULTUS_DAEMONSET=multus-daemonset.yml
-CNIS_DAEMONSET_URL=cni-install.yml
+# MULTUS_DAEMONSET=multus-daemonset.yml
+# CNIS_DAEMONSET_URL=cni-install.yml
 #MULTUS_DAEMONSET_URL="https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml"
 #CNIS_DAEMONSET_URL="https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/e2e/cni-install.yml"
 TIMEOUT_K8="5000s"
@@ -50,7 +50,7 @@ nodes:
 $workers
 EOF
 }
-
+export PATH="$ROOT/:$PATH"?
 
 check_requirements() {
   for cmd in "$OCI_BIN" kind kubectl; do
@@ -83,7 +83,7 @@ retry() {
 }
 
 echo "## checking requirements"
-check_requirements
+# check_requirements
 echo "## delete existing KinD cluster if it exists"
 kind delete clusters $KIND_CLUSTER_NAME
 echo "## start KinD cluster"
@@ -92,17 +92,20 @@ kind export kubeconfig --name $KIND_CLUSTER_NAME
 echo "## wait for coreDNS"
 kubectl -n kube-system wait --for=condition=available deploy/coredns --timeout=$TIMEOUT_K8
 echo "## install multus"
-retry kubectl create -f "${MULTUS_DAEMONSET_URL}"
+retry kubectl create -f daemonset-install.yml
+sleep 10s
+kind load docker-image ghcr.io/k8snetworkplumbingwg/multus-cni:stable --name "whereabouts"
 retry kubectl -n kube-system wait --for=condition=ready -l name="multus" pod --timeout=$TIMEOUT_K8
 echo "## install CNIs"
-retry kubectl create -f "${CNIS_DAEMONSET_URL}"
+retry kubectl create -f cni-install.yml
+# sleep 10s
 # kubectl get ds install-cni-plugins -n kube-system -oyaml > cni-plugins.yaml
 # sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' cni-plugins.yaml
 # kubectl delete ds install-cni-plugins -n kube-system
 # retry kubectl create -f ./cni-plugins.yaml
 # docker pull docker.io/library/alpine:latest
-# kind load docker-image alpine:latest --name "whereabouts"
-# retry kubectl -n kube-system wait --for=condition=ready -l name="cni-plugins" pod --timeout=$TIMEOUT_K8
+kind load docker-image alpine:latest --name "whereabouts"
+retry kubectl -n kube-system wait --for=condition=ready -l name="cni-plugins" pod --timeout=$TIMEOUT_K8
 
 # echo "## load image into KinD"
 # trap "rm /tmp/whereabouts-img.tar || true" EXIT

@@ -99,8 +99,8 @@ retry kubectl -n kube-system wait --for=condition=ready -l name="multus" pod --t
 echo "## install CNIs"
 retry kubectl create -f $HERE/cni-install.yml
 # sleep 10s
-kubectl get ds install-cni-plugins -n kube-system -oyaml > cni-plugins-new.yaml
-sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' cni-plugins-mew.yaml
+kubectl get ds install-cni-plugins -n kube-system -oyaml > $HERE/cni-plugins-new.yaml
+sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' $HERE/cni-plugins-mew.yaml
 kubectl delete ds install-cni-plugins -n kube-system
 retry kubectl create -f $HERE/cni-plugins-new.yaml
 docker pull docker.io/library/alpine:latest

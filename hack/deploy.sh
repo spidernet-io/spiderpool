@@ -101,7 +101,7 @@ retry kubectl create -f $HERE/cni-install.yml
 sleep 10s
 kubectl get ds install-cni-plugins -n kube-system -oyaml > $HERE/cni-plugins-new.yaml
 sleep 10s
-sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' $HERE/cni-plugins-mew.yaml
+sed -i 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' $HERE/cni-plugins-new.yaml
 kubectl delete ds install-cni-plugins -n kube-system
 retry kubectl create -f $HERE/cni-plugins-new.yaml
 docker pull docker.io/library/alpine:latest

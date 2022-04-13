@@ -92,7 +92,7 @@ kind export kubeconfig --name $KIND_CLUSTER_NAME
 echo "## wait for coreDNS"
 kubectl -n kube-system wait --for=condition=available deploy/coredns --timeout=$TIMEOUT_K8
 echo "## install multus"
-retry kubectl create -f daemonset-install.yml
+retry kubectl create -f multus-daemonset.yml
 sleep 10s
 kind load docker-image ghcr.io/k8snetworkplumbingwg/multus-cni:stable --name "whereabouts"
 retry kubectl -n kube-system wait --for=condition=ready -l name="multus" pod --timeout=$TIMEOUT_K8

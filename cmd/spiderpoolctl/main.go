@@ -3,8 +3,10 @@
 
 package main
 
-import "fmt"
+import (
+	"github.com/spidernet-io/spiderpool/cmd/spiderpoolctl/cmd"
+)
 
 func main() {
-	fmt.Println("I am spiderpoolctl")
+	cmd.Execute()
 }

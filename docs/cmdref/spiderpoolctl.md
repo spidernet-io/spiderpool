@@ -27,7 +27,7 @@ try to release ip
 ### Options
 
 ```
-    --ip string     [required] ip
+    --ip string     [optional] ip
     --force         [optional] force release ip
 ```
 

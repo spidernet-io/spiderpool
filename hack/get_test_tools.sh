@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2022 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
@@ -22,11 +22,11 @@ set -o errexit
 # fi
 
 # kind
-# which kind
-# if [ $? -ne 0 ]; then
-#   curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-linux-amd64	
-#   chmod +x /usr/local/bin/kind
-# fi 
+which kind
+if [ $? -ne 0 ]; then
+  curl --max-time 10 --retry 10 --retry-delay 5 --retry-max-time 60 -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-linux-amd64	
+  chmod +x /usr/local/bin/kind
+fi 
 
 # kubectl
 which kubectl 

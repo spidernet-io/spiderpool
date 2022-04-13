@@ -22,7 +22,7 @@ jobs:
       #     go-version: 1.17.8
 
       - name: Checkout code into the Go module directory
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Install test tools
         run: ./hack/get_test_tools.sh
@@ -37,4 +37,4 @@ jobs:
         run: echo "e2e test pass"
           
       # - name: Cleanup
-      #   run: echo "kind delete cluster ${{ env.KIND_CLUSTER_NAME }}"
+      #   run: echo "kind delete cluster ${{ env.KIND_CLUSTER_NAME }}

@@ -200,5 +200,31 @@ endif
 	$(QUIET) $(MAKE) -C images update-golang-image
 	@echo "Updated go version in image Dockerfiles to $(GO_IMAGE_VERSION)"
 
+.PHONY: openapi-validate-spec
+openapi-validate-spec:
+	tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-agent
+	tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-controller
 
+.PHONY: openapi-code-gen
+openapi-code-gen: openapi-validate-spec clean-openapi-code
+	tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-agent
+	tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-controller
 
+.PHONY: openapi-verify
+openapi-verify: openapi-validate-spec
+	tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-agent
+	tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-controller
+
+.PHONY: clean-openapi-code
+clean-openapi-code:
+	tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-agent
+	tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-controller
+
+.PHONY: clean-openapi-tmp
+clean-openapi-tmp:
+	$(QUIET)rm -rf $(CURDIR)/api/v1beta/_tmp
+
+.PHONY: openapi-ui
+openapi-ui:
+	docker run --rm -itd -p 8081:8080 -e SWAGGER_JSON=/foo/swagger.yml -v $(CURDIR)/api/v1beta/spiderpool-agent/swagger.yml:/foo/swagger.yml swaggerapi/swagger-ui
+	docker run --rm -itd -p 8082:8080 -e SWAGGER_JSON=/foo/swagger.yml -v $(CURDIR)/api/v1beta/spiderpool-controller/swagger.yml:/foo/swagger.yml swaggerapi/swagger-ui

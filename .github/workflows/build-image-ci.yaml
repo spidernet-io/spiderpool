@@ -62,8 +62,8 @@ jobs:
         uses: dorny/paths-filter@v2.10.2
         id: go-changes
         with:
-          base: ${{ github.event.pull_request_target.base.sha }}
-          ref: ${{ github.event.pull_request_target.head.sha }}
+          base: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           filters: |
             src:
               - api/**
@@ -124,7 +124,7 @@ jobs:
               echo ::set-output name=push::${{ inputs.push }}
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
-              echo ::set-output name=tag::${{ github.sha }}
+              echo ::set-output name=tag::${{ github.event.push.after }}
               echo ::set-output name=push::false
           elif ${{ github.event_name == 'pull_request_target' }} ; then
               echo "trigger by pull_request_target"

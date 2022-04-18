@@ -38,7 +38,7 @@ jobs:
               echo ::set-output name=ref::${{ github.event.inputs.ref }}
           elif ${{ github.event_name == 'pull_request' }} ; then
               echo "trigger by pull_request"
-              echo ::set-output name=ref::${{ github.sha }}
+              echo ::set-output name=ref::${{ github.event.pull_request.head.sha }}
           else
               echo "error, trigger by unknown event ${{ github.event_name }}"
               exit 1

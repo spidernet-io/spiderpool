@@ -16,3 +16,6 @@ MD040: false
 
 # Dollar signs used before commands without showing output
 MD014: false
+
+# Inline HTML
+MD033: false

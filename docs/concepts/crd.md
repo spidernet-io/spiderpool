@@ -4,6 +4,6 @@
 
 ## ippool CRD
 
-## worloadendpoint CRD
+## workloadendpoint CRD
 
 ## reservedip CRD

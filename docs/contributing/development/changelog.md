@@ -8,11 +8,11 @@
 
 the changelog content include:
 
-(1) New Features: it include all PR labelled with "pr/release/feature-new"
+(1) New Features: it include all PR labeled with "pr/release/feature-new"
 
-(2) Changed Features: it include all PR labelled with "pr/release/feature-changed"
+(2) Changed Features: it include all PR labeled with "pr/release/feature-changed"
 
-(3) Fixes: it include all PR labelled with "pr/release/bug"
+(3) Fixes: it include all PR labeled with "pr/release/bug"
 
 (4) all historical commit within this version
 

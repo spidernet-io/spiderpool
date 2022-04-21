@@ -62,7 +62,7 @@ lint-markdown-spell:
 	if which mdspell &>/dev/null ; then \
   			mdspell  -r --en-us --ignore-numbers --target-relative .github/.spelling --ignore-acronyms  '**/*.md' '!vendor/**/*.md' ; \
   		else \
-			$(CONTAINER_ENGINE) container run --rm -it \
+			$(CONTAINER_ENGINE) container run --rm \
 				--entrypoint bash -v $(ROOT_DIR):/workdir  weizhoulan/spellcheck:latest  \
 				-c "cd /workdir ; mdspell  -r --en-us --ignore-numbers --target-relative .github/.spelling --ignore-acronyms  '**/*.md' '!vendor/**/*.md' " ; \
   		fi

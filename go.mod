@@ -7,7 +7,9 @@ require (
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.19.0
 	github.com/sasha-s/go-deadlock v0.3.1
+	go.uber.org/zap v1.19.0
 	golang.org/x/tools v0.1.6-0.20210820212750-d4cc65f0b2ff
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/code-generator v0.23.4
 	sigs.k8s.io/controller-tools v0.8.0
 )
@@ -37,6 +39,8 @@ require (
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/spf13/cobra v1.2.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect

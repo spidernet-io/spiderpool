@@ -3,14 +3,38 @@
 # Copyright 2022 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
 
-fn=$1
-dir=$2
+set -o errexit
+set -o nounset
+set -o pipefail
 
-API_PATH="${dir}"
-API_YAML_PATH="${API_PATH}/swagger.yml"
+if [[ $# -ne 2 ]];then
+  echo "Error: This shell-script needs 2 params. Your params is $*"
+  exit 1
+fi
+
+# ACTION decides which action of this shell you wanna use.
+ACTION=$1
+# OUTPUT_BASE_DIR defines the output path for swagger generates source codes.
+OUTPUT_BASE_DIR=$2
+
+if [[ ! -d ${OUTPUT_BASE_DIR} ]];then
+  echo "Error: ${OUTPUT_BASE_DIR} file path doesn't exist!"
+  exit 1
+fi
+
+API_PATH="${OUTPUT_BASE_DIR}"
+YAML_PATH="${API_PATH}/swagger.yml"
 API_CLIENT_PATH="${API_PATH}/client"
 API_SERVER_PATH="${API_PATH}/server"
 API_MODELS_PATH="${API_PATH}/models"
+
+if [[ ! -f ${YAML_PATH} ]];then
+  echo "Error: ${YAML_PATH} spec doesn't exist!"
+  exit 1
+else
+  echo "The chosen API_PATH is '${API_PATH}'"
+  echo "The chosen swagger spec is '${YAML_PATH}'"
+fi
 
 PROJECT_ROOT_PATH="$(dirname "${BASH_SOURCE[0]}")/../.."
 SWAGGER_PKG_PATH=${SWAGGER_PKG_PATH:-$(cd "${PROJECT_ROOT_PATH}"; ls -d -1 ./vendor/github.com/go-swagger/go-swagger 2>/dev/null || echo ../go-swagger)}
@@ -37,12 +61,10 @@ RunSwagger() {
 
 # validate the given spec
 validateSpec() {
-  RunSwagger validate ${API_YAML_PATH} 2>&1
-  result=`swagger validate "${API_YAML_PATH}" 2>&1`
-  if `echo ${result} | grep "invalid" > /dev/null 2>&1`; then
+  if ! RunSwagger validate ${YAML_PATH}
+  then
+    echo "Error: failed validate spec: ${YAML_PATH}"
     exit 1
-  else
-    exit 0
   fi
 }
 
@@ -52,21 +74,23 @@ generateCode() {
 
   if ! RunSwagger generate server "$@" \
         -s server -a restapi \
-        -f ${API_YAML_PATH} \
+        -f ${YAML_PATH} \
         --target ${API_PATH} \
         --exclude-main \
         --default-scheme=unix \
         -r ${PROJECT_ROOT_PATH}/tools/spdx-copyright-header.txt
   then
+    echo "Error: Failed run swagger to generate server for yaml '${YAML_PATH}' "
     exit 1
   fi
 
   if ! RunSwagger generate client "$@" \
         -a restapi \
-        -f ${API_YAML_PATH} \
+        -f ${YAML_PATH} \
         --target ${API_PATH} \
         -r ${PROJECT_ROOT_PATH}/tools/spdx-copyright-header.txt
   then
+    echo "Error: Failed run swagger to generate server for yaml '${YAML_PATH}' "
     exit 1
   fi
 }
@@ -74,7 +98,7 @@ generateCode() {
 # verify the current source codes with the spec to make sure whether the source codes is out of date
 verify() {
   DIFFROOT=${API_PATH}
-  TMP_DIFFROOT="${API_PATH}/../_tmp/"
+  TMP_DIFFROOT="${PROJECT_ROOT_PATH}/_openapi_tmp/"
 
   if [ -d ${TMP_DIFFROOT} ];then
     rm -rf ${TMP_DIFFROOT}
@@ -92,24 +116,30 @@ verify() {
   if [[ $ret -eq 0 ]];then
     echo "${DIFFROOT} up to date."
   else
-    echo "Error! ${DIFFROOT} is out of date. Please run 'make openapi-code-gen'"
+    echo "Error: ${DIFFROOT} is out of date! Please run 'make openapi-code-gen'"
     exit 1
   fi
 }
 
-if [[ $fn == "validate" ]];then
-  validateSpec
-fi
-
-if [[ $fn == "generate" ]];then
-  generateCode
-fi
-
-if [[ $fn == "clean" ]];then
-  clean
-fi
-
-if [[ $fn == "verify" ]];then
-  verify
-fi
+case ${ACTION} in
+  validate)
+    echo -e "Your action is 'validate'. Going to validate the '${YAML_PATH}' spec...\n"
+    validateSpec
+    ;;
+  generate)
+    echo -e "Your action is 'generate'. Going to generate source codes with '${YAML_PATH}' spec...\n"
+    generateCode
+    ;;
+  clean)
+    echo -e "Your action is 'clean'. Going to clean '${API_PATH}' legacy...\n"
+    clean
+    ;;
+  verify)
+    echo -e "Your action is 'verify'. Going to verify the '${API_PATH}' source codes with '${YAML_PATH}' spec...\n"
+    verify
+    ;;
+  *)
+    echo "Error: Unidentifiable param: '${ACTION}', please pass the correct 1st param in 'validate|generate|clean|verify'"
+    exit 1
+esac
 

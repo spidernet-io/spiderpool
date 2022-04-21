@@ -58,6 +58,7 @@ func ByteStreamConsumer(opts ...byteStreamOpt) Consumer {
 				close = cl.Close
 			}
 		}
+		//nolint:errcheck // closing a reader wouldn't fail.
 		defer close()
 
 		if wrtr, ok := data.(io.Writer); ok {
@@ -114,6 +115,7 @@ func ByteStreamProducer(opts ...byteStreamOpt) Producer {
 				close = cl.Close
 			}
 		}
+		//nolint:errcheck // TODO: closing a writer would fail.
 		defer close()
 
 		if rc, ok := data.(io.ReadCloser); ok {

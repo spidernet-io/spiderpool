@@ -7,9 +7,9 @@ x-schemes:
   - http
 basePath: "/v1beta"
 produces:
-- application/json
+  - application/json
 consumes:
-- application/json
+  - application/json
 paths:
   "/ipam/ip":
     put:

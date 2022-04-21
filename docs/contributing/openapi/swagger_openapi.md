@@ -1,4 +1,9 @@
-# swagger openapi
+# SWAGGER OPENAPI
+
+Spiderpool uses go-swagger to generate open api source codes. There are two swagger yaml for 'agent' and 'controller'. Please check
+with [agent-swagger spec](../../../api/v1beta/spiderpool-agent/swagger.yml) and
+[controller-swagger spec](../../../api/v1beta/spiderpool-controller/swagger.yml).
+source codes.
 
 ## Features
 
@@ -6,14 +11,18 @@
 * Generate C/S codes
 * Verify spec with current source codes
 * Clean codes
+* Use swagger-ui to analyze the given specs.
 
 ## Usages
 
-The format usage for swag.sh is `swag.sh $ACTION $SPEC_DIR`
+There are two ways for you to get access to the features.
+
+* Use `makefile`, it's the simplest way.
+* Use shell `swag.sh`. The format usage for 'swag.sh' is `swag.sh $ACTION $SPEC_DIR`.
 
 ### validate spec
 
-validate the current spec just give the second param with the spec dir.
+Validate the current spec just give the second parameter with the spec directory.
 > ./tools/scripts/swag.sh validate ./api/v1beta/spiderpool-agent
 
 Or you can use `makefile` to validate the spiderpool agent and controller with the following command.  
@@ -42,3 +51,17 @@ To clean the generated agent codes:
 
 Or you can use `makefile` to clean for both of agent and controller two:
 > make clean-openapi-code
+
+### Use swagger-ui
+
+To analyze the defined specs in your local environment with docker:
+> make openapi-ui
+
+## Steps For Developers
+
+1. Modify the specs: [agent-swagger spec](../../../api/v1beta/spiderpool-agent/swagger.yml) and
+   [controller-swagger spec](../../../api/v1beta/spiderpool-controller/swagger.yml)
+2. Validate the modified specs
+3. Use swagger-ui to check the effects in your local environment with docker
+4. Re-generate the source codes with the modified specs
+5. Commit your PR.

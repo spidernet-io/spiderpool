@@ -67,6 +67,16 @@ lint-markdown-spell:
 				-c "cd /workdir ; mdspell  -r --en-us --ignore-numbers --target-relative .github/.spelling --ignore-acronyms  '**/*.md' '!vendor/**/*.md' " ; \
   		fi
 
+.PHONY: lint-markdown-spell-colour
+lint-markdown-spell-colour:
+	if which mdspell &>/dev/null ; then \
+  			mdspell  -r --en-us --ignore-numbers --target-relative .github/.spelling --ignore-acronyms  '**/*.md' '!vendor/**/*.md' ; \
+  		else \
+			$(CONTAINER_ENGINE) container run --rm -it \
+				--entrypoint bash -v $(ROOT_DIR):/workdir  weizhoulan/spellcheck:latest  \
+				-c "cd /workdir ; mdspell  -r --en-us --ignore-numbers --target-relative .github/.spelling --ignore-acronyms  '**/*.md' '!vendor/**/*.md' " ; \
+  		fi
+
 .PHONY: lint-yaml
 lint-yaml:
 	@$(CONTAINER_ENGINE) container run --rm \
@@ -108,15 +118,28 @@ integration-tests:
 	@echo "run integration-tests"
 	$(QUIET) $(MAKE) -C test
 
+
+# should label for each test file
+.PHONY: check_test_label
+check_test_label:
+	@ALL_TEST_FILE=` find  ./  -name "*_test.go" -not -path "./vendor/*" ` ; FAIL="false" ; \
+		for ITEM in $$ALL_TEST_FILE ; do \
+			[[ "$$ITEM" == *_suite_test.go ]] && continue  ; \
+			! grep 'Label(' $${ITEM} &>/dev/null && FAIL="true" && echo "error, miss Label in $${ITEM}" ; \
+		done ; \
+		[ "$$FAIL" == "true" ] && echo "error, label check fail" && exit 1 ; \
+		echo "each test.go is labeled right"
+
+
 .PHONY: unitest-tests
-unitest-tests:
+unitest-tests: check_test_label
 	@echo "run unitest-tests"
 	$(QUIET) $(ROOT_DIR)/ginkgo.sh   \
 		--cover --coverprofile=./coverage.out --covermode set  \
 		--json-report ./testreport.json \
+		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=30s \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
-
 
 
 .PHONY: manifests
@@ -201,30 +224,34 @@ endif
 	@echo "Updated go version in image Dockerfiles to $(GO_IMAGE_VERSION)"
 
 .PHONY: openapi-validate-spec
-openapi-validate-spec:
-	tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-agent
-	tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-controller
+openapi-validate-spec: ## validate the given spec, like 'json/yaml'
+	$(QUIET) tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-agent
+	$(QUIET) tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-controller
 
 .PHONY: openapi-code-gen
-openapi-code-gen: openapi-validate-spec clean-openapi-code
-	tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-agent
-	tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-controller
+openapi-code-gen: openapi-validate-spec clean-openapi-code	## generate openapi source codes with the given spec.
+	$(QUIET) tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-agent
+	$(QUIET) tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-controller
 
 .PHONY: openapi-verify
-openapi-verify: openapi-validate-spec
-	tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-agent
-	tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-controller
+openapi-verify: openapi-validate-spec	## verify the current generated openapi source codes are not out of date with the given spec.
+	$(QUIET) tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-agent
+	$(QUIET) tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-controller
 
 .PHONY: clean-openapi-code
-clean-openapi-code:
-	tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-agent
-	tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-controller
+clean-openapi-code:	## clean up generated openapi source codes
+	$(QUIET) tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-agent
+	$(QUIET) tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-controller
 
 .PHONY: clean-openapi-tmp
-clean-openapi-tmp:
-	$(QUIET)rm -rf $(CURDIR)/api/v1beta/_tmp
+clean-openapi-tmp:	## clean up '_openapi_tmp' dir
+	$(QUIET) rm -rf $(CURDIR)/_openapi_tmp
 
 .PHONY: openapi-ui
-openapi-ui:
-	docker run --rm -itd -p 8081:8080 -e SWAGGER_JSON=/foo/swagger.yml -v $(CURDIR)/api/v1beta/spiderpool-agent/swagger.yml:/foo/swagger.yml swaggerapi/swagger-ui
-	docker run --rm -itd -p 8082:8080 -e SWAGGER_JSON=/foo/swagger.yml -v $(CURDIR)/api/v1beta/spiderpool-controller/swagger.yml:/foo/swagger.yml swaggerapi/swagger-ui
+openapi-ui:	## set up swagger-ui in local.
+	@$(CONTAINER_ENGINE) container run --rm -it -p 8080:8080 \
+		-e SWAGGER_JSON=/foo/agent-swagger.yml \
+		-v $(CURDIR)/api/v1beta/spiderpool-agent/swagger.yml:/foo/agent-swagger.yml \
+		-v $(CURDIR)/api/v1beta/spiderpool-controller/swagger.yml:/foo/controller-swagger.yml \
+		swaggerapi/swagger-ui
+

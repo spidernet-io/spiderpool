@@ -36,6 +36,8 @@ any go file updated, will check it with following:
 
 5 action: lint license
 
+6 each golang test file should mark ginkgo label
+
 ## action: license
 
 any go or shell file should be licensed
@@ -68,7 +70,7 @@ make fix-markdown-format
 you could test it on local machine with following command. For ignoring case, you could add it to .github/.spelling
 
 ```
-make lint-markdown-spell
+make lint-markdown-spell-colour
 ```
 
 ## action: lint yaml file

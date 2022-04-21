@@ -34,3 +34,4 @@ ipam
 markdownlint.yaml
 codespell-ignorewords
 namespace
+golang

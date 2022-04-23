@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017 Authors of Kubernetes
+# Copyright 2022 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
 
 set -o errexit

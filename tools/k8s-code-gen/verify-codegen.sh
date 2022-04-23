@@ -7,12 +7,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/../..
-CURRENT_FILENAME=`basename $0`
-CURRENT_DIR_PATH=$(cd `dirname $0`; pwd)
+# TODO
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
-DIFFROOT="${SCRIPT_ROOT}/pkg"
-TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/pkg"
+DIFFROOT="${SCRIPT_ROOT}/examples"
+TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/examples"
 _tmp="${SCRIPT_ROOT}/_tmp"
 
 cleanup() {
@@ -25,7 +24,7 @@ cleanup
 mkdir -p "${TMP_DIFFROOT}"
 cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
 
-"${CURRENT_DIR_PATH}/update-codegen.sh"
+"${SCRIPT_ROOT}/hack/update-codegen.sh"
 echo "diffing ${DIFFROOT} against freshly generated codegen"
 ret=0
 diff -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?

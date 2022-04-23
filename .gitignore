@@ -82,3 +82,6 @@ images/*/Dockerfile.dockerignore
 # Binary product
 bin
 
+# openapi tmp path
+_openapi_tmp/
+

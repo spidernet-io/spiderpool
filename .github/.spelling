@@ -35,3 +35,13 @@ markdownlint.yaml
 codespell-ignorewords
 namespace
 golang
+swag.sh
+api
+v1beta
+openapi-validate-spec
+openapi-code-gen
+openapi-verify
+clean-openapi-code
+makefile
+openapi-ui
+swagger-ui

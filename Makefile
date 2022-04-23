@@ -141,19 +141,33 @@ unitest-tests: check_test_label
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
-
 .PHONY: manifests
-CRD_OPTIONS ?= "crd:crdVersions=v1"
-manifests: ## Generate K8s manifests e.g. CRD, RBAC etc.
-	@echo "Generate K8s manifests e.g. CRD, RBAC etc."
-
-
+manifests: controller-gen
+	@echo "Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects"
+	$(CONTROLLER_GEN) crd webhook paths="./pkg/k8s/apis/v1" output:crd:artifacts:config=charts/spiderpool/crds
 
 .PHONY: generate-k8s-api
-generate-k8s-api: ## Generate Cilium k8s API client, deepcopy and deepequal Go sources.
-	@$(ECHO_CHECK) tools/k8s-code-gen/update-codegen.sh "pkg/k8s/api"
-	$(QUIET) tools/k8s-code-gen/update-codegen.sh "pkg/k8s/api"
+generate-k8s-api: controller-gen
+	@echo "Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations"
+	$(CONTROLLER_GEN) object:headerFile="tools/k8s-controller-gen/boilerplate.go.txt" paths="./pkg/k8s/apis/v1"
 
+CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
+.PHONY: controller-gen
+controller-gen:
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+define go-get-tool
+@[ -f $(1) ] || { \
+set -e ;\
+TMP_DIR=$$(mktemp -d) ;\
+cd $$TMP_DIR ;\
+go mod init tmp ;\
+echo "Downloading $(2)" ;\
+GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+rm -rf $$TMP_DIR ;\
+}
+endef
 
 .PHONY: precheck
 precheck: ## Perform build precheck for the source code.

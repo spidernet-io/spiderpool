@@ -103,7 +103,7 @@ spec:
         startupProbe:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
-            path: /ready
+            path: /v1/runtime/startup
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
             httpHeaders:
@@ -116,7 +116,7 @@ spec:
         livenessProbe:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
-            path: /healthz
+            path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
             httpHeaders:
@@ -130,7 +130,7 @@ spec:
         readinessProbe:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
-            path: /healthz
+            path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
             httpHeaders:
@@ -178,7 +178,7 @@ spec:
           readOnly: true
         - name: etc-cni-conf-path
           mountPath: /host/{{ .Values.ipamPlugin.confPath }}
-        - name: etc-bin-path
+        - name: cni-bin-path
           mountPath: /host/{{ .Values.ipamPlugin.binPath }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
@@ -186,13 +186,13 @@ spec:
       volumes:
         # To read the configuration from the config map
       - name: config-path
-        defaultMode: 0400
         configMap:
+          defaultMode: 0400
           name: {{ .Values.configmap.configCmName }}
         # To read the configuration from the config map
       - name: ipam-plugin-config-path
-        defaultMode: 0400
         configMap:
+          defaultMode: 0400
           name: {{ .Values.configmap.ipamCmName }}
         # To install cilium cni configuration in the host
       - name: etc-cni-conf-path

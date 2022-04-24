@@ -1,7 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package pkg
+package cmd
 
 import (
 	"github.com/spf13/pflag"
@@ -37,11 +37,15 @@ func (cc *ControllerConfiguration) BindControllerDaemonFlags(flags *pflag.FlagSe
 
 // RegisterEnv set the env to GlobalConfiguration
 func (cc *ControllerConfiguration) RegisterEnv() {
-	cc.LogLevel = os.Getenv("SPIDERPOOL_LOG_LEVEL")
-	cc.MetricHttpPort = os.Getenv("SPIDERPOOL_METRIC_HTTP_PORT")
-	cc.HttpPort = os.Getenv("SPIDERPOOL_HTTP_PORT")
+	controllerPort := os.Getenv("SPIDERPOOL_HTTP_PORT")
+	if controllerPort == "" {
+		controllerPort = "5720"
+	}
+	cc.HttpPort = controllerPort
 
 	// TODO
+	//os.Getenv("SPIDERPOOL_METRIC_HTTP_PORT")
+	//os.Getenv("SPIDERPOOL_LOG_LEVEL")
 	//os.Getenv("SPIDERPOOL_ENABLED_PPROF")
 	//os.Getenv("SPIDERPOOL_ENABLED_METRIC")
 	//os.Getenv("SPIDERPOOL_GC_IPPOOL_ENABLED")

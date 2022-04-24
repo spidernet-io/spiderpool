@@ -12,7 +12,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "show spiderpool-controller status",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("This is spiderpool controller status...")
 	},
 }
 

@@ -12,7 +12,7 @@ var shutdownCmd = &cobra.Command{
 	Use:   "shutdown",
 	Short: "shutdown spiderpool agent",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("shutdown spiderpool agent...")
 	},
 }
 

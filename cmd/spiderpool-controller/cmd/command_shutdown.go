@@ -13,7 +13,7 @@ var shutdownCmd = &cobra.Command{
 	Short: "shutdown spiderpool-controller daemon",
 	Long:  "notify to stop spiderpool-controller daemon",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("shutdown spiderpool controller...")
 	},
 }
 

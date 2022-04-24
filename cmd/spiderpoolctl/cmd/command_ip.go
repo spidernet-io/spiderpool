@@ -20,7 +20,7 @@ var ipShowCmd = &cobra.Command{
 	Short: "show ip related data",
 	Long:  `show pod who is taking this ip`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("This is spiderpool ctl ip show...")
 	},
 }
 
@@ -30,7 +30,7 @@ var ipReleaseCmd = &cobra.Command{
 	Short: "try to release ip",
 	Long:  `try to release ip and other releted data`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("This is spiderpool ctl ip release...")
 	},
 }
 
@@ -40,7 +40,7 @@ var ipSetCmd = &cobra.Command{
 	Short: "set ip to be taken by a pod",
 	Long:  `set ip to be taken by a pod , this will update ippool and workloadendpoint resource`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("This is spiderpool ctl ip set...")
 	},
 }
 

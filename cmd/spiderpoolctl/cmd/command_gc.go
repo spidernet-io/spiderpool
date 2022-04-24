@@ -13,7 +13,7 @@ var gcCmd = &cobra.Command{
 	Short: "spiderpool gc",
 	Long:  `trigger GC request to spiderpool-controller`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		logger.Info("This is spiderpool ctl gc...")
 	},
 }
 

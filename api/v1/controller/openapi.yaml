@@ -1,0 +1,82 @@
+swagger: "2.0"
+info:
+  description: Spiderpool Controller
+  title: Spiderpool-Controller API
+  version: v1
+x-schemes:
+  - http
+basePath: "/v1"
+produces:
+  - application/json
+consumes:
+  - application/json
+paths:
+  "/ipam/ip":
+    put:
+      summary: Force set ip
+      description: |
+        Force set ip for spiderpool controller cli debug usage
+      tags:
+        - controller
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Force set ip failure
+  /ipam/gc_ips:
+    post:
+      summary: Trigger gc
+      description: |
+        Trigger global gc or specific ip gc with the param
+      tags:
+        - controller
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Global gc failure
+  /ipam/status:
+    get:
+      summary: Get status
+      description: |
+        Get ipam status for spiderpool controller cli debug usage
+      tags:
+        - controller
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Get ipam status failure
+  "/runtime/startup":
+    get:
+      summary: Startup probe
+      description: Check pod startup probe
+      tags:
+        - runtime
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  "/runtime/readiness":
+    get:
+      summary: Readiness probe
+      description: Check pod readiness probe
+      tags:
+        - runtime
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  "/runtime/liveness":
+    get:
+      summary: Liveness probe
+      description: Check pod liveness probe
+      tags:
+        - runtime
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed

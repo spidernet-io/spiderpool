@@ -7,7 +7,7 @@ metadata:
   creationTimestamp: null
   name: ippools.spiderpool.spidernet.io
 spec:
-  group: spiderpool.spidernet.io
+  group: spiderpool.spidernet.ito
   names:
     categories:
     - spiderpool

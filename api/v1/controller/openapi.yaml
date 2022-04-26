@@ -23,7 +23,7 @@ paths:
           description: Success
         "500":
           description: Force set ip failure
-  /ipam/gc_ips:
+  /ipams/gc_ips:
     post:
       summary: Trigger gc
       description: |

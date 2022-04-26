@@ -45,3 +45,4 @@ clean-openapi-code
 makefile
 openapi-ui
 swagger-ui
+e2e

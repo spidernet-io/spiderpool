@@ -220,6 +220,11 @@ jobs:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
 
+      # unitest and e2e, _test.go
+      - name: Check label of All test go
+        run: |
+          make check_test_label
+
       # ================= unitest
       - name: Run unitest
         id: unitest

@@ -23,7 +23,7 @@ if [[ ! -d ${OUTPUT_BASE_DIR} ]];then
 fi
 
 API_PATH="${OUTPUT_BASE_DIR}"
-YAML_PATH="${API_PATH}/swagger.yml"
+YAML_PATH="${API_PATH}/openapi.yaml"
 API_CLIENT_PATH="${API_PATH}/client"
 API_SERVER_PATH="${API_PATH}/server"
 API_MODELS_PATH="${API_PATH}/models"

@@ -10,10 +10,10 @@ import (
 // shutdownCmd represents the shutdown command.
 var shutdownCmd = &cobra.Command{
 	Use:   "shutdown",
-	Short: "shutdown spiderpool-controller daemon",
-	Long:  "notify to stop spiderpool-controller daemon",
+	Short: "shutdown " + BinNameController,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger.Info("shutdown spiderpool controller...")
+		// TODO
+		logger.Sugar().Infof("shutdown %s...", BinNameController)
 	},
 }
 

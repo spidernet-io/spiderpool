@@ -4,14 +4,16 @@
 package cmd
 
 import (
-	"github.com/spf13/pflag"
 	"os"
 	"time"
+
+	"github.com/spf13/pflag"
+	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
 )
 
-var ControllerConfig ControllerConfiguration
+var controllerContext = new(ControllerContext)
 
-type ControllerConfiguration struct {
+type ControllerContext struct {
 	// flags
 	ConfigDir string
 
@@ -28,15 +30,16 @@ type ControllerConfiguration struct {
 	GCEvictedPodIPDuration     time.Duration
 
 	// handler
+	HttpServer *server.Server
 }
 
 // BindControllerDaemonFlags bind controller cli daemon flags
-func (cc *ControllerConfiguration) BindControllerDaemonFlags(flags *pflag.FlagSet) {
+func (cc *ControllerContext) BindControllerDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&cc.ConfigDir, "config-dir", "/tmp/spiderpool/configmap", "config file")
 }
 
 // RegisterEnv set the env to GlobalConfiguration
-func (cc *ControllerConfiguration) RegisterEnv() {
+func (cc *ControllerContext) RegisterEnv() {
 	controllerPort := os.Getenv("SPIDERPOOL_HTTP_PORT")
 	if controllerPort == "" {
 		controllerPort = "5720"

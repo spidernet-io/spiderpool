@@ -4,20 +4,21 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	"github.com/spidernet-io/spiderpool/pkg/cmdgenmd"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-const CONTROLLER_CTL = "controller-cli"
-
-var logger = logutils.Logger.Named(CONTROLLER_CTL)
+var BinNameController = filepath.Base(os.Args[0])
+var logger = logutils.Logger.Named(BinNameController)
 
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{
-	Use:   "spiderpool-controller",
-	Short: "spiderpoll controller cli",
-	Long:  `spiderpoll controller cli for interacting with the spiderpool-controller`,
+	Use:   BinNameController,
+	Short: BinNameController + " cli",
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -29,5 +30,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(CONTROLLER_CTL, rootCmd, logger))
+	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(BinNameController, rootCmd, logger))
 }

@@ -4,13 +4,15 @@
 package cmd
 
 import (
-	"github.com/spf13/pflag"
 	"os"
+
+	"github.com/spf13/pflag"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
 )
 
-var AgentConfig AgentConfiguration
+var agentContext = new(AgentContext)
 
-type AgentConfiguration struct {
+type AgentContext struct {
 	// flags
 	ConfigDir     string
 	IpamConfigDir string
@@ -23,17 +25,17 @@ type AgentConfiguration struct {
 	EnabledMetric  bool
 
 	// handler
-
+	HttpServer *server.Server
 }
 
 // BindAgentDaemonFlags bind agent cli daemon flags
-func (ac *AgentConfiguration) BindAgentDaemonFlags(flags *pflag.FlagSet) {
+func (ac *AgentContext) BindAgentDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&ac.ConfigDir, "config-dir", "/tmp/spiderpool/configmap", "config file")
 	flags.StringVar(&ac.IpamConfigDir, "ipam-config-dir", "", "config file for ipam plugin")
 }
 
 // RegisterEnv set the env to AgentConfiguration
-func (ac *AgentConfiguration) RegisterEnv() {
+func (ac *AgentContext) RegisterEnv() {
 	agentPort := os.Getenv("SPIDERPOOL_HTTP_PORT")
 	if agentPort == "" {
 		agentPort = "5710"

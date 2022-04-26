@@ -1,6 +1,6 @@
 apiVersion: v2
 name: spiderpool
-home: "https://spidernet-io.github.io/spiderpool"
+home: "https://spidernet-io.github.io/spiderpool "
 # application or library
 type: application
 # no need to modify this version , CI will auto update it with /VERSION

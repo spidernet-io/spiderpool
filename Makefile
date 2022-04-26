@@ -225,23 +225,23 @@ endif
 
 .PHONY: openapi-validate-spec
 openapi-validate-spec: ## validate the given spec, like 'json/yaml'
-	$(QUIET) tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-agent
-	$(QUIET) tools/scripts/swag.sh validate $(CURDIR)/api/v1beta/spiderpool-controller
+	$(QUIET) tools/scripts/swag.sh validate $(CURDIR)/api/v1/agent
+	$(QUIET) tools/scripts/swag.sh validate $(CURDIR)/api/v1/controller
 
 .PHONY: openapi-code-gen
 openapi-code-gen: openapi-validate-spec clean-openapi-code	## generate openapi source codes with the given spec.
-	$(QUIET) tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-agent
-	$(QUIET) tools/scripts/swag.sh generate $(CURDIR)/api/v1beta/spiderpool-controller
+	$(QUIET) tools/scripts/swag.sh generate $(CURDIR)/api/v1/agent
+	$(QUIET) tools/scripts/swag.sh generate $(CURDIR)/api/v1/controller
 
 .PHONY: openapi-verify
 openapi-verify: openapi-validate-spec	## verify the current generated openapi source codes are not out of date with the given spec.
-	$(QUIET) tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-agent
-	$(QUIET) tools/scripts/swag.sh verify $(CURDIR)/api/v1beta/spiderpool-controller
+	$(QUIET) tools/scripts/swag.sh verify $(CURDIR)/api/v1/agent
+	$(QUIET) tools/scripts/swag.sh verify $(CURDIR)/api/v1/controller
 
 .PHONY: clean-openapi-code
 clean-openapi-code:	## clean up generated openapi source codes
-	$(QUIET) tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-agent
-	$(QUIET) tools/scripts/swag.sh clean $(CURDIR)/api/v1beta/spiderpool-controller
+	$(QUIET) tools/scripts/swag.sh clean $(CURDIR)/api/v1/agent
+	$(QUIET) tools/scripts/swag.sh clean $(CURDIR)/api/v1/controller
 
 .PHONY: clean-openapi-tmp
 clean-openapi-tmp:	## clean up '_openapi_tmp' dir
@@ -251,7 +251,7 @@ clean-openapi-tmp:	## clean up '_openapi_tmp' dir
 openapi-ui:	## set up swagger-ui in local.
 	@$(CONTAINER_ENGINE) container run --rm -it -p 8080:8080 \
 		-e SWAGGER_JSON=/foo/agent-swagger.yml \
-		-v $(CURDIR)/api/v1beta/spiderpool-agent/swagger.yml:/foo/agent-swagger.yml \
-		-v $(CURDIR)/api/v1beta/spiderpool-controller/swagger.yml:/foo/controller-swagger.yml \
+		-v $(CURDIR)/api/v1/agent/openapi.yaml:/foo/agent-swagger.yml \
+		-v $(CURDIR)/api/v1/controller/openapi.yaml:/foo/controller-swagger.yml \
 		swaggerapi/swagger-ui
 

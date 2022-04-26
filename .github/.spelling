@@ -37,7 +37,7 @@ namespace
 golang
 swag.sh
 api
-v1beta
+v1
 openapi-validate-spec
 openapi-code-gen
 openapi-verify

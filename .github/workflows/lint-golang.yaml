@@ -45,6 +45,8 @@ jobs:
               - '**/*.go'
               - 'go.mod'
               - 'go.sum'
+              - 'api/**/openapi.yaml'
+              - 'charts/**/crds/*.yaml'
 
       - name: Result
         id: result
@@ -174,6 +176,20 @@ jobs:
       - name: Build Lint
         run: |
           make build-bin
+
+  lint_SDK:
+    needs: filter_changes
+    if: ${{ needs.filter_changes.outputs.check == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Openapi SDK
+        run: |
+          make openapi-validate-spec
+
+      - name: Check K8s CRD SDK
+        run: |
+          make manifests-verify
+
 
   unitest:
     needs: filter_changes

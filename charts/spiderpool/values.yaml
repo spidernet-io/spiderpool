@@ -217,7 +217,7 @@ spiderpoolAgent:
 spiderpoolController:
   name: "spiderpool-controller"
 
-  replicas: 2
+  replicas: 1
 
   binName: "spiderpool-controller"
 

@@ -59,7 +59,7 @@ RUN groupadd -f spidernet \
 COPY --from=builder /tmp/install/${TARGETOS}/${TARGETARCH}/bin/*   /usr/bin/
 COPY --from=builder /tmp/install/${TARGETOS}/${TARGETARCH}/bash-completion/*  /etc/bash_completion.d
 
-CMD ["/usr/bin/spiderpool-controller"]
+CMD ["/usr/bin/spiderpool-controller daemon"]
 
 
 

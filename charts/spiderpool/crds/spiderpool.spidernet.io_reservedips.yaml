@@ -1,0 +1,69 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: (devel)
+  creationTimestamp: null
+  name: reservedips.spiderpool.spidernet.io
+spec:
+  group: spiderpool.spidernet.io
+  names:
+    categories:
+    - spiderpool
+    kind: ReservedIP
+    listKind: ReservedIPList
+    plural: reservedips
+    shortNames:
+    - sri
+    singular: reservedip
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: ipVersion
+      jsonPath: .spec.ipVersion
+      name: VERSION
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ReservedIP is the Schema for the reservedips API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ReservedIPSpec defines the desired state of ReservedIP
+            properties:
+              ipVersion:
+                enum:
+                - IPv4
+                - IPv6
+                type: string
+              ips:
+                items:
+                  type: string
+                type: array
+            required:
+            - ipVersion
+            - ips
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

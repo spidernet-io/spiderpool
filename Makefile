@@ -4,14 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-include ./Makefile.defs
+include Makefile.defs
 
 all: build-bin install-bin
 
 .PHONY: all build install
 
 SUBDIRS := cmd/spiderpool-agent cmd/spiderpool-controller cmd/spiderpoolctl cmd/spiderpool
-
 
 build-bin:
 	for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i all; done
@@ -141,26 +140,20 @@ unitest-tests: check_test_label
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
-
 .PHONY: manifests
-CRD_OPTIONS ?= "crd:crdVersions=v1"
-manifests: ## Generate K8s manifests e.g. CRD, RBAC etc.
-	@echo "Generate K8s manifests e.g. CRD, RBAC etc."
-
-
+manifests:
+	@echo "Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects."
+	@$(QUIET) tools/k8s-controller-gen/update-controller-gen.sh manifests
 
 .PHONY: generate-k8s-api
-generate-k8s-api: ## Generate Cilium k8s API client, deepcopy and deepequal Go sources.
-	@$(ECHO_CHECK) tools/k8s-code-gen/update-codegen.sh "pkg/k8s/api"
-	$(QUIET) tools/k8s-code-gen/update-codegen.sh "pkg/k8s/api"
+generate-k8s-api:
+	@echo "Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations."
+	@$(QUIET) tools/k8s-controller-gen/update-controller-gen.sh deepcopy
 
-
-.PHONY: precheck
-precheck: ## Perform build precheck for the source code.
-ifeq ($(SKIP_K8S_CODE_GEN_CHECK),"false")
-	@$(ECHO_CHECK) tools/k8s-code-gen/verify-codegen.sh
-	$(QUIET) tools/k8s-code-gen/verify-codegen.sh
-endif
+.PHONY: manifests-verify
+manifests-verify:
+	@echo "Verify WebhookConfiguration, ClusterRole and CustomResourceDefinition objects."
+	@$(QUIET) tools/k8s-controller-gen/update-controller-gen.sh verify
 
 .PHONY: gofmt
 gofmt: ## Run gofmt on Go source files in the repository.

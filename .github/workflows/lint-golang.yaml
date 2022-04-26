@@ -157,7 +157,7 @@ jobs:
           go install github.com/praetorian-inc/gokart@latest
           gokart scan --globalsTainted
 
-  lint_build:
+  lint_SDK_and_build:
     needs: filter_changes
     if: ${{ needs.filter_changes.outputs.check == 'true' }}
     runs-on: ubuntu-latest
@@ -173,23 +173,29 @@ jobs:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
 
+      - name: Check SDK
+        run: |
+          flag=""
+          echo "Check Openapi SDK"
+          if make openapi-validate-spec ; then
+              echo " pass openapi sdk check"
+          else
+              echo "error, failed to check openapi sdk "
+              flag="bad"
+          fi
+          echo "Check K8S SDK and yaml"
+          if make manifests-verify ; then
+              echo " pass K8S SDK and yaml"
+          else
+              echo "error, failed to K8S SDK and yaml"
+              flag="bad"
+          fi
+          [ -n "$flag" ] && exit 1
+          exit 0
+
       - name: Build Lint
         run: |
           make build-bin
-
-  lint_SDK:
-    needs: filter_changes
-    if: ${{ needs.filter_changes.outputs.check == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Openapi SDK
-        run: |
-          make openapi-validate-spec
-
-      - name: Check K8s CRD SDK
-        run: |
-          make manifests-verify
-
 
   unitest:
     needs: filter_changes

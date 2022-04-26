@@ -176,8 +176,15 @@ jobs:
       - name: Check SDK
         run: |
           flag=""
-          echo "Check Openapi SDK"
+          echo "Check Openapi yaml"
           if make openapi-validate-spec ; then
+              echo " pass openapi yaml "
+          else
+              echo "error, failed to check openapi yaml "
+              flag="bad"
+          fi
+          echo "Check Openapi SDK"
+          if make openapi-verify ; then
               echo " pass openapi sdk check"
           else
               echo "error, failed to check openapi sdk "

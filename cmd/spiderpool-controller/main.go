@@ -4,12 +4,9 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-controller/cmd"
 )
 
 func main() {
-	fmt.Println("I am spiderpool controller")
-	time.Sleep(100 * time.Hour)
-
+	cmd.Execute()
 }

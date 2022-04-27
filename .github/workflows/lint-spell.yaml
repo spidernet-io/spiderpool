@@ -38,7 +38,7 @@ jobs:
               echo ::set-output name=ref::${{ github.event.inputs.ref }}
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
-              echo ::set-output name=ref::${{ github.event.push.after }}
+              echo ::set-output name=ref::${{ github.sha }}
           else
               echo "trigger by ${{ github.event_name }}"
               echo ::set-output name=ref::${{ github.event.pull_request.head.sha }}

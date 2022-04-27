@@ -54,7 +54,7 @@ jobs:
           if ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
               echo "::set-output name=check::true"
-              echo "::set-output name=ref::${{ github.event.push.after }}"
+              echo "::set-output name=ref::${{ github.sha }}"
           elif ${{ github.event_name == 'pull_request' }} ; then
               echo "trigger by pull_request"
               flag=${{ steps.filter_pr.outputs.src }}

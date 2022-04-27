@@ -126,7 +126,7 @@ jobs:
               echo ::set-output name=e2e::true
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
-              echo ::set-output name=tag::${{ github.sha }}
+              echo ::set-output name=tag::${{ github.event.push.after }}
               echo ::set-output name=push::false
               echo ::set-output name=e2e::true
           elif ${{ github.event_name == 'pull_request_target' }} ; then

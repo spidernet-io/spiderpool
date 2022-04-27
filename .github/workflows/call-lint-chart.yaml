@@ -38,7 +38,7 @@ jobs:
               echo ::set-output name=ref::${{ github.event.inputs.ref }}
           elif ${{ github.event_name == 'pull_request' }} ; then
               echo "trigger by pull_request"
-              echo ::set-output name=ref::${{ github.sha }}
+              echo ::set-output name=ref::${{ github.event.pull_request.head.sha }}
           else
               echo "error, trigger by unknown event ${{ github.event_name }}"
               exit 1
@@ -54,13 +54,13 @@ jobs:
       # The cached helm binary path is prepended to the PATH environment variable as well as stored in the helm-path output variable
       # https://github.com/Azure/setup-helm
       - name: Set up Helm
-        uses: azure/setup-helm@v2.0
+        uses: azure/setup-helm@v2.1
         with:
           version: ${{ env.HELM_VERSION }}
 
       # https://github.com/actions/setup-python
       - name: Set up Python
-        uses: actions/setup-python@v3.1.1
+        uses: actions/setup-python@v3.1.2
         with:
           python-version: 3.8
           architecture: x64

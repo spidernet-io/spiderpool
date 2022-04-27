@@ -1,6 +1,6 @@
-# namspace manager
+# namespace manager
 
-for spiderpool to get annotation for ns default ippol
+for spiderpool to get annotation for the default ippool of a namespace
 
 ```
 type NsManager interface {

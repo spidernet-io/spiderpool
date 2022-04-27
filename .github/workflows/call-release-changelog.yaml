@@ -96,7 +96,7 @@ jobs:
       - name: Build Changelog With Specified Start
         id: create_changelog_by_manul_tag
         if: ${{ needs.get_ref.outputs.begin_tag != '' }}
-        uses: mikepenz/release-changelog-builder-action@v2.9.0
+        uses: mikepenz/release-changelog-builder-action@v3
         with:
           configuration: ${{ env.CHANGELOG_CONF }}
           outputFile: ${{ env.CHANGELOG_TMP_FILE }}
@@ -109,7 +109,7 @@ jobs:
       - name: Build Changelog By Auto Tag
         id: create_changelog_by_auto_tag
         if: ${{ needs.get_ref.outputs.begin_tag == '' }}
-        uses: mikepenz/release-changelog-builder-action@v2.9.0
+        uses: mikepenz/release-changelog-builder-action@v3
         with:
           configuration: ${{ env.CHANGELOG_CONF }}
           toTag: ${{ needs.get_ref.outputs.begin_tag }}

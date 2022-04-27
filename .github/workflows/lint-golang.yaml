@@ -45,6 +45,8 @@ jobs:
               - '**/*.go'
               - 'go.mod'
               - 'go.sum'
+              - 'api/**/openapi.yaml'
+              - 'charts/**/crds/*.yaml'
 
       - name: Result
         id: result
@@ -52,7 +54,7 @@ jobs:
           if ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
               echo "::set-output name=check::true"
-              echo "::set-output name=ref::${{ github.sha }}"
+              echo "::set-output name=ref::${{ github.event.push.after }}"
           elif ${{ github.event_name == 'pull_request' }} ; then
               echo "trigger by pull_request"
               flag=${{ steps.filter_pr.outputs.src }}
@@ -155,7 +157,7 @@ jobs:
           go install github.com/praetorian-inc/gokart@latest
           gokart scan --globalsTainted
 
-  lint_build:
+  lint_SDK_and_build:
     needs: filter_changes
     if: ${{ needs.filter_changes.outputs.check == 'true' }}
     runs-on: ubuntu-latest
@@ -170,6 +172,33 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
+
+      - name: Check SDK
+        run: |
+          flag=""
+          echo "Check Openapi yaml"
+          if make openapi-validate-spec ; then
+              echo " pass openapi yaml "
+          else
+              echo "error, failed to check openapi yaml "
+              flag="bad"
+          fi
+          echo "Check Openapi SDK"
+          if make openapi-verify ; then
+              echo " pass openapi sdk check"
+          else
+              echo "error, failed to check openapi sdk "
+              flag="bad"
+          fi
+          echo "Check K8S SDK and yaml"
+          if make manifests-verify ; then
+              echo " pass K8S SDK and yaml"
+          else
+              echo "error, failed to K8S SDK and yaml"
+              flag="bad"
+          fi
+          [ -n "$flag" ] && exit 1
+          exit 0
 
       - name: Build Lint
         run: |
@@ -190,6 +219,11 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
+
+      # unitest and e2e, _test.go
+      - name: Check label of All test go
+        run: |
+          make check_test_label
 
       # ================= unitest
       - name: Run unitest
@@ -217,7 +251,7 @@ jobs:
       # ============= upload coverage report
       - name: Upload to Codecov
         if: ${{ steps.unitest.outcome != 'failure' }}
-        uses: codecov/codecov-action@v3.0.0
+        uses: codecov/codecov-action@v3.1.0
         with:
           directory: './'
           files: 'coverage.out'
@@ -225,6 +259,7 @@ jobs:
           name: my-codecov-umbrella
           fail_ci_if_error: true
           verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Result
         if: ${{ steps.unitest.outcome == 'failure' }}

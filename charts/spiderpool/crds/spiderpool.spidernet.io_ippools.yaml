@@ -1,0 +1,299 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: (devel)
+  creationTimestamp: null
+  name: ippools.spiderpool.spidernet.io
+spec:
+  group: spiderpool.spidernet.io
+  names:
+    categories:
+    - spiderpool
+    kind: IPPool
+    listKind: IPPoolList
+    plural: ippools
+    shortNames:
+    - spl
+    singular: ippool
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: ipVersion
+      jsonPath: .spec.ipVersion
+      name: VERSION
+      type: string
+    - description: subnet
+      jsonPath: .spec.subnet
+      name: SUBNET
+      type: string
+    - description: allocatedIPCount
+      jsonPath: .status.allocatedIPCount
+      name: ALLOCATED-IP-COUNT
+      type: integer
+    - description: totalIPCount
+      jsonPath: .status.totalIPCount
+      name: TOTAL-IP-COUNT
+      type: integer
+    - description: disable
+      jsonPath: .spec.disable
+      name: DISABLE
+      type: boolean
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: IPPool is the Schema for the ippools API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: IPPoolSpec defines the desired state of IPPool
+            properties:
+              disable:
+                default: false
+                type: boolean
+              excludeIPs:
+                items:
+                  type: string
+                type: array
+              gateway:
+                type: string
+              ipVersion:
+                enum:
+                - IPv4
+                - IPv6
+                type: string
+              ips:
+                items:
+                  type: string
+                type: array
+              namesapceSelector:
+                description: A label selector is a label query over a set of resources.
+                  The result of matchLabels and matchExpressions are ANDed. An empty
+                  label selector matches all objects. A null label selector matches
+                  no objects.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+              nodeSelector:
+                description: A label selector is a label query over a set of resources.
+                  The result of matchLabels and matchExpressions are ANDed. An empty
+                  label selector matches all objects. A null label selector matches
+                  no objects.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+              podSelector:
+                description: A label selector is a label query over a set of resources.
+                  The result of matchLabels and matchExpressions are ANDed. An empty
+                  label selector matches all objects. A null label selector matches
+                  no objects.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+              routes:
+                items:
+                  properties:
+                    dst:
+                      type: string
+                    gw:
+                      type: string
+                  required:
+                  - dst
+                  type: object
+                type: array
+              subnet:
+                type: string
+              vlan:
+                format: int32
+                maximum: 4095
+                minimum: 0
+                type: integer
+            required:
+            - ipVersion
+            - ips
+            - subnet
+            type: object
+          status:
+            description: IPPoolStatus defines the observed state of IPPool
+            properties:
+              allocateCount:
+                format: int64
+                minimum: 0
+                type: integer
+              allocatedIPCount:
+                format: int32
+                minimum: 0
+                type: integer
+              allocatedIPs:
+                additionalProperties:
+                  description: PoolIPAllocation is an IP already has been allocated
+                  properties:
+                    containerid:
+                      type: string
+                    interface:
+                      type: string
+                    namespace:
+                      type: string
+                    node:
+                      type: string
+                    pod:
+                      type: string
+                  required:
+                  - containerid
+                  - interface
+                  - namespace
+                  - node
+                  - pod
+                  type: object
+                description: PoolIPAllocations is a map of allocated IPs indexed by
+                  IP
+                type: object
+              deallocateCount:
+                format: int64
+                minimum: 0
+                type: integer
+              totalIPCount:
+                format: int32
+                minimum: 0
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

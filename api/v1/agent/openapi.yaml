@@ -1,0 +1,117 @@
+swagger: "2.0"
+info:
+  description: Spiderpool Agent
+  title: Spiderpool-Agent API
+  version: v1
+x-schemes:
+  - unix
+basePath: "/v1"
+produces:
+  - application/json
+consumes:
+  - application/json
+paths:
+  "/ipam/healthy":
+    get:
+      summary: Get health of spiderpool daemon
+      description: |
+        Check spiderpool daemonset health to make sure whether it's ready
+        for CNI plugin usage
+      tags:
+        - connectivity
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  "/ipam/ip":
+    post:
+      summary: Get ip from spiderpool daemon
+      description: |
+        Send a request to daemonset to ask for an ip assignment
+      tags:
+        - daemonset
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Allocation failure
+    delete:
+      summary: Delete ip from spiderpool daemon
+      description: |
+        Send a request to daemonset to ask for an ip deleting
+      tags:
+        - daemonset
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  /ipam/ips:
+    post:
+      summary: Assign multiple ip as a batch
+      description: |
+        Assign multiple ip for a pod, case for spiderflat compent
+      tags:
+        - daemonset
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Allocation failure
+    delete:
+      summary: Delete multiple ip as a batch
+      description: |
+        Delete multiple ip for a pod, case for spiderflat compent
+      tags:
+        - daemonset
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  /workloadendpoint:
+    get:
+      summary: Get workloadendpoint status
+      description: |
+        Get workloadendpoint details for spiderflat use
+      tags:
+        - daemonset
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Get workloadendpoint failure
+  "/runtime/startup":
+    get:
+      summary: Startup probe
+      description: Check pod startup probe
+      tags:
+        - runtime
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  "/runtime/readiness":
+    get:
+      summary: Readiness probe
+      description: Check pod readiness probe
+      tags:
+        - runtime
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed
+  "/runtime/liveness":
+    get:
+      summary: Liveness probe
+      description: Check pod liveness probe
+      tags:
+        - runtime
+      responses:
+        "200":
+          description: Success
+        "500":
+          description: Failed

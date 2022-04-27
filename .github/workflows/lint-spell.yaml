@@ -36,9 +36,12 @@ jobs:
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "trigger by workflow_dispatch"
               echo ::set-output name=ref::${{ github.event.inputs.ref }}
+          elif ${{ github.event_name == 'push' }} ; then
+              echo "trigger by push"
+              echo ::set-output name=ref::${{ github.event.push.after }}
           else
               echo "trigger by ${{ github.event_name }}"
-              echo ::set-output name=ref::${{ github.sha }}
+              echo ::set-output name=ref::${{ github.event.pull_request.head.sha }}
           fi
 
       - name: Checkout
@@ -48,11 +51,11 @@ jobs:
           ref: ${{ steps.get_ref.outputs.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v3.1.1
+        uses: actions/setup-python@v3.1.2
         with:
           python-version: 3.8
           architecture: x64
 
-      - name: Run Lint
+      - name: Run Code Lint
         run: |
-          make lint-spell
+          make lint-code-spell

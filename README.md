@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G)](https://codecov.io/gh/spidernet-io/spiderpool)
 [![Auto Release Version](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-release.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-release.yaml)
 [![Auto Nightly CI](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5539/badge)](https://bestpractices.coreinfrastructure.org/projects/5539)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6009/badge)](https://bestpractices.coreinfrastructure.org/projects/6009)
 
 ## License
 

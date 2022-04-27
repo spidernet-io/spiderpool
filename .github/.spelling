@@ -5,6 +5,7 @@ spiderpoolctl
 gc
 ip
 ippool
+ippools
 workloadendpoint
 reservedip
 github
@@ -46,3 +47,18 @@ makefile
 openapi-ui
 swagger-ui
 e2e
+macvlan
+ipv4
+ipv6
+ipv4-only
+ipv6-only
+statefulset
+multus
+OpenSSF
+webhook
+SDK
+QuickStart
+spiderflat
+KubeGrid
+openapi
+

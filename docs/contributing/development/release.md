@@ -1,6 +1,6 @@
 # workflow for release
 
-if a tag vXX.XX.XX is puhed , the following will auto trigger:
+if a tag vXX.XX.XX is pushed , the following will auto trigger:
 
 ## 1 build the images with the pushed tag, push to ghcr registry
 
@@ -14,6 +14,6 @@ it commits the new chart package to '/charts' and update /index.yaml on the bran
 
 ## 4 submit '/docs' of branch 'main' to '/docs' of branch 'github_pages'
 
-## 5 create a Github Realse attached with the chart and changelog
+## 5 create a GitHub Release attached with the chart and changelog
 
-## finnally, by hand, need approve the chart PR with label "pr/release/robot_update_githubpage" , and changelog PR with label "pr/release/robot_update_githubpage"
+## Finally, by hand, need approve the chart PR with label "pr/release/robot_update_githubpage" , and changelog PR with label "pr/release/robot_update_githubpage"

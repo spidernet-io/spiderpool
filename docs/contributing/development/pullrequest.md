@@ -20,6 +20,8 @@ use following to find the issue on you local machine
 make lint-yaml
 ```
 
+notice: for some ignoring case, you could add to .github/yamllint-conf.yml
+
 ## action: go source code check
 
 any go file updated, will check it with following:
@@ -34,6 +36,8 @@ any go file updated, will check it with following:
 
 5 action: lint license
 
+6 each golang test file should mark ginkgo label
+
 ## action: license
 
 any go or shell file should be licensed
@@ -47,20 +51,26 @@ if it belongs to spiderpool, could set it as
 
 ## action: lint markdown file
 
-check markdonw file format and best practice.
+check markdown file format , spell and best practice.
 
 if it fails, the reason could refer to <https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md>
 
 you could test it on local machine with following command
 
 ```
-make lint-markdown
+make lint-markdown-format
 ```
 
-you could tyr to justify it on local machine with following command
+you could try to justify it on local machine with following command. For ignoring case, you could add to .github/markdownlint.yaml
 
 ```
-make fix-markdown
+make fix-markdown-format
+```
+
+you could test it on local machine with following command. For ignoring case, you could add it to .github/.spelling
+
+```
+make lint-markdown-spell-colour
 ```
 
 ## action: lint yaml file
@@ -86,6 +96,20 @@ any update about openapi.yaml, will be checked for the yaml validation
 ## action: other github APP
 
 check from <https://www.codefactor.io>
+
+## action: check code spell error
+
+check on local machine
+
+```
+make lint-code-spell
+```
+
+fix on local machine. For ignored case, please edit .github/codespell-ignorewords and make sure all letters should be lower-case
+
+```
+make fix-code-spell
+```
 
 ## need review
 

@@ -28,6 +28,9 @@
 - name: pr/stale
   description: This pull is inactive
   color: dfd6d7
+- name: pr/ready-review
+  description: This pull is ready for review
+  color: dfd6d7
 - name: pr/dependabot/docker
   description: This pull is for dockerfile from dependabot
   color: dfd6d7

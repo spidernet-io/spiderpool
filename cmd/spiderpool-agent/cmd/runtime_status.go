@@ -6,13 +6,12 @@ package cmd
 import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/runtime"
-	runtimeops "github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/runtime"
 )
 
 type httpGetAgentStartup struct{}
 
 // Handle handles GET requests for /runtime/startup .
-func (g *httpGetAgentStartup) Handle(params runtimeops.GetRuntimeStartupParams) middleware.Responder {
+func (g *httpGetAgentStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return runtime.NewGetRuntimeStartupOK()
@@ -21,7 +20,7 @@ func (g *httpGetAgentStartup) Handle(params runtimeops.GetRuntimeStartupParams) 
 type httpGetAgentReadiness struct{}
 
 // Handle handles GET requests for /runtime/readiness .
-func (g *httpGetAgentReadiness) Handle(params runtimeops.GetRuntimeReadinessParams) middleware.Responder {
+func (g *httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return runtime.NewGetRuntimeReadinessOK()
@@ -30,7 +29,7 @@ func (g *httpGetAgentReadiness) Handle(params runtimeops.GetRuntimeReadinessPara
 type httpGetAgentLiveness struct{}
 
 // Handle handles GET requests for /runtime/liveness .
-func (g *httpGetAgentLiveness) Handle(params runtimeops.GetRuntimeLivenessParams) middleware.Responder {
+func (g *httpGetAgentLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return runtime.NewGetRuntimeLivenessOK()

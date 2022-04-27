@@ -37,7 +37,7 @@ jobs:
             tag_name=${{ github.event.inputs.ref }}
             echo ::set-output name=ref::${tag_name}
           elif ${{ github.event_name == 'push' }} ; then
-            echo ::set-output name=ref::${{ github.event.push.after }}
+            echo ::set-output name=ref::${{ github.sha }}
           else
             echo ::set-output name=ref::${{ github.event.pull_request.head.sha }}
           fi

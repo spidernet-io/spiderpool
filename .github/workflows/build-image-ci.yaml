@@ -124,7 +124,7 @@ jobs:
               echo ::set-output name=push::${{ inputs.push }}
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
-              echo ::set-output name=tag::${{ github.event.push.after }}
+              echo ::set-output name=tag::${{ github.sha }}
               echo ::set-output name=push::false
           elif ${{ github.event_name == 'pull_request_target' }} ; then
               echo "trigger by pull_request_target"

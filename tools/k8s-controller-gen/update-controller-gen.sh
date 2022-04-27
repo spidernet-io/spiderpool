@@ -9,15 +9,16 @@ set -o pipefail
 
 # CONST
 PROJECT_ROOT=$(dirname ${BASH_SOURCE[0]})/../..
-CODEGEN_PKG=${CODEGEN_PKG_PATH:-$(cd ${PROJECT_ROOT}; ls -d -1 ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen 2>/dev/null || echo ../controller-gen)}
+CONTROLLER_GEN_TMP_DIR=${CONTROLLER_GEN_TMP_DIR:-${PROJECT_ROOT}/.controller_gen_tmp}
+CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${PROJECT_ROOT}; ls -d -1 ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen 2>/dev/null || echo ../controller-gen)}
 
 # ENV
 # Defines the output path for the artifacts controller-gen generates
 OUTPUT_BASE_DIR=${OUTPUT_BASE_DIR:-${PROJECT_ROOT}/charts/spiderpool}
 # Defines tmp path of the current artifacts for diffing
-OUTPUT_TMP_DIR=${OUTPUT_TMP_DIR:-${PROJECT_ROOT}/_controller_gen_tmp}
+OUTPUT_TMP_DIR=${OUTPUT_TMP_DIR:-${CONTROLLER_GEN_TMP_DIR}/old}
 # Defines the output path of the latest artifacts for diffing
-OUTPUT_DIFF_DIR=${OUTPUT_DIFF_DIR:-${PROJECT_ROOT}/_controller_gen_diff}
+OUTPUT_DIFF_DIR=${OUTPUT_DIFF_DIR:-${CONTROLLER_GEN_TMP_DIR}/new}
 
 
 
@@ -37,50 +38,35 @@ manifests_gen() {
 }
 
 deepcopy_gen() {
-  tmp_header_file=${PROJECT_ROOT}/tools/boilerplate.go.txt
+  tmp_header_file=${CONTROLLER_GEN_TMP_DIR}/boilerplate.go.txt
   cat ${PROJECT_ROOT}/tools/spdx-copyright-header.txt | sed -E 's?(.*)?// \1?' > ${tmp_header_file}
 
   controller-gen \
   object:headerFile="${tmp_header_file}" \
   paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1"
-
-  rm -f ${tmp_header_file}
 }
 
 manifests_verify() {
-  diff_root=${OUTPUT_TMP_DIR}
-  tmp_diff_root=${OUTPUT_DIFF_DIR}
-
-  # Clean up tmp dir
-  if [ -d ${diff_root} ];then
-    rm -rf ${diff_root}
-  fi
-
-  if [ -d ${tmp_diff_root} ];then
-    rm -rf ${tmp_diff_root}
-  fi
-
   # Aggregate the artifacts currently in use
-  mkdir -p ${diff_root}
+  mkdir -p ${OUTPUT_TMP_DIR}
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/crds)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/crds ${diff_root}
+    cp -ra ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
   fi
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/webhook)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/webhook ${diff_root}
+    cp -ra ${OUTPUT_BASE_DIR}/webhook ${OUTPUT_TMP_DIR}
   fi
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/rbac)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/rbac ${diff_root}
+    cp -ra ${OUTPUT_BASE_DIR}/rbac ${OUTPUT_TMP_DIR}
   fi
 
   # Generator the latest artifacts
-  manifests_gen ${tmp_diff_root}
+  manifests_gen ${OUTPUT_DIFF_DIR}
 
   # Diff
   ret=0
-  diff -Naupr ${diff_root} ${tmp_diff_root} || ret=$?
-  rm -rf ${diff_root} ${tmp_diff_root}
+  diff -Naupr ${OUTPUT_TMP_DIR} ${OUTPUT_DIFF_DIR} || ret=$?
 
   if [[ $ret -eq 0 ]];then
     echo "The Artifacts is up to date."
@@ -95,6 +81,11 @@ help() {
 }
 
 main() {
+  if [ -d ${CONTROLLER_GEN_TMP_DIR} ];then
+    rm -rf ${CONTROLLER_GEN_TMP_DIR}
+  fi
+  mkdir -p ${CONTROLLER_GEN_TMP_DIR}
+
   case ${1:-none} in
     manifests)
       manifests_gen ${OUTPUT_BASE_DIR}
@@ -109,6 +100,9 @@ main() {
       help
       ;;
   esac
+
+  # Clean up controller-gen tmp dir
+  rm -rf ${CONTROLLER_GEN_TMP_DIR}
 }
 
 main "$*"

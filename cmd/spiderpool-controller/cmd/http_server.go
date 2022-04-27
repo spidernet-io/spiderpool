@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-openapi/loads"
+	controllerOpenAPIClient "github.com/spidernet-io/spiderpool/api/v1/controller/client"
 	controllerOpenAPIServer "github.com/spidernet-io/spiderpool/api/v1/controller/server"
 	controllerOpenAPIRestapi "github.com/spidernet-io/spiderpool/api/v1/controller/server/restapi"
 )
@@ -36,7 +37,7 @@ func newControllerOpenAPIServer() (*controllerOpenAPIServer.Server, error) {
 	srv := controllerOpenAPIServer.NewServer(api)
 
 	// customize server configurations.
-	srv.EnabledListeners = []string{"http"}
+	srv.EnabledListeners = controllerOpenAPIClient.DefaultSchemes
 	port, err := strconv.Atoi(controllerContext.HttpPort)
 	if nil != err {
 		return nil, err

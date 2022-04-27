@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-openapi/loads"
+	agentOpenAPIClient "github.com/spidernet-io/spiderpool/api/v1/agent/client"
 	agentOpenAPIServer "github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	agentOpenAPIRestapi "github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi"
 )
@@ -36,7 +37,7 @@ func newAgentOpenAPIServer() (*agentOpenAPIServer.Server, error) {
 	srv := agentOpenAPIServer.NewServer(api)
 
 	// customize server configurations.
-	srv.EnabledListeners = []string{"http"}
+	srv.EnabledListeners = agentOpenAPIClient.DefaultSchemes
 	port, err := strconv.Atoi(agentContext.HttpPort)
 	if nil != err {
 		return nil, err

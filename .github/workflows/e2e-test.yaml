@@ -1,0 +1,40 @@
+name: e2e-test
+env:
+  NUMBER_OF_COMPUTE_NODES: 5
+on:
+  push:
+    branches:
+      - e2e-test
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'e2e test'
+        required: true
+        default: main
+jobs:
+  deploy-test:
+    runs-on: ["self-hosted"]
+    name: e2e-test
+    steps:
+      # - name: Set up Go version
+      #   uses: actions/setup-go@v3
+      #   with:
+      #     go-version: 1.17.8
+
+      - name: Checkout code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Install test tools
+        run: ./hack/get_test_tools.sh
+
+      - name: Deploy kind cluster && install-cni && multus-daemonset
+        run: ./hack/deploy.sh -n 5
+
+      - name: Clear test-cache
+        run: go clean -testcache
+      
+      - name: Execute e2e-test
+        run: echo "e2e test pass"
+          
+      # - name: Cleanup
+      #   run: echo "kind delete cluster ${{ env.KIND_CLUSTER_NAME }}

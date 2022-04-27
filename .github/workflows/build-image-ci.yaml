@@ -5,6 +5,7 @@ env:
   BUILD_PLATFORM: linux/amd64,linux/arm64
   ONLINE_REGISTER_USER: ${{ github.actor }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  CLUSTER_NAME: spider
 
 on:
   pull_request_target:
@@ -56,7 +57,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # https://github.com/dorny/paths-filter
+     # https://github.com/dorny/paths-filter
       - name: Check code changes
         if: ${{ github.event_name == 'pull_request_target' || github.event_name == 'push' }}
         uses: dorny/paths-filter@v2.10.2
@@ -76,7 +77,6 @@ jobs:
               - vendor/**
               - 'go.sum'
               - 'go.mod'
-
       - name: Result
         id: result
         run: |
@@ -85,7 +85,6 @@ jobs:
           else
               echo ::set-output name=result::${{ steps.go-changes.outputs.src }}
           fi
-
   build_and_push_prs:
     runs-on: ubuntu-latest
     # run if filters.src was changed
@@ -93,6 +92,7 @@ jobs:
     if: ${{ needs.filter_changes.outputs.build == 'true' }}
     outputs:
       imageTag: ${{ steps.tag.outputs.tag }}
+      e2e: ${{ steps.tag.outputs.e2e }}
     strategy:
       matrix:
         include:
@@ -118,28 +118,33 @@ jobs:
       - name: Getting image tag
         id: tag
         run: |
+          echo ${{ github.event_name }}
           if ${{ inputs.ref != '' }}; then
               echo "trigger by workflow_call"
               echo ::set-output name=tag::${{ inputs.ref }}
               echo ::set-output name=push::${{ inputs.push }}
+              echo ::set-output name=e2e::true
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
               echo ::set-output name=tag::${{ github.sha }}
               echo ::set-output name=push::false
+              echo ::set-output name=e2e::true
           elif ${{ github.event_name == 'pull_request_target' }} ; then
               echo "trigger by pull_request_target"
               echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
               echo ::set-output name=push::false
+              echo ::set-output name=e2e::true
           elif ${{ github.event_name == 'workflow_run' }} ; then
               echo "trigger by workflow_run"
               echo ::set-output name=tag::main
               echo ::set-output name=push::false
+              echo ::set-output name=e2e::false
           else
               echo "trigger by ${{ github.event_name }}"
               echo ::set-output name=tag::${{ github.sha }}
               echo ::set-output name=push::false
+              echo ::set-output name=e2e::false
           fi
-
       # checkout the changed code
       - name: Checkout Source Code
         uses: actions/checkout@v3
@@ -155,7 +160,6 @@ jobs:
           GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
           echo ::set-output name=commitver::${GIT_COMMIT_VERSION}
           echo ::set-output name=committime::${GIT_COMMIT_TIME}
-
       # =============  get cache ===========
       # Load Golang cache build from GitHub
       # Cache dependencies and build outputs in GitHub Actions
@@ -173,13 +177,11 @@ jobs:
             ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.name }}-
             ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
             ${{ runner.os }}-go-
-
       - name: Create ${{ matrix.name }} cache directory
         if: ${{ steps.cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           mkdir -p /tmp/.cache/${{ matrix.name }}
-
       # Import GitHub's cache build to docker cache
       - name: Copy ${{ matrix.name }} Golang cache to docker cache
         uses: docker/build-push-action@v2.10.0
@@ -213,7 +215,6 @@ jobs:
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.tag.outputs.tag }}
-
       # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
@@ -236,7 +237,6 @@ jobs:
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.tag.outputs.tag }}
-
       - name: CI Image Releases digests
         if: ${{ github.event_name != 'pull_request_target' }}
         shell: bash
@@ -244,7 +244,6 @@ jobs:
           mkdir -p image-digest/
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
-
       # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
@@ -263,7 +262,6 @@ jobs:
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.tag.outputs.tag }}
-
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
         uses: docker/build-push-action@v2
@@ -275,6 +273,7 @@ jobs:
           push: ${{ steps.tag.outputs.push }}
           platforms: linux/amd64
           github-token: ${{ secrets.WELAN_PAT }}
+          outputs: type=tar,dest=/tmp/${{ matrix.name }}.tar
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
           build-args: |
@@ -282,7 +281,6 @@ jobs:
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.tag.outputs.tag }}
-
       - name: CI Image Releases digests
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
@@ -290,13 +288,20 @@ jobs:
           mkdir -p image-digest/
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
-
       # Upload artifact digests
       - name: Upload artifact digests
         uses: actions/upload-artifact@v3.0.0
         with:
           name: image-digest ${{ matrix.name }}
           path: image-digest
+          retention-days: 1
+
+      # Upload artifact images tar
+      - name: Upload artifact image tar
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: image-tar ${{ matrix.name }}
+          path: /tmp/${{ matrix.name }}.tar
           retention-days: 1
 
       # =============  restore cache ===========
@@ -324,7 +329,52 @@ jobs:
           if [ -f /tmp/docker-cache-${{ matrix.name }}/tmp/go-pkg-cache.tar.gz ]; then
             cp /tmp/docker-cache-${{ matrix.name }}/tmp/go-pkg-cache.tar.gz /tmp/.cache/${{ matrix.name }}/
           fi
+  e2e-kind:
+    name: e2e-Kind
+    if: ${{ needs.build_and_push_prs.outputs.e2e == 'true' }}
+    runs-on: ubuntu-latest
+    needs: build_and_push_prs
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
+      - name: Setup Golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+        id: go
+
+      - name: Install Tools
+        run: |
+          # install kind/p2ctl/helm/ginkgo
+          cd test && make install-tools
+      - name: Init Kind Cluster
+        run: |
+          cd test && make kind-init INSTALL_MACVLAN=true SINGE_NODE=false
+      - name: Download image
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.name }}
+          path: /tmp/${{ matrix.name }}
+
+      - name: Load Image to Kind
+        run: |
+          make load-image-to-kind E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
+      - name: Helm Install Spiderpool
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          shell: bash
+          command: |
+            make apply-chart-to-kind
+      - name: Run e2e
+        run: |
+          make e2e
+      - name: Clean Up
+        run: |
+          make kind-clean E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
   image-digests:
     name: Display Digests
     runs-on: ubuntu-latest
@@ -334,7 +384,6 @@ jobs:
         shell: bash
         run: |
           mkdir -p image-digest/
-
       - name: Download digests of all images built
         uses: actions/download-artifact@v3.0.0
         with:

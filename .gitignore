@@ -85,3 +85,5 @@ bin
 # openapi tmp path
 _openapi_tmp/
 
+# controller-gen tmp path
+.controller_gen_tmp

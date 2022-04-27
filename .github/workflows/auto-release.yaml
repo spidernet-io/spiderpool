@@ -44,11 +44,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ steps.get_ref.get_ref.outputs.tag }}
+          ref: ${{ steps.get_ref.outputs.tag }}
 
       - name: Check Version
         run: |
-          TagVersion="${{ steps.get_ref.get_ref.outputs.tag }}"
+          TagVersion="${{ steps.get_ref.outputs.tag }}"
           RecordVersion=` cat VERSION  | tr -d ' ' | tr -d '\n' `
           if [ "$RecordVersion" != "$TagVersion" ] ; then
             echo "error, version $RecordVersion of '/VERSION' is different with Tag $TagVersion "
@@ -56,7 +56,7 @@ jobs:
           fi
           #no need to check chart version, which will auto update to /VERSION by CI
 
-build-release-image:
+  build-release-image:
     needs: get-tag
     uses: ./.github/workflows/call-release-image.yaml
     with:

@@ -83,7 +83,7 @@ jobs:
       # version checking, YAML schema validation on 'Chart.yaml', YAML linting on 'Chart.yaml'
       # and 'values.yaml', and maintainer validation
       - name: Run chart-testing (lint)
-        run: ct lint --debug --target-branch ${{ env.DEFAULT_BRANCH }}
+        run: ct lint --debug --target-branch=${{ env.DEFAULT_BRANCH }} --check-version-increment=false
 
       # https://github.com/helm/kind-action
       - name: Create Kind cluster

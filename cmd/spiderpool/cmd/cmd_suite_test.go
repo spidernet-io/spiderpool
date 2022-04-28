@@ -6,6 +6,7 @@ package cmd_test
 import (
 	"net"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,8 +35,13 @@ var _ = BeforeSuite(func() {
 				return
 			}
 			By(err.Error())
+			return
 		}
 	}()
+
+	// [must] give client some time to wait for the unix server starts completely
+	// or the client will request fail cause the server doesn't serve successfully.
+	time.Sleep(time.Second)
 })
 
 var _ = AfterSuite(func() {

@@ -8,37 +8,45 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 )
 
-type unixPostAgentIpamIp struct{}
+// Singleton
+var (
+	unixPostAgentIpamIp    = &_unixPostAgentIpamIp{}
+	unixDeleteAgentIpamIp  = &_unixDeleteAgentIpamIp{}
+	unixPostAgentIpamIps   = &_unixPostAgentIpamIps{}
+	unixDeleteAgentIpamIps = &_unixDeleteAgentIpamIps{}
+)
+
+type _unixPostAgentIpamIp struct{}
 
 // Handle handles POST requests for /ipam/ip .
-func (g *unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
+func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return daemonset.NewPostIpamIPOK()
 }
 
-type unixDeleteAgentIpamIp struct{}
+type _unixDeleteAgentIpamIp struct{}
 
 // Handle handles DELETE requests for /ipam/ip .
-func (g *unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
+func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return daemonset.NewDeleteIpamIPOK()
 }
 
-type unixPostAgentIpamIps struct{}
+type _unixPostAgentIpamIps struct{}
 
 // Handle handles POST requests for /ipam/ips .
-func (g *unixPostAgentIpamIps) Handle(params daemonset.PostIpamIpsParams) middleware.Responder {
+func (g *_unixPostAgentIpamIps) Handle(params daemonset.PostIpamIpsParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return daemonset.NewPostIpamIpsOK()
 }
 
-type unixDeleteAgentIpamIps struct{}
+type _unixDeleteAgentIpamIps struct{}
 
 // Handle handles DELETE requests for /ipam/ips .
-func (g *unixDeleteAgentIpamIps) Handle(params daemonset.DeleteIpamIpsParams) middleware.Responder {
+func (g *_unixDeleteAgentIpamIps) Handle(params daemonset.DeleteIpamIpsParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return daemonset.NewDeleteIpamIpsOK()

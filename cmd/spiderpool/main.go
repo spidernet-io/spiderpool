@@ -5,7 +5,7 @@ package main
 
 import (
 	"github.com/containernetworking/cni/pkg/skel"
-	cniVersion "github.com/containernetworking/cni/pkg/version"
+	cniSpecVersion "github.com/containernetworking/cni/pkg/version"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 )
 
@@ -13,6 +13,6 @@ var version string
 
 func main() {
 	skel.PluginMain(cmd.CmdAdd, nil, cmd.CmdDel,
-		cniVersion.All,
+		cniSpecVersion.PluginSupports("0.3.1"),
 		"Spiderpool IPAM"+version)
 }

@@ -33,11 +33,11 @@ func NewAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 	}
 
 	// daemonset API
-	api.ConnectivityGetIpamHealthyHandler = &unixGetAgentHealth{}
-	api.DaemonsetPostIpamIPHandler = &unixPostAgentIpamIp{}
-	api.DaemonsetDeleteIpamIPHandler = &unixDeleteAgentIpamIp{}
-	api.DaemonsetPostIpamIpsHandler = &unixPostAgentIpamIps{}
-	api.DaemonsetDeleteIpamIpsHandler = &unixDeleteAgentIpamIps{}
+	api.ConnectivityGetIpamHealthyHandler = unixGetAgentHealth
+	api.DaemonsetPostIpamIPHandler = unixPostAgentIpamIp
+	api.DaemonsetDeleteIpamIPHandler = unixDeleteAgentIpamIp
+	api.DaemonsetPostIpamIpsHandler = unixPostAgentIpamIps
+	api.DaemonsetDeleteIpamIpsHandler = unixDeleteAgentIpamIps
 
 	// new agent OpenAPI server with api
 	srv := agentOpenAPIServer.NewServer(api)

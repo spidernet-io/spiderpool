@@ -8,10 +8,13 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/connectivity"
 )
 
-type unixGetAgentHealth struct{}
+// Singleton
+var unixGetAgentHealth = &_unixGetAgentHealth{}
+
+type _unixGetAgentHealth struct{}
 
 // Handle handles GET requests for /ipam/healthy .
-func (g *unixGetAgentHealth) Handle(params connectivity.GetIpamHealthyParams) middleware.Responder {
+func (g *_unixGetAgentHealth) Handle(params connectivity.GetIpamHealthyParams) middleware.Responder {
 	// TODO: return the http status code with logic.
 
 	return connectivity.NewGetIpamHealthyOK()

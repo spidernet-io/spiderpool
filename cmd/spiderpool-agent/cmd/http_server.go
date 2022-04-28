@@ -29,9 +29,9 @@ func newAgentOpenAPIHttpServer() (*agentOpenAPIServer.Server, error) {
 	}
 
 	// runtime API
-	api.RuntimeGetRuntimeStartupHandler = &httpGetAgentStartup{}
-	api.RuntimeGetRuntimeReadinessHandler = &httpGetAgentReadiness{}
-	api.RuntimeGetRuntimeLivenessHandler = &httpGetAgentLiveness{}
+	api.RuntimeGetRuntimeStartupHandler = httpGetAgentStartup
+	api.RuntimeGetRuntimeReadinessHandler = httpGetAgentReadiness
+	api.RuntimeGetRuntimeLivenessHandler = httpGetAgentLiveness
 
 	// new agent OpenAPI server with api
 	srv := agentOpenAPIServer.NewServer(api)

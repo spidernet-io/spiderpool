@@ -5,9 +5,12 @@ package cmd
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
@@ -16,10 +19,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// CmdDel follows CNI SPEC cmdDel.
-func CmdDel(args *skel.CmdArgs) error {
-	// new cmdDel logger
-	logger := logutils.LoggerFile.Named(BinNamePlugin + "-Del")
+var BinNamePlugin = filepath.Base(os.Args[0])
+
+// CmdAdd follows CNI SPEC cmdAdd.
+func CmdAdd(args *skel.CmdArgs) error {
+	// new cmdAdd logger
+	logger := logutils.LoggerFile.Named(BinNamePlugin + "-Add")
 
 	conf := types.NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); nil != err {
@@ -51,11 +56,15 @@ func CmdDel(args *skel.CmdArgs) error {
 	}
 
 	// POST /ipam/ip
-	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(daemonset.NewDeleteIpamIPParams())
+	_, err = spiderpoolAgentAPI.Daemonset.PostIpamIP(daemonset.NewPostIpamIPParams())
 	if nil != err {
 		logger.Error(err.Error())
 		return err
 	}
 
-	return nil
+	result := &current.Result{
+		CNIVersion: conf.CNIVersion,
+	}
+
+	return types.PrintResult(result, conf.CNIVersion)
 }

@@ -12,8 +12,8 @@ import (
 	agentOpenAPIRestapi "github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi"
 )
 
-// newAgentOpenAPIServer instantiates a new instance of the agent OpenAPI server on the http.
-func newAgentOpenAPIServer() (*agentOpenAPIServer.Server, error) {
+// newAgentOpenAPIHttpServer instantiates a new instance of the agent OpenAPI server on the http.
+func newAgentOpenAPIHttpServer() (*agentOpenAPIServer.Server, error) {
 	// read yaml spec
 	swaggerSpec, err := loads.Embedded(agentOpenAPIServer.SwaggerJSON, agentOpenAPIServer.FlatSwaggerJSON)
 	if nil != err {

@@ -23,9 +23,11 @@ type AgentContext struct {
 	HttpPort       string
 	EnabledPprof   bool
 	EnabledMetric  bool
+	SocketPath     string
 
 	// handler
 	HttpServer *server.Server
+	UnixServer *server.Server
 }
 
 // BindAgentDaemonFlags bind agent cli daemon flags
@@ -36,11 +38,17 @@ func (ac *AgentContext) BindAgentDaemonFlags(flags *pflag.FlagSet) {
 
 // RegisterEnv set the env to AgentConfiguration
 func (ac *AgentContext) RegisterEnv() {
-	agentPort := os.Getenv("SPIDERPOOL_HTTP_PORT")
-	if agentPort == "" {
+	agentPort, ok := os.LookupEnv("SPIDERPOOL_HTTP_PORT")
+	if !ok {
 		agentPort = "5710"
 	}
 	ac.HttpPort = agentPort
+
+	socketPath, ok := os.LookupEnv("SPIDER_AGENT_SOCKET_PATH")
+	if !ok {
+		socketPath = "/var/tmp/spiderpool.sock"
+	}
+	ac.SocketPath = socketPath
 
 	// TODO
 	//os.Getenv("SPIDERPOOL_METRIC_HTTP_PORT")

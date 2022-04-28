@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,16 +20,33 @@ func DaemonMain() {
 	go WatchSignal(sigCh)
 
 	// new agent http server
-	srv, err := newAgentOpenAPIServer()
+	httpServer, err := newAgentOpenAPIHttpServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-	agentContext.HttpServer = srv
+	agentContext.HttpServer = httpServer
 
 	// serve agent http
 	go func() {
-		if err = srv.Serve(); nil != err {
+		if err = httpServer.Serve(); nil != err {
 			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatal(err.Error())
+		}
+	}()
+
+	// new agent unix server
+	unixServer, err := NewAgentOpenAPIUnixServer()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	agentContext.UnixServer = unixServer
+
+	// serve agent unix
+	go func() {
+		if err = unixServer.Serve(); nil != err {
+			if err == net.ErrClosed {
 				return
 			}
 			logger.Fatal(err.Error())
@@ -50,7 +68,14 @@ func WatchSignal(sigCh chan os.Signal) {
 		// shut down http server
 		if nil != agentContext.HttpServer {
 			if err := agentContext.HttpServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("shutting down agent server failed: %s", err)
+				logger.Sugar().Errorf("shutting down agent http server failed: %s", err)
+			}
+		}
+
+		// shut down unix server
+		if nil != agentContext.UnixServer {
+			if err := agentContext.UnixServer.Shutdown(); nil != err {
+				logger.Sugar().Errorf("shutting down agent unix server failed: %s", err)
 			}
 		}
 

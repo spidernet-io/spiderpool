@@ -3,6 +3,7 @@ module github.com/spidernet-io/spiderpool
 go 1.17
 
 require (
+	github.com/containernetworking/cni v1.0.1
 	github.com/go-openapi/errors v0.20.2
 	github.com/go-openapi/loads v0.21.1
 	github.com/go-openapi/runtime v0.23.3
@@ -27,6 +28,8 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
+require github.com/containernetworking/plugins v1.1.1
+
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
@@ -47,6 +50,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

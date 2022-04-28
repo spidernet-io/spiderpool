@@ -27,7 +27,7 @@ func GenMarkDownCmd(component string, rootCmd *cobra.Command, logger *zap.Logger
 		},
 	}
 
-	genMarkDownCmd.PersistentFlags().StringVar(&markdownPath, "markdown-path", "", "generate markdown for cli "+component)
+	genMarkDownCmd.Flags().StringVar(&markdownPath, "markdown-path", "", "generate markdown for cli "+component)
 	err := genMarkDownCmd.MarkPersistentFlagRequired("markdown-path")
 	if nil != err {
 		logger.Error(err.Error())

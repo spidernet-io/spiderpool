@@ -1,9 +1,10 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-// Package v1 contains API Schema definitions for the spiderpool v1 API group
 // +kubebuilder:object:generate=true
 // +groupName=spiderpool.spidernet.io
+
+// Package v1 contains API Schema definitions for the spiderpool v1 API group
 package v1
 
 import (

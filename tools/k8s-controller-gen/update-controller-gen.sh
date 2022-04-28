@@ -31,7 +31,7 @@ manifests_gen() {
 
   controller-gen \
   crd webhook rbac:roleName="spiderpool" \
-  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1" \
+  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1;${PWD}/${PROJECT_ROOT}/pkg/webhook" \
   output:crd:artifacts:config="${output_dir}/crds" \
   output:webhook:artifacts:config="${output_dir}/webhook" \
   output:rbac:artifacts:config="${output_dir}/rbac"

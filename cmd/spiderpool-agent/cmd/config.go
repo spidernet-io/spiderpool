@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -23,6 +24,11 @@ type AgentContext struct {
 	HttpPort       string
 	EnabledPprof   bool
 	EnabledMetric  bool
+
+	// ControllerManagerCtx is the context that can be used during shutdown.
+	// It will be cancelled after receiving an interrupt or termination signal.
+	ControllerManagerCtx    context.Context
+	ControllerManagerCancel context.CancelFunc
 
 	// handler
 	HttpServer *server.Server

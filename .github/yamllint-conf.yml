@@ -11,6 +11,7 @@ yaml-files:
 ignore: |
   vendor/
   charts/
+  test/yamls
 
 rules:
   line-length: disable

@@ -1,0 +1,28 @@
+{
+  "name": "macvlan-net",
+  "cniVersion": "0.3.1",
+  "plugins": [
+    {
+      "name": "macvlan",
+      "type": "macvlan",
+      "mode": "bridge",
+      "master": "eth0",
+      "ipam": {
+           {%- if type == "whereabouts" %}
+           "type": "{{ type }}",
+           "range": "172.18.0.0/16",
+           "range_start": "172.18.0.100",
+           "range_end": "172.18.0.200",
+           "log_level": "debug",
+           "log_file": "/var/log/{{ type }}.log",
+           "gateway": "172.18.0.1",
+           "routes": [
+               { "dst": "0.0.0.0/0" }
+           ]
+           {%- else %}
+           "type": "{{ type }}"
+           {%- endif %}
+       }
+    }
+  ]
+}

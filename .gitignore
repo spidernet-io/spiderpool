@@ -87,3 +87,8 @@ _openapi_tmp/
 
 # controller-gen tmp path
 .controller_gen_tmp
+
+# e2e tmp path
+tmp/
+test/.tmp
+

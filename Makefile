@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-include Makefile.defs
+include Makefile.defs test/Makefile.defs
 
 all: build-bin install-bin
 
@@ -22,6 +22,34 @@ install-bin:
 install-bash-completion:
 	$(QUIET)$(INSTALL) -m 0755 -d $(DESTDIR_BIN)
 	for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i install-bash-completion; done
+
+
+# ============ build-load-image ============
+install: build-image-to-tar load-image-to-kind apply-chart-to-kind
+.PHONY: build-image-to-tar
+build-image-to-tar:
+	@echo "Build Image with tag: $(GIT_COMMIT_VERSION)"
+	@for i in $(IMAGES); do \
+		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) --build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) --build-arg VERSION=$(GIT_COMMIT_VERSION) --file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile --output type=tar,dest=$(ROOT_DIR)/tmp/"$${i##*/}"-race.tar --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
+		echo "$${i##*/} image-tar build success, path: $(ROOT_DIR)/tmp/$${i##*/}-race.tar" ; \
+	done
+
+.PHONY: load-image-to-kind
+load-image-to-kind:
+	@echo "Load Image to kind..."
+	@for i in $(IMAGES); do \
+        cat $(ROOT_DIR)/tmp/"$${i##*/}"-race.tar | docker import - $$i-ci:$(GIT_COMMIT_VERSION)-race; \
+    	kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
+    done;
+
+#=============apply-chart=================#
+.PHONY: apply-chart-to-kind
+apply-chart-to-kind:
+	helm install $(RELEASE_NAME) charts/spiderpool \
+	--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
+	--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
+	--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
+	--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
 
 clean:
 	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
@@ -133,13 +161,16 @@ check_test_label:
 .PHONY: unitest-tests
 unitest-tests: check_test_label
 	@echo "run unitest-tests"
-	$(QUIET) $(ROOT_DIR)/ginkgo.sh   \
+	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh   \
 		--cover --coverprofile=./coverage.out --covermode set  \
 		--json-report ./testreport.json \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=30s \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
+.PHONY: e2e
+e2e:
+	make -C test e2e
 .PHONY: manifests
 manifests:
 	@echo "Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects."
@@ -164,8 +195,6 @@ dev-doctor:
 	$(QUIET)$(GO) version 2>/dev/null || ( echo "go not found, see https://golang.org/doc/install" ; false )
 	@$(ECHO_CHECK) contrib/scripts/check-cli.sh
 	$(QUIET) contrib/scripts/check-cli.sh
-
-
 
 #============ tools ====================
 

@@ -40,15 +40,15 @@ jobs:
     outputs:
       imageTag: ${{ steps.tag.outputs.tag }}
       e2e: ${{ steps.tag.outputs.e2e }}
-      strategy:
-        matrix:
-          include:
-            - name: spiderpool-agent
-              dockerfile: ./images/spiderpool-agent/Dockerfile
-              context: ./
-            - name: spiderpool-controller
-              dockerfile: ./images/spiderpool-controller/Dockerfile
-              context: ./
+    strategy:
+      matrix:
+        include:
+          - name: spiderpool-agent
+            dockerfile: ./images/spiderpool-agent/Dockerfile
+            context: ./
+          - name: spiderpool-controller
+            dockerfile: ./images/spiderpool-controller/Dockerfile
+            context: ./
 
     steps:
       - name: Set up Docker Buildx
@@ -251,7 +251,6 @@ jobs:
 
       # Upload artifact race images tar
       - name: Upload artifact race image tar
-        if: ${{ github.event_name != 'pull_request_target' }}
         uses: actions/upload-artifact@v3.0.0
         with:
           name: image-tar-${{ matrix.name }}
@@ -288,13 +287,6 @@ jobs:
     name: Display Digests
     runs-on: ubuntu-latest
     needs: build_and_push_prs
-    strategy:
-      matrix:
-        include:
-          - name: spiderpool-agent
-            context: ./
-          - name: spiderpool-controller
-            context: ./
     steps:
       - name: Downloading Image Digests
         shell: bash
@@ -305,7 +297,13 @@ jobs:
         uses: actions/download-artifact@v3.0.0
         with:
           path: image-digest/
-          name: image-digest-${{ matrix.name }}
+          name: image-digest-spiderpool-agent
+
+      - name: Download digests of all images built
+        uses: actions/download-artifact@v3.0.0
+        with:
+          path: image-digest/
+          name: image-digest-spiderpool-controller
 
       - name: Image Digests Output
         shell: bash

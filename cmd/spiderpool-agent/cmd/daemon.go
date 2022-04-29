@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,12 +19,26 @@ func DaemonMain() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go WatchSignal(sigCh)
 
+	logger.Info("Begin to initialize spiderpool-agent controller manager.")
+	mgr, err := newControllerManager()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	agentContext.ControllerManagerCtx, agentContext.ControllerManagerCancel = context.WithCancel(context.Background())
+
 	// new agent http server
 	srv, err := newAgentOpenAPIServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	agentContext.HttpServer = srv
+
+	go func() {
+		logger.Info("Starting spiderpool-agent controller manager.")
+		if err := mgr.Start(agentContext.ControllerManagerCtx); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}()
 
 	// serve agent http
 	go func() {
@@ -46,6 +61,11 @@ func WatchSignal(sigCh chan os.Signal) {
 		logger.Sugar().Warnw("received shutdown", "signal", sig)
 
 		// TODO: filter some signals
+
+		// TODO
+		if agentContext.ControllerManagerCancel != nil {
+			agentContext.ControllerManagerCancel()
+		}
 
 		// shut down http server
 		if nil != agentContext.HttpServer {

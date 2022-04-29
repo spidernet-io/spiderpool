@@ -20,3 +20,7 @@
         # ADDR=10.6.0.1
         # export https_proxy=http://${ADDR}:7890 http_proxy=http://${ADDR}:7890
         # make e2e
+
+    could run specified case
+
+        # make e2e -e E2E_GINKGO_LABELS="lable1,label2"

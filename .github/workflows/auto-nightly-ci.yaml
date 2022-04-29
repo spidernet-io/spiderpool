@@ -8,7 +8,6 @@ on:
   schedule:
     # each day
     - cron: "0 20 * * *"
-
   pull_request_target:
     types:
       - opened

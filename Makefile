@@ -171,6 +171,7 @@ unitest-tests: check_test_label
 .PHONY: e2e
 e2e:
 	make -C test e2e
+
 .PHONY: manifests
 manifests:
 	@echo "Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects."
@@ -192,9 +193,9 @@ gofmt: ## Run gofmt on Go source files in the repository.
 
 .PHONY: dev-doctor
 dev-doctor:
-	$(QUIET)$(GO) version 2>/dev/null || ( echo "go not found, see https://golang.org/doc/install" ; false )
-	@$(ECHO_CHECK) contrib/scripts/check-cli.sh
-	$(QUIET) contrib/scripts/check-cli.sh
+	@ $(GO) version 2>/dev/null || ( echo "go not found, see https://golang.org/doc/install" ; false )
+	@ JUST_CLI_CHECK=true test/scripts/install-tools.sh
+	@ echo "all tools ready"
 
 #============ tools ====================
 

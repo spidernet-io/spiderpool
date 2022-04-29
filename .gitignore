@@ -89,7 +89,5 @@ _openapi_tmp/
 .controller_gen_tmp
 
 # e2e tmp path
-tmp/
-test/.tmp
 test/.cluster
 test/.download

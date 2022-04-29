@@ -35,6 +35,7 @@ jobs:
     outputs:
       ref: ${{ steps.result.outputs.ref }}
       e2e_labels: ${{ steps.get_ref.outputs.e2e_labels }}
+      unitest: ${{ steps.get_ref.outputs.unitest }}
     steps:
       - name: Get Ref
         id: get_ref
@@ -43,22 +44,28 @@ jobs:
             echo "call by self workflow_dispatch"
             echo ::set-output name=tag::${{ github.event.inputs.ref }}
             echo ::set-output name=e2e_labels::${{ github.event.inputs.e2e_labels }}
+            echo ::set-output name=unitest::true
           elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"
             echo ::set-output name=tag::${{ github.sha }}
             echo ::set-output name=push::false
             echo ::set-output name=e2e_labels::smoke
+            # do it in another workflow
+            echo ::set-output name=unitest::false
           elif ${{ github.event_name == 'pull_request_target' }} ; then
             echo "trigger by pull_request_target"
             echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
             echo ::set-output name=push::false
             echo ::set-output name=e2e_labels::smoke
+            # do it in another workflow
+            echo ::set-output name=unitest::false
           else
             # use main sha for ci image tag
             echo "trigger by schedule"
             echo ::set-output name=tag::main
             echo ::set-output name=push::false
             echo ::set-output name=e2e_labels::smoke
+            echo ::set-output name=unitest::true
           fi
 
       - name: Checkout code
@@ -75,13 +82,14 @@ jobs:
 
   call_unitest:
     needs: get_ref
+    if: ${{ needs.get_ref.outputs.unitest == 'true' }}
     # forbid to specify version for local workflow, GITHUB_REF Same as the caller workflow
     uses: ./.github/workflows/lint-golang.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
 
   call_build_ci_image:
-    needs: [call_unitest, get_ref]
+    needs: [get_ref]
     # get  image:${{ needs.get_ref.outputs.ref }} and image-ci:${{ needs.get_ref.outputs.ref }}
     uses: ./.github/workflows/build-image-ci.yaml
     with:

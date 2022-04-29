@@ -11,33 +11,34 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/cnicommon"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	k8sTypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"go.uber.org/zap"
 )
 
 // CmdDel follows CNI SPEC cmdDel.
 func CmdDel(args *skel.CmdArgs) error {
 	// new cmdDel logger
-	logger := logutils.LoggerFile.Named(BinNamePlugin + "-Del")
+	logger := logutils.LoggerFile.Named(BinNamePlugin)
 
 	conf := types.NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); nil != err {
-		logger.Error(err.Error(), zap.String("ContainerID", args.ContainerID))
+		logger.Error(err.Error(), zap.String("cmd", "Del"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
 
-	k8sArgs := k8sTypes.K8sArgs{}
+	k8sArgs := cnicommon.K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		logger.Error(err.Error(), zap.String("ContainerID", args.ContainerID))
+		logger.Error(err.Error(), zap.String("cmd", "Del"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
 
 	// register some args into logger
-	logger = logger.With(zap.String("ContainerID", args.ContainerID),
-		zap.String("", string(k8sArgs.K8S_POD_UID)),
-		zap.String("K8S_POD_NAME", string(k8sArgs.K8S_POD_NAME)),
-		zap.String("", string(k8sArgs.K8S_POD_NAMESPACE)))
+	logger = logger.With(zap.String("cmd", "Del"),
+		zap.String("ContainerID", args.ContainerID),
+		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
+		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
+		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)))
 	logger.Debug("Generate IPAM configuration")
 
 	// new unix client
@@ -50,7 +51,7 @@ func CmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	// POST /ipam/ip
+	// DELETE /ipam/ip
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(daemonset.NewDeleteIpamIPParams())
 	if nil != err {
 		logger.Error(err.Error())

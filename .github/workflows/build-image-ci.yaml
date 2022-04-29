@@ -224,7 +224,7 @@ jobs:
           push: ${{ steps.tag.outputs.push }}
           platforms: linux/amd64
           github-token: ${{ secrets.WELAN_PAT }}
-          outputs: type=tar,dest=/tmp/${{ matrix.name }}.tar
+          outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
           build-args: |

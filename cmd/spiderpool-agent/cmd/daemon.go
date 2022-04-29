@@ -27,7 +27,7 @@ func DaemonMain() {
 	agentContext.ControllerManagerCtx, agentContext.ControllerManagerCancel = context.WithCancel(context.Background())
 
 	// new agent http server
-	srv, err := newAgentOpenAPIServer()
+	srv, err := newAgentOpenAPIHttpServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}

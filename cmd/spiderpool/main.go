@@ -4,13 +4,15 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"github.com/containernetworking/cni/pkg/skel"
+	cniSpecVersion "github.com/containernetworking/cni/pkg/version"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 )
 
+var version string
+
 func main() {
-	fmt.Println("I am spiderpool ipam plugin")
-
-	time.Sleep(100 * time.Hour)
-
+	skel.PluginMain(cmd.CmdAdd, nil, cmd.CmdDel,
+		cniSpecVersion.PluginSupports("0.3.1"),
+		"Spiderpool IPAM"+version)
 }

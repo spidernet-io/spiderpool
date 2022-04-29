@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -13,6 +14,19 @@ import (
 )
 
 var controllerContext = new(ControllerContext)
+
+type envConf struct {
+	envName      string
+	defaultValue string
+	required     bool
+	associateKey *string
+}
+
+// EnvInfo collects the env and relevant agentContext properties.
+// 'required' that means if there's no env value and we set 'required' true, we use the default value.
+var EnvInfo = []envConf{
+	{"SPIDERPOOL_HTTP_PORT", "5720", true, &controllerContext.HttpPort},
+}
 
 type ControllerContext struct {
 	// flags
@@ -46,20 +60,16 @@ func (cc *ControllerContext) BindControllerDaemonFlags(flags *pflag.FlagSet) {
 
 // RegisterEnv set the env to GlobalConfiguration
 func (cc *ControllerContext) RegisterEnv() {
-	controllerPort := os.Getenv("SPIDERPOOL_HTTP_PORT")
-	if controllerPort == "" {
-		controllerPort = "5720"
-	}
-	cc.HttpPort = controllerPort
+	for i := range EnvInfo {
+		env, ok := os.LookupEnv(EnvInfo[i].envName)
+		if ok {
+			*(EnvInfo[i].associateKey) = strings.TrimSpace(env)
+		}
 
-	// TODO
-	//os.Getenv("SPIDERPOOL_METRIC_HTTP_PORT")
-	//os.Getenv("SPIDERPOOL_LOG_LEVEL")
-	//os.Getenv("SPIDERPOOL_ENABLED_PPROF")
-	//os.Getenv("SPIDERPOOL_ENABLED_METRIC")
-	//os.Getenv("SPIDERPOOL_GC_IPPOOL_ENABLED")
-	//os.Getenv("SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED")
-	//os.Getenv("SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY")
-	//os.Getenv("SPIDERPOOL_GC_EVICTED_POD_IP_ENABLED")
-	//os.Getenv("SPIDERPOOL_GC_EVICTED_POD_IP_DELAY")
+		// if no env and required, set it to default value.
+		// if no env and none-required, just use the empty value.
+		if !ok && EnvInfo[i].required {
+			*(EnvInfo[i].associateKey) = EnvInfo[i].defaultValue
+		}
+	}
 }

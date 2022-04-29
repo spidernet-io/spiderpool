@@ -26,8 +26,12 @@ CNI_PACKAGE_VERSION ?= v0.8.5
 
 #============ ginkgo-custom-flag ====================
 E2E_CLUSTER_NAME ?= spider
+
 # multi flag separated by commas,like setup,ippool
 E2E_GINKGO_LABELS ?=
+
+E2E_EXT_ARGS ?=
+
 E2E_TIMEOUT ?= 60m
 
 #============Image version===========

@@ -65,10 +65,10 @@ prepare:
 #============ e2e ====================
 .PHONY: e2e-test
 e2e-test:
-	$(QUIET)@echo "Run E2E"
+	$(QUIET)@echo "Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} "
 	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 		--race --timeout=$(E2E_TIMEOUT) \
-		--label-filter="$(E2E_GINKGO_LABELS)" \
+		--label-filter="$(E2E_GINKGO_LABELS)"  -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
 		-r e2e/* -- --ipFamily=$(E2E_IP_FAMILY) --kubeconfig=$(E2E_KUBECONFIG) ;  \
 		if (($$?==0)) ; then \
 		  	echo "succeeded to run all test" ; \

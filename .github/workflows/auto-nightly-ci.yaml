@@ -104,12 +104,12 @@ jobs:
 
   call_e2e_test_smoke:
     runs-on: ubuntu-latest
-    needs: [call_build_ci_image, get_ref]
+    needs: [ call_build_ci_image, get_ref, call_release_chart ]
     steps:
       - name: Prepare
         run: |
           echo "ref: ${{ needs.get_ref.outputs.ref }} "
-          echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
+          echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}"
           echo "===== image "
           echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
           echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
@@ -117,7 +117,6 @@ jobs:
           echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
           echo "===== chart "
           echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
-
 
       - name: Checkout Code
         uses: actions/checkout@v2

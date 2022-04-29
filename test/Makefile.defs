@@ -1,21 +1,30 @@
 #============ e2e-kind-config ====================
 # iptables or ipvs, default iptables
 E2E_KUBE_PROXY_MODE ?= iptables
+
 # ipv4 or ipv6 or dual, default ipv4
 E2E_IP_FAMILY ?= ipv4
+
 # true is one node cluster, false is three node cluster, default true
 E2E_SINGE_NODE ?= true
+
 # kubernetes version, default v1.22.1
 E2E_KIND_IMAGE_TAG ?= v1.22.1
+
 # disable default cni, default true
 E2E_DISABLE_DEFAULT_CNI ?= true
+
 INSTALL_MACVLAN ?= true
+
 INSTALL_WHEREABOUTS ?= true
+
 INSTALL_SPIDER ?= false
+
 INSTALL_MULTUS ?= true
 
+CNI_PACKAGE_VERSION ?= v0.8.5
+
 #============ ginkgo-custom-flag ====================
-E2E_KUBECONFIG = $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/.kube/config
 E2E_CLUSTER_NAME ?= spider
 # multi flag separated by commas,like setup,ippool
 E2E_GINKGO_LABELS ?=

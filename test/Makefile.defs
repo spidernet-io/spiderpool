@@ -12,6 +12,7 @@ E2E_DISABLE_DEFAULT_CNI ?= true
 INSTALL_MACVLAN ?= true
 INSTALL_WHEREABOUTS ?= true
 INSTALL_SPIDER ?= false
+INSTALL_MULTUS ?= true
 
 #============ ginkgo-custom-flag ====================
 E2E_KUBECONFIG = $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/.kube/config
@@ -19,6 +20,11 @@ E2E_CLUSTER_NAME ?= spider
 # multi flag separated by commas,like setup,ippool
 E2E_GINKGO_LABELS ?=
 E2E_TIMEOUT ?= 60m
+
+#============Image version===========
+IMAGE_MUTLUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:thick
+IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-amd64
+TEST_IMAGE_NAME := alpine
 
 #=============http_proxy=============
 http_proxy ?=

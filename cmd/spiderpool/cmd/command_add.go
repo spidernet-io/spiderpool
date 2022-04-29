@@ -28,18 +28,18 @@ func CmdAdd(args *skel.CmdArgs) error {
 
 	conf := types.NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); nil != err {
-		logger.Error(err.Error(), zap.String("cmd", "Add"), zap.String("ContainerID", args.ContainerID))
+		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
 
 	k8sArgs := cnicommon.K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		logger.Error(err.Error(), zap.String("cmd", "Add"), zap.String("ContainerID", args.ContainerID))
+		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
 
 	// register some args into logger
-	logger = logger.With(zap.String("cmd", "Add"),
+	logger = logger.With(zap.String("Action", "Add"),
 		zap.String("ContainerID", args.ContainerID),
 		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),

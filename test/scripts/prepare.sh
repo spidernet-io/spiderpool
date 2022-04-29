@@ -56,13 +56,41 @@ else
   echo "$1/tmp/cni-plugins-linux-amd64-v0.8.5.tgz exist, skip download..."
 fi
 
-# prepare whereabouts image
-IMAGE_NAME="ghcr.io/k8snetworkplumbingwg/whereabouts:latest-amd64"
-
-IMAGE_EXIST=$(docker images | grep ghcr.io/k8snetworkplumbingwg/whereabouts)
-if test -z "$IMAGE_EXIST"; then
-  echo "Image: $IMAGE_NAME not exist locally, will pull..."
-  docker pull $IMAGE_NAME
+if test -z "$IMAGE_MUTLUS"; then
+  echo "ERR: multus image tag  no specify, exit"
+  exit 1
 else
-  echo "Image: $IMAGE_NAME already exist locally"
+  echo "multus image tag: $IMAGE_MUTLUS"
 fi
+
+if test -z "$IMAGE_WHEREABOUTS"; then
+  echo "ERR: whereabouts use image tag no specify, exit"
+  exit 1
+else
+  echo "whereabouts use image tag: $IMAGE_WHEREABOUTS"
+fi
+
+if test -z "$TEST_IMAGE"; then
+  echo "ERR: test image tag no specify, exit"
+  exit 1
+else
+  echo "test image use: $TEST_IMAGE"
+fi
+
+# prepare image
+IMAGES="
+$IMAGE_MUTLUS \
+$IMAGE_WHEREABOUTS \
+$TEST_IMAGE"
+
+for image in $IMAGES
+do
+  SUFF_IMAGE=$(echo $image | awk -F ':' '{print $1}')
+  EXIST=$(docker images | grep $SUFF_IMAGE)
+  if test -z "$EXIST"; then
+    echo "Image: $image not exist locally, will pull..."
+    docker pull $image
+  else
+    echo "Image: $image already exist locally"
+  fi
+done

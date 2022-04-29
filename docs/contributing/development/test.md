@@ -24,5 +24,3 @@
     could run specified case
 
         # make e2e -e E2E_GINKGO_LABELS="lable1,label2"
-
-

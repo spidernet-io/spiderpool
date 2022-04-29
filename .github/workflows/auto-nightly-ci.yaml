@@ -2,7 +2,7 @@ name: Auto Nightly CI
 
 env:
   CLUSTER_NAME: spider
-  TIME_OUT: 60s
+  E2E_TIME_OUT: 60m
 
 on:
   schedule:
@@ -106,7 +106,6 @@ jobs:
   call_e2e_test_smoke:
     runs-on: ubuntu-latest
     needs: [call_build_ci_image, get_ref]
-    timeout-minutes: ${{ env.TIME_OUT }}
     steps:
       - name: Prepare
         run: |
@@ -167,7 +166,7 @@ jobs:
       - name: Run e2e
         run: |
           echo ${{ github.event.inputs.labels }}
-          make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.TIME_OUT }}
+          make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
 
       - name: Clean Up
         run: |

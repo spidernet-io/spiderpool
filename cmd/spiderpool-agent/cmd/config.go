@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -39,6 +40,11 @@ type AgentContext struct {
 	EnabledPprof   bool
 	EnabledMetric  bool
 	SocketPath     string
+
+	// ControllerManagerCtx is the context that can be used during shutdown.
+	// It will be cancelled after receiving an interrupt or termination signal.
+	ControllerManagerCtx    context.Context
+	ControllerManagerCancel context.CancelFunc
 
 	// handler
 	HttpServer *server.Server

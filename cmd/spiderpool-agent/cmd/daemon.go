@@ -4,7 +4,7 @@
 package cmd
 
 import (
-	"net"
+	"context"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,34 +19,31 @@ func DaemonMain() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go WatchSignal(sigCh)
 
-	// new agent http server
-	httpServer, err := newAgentOpenAPIHttpServer()
+	logger.Info("Begin to initialize spiderpool-agent controller manager.")
+	mgr, err := newControllerManager()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-	agentContext.HttpServer = httpServer
+	agentContext.ControllerManagerCtx, agentContext.ControllerManagerCancel = context.WithCancel(context.Background())
 
-	// serve agent http
+	// new agent http server
+	srv, err := newAgentOpenAPIServer()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	agentContext.HttpServer = srv
+
 	go func() {
-		if err = httpServer.Serve(); nil != err {
-			if err == http.ErrServerClosed {
-				return
-			}
+		logger.Info("Starting spiderpool-agent controller manager.")
+		if err := mgr.Start(agentContext.ControllerManagerCtx); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}()
 
-	// new agent unix server
-	unixServer, err := NewAgentOpenAPIUnixServer()
-	if nil != err {
-		logger.Fatal(err.Error())
-	}
-	agentContext.UnixServer = unixServer
-
-	// serve agent unix
+	// serve agent http
 	go func() {
-		if err = unixServer.Serve(); nil != err {
-			if err == net.ErrClosed {
+		if err = srv.Serve(); nil != err {
+			if err == http.ErrServerClosed {
 				return
 			}
 			logger.Fatal(err.Error())
@@ -65,17 +62,15 @@ func WatchSignal(sigCh chan os.Signal) {
 
 		// TODO: filter some signals
 
+		// TODO
+		if agentContext.ControllerManagerCancel != nil {
+			agentContext.ControllerManagerCancel()
+		}
+
 		// shut down http server
 		if nil != agentContext.HttpServer {
 			if err := agentContext.HttpServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("shutting down agent http server failed: %s", err)
-			}
-		}
-
-		// shut down unix server
-		if nil != agentContext.UnixServer {
-			if err := agentContext.UnixServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("shutting down agent unix server failed: %s", err)
+				logger.Sugar().Errorf("shutting down agent server failed: %s", err)
 			}
 		}
 

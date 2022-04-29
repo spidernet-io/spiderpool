@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"strings"
 	"time"
@@ -42,6 +43,11 @@ type ControllerContext struct {
 	GCTerminatingPodIPDuration time.Duration
 	EnabledGCEvictedPodIP      bool
 	GCEvictedPodIPDuration     time.Duration
+
+	// ControllerManagerCtx is the context that can be used during shutdown.
+	// It will be cancelled after receiving an interrupt or termination signal.
+	ControllerManagerCtx    context.Context
+	ControllerManagerCancel context.CancelFunc
 
 	// handler
 	HttpServer *server.Server

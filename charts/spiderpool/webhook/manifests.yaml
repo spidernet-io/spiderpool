@@ -1,0 +1,55 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-spiderpool-spidernet-io-v1-ippool
+  failurePolicy: Fail
+  name: ippool-mutating.spiderpool.spidernet.io
+  rules:
+  - apiGroups:
+    - spiderpool.spidernet.io
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ippools
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-spiderpool-spidernet-io-v1-ippool
+  failurePolicy: Fail
+  name: ippool-validaing.spiderpool.spidernet.io
+  rules:
+  - apiGroups:
+    - spiderpool.spidernet.io
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - ippools
+  sideEffects: None

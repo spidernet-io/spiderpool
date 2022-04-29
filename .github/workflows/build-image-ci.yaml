@@ -24,7 +24,6 @@ on:
       push:
         required: true
         type: string
-
     outputs:
       imageTag:
         description: "tag of image ci"

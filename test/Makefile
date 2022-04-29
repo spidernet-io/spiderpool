@@ -1,15 +1,16 @@
 include ../Makefile.defs Makefile.defs
 
-.PHONY: all
-all: usage
-
-#============ kind-e2e ====================
-.PHONY: e2e
-e2e:  kind-init e2e-test
-
 DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
 CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
 E2E_KUBECONFIG = $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
+
+#============ kind-e2e ====================
+
+.PHONY: all
+all: usage
+
+.PHONY: e2e
+e2e:  kind-init e2e-test
 
 
 .PHONY: kind-init
@@ -65,7 +66,18 @@ prepare:
 .PHONY: e2e-test
 e2e-test:
 	$(QUIET)@echo "Run E2E"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh  --race --timeout=$(E2E_TIMEOUT) --label-filter="$(E2E_GINKGO_LABELS)" -r e2e/* -- --ipFamily=$(E2E_IP_FAMILY) --kubeconfig=$(E2E_KUBECONFIG)
+	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh  \
+		--race --timeout=$(E2E_TIMEOUT) \
+		--label-filter="$(E2E_GINKGO_LABELS)" \
+		-r e2e/* -- --ipFamily=$(E2E_IP_FAMILY) --kubeconfig=$(E2E_KUBECONFIG) ;  \
+		if (($$?==0)) ; then \
+		  	echo "succeeded to run all test" ; \
+  			make kind-clean ; \
+  		else \
+  		  	echo "failed to run all test" ; \
+  		  	exit 1 ; \
+  		fi
+
 
 .PHONY: usage
 usage:

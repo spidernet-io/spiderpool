@@ -31,7 +31,7 @@ fi
 #==================
 
 # Install Kind Bin
-if ! kind > /dev/null 2>&1 ; then
+if ! kind &> /dev/null ; then
     echo "fail   'kind' miss"
     if [ -z "$JUST_CLI_CHECK" ] ; then
         echo "try to install it"
@@ -93,5 +93,6 @@ else
     echo "pass   'p2ctl' installed:  $( p2ctl --version 2>&1 ) "
 fi
 
-[ -n "$MISS_FLAG" ] && exit 1
+[ -n "$JUST_CLI_CHECK" ] &&  [ -n "$MISS_FLAG" ] && exit 1
+
 exit 0

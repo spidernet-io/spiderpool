@@ -170,7 +170,9 @@ unitest-tests: check_test_label
 
 .PHONY: e2e
 e2e:
-	make -C test e2e
+	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
+		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
+		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
 
 .PHONY: manifests
 manifests:

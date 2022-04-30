@@ -121,20 +121,22 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	}
 	key := client.ObjectKeyFromObject(fake)
 
-	Eventually(func(g Gomega) bool {
-		defer GinkgoRecover()
-		existing := &corev1.Pod{}
-		e := f.GetResource(key, existing)
-		// g.Expect(existing.ObjectMeta.DeletionTimestamp).NotTo(BeNil())
-		if existing.ObjectMeta.DeletionTimestamp == nil {
-			Fail("a same pod %v/%v exist")
-		}
-		b := api_errors.IsNotFound(e)
-		if b == false {
-			GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
-		}
-		return b
-	}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
+	existing := &corev1.Pod{}
+	e := f.GetResource(key, existing)
+	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+		Fail("a same pod %v/%v exist")
+	} else {
+		Eventually(func(g Gomega) bool {
+			defer GinkgoRecover()
+			existing := &corev1.Pod{}
+			e := f.GetResource(key, existing)
+			b := api_errors.IsNotFound(e)
+			if b == false {
+				GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+			}
+			return b
+		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
+	}
 
 	return f.CreateResource(pod, opts...)
 }

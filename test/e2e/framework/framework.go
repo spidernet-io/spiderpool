@@ -242,6 +242,8 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 // ------------- for namespace
 
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
+	defer GinkgoRecover()
+
 	// ns := &corev1.Namespace{
 	// 	ObjectMeta: metav1.ObjectMeta{
 	// 		Name:      nsName,
@@ -268,8 +270,8 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	ns2 := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
 	GinkgoWriter.Printf(" welan ns2 : %+v  \n", ns2)
 
-	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx1, ns2, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	_, e2 := f.KubeClientSet.CoreV1().Namespaces().Create(ctx1, ns2, metav1.CreateOptions{})
+	Expect(e2).NotTo(HaveOccurred())
 
 	return nil
 }

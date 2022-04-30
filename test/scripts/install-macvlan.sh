@@ -9,6 +9,8 @@ CNI_CONF_PATH="$2"
 [ -z "$CNI_CONF_PATH" ] && echo "error, miss CNI_CONF_PATH " && exit 1
 [ ! -f "$CNI_CONF_PATH" ] && echo "error, could not find file $CNI_CONF_PATH " && exit 1
 
+echo ""
+
 # Copy 10-macvlan.conflist to kind-node
 NODES=$(docker ps | grep -E "kindest/node.* ${E2E_CLUSTER_NAME}-" | awk '{print $1}')
 for node in ${NODES} ; do

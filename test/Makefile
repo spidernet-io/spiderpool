@@ -20,12 +20,15 @@ kind-init: check_env kind-clean prepare
 			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
 			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	$(QUIET) kind create cluster --config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml --name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
+	$(QUIET) kind create cluster \
+		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
+		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
 	@echo -e "\033[35m [Step 4] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
-	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
+			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 	type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 endif
@@ -33,12 +36,15 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
 	$(MAKE) -C $(ROOT_DIR) install
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
-	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	$(QUIET) bash scripts/install-macvlan.sh \
+		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
-	@IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) TEST_IMAGE=$(TEST_IMAGE_NAME) \
-	CLUSTER_PATH=$(CLUSTER_DIR) scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
+		TEST_IMAGE=$(TEST_IMAGE_NAME) \
+		CLUSTER_PATH=$(CLUSTER_DIR) \
+		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	@echo -e "\033[35m Init The Cluster Finished, Please Use 'kubectl get nodes --kubeconfig $(E2E_KUBECONFIG)' \033[0m"
 	@echo "--------------------"

@@ -46,6 +46,10 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("succeeded to create pod \n")
 
+			pod, err = frame.GetPod(podName, podNameSpace)
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf("succeeded to get pod : %+v \n", pod)
+
 			err = frame.DeletePod(podName, podNameSpace)
 			Expect(err).NotTo(HaveOccurred())
 

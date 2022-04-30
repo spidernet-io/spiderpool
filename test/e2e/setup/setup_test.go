@@ -52,7 +52,7 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			// wait for pod ip
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			pod, err = frame.WaitPodStarted(podName, podNameSpace, ctx)
+			pod, err = frame.WaitPodStarted("t3", podNameSpace, ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pod).NotTo(BeNil())
 

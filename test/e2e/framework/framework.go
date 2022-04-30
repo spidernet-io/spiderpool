@@ -190,7 +190,8 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 			if ok == false {
 				return nil, fmt.Errorf("channel is closed ")
 			} else {
-				GinkgoWriter.Printf("receive event: %+v\n", event)
+				// GinkgoWriter.Printf("receive event: %+v\n", event)
+				GinkgoWriter.Printf("pod %v/%v %v event \n", namespace, name, event.Type)
 
 				// Added    EventType = "ADDED"
 				// Modified EventType = "MODIFIED"
@@ -207,7 +208,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 					if ok == false {
 						Fail("failed to get metaObject")
 					}
-					GinkgoWriter.Printf("pod status: %+v\n", pod.Status.Phase)
+					GinkgoWriter.Printf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
 					if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
 						break
 					} else {

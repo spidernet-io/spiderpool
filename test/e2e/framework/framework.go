@@ -125,7 +125,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	existing := &corev1.Pod{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		s := fmt.Sprintf("a same pod %v/%v exist", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+		s := fmt.Sprintf("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 		Fail(s)
 	} else {
 		Eventually(func(g Gomega) bool {

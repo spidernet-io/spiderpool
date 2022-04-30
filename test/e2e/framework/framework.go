@@ -53,7 +53,7 @@ func NewFramework() *Framework {
 	f.t = GinkgoT()
 	defer GinkgoRecover()
 
-	v := deepcopy.Copy(clusterInfo)
+	v := deepcopy.Copy(*clusterInfo)
 	t, ok := v.(ClusterInfo)
 	Expect(ok).To(BeTrue())
 	f.C = &t

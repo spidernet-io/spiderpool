@@ -11,7 +11,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,7 +27,7 @@ import (
 
 type Framework struct {
 	// clienset
-	KubeClientSet client.Client
+	KubeClientSet client.WithWatch
 	KubeConfig    *rest.Config
 
 	// cluster info
@@ -80,7 +82,8 @@ func NewFramework() *Framework {
 	err = apiextensions_v1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	f.KubeClientSet, err = client.New(f.KubeConfig, client.Options{Scheme: scheme})
+	// f.KubeClientSet, err = client.New(f.KubeConfig, client.Options{Scheme: scheme})
+	f.KubeClientSet, err = client.NewWithWatch(f.KubeConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	f.ApiOperateTimeout = 15 * time.Second
@@ -167,6 +170,54 @@ func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
 		return nil, e
 	}
 	return existing, e
+}
+
+func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) (*corev1.Pod, error) {
+
+	// refer to https://github.com/kubernetes-sigs/controller-runtime/blob/master/pkg/client/watch_test.go
+	l := &client.ListOptions{
+		Namespace:     namespace,
+		FieldSelector: fields.OneTermEqualSelector("metadata.name", name),
+	}
+	watchInterface, err := f.KubeClientSet.Watch(ctx, &corev1.PodList{}, l)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(watchInterface).NotTo(BeNil())
+	defer watchInterface.Stop()
+
+	for {
+		select {
+		case event, ok := <-watchInterface.ResultChan():
+			if ok == false {
+				return nil, fmt.Errorf("channel is closed ")
+			} else {
+				GinkgoWriter.Printf("receive event: %+v\n", event)
+
+				// Added    EventType = "ADDED"
+				// Modified EventType = "MODIFIED"
+				// Deleted  EventType = "DELETED"
+				// Bookmark EventType = "BOOKMARK"
+				// Error    EventType = "ERROR"
+				if event.Type == watch.Error {
+					return nil, fmt.Errorf("received errro event: %+v", event)
+				} else if event.Type == watch.Deleted {
+					return nil, fmt.Errorf("resource is deleted")
+				} else {
+					pod, ok := event.Object.(corev1.Pod)
+					if ok == false {
+						Fail("failed to get pod")
+					}
+					GinkgoWriter.Printf("pod status: %+v\n", pod.Status.Phase)
+					if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
+						break
+					} else {
+						return &pod, nil
+					}
+				}
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("ctx timeout ")
+		}
+	}
 }
 
 // ------------- for namespace

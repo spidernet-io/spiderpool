@@ -86,13 +86,8 @@ type Informer interface {
 	HasSynced() bool
 }
 
-// ObjectSelector is an alias name of internal.Selector.
-type ObjectSelector internal.Selector
-
 // SelectorsByObject associate a client.Object's GVK to a field/label selector.
-// There is also `DefaultSelector` to set a global default (which will be overridden by
-// a more specific setting here, if any).
-type SelectorsByObject map[client.Object]ObjectSelector
+type SelectorsByObject map[client.Object]internal.Selector
 
 // Options are the optional arguments for creating a new InformersMap object.
 type Options struct {
@@ -119,10 +114,6 @@ type Options struct {
 	// [2] https://pkg.go.dev/k8s.io/apimachinery/pkg/fields#Set
 	SelectorsByObject SelectorsByObject
 
-	// DefaultSelector will be used as selectors for all object types
-	// that do not have a selector in SelectorsByObject defined.
-	DefaultSelector ObjectSelector
-
 	// UnsafeDisableDeepCopyByObject indicates not to deep copy objects during get or
 	// list objects per GVK at the specified object.
 	// Be very careful with this, when enabled you must DeepCopy any object before mutating it,
@@ -138,7 +129,7 @@ func New(config *rest.Config, opts Options) (Cache, error) {
 	if err != nil {
 		return nil, err
 	}
-	selectorsByGVK, err := convertToSelectorsByGVK(opts.SelectorsByObject, opts.DefaultSelector, opts.Scheme)
+	selectorsByGVK, err := convertToSelectorsByGVK(opts.SelectorsByObject, opts.Scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -159,23 +150,21 @@ func New(config *rest.Config, opts Options) (Cache, error) {
 //          returned from cache get/list before mutating it.
 func BuilderWithOptions(options Options) NewCacheFunc {
 	return func(config *rest.Config, opts Options) (Cache, error) {
-		if options.Scheme == nil {
-			options.Scheme = opts.Scheme
+		if opts.Scheme == nil {
+			opts.Scheme = options.Scheme
 		}
-		if options.Mapper == nil {
-			options.Mapper = opts.Mapper
-		}
-		if options.Resync == nil {
-			options.Resync = opts.Resync
-		}
-		if options.Namespace == "" {
-			options.Namespace = opts.Namespace
+		if opts.Mapper == nil {
+			opts.Mapper = options.Mapper
 		}
 		if opts.Resync == nil {
 			opts.Resync = options.Resync
 		}
-
-		return New(config, options)
+		if opts.Namespace == "" {
+			opts.Namespace = options.Namespace
+		}
+		opts.SelectorsByObject = options.SelectorsByObject
+		opts.UnsafeDisableDeepCopyByObject = options.UnsafeDisableDeepCopyByObject
+		return New(config, opts)
 	}
 }
 
@@ -202,16 +191,15 @@ func defaultOpts(config *rest.Config, opts Options) (Options, error) {
 	return opts, nil
 }
 
-func convertToSelectorsByGVK(selectorsByObject SelectorsByObject, defaultSelector ObjectSelector, scheme *runtime.Scheme) (internal.SelectorsByGVK, error) {
+func convertToSelectorsByGVK(selectorsByObject SelectorsByObject, scheme *runtime.Scheme) (internal.SelectorsByGVK, error) {
 	selectorsByGVK := internal.SelectorsByGVK{}
 	for object, selector := range selectorsByObject {
 		gvk, err := apiutil.GVKForObject(object, scheme)
 		if err != nil {
 			return nil, err
 		}
-		selectorsByGVK[gvk] = internal.Selector(selector)
+		selectorsByGVK[gvk] = selector
 	}
-	selectorsByGVK[schema.GroupVersionKind{}] = internal.Selector(defaultSelector)
 	return selectorsByGVK, nil
 }
 

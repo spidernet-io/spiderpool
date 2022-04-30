@@ -34,7 +34,6 @@ import (
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/internal/httpserver"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics"
 )
@@ -262,7 +261,9 @@ func (s *Server) Start(ctx context.Context) error {
 
 	log.Info("Serving webhook server", "host", s.Host, "port", s.Port)
 
-	srv := httpserver.New(s.WebhookMux)
+	srv := &http.Server{
+		Handler: s.WebhookMux,
+	}
 
 	idleConnsClosed := make(chan struct{})
 	go func() {

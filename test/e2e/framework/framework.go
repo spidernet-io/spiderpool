@@ -258,16 +258,17 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 
 	GinkgoWriter.Printf(" welan ns0  \n")
 
-	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	Expect(ctx).NotTo(BeNil())
-	Expect(cancel).NotTo(BeNil())
-	defer cancel()
+	ctx1, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+	GinkgoWriter.Printf(" welan ns0.5  \n")
+	Expect(ctx1).NotTo(BeNil())
+	Expect(cancel2).NotTo(BeNil())
+	defer cancel2()
 	GinkgoWriter.Printf(" welan ns1  \n")
 
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
 	GinkgoWriter.Printf(" welan ns2 : %+v  \n", ns)
 
-	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx1, ns, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	return nil
@@ -281,7 +282,7 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 	// }
 	// return f.DeleteNamespacedResource(ns, opts...)
 
-	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err := f.KubeClientSet.CoreV1().Namespaces().Delete(ctx, nsName, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())

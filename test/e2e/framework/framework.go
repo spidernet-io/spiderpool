@@ -9,6 +9,7 @@ import (
 	"github.com/mohae/deepcopy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -97,6 +98,16 @@ func (f *Framework) DeleteResource(obj client.Object) {
 	defer cancel1()
 	e := f.KubeClientSet.Create(ctx1, obj)
 	Expect(e).NotTo(HaveOccurred())
+}
+
+func (f *Framework) DeletePod(name, namespace string) {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	f.DeleteResource(pod)
 }
 
 /*

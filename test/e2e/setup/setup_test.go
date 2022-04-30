@@ -42,7 +42,7 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			frame.CreateResource(pod)
 			GinkgoWriter.Printf("succeeded to create pod \n")
 
-			frame.DeleteResource(pod)
+			frame.DeletePod(podName, podNameSpace)
 			GinkgoWriter.Printf("succeeded to delete pod \n")
 
 		})

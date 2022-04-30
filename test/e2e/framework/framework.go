@@ -15,6 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 type Framework struct {
@@ -68,6 +71,11 @@ func NewFramework() *Framework {
 	f.KubeConfig.Burst = 2000
 
 	scheme := runtime.NewScheme()
+	err = corev1.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = apiextensions_v1.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	f.KubeClientSet, err = client.New(f.KubeConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 

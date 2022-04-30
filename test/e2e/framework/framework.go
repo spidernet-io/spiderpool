@@ -269,6 +269,7 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
 		}
 	*/
+	GinkgoWriter.Printf(" create ns : %+v  \n", ns)
 	return f.CreateNamespacedResource(ns, opts...)
 }
 

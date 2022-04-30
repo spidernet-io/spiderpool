@@ -114,7 +114,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &corev1.Pod{}
-	Eventually(func(g Gomega) {
+	Eventually(func(g Gomega) bool {
 		defer GinkgoRecover()
 		b := api_errors.IsNotFound(f.KubeClientSet.Get(ctx, key, existing))
 		if b == false {
@@ -122,8 +122,8 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			time.Sleep(2 * time.Second)
 			GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 		}
-		Expect(b).To(BeTrue())
-	}).WithTimeout(f.ResourceDeleteTimeout).Should(Succeed())
+		return b
+	}).WithTimeout(f.ResourceDeleteTimeout).Should(BeTrue())
 
 	return f.CreateResource(pod, opts...)
 }

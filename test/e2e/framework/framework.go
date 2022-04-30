@@ -13,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+
 	// "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
@@ -28,8 +30,9 @@ import (
 
 type Framework struct {
 	// clienset
-	Client     client.WithWatch
-	KubeConfig *rest.Config
+	Client        client.WithWatch
+	KubeClientSet kubernetes.Interface
+	KubeConfig    *rest.Config
 
 	// cluster info
 	C ClusterInfo
@@ -89,6 +92,9 @@ func NewFramework() *Framework {
 
 	f.ApiOperateTimeout = 15 * time.Second
 	f.ResourceDeleteTimeout = 60 * time.Second
+
+	f.KubeClientSet, err = kubernetes.NewForConfig(f.KubeConfig)
+	Expect(err).NotTo(HaveOccurred())
 
 	GinkgoWriter.Printf("Framework: %+v \n", f)
 	return f
@@ -236,31 +242,33 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 // ------------- for namespace
 
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nsName,
-			Namespace: "",
-			Labels:    map[string]string{"spiderpool-e2e-ns": "true"},
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Namespace",
-			APIVersion: "v1",
-		},
-	}
-	GinkgoWriter.Printf(" create ns : %+v  \n", ns)
-	return f.Client.Create(context.TODO(), ns, opts...)
+	// ns := &corev1.Namespace{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name:      nsName,
+	// 		Namespace: "",
+	// 		Labels:    map[string]string{"spiderpool-e2e-ns": "true"},
+	// 	},
+	// 	TypeMeta: metav1.TypeMeta{
+	// 		Kind:       "Namespace",
+	// 		APIVersion: "v1",
+	// 	},
+	// }
+	// GinkgoWriter.Printf(" create ns : %+v  \n", ns)
+	// return f.Client.Create(context.TODO(), ns, opts...)
+	return nil
 }
 
 func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: nsName,
-		},
-	}
-	return f.DeleteNamespacedResource(ns, opts...)
+	// ns := &corev1.Namespace{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name: nsName,
+	// 	},
+	// }
+	// return f.DeleteNamespacedResource(ns, opts...)
+	return nil
 }
 
-func NamespacedTest(namespace string, f *Framework, body func(string)) {
+func (f *Framework) NamespacedTest(namespace string, body func(string)) {
 	Context("with namespace: "+namespace, func() {
 		BeforeEach(func() {
 			f.CreateNamespace(namespace)

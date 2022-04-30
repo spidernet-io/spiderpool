@@ -15,7 +15,7 @@ var _ = Describe("test pod", Label(framework.LabelSmoke), func() {
 	var err error
 	const namespacePrefix string = "ippool_pod_"
 
-	framework.NamespacedTest(namespacePrefix+"simple", frame, func(namespace string) {
+	frame.NamespacedTest(namespacePrefix+"simple", func(namespace string) {
 		It("test default ippool", func() {
 			podName := "simple"
 			namespace = "default"

@@ -1,30 +1,39 @@
 include ../Makefile.defs Makefile.defs
 
+DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
+CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
+E2E_KUBECONFIG = $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
+
+#============ kind-e2e ====================
+
 .PHONY: all
 all: usage
 
-#============ kind-e2e ====================
 .PHONY: e2e
 e2e:  kind-init e2e-test
 
+
 .PHONY: kind-init
-kind-init: kind-clean prepare
-	$(QUIET)@echo "Install kind cluster..."
-	@mkdir -p -v $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)
-	$(QUIET)kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) singe_node=$(E2E_SINGE_NODE) kind_image_tag=$(E2E_KIND_IMAGE_TAG) disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	$(QUIET)@cat $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	kind create cluster --config $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/kind-config.yaml --name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
-	$(QUIET)@bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(ROOT_DIR)
+kind-init: check_env kind-clean prepare
+	$(QUIET) RED='\E[1;31m'; CLEAR='\E[0m' ; echo "$${RED} Install kind cluster with name ${E2E_CLUSTER_NAME} $${CLEAR}"
+	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
+	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
+			singe_node=$(E2E_SINGE_NODE) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
+			disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
+			p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
+	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
+	$(QUIET) kind create cluster --config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml --name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
+	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
-	$(QUIET)@echo "Install macvlan + whereabouts"
-	$(QUIET)bash scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
-	type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
-	$(QUIET)@bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
+	$(QUIET) echo "Install macvlan + whereabouts"
+	$(QUIET) bash scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+	type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
+	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 endif
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	$(QUIET) echo "Install macvlan + spiderpool"
-	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
-	$(QUIET)@bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(ROOT_DIR)/test/.tmp/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(MAKE) -C $(ROOT_DIR) install
 endif
 ifeq ($(INSTALL_MULTUS),true)
@@ -32,23 +41,77 @@ ifeq ($(INSTALL_MULTUS),true)
 	@bash scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	@kubectl get nodes --kubeconfig $(E2E_KUBECONFIG) > /dev/null 2>&1 || echo "failed to setup cluster"
-	@echo "Please use: kubectl get nodes --kubeconfig $(E2E_KUBECONFIG)"
+	@echo "--------------------"
+	@echo "succeeded to setup cluster $(E2E_CLUSTER_NAME) "
+
 
 .PHONY: kind-clean
 kind-clean:
 	@echo "Cleanup kind cluster"
-	rm -rf $(ROOT_DIR)/test/.tmp
-	kind delete cluster --name $(E2E_CLUSTER_NAME)
+	rm -rf $(CLUSTER_DIR)
+	kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
+
+
+.PHONY: check_env
+check_env:
+	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
+	$(QUIET) ( [ "$(E2E_IP_FAMILY)" == "ipv4" ] || [ "$(E2E_IP_FAMILY)" == "ipv6" ]  || [ "$(E2E_IP_FAMILY)" == "dual" ] ) \
+			|| { echo "error, E2E_IP_FAMILY=$(E2E_IP_FAMILY) must be ipv4/ipv6/dual" ;  exit 1 ; }
+
+
 
 .PHONY: prepare
 prepare:
-	$(QUEIT)IMAGE_MUTLUS=$(IMAGE_MUTLUS_NAME) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) TEST_IMAGE=$(TEST_IMAGE_NAME) scripts/prepare.sh $(ROOT_DIR)
+	$(QUIET) JUST_CLI_CHECK=true scripts/install-tools.sh
+	$(QUIET) mkdir -p $(DOWNLOAD_DIR)
+	$(QUIET) IMAGE_MUTLUS=$(IMAGE_MUTLUS_NAME) \
+			IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
+			TEST_IMAGE=$(TEST_IMAGE_NAME) \
+			CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \
+			scripts/prepare.sh $(DOWNLOAD_DIR)
 
 #============ e2e ====================
 .PHONY: e2e-test
 e2e-test:
-	$(QUIET)@echo "Run E2E"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh  --race --timeout=$(E2E_TIMEOUT) --label-filter="$(E2E_GINKGO_LABELS)" -r e2e/* -- --ipFamily=$(E2E_IP_FAMILY) --kubeconfig=$(E2E_KUBECONFIG)
+	$(QUIET) ( docker ps | grep "kindest/node" &>/dev/null ) || { echo "error, please setup kind first" ; exit 1 ; }
+	$(QUIET) echo "Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} "
+	@  FLAGS="" ; \
+		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
+		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
+		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=false " ; \
+		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
+		  FLAGS+=" --IpV4Enabled=false --IpV6Enabled=true " ; \
+		else \
+		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=true " ; \
+		fi ; \
+		if [ -f "$(E2E_KUBECONFIG)" ] ; then \
+		   FLAGS+=" --KubeConfigPath=$(E2E_KUBECONFIG) "  ; \
+		else \
+		   echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; \
+        fi; \
+		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
+		  	FLAGS+=" --MultusEnabled=true " ; \
+ 		else \
+ 			FLAGS+=" --MultusEnabled=false " ; \
+ 		fi ; \
+		if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
+		  	FLAGS+=" --SpiderIPAMEnabled=false " ; \
+ 		else \
+ 			FLAGS+=" --SpiderIPAMEnabled=true " ; \
+ 		fi ; \
+		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
+		--race --timeout=$(E2E_TIMEOUT) \
+		--label-filter="$(E2E_GINKGO_LABELS)"  -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
+		-r e2e/* -- $${FLAGS} ;  \
+		if (($$?==0)) ; then \
+		  	echo "succeeded to run all test" ; \
+  		else \
+  		  	echo "failed to run all test" ; \
+  		  	exit 1 ; \
+  		fi
+
+
+.PHONY: usage
 usage:
 	@echo "usage:"
 	@echo -e "  \033[35m make prepare \033[0m:       --- Check some required tools is exist like docker/helm.etc and download cni-plugins"

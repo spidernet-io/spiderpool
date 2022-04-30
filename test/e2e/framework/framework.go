@@ -6,6 +6,7 @@ package framework
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/mohae/deepcopy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -124,7 +125,8 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	existing := &corev1.Pod{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		Fail("a same pod %v/%v exist")
+		s := fmt.Sprintf("a same pod %v/%v exist", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+		Fail(s)
 	} else {
 		Eventually(func(g Gomega) bool {
 			defer GinkgoRecover()

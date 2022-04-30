@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -244,12 +245,14 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			Labels: map[string]string{"spiderpool-e2e-ns": "true"},
 		},
 	}
-	key := client.ObjectKeyFromObject(ns)
+
+	// key := client.ObjectKeyFromObject(ns)
+
 	existing := &corev1.Namespace{}
 
-	GinkgoWriter.Printf("key %+v \n", key)
 	GinkgoWriter.Printf("existing %+v \n", existing)
 
+	key := types.NamespacedName{Name: nsName}
 	e := f.GetResource(key, existing)
 	GinkgoWriter.Printf("GetResource \n")
 

@@ -4,6 +4,10 @@
 
 # Copy 10-macvlan.tmpl to kind-node
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 E2E_CLUSTER_NAME="$1"
 
 DOWNLOAD_DIR="$2"

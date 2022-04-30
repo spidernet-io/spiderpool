@@ -9,6 +9,7 @@ OS=$(uname | tr 'A-Z' 'a-z')
 MISS_FLAG=""
 
 # kubectl
+
 if ! kubectl help &>/dev/null  ; then
     echo "fail   'kubectl' miss"
     if [ -z "$JUST_CLI_CHECK" ] ; then

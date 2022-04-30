@@ -51,7 +51,7 @@ kind-clean:
 	@echo -e "\033[35m [Step 1] Clean The Cluster: $(E2E_CLUSTER_NAME) \033[0m"
 	@echo "Deleting Tmp files..."
 	@rm -rf $(CLUSTER_DIR)
-	kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
+	-@kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
 
 
 .PHONY: check_env

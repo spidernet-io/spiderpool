@@ -27,7 +27,5 @@
 
 3. for developing e2e case, could do it step by step
 
-make -C test kind-init
-
-make -C test e2e-test
-
+        # make -C test kind-init
+        # make -C test e2e-test

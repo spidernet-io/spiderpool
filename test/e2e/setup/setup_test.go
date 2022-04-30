@@ -25,11 +25,6 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 				Skip("ipv4 is not enabled by cluster, ignore case")
 			}
 
-			// try to delete exsited pod , ignore error
-			frame.DeletePod(podName, podNameSpace)
-
-			GinkgoWriter.Printf("succeeded to delete pod \n")
-
 			GinkgoWriter.Printf("try to create pod \n")
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -47,7 +42,7 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 					},
 				},
 			}
-			err = frame.CreateResource(pod)
+			err = frame.CreatePod(pod)
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("succeeded to create pod \n")
 

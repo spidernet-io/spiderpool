@@ -19,6 +19,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type Framework struct {
@@ -35,7 +36,8 @@ type Framework struct {
 
 	t GinkgoTInterface
 
-	ApiOperateTimeout time.Duration
+	ApiOperateTimeout     time.Duration
+	ResourceDeleteTimeout time.Duration
 }
 
 type ClusterInfo struct {
@@ -81,21 +83,49 @@ func NewFramework() *Framework {
 	Expect(err).NotTo(HaveOccurred())
 
 	f.ApiOperateTimeout = 15 * time.Second
+	f.ResourceDeleteTimeout = 60 * time.Second
 
 	GinkgoWriter.Printf("Framework: %+v \n", f)
 	return f
 }
 
 func (f *Framework) CreateResource(obj client.Object, opts ...client.CreateOption) error {
-	ctx1, cancel1 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	defer cancel1()
-	return f.KubeClientSet.Create(ctx1, obj, opts...)
+	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel()
+	return f.KubeClientSet.Create(ctx, obj, opts...)
 }
 
 func (f *Framework) DeleteResource(obj client.Object, opts ...client.DeleteOption) error {
-	ctx1, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel()
-	return f.KubeClientSet.Delete(ctx1, obj, opts...)
+	return f.KubeClientSet.Delete(ctx, obj, opts...)
+}
+
+func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) error {
+	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel()
+
+	// try to wait for finish last deleting
+	fake := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: pod.ObjectMeta.Namespace,
+			Name:      pod.ObjectMeta.Name,
+		},
+	}
+	key := client.ObjectKeyFromObject(fake)
+	existing := &corev1.Pod{}
+	Eventually(func(g Gomega) {
+		defer GinkgoRecover()
+		b := api_errors.IsNotFound(f.KubeClientSet.Get(ctx, key, existing))
+		if b == false {
+			// for next get
+			time.Sleep(2 * time.Second)
+			GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+		}
+		Expect(b).To(BeTrue())
+	}).WithTimeout(f.ResourceDeleteTimeout).Should(Succeed())
+
+	return f.CreateResource(pod, opts...)
 }
 
 func (f *Framework) DeletePod(name, namespace string, opts ...client.DeleteOption) error {

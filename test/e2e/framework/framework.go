@@ -89,6 +89,7 @@ func NewFramework() *Framework {
 	return f
 }
 
+// ------------- basic operate
 func (f *Framework) CreateResource(obj client.Object, opts ...client.CreateOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel()
@@ -107,6 +108,8 @@ func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	return f.KubeClientSet.Get(ctx, key, obj)
 }
 
+// ------------- for pod
+
 func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) error {
 
 	// try to wait for finish last deleting
@@ -121,7 +124,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	Eventually(func(g Gomega) bool {
 		defer GinkgoRecover()
 		e := f.GetResource(key, existing)
-		Expect(existing.ObjectMeta.DeletionTimestamp).NotTo(BeNil())
+		g.Expect(existing.ObjectMeta.DeletionTimestamp).NotTo(BeNil())
 		b := api_errors.IsNotFound(e)
 		if b == false {
 			GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
@@ -157,6 +160,8 @@ func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
 	}
 	return existing, e
 }
+
+// ------------- for namespace
 
 /*
 // T exposes a GinkgoTInterface which exposes many of the same methods
@@ -220,7 +225,5 @@ func init() {
 	flag.BoolVar(&(clusterInfo.MultusEnabled), "MultusEnabled", true, "Multus Enabled")
 	flag.BoolVar(&(clusterInfo.SpiderIPAMEnabled), "SpiderIPAMEnabled", true, "SpiderIPAM Enabled")
 	flag.StringVar(&(clusterInfo.ClusterName), "ClusterName", "", "Cluster Name")
-
 	flag.Parse()
-
 }

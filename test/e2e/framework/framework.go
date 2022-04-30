@@ -260,7 +260,7 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 	return f.DeleteNamespacedResource(ns, opts...)
 }
 
-func (f *Framework) NamespacedTest(namespace string, body func(string)) {
+func NamespacedTest(namespace string, f *Framework, body func(string)) {
 	Context("with namespace: "+namespace, func() {
 		BeforeEach(func() {
 			f.CreateNamespace(namespace)

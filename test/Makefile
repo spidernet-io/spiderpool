@@ -1,4 +1,5 @@
-include ../Makefile.defs Makefile.defs
+include ../Makefile.defs
+include Makefile.defs
 
 
 #============ kind-e2e ====================
@@ -83,7 +84,7 @@ prepare:
 .PHONY: e2e-test
 e2e-test:
 	$(QUIET) ( docker ps | grep "kindest/node" &>/dev/null ) || { echo "error, please setup kind first" ; exit 1 ; }
-	$(QUIET) echo "\033[35m [E2E] Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
+	@ echo -e "\033[35m [E2E] Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
 	@  FLAGS="" ; \
 		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \

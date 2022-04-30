@@ -196,7 +196,3 @@ jobs:
         run: |
           echo ${{ github.event.inputs.labels }}
           make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
-
-      - name: Clean Up
-        run: |
-          make -C test kind-clean E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}

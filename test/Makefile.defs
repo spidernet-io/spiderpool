@@ -43,5 +43,7 @@ TEST_IMAGE_NAME := alpine
 DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
 CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
 E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
+
 #=============http_proxy=============
 http_proxy ?=
+

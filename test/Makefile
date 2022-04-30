@@ -1,5 +1,8 @@
 include ../Makefile.defs Makefile.defs
 
+
+#============ kind-e2e ====================
+
 .PHONY: all
 all: usage
 
@@ -7,9 +10,8 @@ all: usage
 e2e:  kind-init e2e-test
 
 
-
 .PHONY: kind-init
-kind-init: kind-clean prepare
+kind-init: check_env kind-clean prepare
 	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
 	@echo -e "\033[35m [Step 3] Init The Cluster: $(E2E_CLUSTER_NAME) \033[0m"
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
@@ -39,6 +41,9 @@ ifeq ($(INSTALL_MULTUS),true)
 	CLUSTER_PATH=$(CLUSTER_DIR) scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	@echo -e "\033[35m Init The Cluster Finished, Please Use 'kubectl get nodes --kubeconfig $(E2E_KUBECONFIG)' \033[0m"
+	@echo "--------------------"
+	@echo "succeeded to setup cluster $(E2E_CLUSTER_NAME) "
+
 
 
 .PHONY: kind-clean
@@ -47,6 +52,13 @@ kind-clean:
 	@echo "Deleting Tmp files..."
 	@rm -rf $(CLUSTER_DIR)
 	kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
+
+
+.PHONY: check_env
+check_env:
+	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
+	$(QUIET) ( [ "$(E2E_IP_FAMILY)" == "ipv4" ] || [ "$(E2E_IP_FAMILY)" == "ipv6" ]  || [ "$(E2E_IP_FAMILY)" == "dual" ] ) \
+			|| { echo "error, E2E_IP_FAMILY=$(E2E_IP_FAMILY) must be ipv4/ipv6/dual" ;  exit 1 ; }
 
 
 .PHONY: prepare
@@ -60,17 +72,42 @@ prepare:
 			 CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \
 			 scripts/prepare.sh $(DOWNLOAD_DIR)
 
+
 #============ e2e ====================
 .PHONY: e2e-test
 e2e-test:
-	@echo -e "\033[35m [E2E] Run E2E With Label: $(E2E_GINKGO_LABELS) \033[0m"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh  \
+	$(QUIET) ( docker ps | grep "kindest/node" &>/dev/null ) || { echo "error, please setup kind first" ; exit 1 ; }
+	$(QUIET) echo "\033[35m [E2E] Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
+	@  FLAGS="" ; \
+		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
+		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
+		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=false " ; \
+		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
+		  FLAGS+=" --IpV4Enabled=false --IpV6Enabled=true " ; \
+		else \
+		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=true " ; \
+		fi ; \
+		if [ -f "$(E2E_KUBECONFIG)" ] ; then \
+		   FLAGS+=" --KubeConfigPath=$(E2E_KUBECONFIG) "  ; \
+		else \
+		   echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; \
+        fi; \
+		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
+		  	FLAGS+=" --MultusEnabled=true " ; \
+ 		else \
+ 			FLAGS+=" --MultusEnabled=false " ; \
+ 		fi ; \
+		if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
+		  	FLAGS+=" --SpiderIPAMEnabled=false " ; \
+ 		else \
+ 			FLAGS+=" --SpiderIPAMEnabled=true " ; \
+ 		fi ; \
+		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 		--race --timeout=$(E2E_TIMEOUT) \
 		--label-filter="$(E2E_GINKGO_LABELS)"  -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
-		-r e2e/* -- --ipFamily=$(E2E_IP_FAMILY) --kubeconfig=$(E2E_KUBECONFIG) ;  \
+		-r e2e/* -- $${FLAGS} ;  \
 		if (($$?==0)) ; then \
 		  	echo "succeeded to run all test" ; \
-  			make kind-clean ; \
   		else \
   		  	echo "failed to run all test" ; \
   		  	exit 1 ; \

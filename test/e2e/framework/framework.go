@@ -258,6 +258,7 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel()
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
+	GinkgoWriter.Printf(" welan ns : %+v  \n", ns)
 	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 

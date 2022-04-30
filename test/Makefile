@@ -105,7 +105,6 @@ e2e-test:
 		-r e2e/* -- $${FLAGS} ;  \
 		if (($$?==0)) ; then \
 		  	echo "succeeded to run all test" ; \
-  			make kind-clean ; \
   		else \
   		  	echo "failed to run all test" ; \
   		  	exit 1 ; \

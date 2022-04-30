@@ -13,7 +13,8 @@ import (
 
 var _ = Describe("test pod", Label(framework.LabelSmoke), func() {
 	var err error
-	const namespacePrefix string = "ippool_pod_"
+	// namespace must be: lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
+	const namespacePrefix string = "ippool-pod-"
 
 	frame.NamespacedTest(namespacePrefix+"simple", func(namespace string) {
 		It("test default ippool", func() {

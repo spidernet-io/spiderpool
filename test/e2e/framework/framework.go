@@ -86,28 +86,26 @@ func NewFramework() *Framework {
 	return f
 }
 
-func (f *Framework) CreateResource(obj client.Object) {
+func (f *Framework) CreateResource(obj client.Object, opts ...client.CreateOption) error {
 	ctx1, cancel1 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel1()
-	e := f.KubeClientSet.Create(ctx1, obj)
-	Expect(e).NotTo(HaveOccurred())
+	return f.KubeClientSet.Create(ctx1, obj, opts...)
 }
 
-func (f *Framework) DeleteResource(obj client.Object) {
-	ctx1, cancel1 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	defer cancel1()
-	e := f.KubeClientSet.Create(ctx1, obj)
-	Expect(e).NotTo(HaveOccurred())
+func (f *Framework) DeleteResource(obj client.Object, opts ...client.DeleteOption) error {
+	ctx1, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel()
+	return f.KubeClientSet.Delete(ctx1, obj, opts...)
 }
 
-func (f *Framework) DeletePod(name, namespace string) {
+func (f *Framework) DeletePod(name, namespace string, opts ...client.DeleteOption) error {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
 	}
-	f.DeleteResource(pod)
+	return f.DeleteResource(pod, opts...)
 }
 
 /*

@@ -5,9 +5,12 @@ import (
 	"github.com/spidernet-io/spiderpool/test/e2e/framework"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// "sigs.k8s.io/controller-runtime/pkg/client"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
+	var err error
 
 	Context("test ipv4", Label(framework.LabelIpv4), func() {
 		var podName, podNameSpace string
@@ -21,6 +24,11 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			if frame.C.IpV4Enabled == false {
 				Skip("ipv4 is not enabled by cluster, ignore case")
 			}
+
+			// try to delete exsited pod , ignore error
+			frame.DeletePod(podName, podNameSpace)
+
+			GinkgoWriter.Printf("succeeded to delete pod \n")
 
 			GinkgoWriter.Printf("try to create pod \n")
 			pod := &corev1.Pod{
@@ -39,11 +47,12 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 					},
 				},
 			}
-			frame.CreateResource(pod)
+			err = frame.CreateResource(pod)
+			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("succeeded to create pod \n")
 
-			frame.DeletePod(podName, podNameSpace)
-			GinkgoWriter.Printf("succeeded to delete pod \n")
+			err = frame.DeletePod(podName, podNameSpace)
+			Expect(err).NotTo(HaveOccurred())
 
 		})
 

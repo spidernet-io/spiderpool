@@ -17,15 +17,18 @@ import (
 var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 	var err error
 
-	Context("test pod ip", Label(framework.LabelIpv4), func() {
+	Context("test pod ip with kinds of ippool", Label(framework.LabelIpv4), func() {
 		var podName, podNameSpace string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			podName = "ipv4test"
 			podNameSpace = "default"
+
+			// try to delete existed pod
+			_ = frame.DeletePod(podName, podNameSpace)
 		})
 
-		It("Create Pod", func() {
+		It("no ippool annotation", func() {
 
 			// create pod
 			GinkgoWriter.Printf("try to create pod \n")
@@ -77,10 +80,6 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 		})
-
-	})
-
-	Context("test ipv6", Label(framework.LabelIpv6), func() {
 
 	})
 

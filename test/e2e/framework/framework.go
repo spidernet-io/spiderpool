@@ -198,19 +198,20 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 				// Bookmark EventType = "BOOKMARK"
 				// Error    EventType = "ERROR"
 				if event.Type == watch.Error {
-					return nil, fmt.Errorf("received errro event: %+v", event)
+					return nil, fmt.Errorf("received error event: %+v", event)
 				} else if event.Type == watch.Deleted {
 					return nil, fmt.Errorf("resource is deleted")
 				} else {
-					pod, ok := event.Object.(corev1.Pod)
+					pod, ok := event.Object.(*corev1.Pod)
+					// metaObject, ok := event.Object.(metav1.Object)
 					if ok == false {
-						Fail("failed to get pod")
+						Fail("failed to get metaObject")
 					}
 					GinkgoWriter.Printf("pod status: %+v\n", pod.Status.Phase)
 					if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
 						break
 					} else {
-						return &pod, nil
+						return pod, nil
 					}
 				}
 			}

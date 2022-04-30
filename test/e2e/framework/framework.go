@@ -28,7 +28,7 @@ type Framework struct {
 	KubeConfig    *rest.Config
 
 	// cluster info
-	C *ClusterInfo
+	C ClusterInfo
 
 	// todo , need docker cli to shutdown node
 
@@ -55,19 +55,19 @@ var clusterInfo = &ClusterInfo{}
 func NewFramework() *Framework {
 	f := &Framework{}
 	var err error
+	var ok bool
 
 	f.t = GinkgoT()
 	defer GinkgoRecover()
 
 	v := deepcopy.Copy(*clusterInfo)
-	t, ok := v.(ClusterInfo)
+	f.C, ok = v.(ClusterInfo)
 	Expect(ok).To(BeTrue())
-	f.C = &t
 
-	if t.KubeConfigPath == "" {
+	if f.C.KubeConfigPath == "" {
 		Fail("miss KubeConfigPath")
 	}
-	f.KubeConfig, err = clientcmd.BuildConfigFromFlags("", t.KubeConfigPath)
+	f.KubeConfig, err = clientcmd.BuildConfigFromFlags("", f.C.KubeConfigPath)
 	Expect(err).NotTo(HaveOccurred())
 
 	f.KubeConfig.QPS = 1000

@@ -1,8 +1,5 @@
 include ../Makefile.defs Makefile.defs
 
-DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
-CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
-E2E_KUBECONFIG = $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
 
 #============ kind-e2e ====================
 

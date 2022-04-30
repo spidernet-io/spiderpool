@@ -235,13 +235,12 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 
 // ------------- for namespace
 
-// CreateNamespace creates a namespace with the given name in the
-// Kubernetes API or fails the test if it encounters an error.
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   nsName,
-			Labels: map[string]string{"spiderpool-e2e-ns": "true"},
+			Name:      nsName,
+			Namespace: "",
+			Labels:    map[string]string{"spiderpool-e2e-ns": "true"},
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Namespace",
@@ -249,26 +248,25 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 		},
 	}
 
-	/*
-		key := client.ObjectKeyFromObject(ns)
-		existing := &corev1.Namespace{}
-		e := f.GetNamespacedResource(key, existing)
+	key := client.ObjectKeyFromObject(ns)
+	existing := &corev1.Namespace{}
+	e := f.GetNamespacedResource(key, existing)
 
-		if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
-			// Got an existing namespace and it's terminating: give it a chance to go
-			// away.
-			Eventually(func(g Gomega) {
-				defer GinkgoRecover()
-				existing := &corev1.Namespace{}
-				e := f.GetNamespacedResource(key, existing)
-				b := api_errors.IsNotFound(e)
-				if b == false {
-					GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
-				}
-				Expect(b).To(BeTrue())
-			}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
-		}
-	*/
+	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
+		// Got an existing namespace and it's terminating: give it a chance to go
+		// away.
+		Eventually(func(g Gomega) {
+			defer GinkgoRecover()
+			existing := &corev1.Namespace{}
+			e := f.GetNamespacedResource(key, existing)
+			b := api_errors.IsNotFound(e)
+			if b == false {
+				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
+			}
+			Expect(b).To(BeTrue())
+		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
+	}
+
 	GinkgoWriter.Printf(" create ns : %+v  \n", ns)
 	return f.CreateNamespacedResource(ns, opts...)
 }
@@ -294,6 +292,65 @@ func (f *Framework) NamespacedTest(namespace string, body func(string)) {
 		body(namespace)
 	})
 }
+
+/*
+func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   nsName,
+			Labels: map[string]string{"spiderpool-e2e-ns": "true"},
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Namespace",
+			APIVersion: "v1",
+		},
+	}
+
+	key := client.ObjectKeyFromObject(ns)
+	existing := &corev1.Namespace{}
+	e := f.GetNamespacedResource(key, existing)
+
+	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
+		// Got an existing namespace and it's terminating: give it a chance to go
+		// away.
+		Eventually(func(g Gomega) {
+			defer GinkgoRecover()
+			existing := &corev1.Namespace{}
+			e := f.GetNamespacedResource(key, existing)
+			b := api_errors.IsNotFound(e)
+			if b == false {
+				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
+			}
+			Expect(b).To(BeTrue())
+		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
+	}
+
+	GinkgoWriter.Printf(" create ns : %+v  \n", ns)
+	return f.CreateNamespacedResource(ns, opts...)
+}
+
+func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsName,
+		},
+	}
+	return f.DeleteNamespacedResource(ns, opts...)
+}
+
+func (f *Framework) NamespacedTest(namespace string, body func(string)) {
+	Context("with namespace: "+namespace, func() {
+		BeforeEach(func() {
+			f.CreateNamespace(namespace)
+		})
+		AfterEach(func() {
+			f.DeleteNamespace(namespace)
+		})
+
+		body(namespace)
+	})
+}
+*/
 
 // ---------------------------
 

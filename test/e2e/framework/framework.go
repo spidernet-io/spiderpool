@@ -259,6 +259,8 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	GinkgoWriter.Printf(" welan ns0  \n")
 
 	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	Expect(ctx).NotTo(BeNil())
+	Expect(cancel).NotTo(BeNil())
 	defer cancel()
 	GinkgoWriter.Printf(" welan ns1  \n")
 

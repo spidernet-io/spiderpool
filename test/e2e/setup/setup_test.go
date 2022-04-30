@@ -52,7 +52,7 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			// wait for pod ip
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			pod, err = frame.WaitPodStarted("t3", podNameSpace, ctx)
+			pod, err = frame.WaitPodStarted(podName, podNameSpace, ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pod).NotTo(BeNil())
 
@@ -62,13 +62,14 @@ var _ = Describe("Setup", Label(framework.LabelSmoke), func() {
 			if len(pod.Status.PodIPs) == 0 {
 				Fail("pod failed to get ip")
 			}
+			GinkgoWriter.Printf("pod %v/%v ip: %+v \n", podNameSpace, podName, pod.Status.PodIPs)
 			if frame.C.IpV4Enabled == true {
 				Expect(tools.CheckPodIpv4IPReady(pod)).To(BeTrue())
-				GinkgoWriter.Printf("succeeded to check pod ipv4 ip \n")
+				By("succeeded to check pod ipv4 ip ")
 			}
 			if frame.C.IpV6Enabled == true {
 				Expect(tools.CheckPodIpv6IPReady(pod)).To(BeTrue())
-				GinkgoWriter.Printf("succeeded to check pod ipv6 ip \n")
+				By("succeeded to check pod ipv6 ip \n")
 			}
 
 			// delete pod

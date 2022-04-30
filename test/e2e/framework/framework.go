@@ -186,6 +186,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 
 	for {
 		select {
+		// if pod not exist , got no event
 		case event, ok := <-watchInterface.ResultChan():
 			if ok == false {
 				return nil, fmt.Errorf("channel is closed ")

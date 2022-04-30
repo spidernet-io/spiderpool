@@ -5,19 +5,19 @@
 DOWNLOAD_DIR="$1"
 [ -z "$DOWNLOAD_DIR" ] && echo "error, miss DOWNLOAD_DIR" && exit 1
 mkdir -p $DOWNLOAD_DIR
-echo "download package to $DOWNLOAD_DIR "
+echo "Download Package to $DOWNLOAD_DIR "
 
 [ -z "$CNI_PACKAGE_VERSION" ] && echo "error, miss CNI_PACKAGE_VERSION " && exit 1
-echo "use CNI_PACKAGE_VERSION $CNI_PACKAGE_VERSION"
+echo "Using CNI_PACKAGE_VERSION: $CNI_PACKAGE_VERSION"
 
-[ -z "$IMAGE_MUTLUS" ] && echo "error, miss IMAGE_MUTLUS " && exit 1
-echo "use IMAGE_MUTLUS $IMAGE_MUTLUS"
+[ -z "$IMAGE_MULTUS" ] && echo "error, miss IMAGE_MULTUS " && exit 1
+echo "Using IMAGE_MUTLUS: $IMAGE_MULTUS"
 
 [ -z "$IMAGE_WHEREABOUTS" ] && echo "error, miss IMAGE_WHEREABOUTS " && exit 1
-echo "use IMAGE_WHEREABOUTS $IMAGE_WHEREABOUTS"
+echo "Using IMAGE_WHEREABOUTS: $IMAGE_WHEREABOUTS"
 
 [ -z "$TEST_IMAGE" ] && echo "error, miss TEST_IMAGE " && exit 1
-echo "use TEST_IMAGE $TEST_IMAGE"
+echo "Using TEST_IMAGE: $TEST_IMAGE"
 
 
 #=================================
@@ -30,14 +30,14 @@ if [ ! -f  "${DOWNLOAD_DIR}/${PACKAGE_NAME}" ]; then
   echo "begin to download cni-plugins ${PACKAGE_NAME} "
   wget -P ${DOWNLOAD_DIR} https://github.com/containernetworking/plugins/releases/download/${CNI_PACKAGE_VERSION}/${PACKAGE_NAME}
 else
-  echo "${DOWNLOAD_DIR}/${PACKAGE_NAME} exist, skip download..."
+  echo "${DOWNLOAD_DIR}/${PACKAGE_NAME} exist, Skip download"
 fi
 
 #=================================
 
 # prepare image
 IMAGES="
-$IMAGE_MUTLUS \
+$IMAGE_MULTUS \
 $IMAGE_WHEREABOUTS \
 $TEST_IMAGE"
 
@@ -46,9 +46,9 @@ do
   SUFF_IMAGE=$(echo $image | awk -F ':' '{print $1}')
   EXIST=$(docker images | grep $SUFF_IMAGE)
   if test -z "$EXIST"; then
-    echo "Image: $image not exist locally, will pull..."
+    echo "Image: $image not exist locally, Will pull..."
     docker pull $image
   else
-    echo "Image: $image already exist locally"
+    echo "Image: $image already exist locally, Skip pull"
   fi
 done

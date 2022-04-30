@@ -30,15 +30,15 @@ install: build-image-to-tar load-image-to-kind apply-chart-to-kind
 build-image-to-tar:
 	@echo "Build Image with tag: $(GIT_COMMIT_VERSION)"
 	@for i in $(IMAGES); do \
-		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) --build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) --build-arg VERSION=$(GIT_COMMIT_VERSION) --file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile --output type=tar,dest=$(ROOT_DIR)/tmp/"$${i##*/}"-race.tar --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
-		echo "$${i##*/} image-tar build success, path: $(ROOT_DIR)/tmp/$${i##*/}-race.tar" ; \
+		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) --build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) --build-arg VERSION=$(GIT_COMMIT_VERSION) --file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile --output type=tar,dest=$(DOWNLOAD_DIR)/"$${i##*/}"-race.tar --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
+		echo "$${i##*/} image-tar build success, path: $(DOWNLOAD_DIR)/$${i##*/}-race.tar" ; \
 	done
 
 .PHONY: load-image-to-kind
 load-image-to-kind:
 	@echo "Load Image to kind..."
 	@for i in $(IMAGES); do \
-        cat $(ROOT_DIR)/tmp/"$${i##*/}"-race.tar | docker import - $$i-ci:$(GIT_COMMIT_VERSION)-race; \
+        cat $(DOWNLOAD_DIR)/"$${i##*/}"-race.tar | docker import - $$i-ci:$(GIT_COMMIT_VERSION)-race; \
     	kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
     done;
 

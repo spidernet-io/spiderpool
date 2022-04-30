@@ -35,9 +35,13 @@ E2E_EXT_ARGS ?=
 E2E_TIMEOUT ?= 60m
 
 #============Image version===========
-IMAGE_MUTLUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:thick
+IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:thick
 IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-amd64
 TEST_IMAGE_NAME := alpine
 
+#============Tmp Path================
+DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
+CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
+E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
 #=============http_proxy=============
 http_proxy ?=

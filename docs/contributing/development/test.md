@@ -29,3 +29,4 @@
 
         # make e2e_kind_init
         # make e2e_test
+        # make clean_e2e

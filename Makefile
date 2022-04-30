@@ -51,10 +51,7 @@ apply-chart-to-kind:
 	--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
 	--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
 
-clean:
-	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
-	-$(QUIET) rm -rf $(DESTDIR_BIN)
-	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)
+
 
 .PHONY: lint
 lint-golang:
@@ -286,3 +283,16 @@ e2e_kind_init:
 .PHONY: e2e_test
 e2e_test:
 	$(QUIET)  make -C test e2e-test
+
+
+# ==========================
+
+.PHONY: clean_e2e
+clean_e2e:
+	$(QUIET)  make -C test clean
+
+.PHONY: clean
+clean: clean_e2e
+	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
+	-$(QUIET) rm -rf $(DESTDIR_BIN)
+	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)

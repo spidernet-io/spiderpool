@@ -247,8 +247,8 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	key := client.ObjectKeyFromObject(ns)
 	existing := &corev1.Namespace{}
 
-	GinkgoWriter.Printf("key $+v \n", key)
-	GinkgoWriter.Printf("existing $+v \n", existing)
+	GinkgoWriter.Printf("key %+v \n", key)
+	GinkgoWriter.Printf("existing %+v \n", existing)
 
 	e := f.GetResource(key, existing)
 	GinkgoWriter.Printf("GetResource \n")

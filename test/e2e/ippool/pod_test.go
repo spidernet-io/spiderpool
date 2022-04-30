@@ -16,11 +16,20 @@ var _ = Describe("test pod", Label(framework.LabelSmoke), func() {
 	// namespace must be: lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
 	const namespacePrefix string = "ippool-pod-"
 
-	frame.NamespacedTest(namespacePrefix+"simple", func(namespace string) {
-		It("test default ippool", func() {
-			podName := "simple"
+	Context("test default ippool", Label(framework.LabelSmoke), func() {
+		var namespace = namespacePrefix + "simple"
 
+		BeforeEach(func() {
+			GinkgoWriter.Printf("create namespace %v \n", namespace)
 			frame.CreateNamespace(namespace)
+		})
+		AfterEach(func() {
+			GinkgoWriter.Printf("delete namespace %v \n", namespace)
+			frame.DeleteNamespace(namespace)
+		})
+
+		It("", func() {
+			podName := "simple"
 
 			// create pod
 			GinkgoWriter.Printf("try to create pod \n")

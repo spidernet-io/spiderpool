@@ -240,7 +240,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 // ------------- for daemonset , to do
 
 // ------------- for namespace
-
+/*
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
 	defer GinkgoRecover()
 
@@ -291,22 +291,8 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 
 	return nil
 }
+*/
 
-func (f *Framework) NamespacedTest(namespace string, body func(string)) {
-	Context("with namespace: "+namespace, func() {
-		BeforeEach(func() {
-			GinkgoWriter.Printf(" welan 3werrrr    \n")
-			// f.CreateNamespace(namespace)
-		})
-		AfterEach(func() {
-			// f.DeleteNamespace(namespace)
-		})
-
-		body(namespace)
-	})
-}
-
-/*
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -324,8 +310,6 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	e := f.GetNamespacedResource(key, existing)
 
 	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
-		// Got an existing namespace and it's terminating: give it a chance to go
-		// away.
 		Eventually(func(g Gomega) {
 			defer GinkgoRecover()
 			existing := &corev1.Namespace{}
@@ -350,20 +334,6 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 	}
 	return f.DeleteNamespacedResource(ns, opts...)
 }
-
-func (f *Framework) NamespacedTest(namespace string, body func(string)) {
-	Context("with namespace: "+namespace, func() {
-		BeforeEach(func() {
-			f.CreateNamespace(namespace)
-		})
-		AfterEach(func() {
-			f.DeleteNamespace(namespace)
-		})
-
-		body(namespace)
-	})
-}
-*/
 
 // ---------------------------
 

@@ -96,9 +96,9 @@ func NewFramework() *Framework {
 
 // ------------- basic operate
 func (f *Framework) CreateNamespacedResource(obj client.Object, opts ...client.CreateOption) error {
-	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	defer cancel()
-	return f.Client.Create(ctx, obj, opts...)
+	// ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	// defer cancel()
+	return f.Client.Create(context.TODO(), obj, opts...)
 }
 
 func (f *Framework) DeleteNamespacedResource(obj client.Object, opts ...client.DeleteOption) error {

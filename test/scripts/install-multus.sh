@@ -30,11 +30,14 @@ echo "$CURRENT_FILENAME : TEST_IMAGE $TEST_IMAGE "
 echo "$CURRENT_FILENAME : CLUSTER_PATH $CLUSTER_PATH "
 
 
+echo "load $IMAGE_MULTUS to kind cluster"
 kind load docker-image $IMAGE_MULTUS --name ${E2E_CLUSTER_NAME}
+
+echo "load $TEST_IMAGE to kind cluster"
 kind load docker-image $TEST_IMAGE --name ${E2E_CLUSTER_NAME}
 
 # tmplate
-IMAGE_TAG=$IMAGE_MULTUS  p2ctl -t $(pwd)/yamls/multus-daemonset-thick-plugin.tmpl \
+IMAGE_TAG=$IMAGE_MULTUS  p2ctl -t ${CURRENT_DIR_PATH}/../yamls/multus-daemonset-thick-plugin.tmpl \
     > $CLUSTER_PATH/multus-daemonset-thick-plugin.yml
 
 kubectl apply -f $CLUSTER_PATH/multus-daemonset-thick-plugin.yml --kubeconfig ${E2E_KUBECONFIG}

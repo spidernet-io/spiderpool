@@ -43,7 +43,7 @@ ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
 	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
 		TEST_IMAGE=$(TEST_IMAGE_NAME) \
-		CLUSTER_PATH=$(CLUSTER_DIR) \
+		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	@echo -e "\033[35m Init The Cluster Finished, Please Use 'kubectl get nodes --kubeconfig $(E2E_KUBECONFIG)' \033[0m"

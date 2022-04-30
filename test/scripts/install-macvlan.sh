@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Authors of Spider-net
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 E2E_CLUSTER_NAME="$1"
 CNI_CONF_PATH="$2"
 

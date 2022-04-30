@@ -120,11 +120,15 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
-	existing := &corev1.Pod{}
+
 	Eventually(func(g Gomega) bool {
 		defer GinkgoRecover()
+		existing := &corev1.Pod{}
 		e := f.GetResource(key, existing)
-		g.Expect(existing.ObjectMeta.DeletionTimestamp).NotTo(BeNil())
+		// g.Expect(existing.ObjectMeta.DeletionTimestamp).NotTo(BeNil())
+		if existing.ObjectMeta.DeletionTimestamp == nil {
+			Fail("a same pod %v/%v exist")
+		}
 		b := api_errors.IsNotFound(e)
 		if b == false {
 			GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)

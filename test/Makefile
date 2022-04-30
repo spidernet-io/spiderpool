@@ -18,6 +18,7 @@ kind-init: kind-clean prepare
 	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
 	$(QUIET) RED='\E[1;31m'; CLEAR='\E[0m' ; echo "$${RED} Install kind cluster with name ${E2E_CLUSTER_NAME} $${CLEAR}"
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
+	$(QUIET) [ "$(E2E_IP_FAMILY)" != "ipv4" ] && [ "$(E2E_IP_FAMILY)" != "ipv6" ]  && [ "$(E2E_IP_FAMILY)" != "dual" ] && echo "error, E2E_IP_FAMILY must be ipv4/ipv6/dual" && exit 1
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
 			singe_node=$(E2E_SINGE_NODE) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
 			disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
@@ -66,10 +67,34 @@ prepare:
 .PHONY: e2e-test
 e2e-test:
 	$(QUIET)@echo "Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} "
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh  \
+	$(QUIET)  FLAGS="" ; \
+		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
+		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
+		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=false " ; \
+		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
+		  FLAGS+=" --IpV4Enabled=false --IpV6Enabled=true " ; \
+		else \
+		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=true " ; \
+		fi ; \
+		if [ -f "$(E2E_KUBECONFIG)" ] ; then \
+		   FLAGS+=" --KubeConfigPath=$(E2E_KUBECONFIG) "  ; \
+		else \
+		   echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; \
+        fi; \
+		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
+		  	FLAGS+=" --MultusEnabled=true " ; \
+ 		else \
+ 			FLAGS+=" --MultusEnabled=false " ; \
+ 		fi ; \
+		if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
+		  	FLAGS+=" --SpiderIPAMEnabled=false " ; \
+ 		else \
+ 			FLAGS+=" --SpiderIPAMEnabled=true " ; \
+ 		fi ; \
+		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 		--race --timeout=$(E2E_TIMEOUT) \
 		--label-filter="$(E2E_GINKGO_LABELS)"  -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
-		-r e2e/* -- --ipFamily=$(E2E_IP_FAMILY) --kubeconfig=$(E2E_KUBECONFIG) ;  \
+		-r e2e/* -- $${FLAGS} ;  \
 		if (($$?==0)) ; then \
 		  	echo "succeeded to run all test" ; \
   			make kind-clean ; \

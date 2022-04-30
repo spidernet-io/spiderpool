@@ -296,10 +296,10 @@ func (f *Framework) NamespacedTest(namespace string, body func(string)) {
 	Context("with namespace: "+namespace, func() {
 		BeforeEach(func() {
 			GinkgoWriter.Printf(" welan 3werrrr    \n")
-			f.CreateNamespace(namespace)
+			// f.CreateNamespace(namespace)
 		})
 		AfterEach(func() {
-			f.DeleteNamespace(namespace)
+			// f.DeleteNamespace(namespace)
 		})
 
 		body(namespace)

@@ -246,7 +246,13 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	}
 	key := client.ObjectKeyFromObject(ns)
 	existing := &corev1.Namespace{}
+
+	GinkgoWriter.Printf("key $+v \n", key)
+	GinkgoWriter.Printf("existing $+v \n", existing)
+
 	e := f.GetResource(key, existing)
+	GinkgoWriter.Printf("GetResource \n")
+
 	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
 		// Got an existing namespace and it's terminating: give it a chance to go
 		// away.

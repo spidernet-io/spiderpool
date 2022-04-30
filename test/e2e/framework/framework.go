@@ -265,10 +265,10 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	defer cancel2()
 	GinkgoWriter.Printf(" welan ns1  \n")
 
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-	GinkgoWriter.Printf(" welan ns2 : %+v  \n", ns)
+	ns2 := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
+	GinkgoWriter.Printf(" welan ns2 : %+v  \n", ns2)
 
-	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx1, ns, metav1.CreateOptions{})
+	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx1, ns2, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	return nil

@@ -255,6 +255,12 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	// }
 	// GinkgoWriter.Printf(" create ns : %+v  \n", ns)
 	// return f.Client.Create(context.TODO(), ns, opts...)
+	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel()
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
+	_, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
 	return nil
 }
 
@@ -265,6 +271,12 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 	// 	},
 	// }
 	// return f.DeleteNamespacedResource(ns, opts...)
+
+	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel()
+	err := f.KubeClientSet.CoreV1().Namespaces().Delete(ctx, nsName, metav1.DeleteOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
 	return nil
 }
 

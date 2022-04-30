@@ -74,8 +74,8 @@ prepare:
 .PHONY: e2e-test
 e2e-test:
 	$(QUIET) ( docker ps | grep "kindest/node" &>/dev/null ) || { echo "error, please setup kind first" ; exit 1 ; }
-	$(QUIET)@echo "Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} "
-	$(QUIET)  FLAGS="" ; \
+	$(QUIET) echo "Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} "
+	@  FLAGS="" ; \
 		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=false " ; \

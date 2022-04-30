@@ -101,22 +101,22 @@ func NewFramework() *Framework {
 }
 
 // ------------- basic operate
-func (f *Framework) CreateNamespacedResource(obj client.Object, opts ...client.CreateOption) error {
-	// ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	// defer cancel()
-	return f.Client.Create(context.TODO(), obj, opts...)
+func (f *Framework) CreateResource(obj client.Object, opts ...client.CreateOption) error {
+	ctx1, cancel1 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel1()
+	return f.Client.Create(ctx1, obj, opts...)
 }
 
-func (f *Framework) DeleteNamespacedResource(obj client.Object, opts ...client.DeleteOption) error {
-	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	defer cancel()
-	return f.Client.Delete(ctx, obj, opts...)
+func (f *Framework) DeleteResource(obj client.Object, opts ...client.DeleteOption) error {
+	ctx2, cancel2 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel2()
+	return f.Client.Delete(ctx2, obj, opts...)
 }
 
-func (f *Framework) GetNamespacedResource(key client.ObjectKey, obj client.Object) error {
-	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
-	defer cancel()
-	return f.Client.Get(ctx, key, obj)
+func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
+	ctx3, cancel3 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
+	defer cancel3()
+	return f.Client.Get(ctx3, key, obj)
 }
 
 // ------------- for pod
@@ -132,7 +132,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &corev1.Pod{}
-	e := f.GetNamespacedResource(key, existing)
+	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
 		s := fmt.Sprintf("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 		Fail(s)
@@ -140,7 +140,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 		Eventually(func(g Gomega) bool {
 			defer GinkgoRecover()
 			existing := &corev1.Pod{}
-			e := f.GetNamespacedResource(key, existing)
+			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if b == false {
 				GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
@@ -149,7 +149,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
 	}
 
-	return f.CreateNamespacedResource(pod, opts...)
+	return f.CreateResource(pod, opts...)
 }
 
 func (f *Framework) DeletePod(name, namespace string, opts ...client.DeleteOption) error {
@@ -159,7 +159,7 @@ func (f *Framework) DeletePod(name, namespace string, opts ...client.DeleteOptio
 			Name:      name,
 		},
 	}
-	return f.DeleteNamespacedResource(pod, opts...)
+	return f.DeleteResource(pod, opts...)
 }
 
 func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
@@ -171,7 +171,7 @@ func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
 	}
 	key := client.ObjectKeyFromObject(pod)
 	existing := &corev1.Pod{}
-	e := f.GetNamespacedResource(key, existing)
+	e := f.GetResource(key, existing)
 	if e != nil {
 		return nil, e
 	}
@@ -240,58 +240,6 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 // ------------- for daemonset , to do
 
 // ------------- for namespace
-/*
-func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
-	defer GinkgoRecover()
-
-	// ns := &corev1.Namespace{
-	// 	ObjectMeta: metav1.ObjectMeta{
-	// 		Name:      nsName,
-	// 		Namespace: "",
-	// 		Labels:    map[string]string{"spiderpool-e2e-ns": "true"},
-	// 	},
-	// 	TypeMeta: metav1.TypeMeta{
-	// 		Kind:       "Namespace",
-	// 		APIVersion: "v1",
-	// 	},
-	// }
-	// GinkgoWriter.Printf(" create ns : %+v  \n", ns)
-	// return f.Client.Create(context.TODO(), ns, opts...)
-
-	GinkgoWriter.Printf(" welan ns0  \n")
-
-	ctx1, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
-	GinkgoWriter.Printf(" welan ns0.5  \n")
-	Expect(ctx1).NotTo(BeNil())
-	Expect(cancel2).NotTo(BeNil())
-	defer cancel2()
-	GinkgoWriter.Printf(" welan ns1  \n")
-
-	ns2 := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-	GinkgoWriter.Printf(" welan ns2 : %+v  \n", ns2)
-
-	_, e2 := f.KubeClientSet.CoreV1().Namespaces().Create(ctx1, ns2, metav1.CreateOptions{})
-	Expect(e2).NotTo(HaveOccurred())
-
-	return nil
-}
-
-func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
-	// ns := &corev1.Namespace{
-	// 	ObjectMeta: metav1.ObjectMeta{
-	// 		Name: nsName,
-	// 	},
-	// }
-	// return f.DeleteNamespacedResource(ns, opts...)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err := f.KubeClientSet.CoreV1().Namespaces().Delete(ctx, nsName, metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
-
-	return nil
-}
-*/
 
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
 	ns := &corev1.Namespace{
@@ -307,13 +255,13 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 
 	key := client.ObjectKeyFromObject(ns)
 	existing := &corev1.Namespace{}
-	e := f.GetNamespacedResource(key, existing)
+	e := f.GetResource(key, existing)
 
 	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
 		Eventually(func(g Gomega) {
 			defer GinkgoRecover()
 			existing := &corev1.Namespace{}
-			e := f.GetNamespacedResource(key, existing)
+			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if b == false {
 				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
@@ -321,9 +269,7 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			Expect(b).To(BeTrue())
 		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
 	}
-
-	GinkgoWriter.Printf(" create ns : %+v  \n", ns)
-	return f.CreateNamespacedResource(ns, opts...)
+	return f.CreateResource(ns, opts...)
 }
 
 func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
@@ -332,7 +278,7 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 			Name: nsName,
 		},
 	}
-	return f.DeleteNamespacedResource(ns, opts...)
+	return f.DeleteResource(ns, opts...)
 }
 
 // ---------------------------

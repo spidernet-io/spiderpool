@@ -171,13 +171,13 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: image-tar-spiderpool-agent
-          path: tmp
+          path: test/.download
 
       - name: Download spiderpool-controller image
         uses: actions/download-artifact@v2
         with:
           name: image-tar-spiderpool-controller
-          path: tmp
+          path: test/.download
 
       - name: Load Image to Kind
         run: |

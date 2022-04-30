@@ -40,6 +40,7 @@ IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-amd64
 TEST_IMAGE_NAME := alpine
 
 #============Tmp Path================
+# do not modify this ,it is also writen on CI workflow file
 DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
 CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
 E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config

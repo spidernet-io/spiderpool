@@ -18,7 +18,7 @@ var _ = Describe("test pod", Label(framework.LabelSmoke), func() {
 	frame.NamespacedTest(namespacePrefix+"simple", func(namespace string) {
 		It("test default ippool", func() {
 			podName := "simple"
-
+			namespace = "default"
 			// create pod
 			GinkgoWriter.Printf("try to create pod \n")
 			pod := &corev1.Pod{

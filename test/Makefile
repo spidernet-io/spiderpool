@@ -12,9 +12,10 @@ e2e:  kind-init e2e-test
 
 
 .PHONY: kind-init
-kind-init: check_env kind-clean prepare
-	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
-	@echo -e "\033[35m [Step 3] Init The Cluster: $(E2E_CLUSTER_NAME) \033[0m"
+kind-init: check_env prepare
+	@echo -e "\033[35m [Step 3] Init kind for the cluster: $(E2E_CLUSTER_NAME) \033[0m"
+	-@ kind delete cluster --name ${E2E_CLUSTER_NAME} &>/dev/null
+	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
 			 singe_node=$(E2E_SINGE_NODE) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
@@ -53,12 +54,10 @@ endif
 
 
 
-.PHONY: kind-clean
-kind-clean:
-	@echo -e "\033[35m [Step 1] Clean The Cluster: $(E2E_CLUSTER_NAME) \033[0m"
-	@echo "Deleting Tmp files..."
+.PHONY: clean
+clean:
 	@rm -rf $(CLUSTER_DIR)
-	-@kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
+	-@  kind get clusters | xargs -n1 -i bash -c "kind delete cluster --name {}"
 
 
 .PHONY: check_env
@@ -83,8 +82,9 @@ prepare:
 #============ e2e ====================
 .PHONY: e2e-test
 e2e-test:
-	$(QUIET) ( docker ps | grep "kindest/node" &>/dev/null ) || { echo "error, please setup kind first" ; exit 1 ; }
-	@ echo -e "\033[35m [E2E] Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
+	@echo -e "\033[35m Run e2e test on the cluster $(E2E_CLUSTER_NAME) \033[0m "
+	$(QUIET) ( docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-" &>/dev/null ) || { echo "error, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; }
+	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
 	@  FLAGS="" ; \
 		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
@@ -127,5 +127,5 @@ usage:
 	@echo -e "  \033[35m make prepare \033[0m:       --- Check some required tools is exist like docker/helm.etc and download cni-plugins"
 	@echo -e "  \033[35m make init \033[0m:          --- Setup a kind cluster, Such as: kind-init E2E_CLUSTER_NAME=spider,More config refer to Makefile.defs(e2e-kind-config)"
 	@echo -e "  \033[35m make e2e-test \033[0m:      --- Ginkgo test,Such as: make e2e-test, More config refer to Makefile.defs(e2e-kind-config)"
-	@echo -e "  \033[35m make kind-clean \033[0m:    --- Clean kind cluster and some config file, Such as: make kind-clean E2E_CLUSTER_NAME=spider"
+	@echo -e "  \033[35m make clean \033[0m:    --- Clean kind cluster and some config file, Such as: make clean E2E_CLUSTER_NAME=spider"
 	@echo -e "  \033[35m make e2e \033[0m:           --- prepare -> kind-init -> e2e-test "

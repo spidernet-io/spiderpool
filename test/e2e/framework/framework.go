@@ -247,28 +247,8 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			APIVersion: "v1",
 		},
 	}
-
-	key := client.ObjectKeyFromObject(ns)
-	existing := &corev1.Namespace{}
-	e := f.GetNamespacedResource(key, existing)
-
-	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
-		// Got an existing namespace and it's terminating: give it a chance to go
-		// away.
-		Eventually(func(g Gomega) {
-			defer GinkgoRecover()
-			existing := &corev1.Namespace{}
-			e := f.GetNamespacedResource(key, existing)
-			b := api_errors.IsNotFound(e)
-			if b == false {
-				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
-			}
-			Expect(b).To(BeTrue())
-		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
-	}
-
 	GinkgoWriter.Printf(" create ns : %+v  \n", ns)
-	return f.CreateNamespacedResource(ns, opts...)
+	return f.Client.Create(context.TODO(), ns, opts...)
 }
 
 func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {

@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	// "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -28,8 +28,8 @@ import (
 
 type Framework struct {
 	// clienset
-	KubeClientSet client.WithWatch
-	KubeConfig    *rest.Config
+	Client     client.WithWatch
+	KubeConfig *rest.Config
 
 	// cluster info
 	C ClusterInfo
@@ -83,8 +83,8 @@ func NewFramework() *Framework {
 	err = apiextensions_v1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	// f.KubeClientSet, err = client.New(f.KubeConfig, client.Options{Scheme: scheme})
-	f.KubeClientSet, err = client.NewWithWatch(f.KubeConfig, client.Options{Scheme: scheme})
+	// f.Client, err = client.New(f.KubeConfig, client.Options{Scheme: scheme})
+	f.Client, err = client.NewWithWatch(f.KubeConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	f.ApiOperateTimeout = 15 * time.Second
@@ -98,19 +98,19 @@ func NewFramework() *Framework {
 func (f *Framework) CreateResource(obj client.Object, opts ...client.CreateOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel()
-	return f.KubeClientSet.Create(ctx, obj, opts...)
+	return f.Client.Create(ctx, obj, opts...)
 }
 
 func (f *Framework) DeleteResource(obj client.Object, opts ...client.DeleteOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel()
-	return f.KubeClientSet.Delete(ctx, obj, opts...)
+	return f.Client.Delete(ctx, obj, opts...)
 }
 
 func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	ctx, cancel := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel()
-	return f.KubeClientSet.Get(ctx, key, obj)
+	return f.Client.Get(ctx, key, obj)
 }
 
 // ------------- for pod
@@ -125,7 +125,6 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
-
 	existing := &corev1.Pod{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
@@ -180,7 +179,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		Namespace:     namespace,
 		FieldSelector: fields.OneTermEqualSelector("metadata.name", name),
 	}
-	watchInterface, err := f.KubeClientSet.Watch(ctx, &corev1.PodList{}, l)
+	watchInterface, err := f.Client.Watch(ctx, &corev1.PodList{}, l)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(watchInterface).NotTo(BeNil())
 	defer watchInterface.Stop()
@@ -246,30 +245,26 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 		},
 	}
 
-	// key := client.ObjectKeyFromObject(ns)
+	/*
+		key := client.ObjectKeyFromObject(ns)
+		existing := &corev1.Namespace{}
+		e := f.GetResource(key, existing)
 
-	existing := &corev1.Namespace{}
-
-	GinkgoWriter.Printf("existing %+v \n", existing)
-
-	key := types.NamespacedName{Name: nsName}
-	e := f.GetResource(key, existing)
-	GinkgoWriter.Printf("GetResource \n")
-
-	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
-		// Got an existing namespace and it's terminating: give it a chance to go
-		// away.
-		Eventually(func(g Gomega) {
-			defer GinkgoRecover()
-			existing := &corev1.Namespace{}
-			e := f.GetResource(key, existing)
-			b := api_errors.IsNotFound(e)
-			if b == false {
-				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
-			}
-			Expect(b).To(BeTrue())
-		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
-	}
+		if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
+			// Got an existing namespace and it's terminating: give it a chance to go
+			// away.
+			Eventually(func(g Gomega) {
+				defer GinkgoRecover()
+				existing := &corev1.Namespace{}
+				e := f.GetResource(key, existing)
+				b := api_errors.IsNotFound(e)
+				if b == false {
+					GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
+				}
+				Expect(b).To(BeTrue())
+			}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
+		}
+	*/
 	return f.CreateResource(ns, opts...)
 }
 

@@ -12,7 +12,7 @@ func CheckPodIpv4IPReady(pod *corev1.Pod) bool {
 		return false
 	}
 	for _, v := range pod.Status.PodIPs {
-		if govalidator.IsIPv4(v.IP) == true {
+		if govalidator.IsIPv4(v.IP) {
 			return true
 		}
 	}
@@ -24,7 +24,7 @@ func CheckPodIpv6IPReady(pod *corev1.Pod) bool {
 		return false
 	}
 	for _, v := range pod.Status.PodIPs {
-		if govalidator.IsIPv6(v.IP) == true {
+		if govalidator.IsIPv6(v.IP) {
 			return true
 		}
 	}

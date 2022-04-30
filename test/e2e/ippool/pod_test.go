@@ -23,11 +23,13 @@ var _ = Describe("test pod", Label(framework.LabelSmoke), func() {
 
 		BeforeEach(func() {
 			GinkgoWriter.Printf("create namespace %v \n", namespace)
-			frame.CreateNamespace(namespace)
+			err = frame.CreateNamespace(namespace)
+			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
-			frame.DeleteNamespace(namespace)
+			err = frame.DeleteNamespace(namespace)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("", func() {

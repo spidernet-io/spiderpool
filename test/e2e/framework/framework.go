@@ -142,7 +142,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			existing := &corev1.Pod{}
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
-			if b == false {
+			if !b {
 				GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 			}
 			return b
@@ -194,7 +194,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		select {
 		// if pod not exist , got no event
 		case event, ok := <-watchInterface.ResultChan():
-			if ok == false {
+			if !ok {
 				return nil, fmt.Errorf("channel is closed ")
 			} else {
 				// GinkgoWriter.Printf("receive event: %+v\n", event)
@@ -212,7 +212,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 				} else {
 					pod, ok := event.Object.(*corev1.Pod)
 					// metaObject, ok := event.Object.(metav1.Object)
-					if ok == false {
+					if !ok {
 						Fail("failed to get metaObject")
 					}
 					GinkgoWriter.Printf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
@@ -263,7 +263,7 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			existing := &corev1.Namespace{}
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
-			if b == false {
+			if !b {
 				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
 			}
 			Expect(b).To(BeTrue())

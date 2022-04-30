@@ -223,61 +223,70 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 	}
 }
 
-// ------------- for namespace
+// ------------- for replicaset , to do
 
-/*
-// T exposes a GinkgoTInterface which exposes many of the same methods
-// as a *testing.T, for use in tests that previously required a *testing.T.
-func (f *Framework) T() GinkgoTInterface {
-	return f.t
-}
+// ------------- for deployment , to do
+
+// ------------- for statefulset , to do
+
+// ------------- for job , to do
+
+// ------------- for daemonset , to do
+
+// ------------- for namespace
 
 // CreateNamespace creates a namespace with the given name in the
 // Kubernetes API or fails the test if it encounters an error.
-func (f *Framework) CreateNamespace(namespaceName string) {
+func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   namespaceName,
+			Name:   nsName,
 			Labels: map[string]string{"spiderpool-e2e-ns": "true"},
 		},
 	}
 	key := client.ObjectKeyFromObject(ns)
-
 	existing := &corev1.Namespace{}
-	err := f.KubeClientSet.Get(context.Background(), key, existing)
-	if err == nil && existing.Status.Phase == corev1.NamespaceTerminating {
+	e := f.GetResource(key, existing)
+	if e == nil && existing.Status.Phase == corev1.NamespaceTerminating {
 		// Got an existing namespace and it's terminating: give it a chance to go
 		// away.
-		Consistently(func(g Gomega) {
+		Eventually(func(g Gomega) {
 			defer GinkgoRecover()
-			b := api_errors.IsNotFound(f.KubeClientSet.Get(context.TODO(), key, existing))
+			existing := &corev1.Namespace{}
+			e := f.GetResource(key, existing)
+			b := api_errors.IsNotFound(e)
+			if b == false {
+				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
+			}
 			Expect(b).To(BeTrue())
-		}, "30s").Should(Succeed())
+		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
 	}
-
-	Eventually(func(g Gomega) {
-		defer GinkgoRecover()
-		err := f.KubeClientSet.Create(context.TODO(), ns)
-		g.Expect(err).NotTo(HaveOccurred())
-	}, "30s").Should(Succeed())
-
+	return f.CreateResource(ns, opts...)
 }
 
-type NamespacedTestBody func(string)
+func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsName,
+		},
+	}
+	return f.DeleteResource(ns, opts...)
+}
 
-func (f *Framework) NamespacedTest(namespace string, body NamespacedTestBody) {
-	ginkgo.Context("with namespace: "+namespace, func() {
-		ginkgo.BeforeEach(func() {
+func (f *Framework) NamespacedTest(namespace string, body func(string)) {
+	Context("with namespace: "+namespace, func() {
+		BeforeEach(func() {
 			f.CreateNamespace(namespace)
 		})
-		ginkgo.AfterEach(func() {
-			f.DeleteNamespace(namespace, false)
+		AfterEach(func() {
+			f.DeleteNamespace(namespace)
 		})
 
 		body(namespace)
 	})
 }
-*/
+
+// ---------------------------
 
 func init() {
 	testing.Init()

@@ -14,11 +14,9 @@ e2e:  kind-init e2e-test
 
 
 .PHONY: kind-init
-kind-init: kind-clean prepare
-	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
+kind-init: check_env kind-clean prepare
 	$(QUIET) RED='\E[1;31m'; CLEAR='\E[0m' ; echo "$${RED} Install kind cluster with name ${E2E_CLUSTER_NAME} $${CLEAR}"
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
-	$(QUIET) [ "$(E2E_IP_FAMILY)" != "ipv4" ] && [ "$(E2E_IP_FAMILY)" != "ipv6" ]  && [ "$(E2E_IP_FAMILY)" != "dual" ] && echo "error, E2E_IP_FAMILY must be ipv4/ipv6/dual" && exit 1
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
 			singe_node=$(E2E_SINGE_NODE) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
 			disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
@@ -43,7 +41,8 @@ ifeq ($(INSTALL_MULTUS),true)
 	@bash scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	@kubectl get nodes --kubeconfig $(E2E_KUBECONFIG) > /dev/null 2>&1 || echo "failed to setup cluster"
-	@echo "Please use: kubectl get nodes --kubeconfig $(E2E_KUBECONFIG)"
+	@echo "--------------------"
+	@echo "succeeded to setup cluster $(E2E_CLUSTER_NAME) "
 
 
 .PHONY: kind-clean
@@ -53,11 +52,19 @@ kind-clean:
 	kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
 
 
+.PHONY: check_env
+check_env:
+	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
+	$(QUIET) ( [ "$(E2E_IP_FAMILY)" == "ipv4" ] || [ "$(E2E_IP_FAMILY)" == "ipv6" ]  || [ "$(E2E_IP_FAMILY)" == "dual" ] ) \
+			|| { echo "error, E2E_IP_FAMILY=$(E2E_IP_FAMILY) must be ipv4/ipv6/dual" ;  exit 1 ; }
+
+
+
 .PHONY: prepare
 prepare:
-	$(QUEIT) JUST_CLI_CHECK=true scripts/install-tools.sh
-	$(QUEIT) mkdir -p $(DOWNLOAD_DIR)
-	$(QUEIT) IMAGE_MUTLUS=$(IMAGE_MUTLUS_NAME) \
+	$(QUIET) JUST_CLI_CHECK=true scripts/install-tools.sh
+	$(QUIET) mkdir -p $(DOWNLOAD_DIR)
+	$(QUIET) IMAGE_MUTLUS=$(IMAGE_MUTLUS_NAME) \
 			IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
 			TEST_IMAGE=$(TEST_IMAGE_NAME) \
 			CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \
@@ -66,6 +73,7 @@ prepare:
 #============ e2e ====================
 .PHONY: e2e-test
 e2e-test:
+	$(QUIET) ( docker ps | grep "kindest/node" &>/dev/null ) || { echo "error, please setup kind first" ; exit 1 ; }
 	$(QUIET)@echo "Run E2E with label ${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} "
 	$(QUIET)  FLAGS="" ; \
 		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \

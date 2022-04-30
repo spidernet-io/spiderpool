@@ -24,3 +24,10 @@
     could run specified case
 
         # make e2e -e E2E_GINKGO_LABELS="lable1,label2"
+
+3. for developing e2e case, could do it step by step
+
+make -C test kind-init
+
+make -C test e2e-test
+

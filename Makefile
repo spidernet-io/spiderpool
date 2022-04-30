@@ -51,10 +51,7 @@ apply-chart-to-kind:
 	--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
 	--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
 
-clean:
-	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
-	-$(QUIET) rm -rf $(DESTDIR_BIN)
-	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)
+
 
 .PHONY: lint
 lint-golang:
@@ -140,39 +137,7 @@ fix-code-spell:
   			fi; \
   			codespell --config .github/codespell-config  --write-changes
 
-.PHONY: integration-tests
-integration-tests:
-	@echo "run integration-tests"
-	$(QUIET) $(MAKE) -C test
 
-
-# should label for each test file
-.PHONY: check_test_label
-check_test_label:
-	@ALL_TEST_FILE=` find  ./  -name "*_test.go" -not -path "./vendor/*" ` ; FAIL="false" ; \
-		for ITEM in $$ALL_TEST_FILE ; do \
-			[[ "$$ITEM" == *_suite_test.go ]] && continue  ; \
-			! grep 'Label(' $${ITEM} &>/dev/null && FAIL="true" && echo "error, miss Label in $${ITEM}" ; \
-		done ; \
-		[ "$$FAIL" == "true" ] && echo "error, label check fail" && exit 1 ; \
-		echo "each test.go is labeled right"
-
-
-.PHONY: unitest-tests
-unitest-tests: check_test_label
-	@echo "run unitest-tests"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh   \
-		--cover --coverprofile=./coverage.out --covermode set  \
-		--json-report ./testreport.json \
-		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=30s \
-		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
-	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
-
-.PHONY: e2e
-e2e:
-	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
-		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
-		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
 
 .PHONY: manifests
 manifests:
@@ -280,3 +245,54 @@ openapi-ui:	## set up swagger-ui in local.
 		-v $(CURDIR)/api/v1/controller/openapi.yaml:/foo/controller-swagger.yml \
 		swaggerapi/swagger-ui
 
+# ==========================
+
+
+# should label for each test file
+.PHONY: check_test_label
+check_test_label:
+	@ALL_TEST_FILE=` find  ./  -name "*_test.go" -not -path "./vendor/*" ` ; FAIL="false" ; \
+		for ITEM in $$ALL_TEST_FILE ; do \
+			[[ "$$ITEM" == *_suite_test.go ]] && continue  ; \
+			! grep 'Label(' $${ITEM} &>/dev/null && FAIL="true" && echo "error, miss Label in $${ITEM}" ; \
+		done ; \
+		[ "$$FAIL" == "true" ] && echo "error, label check fail" && exit 1 ; \
+		echo "each test.go is labeled right"
+
+
+.PHONY: unitest-tests
+unitest-tests: check_test_label
+	@echo "run unitest-tests"
+	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh   \
+		--cover --coverprofile=./coverage.out --covermode set  \
+		--json-report ./testreport.json \
+		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=30s \
+		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
+	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
+
+.PHONY: e2e
+e2e:
+	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
+		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
+		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
+
+.PHONY: e2e_kind_init
+e2e_kind_init:
+	$(QUIET)  make -C test kind-init
+
+.PHONY: e2e_test
+e2e_test:
+	$(QUIET)  make -C test e2e-test
+
+
+# ==========================
+
+.PHONY: clean_e2e
+clean_e2e:
+	$(QUIET)  make -C test clean
+
+.PHONY: clean
+clean: clean_e2e
+	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
+	-$(QUIET) rm -rf $(DESTDIR_BIN)
+	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)

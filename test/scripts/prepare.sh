@@ -20,6 +20,7 @@ echo "Using IMAGE_WHEREABOUTS: $IMAGE_WHEREABOUTS"
 echo "Using TEST_IMAGE: $TEST_IMAGE"
 
 
+
 #=================================
 
 OS=$(uname | tr 'A-Z' 'a-z')
@@ -41,14 +42,13 @@ $IMAGE_MULTUS \
 $IMAGE_WHEREABOUTS \
 $TEST_IMAGE"
 
-for image in $IMAGES
-do
-  SUFF_IMAGE=$(echo $image | awk -F ':' '{print $1}')
-  EXIST=$(docker images | grep $SUFF_IMAGE)
-  if test -z "$EXIST"; then
-    echo "Image: $image not exist locally, Will pull..."
-    docker pull $image
-  else
-    echo "Image: $image already exist locally, Skip pull"
-  fi
+for image in $IMAGES ; do
+    PREFIX_IMAGE=$(echo $image | awk -F ':' '{print $1}')
+    SUFFIX_IMAGE=$(echo $image | awk -F ':' '{print $2}')
+    if docker images | grep -E "^${PREFIX_IMAGE}[[:space:]]+${SUFFIX_IMAGE} " &>/dev/null ; then
+      echo "Image: $image already exist locally "
+    else
+      echo "Image: $image not exist locally, Will pull..."
+      docker pull $image
+    fi
 done

@@ -266,7 +266,7 @@ unitest-tests: check_test_label
 	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh   \
 		--cover --coverprofile=./coverage.out --covermode set  \
 		--json-report ./testreport.json \
-		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=30s \
+		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=120s \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 

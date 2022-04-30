@@ -7,8 +7,9 @@ set -o pipefail
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Authors of Spider
 
-CURRENT_FILENAME=`basename $0`
-CURRENT_DIR_PATH=$(cd `dirname $0`; pwd)
+CURRENT_FILENAME=$( basename $0 )
+CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
+
 
 E2E_CLUSTER_NAME="$1"
 E2E_KUBECONFIG="$2"

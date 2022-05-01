@@ -6,19 +6,18 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spidernet-io/spiderpool/test/e2e/framework"
 	"github.com/spidernet-io/spiderpool/test/e2e/tools"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
-var _ = Describe("test pod", Label(framework.LabelSmoke), func() {
+var _ = Describe("test pod", Label("smoke"), func() {
 	var err error
 	// namespace must be: lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
 	const namespacePrefix string = "ippool-pod-"
 
-	Context("test default ippool", Label(framework.LabelSmoke), func() {
+	Context("test default ippool", Label("E00001"), func() {
 		var namespace = namespacePrefix + "simple"
 
 		BeforeEach(func() {

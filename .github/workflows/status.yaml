@@ -2,6 +2,7 @@ name: Badge Status
 
 env:
   CODESTATUSSCRIPT: "./tools/scripts/codeCoverage.sh"
+  E2ESTATUSSCRIPT: "./tools/scripts/e2ecover.sh"
 
 on:
   push:
@@ -28,7 +29,9 @@ jobs:
           COMMENT_PERCENTAGE=$(  ${TOOL_PATH} --comment-percent )
           echo "CODE_LINES=${CODE_LINES}" >> $GITHUB_ENV
           echo "COMMENT_PERCENTAGE=${COMMENT_PERCENTAGE}" >> $GITHUB_ENV
-          echo "E2E_STATUS=0" >> $GITHUB_ENV
+          TOOL_PATH=${{ env.E2ESTATUSSCRIPT }}
+          E2E_STATUS=$( ${TOOL_PATH} )
+          echo "E2E_STATUS=${E2E_STATUS}" >> $GITHUB_ENV
 
       - name: Create Lines-of-Code-Badge
         uses: schneegans/dynamic-badges-action@v1.3.0

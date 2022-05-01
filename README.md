@@ -7,9 +7,9 @@
 [![Auto Release Version](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-release.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-release.yaml)
 [![Auto Nightly CI](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6009/badge)](https://bestpractices.coreinfrastructure.org/projects/6009)
-![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/7e54bfe38fec206e7710c74ad55a5139/raw/debdd587aa431d8f0a25ff44447bcf6156e61599/spiderpoolcodeline.json)
+![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/7e54bfe38fec206e7710c74ad55a5139/raw/9166960df332d370a2d93e107d455d81db9a7626/spiderpoolcodeline.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/93b7ba26a4600fabe100ff640f9b3bd3/raw/aadf5eaf40f5890b87e012c824576df2467542ed/spiderpoolcomment.json)
-![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/e1d3c092d1b9f61f1c8e36f09d2809cb/raw/7d861142c59be3a29d28fd218373d9d468f71b49/spiderpoole2e.json)
+![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/e1d3c092d1b9f61f1c8e36f09d2809cb/raw/ca72a49fe214b5d3418fa25f345cd634de3ed942/spiderpoole2e.json)
 
 ## License
 

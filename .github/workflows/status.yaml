@@ -44,7 +44,7 @@ jobs:
         uses: schneegans/dynamic-badges-action@v1.3.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
-          gistID: 0c02c46da21b99cd06ba05b59bbb407e
+          gistID: 93b7ba26a4600fabe100ff640f9b3bd3
           filename: spiderpoolcomment.json
           label: Comments
           message: ${{ env.COMMENT_PERCENTAGE }}%

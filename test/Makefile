@@ -123,6 +123,7 @@ e2e-test:
  		fi ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 		--race --timeout=$(E2E_TIMEOUT) \
+		--json-report ../e2ereport.json \
 		--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
 		-r e2e/* -- $${FLAGS} ;  \
 		if (($$?==0)) ; then \

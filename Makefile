@@ -265,7 +265,7 @@ unitest-tests: check_test_label
 	@echo "run unitest-tests"
 	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh   \
 		--cover --coverprofile=./coverage.out --covermode set  \
-		--json-report ./testreport.json \
+		--json-report unitestreport.json \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=120s \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
@@ -289,7 +289,8 @@ e2e_test:
 
 .PHONY: clean_e2e
 clean_e2e:
-	$(QUIET)  make -C test clean
+	-$(QUIET)  make -C test clean
+	-$(QUIET) rm -f e2ereport.json
 
 .PHONY: clean
 clean: clean_e2e

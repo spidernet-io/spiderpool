@@ -38,4 +38,6 @@
 
         # make e2e_test
 
+        # ls e2ereport.json
+
         # make clean_e2e

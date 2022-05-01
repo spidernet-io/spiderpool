@@ -171,13 +171,13 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: image-tar-spiderpool-agent
-          path: tmp
+          path: test/.download
 
       - name: Download spiderpool-controller image
         uses: actions/download-artifact@v2
         with:
           name: image-tar-spiderpool-controller
-          path: tmp
+          path: test/.download
 
       - name: Load Image to Kind
         run: |
@@ -196,7 +196,3 @@ jobs:
         run: |
           echo ${{ github.event.inputs.labels }}
           make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
-
-      - name: Clean Up
-        run: |
-          make -C test kind-clean E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}

@@ -4,6 +4,10 @@
 
 # Copy 10-macvlan.tmpl to kind-node
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 E2E_CLUSTER_NAME="$1"
 
 DOWNLOAD_DIR="$2"
@@ -15,7 +19,7 @@ CNI_TAR_PATH="${DOWNLOAD_DIR}/${CNI_TAR_NAME}"
 [ ! -f  "$CNI_TAR_PATH" ] &&  echo "error, failed to find cni path $CNI_TAR_PATH " && exit 3
 echo "find $CNI_TAR_PATH "
 
-NODES=$(docker ps | grep -E "kindest/node.* ${E2E_CLUSTER_NAME}-" | awk '{print $1}')
+NODES=$(docker ps | grep -E "kindest/node.* ${E2E_CLUSTER_NAME}-(control|worker)" | awk '{print $1}')
 for node in ${NODES} ; do
   echo "install cni to node ${node} "
   docker cp ${CNI_TAR_PATH} $node:/root/

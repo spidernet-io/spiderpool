@@ -6,20 +6,23 @@ networking:
   ipFamily: {{ ip_family }}
   apiServerAddress: 127.0.0.1
 {%- if ip_family == "ipv4" %}
-  podSubnet: "10.16.0.0/16"
-  serviceSubnet: "10.96.0.0/12"
+  podSubnet: "172.20.0.0/16"
+  serviceSubnet: "172.31.0.0/16"
 {%- elif ip_family == "ipv6" %}
-  podSubnet: "fd00:10:16::/64"
-  serviceSubnet: "fd00:10:96::/112"
+  podSubnet: "fd01::/48"
+  serviceSubnet: "fd99::/108"
 {%- else %}
-  podSubnet: "10.16.0.0/16,fd00:10:16::/64"
-  serviceSubnet: "10.96.0.0/12,fd00:10:96::/112"
+  podSubnet: "172.20.0.0/16,fd01::/48"
+  serviceSubnet: "172.31.0.0/16,fd99::/108"
 {%- endif %}
 kubeadmConfigPatches:
   - |
     kind: ClusterConfiguration
     metadata:
       name: config
+    apiServer:
+        extraArgs:
+          enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
     etcd:
       local:
         dataDir: "/tmp/lib/etcd"
@@ -27,9 +30,9 @@ kubeadmConfigPatches:
 nodes:
   - role: control-plane
     image: kindest/node:{{ kind_image_tag }}
-  {%- if singe_node != "true" %}
   - role: worker
     image: kindest/node:{{ kind_image_tag }}
+  {%- if standard_cluster != "true" %}
   - role: worker
     image: kindest/node:{{ kind_image_tag }}
   {%- endif %}

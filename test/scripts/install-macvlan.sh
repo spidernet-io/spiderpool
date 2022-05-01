@@ -16,7 +16,7 @@ CNI_CONF_PATH="$2"
 echo ""
 
 # Copy 10-macvlan.conflist to kind-node
-NODES=$(docker ps | grep -E "kindest/node.* ${E2E_CLUSTER_NAME}-" | awk '{print $1}')
+NODES=$(docker ps | grep -E "kindest/node.* ${E2E_CLUSTER_NAME}-(control|worker)" | awk '{print $1}')
 for node in ${NODES} ; do
   echo "docker cp ${CNI_CONF_PATH} $node:/etc/cni/net.d"
   docker cp ${CNI_CONF_PATH} $node:/etc/cni/net.d

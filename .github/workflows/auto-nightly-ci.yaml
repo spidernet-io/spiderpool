@@ -193,6 +193,35 @@ jobs:
             make apply-chart-to-kind  E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
 
       - name: Run e2e
+        id: e2e
+        continue-on-error: true
         run: |
           echo ${{ github.event.inputs.labels }}
           make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
+          if (($?==0)) ; then
+              echo ::set-output name=pass::true
+          else
+              echo ::set-output name=pass::false
+          fi
+          if [ -f "./e2ereport.json" ] ; then
+              echo "error, did not find e2e report"
+              echo ::set-output name=upload::true
+          else
+              echo ::set-output name=upload::false
+          fi
+
+      - name: Upload e2e report
+        if: ${{ steps.e2e.outputs.upload == 'true' }}
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: e2ereport.json
+          path: e2ereport.json
+          retention-days: 1
+
+      - name: Show e2e Result
+        run: |
+          if ${{ steps.e2e.outputs.pass == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi

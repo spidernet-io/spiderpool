@@ -9,18 +9,52 @@
       "master": "eth0",
       "ipam": {
            {%- if type == "whereabouts" %}
-           "type": "{{ type }}",
-           "range": "172.18.0.0/16",
-           "range_start": "172.18.0.100",
-           "range_end": "172.18.0.200",
-           "log_level": "debug",
-           "log_file": "/var/log/{{ type }}.log",
-           "gateway": "172.18.0.1",
-           "routes": [
-               { "dst": "0.0.0.0/0" }
-           ]
+                {%- if ip_family == "ipv4" %}
+                   "range": "172.20.0.0/16",
+                   "exclude": [ "172.20.0.1/32" ],
+                   "gateway": "172.20.0.1",
+                   "routes": [ { "dst": "0.0.0.0/0" }],
+               {%- elif ip_family == "ipv6" %}
+                    "range": "fd01::/48",
+                    "exclude": [ "fd01::1/128" ],
+                    "gateway": "fd01::1",
+                    "routes": [{ "dst": "0.0.0.0/0" }],
+               {%- else %}
+                   "range": "172.20.0.0/16",
+                   "exclude": [ "172.20.0.1/32" ],
+                   "gateway": "172.20.0.1",
+                   "addresses": [
+                      {
+                        "address": "172.19.0.100/16",
+                        "gateway": "172.19.0.1"
+                      },
+                      {
+                        "address": "172.19.0.101/16",
+                        "gateway": "172.19.0.1"
+                      },
+                      {
+                        "address": "172.19.0.102/16",
+                        "gateway": "172.19.0.1"
+                      },
+                      {
+                        "address": "fd01::100/48",
+                        "gateway": "fd01::1"
+                      },
+                      {
+                        "address": "fd01::101/48",
+                        "gateway": "fd01::1"
+                      },
+                      {
+                        "address": "fd01::102/48",
+                        "gateway": "fd01::1"
+                      }],
+                   "routes": [ { "dst": "0.0.0.0/0" }],
+               {%- endif %}
+                   "type": "{{ type }}",
+                   "log_level": "debug",
+                   "log_file": "/var/log/{{ type }}.log"
            {%- else %}
-           "type": "{{ type }}"
+                    "type": "{{ type }}"
            {%- endif %}
        }
     }

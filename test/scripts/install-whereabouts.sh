@@ -26,8 +26,8 @@ echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 kind load docker-image $IMAGE_WHEREABOUTS --name ${E2E_CLUSTER_NAME}
 
 # Install whereabouts
-kubectl apply \
+kubectl apply --kubeconfig ${E2E_KUBECONFIG} \
       -f ${CURRENT_DIR_PATH}/../yamls/daemonset-install.yaml \
       -f ${CURRENT_DIR_PATH}/../yamls/whereabouts.cni.cncf.io_ippools.yaml \
       -f ${CURRENT_DIR_PATH}/../yamls/whereabouts.cni.cncf.io_overlappingrangeipreservations.yaml \
-      -f ${CURRENT_DIR_PATH}/../yamls/ip-reconciler-job.yaml --kubeconfig ${E2E_KUBECONFIG}
+      -f ${CURRENT_DIR_PATH}/../yamls/ip-reconciler-job.yaml

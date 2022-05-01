@@ -34,7 +34,8 @@ coverage.out
 coverage-all.out
 coverage-all.html
 coverage-all-tmp.out
-testreport.json
+unitestreport.json
+e2ereport.json
 
 .DS_Store
 .idea/

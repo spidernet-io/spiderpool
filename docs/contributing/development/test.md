@@ -27,6 +27,15 @@
 
 3. for developing e2e case, could do it step by step
 
-        # make e2e_kind_init
+        # make e2e_init
+          .......
+          -----------------------------------------------------------------------------------------------------
+             succeeded to setup cluster spider
+             you could use following command to access the cluster
+                export KUBECONFIG=/root/git/spiderpool/test/.cluster/spider/.kube/config
+                kubectl get nodes
+          -----------------------------------------------------------------------------------------------------        
+
         # make e2e_test
+
         # make clean_e2e

@@ -18,7 +18,7 @@ kind-init: check_env prepare
 	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
-			 singe_node=$(E2E_SINGE_NODE) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
+			 standard_cluster=$(E2E_STANDARD_CLUSTER) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
 			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
 			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
@@ -31,7 +31,7 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
 	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
 			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
-	type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
+	ip_family=$(E2E_IP_FAMILY) type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 endif
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
@@ -48,10 +48,18 @@ ifeq ($(INSTALL_MULTUS),true)
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
-	@echo -e "\033[35m Init The Cluster Finished, Please Use 'kubectl get nodes --kubeconfig $(E2E_KUBECONFIG)' \033[0m"
-	@echo "--------------------"
-	@echo "succeeded to setup cluster $(E2E_CLUSTER_NAME) "
-
+	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage &>/dev/null
+	@echo ""
+	@echo "-----------------------------------------------------------------------------------------------------"
+	@echo ""
+	@echo -e "    succeeded to setup cluster $(E2E_CLUSTER_NAME) "
+	@echo -e "    you could use following command to access the cluster "
+	@echo -e ""
+	@echo -e "         export KUBECONFIG=$(E2E_KUBECONFIG) "
+	@echo -e "         kubectl get nodes "
+	@echo ""
+	@echo "-----------------------------------------------------------------------------------------------------"
+	@echo ""
 
 
 .PHONY: clean
@@ -83,9 +91,13 @@ prepare:
 .PHONY: e2e-test
 e2e-test:
 	@echo -e "\033[35m Run e2e test on the cluster $(E2E_CLUSTER_NAME) \033[0m "
-	$(QUIET) ( docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-" &>/dev/null ) || { echo "error, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; }
 	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
-	@  FLAGS="" ; \
+	@  NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		NODE_LIST=` echo "$${NODE_LIST}" | tr -d ' ' | tr '\n' ',' ` ; \
+		NODE_LIST=$${NODE_LIST%%,} ; \
+		echo "find cluster node: $${NODE_LIST}" ; \
+  		FLAGS="  --ClusterNodeList $${NODE_LIST} " ; \
 		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=false " ; \
@@ -111,7 +123,7 @@ e2e-test:
  		fi ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 		--race --timeout=$(E2E_TIMEOUT) \
-		--label-filter="$(E2E_GINKGO_LABELS)" -p -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
+		--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
 		-r e2e/* -- $${FLAGS} ;  \
 		if (($$?==0)) ; then \
 		  	echo "succeeded to run all test" ; \

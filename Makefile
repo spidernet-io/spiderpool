@@ -276,8 +276,8 @@ e2e:
 		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
 		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
 
-.PHONY: e2e_kind_init
-e2e_kind_init:
+.PHONY: e2e_init
+e2e_init:
 	$(QUIET)  make -C test kind-init
 
 .PHONY: e2e_test

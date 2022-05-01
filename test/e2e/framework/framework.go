@@ -13,9 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
+	"strings"
 
-	// "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -30,16 +29,11 @@ import (
 
 type Framework struct {
 	// clienset
-	Client        client.WithWatch
-	KubeClientSet kubernetes.Interface
-	KubeConfig    *rest.Config
+	kClient client.WithWatch
+	kConfig *rest.Config
 
 	// cluster info
 	C ClusterInfo
-
-	// todo , need docker cli to shutdown node
-
-	// todo, need ssh to node to check something
 
 	t GinkgoTInterface
 
@@ -54,6 +48,8 @@ type ClusterInfo struct {
 	SpiderIPAMEnabled bool
 	ClusterName       string
 	KubeConfigPath    string
+	// docker container name for kind cluster
+	KindNodeList []string
 }
 
 var clusterInfo = &ClusterInfo{}
@@ -74,11 +70,11 @@ func NewFramework() *Framework {
 	if f.C.KubeConfigPath == "" {
 		Fail("miss KubeConfigPath")
 	}
-	f.KubeConfig, err = clientcmd.BuildConfigFromFlags("", f.C.KubeConfigPath)
+	f.kConfig, err = clientcmd.BuildConfigFromFlags("", f.C.KubeConfigPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	f.KubeConfig.QPS = 1000
-	f.KubeConfig.Burst = 2000
+	f.kConfig.QPS = 1000
+	f.kConfig.Burst = 2000
 
 	scheme := runtime.NewScheme()
 	err = corev1.AddToScheme(scheme)
@@ -86,37 +82,41 @@ func NewFramework() *Framework {
 	err = apiextensions_v1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	// f.Client, err = client.New(f.KubeConfig, client.Options{Scheme: scheme})
-	f.Client, err = client.NewWithWatch(f.KubeConfig, client.Options{Scheme: scheme})
+	// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
+	f.kClient, err = client.NewWithWatch(f.kConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	f.ApiOperateTimeout = 15 * time.Second
 	f.ResourceDeleteTimeout = 60 * time.Second
 
-	f.KubeClientSet, err = kubernetes.NewForConfig(f.KubeConfig)
-	Expect(err).NotTo(HaveOccurred())
-
+	f.t = GinkgoT()
 	GinkgoWriter.Printf("Framework: %+v \n", f)
 	return f
+}
+
+// T exposes a GinkgoTInterface which exposes many of the same methods
+// as a *testing.T, for use in tests that previously required a *testing.T.
+func (f *Framework) T() GinkgoTInterface {
+	return f.t
 }
 
 // ------------- basic operate
 func (f *Framework) CreateResource(obj client.Object, opts ...client.CreateOption) error {
 	ctx1, cancel1 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel1()
-	return f.Client.Create(ctx1, obj, opts...)
+	return f.kClient.Create(ctx1, obj, opts...)
 }
 
 func (f *Framework) DeleteResource(obj client.Object, opts ...client.DeleteOption) error {
 	ctx2, cancel2 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel2()
-	return f.Client.Delete(ctx2, obj, opts...)
+	return f.kClient.Delete(ctx2, obj, opts...)
 }
 
 func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	ctx3, cancel3 := context.WithTimeout(context.Background(), f.ApiOperateTimeout)
 	defer cancel3()
-	return f.Client.Get(ctx3, key, obj)
+	return f.kClient.Get(ctx3, key, obj)
 }
 
 // ------------- for pod
@@ -185,7 +185,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		Namespace:     namespace,
 		FieldSelector: fields.OneTermEqualSelector("metadata.name", name),
 	}
-	watchInterface, err := f.Client.Watch(ctx, &corev1.PodList{}, l)
+	watchInterface, err := f.kClient.Watch(ctx, &corev1.PodList{}, l)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(watchInterface).NotTo(BeNil())
 	defer watchInterface.Stop()
@@ -281,15 +281,28 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 	return f.DeleteResource(ns, opts...)
 }
 
+// ------------- shutdown node , to do
+
+// ------------- docker exec command to kind node
+
 // ---------------------------
 
 func init() {
+	var nodeList string
 	testing.Init()
 	flag.BoolVar(&(clusterInfo.IpV4Enabled), "IpV4Enabled", true, "IpV4 Enabled of cluster")
 	flag.BoolVar(&(clusterInfo.IpV6Enabled), "IpV6Enabled", true, "IpV6 Enabled of cluster")
-	flag.StringVar(&(clusterInfo.KubeConfigPath), "KubeConfigPath", "", "the path to kubeconfig")
+	flag.StringVar(&(clusterInfo.KubeConfigPath), "KubeConfigPath", "", "the path to kubeConfig")
 	flag.BoolVar(&(clusterInfo.MultusEnabled), "MultusEnabled", true, "Multus Enabled")
 	flag.BoolVar(&(clusterInfo.SpiderIPAMEnabled), "SpiderIPAMEnabled", true, "SpiderIPAM Enabled")
 	flag.StringVar(&(clusterInfo.ClusterName), "ClusterName", "", "Cluster Name")
+	flag.StringVar(&nodeList, "ClusterNodeList", "", "Cluster kind node list")
+
 	flag.Parse()
+
+	clusterInfo.KindNodeList = strings.Split(nodeList, ",")
+	if len(clusterInfo.KindNodeList) == 0 {
+		Fail("error, fail to get kind nodes")
+	}
+
 }

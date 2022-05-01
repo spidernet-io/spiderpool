@@ -1,0 +1,63 @@
+name: Badge Status
+
+env:
+  CODESTATUSSCRIPT: "./tools/scripts/codeCoverage.sh"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-badges:
+    name: Update Badges
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Download cloc
+        run: sudo apt-get update -y && sudo apt-get install -y cloc
+
+      - name: Get the Numbers
+        shell: bash
+        run: |
+          TOOL_PATH=${{ env.CODESTATUSSCRIPT }}
+          CODE_LINES=$(  ${TOOL_PATH} --code-lines )
+          COMMENT_PERCENTAGE=$(  ${TOOL_PATH} --comment-percent )
+          echo "CODE_LINES=${CODE_LINES}" >> $GITHUB_ENV
+          echo "COMMENT_PERCENTAGE=${COMMENT_PERCENTAGE}" >> $GITHUB_ENV
+          echo "E2E_STATUS=0" >> $GITHUB_ENV
+
+      - name: Create Lines-of-Code-Badge
+        uses: schneegans/dynamic-badges-action@v1.3.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: 7e54bfe38fec206e7710c74ad55a5139
+          filename: spiderpoolcodeline.json
+          label: Code Lines
+          message: ${{ env.CODE_LINES }}
+          color: lightgrey
+
+      - name: Create Comments-Badge
+        uses: schneegans/dynamic-badges-action@v1.3.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: 0c02c46da21b99cd06ba05b59bbb407e
+          filename: spiderpoolcomment.json
+          label: Comments
+          message: ${{ env.COMMENT_PERCENTAGE }}%
+          valColorRange: ${{ env.COMMENT_PERCENTAGE }}
+          maxColorRange: 100
+          minColorRange: 0
+
+      - name: Create E2E-Badge
+        uses: schneegans/dynamic-badges-action@v1.3.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: e1d3c092d1b9f61f1c8e36f09d2809cb
+          filename: spiderpoole2e.json
+          label: e2e
+          message: ${{ env.E2E_STATUS }}
+          color: lightgrey

@@ -80,7 +80,7 @@ jobs:
           mkdir ${{ env.DEST_DIRECTORY }}
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3.0.0
+        uses: actions/download-artifact@v3
         with:
           name: doc_artifact
           path: ${{ env.DEST_DIRECTORY }}

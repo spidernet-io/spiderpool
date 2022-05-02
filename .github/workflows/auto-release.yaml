@@ -87,13 +87,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Chart Artifact
-        uses: actions/download-artifact@v3.0.0
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.release-chart.outputs.artifact }}
           path: chart-package/
 
       - name: Download Changelog Artifact
-        uses: actions/download-artifact@v3.0.0
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.release-changelog.outputs.artifact }}
           path: changelog-result/

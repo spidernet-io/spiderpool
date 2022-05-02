@@ -14,6 +14,8 @@ on:
         required: true
         default: main
 
+permissions: write-all
+
 env:
   MERGE_BRANCH: github_pages
   SRC_DIRECTORY: 'docs'
@@ -49,18 +51,15 @@ jobs:
         with:
           ref: ${{ steps.get_ref.outputs.ref }}
 
-      - name: Tar Doc
+      - name: Build Site
         run: |
-          cd ${{ env.SRC_DIRECTORY }}
-          tar -czvf _doc.tar.gz *
-          ls
-          tar -tf _doc.tar.gz
+          make build_doc
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.0.0
         with:
-          name: doc_artifact
-          path: ${{ env.SRC_DIRECTORY }}/_doc.tar.gz
+          name: site_artifact
+          path: docs/site.tar.gz
           retention-days: 0
           if-no-files-found: error
 
@@ -82,15 +81,16 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v3
         with:
-          name: doc_artifact
+          name: site_artifact
           path: ${{ env.DEST_DIRECTORY }}
 
       - name: Untar Doc
         run: |
           cd ${{ env.DEST_DIRECTORY }}
-          tar -xzvf _doc.tar.gz
-          rm -f _doc.tar.gz
+          tar -xzvf site.tar.gz
+          rm -f site.tar.gz
 
+      # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
         uses: peter-evans/create-pull-request@v4
@@ -102,6 +102,6 @@ jobs:
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WELAN_PAT }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}

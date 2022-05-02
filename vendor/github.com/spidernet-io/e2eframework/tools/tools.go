@@ -48,7 +48,7 @@ func Eventually(f func() bool, timeout time.Duration, interval time.Duration) bo
 			return false
 		default:
 		}
-		if f() == true {
+		if f() {
 			return true
 		}
 		time.Sleep(interval)

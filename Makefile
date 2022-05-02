@@ -285,6 +285,40 @@ e2e_test:
 	$(QUIET)  make -C test e2e-test
 
 
+
+.PHONY: preview_doc
+preview_doc: PROJECT_DOC_DIR := ${ROOT_DIR}/docs
+preview_doc:
+	-docker stop doc_previewer &>/dev/null
+	-docker rm doc_previewer &>/dev/null
+	@echo "set up preview http server  "
+	@echo "you can visit the website on browser with url 'http://127.0.0.1:8000' "
+	[ -f "docs/mkdocs.yml" ] || { echo "error, miss docs/mkdocs.yml "; exit 1 ; }
+	docker run --rm  -p 8000:8000 --name doc_previewer -v $(PROJECT_DOC_DIR):/host/docs \
+        --entrypoint sh \
+        --stop-timeout 3 \
+        --stop-signal "SIGKILL" \
+        squidfunk/mkdocs-material  -c "cd /host ; cp docs/mkdocs.yml ./ ;  mkdocs serve -a 0.0.0.0:8000"
+	#sleep 10 ; if curl 127.0.0.1:8000 &>/dev/null  ; then echo "succeeded to set up preview server" ; else echo "error, failed to set up preview server" ; docker stop doc_previewer ; exit 1 ; fi
+
+
+.PHONY: build_doc
+build_doc: PROJECT_DOC_DIR := ${ROOT_DIR}/docs
+build_doc: OUTPUT_TAR := site.tar.gz
+build_doc:
+	-docker stop doc_builder &>/dev/null
+	-docker rm doc_builder &>/dev/null
+	[ -f "docs/mkdocs.yml" ] || { echo "error, miss docs/mkdocs.yml "; exit 1 ; }
+	-@ rm -f ./docs/$(OUTPUT_TAR)
+	@echo "build doc html " ; \
+		docker run --rm --name doc_builder  \
+		-v ${PROJECT_DOC_DIR}:/host/docs \
+        --entrypoint sh \
+        squidfunk/mkdocs-material -c "cd /host ; cp ./docs/mkdocs.yml ./ ; mkdocs build ; cd site ; tar -czvf site.tar.gz * ; mv ${OUTPUT_TAR} ../docs/"
+	@ [ -f "$(PROJECT_DOC_DIR)/$(OUTPUT_TAR)" ] || { echo "failed to build site to $(PROJECT_DOC_DIR)/$(OUTPUT_TAR) " ; exit 1 ; }
+	@ echo "succeeded to build site to $(PROJECT_DOC_DIR)/$(OUTPUT_TAR) "
+
+
 # ==========================
 
 .PHONY: clean_e2e

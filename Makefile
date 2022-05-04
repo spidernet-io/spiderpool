@@ -175,7 +175,7 @@ update-authors: ## Update AUTHORS file for Cilium repository.
 	@contrib/authorgen/authorgen.sh >> AUTHORS
 
 
-# could set proxy for acccessing k8S
+# could set proxy for acccessing k8s
 # export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
 .PHONY: update_vendor_k8s
 update_vendor_k8s:

@@ -1,9 +1,13 @@
 #!/bin/sh
 
-# could set proxy for acccessing k8S
+# Copyright 2022 Authors of spidernet-io
+# SPDX-License-Identifier: Apache-2.0
+
+# could set proxy for acccessing k8s
 # export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
 
-set -euo pipefail
+#set -euo pipefail
+set -x
 
 VERSION=${1#"v"}
 if [ -z "$VERSION" ]; then
@@ -19,13 +23,10 @@ MODS=($(
 
 echo "begin to go edit"
 for MOD in "${MODS[@]}"; do
-    V=$(
-        go mod download -json "${MOD}@kubernetes-${VERSION}" |
-        sed -n 's|.*"Version": "\(.*\)".*|\1|p'
-    )
+    V=$( go mod download -json "${MOD}@kubernetes-${VERSION}" | sed -n 's?.*"Version": "\(.*\)".*?\1?p' )
+    echo "mod=${MOD}, version=${V}"
     go mod edit "-replace=${MOD}=${MOD}@${V}"
 done
 
 echo "begin to go get "
 go get "k8s.io/kubernetes@v${VERSION}"
-

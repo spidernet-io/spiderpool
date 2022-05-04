@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
+	// "testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -310,7 +310,7 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 
 func init() {
 	var nodeList string
-	testing.Init()
+	// testing.Init()
 	// flag.BoolVar(&(clusterInfo.IpV4Enabled), "IpV4Enabled", true, "IpV4 Enabled of cluster")
 	// flag.BoolVar(&(clusterInfo.IpV6Enabled), "IpV6Enabled", true, "IpV6 Enabled of cluster")
 	// flag.StringVar(&(clusterInfo.KubeConfigPath), "KubeConfigPath", "", "the path to kubeConfig")

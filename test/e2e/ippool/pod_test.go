@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// v1 "k8s.io/client-go/applyconfigurations/core/v1"
+	framework "github.com/spidernet-io/spiderpool/test/e2e/framework"
 	k8sframework "k8s.io/kubernetes/test/e2e/framework"
 	"time"
 )
@@ -18,6 +19,8 @@ var _ = Describe("test pod", Label("smoke"), func() {
 	var err error
 	// namespace must be: lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
 	const namespacePrefix string = "ippool-pod-"
+
+	frame := framework.NewFramework()
 
 	Context("test default ippool", Label("E00001"), func() {
 		var namespace = namespacePrefix + "simple"

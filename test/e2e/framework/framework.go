@@ -73,8 +73,8 @@ func NewFramework() *Framework {
 	f.kConfig, err = clientcmd.BuildConfigFromFlags("", f.C.KubeConfigPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	f.kConfig.QPS = 1000
-	f.kConfig.Burst = 2000
+	f.kConfig.QPS = 100
+	f.kConfig.Burst = 200
 
 	scheme := runtime.NewScheme()
 	err = corev1.AddToScheme(scheme)
@@ -89,6 +89,9 @@ func NewFramework() *Framework {
 	f.ApiOperateTimeout = 15 * time.Second
 	f.ResourceDeleteTimeout = 60 * time.Second
 
+	// generate a uniq namespace pod for test
+	// namespace must be: lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
+
 	f.t = GinkgoT()
 	GinkgoWriter.Printf("Framework: %+v \n", f)
 	return f
@@ -98,6 +101,21 @@ func NewFramework() *Framework {
 // as a *testing.T, for use in tests that previously required a *testing.T.
 func (f *Framework) T() GinkgoTInterface {
 	return f.t
+}
+
+func (f *Framework) RandomName() string {
+	m := time.Now()
+	return fmt.Sprintf("%v%v-%v", m.Minute(), m.Second(), m.Nanosecond())
+}
+
+func (f *Framework) By(format string, arg ...interface{}) {
+	t := fmt.Sprintf(format, arg...)
+	By(t)
+}
+
+func (f *Framework) Fail(format string, arg ...interface{}) {
+	t := fmt.Sprintf(format, arg...)
+	Fail(t)
 }
 
 // ------------- basic operate
@@ -134,8 +152,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	existing := &corev1.Pod{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		s := fmt.Sprintf("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
-		Fail(s)
+		f.Fail("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 	} else {
 		Eventually(func(g Gomega) bool {
 			defer GinkgoRecover()
@@ -143,7 +160,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
-				GinkgoWriter.Printf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+				f.By("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 			}
 			return b
 		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())
@@ -197,8 +214,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 			if !ok {
 				return nil, fmt.Errorf("channel is closed ")
 			} else {
-				// GinkgoWriter.Printf("receive event: %+v\n", event)
-				GinkgoWriter.Printf("pod %v/%v %v event \n", namespace, name, event.Type)
+				f.By("pod %v/%v %v event \n", namespace, name, event.Type)
 
 				// Added    EventType = "ADDED"
 				// Modified EventType = "MODIFIED"
@@ -215,7 +231,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 					if !ok {
 						Fail("failed to get metaObject")
 					}
-					GinkgoWriter.Printf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
+					f.By("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
 					if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
 						break
 					} else {
@@ -264,7 +280,7 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
-				GinkgoWriter.Printf("waiting for a same namespace %v to finish deleting \n", nsName)
+				f.By("waiting for a same namespace %v to finish deleting \n", nsName)
 			}
 			Expect(b).To(BeTrue())
 		}).WithTimeout(f.ResourceDeleteTimeout).WithPolling(2 * time.Second).Should(BeTrue())

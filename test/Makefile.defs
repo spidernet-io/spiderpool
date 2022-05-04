@@ -34,6 +34,8 @@ E2E_EXT_ARGS ?=
 
 E2E_TIMEOUT ?= 60m
 
+E2E_GINKGO_PROCS ?= 4
+
 #============Image version===========
 IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:thick
 IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-amd64

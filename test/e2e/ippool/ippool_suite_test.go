@@ -18,10 +18,5 @@ func TestIppool(t *testing.T) {
 var frame *Framework
 
 var _ = BeforeSuite(func() {
-	var e error
 	frame = NewFramework()
-	if e != nil {
-		Fail("failed to initialize framework")
-	}
-
 })

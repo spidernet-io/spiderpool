@@ -106,6 +106,9 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
 
       - name: Check Make lint-golang
         id: other

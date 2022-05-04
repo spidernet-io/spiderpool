@@ -29,10 +29,12 @@ import (
 )
 
 type Framework struct {
-	// clienset
-	kClient client.WithWatch
 	kConfig *rest.Config
 
+	// kubebuilder clienset, easy to use
+	kClient client.WithWatch
+
+	// kubernetes framework
 	F k8sframework.Framework
 
 	// cluster info

@@ -3,7 +3,7 @@
 # Copyright 2022 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
 
-# could set proxy for acccessing k8s
+# could set proxy for accessing k8s
 # export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
 
 #set -euo pipefail

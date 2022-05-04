@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/watch"
@@ -35,7 +36,7 @@ type Framework struct {
 	kClient client.WithWatch
 
 	// kubernetes framework
-	F k8sframework.Framework
+	F *k8sframework.Framework
 
 	// cluster info
 	C ClusterInfo
@@ -77,10 +78,11 @@ func NewFramework() *Framework {
 	}
 	f.kConfig, err = clientcmd.BuildConfigFromFlags("", f.C.KubeConfigPath)
 	Expect(err).NotTo(HaveOccurred())
-
 	f.kConfig.QPS = 1000
 	f.kConfig.Burst = 2000
 
+	// ==============================
+	// generate kubebuilder clientset, it is easy to use, especially for CRD
 	scheme := runtime.NewScheme()
 	err = corev1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
@@ -90,12 +92,23 @@ func NewFramework() *Framework {
 	// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
 	f.kClient, err = client.NewWithWatch(f.kConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
-
+	// for kubebuilder clienset operation
 	f.ApiOperateTimeout = 15 * time.Second
 	f.ResourceDeleteTimeout = 60 * time.Second
 
+	// ==============================
+	// generate k8s clienset to use k8s framework
+	kubeClient, err := kubernetes.NewForConfig(f.kConfig)
+	options := k8sframework.Options{
+		ClientQPS:   20,
+		ClientBurst: 50,
+	}
+	f.F = k8sframework.NewFramework("spipderpool", options, kubeClient)
+
+	// ==============================
 	f.t = GinkgoT()
 	GinkgoWriter.Printf("Framework: %+v \n", f)
+
 	return f
 }
 

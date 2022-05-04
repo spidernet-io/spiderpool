@@ -1,2 +1,7 @@
 GO_VERSION := 1.17.8
+
 GINKGO_VERSION := 2.1.3
+
+# for get k8s vendor for e2e framework
+K8S_VERSION := v1.23.6
+

@@ -25,12 +25,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	k8sframework "k8s.io/kubernetes/test/e2e/framework"
 )
 
 type Framework struct {
 	// clienset
 	kClient client.WithWatch
 	kConfig *rest.Config
+
+	F k8sframework.Framework
 
 	// cluster info
 	C ClusterInfo
@@ -284,6 +287,8 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 // ------------- shutdown node , to do
 
 // ------------- docker exec command to kind node
+
+// ------------- metric , to do
 
 // ---------------------------
 

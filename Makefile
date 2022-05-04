@@ -53,7 +53,7 @@ apply-chart-to-kind:
 
 
 
-.PHONY: lint
+.PHONY: lint-golang
 lint-golang:
 	@$(ECHO_CHECK) contrib/scripts/check-go-fmt.sh
 	$(QUIET) contrib/scripts/check-go-fmt.sh
@@ -173,6 +173,15 @@ update-authors: ## Update AUTHORS file for Cilium repository.
 	@echo "off on commits in the Cilium repository:" >> AUTHORS
 	@echo "" >> AUTHORS
 	@contrib/authorgen/authorgen.sh >> AUTHORS
+
+
+# could set proxy for acccessing k8S
+# export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
+.PHONY: update_vendor_k8s
+update_vendor_k8s:
+	@echo "update go mod for k8s"
+	$(QUIET) ./contrib/scripts/go-get-k8s.sh $(K8S_VERSION)
+
 
 
 .PHONY: licenses-all

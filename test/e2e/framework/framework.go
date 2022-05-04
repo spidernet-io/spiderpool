@@ -5,7 +5,7 @@ package framework
 
 import (
 	"context"
-	"flag"
+	// "flag"
 	"fmt"
 	"github.com/mohae/deepcopy"
 	. "github.com/onsi/ginkgo/v2"
@@ -27,6 +27,7 @@ import (
 	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	k8sframework "k8s.io/kubernetes/test/e2e/framework"
+	"os"
 )
 
 type Framework struct {
@@ -310,15 +311,22 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 func init() {
 	var nodeList string
 	testing.Init()
-	flag.BoolVar(&(clusterInfo.IpV4Enabled), "IpV4Enabled", true, "IpV4 Enabled of cluster")
-	flag.BoolVar(&(clusterInfo.IpV6Enabled), "IpV6Enabled", true, "IpV6 Enabled of cluster")
-	flag.StringVar(&(clusterInfo.KubeConfigPath), "KubeConfigPath", "", "the path to kubeConfig")
-	flag.BoolVar(&(clusterInfo.MultusEnabled), "MultusEnabled", true, "Multus Enabled")
-	flag.BoolVar(&(clusterInfo.SpiderIPAMEnabled), "SpiderIPAMEnabled", true, "SpiderIPAM Enabled")
-	flag.StringVar(&(clusterInfo.ClusterName), "ClusterName", "", "Cluster Name")
-	flag.StringVar(&nodeList, "ClusterNodeList", "", "Cluster kind node list")
+	// flag.BoolVar(&(clusterInfo.IpV4Enabled), "IpV4Enabled", true, "IpV4 Enabled of cluster")
+	// flag.BoolVar(&(clusterInfo.IpV6Enabled), "IpV6Enabled", true, "IpV6 Enabled of cluster")
+	// flag.StringVar(&(clusterInfo.KubeConfigPath), "KubeConfigPath", "", "the path to kubeConfig")
+	// flag.BoolVar(&(clusterInfo.MultusEnabled), "MultusEnabled", true, "Multus Enabled")
+	// flag.BoolVar(&(clusterInfo.SpiderIPAMEnabled), "SpiderIPAMEnabled", true, "SpiderIPAM Enabled")
+	// flag.StringVar(&(clusterInfo.ClusterName), "ClusterName", "", "Cluster Name")
+	// flag.StringVar(&nodeList, "ClusterNodeList", "", "Cluster kind node list")
 
-	flag.Parse()
+	// flag.Parse()
+
+	val := os.Getenv("KubeConfigPath")
+	if len(val) != 0 {
+		clusterInfo.KubeConfigPath = val
+	}
+	clusterInfo.IpV4Enabled = true
+	clusterInfo.IpV6Enabled = true
 
 	clusterInfo.KindNodeList = strings.Split(nodeList, ",")
 	if len(clusterInfo.KindNodeList) == 0 {

@@ -13,4 +13,4 @@
 | F00009  | log | check spider-agent log   | p2       |       |       |
 | F000010  | log | check spider-server log   | p2       |       |       |
 | F000011  | log | check plugin log   | p2       |       |       |
-kind-config.yaml	10.16这外子网![image](https://user-images.githubusercontent.com/31728060/166894927-102657dc-13bc-4ab7-98c6-a49e01dbb33e.png)
+

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"os"
@@ -45,18 +46,29 @@ type envconfig struct {
 	BoolType bool
 }
 
+const (
+	E2E_CLUSTER_NAME            = "E2E_CLUSTER_NAME"
+	E2E_KUBECONFIG_PATH         = "E2E_KUBECONFIG_PATH"
+	E2E_IPV4_ENABLED            = "E2E_IPV4_ENABLED"
+	E2E_IPV6_ENABLED            = "E2E_IPV6_ENABLED"
+	E2E_MULTUS_CNI_ENABLED      = "E2E_MULTUS_CNI_ENABLED"
+	E2E_SPIDERPOOL_IPAM_ENABLED = "E2E_SPIDERPOOL_IPAM_ENABLED"
+	E2E_WHEREABOUT_IPAM_ENABLED = "E2E_WHEREABOUT_IPAM_ENABLED"
+	E2E_KIND_CLUSTER_NODE_LIST  = "E2E_KIND_CLUSTER_NODE_LIST"
+)
+
 var envConfigList = []envconfig{
 	// --- require field
-	envconfig{EnvName: "E2E_CLUSTER_NAME", DestStr: &clusterInfo.ClusterName, Default: "", Required: true},
-	envconfig{EnvName: "E2E_KUBECONFIG_PATH", DestStr: &clusterInfo.KubeConfigPath, Default: "", Required: true},
+	{EnvName: E2E_CLUSTER_NAME, DestStr: &clusterInfo.ClusterName, Default: "", Required: true},
+	{EnvName: E2E_KUBECONFIG_PATH, DestStr: &clusterInfo.KubeConfigPath, Default: "", Required: true},
 	// ---- optional field
-	envconfig{EnvName: "E2E_IPV4_ENABLED", DestBool: &clusterInfo.IpV4Enabled, Default: "true", Required: false},
-	envconfig{EnvName: "E2E_IPV6_ENABLED", DestBool: &clusterInfo.IpV6Enabled, Default: "true", Required: false},
-	envconfig{EnvName: "E2E_MULTUS_CNI_ENABLED", DestBool: &clusterInfo.MultusEnabled, Default: "false", Required: false},
-	envconfig{EnvName: "E2E_SPIDERPOOL_IPAM_ENABLED", DestBool: &clusterInfo.SpiderIPAMEnabled, Default: "false", Required: false},
-	envconfig{EnvName: "E2E_WHEREABOUT_IPAM_ENABLED", DestBool: &clusterInfo.WhereaboutIPAMEnabled, Default: "false", Required: false},
+	{EnvName: E2E_IPV4_ENABLED, DestBool: &clusterInfo.IpV4Enabled, Default: "true", Required: false},
+	{EnvName: E2E_IPV6_ENABLED, DestBool: &clusterInfo.IpV6Enabled, Default: "true", Required: false},
+	{EnvName: E2E_MULTUS_CNI_ENABLED, DestBool: &clusterInfo.MultusEnabled, Default: "false", Required: false},
+	{EnvName: E2E_SPIDERPOOL_IPAM_ENABLED, DestBool: &clusterInfo.SpiderIPAMEnabled, Default: "false", Required: false},
+	{EnvName: E2E_WHEREABOUT_IPAM_ENABLED, DestBool: &clusterInfo.WhereaboutIPAMEnabled, Default: "false", Required: false},
 	// ---- kind field
-	envconfig{EnvName: "E2E_KIND_CLUSTER_NODE_LIST", DestStr: &clusterInfo.KindNodeListRaw, Default: "false", Required: false},
+	{EnvName: E2E_KIND_CLUSTER_NODE_LIST, DestStr: &clusterInfo.KindNodeListRaw, Default: "false", Required: false},
 	// ---- vagrant field
 }
 
@@ -81,7 +93,6 @@ type Framework struct {
 
 // -------------------------------------------
 type TestingT interface {
-	Fatalf(format string, args ...interface{})
 	Logf(format string, args ...interface{})
 }
 
@@ -94,10 +105,10 @@ var (
 )
 
 // NewFramework init Framework struct
-func NewFramework(t TestingT) *Framework {
+func NewFramework(t TestingT) (*Framework, error) {
 
 	if t == nil {
-		return nil
+		return nil, fmt.Errorf("miss TestingT")
 	}
 
 	var err error
@@ -105,7 +116,9 @@ func NewFramework(t TestingT) *Framework {
 
 	// defer GinkgoRecover()
 	if len(clusterInfo.ClusterName) == 0 {
-		initClusterInfo(t)
+		if e := initClusterInfo(); e != nil {
+			return nil, e
+		}
 	}
 
 	f := &Framework{}
@@ -114,15 +127,15 @@ func NewFramework(t TestingT) *Framework {
 	v := deepcopy.Copy(*clusterInfo)
 	f.Info, ok = v.(ClusterInfo)
 	if ok == false {
-		f.t.Fatalf("internal error, failed to deepcopy")
+		return nil, fmt.Errorf("internal error, failed to deepcopy")
 	}
 
 	if f.Info.KubeConfigPath == "" {
-		f.t.Fatalf("miss KubeConfig Path")
+		return nil, fmt.Errorf("miss KubeConfig Path")
 	}
 	f.KConfig, err = clientcmd.BuildConfigFromFlags("", f.Info.KubeConfigPath)
 	if err != nil {
-		f.t.Fatalf("BuildConfigFromFlags failed % v", err)
+		return nil, fmt.Errorf("BuildConfigFromFlags failed % v", err)
 	}
 
 	f.KConfig.QPS = Default_k8sClient_QPS
@@ -131,17 +144,17 @@ func NewFramework(t TestingT) *Framework {
 	scheme := runtime.NewScheme()
 	err = corev1.AddToScheme(scheme)
 	if err != nil {
-		f.t.Fatalf("failed to add runtime Scheme : %v", err)
+		return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
 	}
 	err = apiextensions_v1.AddToScheme(scheme)
 	if err != nil {
-		f.t.Fatalf("failed to add apiextensions_v1 Scheme : %v", err)
+		return nil, fmt.Errorf("failed to add apiextensions_v1 Scheme : %v", err)
 	}
 
 	// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
 	f.KClient, err = client.NewWithWatch(f.KConfig, client.Options{Scheme: scheme})
 	if err != nil {
-		f.t.Fatalf("failed to new clientset: %v", err)
+		return nil, fmt.Errorf("failed to new clientset: %v", err)
 	}
 
 	f.Config.ApiOperateTimeout = Default_k8sClient_ApiOperateTimeout
@@ -150,7 +163,7 @@ func NewFramework(t TestingT) *Framework {
 	f.t.Logf("Framework ClusterInfo: %+v \n", f.Info)
 	f.t.Logf("Framework Config: %+v \n", f.Config)
 
-	return f
+	return f, nil
 }
 
 // ------------- basic operate
@@ -173,28 +186,12 @@ func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	return f.KClient.Get(ctx3, key, obj)
 }
 
-// ------------- for replicaset , to do
-
-// ------------- for deployment , to do
-
-// ------------- for statefulset , to do
-
-// ------------- for job , to do
-
-// ------------- for daemonset , to do
-
-// ------------- for namespace
-
-// ------------- shutdown node , to do
-
-// ------------- docker exec command to kind node
-
-func initClusterInfo(q TestingT) {
+func initClusterInfo() error {
 
 	for _, v := range envConfigList {
 		t := os.Getenv(v.EnvName)
 		if len(t) == 0 && v.Required == true {
-			q.Fatalf("error, failed to get ENV %s", v.EnvName)
+			return fmt.Errorf("error, failed to get ENV %s", v.EnvName)
 		}
 		r := v.Default
 		if len(t) > 0 {
@@ -204,7 +201,7 @@ func initClusterInfo(q TestingT) {
 			*(v.DestStr) = r
 		} else {
 			if s, err := strconv.ParseBool(r); err != nil {
-				q.Fatalf("error, %v require a bool value, but get %v", v.EnvName, r)
+				return fmt.Errorf("error, %v require a bool value, but get %v", v.EnvName, r)
 			} else {
 				*(v.DestBool) = s
 			}
@@ -214,5 +211,6 @@ func initClusterInfo(q TestingT) {
 	if len(clusterInfo.KindNodeListRaw) > 0 {
 		clusterInfo.KindNodeList = strings.Split(clusterInfo.KindNodeListRaw, ",")
 	}
+	return nil
 
 }

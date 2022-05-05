@@ -97,41 +97,34 @@ e2e-test:
 		NODE_LIST=` echo "$${NODE_LIST}" | tr -d ' ' | tr '\n' ',' ` ; \
 		NODE_LIST=$${NODE_LIST%%,} ; \
 		echo "find cluster node: $${NODE_LIST}" ; \
-  		FLAGS="  --ClusterNodeList $${NODE_LIST} " ; \
-		FLAGS+=" --ClusterName=$(E2E_CLUSTER_NAME) " ; \
+		export E2E_KIND_CLUSTER_NODE_LIST="$${NODE_LIST}" ; \
+		export E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
-		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=false " ; \
+			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=false ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
-		  FLAGS+=" --IpV4Enabled=false --IpV6Enabled=true " ; \
+			export E2E_IPV4_ENABLED=false ; export E2E_IPV6_ENABLED=true ; \
 		else \
-		  FLAGS+=" --IpV4Enabled=true --IpV6Enabled=true " ; \
+			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
-		if [ -f "$(E2E_KUBECONFIG)" ] ; then \
-		   FLAGS+=" --KubeConfigPath=$(E2E_KUBECONFIG) "  ; \
-		else \
-		   echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; \
-        fi; \
-		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
-		  	FLAGS+=" --MultusEnabled=true " ; \
- 		else \
- 			FLAGS+=" --MultusEnabled=false " ; \
- 		fi ; \
-		if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
-		  	FLAGS+=" --SpiderIPAMEnabled=false " ; \
- 		else \
- 			FLAGS+=" --SpiderIPAMEnabled=true " ; \
- 		fi ; \
+		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
+        if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
+        if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
+          	export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
+          	export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \
+        else  \
+        	export E2E_WHEREABOUT_IPAM_ENABLED=false ;  \
+        	export E2E_SPIDERPOOL_IPAM_ENABLED=true ; \
+       	fi ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
-		--race --timeout=$(E2E_TIMEOUT) \
-		--json-report ../e2ereport.json --procs $(E2E_GINKGO_PROCS) \
-		--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
-		-r e2e/* -- $${FLAGS} ;  \
-		if (($$?==0)) ; then \
-		  	echo "succeeded to run all test" ; \
-  		else \
-  		  	echo "failed to run all test" ; \
-  		  	exit 1 ; \
-  		fi
+			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none \
+			--json-report ../e2ereport.json --procs $(E2E_GINKGO_PROCS) \
+			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
+			-r e2e/*   ; \
+		(($$?!=0)) && echo "failed to run all test"  && exit 1 ; \
+		echo "" ; \
+		echo "============================================" ; \
+		echo "succeeded to run all test" ; \
+		echo "output report to e2ereport.json"
 
 
 .PHONY: usage

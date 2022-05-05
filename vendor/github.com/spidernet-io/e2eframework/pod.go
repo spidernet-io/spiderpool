@@ -1,3 +1,5 @@
+// Copyright 2022 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
 package e2eframework
 
 import (
@@ -25,7 +27,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	existing := &corev1.Pod{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		f.t.Fatalf("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+		return fmt.Errorf("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 	} else {
 		t := func() bool {
 			existing := &corev1.Pod{}
@@ -106,7 +108,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 					pod, ok := event.Object.(*corev1.Pod)
 					// metaObject, ok := event.Object.(metav1.Object)
 					if !ok {
-						f.t.Fatalf("failed to get metaObject")
+						return nil, fmt.Errorf("failed to get metaObject")
 					}
 					f.t.Logf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
 					if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {

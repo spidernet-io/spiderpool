@@ -92,3 +92,7 @@ _openapi_tmp/
 # e2e tmp path
 test/.cluster
 test/.download
+
+coverage-all.html
+coverage.out
+

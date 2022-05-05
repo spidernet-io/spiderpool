@@ -19,5 +19,7 @@ var frame *e2eframework.Framework
 
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
-	frame = e2eframework.NewFramework(GinkgoT())
+	var e error
+	frame, e = e2eframework.NewFramework(GinkgoT())
+	Expect(e).NotTo(HaveOccurred())
 })

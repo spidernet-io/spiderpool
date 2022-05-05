@@ -1,0 +1,94 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+*.so.*
+
+# LLVM IR files
+*.ll
+*.ll-*
+
+# Folders
+_obj
+_test
+_build/
+
+# Architecture specific extensions/prefixes
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
+*.test
+*.prof
+
+*.swn
+*.swp
+.vagrant
+vagrant.kubeconfig
+coverage.out
+coverage-all.out
+coverage-all.html
+coverage-all-tmp.out
+unitestreport.json
+e2ereport.json
+
+.DS_Store
+.idea/
+.vscode/
+*.plist
+
+*_bash_completion
+*.swo
+outgoing
+
+*cscope.files
+*cscope.out
+*cscope.in.out
+*cscope.po.out
+*tags
+.gdb_history
+
+man/
+
+# Emacs backup files
+*~
+
+# generated from make targets
+*.ok
+*.build_all
+LICENSE.all
+
+# Temporary files that allow build containers/VMs work without git
+# Not to be ignored by docker.
+GIT_VERSION
+
+# The following files get created during image builds
+.buildx
+.buildx_builder
+
+# Local developer config to be executed in the dev VM and CI VMs started locally
+.devvmrc
+
+# Generated dockerignore files
+images/*/Dockerfile.dockerignore
+
+# Local Emacs files
+.dir-locals.el
+
+# Binary product
+bin
+
+# openapi tmp path
+_openapi_tmp/
+
+# controller-gen tmp path
+.controller_gen_tmp
+
+# e2e tmp path
+test/.cluster
+test/.download

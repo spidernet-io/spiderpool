@@ -1,0 +1,24 @@
+| case id | category  | title | check point            | priority | status | other |
+|---------|-----------|-----------------------|-------|----------|--------|-------|
+| E00001  | ipam-ip | Single pod assign / releases ip addresses |1 check assign ip ok <br> 2 check release ip ok|        | done   |       |
+| E00002  | ipam-ip | two pods in one deployment  assign / releases ip addresses |1 check assign ip ok <br> 2 ip address is in set ippool <br> 3 after restart pod,check ip address assign ok <br> 4 after delete deployment,check release ip address ok <br> (judge whether to verify IPv4 and IPv6 according to the cluster environment) |        |    |       |
+| E00003  | ipam-ip |  two pods in one statfulset  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00004  | ipam-ip |  two pods in one damonset  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00005  | ipam-ip |  two pods in one job  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00006  | ipam-ip |  two pods in one replicaset  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00007  | ipam-ip | 128 pods in one deployment exclusive ip pool| |        |    |       |
+| E00008  | ipam-ip | ip allocation when ip pool is full | |        |    |       |
+| E00009  | gc | The CNI bin is removed and the GC is verified | |        |    |       |
+| E000010  | ipam-ip | ip release in forced deletion | |        |    |       |
+| E000011  | ipam-ip | Failed to create pod when IPv4 / IPv6 pool IP is exhausted <br>（optional） | |        |    |       |
+| E000012  | ipam-ip | When an invalid IPv4 or IPv6 pool is passed through the announcement mode | |        |    |       |
+| E000013  | ipam-ip | the IP address allocated is consistent with the address  by the CRD | |        |    |       |
+| E000014  | ipam-ip | After the namespace is deleted, the pod IP under it is recycled | |        |    |       |
+| E000015  | ipam-ip | After the IP address is released, it can be used again | |        |    |       |
+| E000016  | ipam-ip | Create a pod using long yaml | |        |    |       |
+| E000017  | ipam-ip pool | The IP pool is assigned to the namespace <br>（optional） | |        |    |       |
+| E000018  | ipam-ip pool |  The IP pool is assigned to pod <br>（optional） | |        |    |       |
+| E000019  | reliability | 256 pod start/ kill <br>（optional） | |        |    |       |
+| E000020  | reliability | IP allocation after restart of all hosts | |        |    |       |
+| E000021  | reliability | evited pod is drived out | |  
+| E000022  | reliability | assign IP address when api-server/etcd starts and stops | |  |    |       |

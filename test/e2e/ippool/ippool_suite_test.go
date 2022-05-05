@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/spidernet-io/spiderpool/test/e2e/framework"
+	"github.com/spidernet-io/e2eframework"
 )
 
 func TestIppool(t *testing.T) {
@@ -15,8 +15,11 @@ func TestIppool(t *testing.T) {
 	RunSpecs(t, "Ippool Suite")
 }
 
-var frame *Framework
+var frame *e2eframework.Framework
 
 var _ = BeforeSuite(func() {
-	frame = NewFramework()
+	defer GinkgoRecover()
+	var e error
+	frame, e = e2eframework.NewFramework(GinkgoT())
+	Expect(e).NotTo(HaveOccurred())
 })

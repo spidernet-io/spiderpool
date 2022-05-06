@@ -8,6 +8,8 @@ on:
   pull_request:
     types: [closed]
 
+permissions: write-all
+
 jobs:
   purge-image:
     name: Delete image from ghcr.io

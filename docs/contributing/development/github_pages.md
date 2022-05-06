@@ -6,6 +6,10 @@ the branch 'github_pages' is set as github page
 
 chart package of each version is stored on '/charts' and '/index.yaml' will be updated
 
-## it is used as gitbook
+## it is used as documentation site
 
-documentation is store on '/docs' , the directory is set to gitbook
+documentation is stored on '/docs'
+
+## for changelog
+
+changelog is stored on '/changelogs'

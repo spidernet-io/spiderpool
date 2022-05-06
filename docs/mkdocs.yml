@@ -1,0 +1,36 @@
+site_name: spiderpool
+docs_dir: docs
+site_dir: site
+repo_name: spidernet-io/spiderpool
+repo_url: https://github.com/spidernet-io/spiderpool
+remote_branch: github_pages
+theme:
+  name: material
+  # The maximum depth of the navigation tree in the sidebar
+  navigation_depth: 2
+  palette:
+    scheme: default
+    primary: blue
+    language: zh
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - search.share
+
+plugins:
+  - tags
+  - search
+
+markdown_extensions:
+  - meta
+  - toc
+  - tables
+  - fenced_code
+  - tables
+  - attr_list

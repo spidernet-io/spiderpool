@@ -13,3 +13,12 @@ const (
 	AnnoNamespaceDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
 	AnnoNamespaceDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )
+
+// Network configurations
+const (
+	NetworkLegacy = "legacy"
+	NetworkStrict = "strict"
+	NetworkSDN    = "sdn"
+
+	DefaultIPAMUnixSocketPath = "/var/run/spidernet/spiderpool.sock"
+)

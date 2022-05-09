@@ -38,7 +38,7 @@ func newAgentOpenAPIHttpServer() (*agentOpenAPIServer.Server, error) {
 
 	// customize server configurations.
 	srv.EnabledListeners = agentOpenAPIClient.DefaultSchemes
-	port, err := strconv.Atoi(agentContext.HttpPort)
+	port, err := strconv.Atoi(agentContext.Cfg.HttpPort)
 	if nil != err {
 		return nil, err
 	}

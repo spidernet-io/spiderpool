@@ -1,7 +1,7 @@
 | case id | category  | title | check point            | priority | status | other |
 |---------|-----------|-----------------------|-------|----------|--------|-------|
-| E00001  | ipam-ip | Single pod assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        | done   |       |
-| E00002  | ipam-ip | assign deployment ip |1 check assign ip <br> 2 check release ip|        |    |       |
+| E00001  | ipam-ip | Single pod  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        | done   |       |
+| E00002  | ipam-ip | two pods in one deployment  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
 | E00003  | ipam-ip | assign deployment ip |1 check assign ip <br> 2 check release ip|        |    |       |
 | E00004  | ipam-ip | assign deployment ip |1 check assign ip <br> 2 check release ip|        |    |       |
 | E00005  | ipam-ip | assign deployment ip |1 check assign ip <br> 2 check release ip|        |    |       |

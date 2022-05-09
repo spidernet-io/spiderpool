@@ -1,4 +1,11 @@
-| case id | category  | description                                             | priority | status | other |
+
+
+
+
+
+
+
+| case id | category  | title | check point                                             | priority | status | other |
 |---------|-----------|---------------------------------------------------------|----------|--------|-------|
 | SM00001  | create subnet | create subnet   | p1       |    |       |
 | SM00002  | create ippool | create ippool    | p1       |    |       |

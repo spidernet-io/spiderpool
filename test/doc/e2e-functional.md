@@ -1,7 +1,7 @@
 | case id | category  | title | check point            | priority | status | other |
 |---------|-----------|-----------------------|-------|----------|--------|-------|
-| E00001  | ipam-ip | Single pod assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        | done   |       |
-| E00002  | ipam-ip | two pods in one deployment  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
+| E00001  | ipam-ip | Single pod assign / releases ip addresses |a check assign ip ok <br> b check release ip ok|        | done   |       |
+| E00002  | ipam-ip | two pods in one deployment  assign / releases ip addresses |a check assign ip ok <br> <br> b ip address is in set ippool <br> c after restart pod,check ip address assign ok <br> d after delete deployment,check release ip address ok <br> (judge whether to verify IPv4 and IPv6 according to the cluster environment) |        |    |       |
 | E00003  | ipam-ip |  two pods in one statfulset  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
 | E00004  | ipam-ip |  two pods in one damonset  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
 | E00005  | ipam-ip |  two pods in one job  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |

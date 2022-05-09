@@ -15,6 +15,14 @@ import (
 
 // DaemonMain runs agentContext handlers.
 func DaemonMain() {
+	// load Configmap
+	err := agentContext.LoadConfigmap()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+
+	// TODO: flush ipam plugin config (deprecated)
+
 	// start notifying signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)

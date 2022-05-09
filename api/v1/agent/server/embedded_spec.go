@@ -59,9 +59,22 @@ func init() {
           "daemonset"
         ],
         "summary": "Get ip from spiderpool daemon",
+        "parameters": [
+          {
+            "name": "ipam-add-args",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IpamAddArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/IpamAddResponse"
+            }
           },
           "500": {
             "description": "Allocation failure"
@@ -74,6 +87,16 @@ func init() {
           "daemonset"
         ],
         "summary": "Delete ip from spiderpool daemon",
+        "parameters": [
+          {
+            "name": "ipam-del-args",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IpamDelArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -185,6 +208,158 @@ func init() {
       }
     }
   },
+  "definitions": {
+    "DNS": {
+      "description": "IPAM CNI types DNS",
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "nameservers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "search": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "IpConfig": {
+      "description": "IPAM IPs struct, contains ifName, Address and Gateway",
+      "type": "object",
+      "required": [
+        "version",
+        "address",
+        "nic"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "gateway": {
+          "type": "string"
+        },
+        "nic": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "enum": [
+            4,
+            6
+          ]
+        },
+        "vlan": {
+          "type": "integer"
+        }
+      }
+    },
+    "IpamAddArgs": {
+      "description": "IPAM request args",
+      "type": "object",
+      "required": [
+        "podNamespace",
+        "podName",
+        "containerID",
+        "ifName",
+        "netNamespace"
+      ],
+      "properties": {
+        "containerID": {
+          "type": "string"
+        },
+        "ifName": {
+          "type": "string"
+        },
+        "netNamespace": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        }
+      }
+    },
+    "IpamAddResponse": {
+      "description": "IPAM assignment IPs information",
+      "type": "object",
+      "required": [
+        "ips",
+        "routes"
+      ],
+      "properties": {
+        "dns": {
+          "type": "object",
+          "$ref": "#/definitions/DNS"
+        },
+        "ips": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IpConfig"
+          }
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Route"
+          }
+        }
+      }
+    },
+    "IpamDelArgs": {
+      "description": "IPAM release IP information",
+      "type": "object",
+      "required": [
+        "containerID",
+        "ifName",
+        "podNamespace",
+        "podName"
+      ],
+      "properties": {
+        "containerID": {
+          "type": "string"
+        },
+        "ifName": {
+          "type": "string"
+        },
+        "netNamespace": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        }
+      }
+    },
+    "Route": {
+      "description": "IPAM CNI types Route",
+      "type": "object",
+      "properties": {
+        "dst": {
+          "type": "string"
+        },
+        "gw": {
+          "type": "string"
+        }
+      }
+    }
+  },
   "x-schemes": [
     "unix"
   ]
@@ -228,9 +403,22 @@ func init() {
           "daemonset"
         ],
         "summary": "Get ip from spiderpool daemon",
+        "parameters": [
+          {
+            "name": "ipam-add-args",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IpamAddArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/IpamAddResponse"
+            }
           },
           "500": {
             "description": "Allocation failure"
@@ -243,6 +431,16 @@ func init() {
           "daemonset"
         ],
         "summary": "Delete ip from spiderpool daemon",
+        "parameters": [
+          {
+            "name": "ipam-del-args",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IpamDelArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -350,6 +548,158 @@ func init() {
           "500": {
             "description": "Get workloadendpoint failure"
           }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DNS": {
+      "description": "IPAM CNI types DNS",
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "nameservers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "search": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "IpConfig": {
+      "description": "IPAM IPs struct, contains ifName, Address and Gateway",
+      "type": "object",
+      "required": [
+        "version",
+        "address",
+        "nic"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "gateway": {
+          "type": "string"
+        },
+        "nic": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "enum": [
+            4,
+            6
+          ]
+        },
+        "vlan": {
+          "type": "integer"
+        }
+      }
+    },
+    "IpamAddArgs": {
+      "description": "IPAM request args",
+      "type": "object",
+      "required": [
+        "podNamespace",
+        "podName",
+        "containerID",
+        "ifName",
+        "netNamespace"
+      ],
+      "properties": {
+        "containerID": {
+          "type": "string"
+        },
+        "ifName": {
+          "type": "string"
+        },
+        "netNamespace": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        }
+      }
+    },
+    "IpamAddResponse": {
+      "description": "IPAM assignment IPs information",
+      "type": "object",
+      "required": [
+        "ips",
+        "routes"
+      ],
+      "properties": {
+        "dns": {
+          "type": "object",
+          "$ref": "#/definitions/DNS"
+        },
+        "ips": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IpConfig"
+          }
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Route"
+          }
+        }
+      }
+    },
+    "IpamDelArgs": {
+      "description": "IPAM release IP information",
+      "type": "object",
+      "required": [
+        "containerID",
+        "ifName",
+        "podNamespace",
+        "podName"
+      ],
+      "properties": {
+        "containerID": {
+          "type": "string"
+        },
+        "ifName": {
+          "type": "string"
+        },
+        "netNamespace": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        }
+      }
+    },
+    "Route": {
+      "description": "IPAM CNI types Route",
+      "type": "object",
+      "properties": {
+        "dst": {
+          "type": "string"
+        },
+        "gw": {
+          "type": "string"
         }
       }
     }

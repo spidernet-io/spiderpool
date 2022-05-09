@@ -89,7 +89,6 @@ spec:
         args:
         - daemon
         - --config-dir=/tmp/spiderpool/config-map
-        - --ipam-config-dir=/tmp/spiderpool/ipam-plugin-config-map
         {{- with .Values.spiderpoolAgent.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
@@ -173,9 +172,6 @@ spec:
         - name: config-path
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
-        - name: ipam-plugin-config-path
-          mountPath: /tmp/spiderpool/ipam-plugin-config-map
-          readOnly: true
         - name: etc-cni-conf-path
           mountPath: /host/{{ .Values.ipamPlugin.confPath }}
         - name: cni-bin-path
@@ -189,11 +185,6 @@ spec:
         configMap:
           defaultMode: 0400
           name: {{ .Values.configmap.configCmName }}
-        # To read the configuration from the config map
-      - name: ipam-plugin-config-path
-        configMap:
-          defaultMode: 0400
-          name: {{ .Values.configmap.ipamCmName }}
         # To install cilium cni configuration in the host
       - name: etc-cni-conf-path
         hostPath:

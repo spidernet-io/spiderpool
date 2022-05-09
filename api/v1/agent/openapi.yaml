@@ -31,9 +31,17 @@ paths:
         Send a request to daemonset to ask for an ip assignment
       tags:
         - daemonset
+      parameters:
+        - name: ipam-add-args
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/IpamAddArgs"
       responses:
         "200":
           description: Success
+          schema:
+            "$ref": "#/definitions/IpamAddResponse"
         "500":
           description: Allocation failure
     delete:
@@ -42,6 +50,12 @@ paths:
         Send a request to daemonset to ask for an ip deleting
       tags:
         - daemonset
+      parameters:
+        - name: ipam-del-args
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/IpamDelArgs"
       responses:
         "200":
           description: Success
@@ -115,3 +129,108 @@ paths:
           description: Success
         "500":
           description: Failed
+definitions:
+  IpamAddArgs:
+    description: IPAM request args
+    type: object
+    properties:
+      podNamespace:
+        type: string
+      podName:
+        type: string
+      containerID:
+        type: string
+      ifName:
+        type: string
+      netNamespace:
+        type: string
+    required:
+      - podNamespace
+      - podName
+      - containerID
+      - ifName
+      - netNamespace
+  IpamAddResponse:
+    description: IPAM assignment IPs information
+    type: object
+    properties:
+      ips:
+        type: array
+        items:
+          $ref: "#/definitions/IpConfig"
+      routes:
+        type: array
+        items:
+          $ref: "#/definitions/Route"
+      dns:
+        type: object
+        $ref: "#/definitions/DNS"
+    required:
+      - ips
+      - routes
+  IpamDelArgs:
+    description: IPAM release IP information
+    type: object
+    properties:
+      containerID:
+        type: string
+      ifName:
+        type: string
+      podNamespace:
+        type: string
+      podName:
+        type: string
+      netNamespace:
+        type: string
+    required:
+      - containerID
+      - ifName
+      - podNamespace
+      - podName
+  DNS:
+    description: IPAM CNI types DNS
+    type: object
+    properties:
+      domain:
+        type: string
+      nameservers:
+        type: array
+        items:
+          type: string
+      options:
+        type: array
+        items:
+          type: string
+      search:
+        type: array
+        items:
+          type: string
+  Route:
+    description: IPAM CNI types Route
+    type: object
+    properties:
+      dst:
+        type: string
+      gw:
+        type: string
+  IpConfig:
+    description: IPAM IPs struct, contains ifName, Address and Gateway
+    type: object
+    properties:
+      version:
+        type: integer
+        enum:
+          - 4
+          - 6
+      address:
+        type: string
+      gateway:
+        type: string
+      nic:
+        type: string
+      vlan:
+        type: integer
+    required:
+      - version
+      - address
+      - nic

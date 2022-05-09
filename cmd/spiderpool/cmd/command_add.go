@@ -4,7 +4,9 @@
 package cmd
 
 import (
-	"encoding/json"
+	"fmt"
+	"github.com/go-openapi/strfmt"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -13,8 +15,8 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"github.com/spidernet-io/spiderpool/pkg/cnicommon"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
 )
@@ -22,21 +24,42 @@ import (
 var BinNamePlugin = filepath.Base(os.Args[0])
 
 // CmdAdd follows CNI SPEC cmdAdd.
-func CmdAdd(args *skel.CmdArgs) error {
+func CmdAdd(args *skel.CmdArgs) (err error) {
+	// Defer a panic recover, so that in case we panic we can still return
+	// a proper error to the runtime.
+	defer func() {
+		if e := recover(); e != nil {
+			msg := fmt.Sprintf("Spiderpool IPAM CNI panicked during ADD: %s", e)
+			if err != nil {
+				// If we're recovering and there was also an error, then we need to
+				// present both.
+				msg = fmt.Sprintf("%s: error=%s", msg, err)
+			}
+			err = fmt.Errorf(msg)
+		}
+	}()
+
+	conf, err := LoadNetConf(args.StdinData)
+	if nil != err {
+		return fmt.Errorf("Load network config failed: %v", err)
+	}
+
+	err = setupFileLogging(conf)
+	if nil != err {
+		return fmt.Errorf("Unable to setup logging: %w", err)
+	}
+
 	// new cmdAdd logger
 	logger := logutils.LoggerFile.Named(BinNamePlugin)
+	logger.Sugar().Debugf("Processing CNI ADD request %#v", args)
+	logger.Sugar().Debugf("CNI ADD NetConf: %#v", conf)
 
-	conf := types.NetConf{}
-	if err := json.Unmarshal(args.StdinData, &conf); nil != err {
+	k8sArgs := K8sArgs{}
+	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
 		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
-
-	k8sArgs := cnicommon.K8sArgs{}
-	if err := types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
-		return err
-	}
+	logger.Sugar().Debugf("CNI ADD Args: %#v", k8sArgs)
 
 	// register some args into logger
 	logger = logger.With(zap.String("Action", "Add"),
@@ -44,28 +67,121 @@ func CmdAdd(args *skel.CmdArgs) error {
 		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)))
-	logger.Debug("Generate IPAM configuration")
+	logger.Info("Generate IPAM configuration")
 
 	// new unix client
-	spiderpoolAgentAPI := cmd.NewAgentOpenAPIUnixClient()
+	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IpamUnixSocketPath)
+	if nil != err {
+		logger.Error(err.Error())
+		return err
+	}
 
 	// GET /ipam/healthy
-	_, err := spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
+	logger.Debug("Sending health check to spider agent.")
+	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
 		logger.Error(err.Error())
 		return err
 	}
 
 	// POST /ipam/ip
-	_, err = spiderpoolAgentAPI.Daemonset.PostIpamIP(daemonset.NewPostIpamIPParams())
+	logger.Info("Sending IP assignment request to spider agent.")
+	ipamAddArgs := &models.IpamAddArgs{
+		ContainerID:  &args.ContainerID,
+		IfName:       &args.IfName,
+		NetNamespace: &args.Netns,
+		PodName:      (*string)(&k8sArgs.K8S_POD_NAME),
+		PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+	}
+
+	params := daemonset.NewPostIpamIPParams()
+	params.SetIpamAddArgs(ipamAddArgs)
+	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
 	if nil != err {
 		logger.Error(err.Error())
 		return err
 	}
+	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {
+		logger.Error(err.Error())
+		return err
+	}
 
+	// IPAM Plugin Result
 	result := &current.Result{
 		CNIVersion: conf.CNIVersion,
 	}
+
+	// Result DNS
+	if nil != ipamResponse.Payload.DNS {
+		result.DNS = types.DNS{
+			Nameservers: ipamResponse.Payload.DNS.Nameservers,
+			Domain:      ipamResponse.Payload.DNS.Domain,
+			Search:      ipamResponse.Payload.DNS.Search,
+			Options:     ipamResponse.Payload.DNS.Options,
+		}
+	}
+
+	// Result Routes
+	var routes []*types.Route
+	for _, singleRoute := range ipamResponse.Payload.Routes {
+		var route types.Route
+
+		routeDstAddr := net.ParseIP(singleRoute.Dst)
+		routeDst := net.IPNet{IP: routeDstAddr}
+		if routeDstAddr.To4() == nil {
+			// ipv6 address
+			routeDst.Mask = net.CIDRMask(128, 128)
+		} else {
+			// ipv4 address
+			routeDst.Mask = net.CIDRMask(32, 32)
+		}
+		route.Dst = routeDst
+		route.GW = net.ParseIP(singleRoute.Gw)
+
+		routes = append(routes, &route)
+	}
+	result.Routes = routes
+
+	// Result Interfaces, IPs
+	var netInterfaces []*current.Interface
+	// for NIC index recording.
+	tmpIndex := 0
+	for _, ipconfig := range ipamResponse.Payload.Ips {
+		// filter IPAM multi-Interfaces
+		if *ipconfig.Nic == args.IfName {
+			nic := &current.Interface{Name: *ipconfig.Nic}
+			netInterfaces = append(netInterfaces, nic)
+
+			// record ips
+			if *ipconfig.Version == 4 {
+				var v4ip current.IPConfig
+				nicIndex := tmpIndex
+
+				v4ip.Interface = &nicIndex
+				v4ip.Address = net.IPNet{IP: net.ParseIP(*ipconfig.Address), Mask: net.CIDRMask(32, 32)}
+				v4ip.Gateway = net.ParseIP(ipconfig.Gateway)
+
+				result.IPs = append(result.IPs, &v4ip)
+			} else {
+				var v6ip current.IPConfig
+				nicIndex := tmpIndex
+
+				v6ip.Interface = &nicIndex
+				v6ip.Address = net.IPNet{IP: net.ParseIP(*ipconfig.Address), Mask: net.CIDRMask(128, 128)}
+				v6ip.Gateway = net.ParseIP(ipconfig.Gateway)
+
+				result.IPs = append(result.IPs, &v6ip)
+			}
+			tmpIndex++
+		}
+	}
+	result.Interfaces = netInterfaces
+
+	var ips string
+	for i := range result.IPs {
+		ips = fmt.Sprint(ips, result.IPs[i].String(), " ")
+	}
+	logger.Sugar().Infof("IPAM assigned successfully: %s", ips)
 
 	return types.PrintResult(result, conf.CNIVersion)
 }

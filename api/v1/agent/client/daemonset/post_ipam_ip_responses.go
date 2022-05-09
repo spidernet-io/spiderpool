@@ -10,9 +10,12 @@ package daemonset
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // PostIpamIPReader is a Reader for the PostIpamIP structure.
@@ -50,13 +53,24 @@ func NewPostIpamIPOK() *PostIpamIPOK {
 Success
 */
 type PostIpamIPOK struct {
+	Payload *models.IpamAddResponse
 }
 
 func (o *PostIpamIPOK) Error() string {
-	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpOK ", 200)
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpOK  %+v", 200, o.Payload)
+}
+func (o *PostIpamIPOK) GetPayload() *models.IpamAddResponse {
+	return o.Payload
 }
 
 func (o *PostIpamIPOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.IpamAddResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }

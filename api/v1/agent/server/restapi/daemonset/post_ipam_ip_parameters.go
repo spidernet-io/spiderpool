@@ -9,10 +9,16 @@ package daemonset
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"context"
+	"io"
 	"net/http"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/validate"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // NewPostIpamIPParams creates a new PostIpamIPParams object
@@ -31,6 +37,12 @@ type PostIpamIPParams struct {
 
 	// HTTP Request Object
 	HTTPRequest *http.Request `json:"-"`
+
+	/*
+	  Required: true
+	  In: body
+	*/
+	IpamAddArgs *models.IpamAddArgs
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -42,6 +54,33 @@ func (o *PostIpamIPParams) BindRequest(r *http.Request, route *middleware.Matche
 
 	o.HTTPRequest = r
 
+	if runtime.HasBody(r) {
+		defer r.Body.Close()
+		var body models.IpamAddArgs
+		if err := route.Consumer.Consume(r.Body, &body); err != nil {
+			if err == io.EOF {
+				res = append(res, errors.Required("ipamAddArgs", "body", ""))
+			} else {
+				res = append(res, errors.NewParseError("ipamAddArgs", "body", "", err))
+			}
+		} else {
+			// validate body object
+			if err := body.Validate(route.Formats); err != nil {
+				res = append(res, err)
+			}
+
+			ctx := validate.WithOperationRequest(context.Background())
+			if err := body.ContextValidate(ctx, route.Formats); err != nil {
+				res = append(res, err)
+			}
+
+			if len(res) == 0 {
+				o.IpamAddArgs = &body
+			}
+		}
+	} else {
+		res = append(res, errors.Required("ipamAddArgs", "body", ""))
+	}
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}

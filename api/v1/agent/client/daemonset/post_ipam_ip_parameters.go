@@ -17,6 +17,8 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // NewPostIpamIPParams creates a new PostIpamIPParams object,
@@ -61,6 +63,10 @@ func NewPostIpamIPParamsWithHTTPClient(client *http.Client) *PostIpamIPParams {
    Typically these are written to a http.Request.
 */
 type PostIpamIPParams struct {
+
+	// IpamAddArgs.
+	IpamAddArgs *models.IpamAddArgs
+
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -114,6 +120,17 @@ func (o *PostIpamIPParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithIpamAddArgs adds the ipamAddArgs to the post ipam IP params
+func (o *PostIpamIPParams) WithIpamAddArgs(ipamAddArgs *models.IpamAddArgs) *PostIpamIPParams {
+	o.SetIpamAddArgs(ipamAddArgs)
+	return o
+}
+
+// SetIpamAddArgs adds the ipamAddArgs to the post ipam IP params
+func (o *PostIpamIPParams) SetIpamAddArgs(ipamAddArgs *models.IpamAddArgs) {
+	o.IpamAddArgs = ipamAddArgs
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *PostIpamIPParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -121,6 +138,11 @@ func (o *PostIpamIPParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 	var res []error
+	if o.IpamAddArgs != nil {
+		if err := r.SetBodyParam(o.IpamAddArgs); err != nil {
+			return err
+		}
+	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

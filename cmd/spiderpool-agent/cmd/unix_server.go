@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 
@@ -43,7 +44,7 @@ func NewAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 	srv := agentOpenAPIServer.NewServer(api)
 
 	// customize server configurations.
-	srv.SocketPath = flags.Filename(agentContext.SocketPath)
+	srv.SocketPath = flags.Filename(agentContext.Cfg.IpamUnixSocketPath)
 
 	// configure API and handlers with some default values.
 	srv.ConfigureAPI()
@@ -52,16 +53,19 @@ func NewAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 }
 
 // NewAgentOpenAPIUnixClient creates a new instance of the agent OpenAPI unix client.
-func NewAgentOpenAPIUnixClient() *agentOpenAPIClient.SpiderpoolAgentAPI {
+func NewAgentOpenAPIUnixClient(unixSocketPath string) (*agentOpenAPIClient.SpiderpoolAgentAPI, error) {
+	if unixSocketPath == "" {
+		return nil, fmt.Errorf("Error: no unix socket path!")
+	}
 	transport := &http.Transport{
 		DisableCompression: true,
 		Dial: func(_, _ string) (net.Conn, error) {
-			return net.Dial("unix", agentContext.SocketPath)
+			return net.Dial("unix", unixSocketPath)
 		},
 	}
 	httpClient := &http.Client{Transport: transport}
-	clientTrans := runtime_client.NewWithClient(agentContext.SocketPath, agentOpenAPIClient.DefaultBasePath,
+	clientTrans := runtime_client.NewWithClient(unixSocketPath, agentOpenAPIClient.DefaultBasePath,
 		agentOpenAPIClient.DefaultSchemes, httpClient)
 	client := agentOpenAPIClient.New(clientTrans, strfmt.Default)
-	return client
+	return client, nil
 }

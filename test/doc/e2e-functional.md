@@ -2,10 +2,10 @@
 |---------|-----------|-----------------------|-------|----------|--------|-------|
 | E00001  | ipam-ip | Single pod assign / releases ip addresses |1 check assign ip ok <br> 2 check release ip ok|        | done   |       |
 | E00002  | ipam-ip | two pods in one deployment  assign / releases ip addresses |1 check assign ip ok <br> 2 ip address is in set ippool <br> 3 after restart pod,check ip address assign ok <br> 4 after delete deployment,check release ip address ok <br> (judge whether to verify IPv4 and IPv6 according to the cluster environment) |        |    |       |
-| E00003  | ipam-ip |  two pods in one statfulset  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
-| E00004  | ipam-ip |  two pods in one damonset  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
-| E00005  | ipam-ip |  two pods in one job  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
-| E00006  | ipam-ip |  two pods in one replicaset  assign / releases ip addresses |1 check assign ip <br> 2 check release ip|        |    |       |
+| E00003  | ipam-ip |  two pods in one statfulset  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00004  | ipam-ip |  two pods in one damonset  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00005  | ipam-ip |  two pods in one job  assign / releases ip addresses |1  <br> 2 |        |    |       |
+| E00006  | ipam-ip |  two pods in one replicaset  assign / releases ip addresses |1  <br> 2 |        |    |       |
 | E00007  | ipam-ip | 128 pods in one deployment exclusive ip pool| |        |    |       |
 | E00008  | ipam-ip | ip allocation when ip pool is full | |        |    |       |
 | E00009  | gc | The CNI bin is removed and the GC is verified | |        |    |       |

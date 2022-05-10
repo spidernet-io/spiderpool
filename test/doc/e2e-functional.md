@@ -20,9 +20,5 @@
 | E00016  | ipam-ip | Create a pod using long yaml | | | | |
 | E00017  | ipam-ip pool | The IP pool is assigned to the namespace <br>（optional） | | | | |
 | E00018  | ipam-ip pool |  The IP pool is assigned to pod <br>（optional） | | | | |
-| E00019  | reliability | 256 pod start/ kill <br>（optional）| | | | |
-| E00020  | reliability | IP allocation after restart of all hosts | | | | |
-| E00021  | reliability | evited pod is drived out | | | | |
-| E00022  | reliability | assign IP address when api-server/etcd starts and stops | | | | |
 
 ### judge whether to verify IPv4 and IPv6 according to the cluster environment ###

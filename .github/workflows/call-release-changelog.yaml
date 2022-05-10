@@ -25,6 +25,8 @@ on:
         required: false
         default: v1.0.0
 
+permissions: write-all
+
 env:
   DEST_BRANCH: github_pages
   DEST_DIRECTORY: 'changelogs/'
@@ -158,7 +160,7 @@ jobs:
           ref: ${{ env.DEST_BRANCH }}
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3.0.0
+        uses: actions/download-artifact@v3
         with:
           name: changelog_artifact
           path: ${{ env.DEST_DIRECTORY }}
@@ -174,6 +176,6 @@ jobs:
           delete-branch: true
           base: ${{ env.DEST_BRANCH }}
           signoff: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WELAN_PAT }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}

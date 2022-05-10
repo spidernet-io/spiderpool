@@ -1,3 +1,6 @@
+- name: pr/not-ready
+  description: not ready for merging
+  color: d73a4a
 - name: pr/release/bug
   description: bug pr in a new release
   color: d73a4a

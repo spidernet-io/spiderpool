@@ -32,6 +32,7 @@ on:
         required: true
         default: v1.0.0
 
+permissions: write-all
 
 jobs:
   get_ref:
@@ -116,7 +117,7 @@ jobs:
           ref: ${{ env.MERGE_BRANCH }}
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3.0.0
+        uses: actions/download-artifact@v3
         with:
           name: chart_package_artifact
           path: charts/
@@ -137,6 +138,6 @@ jobs:
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WELAN_PAT }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}

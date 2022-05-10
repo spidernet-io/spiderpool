@@ -1,5 +1,4 @@
 # e2e case for functional test
-### https://dwiki.daocloud.io/pages/viewpage.action?pageId=121145929 ###
 
 | case id | category  | title | check point            | priority | status | other |
 |---------|-----------|-------|------------------------|----------|--------|-------|

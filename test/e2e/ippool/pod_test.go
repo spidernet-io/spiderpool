@@ -4,13 +4,16 @@ package ippool_test
 
 import (
 	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+
 	// corev1 "k8s.io/api/core/v1"
 	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/spidernet-io/e2eframework/tools"
 	"time"
+
+	"github.com/spidernet-io/e2eframework/tools"
 )
 
 var _ = Describe("test pod", Label("ippool_pod"), func() {
@@ -43,6 +46,7 @@ var _ = Describe("test pod", Label("ippool_pod"), func() {
 			// wait for pod ip
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
+			GinkgoWriter.Printf("print ctx: %v\n print cancel: %v\n", ctx, cancel)
 			pod, err = frame.WaitPodStarted(podName, namespace, ctx)
 			Expect(err).NotTo(HaveOccurred(), "time out to wait pod ready")
 			Expect(pod).NotTo(BeNil())
@@ -51,7 +55,6 @@ var _ = Describe("test pod", Label("ippool_pod"), func() {
 			// pod, err := frame.GetPod(podName, namespace )
 			// Expect(err).NotTo(HaveOccurred())
 			Expect(pod.Status.PodIPs).NotTo(BeEmpty(), "pod failed to assign ip")
-
 			GinkgoWriter.Printf("pod %v/%v ip: %+v \n", namespace, podName, pod.Status.PodIPs)
 			if frame.Info.IpV4Enabled == true {
 				Expect(tools.CheckPodIpv4IPReady(pod)).To(BeTrue(), "pod failed to get ipv4 ip")
@@ -67,5 +70,4 @@ var _ = Describe("test pod", Label("ippool_pod"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete pod")
 		})
 	})
-
 })

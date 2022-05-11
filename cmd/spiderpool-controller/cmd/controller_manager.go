@@ -26,7 +26,8 @@ func init() {
 
 func newControllerManager() (ctrl.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
+		Scheme: scheme,
+		// TODO: Add port...
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 	})

@@ -20,7 +20,7 @@ func DaemonMain() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go WatchSignal(sigCh)
 
-	logger.Info("Begin to initialize spiderpool-agent controller manager.")
+	logger.Info("Begin to initialize spiderpool-agent Controller Manager")
 	mgr, err := newControllerManager()
 	if nil != err {
 		logger.Fatal(err.Error())
@@ -28,7 +28,7 @@ func DaemonMain() {
 	agentContext.ControllerManagerCtx, agentContext.ControllerManagerCancel = context.WithCancel(context.Background())
 
 	go func() {
-		logger.Info("Starting spiderpool-agent controller manager.")
+		logger.Info("Starting spiderpool-agent Controller Manager")
 		if err := mgr.Start(agentContext.ControllerManagerCtx); err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -84,7 +84,8 @@ func WatchSignal(sigCh chan os.Signal) {
 
 		// TODO: filter some signals
 
-		// TODO
+		// Cancel the context of Controller Manager.
+		// This stops things like the CRD's Informer, Webhook, Controller, etc.
 		if agentContext.ControllerManagerCancel != nil {
 			agentContext.ControllerManagerCancel()
 		}

@@ -21,6 +21,11 @@ type envConf struct {
 	associateKey *string
 }
 
+// GetAgentContext returns singleton object agentContext.
+func GetAgentContext() *AgentContext {
+	return agentContext
+}
+
 // EnvInfo collects the env and relevant agentContext properties.
 // 'required' that means if there's no env value and we set 'required' true, we use the default value.
 var EnvInfo = []envConf{

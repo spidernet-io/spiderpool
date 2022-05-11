@@ -20,5 +20,3 @@
 | E00016  | ipam-ip | Create a pod using long yaml | | | | |
 | E00017  | ipam-ip pool | The IP pool is assigned to the namespace <br>（optional） | | | | |
 | E00018  | ipam-ip pool |  The IP pool is assigned to pod <br>（optional） | | | | |
-
-### judge whether to verify IPv4 and IPv6 according to the cluster environment ###

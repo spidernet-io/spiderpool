@@ -2,4 +2,4 @@
 
 | case id | category  | title | check point   | priority | status | other |
 |---------|-----------|-----------------------|----------|--------|-------|-------|
-| P00001  | performance| time cost for assigning ip to 1000 pods| | | | |
+| P00001  | performance| time cost for assigning ip to 1000 pods | | | | |

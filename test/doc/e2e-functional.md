@@ -2,12 +2,12 @@
 
 | case id | category  | title | check point            | priority | status | other |
 |---------|-----------|-------|------------------------|----------|--------|-------|
-| E00001  | ipam   | single pod assign / releases ip | 1 check assign ip ok <br> 2 check releases ip ok |        | done   |       |
+| E00001  | ipam   | single pod assign / release ip | 1 check assign ip ok <br> 2 check release ip ok |        | done   |       |
 | E00002  | ipam |  two pods in one deployment  assign / releases ip | | | | |
 | E00003  | ipam |  two pods in one statefulset  assign / releases ip  | | | | |
-| E00004  | ipam |  two pods in one damonset  assign / releases ip | | | | |
+| E00004  | ipam |  two pods in one damonset  assign / release ip | | | | |
 | E00005  | ipam |  two pods in one job  assign / releases ip | | | | |
-| E00006  | ipam |  two pods in one replicaset  assign / releases ip | | | | |
+| E00006  | ipam |  two pods in one replicaset  assign / release ip | | | | |
 | E00007  | ipam | 128 pods in one deployment exclusive ip pool | | | | |
 | E00008  | ipam | ip allocation when ip pool is full | | | | |
 | E00009  | gc | The CNI bin is removed and the GC is verified | | | | |

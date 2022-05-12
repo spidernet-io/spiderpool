@@ -11,8 +11,8 @@ import (
 type WorkloadEndpointStatus struct {
 	// TODO
 
-	// +kubebuilder:validation:Required
-	Current PodIPAllocation `json:"current"`
+	// +kubebuilder:validation:Optional
+	Current *PodIPAllocation `json:"current,omitempty"`
 
 	// TODO
 
@@ -25,7 +25,7 @@ type PodIPAllocation struct {
 	// TODO
 
 	// +kubebuilder:validation:Required
-	Containerid string `json:"containerid"`
+	ContainerID string `json:"containerID"`
 
 	// TODO
 
@@ -79,7 +79,7 @@ type IPAllocationDetail struct {
 	// TODO
 
 	// +kubebuilder:validation:Optional
-	Route *Route `json:"route,omitempty"`
+	Routes []Route `json:"routes,omitempty"`
 
 	// TODO
 
@@ -88,12 +88,7 @@ type IPAllocationDetail struct {
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="workloadendpoints",scope="Namespaced",shortName={swe},singular="workloadendpoint"
-// +kubebuilder:printcolumn:JSONPath=".status.ips.interface",description="interface",name="INTERFACE",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.ips.ipv4Pool",description="ipv4Pool",name="IPV4POOL",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.ips.ipv4",description="ipv4",name="IPV4",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.ips.ipv6Pool",description="ipv6Pool",name="IPV6POOL",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.ips.ipv6",description="ipv6",name="IPV6",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.node",description="node",name="NODE",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.current.node",description="node",name="NODE",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.creationTime",description="creationTime",name="CREATETION TIME",type=date
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

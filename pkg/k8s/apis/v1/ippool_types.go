@@ -30,9 +30,8 @@ type IPPoolSpec struct {
 
 	// TODO
 
-	// +kubebuilder:default=false
-	// +kubebuilder:validation:Optional
-	Disable *bool `json:"disable,omitempty"`
+	// +kubebuilder:validation:Required
+	Disable bool `json:"disable"`
 
 	// TODO
 
@@ -93,8 +92,8 @@ type Route struct {
 
 	// TODO
 
-	// +kubebuilder:validation:Optional
-	Gw *string `json:"gw,omitempty"`
+	// +kubebuilder:validation:Required
+	Gw string `json:"gw"`
 }
 
 // IPPoolStatus defines the observed state of IPPool
@@ -137,7 +136,7 @@ type PoolIPAllocation struct {
 	// TODO
 
 	// +kubebuilder:validation:Required
-	Containerid string `json:"containerid"`
+	ContainerID string `json:"containerID"`
 
 	// TODO
 

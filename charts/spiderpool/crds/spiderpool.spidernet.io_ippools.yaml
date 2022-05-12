@@ -61,7 +61,6 @@ spec:
             description: IPPoolSpec defines the desired state of IPPool
             properties:
               disable:
-                default: false
                 type: boolean
               excludeIPs:
                 items:
@@ -228,6 +227,7 @@ spec:
                       type: string
                   required:
                   - dst
+                  - gw
                   type: object
                 type: array
               subnet:
@@ -238,6 +238,7 @@ spec:
                 minimum: 0
                 type: integer
             required:
+            - disable
             - ipVersion
             - ips
             - subnet
@@ -257,7 +258,7 @@ spec:
                 additionalProperties:
                   description: PoolIPAllocation is an IP already has been allocated
                   properties:
-                    containerid:
+                    containerID:
                       type: string
                     interface:
                       type: string
@@ -268,7 +269,7 @@ spec:
                     pod:
                       type: string
                   required:
-                  - containerid
+                  - containerID
                   - interface
                   - namespace
                   - node

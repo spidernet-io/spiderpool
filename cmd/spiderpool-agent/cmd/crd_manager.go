@@ -6,15 +6,17 @@ package cmd
 import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"context"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/webhook"
 )
 
 var scheme = runtime.NewScheme()
@@ -24,24 +26,22 @@ func init() {
 	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
 }
 
-func newControllerManager() (ctrl.Manager, error) {
+func newCRDManager() (ctrl.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: scheme,
-		// TODO (Icarus9913): Add port...
+		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 	})
-
-	if nil != err {
+	if err != nil {
 		return nil, err
 	}
 
-	if err = (&webhook.IPPoolWebhook{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWebhookWithManager(mgr); err != nil {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &spiderpoolv1.ReservedIP{}, ".spec.ipVersion", func(raw client.Object) []string {
+		reservedIP := raw.(*spiderpoolv1.ReservedIP)
+		return []string{string(reservedIP.Spec.IPVersion)}
+	}); err != nil {
 		return nil, err
 	}
 
-	return mgr, err
+	return mgr, nil
 }

@@ -57,7 +57,7 @@ manifests_verify() {
   # Aggregate the artifacts currently in use
   mkdir -p ${OUTPUT_TMP_DIR}
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/crds)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
+    cp -a ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
   fi
 
   #if [ "$(ls -A ${OUTPUT_BASE_DIR}/webhook)" ]; then
@@ -65,7 +65,7 @@ manifests_verify() {
   #fi
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/rbac)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/rbac ${OUTPUT_TMP_DIR}
+    cp -a ${OUTPUT_BASE_DIR}/rbac ${OUTPUT_TMP_DIR}
   fi
 
   # Generator the latest artifacts

@@ -21,8 +21,12 @@ type _unixPostAgentIpamIp struct{}
 // Handle handles POST requests for /ipam/ip .
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
+	resp, err := agentContext.IPAM.Allocate(params.HTTPRequest.Context(), params.IpamAddArgs)
+	if err != nil {
+		return daemonset.NewPostIpamIpsInternalServerError()
+	}
 
-	return daemonset.NewPostIpamIPOK()
+	return daemonset.NewPostIpamIPOK().WithPayload(resp)
 }
 
 type _unixDeleteAgentIpamIp struct{}

@@ -13,6 +13,14 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/pkg/ipam"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 // DaemonMain runs agentContext handlers.
@@ -37,16 +45,31 @@ func DaemonMain() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go WatchSignal(sigCh)
 
-	logger.Info("Begin to initialize spiderpool-agent Controller Manager")
-	mgr, err := newControllerManager()
+	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
+
+	logger.Info("Begin to initialize spiderpool-agent CRD Manager")
+	mgr, err := newCRDManager()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-	agentContext.ControllerManagerCtx, agentContext.ControllerManagerCancel = context.WithCancel(context.Background())
+	agentContext.CRDManager = mgr
+
+	agentContext.WEManager = workloadendpointmanager.NewWorkloadEndpointManager(mgr.GetClient())
+	agentContext.RIPManager = reservedipmanager.NewReservedIPManager(mgr.GetClient())
+	agentContext.NodeManager = nodemanager.NewNodeManager(mgr.GetClient())
+	agentContext.NSManager = namespacemanager.NewNamespaceManager(mgr.GetClient())
+	agentContext.PodManager = podmanager.NewPodManager(mgr.GetClient())
+	agentContext.IPPoolManager = ippoolmanager.NewIPPoolManager(mgr.GetClient(), agentContext.RIPManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager)
+	agentContext.IPAM = ipam.NewIPAM(ipam.IPAMConfig{
+		StatuflsetIPEnable:       false,
+		ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
+		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
+	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NSManager, agentContext.PodManager)
 
 	go func() {
-		logger.Info("Starting spiderpool-agent Controller Manager")
-		if err := mgr.Start(agentContext.ControllerManagerCtx); err != nil {
+		logger.Info("Starting spiderpool-agent CRD Manager")
+		if err := mgr.Start(agentContext.InnerCtx); err != nil {
+			mgr.GetClient()
 			logger.Fatal(err.Error())
 		}
 	}()
@@ -106,10 +129,10 @@ func WatchSignal(sigCh chan os.Signal) {
 
 		// TODO (Icarus9913): filter some signals
 
-		// Cancel the context of Controller Manager.
-		// This stops things like the CRD's Informer, Webhook, Controller, etc.
-		if agentContext.ControllerManagerCancel != nil {
-			agentContext.ControllerManagerCancel()
+		// Cancel the internal context of spiderpool-agent.
+		// This stops things like the CRD Manager, GC, etc.
+		if agentContext.InnerCancel != nil {
+			agentContext.InnerCancel()
 		}
 
 		// shut down agent http server

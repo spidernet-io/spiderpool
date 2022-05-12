@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var controllerContext = new(ControllerContext)
@@ -55,12 +56,13 @@ type ControllerContext struct {
 	EnabledGCEvictedPodIP      bool
 	GCEvictedPodIPDuration     time.Duration
 
-	// ControllerManagerCtx is the context that can be used during shutdown.
+	// InnerCtx is the context that can be used during shutdown.
 	// It will be cancelled after receiving an interrupt or termination signal.
-	ControllerManagerCtx    context.Context
-	ControllerManagerCancel context.CancelFunc
+	InnerCtx    context.Context
+	InnerCancel context.CancelFunc
 
 	// handler
+	CRDManager ctrl.Manager
 	HttpServer *server.Server
 }
 

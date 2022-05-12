@@ -23,16 +23,23 @@ func init() {
 	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
 }
 
-func newControllerManager() (ctrl.Manager, error) {
+func newCRDManager() (ctrl.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
+		Scheme: scheme,
+		// TODO(iiiceoo): Add port, cert dir...
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 	})
-
 	if nil != err {
 		return nil, err
 	}
 
-	return mgr, err
+	// if err = (&webhook.IPPoolWebhook{
+	// 	Client: mgr.GetClient(),
+	// 	Scheme: mgr.GetScheme(),
+	// }).SetupWebhookWithManager(mgr); err != nil {
+	// 	return nil, err
+	// }
+
+	return mgr, nil
 }

@@ -73,6 +73,15 @@ func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
 	return existing, e
 }
 
+func (f *Framework) GetPodList(opts ...client.ListOption) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+	e := f.ListResource(pods, opts...)
+	if e != nil {
+		return nil, e
+	}
+	return pods, nil
+}
+
 func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) (*corev1.Pod, error) {
 
 	// refer to https://github.com/kubernetes-sigs/controller-runtime/blob/master/pkg/client/watch_test.go

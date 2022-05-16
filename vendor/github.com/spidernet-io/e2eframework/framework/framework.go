@@ -190,6 +190,12 @@ func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	return f.KClient.Get(ctx3, key, obj)
 }
 
+func (f *Framework) ListResource(list client.ObjectList, opts ...client.ListOption) error {
+	ctx3, cancel3 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel3()
+	return f.KClient.List(ctx3, list, opts...)
+}
+
 func initClusterInfo() error {
 
 	for _, v := range envConfigList {

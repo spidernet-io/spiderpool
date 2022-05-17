@@ -34,7 +34,7 @@ jobs:
           echo "E2E_STATUS=${E2E_STATUS}" >> $GITHUB_ENV
 
       - name: Create Lines-of-Code-Badge
-        uses: schneegans/dynamic-badges-action@v1.3.0
+        uses: schneegans/dynamic-badges-action@v1.4.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: 7e54bfe38fec206e7710c74ad55a5139
@@ -44,7 +44,7 @@ jobs:
           color: lightgrey
 
       - name: Create Comments-Badge
-        uses: schneegans/dynamic-badges-action@v1.3.0
+        uses: schneegans/dynamic-badges-action@v1.4.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: 93b7ba26a4600fabe100ff640f9b3bd3
@@ -56,7 +56,7 @@ jobs:
           minColorRange: 0
 
       - name: Create E2E-Badge
-        uses: schneegans/dynamic-badges-action@v1.3.0
+        uses: schneegans/dynamic-badges-action@v1.4.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: e1d3c092d1b9f61f1c8e36f09d2809cb

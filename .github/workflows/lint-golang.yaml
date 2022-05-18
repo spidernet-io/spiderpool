@@ -82,7 +82,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17.8
+          go-version: 1.18.2
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -122,42 +122,6 @@ jobs:
           echo "all succeed"
           exit 0
 
-  quality:
-    needs: filter_changes
-    if: ${{ needs.filter_changes.outputs.check == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.17.8
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-          ref: ${{ needs.filter_changes.outputs.ref }}
-          fetch-depth: 0
-
-      # ================= quality
-      # too slow
-      # - name: CodeQL Initialize
-      #   uses: github/codeql-action/init@v2.1.8
-      #   with:
-      #     languages: go
-      # - name: CodeQL Analysis
-      #   uses: github/codeql-action/analyze@v2.1.8
-
-      - name: gokart
-        id: gokart
-        run: |
-          go install github.com/praetorian-inc/gokart@latest
-          gokart scan --globalsTainted
-
   lint_SDK_and_build:
     needs: filter_changes
     if: ${{ needs.filter_changes.outputs.check == 'true' }}
@@ -166,7 +130,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17.8
+          go-version: 1.18.2
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -213,7 +177,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17.8
+          go-version: 1.18.2
 
       - name: Checkout code
         uses: actions/checkout@v3

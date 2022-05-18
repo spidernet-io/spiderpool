@@ -3,6 +3,7 @@ name: Badge Status
 env:
   CODESTATUSSCRIPT: "./tools/scripts/codeCoverage.sh"
   E2ESTATUSSCRIPT: "./tools/scripts/e2ecover.sh"
+  TODOSCRIPT: "./tools/scripts/todocover.sh"
 
 on:
   push:
@@ -32,6 +33,9 @@ jobs:
           TOOL_PATH=${{ env.E2ESTATUSSCRIPT }}
           E2E_STATUS=$( ${TOOL_PATH} )
           echo "E2E_STATUS=${E2E_STATUS}" >> $GITHUB_ENV
+          TOOL_PATH=${{ env.TODOSCRIPT }}
+          TODO_STATUS=$( ${TOOL_PATH} )
+          echo "TODO_STATUS=${TODO_STATUS}" >> $GITHUB_ENV
 
       - name: Create Lines-of-Code-Badge
         uses: schneegans/dynamic-badges-action@v1.4.0
@@ -63,4 +67,14 @@ jobs:
           filename: spiderpoole2e.json
           label: e2e
           message: ${{ env.E2E_STATUS }}
+          color: lightgrey
+
+      - name: Create TODO-Badge
+        uses: schneegans/dynamic-badges-action@v1.4.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: cd9ef69f5ba8724cb4ff896dca953ef4
+          filename: spiderpooltodo.json
+          label: todo
+          message: ${{ env.TODO_STATUS }}
           color: lightgrey

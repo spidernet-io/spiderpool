@@ -200,11 +200,9 @@ update-go-version: ## Update Go version for all the components
 			-e 's|^// +build go.*|// +build go${GO_MAJOR_AND_MINOR_VERSION}|g' \
 			$$fl ; \
 	done
-ifeq (${shell [ -f .travis.yml ] && echo done},done)
-	# ====== Update Go version in Travis CI config.
-	$(QUIET) sed -i 's/go: ".*/go: "$(GO_VERSION)"/g' .travis.yml
-	@echo "Updated go version in .travis.yml to $(GO_VERSION)"
-endif
+	# ====== Update Go version in go.mod
+	$(QUIET) sed -i -E 's/^go .*/go '$(GO_MAJOR_AND_MINOR_VERSION)'/g' go.mod
+	@echo "Updated go version in go.mod to $(GO_VERSION)"
 ifeq (${shell [ -d ./test ] && echo done},done)
 	# ======= Update Go version in test scripts.
 	@echo "Updated go version in test scripts to $(GO_VERSION)"

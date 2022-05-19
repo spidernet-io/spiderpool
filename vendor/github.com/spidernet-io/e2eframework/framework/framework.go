@@ -5,19 +5,22 @@ package framework
 
 import (
 	"context"
-	"github.com/mohae/deepcopy"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"os"
 	"strconv"
+
+	"github.com/mohae/deepcopy"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	corev1 "k8s.io/api/core/v1"
+	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // -----------------------------
@@ -147,7 +150,12 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 		scheme := runtime.NewScheme()
 		err = corev1.AddToScheme(scheme)
 		if err != nil {
+
 			return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
+		}
+		err = appsv1.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add appsv1 Scheme: %v", err)
 		}
 		err = apiextensions_v1.AddToScheme(scheme)
 		if err != nil {
@@ -188,6 +196,12 @@ func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	ctx3, cancel3 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
 	defer cancel3()
 	return f.KClient.Get(ctx3, key, obj)
+}
+
+func (f *Framework) ListResource(list client.ObjectList, opts ...client.ListOption) error {
+	ctx4, cancel4 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel4()
+	return f.KClient.List(ctx4, list, opts...)
 }
 
 func initClusterInfo() error {

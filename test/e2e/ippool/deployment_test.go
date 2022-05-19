@@ -30,8 +30,8 @@ var _ = Describe("test deployment", Label("deployment"), func() {
 		})
 	})
 
-	Context("test by means of deployment create pods，assign ipv4、ipv6", Label("smoke"), Label("E00002"), func() {
-		It("Two pods in a deployment allocate/release ipv4 and ipv6 addresses", func() {
+	Context("test by means of deployment create pods，assign ipv4、ipv6", func() {
+		It("Two pods in a deployment allocate/release ipv4 and ipv6 addresses",Label("smoke"), Label("E00002"), func() {
 			// create deployment
 			GinkgoWriter.Printf("try to create deployment %v/%v/%v \n", dpmName, nsName)
 			pod := common.GenerateExampleDeploymentYaml(dpmName, nsName, 2)
@@ -51,7 +51,7 @@ var _ = Describe("test deployment", Label("deployment"), func() {
 			// get all deployment replicas name and check ip
 			opts := []client.ListOption{
 				client.InNamespace(nsName),
-				client.MatchingLabels{"app": dpmName},
+				client.MatchingLabels(dpm.Spec.Selector.MatchLabels),
 			}
 			podinfolist, err := frame.GetPodList(opts...)
 			Expect(err).NotTo(HaveOccurred(), "failed to list pod")

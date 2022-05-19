@@ -1,6 +1,6 @@
 module github.com/spidernet-io/spiderpool
 
-go 1.17
+go 1.18
 
 require (
 	github.com/containernetworking/cni v1.1.0

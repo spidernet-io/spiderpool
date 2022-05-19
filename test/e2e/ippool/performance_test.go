@@ -28,9 +28,8 @@ var _ = Describe("test performance", Label("performance"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", nsName)
 		})
 	})
-	Context("through controller deployment CRUD，check time cost for assigning ipv4、ipv6 to 100 pods",
-		Label("performance"), Label("P00002"), func() {
-			It("time cost for assigning ipv4、ipv6 to 100 pods", func() {
+	Context("through controller deployment CRUD，check time cost for assigning ipv4、ipv6 to 100 pods", func() {
+			It("time cost for assigning ipv4、ipv6 to 100 pods", Label("performance"), Label("P00002"), func() {
 				// create deployment，record the creation time
 				startT := time.Now()
 				GinkgoWriter.Printf("try to create deployment %v/%v/%v \n", dpmName, nsName)
@@ -57,7 +56,7 @@ var _ = Describe("test performance", Label("performance"), func() {
 				Expect(err).NotTo(HaveOccurred(), "failed to update deployment")
 
 				dpm, err = frame.WaitDeploymentReady(dpmName, nsName, ctx)
-				Expect(err).NotTo(HaveOccurred(), "time out to wait  all Replicas ready")
+				Expect(err).NotTo(HaveOccurred(), "time out to wait all Replicas ready")
 				Expect(dpm).NotTo(BeNil())
 
 				// computing time
@@ -67,7 +66,7 @@ var _ = Describe("test performance", Label("performance"), func() {
 				// get all deployment replicas name and check ip
 				opts := []client.ListOption{
 					client.InNamespace(nsName),
-					client.MatchingLabels{"app": dpmName},
+					client.MatchingLabels(dpm.Spec.Selector.MatchLabels),
 				}
 				podinfolist, err := frame.GetPodList(opts...)
 				Expect(err).NotTo(HaveOccurred(), "failed to list pod")

@@ -88,7 +88,7 @@ spec:
         - {{ .Values.spiderpoolAgent.binName }}
         args:
         - daemon
-        - --config-dir=/tmp/spiderpool/config-map
+        - --config-dir=/tmp/spiderpool/config-map/conf.yml
         {{- with .Values.spiderpoolAgent.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
@@ -176,6 +176,8 @@ spec:
           mountPath: /host/{{ .Values.ipamPlugin.confPath }}
         - name: cni-bin-path
           mountPath: /host/{{ .Values.ipamPlugin.binPath }}
+        - name: ipam-unix-socket-dir
+          mountPath: {{ .Values.ipamPlugin.ipam_unix_socket_dir }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
@@ -194,6 +196,11 @@ spec:
       - name: cni-bin-path
         hostPath:
           path:  {{ .Values.ipamPlugin.binPath }}
+          type: DirectoryOrCreate
+        # To create unix socket dir in the host
+      - name: ipam-unix-socket-dir
+        hostPath:
+          path: {{ .Values.ipamPlugin.ipam_unix_socket_dir }}
           type: DirectoryOrCreate
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

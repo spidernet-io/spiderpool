@@ -167,7 +167,6 @@ definitions:
         $ref: "#/definitions/DNS"
     required:
       - ips
-      - routes
   IpamDelArgs:
     description: IPAM release IP information
     type: object
@@ -213,6 +212,9 @@ definitions:
         type: string
       gw:
         type: string
+    required:
+      - dst
+      - gw
   IpConfig:
     description: IPAM IPs struct, contains ifName, Address and Gateway
     type: object

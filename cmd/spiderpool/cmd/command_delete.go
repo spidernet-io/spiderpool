@@ -18,6 +18,8 @@ import (
 
 // CmdDel follows CNI SPEC cmdDel.
 func CmdDel(args *skel.CmdArgs) (err error) {
+	var logger *zap.Logger
+
 	// Defer a panic recover, so that in case we panic we can still return
 	// a proper error to the runtime.
 	defer func() {
@@ -28,6 +30,10 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 				// present both.
 				msg = fmt.Sprintf("%s: error=%s", msg, err)
 			}
+			if nil != logger {
+				logger.Error(msg)
+			}
+
 			err = fmt.Errorf(msg)
 		}
 	}()
@@ -43,7 +49,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	}
 
 	// new cmdDel logger
-	logger := logutils.LoggerFile.Named(BinNamePlugin)
+	logger = logutils.LoggerFile.Named(BinNamePlugin)
 	logger.Sugar().Debugf("Processing CNI DEL request %#v", args)
 	logger.Sugar().Debugf("CNI DEL NetConf: %#v", conf)
 
@@ -59,7 +65,8 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		zap.String("ContainerID", args.ContainerID),
 		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
-		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)))
+		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
+		zap.String("IfName", args.IfName))
 	logger.Info("Generate IPAM configuration")
 
 	// new unix client
@@ -76,6 +83,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error())
 		return err
 	}
+	logger.Debug("Health check succeed.")
 
 	// DELETE /ipam/ip
 	logger.Info("Sending IP release request to spider agent.")

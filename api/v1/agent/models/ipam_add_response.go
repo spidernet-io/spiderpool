@@ -31,7 +31,6 @@ type IpamAddResponse struct {
 	Ips []*IPConfig `json:"ips"`
 
 	// routes
-	// Required: true
 	Routes []*Route `json:"routes"`
 }
 
@@ -104,9 +103,8 @@ func (m *IpamAddResponse) validateIps(formats strfmt.Registry) error {
 }
 
 func (m *IpamAddResponse) validateRoutes(formats strfmt.Registry) error {
-
-	if err := validate.Required("routes", "body", m.Routes); err != nil {
-		return err
+	if swag.IsZero(m.Routes) { // not required
+		return nil
 	}
 
 	for i := 0; i < len(m.Routes); i++ {

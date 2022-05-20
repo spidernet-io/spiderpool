@@ -7,23 +7,24 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 // Set up logging for spiderpool plugin
 func setupFileLogging(conf *NetConf) error {
 	var logLevel logutils.LogLevel
-	if strings.EqualFold(conf.LogLevel, "debug") {
+	if strings.EqualFold(conf.LogLevel, constant.LogDebugLevelStr) {
 		logLevel = logutils.DebugLevel
-	} else if strings.EqualFold(conf.LogLevel, "info") {
+	} else if strings.EqualFold(conf.LogLevel, constant.LogInfoLevelStr) {
 		logLevel = logutils.InfoLevel
-	} else if strings.EqualFold(conf.LogLevel, "warn") {
+	} else if strings.EqualFold(conf.LogLevel, constant.LogWarnLevelStr) {
 		logLevel = logutils.WarnLevel
-	} else if strings.EqualFold(conf.LogLevel, "error") {
+	} else if strings.EqualFold(conf.LogLevel, constant.LogErrorLevelStr) {
 		logLevel = logutils.ErrorLevel
-	} else if strings.EqualFold(conf.LogLevel, "fatal") {
+	} else if strings.EqualFold(conf.LogLevel, constant.LogFatalLevelStr) {
 		logLevel = logutils.FatalLevel
-	} else if strings.EqualFold(conf.LogLevel, "panic") {
+	} else if strings.EqualFold(conf.LogLevel, constant.LogPanicLevelStr) {
 		logLevel = logutils.PanicLevel
 	} else {
 		return fmt.Errorf("There's no match %s log level", conf.LogLevel)

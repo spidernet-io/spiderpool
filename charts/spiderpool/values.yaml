@@ -44,6 +44,7 @@ ipamPlugin:
   ipamBinPath: /opt/cni/bin
 
   # -- Configure the unix socket path to connect with the spiderpool agent.
+  ipam_unix_socket_dir: /var/run/spidernet
   ipam_unix_socket_path: /var/run/spidernet/spiderpool.sock
 
 configmap:

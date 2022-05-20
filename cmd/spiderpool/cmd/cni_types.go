@@ -12,7 +12,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
-const DefaultLogLevelStr = "info"
+const SupportCNIVersion = "0.3.1"
+const DefaultLogLevelStr = constant.LogInfoLevelStr
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
 type K8sArgs struct {
@@ -44,6 +45,10 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 	err := json.Unmarshal(argsStdin, netConf)
 	if nil != err {
 		return nil, fmt.Errorf("Unable to parse CNI configuration \"%s\": %s", argsStdin, err)
+	}
+
+	if netConf.CNIVersion != SupportCNIVersion {
+		return nil, fmt.Errorf("Error: Mismatch CNI Version: %s, spiderpool surports CNI version %s", netConf.CNIVersion, SupportCNIVersion)
 	}
 
 	if netConf.LogLevel == "" {

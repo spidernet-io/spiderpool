@@ -298,8 +298,7 @@ func init() {
       "description": "IPAM assignment IPs information",
       "type": "object",
       "required": [
-        "ips",
-        "routes"
+        "ips"
       ],
       "properties": {
         "dns": {
@@ -350,6 +349,10 @@ func init() {
     "Route": {
       "description": "IPAM CNI types Route",
       "type": "object",
+      "required": [
+        "dst",
+        "gw"
+      ],
       "properties": {
         "dst": {
           "type": "string"
@@ -642,8 +645,7 @@ func init() {
       "description": "IPAM assignment IPs information",
       "type": "object",
       "required": [
-        "ips",
-        "routes"
+        "ips"
       ],
       "properties": {
         "dns": {
@@ -694,6 +696,10 @@ func init() {
     "Route": {
       "description": "IPAM CNI types Route",
       "type": "object",
+      "required": [
+        "dst",
+        "gw"
+      ],
       "properties": {
         "dst": {
           "type": "string"

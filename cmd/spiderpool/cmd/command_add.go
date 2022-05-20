@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-openapi/strfmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/go-openapi/strfmt"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -25,6 +25,8 @@ var BinNamePlugin = filepath.Base(os.Args[0])
 
 // CmdAdd follows CNI SPEC cmdAdd.
 func CmdAdd(args *skel.CmdArgs) (err error) {
+	var logger *zap.Logger
+
 	// Defer a panic recover, so that in case we panic we can still return
 	// a proper error to the runtime.
 	defer func() {
@@ -35,6 +37,10 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 				// present both.
 				msg = fmt.Sprintf("%s: error=%s", msg, err)
 			}
+			if nil != logger {
+				logger.Error(msg)
+			}
+
 			err = fmt.Errorf(msg)
 		}
 	}()
@@ -50,7 +56,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	// new cmdAdd logger
-	logger := logutils.LoggerFile.Named(BinNamePlugin)
+	logger = logutils.LoggerFile.Named(BinNamePlugin)
 	logger.Sugar().Debugf("Processing CNI ADD request %#v", args)
 	logger.Sugar().Debugf("CNI ADD NetConf: %#v", conf)
 
@@ -66,7 +72,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("ContainerID", args.ContainerID),
 		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
-		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)))
+		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
+		zap.String("IfName", args.IfName))
 	logger.Info("Generate IPAM configuration")
 
 	// new unix client
@@ -83,6 +90,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error())
 		return err
 	}
+	logger.Debug("Health check succeed.")
 
 	// POST /ipam/ip
 	logger.Info("Sending IP assignment request to spider agent.")
@@ -101,14 +109,25 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error())
 		return err
 	}
+	// validate spiderpool-agent response
 	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {
 		logger.Error(err.Error())
 		return err
 	}
 
+	// assemble result with ipam response.
+	result := assembleResult(conf.CNIVersion, args.IfName, ipamResponse)
+
+	logger.Sugar().Infof("IPAM assigned successfully: %s", result.IPs)
+
+	return types.PrintResult(result, conf.CNIVersion)
+}
+
+// assembleResult combines the cni result with spiderpool agent response.
+func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamIPOK) *current.Result {
 	// IPAM Plugin Result
 	result := &current.Result{
-		CNIVersion: conf.CNIVersion,
+		CNIVersion: cniVersion,
 	}
 
 	// Result DNS
@@ -126,7 +145,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	for _, singleRoute := range ipamResponse.Payload.Routes {
 		var route types.Route
 
-		routeDstAddr := net.ParseIP(singleRoute.Dst)
+		routeDstAddr := net.ParseIP(*singleRoute.Dst)
 		routeDst := net.IPNet{IP: routeDstAddr}
 		if routeDstAddr.To4() == nil {
 			// ipv6 address
@@ -136,7 +155,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			routeDst.Mask = net.CIDRMask(32, 32)
 		}
 		route.Dst = routeDst
-		route.GW = net.ParseIP(singleRoute.Gw)
+		route.GW = net.ParseIP(*singleRoute.Gw)
 
 		routes = append(routes, &route)
 	}
@@ -148,7 +167,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	tmpIndex := 0
 	for _, ipconfig := range ipamResponse.Payload.Ips {
 		// filter IPAM multi-Interfaces
-		if *ipconfig.Nic == args.IfName {
+		if *ipconfig.Nic == IfName {
 			nic := &current.Interface{Name: *ipconfig.Nic}
 			netInterfaces = append(netInterfaces, nic)
 
@@ -177,11 +196,5 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 	result.Interfaces = netInterfaces
 
-	var ips string
-	for i := range result.IPs {
-		ips = fmt.Sprint(ips, result.IPs[i].String(), " ")
-	}
-	logger.Sugar().Infof("IPAM assigned successfully: %s", ips)
-
-	return types.PrintResult(result, conf.CNIVersion)
+	return result
 }

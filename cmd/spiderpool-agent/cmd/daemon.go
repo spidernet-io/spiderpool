@@ -21,7 +21,7 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 
-	// TODO: flush ipam plugin config (deprecated)
+	// TODO (Icarus9913): flush ipam plugin config (deprecated)
 
 	// start notifying signals
 	sigCh := make(chan os.Signal, 1)
@@ -63,6 +63,11 @@ func DaemonMain() {
 
 	// new agent unix server
 	logger.Info("Begin to initialize spiderpool-agent openapi unix server.")
+	// clean up unix socket path legacy, it won't return an error if it doesn't exist
+	err = os.RemoveAll(agentContext.Cfg.IpamUnixSocketPath)
+	if nil != err {
+		logger.Sugar().Fatalf("Error: clean up socket legacy '%s' failed: %v", agentContext.Cfg.IpamUnixSocketPath, err)
+	}
 	unixServer, err := NewAgentOpenAPIUnixServer()
 	if nil != err {
 		logger.Fatal(err.Error())

@@ -20,5 +20,16 @@ const (
 	NetworkStrict = "strict"
 	NetworkSDN    = "sdn"
 
+	// For ipam plugin and spiderpool-agent use
 	DefaultIPAMUnixSocketPath = "/var/run/spidernet/spiderpool.sock"
+)
+
+// Log level character string
+const (
+	LogDebugLevelStr = "debug"
+	LogInfoLevelStr  = "info"
+	LogWarnLevelStr  = "warn"
+	LogErrorLevelStr = "error"
+	LogFatalLevelStr = "fatal"
+	LogPanicLevelStr = "panic"
 )

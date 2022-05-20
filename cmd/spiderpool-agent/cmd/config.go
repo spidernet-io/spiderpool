@@ -34,7 +34,7 @@ type envConf struct {
 // EnvInfo collects the env and relevant agentContext properties.
 // 'required' that means if there's no env value and we set 'required' true, we use the default value.
 var envInfo = []envConf{
-	{"SPIDERPOOL_LOG_LEVEL", "INFO", true, &agentContext.Cfg.LogLevel, nil},
+	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
 	{"SPIDERPOOL_ENABLED_PPROF", "", false, nil, &agentContext.Cfg.EnabledPprof},
 	{"SPIDERPOOL_ENABLED_METRIC", "", false, nil, &agentContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
@@ -76,7 +76,7 @@ type AgentContext struct {
 
 // BindAgentDaemonFlags bind agent cli daemon flags
 func (ac *AgentContext) BindAgentDaemonFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&ac.Cfg.ConfigmapPath, "config-dir", "/tmp/spiderpool/config-map", "configmap file")
+	flags.StringVar(&ac.Cfg.ConfigmapPath, "config-dir", "/tmp/spiderpool/config-map/conf.yml", "configmap file")
 }
 
 // RegisterEnv set the env to AgentConfiguration

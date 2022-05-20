@@ -11,8 +11,10 @@ package models
 import (
 	"context"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // Route IPAM CNI types Route
@@ -21,14 +23,47 @@ import (
 type Route struct {
 
 	// dst
-	Dst string `json:"dst,omitempty"`
+	// Required: true
+	Dst *string `json:"dst"`
 
 	// gw
-	Gw string `json:"gw,omitempty"`
+	// Required: true
+	Gw *string `json:"gw"`
 }
 
 // Validate validates this route
 func (m *Route) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateDst(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateGw(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *Route) validateDst(formats strfmt.Registry) error {
+
+	if err := validate.Required("dst", "body", m.Dst); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Route) validateGw(formats strfmt.Registry) error {
+
+	if err := validate.Required("gw", "body", m.Gw); err != nil {
+		return err
+	}
+
 	return nil
 }
 

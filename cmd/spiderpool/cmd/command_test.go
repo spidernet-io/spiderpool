@@ -6,13 +6,10 @@ package cmd_test
 import (
 	"encoding/json"
 	"fmt"
-	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
+	"reflect"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -20,8 +17,12 @@ import (
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/testutils"
+	"github.com/onsi/gomega/ghttp"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/connectivity"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
@@ -30,8 +31,15 @@ const ifname string = "eth0"
 const nspath string = "/some/where"
 const containerID string = "dummy"
 const CNITimeoutSec = 220
-const healthCheckRoute = "/v1/ipam/healthy"
-const ipamReqRoute = "/v1/ipam/ip"
+
+const (
+	healthCheckRoute = "/v1/ipam/healthy"
+	ipamReqRoute     = "/v1/ipam/ip"
+
+	AgentErrorHealthRespStr     = "getIpamHealthyInternalServerError"
+	AgentErrorPostIpamRespStr   = "postIpamIpInternalServerError"
+	AgentErrorDeleteIpamRespStr = "deleteIpamIpInternalServerError"
+)
 
 var cniVersion string
 var args *skel.CmdArgs
@@ -41,6 +49,7 @@ var sockPath string
 var addChan, delChan chan struct{}
 
 var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func() {
+
 	BeforeEach(func() {
 		// generate one temp unix file.
 		tempDir := GinkgoT().TempDir()
@@ -58,324 +67,275 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			IfName:      ifname,
 		}
 
-		cniVersion = "0.3.1"
+		cniVersion = cmd.SupportCNIVersion
 
 		netConf = cmd.NetConf{
 			NetConf:            types.NetConf{CNIVersion: cniVersion},
-			LogLevel:           "DEBUG",
+			LogLevel:           constant.LogDebugLevelStr,
 			IpamUnixSocketPath: sockPath,
 		}
 
 		addChan = make(chan struct{})
 		delChan = make(chan struct{})
+
 	})
 
-	It(fmt.Sprintf("[%s] allocates addresses with ADD/DEL", cniVersion), func() {
-		// use httptest to mock one server that handles healthcheck, ipam add/del routes response.
-		func() {
+	Context("mock ipam plugin interacts with agent through unix socket", func() {
+		var server *ghttp.Server
+		BeforeEach(func() {
 			listener, err := net.Listen("unix", sockPath)
 			Expect(err).NotTo(HaveOccurred())
-
-			mux := http.NewServeMux()
-
-			mux.HandleFunc(healthCheckRoute, func(resp http.ResponseWriter, req *http.Request) {
-				resp.WriteHeader(connectivity.GetIpamHealthyOKCode)
-			})
-
-			mux.HandleFunc(ipamReqRoute, func(resp http.ResponseWriter, req *http.Request) {
-				if req.Method == http.MethodPost {
-					// POST /ipam/ip will
-					resp.Header().Set("Content-Type", "application/json")
-					resp.WriteHeader(daemonset.PostIpamIPOKCode)
-
-					ipamIP := daemonset.NewPostIpamIPOK()
-					ipamIP.Payload = &models.IpamAddResponse{
-						DNS: &models.DNS{
-							Domain:      "local",
-							Nameservers: []string{"10.1.0.1"},
-							Options:     []string{"somedomain.com"},
-							Search:      []string{"foo"},
-						},
-						Ips: []*models.IPConfig{
-							{
-								Address: new(string),
-								Gateway: "10.1.0.1",
-								Nic:     new(string),
-								Version: new(int64),
-								Vlan:    8,
-							},
-							{
-								Address: new(string),
-								Gateway: "1.2.3.1",
-								Nic:     new(string),
-								Version: new(int64),
-								Vlan:    6,
-							},
-						},
-						Routes: []*models.Route{
-							{Dst: "15.5.6.8", Gw: "15.5.6.1"},
-						},
-					}
-
-					// multi nic, ip responses
-					*ipamIP.Payload.Ips[0].Address = "10.1.0.5"
-					*ipamIP.Payload.Ips[0].Nic = "eth1"
-					*ipamIP.Payload.Ips[0].Version = 4
-
-					*ipamIP.Payload.Ips[1].Address = "1.2.3.30"
-					*ipamIP.Payload.Ips[1].Nic = "eth0"
-					*ipamIP.Payload.Ips[1].Version = 4
-
-					err = json.NewEncoder(resp).Encode(ipamIP.Payload)
-					Expect(err).NotTo(HaveOccurred())
-				} else if req.Method == http.MethodDelete {
-					// DELETE /ipam/ip just return http status code
-					resp.WriteHeader(daemonset.DeleteIpamIPOKCode)
-				} else {
-					resp.WriteHeader(http.StatusInternalServerError)
-				}
-			})
-
-			server := httptest.NewUnstartedServer(mux)
-			server.Listener = listener
+			server = ghttp.NewUnstartedServer()
+			server.HTTPTestServer.Listener = listener
 			server.Start()
-		}()
+		})
 
-		netConfBytes, err := json.Marshal(netConf)
-		Expect(err).NotTo(HaveOccurred())
-		args.StdinData = netConfBytes
+		AfterEach(func() {
+			server.Close()
+		})
 
-		// Allocate the IP
-		go func() {
-			defer GinkgoRecover()
+		DescribeTable("", func(isHealthy, isPostIPAM bool, cmdArgs func() *skel.CmdArgs, mockServerResponse func() *models.IpamAddResponse, expectResponse func() *current.Result) {
+			var healthHandleFunc http.HandlerFunc
+			var ipamPostHandleFunc http.HandlerFunc
+			//var ipamDeleteHandleFunc http.HandlerFunc
 
-			r, _, err := testutils.CmdAddWithArgs(args, func() error {
-				return cmd.CmdAdd(args)
+			// GET /v1/ipam/healthy
+			if isHealthy {
+				healthHandleFunc = ghttp.RespondWith(connectivity.GetIpamHealthyOKCode, nil)
+			} else {
+				healthHandleFunc = ghttp.RespondWith(connectivity.GetIpamHealthyInternalServerErrorCode, nil)
+			}
+			server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(healthHandleFunc))
+
+			// POST /v1/ipam/ip
+			if isPostIPAM {
+				// You must pre-define this even if the mockServerResponse is nil!
+				// And mockServerResponse is nil only use for bad health check!
+				var mockServerResp *models.IpamAddResponse
+				if nil != mockServerResponse {
+					mockServerResp = mockServerResponse()
+				}
+				ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsOKCode, mockServerResp)
+			} else {
+				ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsInternalServerErrorCode, nil)
+			}
+			server.RouteToHandler("POST", ipamReqRoute, ghttp.CombineHandlers(ipamPostHandleFunc))
+
+			// DELETE /v1/ipam/ip
+			//if isDeleteIPAM {
+			//	ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPOKCode, nil)
+			//} else {
+			//	ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPInternalServerErrorCode, nil)
+			//}
+			//server.RouteToHandler("DELETE", ipamReqRoute, ghttp.CombineHandlers(ipamDeleteHandleFunc))
+
+			tmpArgs := cmdArgs()
+			var tmpNetConf cmd.NetConf
+			err := json.Unmarshal(tmpArgs.StdinData, &tmpNetConf)
+			Expect(err).NotTo(HaveOccurred())
+
+			// statr client test.
+			r, _, err := testutils.CmdAddWithArgs(cmdArgs(), func() error {
+				return cmd.CmdAdd(cmdArgs())
 			})
+
+			// bad response check
+			if !isHealthy || !isPostIPAM {
+				var subErrorString string
+				if !isHealthy {
+					subErrorString = AgentErrorHealthRespStr
+				} else if !isPostIPAM {
+					subErrorString = AgentErrorPostIpamRespStr
+				} else {
+					subErrorString = AgentErrorDeleteIpamRespStr
+				}
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).Should(ContainSubstring(subErrorString))
+				return
+			}
+
 			Expect(err).NotTo(HaveOccurred())
 
 			addResult, err := current.GetResult(r)
 			Expect(err).NotTo(HaveOccurred())
 
+			var expectResp *current.Result
+			if nil != expectResponse {
+				expectResp = expectResponse()
+			} else {
+				Fail("You must define expectResp if every route good in CmdAdd situation.")
+			}
+
+			// No need to check result.CNIVersion since cni types 100 library would hard code it with "1.0.0"
+
 			// check Result.DNS
-			Expect(addResult.DNS.Domain).To(Equal("local"))
-			Expect(len(addResult.DNS.Nameservers)).To(Equal(1))
-			Expect(addResult.DNS.Nameservers[0]).To(Equal("10.1.0.1"))
-			Expect(len(addResult.DNS.Options)).To(Equal(1))
-			Expect(addResult.DNS.Options[0]).To(Equal("somedomain.com"))
-			Expect(len(addResult.DNS.Search)).To(Equal(1))
-			Expect(addResult.DNS.Search[0]).To(Equal("foo"))
+			Expect(reflect.DeepEqual(addResult.DNS, expectResp.DNS)).To(Equal(true))
 
 			// check Result.IPs
-			Expect(len(addResult.IPs)).To(Equal(1))
-			Expect(addResult.IPs[0].Address.String()).To(Equal("1.2.3.30/32"))
-			Expect(addResult.IPs[0].Gateway.String()).To(Equal("1.2.3.1"))
-			Expect(*addResult.IPs[0].Interface).To(Equal(0))
+			Expect(reflect.DeepEqual(addResult.IPs, expectResp.IPs)).To(Equal(true))
 
 			// check Result.Interfaces
-			Expect(len(addResult.Interfaces)).To(Equal(1))
-			Expect(addResult.Interfaces[0].Name).To(Equal("eth0"))
+			Expect(reflect.DeepEqual(addResult.Interfaces, expectResp.Interfaces)).To(Equal(true))
 
 			// check Result.Routes
-			Expect(len(addResult.Routes)).To(Equal(1))
-			Expect(addResult.Routes[0].Dst.String()).To(Equal("15.5.6.8/32"))
-			Expect(addResult.Routes[0].GW.String()).To(Equal("15.5.6.1"))
-
-			close(addChan)
-		}()
-		Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-
-		// Release the IP
-		go func() {
-			defer GinkgoRecover()
-
-			err = testutils.CmdDelWithArgs(args, func() error {
-				return cmd.CmdDel(args)
-			})
-			Expect(err).NotTo(HaveOccurred())
-			close(delChan)
-		}()
-		Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-	})
-
-	It(fmt.Sprintf("[%s] is returning an error on required properties lost with ADD/DEL", cniVersion), func() {
-		// use httptest to mock one server that handles healthcheck, ipam add/del routes response.
-		func() {
-			listener, err := net.Listen("unix", sockPath)
-			Expect(err).NotTo(HaveOccurred())
-
-			mux := http.NewServeMux()
-
-			mux.HandleFunc(healthCheckRoute, func(resp http.ResponseWriter, req *http.Request) {
-				resp.WriteHeader(connectivity.GetIpamHealthyOKCode)
-			})
-
-			mux.HandleFunc(ipamReqRoute, func(resp http.ResponseWriter, req *http.Request) {
-				if req.Method == http.MethodPost {
-					// POST /ipam/ip will
-					resp.Header().Set("Content-Type", "application/json")
-					resp.WriteHeader(daemonset.PostIpamIPOKCode)
-
-					ipamIP := daemonset.NewPostIpamIPOK()
-					ipamIP.Payload = &models.IpamAddResponse{
-						Routes: []*models.Route{
-							{Dst: "15.5.6.8", Gw: "15.5.6.1"},
+			Expect(reflect.DeepEqual(addResult.Routes, expectResp.Routes))
+		},
+			Entry("returning an error on bad health check with ADD", false, true, func() *skel.CmdArgs {
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, nil, nil),
+			Entry("allocates addresses with ADD", true, true, func() *skel.CmdArgs {
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, func() *models.IpamAddResponse {
+				ipamAddResp := &models.IpamAddResponse{
+					DNS: &models.DNS{
+						Domain:      "local",
+						Nameservers: []string{"10.1.0.1"},
+						Options:     []string{"somedomain.com"},
+						Search:      []string{"foo"},
+					},
+					Ips: []*models.IPConfig{
+						{
+							Address: new(string),
+							Gateway: "10.1.0.1",
+							Nic:     new(string),
+							Version: new(int64),
+							Vlan:    8,
 						},
-					}
-
-					err = json.NewEncoder(resp).Encode(ipamIP.Payload)
-					Expect(err).NotTo(HaveOccurred())
-				} else if req.Method == http.MethodDelete {
-					// DELETE /ipam/ip just return http status code
-					resp.WriteHeader(daemonset.DeleteIpamIPOKCode)
-				} else {
-					resp.WriteHeader(http.StatusInternalServerError)
+						{
+							Address: new(string),
+							Gateway: "1.2.3.1",
+							Nic:     new(string),
+							Version: new(int64),
+							Vlan:    6,
+						},
+					},
+					Routes: []*models.Route{{Dst: new(string), Gw: new(string)}},
 				}
-			})
+				// Routes
+				*ipamAddResp.Routes[0].Dst = "15.5.6.8"
+				*ipamAddResp.Routes[0].Gw = "15.5.6.1"
 
-			server := httptest.NewUnstartedServer(mux)
-			server.Listener = listener
-			server.Start()
-		}()
+				// multi nic, ip responses
+				*ipamAddResp.Ips[0].Address = "10.1.0.5"
+				*ipamAddResp.Ips[0].Nic = "eth1"
+				*ipamAddResp.Ips[0].Version = 4
 
-		netConfBytes, err := json.Marshal(netConf)
-		Expect(err).NotTo(HaveOccurred())
-		args.StdinData = netConfBytes
+				*ipamAddResp.Ips[1].Address = "1.2.3.30"
+				*ipamAddResp.Ips[1].Nic = "eth0"
+				*ipamAddResp.Ips[1].Version = 4
 
-		// Allocate the IP
-		go func() {
-			defer GinkgoRecover()
+				return ipamAddResp
+			}, func() *current.Result {
+				expectResult := new(current.Result)
+				// CNIVersion
+				expectResult.CNIVersion = cniVersion
+				// DNS
+				expectResult.DNS = types.DNS{
+					Nameservers: []string{"10.1.0.1"},
+					Domain:      "local",
+					Search:      []string{"foo"},
+					Options:     []string{"somedomain.com"},
+				}
+				// IPs
+				expectResult.IPs = []*current.IPConfig{{Interface: new(int)}}
+				*expectResult.IPs[0].Interface = 0
+				expectResult.IPs[0].Gateway = net.ParseIP("1.2.3.1")
+				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("1.2.3.30"), Mask: net.CIDRMask(32, 32)}
+				// Routes
+				expectResult.Routes = []*types.Route{{Dst: net.IPNet{IP: net.ParseIP("15.5.6.8"), Mask: net.CIDRMask(32, 32)}, GW: net.ParseIP("15.5.6.1")}}
+				//Interfaces
+				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}}
+				return expectResult
+			}),
+		)
 
-			_, _, err := testutils.CmdAddWithArgs(args, func() error {
-				return cmd.CmdAdd(args)
-			})
-			Expect(err).To(HaveOccurred())
+	})
 
-			close(addChan)
-		}()
-		Eventually(addChan).WithTimeout(5 * time.Second).Should(BeClosed())
-
-		// Release the IP
-		go func() {
-			defer GinkgoRecover()
-
-			err = testutils.CmdDelWithArgs(args, func() error {
-				return cmd.CmdDel(args)
-			})
+	// TODO (Icarus9913): refactoring below
+	Describe("test ipam plugin configuration ", func() {
+		It(fmt.Sprintf("[%s] is returning an error on conf broken with ADD/DEL", cniVersion), func() {
+			confBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
-			close(delChan)
-		}()
-		Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-	})
+			confBytes = append(confBytes, []byte("}")...)
+			args.StdinData = confBytes
 
-	It(fmt.Sprintf("[%s] is returning an error on bad health check with ADD/DEL", cniVersion), func() {
-		// use httptest to mock bad health check http route response.
-		func() {
-			listener, err := net.Listen("unix", sockPath)
+			// Allocate the IP
+			go func() {
+				defer GinkgoRecover()
+
+				_, _, err := testutils.CmdAddWithArgs(args, func() error {
+					return cmd.CmdAdd(args)
+				})
+				Expect(err).To(HaveOccurred())
+				close(addChan)
+			}()
+			Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+
+			// Release the IP
+			go func() {
+				defer GinkgoRecover()
+
+				err = testutils.CmdDelWithArgs(args, func() error {
+					return cmd.CmdDel(args)
+				})
+				Expect(err).To(HaveOccurred())
+				close(delChan)
+			}()
+			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+		})
+
+		It(fmt.Sprintf("[%s] is returning an error on bad log configuration with ADD/DEL", cniVersion), func() {
+			netConf.LogLevel = "bad"
+			netConfBytes, err := json.Marshal(netConf)
+			Expect(err).NotTo(HaveOccurred())
+			args.StdinData = netConfBytes
+
+			// Allocate the IP
+			go func() {
+				defer GinkgoRecover()
+
+				_, _, err := testutils.CmdAddWithArgs(args, func() error {
+					return cmd.CmdAdd(args)
+				})
+				Expect(err).To(HaveOccurred())
+				close(addChan)
+			}()
+			Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+
+			// Release the IP
+			go func() {
+				defer GinkgoRecover()
+
+				err = testutils.CmdDelWithArgs(args, func() error {
+					return cmd.CmdDel(args)
+				})
+				Expect(err).To(HaveOccurred())
+				close(delChan)
+			}()
+			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+		})
+
+		It("Check default network configuration", func() {
+			// set some configurations with empty value.
+			netConf.LogLevel = ""
+			netConf.IpamUnixSocketPath = ""
+
+			netConfBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
 
-			mux := http.NewServeMux()
-			mux.HandleFunc(healthCheckRoute, func(resp http.ResponseWriter, req *http.Request) {
-				resp.WriteHeader(connectivity.GetIpamHealthyInternalServerErrorCode)
-			})
+			conf, err := cmd.LoadNetConf(netConfBytes)
+			Expect(err).NotTo(HaveOccurred())
 
-			server := httptest.NewUnstartedServer(mux)
-			server.Listener = listener
-			server.Start()
-		}()
-
-		netConfBytes, err := json.Marshal(netConf)
-		Expect(err).NotTo(HaveOccurred())
-		args.StdinData = netConfBytes
-
-		// Allocate the IP
-		go func() {
-			defer GinkgoRecover()
-
-			_, _, err := testutils.CmdAddWithArgs(args, func() error {
-				return cmd.CmdAdd(args)
-			})
-			Expect(err).Should(HaveOccurred())
-			close(addChan)
-		}()
-		Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-	})
-
-	It(fmt.Sprintf("[%s] is returning an error on conf broken with ADD/DEL", cniVersion), func() {
-		confBytes, err := json.Marshal(netConf)
-		Expect(err).NotTo(HaveOccurred())
-		confBytes = append(confBytes, []byte("}")...)
-		args.StdinData = confBytes
-
-		// Allocate the IP
-		go func() {
-			defer GinkgoRecover()
-
-			_, _, err := testutils.CmdAddWithArgs(args, func() error {
-				return cmd.CmdAdd(args)
-			})
-			Expect(err).To(HaveOccurred())
-			close(addChan)
-		}()
-		Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-
-		// Release the IP
-		go func() {
-			defer GinkgoRecover()
-
-			err = testutils.CmdDelWithArgs(args, func() error {
-				return cmd.CmdDel(args)
-			})
-			Expect(err).To(HaveOccurred())
-			close(delChan)
-		}()
-		Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-	})
-
-	It(fmt.Sprintf("[%s] is returning an error on bad log configuration with ADD/DEL", cniVersion), func() {
-		netConf.LogLevel = "bad"
-		netConfBytes, err := json.Marshal(netConf)
-		Expect(err).NotTo(HaveOccurred())
-		args.StdinData = netConfBytes
-
-		// Allocate the IP
-		go func() {
-			defer GinkgoRecover()
-
-			_, _, err := testutils.CmdAddWithArgs(args, func() error {
-				return cmd.CmdAdd(args)
-			})
-			Expect(err).To(HaveOccurred())
-			close(addChan)
-		}()
-		Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-
-		// Release the IP
-		go func() {
-			defer GinkgoRecover()
-
-			err = testutils.CmdDelWithArgs(args, func() error {
-				return cmd.CmdDel(args)
-			})
-			Expect(err).To(HaveOccurred())
-			close(delChan)
-		}()
-		Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-	})
-
-	It("Check default network configuration", func() {
-		// set some configurations with empty value.
-		netConf.LogLevel = ""
-		netConf.IpamUnixSocketPath = ""
-
-		netConfBytes, err := json.Marshal(netConf)
-		Expect(err).NotTo(HaveOccurred())
-
-		conf, err := cmd.LoadNetConf(netConfBytes)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(conf.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
-		Expect(conf.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
+			Expect(conf.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
+			Expect(conf.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
+		})
 	})
 
 })

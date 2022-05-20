@@ -108,17 +108,25 @@ jobs:
           version: latest
 
       - name: Check Make lint-golang
-        id: other
+        id: lintgolang
         continue-on-error: true
         run: |
           make lint-golang
+
+      - name: Check TODO Comment
+        id: comment
+        continue-on-error: true
+        run: |
+          tools/scripts/todocover.sh "check"
 
       - name: Result
         run: |
           result=${{ steps.golangci_lint.outcome }}
           [ "${result}"x == "failure"x ] && echo "step golangci_lint failed" && exit 1
-          result=${{ steps.other.outcome }}
-          [ "${result}"x == "failure"x ] && echo "step gokart failed" && exit 3
+          result=${{ steps.lintgolang.outcome }}
+          [ "${result}"x == "failure"x ] && echo "step lint-golang failed" && exit 2
+          result=${{ steps.comment.outcome }}
+          [ "${result}"x == "failure"x ] && echo "step comment failed" && exit 3
           echo "all succeed"
           exit 0
 

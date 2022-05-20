@@ -60,7 +60,7 @@ func WatchSignal(sigCh chan os.Signal) {
 	for sig := range sigCh {
 		logger.Sugar().Warnw("received shutdown", "signal", sig)
 
-		// TODO: filter some signals
+		// TODO (Icarus9913):  filter some signals
 
 		// Cancel the context of Controller Manager.
 		// This stops things like the CRD's Informer, Webhook, Controller, etc.

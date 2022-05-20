@@ -19,7 +19,7 @@ type _httpGetAgentStartup struct{}
 
 // Handle handles GET requests for /runtime/startup .
 func (g *_httpGetAgentStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
-	// TODO: return the http status code with logic.
+	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeStartupOK()
 }
@@ -28,7 +28,7 @@ type _httpGetAgentReadiness struct{}
 
 // Handle handles GET requests for /runtime/readiness .
 func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
-	// TODO: return the http status code with logic.
+	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeReadinessOK()
 }
@@ -37,7 +37,7 @@ type _httpGetAgentLiveness struct{}
 
 // Handle handles GET requests for /runtime/liveness .
 func (g *_httpGetAgentLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
-	// TODO: return the http status code with logic.
+	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeLivenessOK()
 }

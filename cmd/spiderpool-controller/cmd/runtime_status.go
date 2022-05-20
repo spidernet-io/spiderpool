@@ -12,7 +12,7 @@ type getControllerStartup struct{}
 
 // Handle handles GET requests for /runtime/startup .
 func (g *getControllerStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
-	// TODO: return the http status code with logic.
+	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeStartupOK()
 }
@@ -21,7 +21,7 @@ type getControllerReadiness struct{}
 
 // Handle handles GET requests for /runtime/readiness .
 func (g *getControllerReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
-	// TODO: return the http status code with logic.
+	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeReadinessOK()
 }
@@ -30,7 +30,7 @@ type getControllerLiveness struct{}
 
 // Handle handles GET requests for /runtime/liveness .
 func (g *getControllerLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
-	// TODO: return the http status code with logic.
+	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeLivenessOK()
 }

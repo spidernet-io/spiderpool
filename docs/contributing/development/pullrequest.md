@@ -28,7 +28,7 @@ any go file updated, will check it with following:
 
 1 mod dependency updated, golangci-lint, gofmt updated, go vet, use internal lock pkg
 
-2 code quality check, like codeql and gokart
+2 comment `// TODO` should follow format: `// TODO (AuthorName) ...`, which easy to trace the owner of the remaining job
 
 3 build binary
 

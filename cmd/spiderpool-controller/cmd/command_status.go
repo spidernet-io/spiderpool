@@ -12,7 +12,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: BinNameController + " status",
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO
+		// TODO (Icarus9913)
 		logger.Sugar().Infof("This is %s status...", BinNameController)
 	},
 }

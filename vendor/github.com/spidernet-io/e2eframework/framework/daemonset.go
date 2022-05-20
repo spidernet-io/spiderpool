@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
 	"github.com/spidernet-io/e2eframework/tools"
 	appsv1 "k8s.io/api/apps/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -105,7 +104,7 @@ func (f *Framework) WaitDaemonSetReady(name, namespace string, ctx context.Conte
 	for {
 		select {
 		case event, ok := <-watchInterface.ResultChan():
-			f.t.Logf("pod check number %v/%v\n", event, ok)
+			f.t.Logf("pod %v/%v\n", event, ok)
 			if !ok {
 				return nil, fmt.Errorf("channel is closed ")
 			} else {
@@ -121,13 +120,11 @@ func (f *Framework) WaitDaemonSetReady(name, namespace string, ctx context.Conte
 					}
 					f.t.Logf("pod %v/%v status=%+v\n", namespace, name)
 					//already ready Replicas == all Replicas
-					//time.Sleep(20 * time.Second)
-					if ds.Status.CurrentNumberScheduled == ds.Status.DesiredNumberScheduled {
 
-						GinkgoWriter.Printf("CurrentNumberScheduled: %v \n", ds.Status.CurrentNumberScheduled)
-						GinkgoWriter.Printf("DesiredNumberScheduled: %v \n", ds.Status.DesiredNumberScheduled)
-						GinkgoWriter.Printf("ds.Status.NumberReady : %v \n", ds.Status.NumberReady)
+					if ds.Status.NumberReady == 0 {
+						break
 
+					} else if ds.Status.NumberReady == ds.Status.DesiredNumberScheduled {
 						return ds, nil
 					}
 				}

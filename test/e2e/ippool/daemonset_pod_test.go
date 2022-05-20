@@ -47,8 +47,10 @@ var _ = Describe("test daemonset", Label("ippool_daemonset"), func() {
 			ds, err := frame.WaitDaemonSetReady(dsName, nsName, ctx)
 			Expect(err).NotTo(HaveOccurred(), "time out to wait  all Replicas ready")
 			Expect(ds).NotTo(BeNil())
-			//GinkgoWriter.Printf("CurrentNumberScheduled: %v \n", ds.Status.CurrentNumberScheduled)
-			//GinkgoWriter.Printf("DesiredNumberScheduled: %v \n", ds.Status.DesiredNumberScheduled)
+			GinkgoWriter.Printf("CurrentNumberScheduled: %v \n", ds.Status.CurrentNumberScheduled)
+			GinkgoWriter.Printf("DesiredNumberScheduled: %v \n", ds.Status.DesiredNumberScheduled)
+			GinkgoWriter.Printf("NumberReady: %v \n", ds.Status.NumberReady)
+
 			// get all daemonset replicas name and check ip
 			opts := []client.ListOption{
 				client.InNamespace(nsName),
@@ -57,9 +59,10 @@ var _ = Describe("test daemonset", Label("ippool_daemonset"), func() {
 
 			podinfolist, err := frame.GetPodList(opts...)
 			Expect(err).NotTo(HaveOccurred(), "failed to list pod")
-			//GinkgoWriter.Printf("podinfolist: %v", *podinfolist)
+			//GinkgoWriter.Printf("podinfolist.Items): %v", podinfolist.Items)
 			//Expect(len(podinfolist.Items)).NotTo(HaveValue(Equal(0)))
-			Expect(len(podinfolist.Items)).NotTo(HaveValue(Equal(ds.Status.CurrentNumberScheduled)))
+			//Expect(len(podinfolist.Items)).NotTo(HaveValue(Equal(ds.Status.CurrentNumberScheduled)))
+			Expect(int32(len(podinfolist.Items))).To(Equal(ds.Status.NumberReady))
 
 			// check all pod assign ipv4 and ipv6 addresses success
 			for i := 0; i < len(podinfolist.Items); i++ {
@@ -78,7 +81,7 @@ var _ = Describe("test daemonset", Label("ippool_daemonset"), func() {
 					Expect(tools.CheckPodIpv6IPReady(ds)).To(BeTrue(), "pod failed to get ipv6 ip")
 					By("succeeded to check pod ipv6 ip \n")
 				}
-				//}
+
 				// delete daemonset
 				//GinkgoWriter.Printf("delete daemonset: %v \n", dsName)
 				//err = frame.DeleteDaemonSet(dsName, nsName)

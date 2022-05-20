@@ -22,7 +22,6 @@ echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
-
 kind load docker-image $IMAGE_WHEREABOUTS --name ${E2E_CLUSTER_NAME}
 
 # Install whereabouts

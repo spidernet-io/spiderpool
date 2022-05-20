@@ -36,6 +36,11 @@ RELEASE_NAME ?= spidernet
 
 VERSION = $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/VERSION)
 
+ARCH = $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+    ARCH=amd64
+endif
+
 GIT_COMMIT_VERSION = $(shell git show -s --format='format:%H')
 GIT_COMMIT_TIME = $(shell git show -s --format='format:%aI')
 

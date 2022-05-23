@@ -40,6 +40,10 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(QUIET) bash scripts/install-macvlan.sh \
 		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	@echo "waiting for deployment/spiderpool-controller ready"
+	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
+	@echo "waiting for daemonset/spiderpool-agent ready"
+	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
 endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"

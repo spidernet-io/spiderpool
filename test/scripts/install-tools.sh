@@ -25,7 +25,7 @@ if ! kubectl help &>/dev/null  ; then
     fi
     MISS_FLAG="true"
 else
-    echo "pass   'kubectl' installed:  $(kubectl version | grep -E -o "Client.*GitVersion:\"[^[:space:]]+\"" | awk -F, '{print $NF}') "
+    echo "pass   'kubectl' installed:  $(kubectl version --client=true | grep -E -o "Client.*GitVersion:\"[^[:space:]]+\"" | awk -F, '{print $NF}') "
 fi
 
 #==================
@@ -47,6 +47,14 @@ if ! kind &> /dev/null ; then
     MISS_FLAG="true"
 else
     echo "pass   'kind' installed:  $(kind --version) "
+fi
+
+# docker required by kind
+if ! docker &> /dev/null ; then
+    echo "fail   'docker' miss"
+    MISS_FLAG="true"
+else
+    echo "pass   'docker' installed:  $(docker -v) "
 fi
 
 #======================

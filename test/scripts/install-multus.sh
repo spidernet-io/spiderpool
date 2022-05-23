@@ -43,4 +43,7 @@ IMAGE_TAG=$IMAGE_MULTUS  p2ctl -t ${CURRENT_DIR_PATH}/../yamls/multus-daemonset-
 
 kubectl apply -f $CLUSTER_PATH/multus-daemonset-thick-plugin.yml --kubeconfig ${E2E_KUBECONFIG}
 
+echo "waiting for daemonset/kube-multus-ds ready"
+kubectl rollout status --kubeconfig ${E2E_KUBECONFIG} -n kube-system  daemonset/kube-multus-ds  -w --timeout=60s
+
 echo "$CURRENT_FILENAME : done"

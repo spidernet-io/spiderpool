@@ -19,27 +19,15 @@ func DaemonMain() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go WatchSignal(sigCh)
 
-	logger.Info("Begin to initialize spiderpool-controller Controller Manager")
-	mgr, err := newControllerManager()
-	if nil != err {
-		logger.Fatal(err.Error())
-	}
 	controllerContext.ControllerManagerCtx, controllerContext.ControllerManagerCancel = context.WithCancel(context.Background())
 
+	logger.Info("Begin to initialize http server")
 	// new controller http server
 	srv, err := newControllerOpenAPIServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.HttpServer = srv
-
-	go func() {
-		logger.Info("Starting spiderpool-agent Controller Manager")
-		if err := mgr.Start(controllerContext.ControllerManagerCtx); err != nil {
-			logger.Fatal(err.Error())
-		}
-	}()
-
 	// serve controller http
 	go func() {
 		if err = srv.Serve(); nil != err {
@@ -51,8 +39,22 @@ func DaemonMain() {
 	}()
 
 	// ...
-
 	time.Sleep(100 * time.Hour)
+
+	logger.Info("Begin to initialize spiderpool-controller Controller Manager")
+	mgr, err := newControllerManager()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+
+	// TODO (iiiceoo): miss tls cert
+	go func() {
+		logger.Info("Starting spiderpool-agent Controller Manager")
+		if err := mgr.Start(controllerContext.ControllerManagerCtx); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}()
+
 }
 
 // WatchSignal notifies the signal to shut down controllerContext handlers.

@@ -69,7 +69,7 @@ endif
 .PHONY: clean
 clean:
 	@rm -rf $(CLUSTER_DIR)
-	-@  kind get clusters | xargs -n1 -i bash -c "kind delete cluster --name {}"
+	-@  kind get clusters | xargs -n1  kind delete cluster --name
 
 
 .PHONY: check_env
@@ -84,7 +84,8 @@ prepare:
 	@echo -e "\033[35m [Step 2] Check The Tools For Ready: \033[0m"
 	$(QUEIT) JUST_CLI_CHECK=true scripts/install-tools.sh
 	$(QUEIT) mkdir -p $(DOWNLOAD_DIR)
-	$(QUEIT) IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
+	$(QUEIT) ARCH=$(ARCH) \
+			 IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
 			 IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
 			 TEST_IMAGE=$(TEST_IMAGE_NAME) \
 			 CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \

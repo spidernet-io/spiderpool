@@ -212,7 +212,7 @@ jobs:
 
       - name: Upload e2e report
         if: ${{ steps.e2e.outputs.upload == 'true' }}
-        uses: actions/upload-artifact@v3.0.0
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: e2ereport.json
           path: e2ereport.json

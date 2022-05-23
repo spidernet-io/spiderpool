@@ -119,14 +119,14 @@ jobs:
           cd ..
 
       - name: Upload artifact digests
-        uses: actions/upload-artifact@v3.0.0
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: image-digest-artifact-${{ steps.ref.outputs.ref }}
           path: image-digest-output.txt
           retention-days: 1
 
       - name: Upload artifact digests
-        uses: actions/upload-artifact@v3.0.0
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: makefile-digest-artifact-${{ steps.ref.outputs.ref }}
           path: Makefile.digests

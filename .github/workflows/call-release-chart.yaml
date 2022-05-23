@@ -90,7 +90,7 @@ jobs:
           mv charts/*.tgz tmp
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3.0.0
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: chart_package_artifact
           path: tmp/*

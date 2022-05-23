@@ -1,6 +1,6 @@
 module github.com/spidernet-io/spiderpool
 
-go 1.18
+go 1.17
 
 require (
 	github.com/containernetworking/cni v1.1.0
@@ -19,7 +19,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
-	github.com/spidernet-io/e2eframework v0.0.0-20220505160401-5b06a8087c95
+	github.com/spidernet-io/e2eframework v0.0.0-20220523122116-285b1df97833
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/tools v0.1.10
@@ -27,6 +27,7 @@ require (
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
 	k8s.io/client-go v0.24.0
+	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/controller-tools v0.8.0
 )
@@ -124,7 +125,6 @@ require (
 	k8s.io/component-base v0.24.0 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
-	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

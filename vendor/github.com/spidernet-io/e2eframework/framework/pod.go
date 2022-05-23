@@ -5,6 +5,8 @@ package framework
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -12,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) error {
@@ -43,11 +44,17 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			return fmt.Errorf("time out to wait a deleting pod")
 		}
 	}
-
 	return f.CreateResource(pod, opts...)
 }
 
 func (f *Framework) DeletePod(name, namespace string, opts ...client.DeleteOption) error {
+
+	if name == "" {
+		return fmt.Errorf("the pod name %v not to be empty", name)
+	} else if namespace == "" {
+		return fmt.Errorf("the pod namespace %v not to be empty", namespace)
+	}
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -58,6 +65,13 @@ func (f *Framework) DeletePod(name, namespace string, opts ...client.DeleteOptio
 }
 
 func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
+
+	if name == "" {
+		return nil, fmt.Errorf("the pod name %v not to be empty", name)
+	} else if namespace == "" {
+		return nil, fmt.Errorf("the pod namespace %v not to be empty", namespace)
+	}
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -73,7 +87,21 @@ func (f *Framework) GetPod(name, namespace string) (*corev1.Pod, error) {
 	return existing, e
 }
 
+func (f *Framework) GetPodList(opts ...client.ListOption) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+	e := f.ListResource(pods, opts...)
+	if e != nil {
+		return nil, e
+	}
+	return pods, nil
+}
+
 func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) (*corev1.Pod, error) {
+	if name == "" {
+		return nil, fmt.Errorf("the pod name %v not to be empty", name)
+	} else if namespace == "" {
+		return nil, fmt.Errorf("the pod namespace %v not to be empty", namespace)
+	}
 
 	// refer to https://github.com/kubernetes-sigs/controller-runtime/blob/master/pkg/client/watch_test.go
 	l := &client.ListOptions{
@@ -92,30 +120,29 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		case event, ok := <-watchInterface.ResultChan():
 			if !ok {
 				return nil, fmt.Errorf("channel is closed ")
-			} else {
-				f.t.Logf("pod %v/%v %v event \n", namespace, name, event.Type)
-
-				// Added    EventType = "ADDED"
-				// Modified EventType = "MODIFIED"
-				// Deleted  EventType = "DELETED"
-				// Bookmark EventType = "BOOKMARK"
-				// Error    EventType = "ERROR"
-				if event.Type == watch.Error {
-					return nil, fmt.Errorf("received error event: %+v", event)
-				} else if event.Type == watch.Deleted {
-					return nil, fmt.Errorf("resource is deleted")
+			}
+			f.t.Logf("pod %v/%v %v event \n", namespace, name, event.Type)
+			// Added    EventType = "ADDED"
+			// Modified EventType = "MODIFIED"
+			// Deleted  EventType = "DELETED"
+			// Bookmark EventType = "BOOKMARK"
+			// Error    EventType = "ERROR"
+			switch event.Type {
+			case watch.Error:
+				return nil, fmt.Errorf("received error event: %+v", event)
+			case watch.Deleted:
+				return nil, fmt.Errorf("resource is deleted")
+			default:
+				pod, ok := event.Object.(*corev1.Pod)
+				// metaObject, ok := event.Object.(metav1.Object)
+				if !ok {
+					return nil, fmt.Errorf("failed to get metaObject")
+				}
+				f.t.Logf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
+				if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
+					break
 				} else {
-					pod, ok := event.Object.(*corev1.Pod)
-					// metaObject, ok := event.Object.(metav1.Object)
-					if !ok {
-						return nil, fmt.Errorf("failed to get metaObject")
-					}
-					f.t.Logf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
-					if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
-						break
-					} else {
-						return pod, nil
-					}
+					return pod, nil
 				}
 			}
 		case <-ctx.Done():

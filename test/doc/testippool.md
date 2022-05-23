@@ -4,7 +4,7 @@
 |---------|-----------|---------------------------------------|------------|----------|--------|-------|
 | E00001  | assign ip | assign ip to a pod for case ipv4, ipv6, dual-stack ip || p1   | done   | In all use cases, do not create pods in the default namespace  |
 | E00002  | assign ip | two pods in one deployment assign/releases ipv4, ipv6 addresses|| p1 | done ||
-| E00003  | assign ip | two pods in one statefulSet assign/releases ipv4, ipv6 addresses||p1|NA||
+| E00003  | assign ip | two pods in one statefulSet assign/releases ipv4, ipv6 addresses|| p1 | done ||
 | E00004  | assign ip | two pods in one daemon-Set assign/releases ipv4, ipv6 addresses||p1|NA||
 | E00005  | assign ip | two pods in one job assign/releases ipv4, ipv6 addresses||p1|NA||
 | E00006  | assign ip | two pods in one replica-Set assign/releases ipv4, ipv6 addresses||p1|NA||

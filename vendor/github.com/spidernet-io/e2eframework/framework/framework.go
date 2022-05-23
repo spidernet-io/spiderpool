@@ -5,19 +5,22 @@ package framework
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	"github.com/mohae/deepcopy"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"os"
 	"strconv"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // -----------------------------
@@ -146,6 +149,7 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 
 		scheme := runtime.NewScheme()
 		err = corev1.AddToScheme(scheme)
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
 		}
@@ -153,7 +157,14 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 		if err != nil {
 			return nil, fmt.Errorf("failed to add apiextensions_v1 Scheme : %v", err)
 		}
-
+		err = appsv1.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
+		}
+		err = apiextensions_v1.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add apiextensions_v1 Scheme : %v", err)
+		}
 		// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
 		f.KClient, err = client.NewWithWatch(f.KConfig, client.Options{Scheme: scheme})
 		if err != nil {
@@ -188,6 +199,18 @@ func (f *Framework) GetResource(key client.ObjectKey, obj client.Object) error {
 	ctx3, cancel3 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
 	defer cancel3()
 	return f.KClient.Get(ctx3, key, obj)
+}
+
+func (f *Framework) ListResource(list client.ObjectList, opts ...client.ListOption) error {
+	ctx4, cancel4 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel4()
+	return f.KClient.List(ctx4, list, opts...)
+}
+
+func (f *Framework) UpdateResource(obj client.Object, opts ...client.UpdateOption) error {
+	ctx5, cancel5 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel5()
+	return f.KClient.Update(ctx5, obj, opts...)
 }
 
 func initClusterInfo() error {

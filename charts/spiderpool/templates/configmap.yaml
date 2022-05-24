@@ -17,29 +17,3 @@ data:
   conf.yml: |
     {{- toYaml . | trim | nindent 4 }}
   {{- end }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Values.configmap.ipamCmName }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
-    {{- if .Values.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
-    {{- end }}
-  {{- if .Values.commonAnnotations }}
-  annotations:
-    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
-  {{- end }}
-data:
-  ipam_conf: |
-    {
-      "log_file_path": {{ .Values.ipamPlugin.logFile | quote }},
-      "log_level": {{ .Values.ipamPlugin.logLevel | quote }},
-      "log_file_max_size": {{ .Values.ipamPlugin.logFileSize | quote }},
-      "log_file_max_age": {{ .Values.ipamPlugin.logFileAge | quote }},
-      "log_file_max_count": {{ .Values.ipamPlugin.logFileCount }},
-      "ipam_bin_Path": {{ .Values.ipamPlugin.ipamBinPath | quote }},
-      "unix_path": {{ .Values.configmap.config.ipamUnixSocketPath | quote }}
-    }

@@ -5,38 +5,45 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"gopkg.in/yaml.v3"
 )
 
 var agentContext = new(AgentContext)
 
-type envConf struct {
-	envName      string
-	defaultValue string
-	required     bool
-	associateKey *string
-}
+const (
+	defaultNetworkMode = constant.NetworkLegacy
+)
 
-// GetAgentContext returns singleton object agentContext.
-func GetAgentContext() *AgentContext {
-	return agentContext
+type envConf struct {
+	envName          string
+	defaultValue     string
+	required         bool
+	associateStrKey  *string
+	associateBoolKey *bool
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
 // 'required' that means if there's no env value and we set 'required' true, we use the default value.
-var EnvInfo = []envConf{
-	{"SPIDERPOOL_HTTP_PORT", "5710", true, &agentContext.HttpPort},
-	{"SPIDER_AGENT_SOCKET_PATH", "/var/tmp/spiderpool.sock", true, &agentContext.SocketPath},
+var envInfo = []envConf{
+	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
+	{"SPIDERPOOL_ENABLED_PPROF", "", false, nil, &agentContext.Cfg.EnabledPprof},
+	{"SPIDERPOOL_ENABLED_METRIC", "", false, nil, &agentContext.Cfg.EnabledMetric},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
+	{"SPIDERPOOL_HTTP_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
 }
 
-type AgentContext struct {
+type Config struct {
 	// flags
-	ConfigDir     string
-	IpamConfigDir string
+	ConfigmapPath string
 
 	// env
 	LogLevel       string
@@ -44,7 +51,18 @@ type AgentContext struct {
 	HttpPort       string
 	EnabledPprof   bool
 	EnabledMetric  bool
-	SocketPath     string
+
+	// configmap
+	IpamUnixSocketPath       string   `yaml:"ipamUnixSocketPath"`
+	EnableIPv4               bool     `yaml:"enableIpv4"`
+	EnableIPv6               bool     `yaml:"enableIpv6"`
+	ClusterDefaultIPv4IPPool []string `yaml:"clusterDefaultIpv4Ippool"`
+	ClusterDefaultIPv6IPPool []string `yaml:"clusterDefaultIpv6Ippool"`
+	NetworkMode              string   `yaml:"networkMode"`
+}
+
+type AgentContext struct {
+	Cfg Config
 
 	// ControllerManagerCtx is the context that can be used during shutdown.
 	// It will be cancelled after receiving an interrupt or termination signal.
@@ -58,22 +76,64 @@ type AgentContext struct {
 
 // BindAgentDaemonFlags bind agent cli daemon flags
 func (ac *AgentContext) BindAgentDaemonFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&ac.ConfigDir, "config-dir", "/tmp/spiderpool/configmap", "config file")
-	flags.StringVar(&ac.IpamConfigDir, "ipam-config-dir", "", "config file for ipam plugin")
+	flags.StringVar(&ac.Cfg.ConfigmapPath, "config-dir", "/tmp/spiderpool/config-map/conf.yml", "configmap file")
 }
 
 // RegisterEnv set the env to AgentConfiguration
-func (ac *AgentContext) RegisterEnv() {
-	for i := range EnvInfo {
-		env, ok := os.LookupEnv(EnvInfo[i].envName)
+func (ac *AgentContext) RegisterEnv() error {
+	var result string
+
+	for i := range envInfo {
+		env, ok := os.LookupEnv(envInfo[i].envName)
 		if ok {
-			*(EnvInfo[i].associateKey) = strings.TrimSpace(env)
+			result = strings.TrimSpace(env)
+		} else if !ok && envInfo[i].required {
+			// if no env and required, set it to default value.
+			result = envInfo[i].defaultValue
+		} else {
+			// if no env and none-required, just use the empty value.
+			continue
 		}
 
-		// if no env and required, set it to default value.
-		// if no env and none-required, just use the empty value.
-		if !ok && EnvInfo[i].required {
-			*(EnvInfo[i].associateKey) = EnvInfo[i].defaultValue
+		if nil != envInfo[i].associateStrKey {
+			*(envInfo[i].associateStrKey) = result
+		} else {
+			b, err := strconv.ParseBool(result)
+			if nil != err {
+				return fmt.Errorf("Error: %s require a bool value, but get %s", envInfo[i].envName, result)
+			}
+			*(envInfo[i].associateBoolKey) = b
 		}
 	}
+
+	return nil
+}
+
+// LoadConfigmap reads configmap data from cli flag config-path
+func (ac *AgentContext) LoadConfigmap() error {
+	configmapBytes, err := ioutil.ReadFile(ac.Cfg.ConfigmapPath)
+	if nil != err {
+		return fmt.Errorf("Read configmap file failed: %v", err)
+	}
+
+	err = yaml.Unmarshal(configmapBytes, &ac.Cfg)
+	if nil != err {
+		return fmt.Errorf("Parse configmap failed: %v", err)
+	}
+
+	if ac.Cfg.IpamUnixSocketPath == "" {
+		ac.Cfg.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
+	}
+
+	if ac.Cfg.NetworkMode == "" {
+		ac.Cfg.NetworkMode = defaultNetworkMode
+	} else {
+		if ac.Cfg.NetworkMode != constant.NetworkLegacy &&
+			ac.Cfg.NetworkMode != constant.NetworkStrict &&
+			ac.Cfg.NetworkMode != constant.NetworkSDN {
+			return fmt.Errorf("Error: Unrecognized network mode %s", ac.Cfg.NetworkMode)
+		}
+	}
+
+	return nil
 }

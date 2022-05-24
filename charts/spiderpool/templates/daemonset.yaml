@@ -88,8 +88,7 @@ spec:
         - {{ .Values.spiderpoolAgent.binName }}
         args:
         - daemon
-        - --config-dir=/tmp/spiderpool/config-map
-        - --ipam-config-dir=/tmp/spiderpool/ipam-plugin-config-map
+        - --config-dir=/tmp/spiderpool/config-map/conf.yml
         {{- with .Values.spiderpoolAgent.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
@@ -173,13 +172,12 @@ spec:
         - name: config-path
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
-        - name: ipam-plugin-config-path
-          mountPath: /tmp/spiderpool/ipam-plugin-config-map
-          readOnly: true
         - name: etc-cni-conf-path
           mountPath: /host/{{ .Values.ipamPlugin.confPath }}
         - name: cni-bin-path
           mountPath: /host/{{ .Values.ipamPlugin.binPath }}
+        - name: ipam-unix-socket-dir
+          mountPath: {{ .Values.ipamPlugin.ipam_unix_socket_dir }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
@@ -189,11 +187,6 @@ spec:
         configMap:
           defaultMode: 0400
           name: {{ .Values.configmap.configCmName }}
-        # To read the configuration from the config map
-      - name: ipam-plugin-config-path
-        configMap:
-          defaultMode: 0400
-          name: {{ .Values.configmap.ipamCmName }}
         # To install cilium cni configuration in the host
       - name: etc-cni-conf-path
         hostPath:
@@ -203,6 +196,11 @@ spec:
       - name: cni-bin-path
         hostPath:
           path:  {{ .Values.ipamPlugin.binPath }}
+          type: DirectoryOrCreate
+        # To create unix socket dir in the host
+      - name: ipam-unix-socket-dir
+        hostPath:
+          path: {{ .Values.ipamPlugin.ipam_unix_socket_dir }}
           type: DirectoryOrCreate
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

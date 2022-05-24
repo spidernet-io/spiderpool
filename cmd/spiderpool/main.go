@@ -11,8 +11,10 @@ import (
 
 var version string
 
+// TODO (Icarus9913): add one doc for spiderpool-plugin configuration file explanation
+// TODO (Icarus9913): implement cmdCheck to support CNI 0.3.1 ?
 func main() {
 	skel.PluginMain(cmd.CmdAdd, nil, cmd.CmdDel,
-		cniSpecVersion.PluginSupports("0.3.1"),
+		cniSpecVersion.PluginSupports(cmd.SupportCNIVersion),
 		"Spiderpool IPAM"+version)
 }

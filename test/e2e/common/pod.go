@@ -48,11 +48,12 @@ func GenerateLongPodYaml(podName, namespace string, annotationLength int) *corev
 
 func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, namespace string) (pod *corev1.Pod, podIPv4, podIPv6 string) {
 	// create pod
+	GinkgoWriter.Printf("create pod %v/%v \n", namespace, podName)
 	err := frame.CreatePod(podYaml)
 	Expect(err).NotTo(HaveOccurred(), "failed to create pod")
 
 	// wait for pod ip
-	GinkgoWriter.Println("wait for pod ready")
+	GinkgoWriter.Printf("wait for pod %v/%v ready \n", namespace, podName)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	pod, err = frame.WaitPodStarted(podName, namespace, ctx)
@@ -77,7 +78,7 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 		// get ipv6
 		GinkgoWriter.Println("get IPv6")
 		podIPv6 = GetPodIPv6(pod)
-		GinkgoWriter.Printf("pod IPv6: %+v", podIPv6)
+		GinkgoWriter.Printf("pod IPv6: %+v\n", podIPv6)
 		Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
 	}
 	return

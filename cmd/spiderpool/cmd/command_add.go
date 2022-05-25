@@ -77,7 +77,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Info("Generate IPAM configuration")
 
 	// new unix client
-	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IpamUnixSocketPath)
+	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IpamUnixSocketPath)
 	if nil != err {
 		logger.Error(err.Error())
 		return err

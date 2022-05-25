@@ -29,9 +29,9 @@ on:
         description: "tag of image ci"
         value: ${{ jobs.build_and_push_prs.outputs.imageTag }}
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.after }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+#   cancel-in-progress: true
 
 jobs:
   build_and_push_prs:

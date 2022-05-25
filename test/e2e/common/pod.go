@@ -61,7 +61,6 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 	Expect(pod.Status.PodIPs).NotTo(BeEmpty(), "pod failed to assign ip")
 
 	GinkgoWriter.Printf("pod: %v/%v, ips: %+v \n", namespace, podName, pod.Status.PodIPs)
-
 	if frame.Info.IpV4Enabled {
 		Expect(tools.CheckPodIpv4IPReady(pod)).To(BeTrue(), "pod failed to get ipv4 ip")
 		GinkgoWriter.Println("succeeded to check pod ipv4 ip")
@@ -101,4 +100,20 @@ func GetPodIPv6(pod *corev1.Pod) string {
 		}
 	}
 	return ""
+}
+
+func CheckPodListIpReady(frame *e2e.Framework, podlist *corev1.PodList) {
+	for i := 0; i < len(podlist.Items); i++ {
+		Expect(podlist.Items[i].Status.PodIPs).NotTo(BeEmpty(), "pod %v failed to assign ip", podlist.Items[i].Name)
+		GinkgoWriter.Printf("pod %v ips: %+v \n", podlist.Items[i].Name, podlist.Items[i].Status.PodIPs)
+
+		if frame.Info.IpV4Enabled {
+			Expect(tools.CheckPodIpv4IPReady(&podlist.Items[i])).To(BeTrue(), "pod %v failed to get ipv4 ip", podlist.Items[i].Name)
+			By("succeeded to check pod ipv4 ip ")
+		}
+		if frame.Info.IpV6Enabled {
+			Expect(tools.CheckPodIpv6IPReady(&podlist.Items[i])).To(BeTrue(), "pod %v failed to get ipv6 ip", podlist.Items[i].Name)
+			By("succeeded to check pod ipv6 ip \n")
+		}
+	}
 }

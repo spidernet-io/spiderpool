@@ -13,9 +13,9 @@ env:
   REPOSITY_NAME: github.com/spidernet-io/spiderpool
 
 # for each pr, queue all workflows
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+#   cancel-in-progress: true
 
 jobs:
   # find all changed files from PR

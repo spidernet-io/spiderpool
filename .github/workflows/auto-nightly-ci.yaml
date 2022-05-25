@@ -23,7 +23,6 @@ on:
         description: 'sha, tag, branch'
         required: true
         default: main
-
       e2e_labels:
         description: 'e2e labels(if not set, ginkgo will run all test, multi labels separated by commas)'
         required: false
@@ -38,7 +37,7 @@ jobs:
       unitest_enabled: ${{ steps.get_ref.outputs.unitest_enabled }}
       e2e_enabled: ${{ steps.get_ref.outputs.e2e_enabled }}
     steps:
-      - name: Check build Changes
+      - name: Check Code Changes
         uses: dorny/paths-filter@v2.10.2
         if: ${{ github.event_name == 'pull_request_target' }}
         id: filter_pr
@@ -54,6 +53,18 @@ jobs:
               - 'charts/'
               - 'Makefile*'
               - '**/Makefile*'
+
+      - name: Check E2E Changes
+        uses: dorny/paths-filter@v2.10.2
+        if: ${{ github.event_name == 'pull_request_target' }}
+        id: filter_e2e
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          filters: |
+            src:
+              - 'test/e2e/**/*.go'
+              - 'vendor/github.com/spidernet-io/**/*.go'
 
       - name: Get Ref
         id: get_ref
@@ -76,7 +87,12 @@ jobs:
             echo "trigger by pull_request_target"
             echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
             echo ::set-output name=push::false
-            echo ::set-output name=e2e_labels::smoke
+            if ${{ steps.filter_e2e.outputs.src == 'true' }} ; then
+                # run all e2e
+                echo ::set-output name=e2e_labels::
+            else
+                echo ::set-output name=e2e_labels::smoke
+            fi
             echo ::set-output name=e2e_enabled::${{ steps.filter_pr.outputs.src }}
             # do it in another workflow
             echo ::set-output name=unitest_enabled::false
@@ -85,7 +101,8 @@ jobs:
             echo "trigger by schedule"
             echo ::set-output name=tag::main
             echo ::set-output name=push::false
-            echo ::set-output name=e2e_labels::smoke
+            # nightly ci, run all e2e
+            echo ::set-output name=e2e_labels::
             echo ::set-output name=e2e_enabled::true
             echo ::set-output name=unitest_enabled::true
           fi

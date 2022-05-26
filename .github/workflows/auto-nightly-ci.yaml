@@ -107,11 +107,12 @@ jobs:
             echo ::set-output name=unitest_enabled::true
           fi
 
+      # some event, the tag is not sha, so checkout it and get sha
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: false
-          ref: ${{ steps.ref.outputs.tag }}
+          ref: ${{ steps.get_ref.outputs.tag }}
 
       - name: Result Ref
         id: result
@@ -167,7 +168,10 @@ jobs:
           echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
 
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ needs.get_ref.outputs.ref }}
 
       - name: Setup Golang
         uses: actions/setup-go@v3

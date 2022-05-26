@@ -46,7 +46,7 @@ func GenerateLongPodYaml(podName, namespace string, annotationLength int) *corev
 	}
 }
 
-func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, namespace string) (pod *corev1.Pod, podIPv4, podIPv6 string) {
+func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, namespace string, waitPodStartTimeout time.Duration) (pod *corev1.Pod, podIPv4, podIPv6 string) {
 	// create pod
 	GinkgoWriter.Printf("create pod %v/%v \n", namespace, podName)
 	err := frame.CreatePod(podYaml)
@@ -54,7 +54,8 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 
 	// wait for pod ip
 	GinkgoWriter.Printf("wait for pod %v/%v ready \n", namespace, podName)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), waitPodStartTimeout)
+
 	defer cancel()
 	pod, err = frame.WaitPodStarted(podName, namespace, ctx)
 	Expect(err).NotTo(HaveOccurred(), "time out to wait pod ready")

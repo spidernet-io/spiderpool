@@ -122,7 +122,7 @@ e2e-test:
        	fi ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none \
-			--json-report ../e2ereport.json --procs $(E2E_GINKGO_PROCS) \
+			--json-report $(ROOT_DIR)/e2ereport.json --procs $(E2E_GINKGO_PROCS) \
 			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
 			-r e2e/*   ; \
 		(($$?!=0)) && echo "failed to run all test"  && exit 1 ; \

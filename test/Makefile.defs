@@ -30,7 +30,7 @@ E2E_CLUSTER_NAME ?= spider
 # multi flag separated by commas,like setup,ippool
 E2E_GINKGO_LABELS ?=
 
-E2E_EXT_ARGS ?=
+GINKGO_OPTION ?=
 
 E2E_TIMEOUT ?= 60m
 

@@ -279,6 +279,7 @@ e2e:
 e2e_init:
 	$(QUIET)  make -C test kind-init
 
+
 .PHONY: e2e_test
 e2e_test:
 	$(QUIET)  make -C test e2e-test

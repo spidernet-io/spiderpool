@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var ErrDeleteIPAM = fmt.Errorf("err: get ipam release failed")
+
 // CmdDel follows CNI SPEC cmdDel.
 func CmdDel(args *skel.CmdArgs) (err error) {
 	var logger *zap.Logger
@@ -81,7 +83,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
 		logger.Error(err.Error())
-		return err
+		return ErrAgentHealthCheck
 	}
 	logger.Debug("Health check succeed.")
 
@@ -100,7 +102,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(params)
 	if nil != err {
 		logger.Error(err.Error())
-		return err
+		return ErrDeleteIPAM
 	}
 
 	logger.Info("IP release successfully.")

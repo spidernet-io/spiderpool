@@ -70,9 +70,11 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		cniVersion = cmd.SupportCNIVersion
 
 		netConf = cmd.NetConf{
-			NetConf:            types.NetConf{CNIVersion: cniVersion},
-			LogLevel:           constant.LogDebugLevelStr,
-			IpamUnixSocketPath: sockPath,
+			CNIVersion: cniVersion,
+			IPAM: cmd.IPAMConfig{
+				LogLevel:           constant.LogDebugLevelStr,
+				IpamUnixSocketPath: sockPath,
+			},
 		}
 
 		addChan = make(chan struct{})
@@ -292,7 +294,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		})
 
 		It(fmt.Sprintf("[%s] is returning an error on bad log configuration with ADD/DEL", cniVersion), func() {
-			netConf.LogLevel = "bad"
+			netConf.IPAM.LogLevel = "bad"
 			netConfBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
 			args.StdinData = netConfBytes
@@ -324,8 +326,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 
 		It("Check default network configuration", func() {
 			// set some configurations with empty value.
-			netConf.LogLevel = ""
-			netConf.IpamUnixSocketPath = ""
+			netConf.IPAM.LogLevel = ""
+			netConf.IPAM.IpamUnixSocketPath = ""
 
 			netConfBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
@@ -333,8 +335,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			conf, err := cmd.LoadNetConf(netConfBytes)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(conf.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
-			Expect(conf.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
+			Expect(conf.IPAM.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
+			Expect(conf.IPAM.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
 		})
 	})
 

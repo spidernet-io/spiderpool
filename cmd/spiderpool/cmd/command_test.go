@@ -270,21 +270,21 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				Expect(err).NotTo(HaveOccurred())
 			},
 			Entry("returning an error on bad health check with DEL", false, true, func() *skel.CmdArgs {
-				netConf.LogLevel = constant.LogInfoLevelStr
+				netConf.IPAM.LogLevel = constant.LogInfoLevelStr
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}),
 			Entry("release addresses with DEL", true, true, func() *skel.CmdArgs {
-				netConf.LogLevel = constant.LogWarnLevelStr
+				netConf.IPAM.LogLevel = constant.LogWarnLevelStr
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}),
 			Entry("release addresses with DEL", true, false, func() *skel.CmdArgs {
-				netConf.LogLevel = constant.LogErrorLevelStr
+				netConf.IPAM.LogLevel = constant.LogErrorLevelStr
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes

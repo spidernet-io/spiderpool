@@ -96,7 +96,7 @@ prepare:
 .PHONY: e2e-test
 e2e-test:
 	@echo -e "\033[35m Run e2e test on the cluster $(E2E_CLUSTER_NAME) \033[0m "
-	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} E2E_EXT_ARGS=${E2E_EXT_ARGS} \033[0m"
+	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} GINKGO_OPTION=${GINKGO_OPTION} \033[0m"
 	@  NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		NODE_LIST=` echo "$${NODE_LIST}" | tr -d ' ' | tr '\n' ',' ` ; \
@@ -123,7 +123,7 @@ e2e-test:
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none \
 			--json-report e2ereport.json --output-dir $(ROOT_DIR) --procs $(E2E_GINKGO_PROCS) \
-			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${E2E_EXT_ARGS} \
+			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${GINKGO_OPTION} \
 			-r e2e/*   ; \
 		(($$?!=0)) && echo "failed to run all test"  && exit 1 ; \
 		echo "" ; \

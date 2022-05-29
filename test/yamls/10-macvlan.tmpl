@@ -3,7 +3,6 @@
   "cniVersion": "0.3.1",
   "plugins": [
     {
-      "name": "macvlan",
       "type": "macvlan",
       "mode": "bridge",
       "master": "eth0",
@@ -54,7 +53,13 @@
                    "log_level": "debug",
                    "log_file": "/var/log/{{ type }}.log"
            {%- else %}
-                    "type": "{{ type }}"
+                    "type": "{{ type }}",
+                    "log_level" : "DEBUG",
+                    "log_file_path" : "/tmp/cni.log",
+                    "log_file_max_size" : 100,
+                    "log_file_max_age": 30,
+                    "log_file_max_count": 10,
+                    "ipam_unix_socket_path": "/var/run/spidernet/spiderpool.sock"
            {%- endif %}
        }
     }

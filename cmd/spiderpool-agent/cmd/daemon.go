@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // DaemonMain runs agentContext handlers.
@@ -18,8 +20,15 @@ func DaemonMain() {
 	// load Configmap
 	err := agentContext.LoadConfigmap()
 	if nil != err {
-		logger.Fatal(err.Error())
+		logger.Fatal("Load configmap failed, " + err.Error())
 	}
+	logger.With(zap.String("IpamUnixSocketPath", agentContext.Cfg.IpamUnixSocketPath),
+		zap.Bool("EnabledIPv4", agentContext.Cfg.EnableIPv4),
+		zap.Bool("EnabledIPv6", agentContext.Cfg.EnableIPv6),
+		zap.Strings("ClusterDefaultIPv4IPPool", agentContext.Cfg.ClusterDefaultIPv4IPPool),
+		zap.Strings("ClusterDefaultIPv6IPPool", agentContext.Cfg.ClusterDefaultIPv6IPPool),
+		zap.String("NetworkMode", agentContext.Cfg.NetworkMode)).
+		Info("Load configmap successfully")
 
 	// TODO (Icarus9913): flush ipam plugin config (deprecated)
 

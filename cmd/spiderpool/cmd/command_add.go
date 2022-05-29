@@ -21,7 +21,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var BinNamePlugin = filepath.Base(os.Args[0])
+var (
+	BinNamePlugin       = filepath.Base(os.Args[0])
+	ErrAgentHealthCheck = fmt.Errorf("err: get spiderpool agent health check failed")
+	ErrPostIPAM         = fmt.Errorf("err: get ipam allocation failed")
+)
 
 // CmdAdd follows CNI SPEC cmdAdd.
 func CmdAdd(args *skel.CmdArgs) (err error) {
@@ -77,7 +81,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Info("Generate IPAM configuration")
 
 	// new unix client
-	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IpamUnixSocketPath)
+	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IpamUnixSocketPath)
 	if nil != err {
 		logger.Error(err.Error())
 		return err
@@ -88,7 +92,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
 		logger.Error(err.Error())
-		return err
+		return ErrAgentHealthCheck
 	}
 	logger.Debug("Health check succeed.")
 
@@ -107,7 +111,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
 	if nil != err {
 		logger.Error(err.Error())
-		return err
+		return ErrPostIPAM
 	}
 	// validate spiderpool-agent response
 	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {

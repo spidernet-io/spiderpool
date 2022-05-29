@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	"time"
 )
 
 var _ = Describe("test pod", Label("ippool_pod"), func() {
@@ -32,7 +33,7 @@ var _ = Describe("test pod", Label("ippool_pod"), func() {
 		GinkgoWriter.Printf("create pod %v/%v with annotationLength= %v \n", namespace, podName, annotationLength)
 		podYaml := common.GenerateLongPodYaml(podName, namespace, annotationLength)
 		Expect(podYaml).NotTo(BeNil())
-		pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, namespace)
+		pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, namespace, time.Second*30)
 		Expect(pod).NotTo(BeNil())
 		Expect(pod.Annotations["test"]).To(Equal(podYaml.Annotations["test"]))
 		GinkgoWriter.Printf("create pod %v/%v successfully \n", namespace, podName)

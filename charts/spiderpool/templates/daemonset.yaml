@@ -145,6 +145,10 @@ spec:
         {{- toYaml . | trim | nindent 10 }}
         {{- end }}
         lifecycle:
+          postStart:
+            # Move an eventual old existing binary out of the way, we can't delete it as it might be in use right now
+            exec:
+              command: [ "/bin/sh", "-c", "if [ -f \"/host/opt/cni/bin/spiderpool\" ];then rm -f \"/host/opt/cni/bin/spiderpool.old\"; mv \"/host/opt/cni/bin/spiderpool\" \"/host/opt/cni/bin/spiderpool.old\"; fi; cp \"/usr/bin/spiderpool\" \"/host/opt/cni/bin/spiderpool\""]
           preStop:
             exec:
               command:

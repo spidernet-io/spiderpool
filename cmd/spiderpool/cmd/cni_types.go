@@ -27,7 +27,14 @@ type K8sArgs struct {
 
 // NetConf for cni config file written in json
 type NetConf struct {
-	types.NetConf
+	Name       string     `json:"name"`
+	CNIVersion string     `json:"cniVersion"`
+	IPAM       IPAMConfig `json:"ipam"`
+}
+
+// IPAMConfig is a custom IPAM struct, you can check reference details: https://www.cni.dev/docs/spec/#plugin-configuration-objects
+type IPAMConfig struct {
+	Type string `json:"type"`
 
 	LogLevel        string `json:"log_level"`
 	LogFilePath     string `json:"log_file_path"`
@@ -48,15 +55,15 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 	}
 
 	if netConf.CNIVersion != SupportCNIVersion {
-		return nil, fmt.Errorf("Error: Mismatch CNI Version: %s, spiderpool surports CNI version %s", netConf.CNIVersion, SupportCNIVersion)
+		return nil, fmt.Errorf("Error: Mismatch the given CNI Version: %s, spiderpool supports CNI version %s", netConf.CNIVersion, SupportCNIVersion)
 	}
 
-	if netConf.LogLevel == "" {
-		netConf.LogLevel = DefaultLogLevelStr
+	if netConf.IPAM.LogLevel == "" {
+		netConf.IPAM.LogLevel = DefaultLogLevelStr
 	}
 
-	if netConf.IpamUnixSocketPath == "" {
-		netConf.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
+	if netConf.IPAM.IpamUnixSocketPath == "" {
+		netConf.IPAM.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
 	}
 
 	return netConf, nil

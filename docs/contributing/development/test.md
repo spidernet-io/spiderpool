@@ -27,7 +27,7 @@
 
 3. for developing e2e case, could do it step by step
 
-        # make e2e_init
+        $ make e2e_init
           .......
           -----------------------------------------------------------------------------------------------------
              succeeded to setup cluster spider
@@ -36,8 +36,15 @@
                 kubectl get nodes
           -----------------------------------------------------------------------------------------------------        
 
-        # make e2e_test
+        $ make e2e_test
 
-        # ls e2ereport.json
+        # after finish a e2e case , you could test repeated  for debugging flaky tests
+        # example: run a case repeated
+        $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --repeat=10 "
 
-        # make clean_e2e
+        # example: run a case until fails
+        $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+
+        $ ls e2ereport.json
+
+        $ make clean_e2e

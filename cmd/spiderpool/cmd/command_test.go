@@ -35,10 +35,6 @@ const CNITimeoutSec = 220
 const (
 	healthCheckRoute = "/v1/ipam/healthy"
 	ipamReqRoute     = "/v1/ipam/ip"
-
-	AgentErrorHealthRespStr     = "getIpamHealthyInternalServerError"
-	AgentErrorPostIpamRespStr   = "postIpamIpInternalServerError"
-	AgentErrorDeleteIpamRespStr = "deleteIpamIpInternalServerError"
 )
 
 var cniVersion string
@@ -70,9 +66,11 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		cniVersion = cmd.SupportCNIVersion
 
 		netConf = cmd.NetConf{
-			NetConf:            types.NetConf{CNIVersion: cniVersion},
-			LogLevel:           constant.LogDebugLevelStr,
-			IpamUnixSocketPath: sockPath,
+			CNIVersion: cniVersion,
+			IPAM: cmd.IPAMConfig{
+				LogLevel:           constant.LogDebugLevelStr,
+				IpamUnixSocketPath: sockPath,
+			},
 		}
 
 		addChan = make(chan struct{})
@@ -94,93 +92,72 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			server.Close()
 		})
 
-		DescribeTable("", func(isHealthy, isPostIPAM bool, cmdArgs func() *skel.CmdArgs, mockServerResponse func() *models.IpamAddResponse, expectResponse func() *current.Result) {
-			var healthHandleFunc http.HandlerFunc
-			var ipamPostHandleFunc http.HandlerFunc
-			//var ipamDeleteHandleFunc http.HandlerFunc
+		DescribeTable("test cmdAdd",
+			func(isHealthy, isPostIPAM bool, cmdArgs func() *skel.CmdArgs, mockServerResponse func() *models.IpamAddResponse, expectResponse func() *current.Result) {
+				var ipamPostHandleFunc http.HandlerFunc
 
-			// GET /v1/ipam/healthy
-			if isHealthy {
-				healthHandleFunc = ghttp.RespondWith(connectivity.GetIpamHealthyOKCode, nil)
-			} else {
-				healthHandleFunc = ghttp.RespondWith(connectivity.GetIpamHealthyInternalServerErrorCode, nil)
-			}
-			server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(healthHandleFunc))
+				// GET /v1/ipam/healthy
+				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(isHealthy)))
 
-			// POST /v1/ipam/ip
-			if isPostIPAM {
-				// You must pre-define this even if the mockServerResponse is nil!
-				// And mockServerResponse is nil only use for bad health check!
-				var mockServerResp *models.IpamAddResponse
-				if nil != mockServerResponse {
-					mockServerResp = mockServerResponse()
-				}
-				ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsOKCode, mockServerResp)
-			} else {
-				ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsInternalServerErrorCode, nil)
-			}
-			server.RouteToHandler("POST", ipamReqRoute, ghttp.CombineHandlers(ipamPostHandleFunc))
-
-			// DELETE /v1/ipam/ip
-			//if isDeleteIPAM {
-			//	ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPOKCode, nil)
-			//} else {
-			//	ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPInternalServerErrorCode, nil)
-			//}
-			//server.RouteToHandler("DELETE", ipamReqRoute, ghttp.CombineHandlers(ipamDeleteHandleFunc))
-
-			tmpArgs := cmdArgs()
-			var tmpNetConf cmd.NetConf
-			err := json.Unmarshal(tmpArgs.StdinData, &tmpNetConf)
-			Expect(err).NotTo(HaveOccurred())
-
-			// statr client test.
-			r, _, err := testutils.CmdAddWithArgs(cmdArgs(), func() error {
-				return cmd.CmdAdd(cmdArgs())
-			})
-
-			// bad response check
-			if !isHealthy || !isPostIPAM {
-				var subErrorString string
-				if !isHealthy {
-					subErrorString = AgentErrorHealthRespStr
-				} else if !isPostIPAM {
-					subErrorString = AgentErrorPostIpamRespStr
+				// POST /v1/ipam/ip
+				if isPostIPAM {
+					// You must pre-define this even if the mockServerResponse is nil!
+					// And mockServerResponse is nil only use for bad health check!
+					var mockServerResp *models.IpamAddResponse
+					if nil != mockServerResponse {
+						mockServerResp = mockServerResponse()
+					}
+					ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsOKCode, mockServerResp)
 				} else {
-					subErrorString = AgentErrorDeleteIpamRespStr
+					ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsInternalServerErrorCode, nil)
+				}
+				server.RouteToHandler("POST", ipamReqRoute, ghttp.CombineHandlers(ipamPostHandleFunc))
+
+				// start client test.
+				r, _, err := testutils.CmdAddWithArgs(cmdArgs(), func() error {
+					return cmd.CmdAdd(cmdArgs())
+				})
+
+				// bad response check
+				if !isHealthy || !isPostIPAM {
+					var expectErr error
+					if !isHealthy {
+						expectErr = cmd.ErrAgentHealthCheck
+					} else {
+						expectErr = cmd.ErrPostIPAM
+					}
+
+					Expect(err).To(HaveOccurred())
+					Expect(err).Should(MatchError(expectErr))
+					return
 				}
 
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).Should(ContainSubstring(subErrorString))
-				return
-			}
+				Expect(err).NotTo(HaveOccurred())
 
-			Expect(err).NotTo(HaveOccurred())
+				addResult, err := current.GetResult(r)
+				Expect(err).NotTo(HaveOccurred())
 
-			addResult, err := current.GetResult(r)
-			Expect(err).NotTo(HaveOccurred())
+				var expectResp *current.Result
+				if nil != expectResponse {
+					expectResp = expectResponse()
+				} else {
+					Fail("You must define expectResp if every route good in CmdAdd situation.")
+				}
 
-			var expectResp *current.Result
-			if nil != expectResponse {
-				expectResp = expectResponse()
-			} else {
-				Fail("You must define expectResp if every route good in CmdAdd situation.")
-			}
+				// No need to check result.CNIVersion since cni types 100 library would hard code it with "1.0.0"
 
-			// No need to check result.CNIVersion since cni types 100 library would hard code it with "1.0.0"
+				// check Result.DNS
+				Expect(reflect.DeepEqual(addResult.DNS, expectResp.DNS)).To(Equal(true))
 
-			// check Result.DNS
-			Expect(reflect.DeepEqual(addResult.DNS, expectResp.DNS)).To(Equal(true))
+				// check Result.IPs
+				Expect(reflect.DeepEqual(addResult.IPs, expectResp.IPs)).To(Equal(true))
 
-			// check Result.IPs
-			Expect(reflect.DeepEqual(addResult.IPs, expectResp.IPs)).To(Equal(true))
+				// check Result.Interfaces
+				Expect(reflect.DeepEqual(addResult.Interfaces, expectResp.Interfaces)).To(Equal(true))
 
-			// check Result.Interfaces
-			Expect(reflect.DeepEqual(addResult.Interfaces, expectResp.Interfaces)).To(Equal(true))
-
-			// check Result.Routes
-			Expect(reflect.DeepEqual(addResult.Routes, expectResp.Routes))
-		},
+				// check Result.Routes
+				Expect(reflect.DeepEqual(addResult.Routes, expectResp.Routes))
+			},
 			Entry("returning an error on bad health check with ADD", false, true, func() *skel.CmdArgs {
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
@@ -256,6 +233,64 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			}),
 		)
 
+		DescribeTable("test cmdDel",
+			func(isHealthy, isDeleteIPAM bool, cmdArgs func() *skel.CmdArgs) {
+				var ipamDeleteHandleFunc http.HandlerFunc
+
+				// GET /v1/ipam/healthy
+				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(isHealthy)))
+
+				// DELETE /v1/ipam/ip
+				if isDeleteIPAM {
+					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPOKCode, nil)
+				} else {
+					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPInternalServerErrorCode, nil)
+				}
+				server.RouteToHandler("DELETE", ipamReqRoute, ghttp.CombineHandlers(ipamDeleteHandleFunc))
+
+				// start client test
+				err := testutils.CmdDelWithArgs(cmdArgs(), func() error {
+					return cmd.CmdDel(cmdArgs())
+				})
+
+				// bad response check
+				if !isHealthy || !isDeleteIPAM {
+					var expectErr error
+					if !isHealthy {
+						expectErr = cmd.ErrAgentHealthCheck
+					} else {
+						expectErr = cmd.ErrDeleteIPAM
+					}
+
+					Expect(err).To(HaveOccurred())
+					Expect(err).Should(MatchError(expectErr))
+					return
+				}
+
+				Expect(err).NotTo(HaveOccurred())
+			},
+			Entry("returning an error on bad health check with DEL", false, true, func() *skel.CmdArgs {
+				netConf.LogLevel = constant.LogInfoLevelStr
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}),
+			Entry("release addresses with DEL", true, true, func() *skel.CmdArgs {
+				netConf.LogLevel = constant.LogWarnLevelStr
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}),
+			Entry("release addresses with DEL", true, false, func() *skel.CmdArgs {
+				netConf.LogLevel = constant.LogErrorLevelStr
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}),
+		)
 	})
 
 	// TODO (Icarus9913): refactoring below
@@ -292,7 +327,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		})
 
 		It(fmt.Sprintf("[%s] is returning an error on bad log configuration with ADD/DEL", cniVersion), func() {
-			netConf.LogLevel = "bad"
+			netConf.IPAM.LogLevel = "bad"
 			netConfBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
 			args.StdinData = netConfBytes
@@ -324,8 +359,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 
 		It("Check default network configuration", func() {
 			// set some configurations with empty value.
-			netConf.LogLevel = ""
-			netConf.IpamUnixSocketPath = ""
+			netConf.IPAM.LogLevel = ""
+			netConf.IPAM.IpamUnixSocketPath = ""
 
 			netConfBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
@@ -333,9 +368,21 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			conf, err := cmd.LoadNetConf(netConfBytes)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(conf.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
-			Expect(conf.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
+			Expect(conf.IPAM.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
+			Expect(conf.IPAM.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
 		})
 	})
 
 })
+
+func getHealthHandleFunc(isHealthy bool) http.HandlerFunc {
+	var healthHandleFunc http.HandlerFunc
+
+	if isHealthy {
+		healthHandleFunc = ghttp.RespondWith(connectivity.GetIpamHealthyOKCode, nil)
+	} else {
+		healthHandleFunc = ghttp.RespondWith(connectivity.GetIpamHealthyInternalServerErrorCode, nil)
+	}
+
+	return healthHandleFunc
+}

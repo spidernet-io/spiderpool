@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	"time"
 )
 
 var _ = Describe("test ip with namespace case", Label("ippool_namespace"), func() {
@@ -32,7 +33,7 @@ var _ = Describe("test ip with namespace case", Label("ippool_namespace"), func(
 		GinkgoWriter.Printf("podYaml: %v \n", podYaml)
 
 		// create pod
-		pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, namespace)
+		pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, namespace, time.Second*30)
 		Expect(pod).NotTo(BeNil(), "create pod failed")
 
 		// ippool allocated ip

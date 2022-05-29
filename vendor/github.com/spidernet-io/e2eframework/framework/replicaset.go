@@ -51,10 +51,8 @@ func (f *Framework) CreateReplicaSet(rs *appsv1.ReplicaSet, opts ...client.Creat
 
 func (f *Framework) DeleteReplicaSet(name, namespace string, opts ...client.DeleteOption) error {
 
-	if name == "" {
-		return fmt.Errorf("the ReplicaSet name %v not to be empty", name)
-	} else if namespace == "" {
-		return fmt.Errorf("the ReplicaSet namespace %v not to be empty", namespace)
+	if name == "" || namespace == "" {
+		return ErrWrongInput
 	}
 
 	pod := &appsv1.ReplicaSet{
@@ -68,10 +66,8 @@ func (f *Framework) DeleteReplicaSet(name, namespace string, opts ...client.Dele
 
 func (f *Framework) GetReplicaSet(name, namespace string) (*appsv1.ReplicaSet, error) {
 
-	if name == "" {
-		return nil, fmt.Errorf("the ReplicaSet name %v not to be empty", name)
-	} else if namespace == "" {
-		return nil, fmt.Errorf("the ReplicaSet namespace %v not to be empty", namespace)
+	if name == "" || namespace == "" {
+		return nil, ErrWrongInput
 	}
 
 	rs := &appsv1.ReplicaSet{
@@ -92,7 +88,7 @@ func (f *Framework) GetReplicaSet(name, namespace string) (*appsv1.ReplicaSet, e
 func (f *Framework) GetReplicaSetPodList(rs *appsv1.ReplicaSet) (*corev1.PodList, error) {
 
 	if rs == nil {
-		return nil, fmt.Errorf("rs cannot be nil")
+		return nil, ErrWrongInput
 	}
 
 	pods := &corev1.PodList{}
@@ -110,7 +106,7 @@ func (f *Framework) GetReplicaSetPodList(rs *appsv1.ReplicaSet) (*corev1.PodList
 
 func (f *Framework) ScaleReplicaSet(rs *appsv1.ReplicaSet, replicas int32) (*appsv1.ReplicaSet, error) {
 	if rs == nil {
-		return nil, fmt.Errorf("ReplicaSet cannot be nil")
+		return nil, ErrWrongInput
 	}
 	rs.Spec.Replicas = pointer.Int32(replicas)
 	err := f.UpdateResource(rs)
@@ -122,10 +118,8 @@ func (f *Framework) ScaleReplicaSet(rs *appsv1.ReplicaSet, replicas int32) (*app
 
 func (f *Framework) WaitReplicaSetReady(name, namespace string, ctx context.Context) (*appsv1.ReplicaSet, error) {
 
-	if name == "" {
-		return nil, fmt.Errorf("the ReplicaSet name not to be empty")
-	} else if namespace == "" {
-		return nil, fmt.Errorf("the namespace not to be empty")
+	if name == "" || namespace == "" {
+		return nil, ErrWrongInput
 	}
 
 	l := &client.ListOptions{
@@ -162,7 +156,7 @@ func (f *Framework) WaitReplicaSetReady(name, namespace string, ctx context.Cont
 				}
 			}
 		case <-ctx.Done():
-			return nil, fmt.Errorf("ctx timeout ")
+			return nil, ErrTimeOut
 		}
 	}
 }

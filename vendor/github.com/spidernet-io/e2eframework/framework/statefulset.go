@@ -5,8 +5,9 @@ package framework
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/e2eframework/tools"
 	appsv1 "k8s.io/api/apps/v1"
@@ -51,12 +52,11 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 }
 
 func (f *Framework) DeleteStatefulSet(name, namespace string, opts ...client.DeleteOption) error {
-	if name == "" {
-		return fmt.Errorf("name cannot be empty string")
+
+	if name == "" || namespace == "" {
+		return ErrWrongInput
 	}
-	if namespace == "" {
-		return fmt.Errorf("namespace cannot be empty string")
-	}
+
 	sts := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -67,12 +67,11 @@ func (f *Framework) DeleteStatefulSet(name, namespace string, opts ...client.Del
 }
 
 func (f *Framework) GetStatefulSet(name, namespace string) (*appsv1.StatefulSet, error) {
-	if name == "" {
-		return nil, fmt.Errorf("name cannot be empty string")
+
+	if name == "" || namespace == "" {
+		return nil, ErrWrongInput
 	}
-	if namespace == "" {
-		return nil, fmt.Errorf("namespace cannot be empty string")
-	}
+
 	sts := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -90,8 +89,9 @@ func (f *Framework) GetStatefulSet(name, namespace string) (*appsv1.StatefulSet,
 
 func (f *Framework) GetStatefulSetPodList(sts *appsv1.StatefulSet) (*corev1.PodList, error) {
 	if sts == nil {
-		return nil, fmt.Errorf("statefulSet cannot be nil")
+		return nil, ErrWrongInput
 	}
+
 	pods := &corev1.PodList{}
 	ops := []client.ListOption{
 		client.MatchingLabelsSelector{
@@ -107,7 +107,7 @@ func (f *Framework) GetStatefulSetPodList(sts *appsv1.StatefulSet) (*corev1.PodL
 
 func (f *Framework) ScaleStatefulSet(sts *appsv1.StatefulSet, replicas int32) (*appsv1.StatefulSet, error) {
 	if sts == nil {
-		return nil, fmt.Errorf("statefulSet cannot be nil")
+		return nil, ErrWrongInput
 	}
 	sts.Spec.Replicas = pointer.Int32(replicas)
 	err := f.UpdateResource(sts)
@@ -118,11 +118,9 @@ func (f *Framework) ScaleStatefulSet(sts *appsv1.StatefulSet, replicas int32) (*
 }
 
 func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Context) (*appsv1.StatefulSet, error) {
-	if name == "" {
-		return nil, fmt.Errorf("name cannot be empty string")
-	}
-	if namespace == "" {
-		return nil, fmt.Errorf("namespace cannot be empty string")
+
+	if name == "" || namespace == "" {
+		return nil, ErrWrongInput
 	}
 
 	l := &client.ListOptions{
@@ -166,7 +164,7 @@ func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Con
 				}
 			}
 		case <-ctx.Done():
-			return nil, fmt.Errorf("ctx timeout ")
+			return nil, ErrTimeOut
 		}
 	}
 }

@@ -4,12 +4,13 @@ package framework
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) error {
@@ -47,6 +48,11 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 }
 
 func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
+
+	if nsName == "" {
+		return ErrWrongInput
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: nsName,

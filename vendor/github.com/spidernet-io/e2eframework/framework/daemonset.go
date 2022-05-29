@@ -50,11 +50,9 @@ func (f *Framework) CreateDaemonSet(ds *appsv1.DaemonSet, opts ...client.CreateO
 }
 
 func (f *Framework) DeleteDaemonSet(name, namespace string, opts ...client.DeleteOption) error {
-	if name == "" {
-		return fmt.Errorf("name cannot be empty string")
-	}
-	if namespace == "" {
-		return fmt.Errorf("namespace cannot be empty string")
+
+	if name == "" || namespace == "" {
+		return ErrWrongInput
 	}
 	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -66,11 +64,9 @@ func (f *Framework) DeleteDaemonSet(name, namespace string, opts ...client.Delet
 }
 
 func (f *Framework) GetDaemonSet(name, namespace string) (*appsv1.DaemonSet, error) {
-	if name == "" {
-		return nil, fmt.Errorf("name cannot be empty string")
-	}
-	if namespace == "" {
-		return nil, fmt.Errorf("namespace cannot be empty string")
+
+	if name == "" || namespace == "" {
+		return nil, ErrWrongInput
 	}
 	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -89,7 +85,7 @@ func (f *Framework) GetDaemonSet(name, namespace string) (*appsv1.DaemonSet, err
 
 func (f *Framework) GetDaemonSetPodList(ds *appsv1.DaemonSet) (*corev1.PodList, error) {
 	if ds == nil {
-		return nil, fmt.Errorf("DaemonSet cannot be nil")
+		return nil, ErrWrongInput
 	}
 	pods := &corev1.PodList{}
 	ops := []client.ListOption{
@@ -105,11 +101,9 @@ func (f *Framework) GetDaemonSetPodList(ds *appsv1.DaemonSet) (*corev1.PodList, 
 }
 
 func (f *Framework) WaitDaemonSetReady(name, namespace string, ctx context.Context) (*appsv1.DaemonSet, error) {
-	if name == "" {
-		return nil, fmt.Errorf("name cannot be empty string")
-	}
-	if namespace == "" {
-		return nil, fmt.Errorf("namespace cannot be empty string")
+
+	if name == "" || namespace == "" {
+		return nil, ErrWrongInput
 	}
 
 	l := &client.ListOptions{
@@ -156,7 +150,7 @@ func (f *Framework) WaitDaemonSetReady(name, namespace string, ctx context.Conte
 				}
 			}
 		case <-ctx.Done():
-			return nil, fmt.Errorf("ctx timeout ")
+			return nil, ErrTimeOut
 		}
 	}
 }

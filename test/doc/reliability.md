@@ -8,3 +8,4 @@
 | R00004  | chaos | IP address allocation, spiderpool ipam plugin service failure||p4|NA||
 | R00005  | chaos | IP address allocation, spiderpool agent failure ||p4|NA||
 | R00006  | chaos | IP address allocation, COREDNS failure  ||p4|NA||
+| R00007  | chaos | After a cluster restart, it is pod-based and the ip does not change |||NA||

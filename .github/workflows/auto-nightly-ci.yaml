@@ -45,7 +45,7 @@ jobs:
           base: ${{ github.event.pull_request.base.sha }}
           ref: ${{ github.event.pull_request.head.sha }}
           filters: |
-            src:
+            run_e2e:
               - '**/*.sh'
               - '**/*.go'
               - 'go.mod'
@@ -53,16 +53,7 @@ jobs:
               - 'charts/'
               - 'Makefile*'
               - '**/Makefile*'
-
-      - name: Check E2E Changes
-        uses: dorny/paths-filter@v2.10.2
-        if: ${{ github.event_name == 'pull_request_target' }}
-        id: filter_e2e
-        with:
-          base: ${{ github.event.pull_request.base.sha }}
-          ref: ${{ github.event.pull_request.head.sha }}
-          filters: |
-            src:
+            all_e2e:
               - 'test/e2e/**/*.go'
               - 'vendor/github.com/spidernet-io/**/*.go'
 
@@ -87,13 +78,13 @@ jobs:
             echo "trigger by pull_request_target"
             echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
             echo ::set-output name=push::false
-            if ${{ steps.filter_e2e.outputs.src == 'true' }} ; then
+            if ${{ steps.filter_pr.outputs.all_e2e == 'true' }} ; then
                 # run all e2e
                 echo ::set-output name=e2e_labels::
             else
                 echo ::set-output name=e2e_labels::smoke
             fi
-            echo ::set-output name=e2e_enabled::${{ steps.filter_pr.outputs.src }}
+            echo ::set-output name=e2e_enabled::${{ steps.filter_pr.outputs.run_e2e }}
             # do it in another workflow
             echo ::set-output name=unitest_enabled::false
           else
@@ -130,6 +121,7 @@ jobs:
 
   call_build_ci_image:
     needs: [get_ref]
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     # get  image:${{ needs.get_ref.outputs.ref }} and image-ci:${{ needs.get_ref.outputs.ref }}
     uses: ./.github/workflows/build-image-ci.yaml
     with:
@@ -138,6 +130,7 @@ jobs:
 
   call_test_chart:
     needs: get_ref
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     # forbid to specify version for local workflow, GITHUB_REF Same as the caller workflow
     uses: ./.github/workflows/call-lint-chart.yaml
     with:
@@ -145,6 +138,7 @@ jobs:
 
   call_release_chart:
     needs: [call_test_chart, get_ref]
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     uses: ./.github/workflows/call-release-chart.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}

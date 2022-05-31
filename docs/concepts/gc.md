@@ -1,10 +1,6 @@
 # Resource Reclaim
 
-***
-
 ## IP collection
-
-***
 
 ### context
 
@@ -42,8 +38,6 @@ The spiderpool controller takes charge of this responsibility. There is some env
 // TODO (Icarus9913), describe the environment
 
 ## ippool collection
-
-***
 
 To prevent IP from leaking when ippool resource is deleted, the spiderpool has some rules:
 

@@ -2,8 +2,6 @@
 
 ## Pod Annotation
 
-***
-
 Pod could specify spiderpool annotation for special request
 
 * "ipam.spidernet.io/ippool", specify which ippool is used for the assigning IP.
@@ -40,8 +38,6 @@ Pod could specify spiderpool annotation for special request
                                              "ipv4": "172.16.0.100/16", "ipv6": "fd00::100/64", "vlan": 100 }
 
 ## Namespace Annotation
-
-***
 
 the namespace resource could set following annotation to specify default ippool, to override the default ippool of the cluster recorded in configmap "spiderpool-conf".
 

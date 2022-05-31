@@ -1,7 +1,5 @@
 # workflow for release
 
-***
-
 If a tag is pushed , the following steps will run:
 
 1. build the images with the pushed tag, and push to ghcr registry

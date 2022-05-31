@@ -1,7 +1,5 @@
 # changelog
 
-***
-
 how automatically generate the changelog
 
 1. all PR should be labeled with "pr/release/***" and could be merged

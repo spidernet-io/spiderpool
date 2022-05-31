@@ -5,6 +5,8 @@ env:
   E2E_TIME_OUT: 60m
   PERFORMANCESCRIPT: "./tools/scripts/e2eperformance.sh"
 
+permissions: write-all
+
 on:
   schedule:
     # each day
@@ -248,7 +250,7 @@ jobs:
         id: get_performance
         shell: bash
         run: |
-          apt-get install -y jq
+          sudo apt-get install -y jq
           TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
           TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
           echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV

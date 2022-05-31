@@ -1,7 +1,5 @@
 # e2e test
 
-***
-
 you could follow the below steps to test:
 
 1. check required developing tools on you local host. If something missing, please run 'test/scripts/install-tools.sh' to install them

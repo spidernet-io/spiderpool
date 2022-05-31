@@ -1,16 +1,10 @@
 # Submit Pull request
 
-***
-
 A pull request will be checked by following workflow, which is the required condition for merging
 
 ## action: PR should be signed off
 
-***
-
 ## action: check yaml files
-
-***
 
 If this check fails, it could refer to the [yaml rule](https://yamllint.readthedocs.io/en/stable/rules.html)
 
@@ -19,8 +13,6 @@ Once the issue is fixed , it could be verified on local host by command ` make l
 notice: for ignoring yaml rule, it could be add to .github/yamllint-conf.yml
 
 ## action: check golang source code
-
-***
 
 It checks the following against any updated golang file
 
@@ -34,13 +26,9 @@ It checks the following against any updated golang file
 
 ## action: check license
 
-***
-
 Any golang or shell file should be licensed correctly.
 
 ## action: check markdown file
-
-***
 
 * check markdown format, if fails, it could refer to the [Markdown Rule](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)
 
@@ -58,23 +46,15 @@ Any golang or shell file should be licensed correctly.
 
 ## action: lint yaml file
 
-***
-
 if it fails, the reason could refer to <https://yamllint.readthedocs.io/en/stable/rules.html>
 
 It could be tested on local machine with command `make lint-yaml`
 
 ## action: lint chart
 
-***
-
 ## action: lint openapi.yaml
 
-***
-
 ## action: check code spell
-
-***
 
 Any code spell error of golang files will be checked.
 

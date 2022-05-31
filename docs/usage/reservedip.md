@@ -1,7 +1,5 @@
 # Reserved IP
 
-***
-
 If any IP is not expected to be assigned to Pod, there is some solution
 
 * ReservedIP CRD.

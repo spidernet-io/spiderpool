@@ -1,10 +1,6 @@
 # Configuration
 
-***
-
 ## IPAM Plugin Configuration
-
-***
 
 the following is an example for IPAM configuration
 
@@ -54,8 +50,6 @@ the following is an example for IPAM configuration
 
 ## Configmap Configuration
 
-***
-
 The configmap "spiderpool-conf" is the global configuration of spiderpool.
 
 ```yaml
@@ -104,8 +98,6 @@ data:
 
 ## spiderpool controller environment
 
-***
-
 | environment                              | description            | value                                       |
 |------------------------------------------|------------------------|---------------------------------------------|
 | SPIDERPOOL_LOG_LEVEL                     | log level              | "INFO", "DEBUG", "ERROR", default to "INFO" |
@@ -120,8 +112,6 @@ data:
 | SPIDERPOOL_GC_EVICTED_POD_IP_DELAY       |                        |                                             |
 
 ## spiderpool agent environment
-
-***
 
 | environment                 | description            | value                                       |
 |-----------------------------|------------------------|---------------------------------------------|

@@ -1,7 +1,5 @@
 # IP Allocation
 
-***
-
 when a pod is creating, it observes following steps to assign ip:
 
 1. get all ippool candidates

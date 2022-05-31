@@ -1,10 +1,7 @@
 # architect
 
-***
-
 ## architecture
 
-***
 ![ architecture ](./images/arch.jpg )
 
 the spiderpool consists of following components:
@@ -22,8 +19,6 @@ the spiderpool consists of following components:
 * spiderpoolctl, CLI tool for debugging
 
 ## CRD
-
-***
 
 the spiderpool designs following CRD:
 

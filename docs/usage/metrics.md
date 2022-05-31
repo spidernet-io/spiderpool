@@ -1,12 +1,8 @@
 # Metric
 
-***
-
 the spiderpool provides reach metrics
 
 ## spiderpool controller
-
-***
 
 the metric of spiderpool controller is set by following pod environment
 
@@ -21,8 +17,6 @@ the spiderpool controller provides following metrics
 |-------------|-------------|
 
 ## spiderpool agent
-
-***
 
 the metric of spiderpool agent is set by following pod environment
 

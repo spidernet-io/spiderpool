@@ -3,6 +3,7 @@ name: Auto Nightly CI
 env:
   CLUSTER_NAME: spider
   E2E_TIME_OUT: 60m
+  PERFORMANCESCRIPT: "./tools/scripts/e2eperformance.sh"
 
 on:
   schedule:
@@ -240,3 +241,25 @@ jobs:
           else
               exit 1
           fi
+
+      - name: Get the E2E Performance Result
+        # run all e2e cases
+        if: ${{ needs.get_ref.outputs.e2e_labels == '' }} && ${{ steps.e2e.outputs.pass == 'true' }}
+        id: get_performance
+        shell: bash
+        run: |
+          apt-get install -y jq
+          TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
+          TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
+          echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
+
+      - name: Update Badge
+        if: ${{ steps.get_performance.outcome == 'success' }}
+        uses: schneegans/dynamic-badges-action@v1.4.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: 38d00a872e830eedb46870c886549561
+          filename: spiderpoolperformance.json
+          label: performance
+          message: ${{ env.PERFORMANCE }}
+          color: lightgrey

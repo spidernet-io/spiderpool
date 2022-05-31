@@ -4,6 +4,7 @@ package performance_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -143,20 +144,12 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			GinkgoWriter.Printf("time cost for reboot %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT2)
 			GinkgoWriter.Printf("time cost for delete %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT3)
 			// attaching Data to Reports
-			AddReportEntry("output the performance results",
-				timcostStruct{controllerType: controllerType, replicas: replicas, createTimeCost: time.Duration(endT1.Seconds()),
-					rebootTimeCost: time.Duration(endT2.Seconds()), deleteTimeCost: time.Duration(endT3.Seconds())})
+			AddReportEntry("Performance Results",
+				fmt.Sprintf(`{ "controllerType" : "%s", "replicas": %d, "createTime": %d , "rebuildTime": %d, "deleteTime": %d }`,
+					controllerType, replicas, int(endT1.Seconds()), int(endT2.Seconds()), int(endT3.Seconds())))
 		},
 		// TODO (tao.yang), N controller replicas in Ippool for N IP, Through this template complete gc performance closed-loop test together
 		Entry("time cost of create、reboot、delete 60 pods through deployment", Label("P00002"), common.DeploymentNameString, int32(60), time.Second*300),
 		Entry("time cost of create、reboot、delete 30 pods through statefulSet", Label("P00003"), common.StatefulsetNameString, int32(30), time.Second*1200),
 	)
 })
-
-type timcostStruct struct {
-	controllerType string
-	replicas       int32
-	createTimeCost time.Duration
-	rebootTimeCost time.Duration
-	deleteTimeCost time.Duration
-}

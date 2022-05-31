@@ -1030,13 +1030,11 @@
 
 
 <h1 id="swagger-openapi">SWAGGER OPENAPI</h1>
-<hr />
 <p>Spiderpool uses go-swagger to generate open api source codes. There are two swagger yaml for 'agent' and 'controller'. Please check
 with <a href="https://github.com/spidernet-io/spiderpool/blob/main/api/v1/agent/openapi.yaml">agent-swagger spec</a> and
 <a href="https://github.com/spidernet-io/spiderpool/blob/main/api/v1/controller/openapi.yaml">controller-swagger spec</a>.
 source codes.</p>
 <h2 id="features">Features</h2>
-<hr />
 <ul>
 <li>Validate spec</li>
 <li>Generate C/S codes</li>
@@ -1045,14 +1043,12 @@ source codes.</p>
 <li>Use swagger-ui to analyze the given specs.</li>
 </ul>
 <h2 id="usages">Usages</h2>
-<hr />
 <p>There are two ways for you to get access to the features.</p>
 <ul>
 <li>Use <code>makefile</code>, it's the simplest way.</li>
 <li>Use shell <code>swag.sh</code>. The format usage for 'swag.sh' is <code>swag.sh $ACTION $SPEC_DIR</code>.</li>
 </ul>
 <h3 id="validate-spec">validate spec</h3>
-<hr />
 <p>Validate the current spec just give the second parameter with the spec directory.</p>
 <pre><code class="language-shell">./tools/scripts/swag.sh validate ./api/v1/agent
 </code></pre>
@@ -1060,7 +1056,6 @@ source codes.</p>
 <pre><code class="language-shell">make openapi-validate-spec
 </code></pre>
 <h3 id="generate-source-codes-with-the-given-spec">generate source codes with the given spec</h3>
-<hr />
 <p>To generate agent source codes:</p>
 <pre><code class="language-shell">./tools/scripts/swag.sh generate ./api/v1/agent
 </code></pre>
@@ -1068,7 +1063,6 @@ source codes.</p>
 <pre><code class="language-shell">make openapi-code-gen
 </code></pre>
 <h3 id="verify-the-spec-with-current-source-codes-to-make-sure-whether-the-current-source-codes-is-out-of-date">verify the spec with current source codes to make sure whether the current source codes is out of date</h3>
-<hr />
 <p>To verify the given spec whether valid or not:</p>
 <pre><code class="language-shell">./tools/scripts/swag.sh verify ./api/v1/agent
 </code></pre>
@@ -1076,7 +1070,6 @@ source codes.</p>
 <pre><code class="language-shell">make openapi-verify
 </code></pre>
 <h3 id="clean-the-generated-source-codes">clean the generated source codes</h3>
-<hr />
 <p>To clean the generated agent codes:</p>
 <pre><code class="language-shell">./tools/scripts/swag.sh verify ./api/v1/agent
 </code></pre>
@@ -1084,13 +1077,11 @@ source codes.</p>
 <pre><code class="language-shell">make clean-openapi-code
 </code></pre>
 <h3 id="use-swagger-ui">Use swagger-ui</h3>
-<hr />
 <p>To analyze the defined specs in your local environment with docker:</p>
 <pre><code class="language-shell">make openapi-ui
 </code></pre>
 <p>Then you can visit the web with port 8080. Switch the yaml with './agent-swagger.yaml' and './controller-swagger.yaml' in the web.</p>
 <h2 id="steps-for-developers">Steps For Developers</h2>
-<hr />
 <ol>
 <li>Modify the specs: <a href="https://github.com/spidernet-io/spiderpool/blob/main/api/v1/agent/openapi.yaml">agent-swagger spec</a> and
    <a href="https://github.com/spidernet-io/spiderpool/blob/main/api/v1/controller/openapi.yaml">controller-swagger spec</a></li>

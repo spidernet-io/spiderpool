@@ -1032,17 +1032,13 @@
 
 
 <h1 id="submit-pull-request">Submit Pull request</h1>
-<hr />
 <p>A pull request will be checked by following workflow, which is the required condition for merging</p>
 <h2 id="action-pr-should-be-signed-off">action: PR should be signed off</h2>
-<hr />
 <h2 id="action-check-yaml-files">action: check yaml files</h2>
-<hr />
 <p>If this check fails, it could refer to the <a href="https://yamllint.readthedocs.io/en/stable/rules.html">yaml rule</a></p>
 <p>Once the issue is fixed , it could be verified on local host by command <code>make lint-yaml</code></p>
 <p>notice: for ignoring yaml rule, it could be add to .github/yamllint-conf.yml</p>
 <h2 id="action-check-golang-source-code">action: check golang source code</h2>
-<hr />
 <p>It checks the following against any updated golang file</p>
 <ul>
 <li>
@@ -1059,10 +1055,8 @@
 </li>
 </ul>
 <h2 id="action-check-license">action: check license</h2>
-<hr />
 <p>Any golang or shell file should be licensed correctly.</p>
 <h2 id="action-check-markdown-file">action: check markdown file</h2>
-<hr />
 <ul>
 <li>
 <p>check markdown format, if fails, it could refer to the <a href="https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md">Markdown Rule</a></p>
@@ -1077,15 +1071,11 @@
 </li>
 </ul>
 <h2 id="action-lint-yaml-file">action: lint yaml file</h2>
-<hr />
 <p>if it fails, the reason could refer to <a href="https://yamllint.readthedocs.io/en/stable/rules.html">https://yamllint.readthedocs.io/en/stable/rules.html</a></p>
 <p>It could be tested on local machine with command <code>make lint-yaml</code></p>
 <h2 id="action-lint-chart">action: lint chart</h2>
-<hr />
 <h2 id="action-lint-openapiyaml">action: lint openapi.yaml</h2>
-<hr />
 <h2 id="action-check-code-spell">action: check code spell</h2>
-<hr />
 <p>Any code spell error of golang files will be checked.</p>
 <p>It could be checked on local machine with command <code>make lint-code-spell</code>.</p>
 <p>It could be auto fixed on local machine with command <code>make fix-code-spell</code>.</p>

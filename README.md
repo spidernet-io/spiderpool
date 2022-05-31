@@ -1,7 +1,5 @@
 # spider pool
 
-* * *
-
 [![Go Report Card](https://goreportcard.com/badge/github.com/spidernet-io/spiderpool)](https://goreportcard.com/report/github.com/spidernet-io/spiderpool)
 [![CodeFactor](https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge)](https://www.codefactor.io/repository/github/spidernet-io/spiderpool)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=spidernet-io_spiderpool&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spidernet-io_spiderpool)
@@ -16,8 +14,6 @@
 
 ## Introduction
 
-* * *
-
 The Spiderpool is an IP Address Management (IPAM) CNI plugin that assigns IP addresses for kubernetes cluster.
 
 Currently, it is under developing stage, not ready for production environment.
@@ -29,8 +25,6 @@ The Spiderpool also support [multus CNI](https://github.com/k8snetworkplumbingwg
 The Spiderpool will be tested with more CNI for integration.
 
 ## Why Spiderpool
-
-* * *
 
 For most overlay CNI, like [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), they have good implement of IPAM, so, the Spiderpool is not intentionally designed to these cases, but maybe integrate with them.
 
@@ -45,8 +39,6 @@ BTW, there is also some CNI plugins who could work on underlay mode, such as [ku
 But the spiderpool provides lots of different features, you could refer Feature for detail
 
 ## Feature
-
-* * *
 
 * Based on CRD storage. All operation could be done with kubernetes API-server
 
@@ -83,19 +75,13 @@ But the spiderpool provides lots of different features, you could refer Feature 
 
 ## Components
 
-* * *
-
 refer to [architecture](docs/concepts/arch.md) for components
 
 ## Installation
 
-* * *
-
 refer to [installation](./docs/usage/install.md)
 
 ## Usage
-
-* * *
 
 for quick start, refer to [demo](./docs/usage/demo.md)
 
@@ -103,18 +89,12 @@ for complex case, refer to [ippool usage](./docs/usage/allocation.md)
 
 ## Development
 
-* * *
-
 [Development guide](docs/contributing/pullrequest.md) is a reference point for development helper commands
 
 ## Roadmap
 
-* * *
-
 refer to [roadmap](docs/concepts/roadmap.md)
 
 ## License
-
-* * *
 
 Spider pool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.

@@ -1,8 +1,8 @@
 # SWAGGER OPENAPI
 
 Spiderpool uses go-swagger to generate open api source codes. There are two swagger yaml for 'agent' and 'controller'. Please check
-with [agent-swagger spec](../../../api/v1/agent/openapi.yaml) and
-[controller-swagger spec](../../../api/v1/controller/openapi.yaml).
+with [agent-swagger spec](https://github.com/spidernet-io/spiderpool/blob/main/api/v1/agent/openapi.yaml) and
+[controller-swagger spec](https://github.com/spidernet-io/spiderpool/blob/main/api/v1/controller/openapi.yaml).
 source codes.
 
 ## Features
@@ -88,8 +88,8 @@ Then you can visit the web with port 8080. Switch the yaml with './agent-swagger
 
 ## Steps For Developers
 
-1. Modify the specs: [agent-swagger spec](../../../api/v1/agent/openapi.yaml) and
-   [controller-swagger spec](../../../api/v1/controller/openapi.yaml)
+1. Modify the specs: [agent-swagger spec](https://github.com/spidernet-io/spiderpool/blob/main/api/v1/agent/openapi.yaml) and
+   [controller-swagger spec](https://github.com/spidernet-io/spiderpool/blob/main/api/v1/controller/openapi.yaml)
 2. Validate the modified specs
 3. Use swagger-ui to check the effects in your local environment with docker
 4. Re-generate the source codes with the modified specs

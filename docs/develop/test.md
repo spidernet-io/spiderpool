@@ -1,6 +1,8 @@
 # e2e test
 
-1. check required tools, if miss something, you could run 'test/scripts/install-tools.sh' to install them
+you could follow the below steps to test:
+
+1. check required developing tools on you local host. If something missing, please run 'test/scripts/install-tools.sh' to install them
 
         # make dev-doctor
         go version go1.17 linux/amd64
@@ -15,17 +17,17 @@
 
         # make e2e
 
-    if your first run it, it will download some images, you could set the http proxy for it
+    if your run it for the first time, it will download some images, you could set the http proxy
 
         # ADDR=10.6.0.1
         # export https_proxy=http://${ADDR}:7890 http_proxy=http://${ADDR}:7890
         # make e2e
 
-    could run specified case
+    run a specified case
 
         # make e2e -e E2E_GINKGO_LABELS="lable1,label2"
 
-3. for developing e2e case, could do it step by step
+3. when developing e2e case, please follow the below steps
 
         $ make e2e_init
           .......
@@ -38,7 +40,7 @@
 
         $ make e2e_test
 
-        # after finish a e2e case , you could test repeated  for debugging flaky tests
+        # after finish e2e case , you could test repeated for debugging flaky tests
         # example: run a case repeated
         $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --repeat=10 "
 

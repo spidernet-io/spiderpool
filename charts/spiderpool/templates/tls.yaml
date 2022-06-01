@@ -15,7 +15,7 @@ spec:
   {{- range $dns := .Values.spiderpoolController.tls.server.extraDnsNames }}
   - {{ $dns | quote }}
   {{- end }}
-  {{- if .Values.spiderpoolController.tl.server.extraIpAddresses }}
+  {{- if .Values.spiderpoolController.tls.server.extraIpAddresses }}
   ipAddresses:
   {{- range $ip := .Values.spiderpoolController.tls.server.extraIpAddresses }}
   - {{ $ip | quote }}

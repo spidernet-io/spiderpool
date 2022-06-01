@@ -42,7 +42,7 @@ metadata:
 spec:
   selfSigned: {}
 EOF
-(($?=0)) && exit 0
+(( $? == 0 )) && exit 0
 done
 
 exit 1

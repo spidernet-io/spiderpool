@@ -16,7 +16,7 @@ CURRENT_FILENAME=$( basename $0 )
 CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
 
 # cert-manager-v1.8.0
-# this yaml is modified to be hostnetwork
+# this yaml is modified to be hostnetwork, and added lots tolerations, to make sure it starts before IPAM
 CERT_MANAGER_CHART_PATH=${CURRENT_DIR_PATH}/../yamls/cert-manager.yaml
 [ -f "$CERT_MANAGER_CHART_PATH" ] || { echo "error, find to find directory $CERT_MANAGER_CHART_PATH" ; exit 1 ; }
 

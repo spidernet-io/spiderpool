@@ -246,22 +246,22 @@ jobs:
 
       - name: Get the E2E Performance Result
         # run all e2e cases
-        if: ${{ needs.get_ref.outputs.e2e_labels == '' }} && ${{ steps.e2e.outputs.pass == 'true' }}
         id: get_performance
         shell: bash
         run: |
-          sudo apt-get install -y jq
+          # sudo apt-get install -y jq
           TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
           TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
-          echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
+          # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
+          echo ::set-output name=result::${TODO_STATUS}
 
       - name: Update Badge
-        if: ${{ steps.get_performance.outcome == 'success' }}
+        if: ${{ steps.get_performance.outputs.result != '' }}
         uses: schneegans/dynamic-badges-action@v1.4.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: 38d00a872e830eedb46870c886549561
           filename: spiderpoolperformance.json
           label: performance
-          message: ${{ env.PERFORMANCE }}
+          message: ${{ steps.get_performance.outputs.result }}
           color: lightgrey

@@ -23,6 +23,7 @@ spec:
   {{- end }}
   duration: {{ printf "%dh" (mul .Values.spiderpoolController.tls.certValidityDuration 24) }}
 {{- end }}
+
 {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
 apiVersion: v1
 kind: Secret
@@ -31,7 +32,26 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: kubernetes.io/tls
 data:
-  ca.crt:  {{ .Values.spiderpoolController.tls.ca.cert }}
+  ca.crt:  {{ .Values.ca.cert }}
   tls.crt: {{ .Values.spiderpoolController.tls.server.cert | required "missing spiderpoolController.tls.server.cert" }}
   tls.key: {{ .Values.spiderpoolController.tls.server.key  | required "missing spiderpoolController.tls.server.key"  }}
+{{- end }}
+
+{{- if (eq .Values.spiderpoolController.tls.method "helm") }}
+{{- $_ := include "helm.setup-ca" . -}}
+{{- $cn := "*.spidernet.io" }}
+{{- $ip := .Values.spiderpoolController.tls.server.extraIpAddresses }}
+{{- $dns := prepend .Values.spiderpoolController.tls.server.extraDnsNames $cn }}
+{{- $cert := genSignedCert $cn $ip $dns (Values.spiderpoolController.tls.certValidityDuration | int) .ca -}}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  namespace: {{ .Release.Namespace }}
+type: kubernetes.io/tls
+data:
+  ca.crt:  {{ .ca.Cert }}
+  tls.crt: {{ $cert.Cert }}
+  tls.key: {{ $cert.Key }}
 {{- end }}

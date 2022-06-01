@@ -29,16 +29,21 @@ kind-init: check_env prepare
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_SPIDER),true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
-	@if [ "$(USE_CERT_MANAGER_TLS)" == "true" ] ; then \
-			echo "tls cert is provided by cert manager" ; \
+	@if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
-        elif [ "$(USE_PROVIDED_TLS)" == "true" ] ; then \
-			echo "tls cert is provided by hand" ; \
+        elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			CA=` echo ASDFF3QWF |  base64   | tr -d '\n' ` ; \
 			CERT=` echo fqwsadfsaf |  base64   | tr -d '\n' ` ; \
 			KEY=` echo 23dsafasdf |  base64   | tr -d '\n' ` ; \
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=\"$${CA}\" --set spiderpoolController.tls.server.cert=\"$${CERT}\" --set spiderpoolController.tls.server.key=\"$${KEY}\" --set spiderpoolController.tls.method=provided" ; \
+        elif [ "$(USE_TLS_METHOD)" == "helm" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			CERT=` echo fqwsadfsaf |  base64   | tr -d '\n' ` ; \
+			KEY=` echo 23dsafasdf |  base64   | tr -d '\n' ` ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=\"$${CERT}\" --set spiderpoolController.tls.ca.key=\"$${KEY}\" --set spiderpoolController.tls.method=helm" ; \
         else  \
             echo "miss tls cert" ;  \
 			exit 1 ; \
@@ -97,7 +102,7 @@ prepare:
 	$(QUEIT) JUST_CLI_CHECK=true scripts/install-tools.sh
 	$(QUEIT) mkdir -p $(DOWNLOAD_DIR)
 	$(QUEIT) IMAGE_LIST="" ; \
-		 [ "$(USE_CERT_MANAGER_TLS)" == "true" ] && IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_CERT_MANAGER_NAME) " ; \
+		 [ "$(USE_TLS_METHOD)" == "certmanager" ] && IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_CERT_MANAGER_NAME) " ; \
 		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_MULTUS_NAME) " ; \
 		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_WHEREABOUTS_NAME) " ; \
 		 IMAGE_LIST+=" $${IMAGE_LIST} $(TEST_IMAGE_NAME) " ; \

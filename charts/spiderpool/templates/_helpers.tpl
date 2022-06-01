@@ -123,3 +123,11 @@ Return the appropriate apiVersion for RBAC resources.
 {{- print "rbac.authorization.k8s.io/v1" -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "helm.setup-ca" }}
+    {{- $ca := "" -}}
+    {{- $crt := .Values.ca.cert -}}
+    {{- $key := .Values.ca.key -}}
+    {{- $ca = buildCustomCert $crt $key -}}
+    {{- $_ := set . "ca" $ca -}}
+{{- end }}

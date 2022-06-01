@@ -27,14 +27,7 @@ kind-init: check_env prepare
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
 	@echo -e "\033[35m [Step 4] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
-ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
-	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
-	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
-			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
-	ip_family=$(E2E_IP_FAMILY) type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
-	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
-endif
-ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
+ifeq ($(INSTALL_SPIDER),true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
 	@if [ "$(USE_CERT_MANAGER_TLS)" == "true" ] ; then \
 			echo "tls cert is provided by cert manager" ; \
@@ -54,6 +47,12 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
 	@echo "waiting for daemonset/spiderpool-agent ready"
 	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
+else
+	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
+	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
+			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+	ip_family=$(E2E_IP_FAMILY) type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
+	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
@@ -123,7 +122,7 @@ e2e-test:
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
         if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
-        if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
+        if [ "$(INSTALL_SPIDER)" != "true" ] ; then \
           	export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
           	export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \
         else  \

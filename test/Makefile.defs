@@ -41,11 +41,13 @@ IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:latest-$(ARCH)
 IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-$(ARCH)
 TEST_IMAGE_NAME := alpine:latest
 
+USE_CERT_MANAGER_TLS := false
 CERT_MANAGER_VERSION := v1.8.0
 IMAGE_CERT_MANAGER_REPO := quay.io/jetstack
 IMAGE_CERT_MANAGER_NAME := $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-webhook:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-controller:$(CERT_MANAGER_VERSION)
-
 CERT_MANAGER_ISSUER_NAME := selfsigned
+
+USE_PROVIDED_TLS := true
 
 #============Tmp Path================
 # do not modify this ,it is also written on CI workflow file

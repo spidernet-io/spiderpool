@@ -388,9 +388,9 @@ spiderpoolController:
   # -- TLS configuration for webhook
   tls:
     # -- Set the method to auto-generate certificates. Supported values:
-    # - helm:         This method uses Helm to generate all certificates.
+    # - provided:     provide all certificates by helm options
     # - certmanager:  This method use cert-manager to generate & rotate certificates.
-    method: helm
+    method: provided
     # -- Generated certificates validity duration in days.
     certValidityDuration: 1095
 
@@ -406,7 +406,7 @@ spiderpoolController:
     # by manual.
     ca:
       cert: ""
-      key: ""
+      # key: ""
 
     # -- base64 encoded PEM values for the Hubble server certificate and private key
     server:

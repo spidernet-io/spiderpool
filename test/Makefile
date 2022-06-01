@@ -36,8 +36,17 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
 endif
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
-	$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)"
-	$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager"
+	@if [ "$(USE_CERT_MANAGER_TLS)" == "true" ] ; then \
+			echo "tls cert is provided by cert manager" ; \
+			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
+        elif [ "$(USE_PROVIDED_TLS)" == "true" ] ; then \
+			echo "tls cert is provided by hand" ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=12345 --set spiderpoolController.tls.server.cert=56789 --set spiderpoolController.tls.server.key=87654 --set spiderpoolController.tls.method=provided" ; \
+        else  \
+            echo "miss tls cert" ;  \
+			exit 1 ; \
+        fi
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(QUIET) bash scripts/install-macvlan.sh \
 		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
@@ -85,13 +94,13 @@ prepare:
 	@echo -e "\033[35m [Step 2] Check The Tools For Ready: \033[0m"
 	$(QUEIT) JUST_CLI_CHECK=true scripts/install-tools.sh
 	$(QUEIT) mkdir -p $(DOWNLOAD_DIR)
-	$(QUEIT) ARCH=$(ARCH) \
-			 IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
-			 IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
-			 IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" \
-			 TEST_IMAGE=$(TEST_IMAGE_NAME) \
-			 CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \
-			 scripts/prepare.sh $(DOWNLOAD_DIR)
+	$(QUEIT) IMAGE_LIST="" ; \
+		 [ "$(USE_CERT_MANAGER_TLS)" == "true" ] && IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_CERT_MANAGER_NAME) " ; \
+		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_MULTUS_NAME) " ; \
+		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_WHEREABOUTS_NAME) " ; \
+		 IMAGE_LIST+=" $${IMAGE_LIST} $(TEST_IMAGE_NAME) " ; \
+		 ARCH=$(ARCH) IMAGE_LIST="$${IMAGE_LIST}" \
+		 	CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION)  scripts/prepare.sh $(DOWNLOAD_DIR)
 
 #============ e2e ====================
 .PHONY: e2e-test

@@ -5287,10 +5287,8 @@ spec:
         - key: CriticalAddonsOnly
           operator: Exists
         - effect: NoSchedule
-          key: node-role.kubernetes.io/master
-        - key: node.kubernetes.io/not-ready
           operator: Exists
-        - key: node.kubernetes.io/unreachable
+        - effect: NoExecute
           operator: Exists
       containers:
         - name: cert-manager

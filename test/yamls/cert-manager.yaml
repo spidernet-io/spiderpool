@@ -5288,14 +5288,10 @@ spec:
           operator: Exists
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
-        - effect: NoExecute
-          key: node.kubernetes.io/not-ready
+        - key: node.kubernetes.io/not-ready
           operator: Exists
-          tolerationSeconds: 300
-        - effect: NoExecute
-          key: node.kubernetes.io/unreachable
+        - key: node.kubernetes.io/unreachable
           operator: Exists
-          tolerationSeconds: 300
       containers:
         - name: cert-manager
           image: "quay.io/jetstack/cert-manager-cainjector:v1.8.0"

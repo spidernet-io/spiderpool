@@ -29,7 +29,7 @@ for IMAGE in $IMAGE_CERT_MANAGER ; do
     kind load docker-image $IMAGE --name ${E2E_CLUSTER_NAME}
 done
 
-kubectl apply -f ${CERT_MANAGER_CHART_PATH}
+kubectl apply -f ${CERT_MANAGER_CHART_PATH} || true
 
 NAMESPACE=kube-system
 cat <<EOF | kubectl apply -f -

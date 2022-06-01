@@ -2,9 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Authors of Spider-net
 
-set -o errexit
-set -o nounset
-set -o pipefail
+
 
 E2E_CLUSTER_NAME="$1"
 [ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
@@ -29,7 +27,7 @@ for IMAGE in $IMAGE_CERT_MANAGER ; do
     kind load docker-image $IMAGE --name ${E2E_CLUSTER_NAME}
 done
 
-kubectl apply -f ${CERT_MANAGER_CHART_PATH} || true
+kubectl apply -f ${CERT_MANAGER_CHART_PATH}
 
 NAMESPACE=kube-system
 cat <<EOF | kubectl apply -f -

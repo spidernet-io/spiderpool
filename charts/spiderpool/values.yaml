@@ -401,7 +401,7 @@ spiderpoolController:
     #   name: ca-issuer
     # -- certmanager issuer used when spiderpoolController.tls.auto.method=certmanager.
     # If not specified, a CA issuer will be created.
-    certManagerIssuerRef: {}
+    certManagerIssuerName: ""
 
     # by manual.
     ca:
@@ -416,4 +416,3 @@ spiderpoolController:
       extraDnsNames: []
       # -- Extra IP addresses added to certificate when it's auto generated
       extraIpAddresses: []
-

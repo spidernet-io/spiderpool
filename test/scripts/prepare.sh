@@ -54,7 +54,7 @@ for image in $IMAGES ; do
     if docker images | grep -E "^${PREFIX_IMAGE}[[:space:]]+${SUFFIX_IMAGE} " &>/dev/null ; then
       echo "Image: $image already exist locally "
     else
-      echo "Image: $image not exist locally, Will pull..."
+      echo "Image: pulling $image"
       docker pull $image
     fi
 done

@@ -36,7 +36,7 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
 endif
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
-	$(QUIET) IMAGE_CERT_MANAGER="$IMAGE_CERT_MANAGER_NAME" bash scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)"
+	$(QUIET) IMAGE_CERT_MANAGER="$IMAGE_CERT_MANAGER_NAME" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)"
 	$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerRef=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager"
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(QUIET) bash scripts/install-macvlan.sh \

@@ -384,3 +384,36 @@ spiderpoolController:
     gcEvictedPodIpEnabled: true
     # delay to gc pod ip after pod graceful time, second
     gcEvictedPodIpDelay: 0
+
+  # -- TLS configuration for webhook
+  tls:
+    # -- Set the method to auto-generate certificates. Supported values:
+    # - helm:         This method uses Helm to generate all certificates.
+    # - certmanager:  This method use cert-manager to generate & rotate certificates.
+    method: helm
+    # -- Generated certificates validity duration in days.
+    certValidityDuration: 1095
+
+    # [Example]
+    # certManagerIssuerRef:
+    #   group: cert-manager.io
+    #   kind: ClusterIssuer
+    #   name: ca-issuer
+    # -- certmanager issuer used when spiderpoolController.tls.auto.method=certmanager.
+    # If not specified, a CA issuer will be created.
+    certManagerIssuerRef: {}
+
+    # by manual.
+    ca:
+      cert: ""
+      key: ""
+
+    # -- base64 encoded PEM values for the Hubble server certificate and private key
+    server:
+      cert: ""
+      key: ""
+      # -- Extra DNS names added to certificate when it's auto generated
+      extraDnsNames: []
+      # -- Extra IP addresses added to certificate when it's auto generated
+      extraIpAddresses: []
+

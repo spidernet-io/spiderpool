@@ -181,6 +181,9 @@ spec:
         - name: config-path
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
+        - name: tls
+          mountPath: /etc/tls
+          readOnly: true
         {{- if .Values.spiderpoolController.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
@@ -189,6 +192,17 @@ spec:
       - name: config-path
         configMap:
           name: {{ .Values.configmap.configCmName }}
+      - name: tls
+        projected:
+          defaultMode: 0400
+          sources:
+          - secret:
+              name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+              items:
+                - key: tls.crt
+                  path: server.crt
+                - key: tls.key
+                  path: server.key
       {{- if .Values.spiderpoolController.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

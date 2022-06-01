@@ -1,0 +1,25 @@
+{{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  namespace: {{ .Release.Namespace }}
+spec:
+  issuerRef:
+    {{- toYaml .Values.spiderpoolController.tls.certManagerIssuerRef }}
+  secretName: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  commonName: "*.spiderpool.io"
+  dnsNames:
+    - "*.spiderpool.io"
+  {{- range $dns := .Values.spiderpoolController.tls.server.extraDnsNames }}
+  - {{ $dns | quote }}
+  {{- end }}
+  {{- if .Values.spiderpoolController.tl.server.extraIpAddresses }}
+  ipAddresses:
+  {{- range $ip := .Values.spiderpoolController.tls.server.extraIpAddresses }}
+  - {{ $ip | quote }}
+  {{- end }}
+  {{- end }}
+  duration: {{ printf "%dh" (mul .Values.spiderpoolController.tls.certValidityDuration 24) }}
+{{- end }}

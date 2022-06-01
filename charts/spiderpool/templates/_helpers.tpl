@@ -126,8 +126,8 @@ Return the appropriate apiVersion for RBAC resources.
 
 {{- define "helm.setup-ca" }}
     {{- $ca := "" -}}
-    {{- $crt := ( .Values.ca.cert | b64dec ) -}}
-    {{- $key := ( .Values.ca.key | b64dec ) -}}
+    {{- $crt := .Values.ca.cert -}}
+    {{- $key := .Values.ca.key -}}
     {{- $ca = buildCustomCert $crt $key -}}
     {{- $_ := set . "ca" $ca -}}
 {{- end }}

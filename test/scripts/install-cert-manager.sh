@@ -31,7 +31,7 @@ kubectl apply -f ${CERT_MANAGER_CHART_PATH}
 
 # must be ready and apply Issuer
 NAMESPACE=kube-system
-for ((N=0;N<3;N++)) ; do
+for (( CNT=0 ; CNT<3 ; CNT++ )) ; do
 sleep 10
 cat <<EOF | kubectl apply -f -
 apiVersion: cert-manager.io/v1

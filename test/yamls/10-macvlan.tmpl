@@ -9,43 +9,23 @@
       "ipam": {
            {%- if type == "whereabouts" %}
                 {%- if ip_family == "ipv4" %}
-                   "range": "172.20.0.0/16",
-                   "exclude": [ "172.20.0.1/32" ],
-                   "gateway": "172.20.0.1",
+                   "range": "172.19.0.0/16",
+                   "exclude": [ "172.19.0.1/32", "172.19.0.2/32", "172.19.0.3/32" ],
+                   "gateway": "172.19.0.1",
                    "routes": [ { "dst": "0.0.0.0/0" }],
                {%- elif ip_family == "ipv6" %}
-                    "range": "fd01::/48",
-                    "exclude": [ "fd01::1/128" ],
-                    "gateway": "fd01::1",
+                    "range": "fc00:f853::/64",
+                    "exclude": [ "fc00:f853::1/128" ],
+                    "gateway": "fc00:f853::1",
                     "routes": [{ "dst": "0.0.0.0/0" }],
                {%- else %}
-                   "range": "172.20.0.0/16",
-                   "exclude": [ "172.20.0.1/32" ],
-                   "gateway": "172.20.0.1",
+                   "range": "172.19.1.10-172.19.1.254/16",
+                   "exclude": [ "172.19.1.1/32" ],
+                   "gateway": "172.19.0.1",
                    "addresses": [
                       {
-                        "address": "172.19.0.100/16",
-                        "gateway": "172.19.0.1"
-                      },
-                      {
-                        "address": "172.19.0.101/16",
-                        "gateway": "172.19.0.1"
-                      },
-                      {
-                        "address": "172.19.0.102/16",
-                        "gateway": "172.19.0.1"
-                      },
-                      {
-                        "address": "fd01::100/48",
-                        "gateway": "fd01::1"
-                      },
-                      {
-                        "address": "fd01::101/48",
-                        "gateway": "fd01::1"
-                      },
-                      {
-                        "address": "fd01::102/48",
-                        "gateway": "fd01::1"
+                        "address": "fc00:f853::100/64",
+                        "gateway": "fc00:f853::1"
                       }],
                    "routes": [ { "dst": "0.0.0.0/0" }],
                {%- endif %}

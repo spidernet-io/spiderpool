@@ -45,6 +45,8 @@ CERT_MANAGER_VERSION := v1.8.0
 IMAGE_CERT_MANAGER_REPO := quay.io/jetstack
 IMAGE_CERT_MANAGER_NAME := $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-webhook:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-controller:$(CERT_MANAGER_VERSION)
 
+CERT_MANAGER_ISSUER_NAME := selfsigned
+
 #============Tmp Path================
 # do not modify this ,it is also written on CI workflow file
 DOWNLOAD_DIR := $(ROOT_DIR)/test/.download

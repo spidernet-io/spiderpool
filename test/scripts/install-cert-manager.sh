@@ -9,11 +9,15 @@ set -o pipefail
 E2E_CLUSTER_NAME="$1"
 [ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
 
+ISSUER_NAME="$2"
+[ -z "$ISSUER_NAME" ] && echo "error, miss ISSUER_NAME " && exit 1
+
 CURRENT_FILENAME=$( basename $0 )
 CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
 
 # cert-manager-v1.8.0
-CERT_MANAGER_CHART_PATH=$( cd ${CURRENT_DIR_PATH}/../yamls/cert-manager && pwd )
+# this yaml is modified to be hostnetwork
+CERT_MANAGER_CHART_PATH=${CURRENT_DIR_PATH}/../yamls/cert-manager.yaml
 [ -d "$CERT_MANAGER_CHART_PATH" ] || { echo "error, find to find directory $CERT_MANAGER_CHART_PATH" ; exit 1 ; }
 
 
@@ -25,4 +29,15 @@ for IMAGE in $IMAGE_CERT_MANAGER ; do
     kind load docker-image $IMAGE --name ${E2E_CLUSTER_NAME}
 done
 
-helm install cert-manager ${CERT_MANAGER_CHART_PATH} --namespace kube-system --set installCRDs=true
+kubectl apply -f ${CERT_MANAGER_CHART_PATH}
+
+NAMESPACE=kube-system
+cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ${ISSUER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  selfSigned: {}
+EOF

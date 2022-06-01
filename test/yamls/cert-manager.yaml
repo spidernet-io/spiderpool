@@ -5283,6 +5283,19 @@ spec:
       securityContext:
         runAsNonRoot: true
       hostNetwork: true
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
       containers:
         - name: cert-manager
           image: "quay.io/jetstack/cert-manager-cainjector:v1.8.0"
@@ -5340,6 +5353,19 @@ spec:
       securityContext:
         runAsNonRoot: true
       hostNetwork: true
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
       containers:
         - name: cert-manager
           image: "quay.io/jetstack/cert-manager-controller:v1.8.0"
@@ -5398,6 +5424,19 @@ spec:
       securityContext:
         runAsNonRoot: true
       hostNetwork: true
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
       containers:
         - name: cert-manager
           image: "quay.io/jetstack/cert-manager-webhook:v1.8.0"

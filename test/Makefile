@@ -36,6 +36,7 @@ ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
 endif
 ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
+	$(QUIET) IMAGE_CERT_MANAGER="$IMAGE_CERT_MANAGER" bash scripts/install-cert-manager.sh
 	$(MAKE) -C $(ROOT_DIR) install
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(QUIET) bash scripts/install-macvlan.sh \
@@ -87,10 +88,10 @@ prepare:
 	$(QUEIT) ARCH=$(ARCH) \
 			 IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
 			 IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
+			 IMAGE_CERT_MANAGER=$(IMAGE_CERT_MANAGER_NAME) \
 			 TEST_IMAGE=$(TEST_IMAGE_NAME) \
 			 CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \
 			 scripts/prepare.sh $(DOWNLOAD_DIR)
-
 
 #============ e2e ====================
 .PHONY: e2e-test

@@ -22,6 +22,8 @@ echo "Using IMAGE_WHEREABOUTS: $IMAGE_WHEREABOUTS"
 [ -z "$TEST_IMAGE" ] && echo "error, miss TEST_IMAGE " && exit 1
 echo "Using TEST_IMAGE: $TEST_IMAGE"
 
+[ -z "$IMAGE_CERT_MANAGER" ] && echo "error, miss IMAGE_CERT_MANAGER " && exit 1
+echo "Using IMAGE_CERT_MANAGER: $IMAGE_CERT_MANAGER"
 
 
 #=================================
@@ -43,6 +45,7 @@ fi
 IMAGES="
 $IMAGE_MULTUS \
 $IMAGE_WHEREABOUTS \
+$IMAGE_CERT_MANAGER \
 $TEST_IMAGE"
 
 for image in $IMAGES ; do

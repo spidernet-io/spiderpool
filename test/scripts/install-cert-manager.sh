@@ -18,7 +18,7 @@ CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
 # cert-manager-v1.8.0
 # this yaml is modified to be hostnetwork
 CERT_MANAGER_CHART_PATH=${CURRENT_DIR_PATH}/../yamls/cert-manager.yaml
-[ -d "$CERT_MANAGER_CHART_PATH" ] || { echo "error, find to find directory $CERT_MANAGER_CHART_PATH" ; exit 1 ; }
+[ -f "$CERT_MANAGER_CHART_PATH" ] || { echo "error, find to find directory $CERT_MANAGER_CHART_PATH" ; exit 1 ; }
 
 
 [ -z "$IMAGE_CERT_MANAGER" ] && echo "error, miss IMAGE_CERT_MANAGER" && exit 1

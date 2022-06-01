@@ -29,7 +29,10 @@ done
 
 kubectl apply -f ${CERT_MANAGER_CHART_PATH}
 
+# must be ready and apply Issuer
 NAMESPACE=kube-system
+for ((N=0;N<3;N++)) ; do
+sleep 10
 cat <<EOF | kubectl apply -f -
 apiVersion: cert-manager.io/v1
 kind: Issuer
@@ -39,3 +42,7 @@ metadata:
 spec:
   selfSigned: {}
 EOF
+(($?=0)) && exit 0
+done
+
+exit 1

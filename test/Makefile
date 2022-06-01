@@ -38,7 +38,7 @@ ifeq ($(INSTALL_SPIDER),true)
 			CA=` echo ASDFF3QWF |  base64   | tr -d '\n' ` ; \
 			CERT=` echo fqwsadfsaf |  base64   | tr -d '\n' ` ; \
 			KEY=` echo 23dsafasdf |  base64   | tr -d '\n' ` ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=$$(CA) --set spiderpoolController.tls.server.cert=$${CERT} --set spiderpoolController.tls.server.key=$${KEY} --set spiderpoolController.tls.method=provided" ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=\"$${CA}\" --set spiderpoolController.tls.server.cert=\"$${CERT}\" --set spiderpoolController.tls.server.key=\"$${KEY}\" --set spiderpoolController.tls.method=provided" ; \
         else  \
             echo "miss tls cert" ;  \
 			exit 1 ; \

@@ -35,7 +35,10 @@ ifeq ($(INSTALL_SPIDER),true)
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
         elif [ "$(USE_PROVIDED_TLS)" == "true" ] ; then \
 			echo "tls cert is provided by hand" ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=12345 --set spiderpoolController.tls.server.cert=56789 --set spiderpoolController.tls.server.key=87654 --set spiderpoolController.tls.method=provided" ; \
+			CA=` echo ASDFF3QWF |  base64   | tr -d '\n' ` ; \
+			CERT=` echo fqwsadfsaf |  base64   | tr -d '\n' ` ; \
+			KEY=` echo 23dsafasdf |  base64   | tr -d '\n' ` ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.ca.cert=$$(CA) --set spiderpoolController.tls.server.cert=$${CERT} --set spiderpoolController.tls.server.key=$${KEY} --set spiderpoolController.tls.method=provided" ; \
         else  \
             echo "miss tls cert" ;  \
 			exit 1 ; \

@@ -52,6 +52,6 @@ metadata:
 type: kubernetes.io/tls
 data:
   ca.crt:  {{ .Values.ca.Cert }}
-  tls.crt: {{ $cert.Cert }}
-  tls.key: {{ $cert.Key }}
+  tls.crt: {{ $cert.Cert | b64enc }}
+  tls.key: {{ $cert.Key | b64enc }}
 {{- end }}

@@ -1,12 +1,12 @@
-# e2e case for gc ip
+# e2e case for reclaim ip
 
-| case id   | title                                | priority | smoke |status | other |
-|---------|---------------------------------------|------------|----------|--------|-------|
-| G00001  | the garbage collection (gc) of the ip will be triggered after the namespace is deleted |p2||done||
-| G00002  | set two pods with the same name in different namespace. one is immune to the fact that another is deleted  |p1 | | NA |  |
-| G00003  | delete CNI/bin and then pod, ip will be in gc   |  p1   | |NA   |  |
-| G00004  | the grace period=0 in deleting pod forces gc  |  p2 |  | NA   |  |
-| G00005  | status/ip dirty data will be removed after a period of time|p2|   | NA   |  |
-| G00006  | two different state of jobs: failed or succeed leads to the ip gc|  p2  | | NA   |  |
-| G00007  | delete and reboot the spiderpool component in multi times. After the spiderpool recover, ip gc will be triggered|  p2 |  | NA   |  |
-| G00008  | if the dirty data is occupied by pod, and the container id of the pod is invalid, ip gc will be triggered| p2| |NA |  |
+| case id | title                                                                                                           | priority  | smoke | status | other |
+|---------|-----------------------------------------------------------------------------------------------------------------|-----------|-------|--------|-------|
+| G00001  | related IP resource recorded in ippool will be reclaimed after the namespace is deleted                         | p2        |       | done   |       |
+| G00002  | the IP of a running pod should not be reclaimed after a same-name pod within a different namespace is deleted   | p1        |       | NA     |       |
+| G00003  | the IP should be reclaimed after its pod is deleted , even when CNI binary is gone on the host                  | p1        |       | NA     |       |
+| G00004  | the IP should be reclaimed when deleting the pod with 0 second of grace period                                  | p2        |       | NA     |       |
+| G00005  | a dirty IP record (pod name is wrong) in the ippool should be auto clean by spiderpool                           | p2        |       | NA     |       |
+| G00006  | the IP should be reclaimed for the job pod finished with success or failure status                              | p2        |       | NA     |       |
+| G00007  | a dirty IP record (pod name is right but container ID is wrong) in the ippool should be auto clean by spiderpool | p2        |       | NA     |       |
+| G00008  | the spiderpool component recovery from repeated reboot, and could correctly reclaim IP                          | p2        |       | NA     |       |

@@ -1,10 +1,10 @@
 # e2e case for reliability
 
-| case id  | title                             |priority |smoke| status | other |
-|---------|-----------------------------------------|----------|----------|--------|-------|
-| R00001  | create a pod while deleting and rebooting the spiderpool controller manager service.  After the service returns to be stable, pod will run in normal |p3   |    | NA     |       |
-| R00002  | create a pod while deleting and rebooting the ETCD. After the ETCD returns to be stable, pod will run in normal |p3||done||
-| R00003  | create a pod while deleting and rebooting the api-server.  After the api-server returns to be stable, pod will run in normal|p3||done||
-| R00004  | create a pod while deleting and rebooting the spiderpool agent.  After the spiderpool agent returns to be stable, pod will run in normal|p4||NA||
-| R00005  | create a pod while deleting and rebooting the COREDNS.  After the COREDNS returns to be stable, pod will run in normal|p4||NA||
-| R00006  | power off one node for more than five minutes and check if pod could run in another node|p2||NA||
+| case id  | title                                                                       | priority | smoke | status | other |
+|---------|-----------------------------------------------------------------------------|----------|-------|--------|-------|
+| R00001  | finally succeed to run a pod during the spiderpool controller is restarting | p3       |       | NA     |       |
+| R00002  | finally succeed to run a pod during the ETCD is restarting                  | p3       |       | done   |       |
+| R00003  | finally succeed to run a pod during the API-server is restarting            | p3       |       | done   |       |
+| R00004  | finally succeed to run a pod during the spiderpool agent is restarting      | p4       |       | NA     |       |
+| R00005  | finally succeed to run a pod during the coreDns is restarting               | p4       |       | NA     |       |
+| R00006  | finally succeed to recovery a pod whose original node is power-off          | p2       |       | NA     |       |

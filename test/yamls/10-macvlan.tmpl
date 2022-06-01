@@ -9,18 +9,16 @@
       "ipam": {
            {%- if type == "whereabouts" %}
                 {%- if ip_family == "ipv4" %}
-                   "range": "172.19.0.0/16",
-                   "exclude": [ "172.19.0.1/32", "172.19.0.2/32", "172.19.0.3/32" ],
+                   "range": "172.19.1.10-172.19.1.254/16",
                    "gateway": "172.19.0.1",
                    "routes": [ { "dst": "0.0.0.0/0" }],
                {%- elif ip_family == "ipv6" %}
-                    "range": "fc00:f853::/64",
-                    "exclude": [ "fc00:f853::1/128" ],
-                    "gateway": "fc00:f853::1",
+                    "range": "fc00::/64",
+                    "exclude": [ "fc00::1/128" ],
+                    "gateway": "fc00::1",
                     "routes": [{ "dst": "0.0.0.0/0" }],
                {%- else %}
                    "range": "172.19.1.10-172.19.1.254/16",
-                   "exclude": [ "172.19.1.1/32" ],
                    "gateway": "172.19.0.1",
                    "addresses": [
                       {

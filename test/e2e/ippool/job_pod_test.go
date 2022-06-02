@@ -66,8 +66,8 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 
 		for i := 0; i < len(podlist.Items); i++ {
 			GinkgoWriter.Printf("pod %v/%v ips: %+v \n", nsName, podlist.Items[i].Name, podlist.Items[i].Status.PodIPs)
-			//Expect(podlist.Items[i].Status.PodIPs).NotTo(BeEmpty(), "pod %v failed to assign ip", podlist.Items[i].Name)
-			Expect(podlist.Items[i].Status.PodIPs).NotTo(BeNil(), "pod %v failed to assign ip", podlist.Items[i].Name)
+			err = frame.CheckPodListIpReady(podlist)
+			Expect(err).NotTo(HaveOccurred(), "failed to checkout ipv4、ipv6")
 
 			if frame.Info.IpV4Enabled == true {
 				Expect(tools.CheckPodIpv4IPReady(&podlist.Items[i])).To(BeTrue(), "pod %v failed to get ipv4 ip", podlist.Items[i].Name)

@@ -35,13 +35,15 @@ ifeq ($(INSTALL_SPIDER),true)
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
         elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			CA=` cat scripts/exampleProvidedTls/ca.crt  | tr -d '\n' ` ; \
 			SERVER_CERT=` cat scripts/exampleProvidedTls/server.crt  | tr -d '\n' ` ; \
 			SERVER_KEY=` cat scripts/exampleProvidedTls/server.key  | tr -d '\n' ` ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set ca.cert=\"$${CA}\" --set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.method=provided" ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.method=provided" ; \
         else  \
-            echo "miss tls cert" ;  \
-			exit 1 ; \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			kubectl create secret tls spiderpool-controller-server-certs -n kube-system \
+					--from-file=key.pem=scripts/exampleProvidedTls/server.key \
+					--from-file=cert.pem=scripts/exampleProvidedTls/server.crt ; \
+			$(MAKE) -C $(ROOT_DIR) install  ; \
         fi
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(QUIET) bash scripts/install-macvlan.sh \

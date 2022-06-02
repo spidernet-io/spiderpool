@@ -87,7 +87,6 @@ spec:
         - --config-dir=/tmp/spiderpool/config-map
         - --tls-server-cert=/etc/tls/server.crt
         - --tls-server-key=/etc/tls/server.key
-        - --tls-ca-cert=/etc/tls/ca.crt
         {{- with .Values.spiderpoolController.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
@@ -200,14 +199,12 @@ spec:
           defaultMode: 0400
           sources:
           - secret:
-              name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+              name: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
               items:
                 - key: tls.crt
                   path: server.crt
                 - key: tls.key
                   path: server.key
-                - key: ca.crt
-                  path: ca.crt
       {{- if .Values.spiderpoolController.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

@@ -8,7 +8,7 @@ metadata:
 spec:
   issuerRef:
     name: {{ .Values.spiderpoolController.tls.certManagerIssuerName | trunc 63 | trimSuffix "-" }}
-  secretName: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  secretName: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
   commonName: "*.spidernet.io"
   dnsNames:
     - "*.spidernet.io"
@@ -28,7 +28,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  name: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
 type: kubernetes.io/tls
 data:

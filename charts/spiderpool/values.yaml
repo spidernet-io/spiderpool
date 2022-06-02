@@ -393,7 +393,6 @@ spiderpoolController:
   # -- TLS configuration for webhook
   tls:
     # -- Set the method to auto-generate certificates. Supported values:
-    # - helm:         This method uses Helm to generate all certificates.
     # - provided:     provide all certificates by helm options
     # - certmanager:  This method use cert-manager to generate & rotate certificates.
     method: provided

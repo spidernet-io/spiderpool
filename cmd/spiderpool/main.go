@@ -13,7 +13,11 @@ import (
 var version string
 
 func main() {
-	skel.PluginMain(cmd.CmdAdd, nil, cmd.CmdDel,
-		cniSpecVersion.PluginSupports(cmd.SupportCNIVersion),
+	skel.PluginMain(cmd.CmdAdd, cmdCheck, cmd.CmdDel,
+		cniSpecVersion.PluginSupports(cmd.SupportCNIVersions...),
 		"Spiderpool IPAM "+version)
+}
+
+func cmdCheck(args *skel.CmdArgs) error {
+	return nil
 }

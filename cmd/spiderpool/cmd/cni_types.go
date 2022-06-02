@@ -12,7 +12,15 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
-const SupportCNIVersion = "0.3.1"
+const (
+	CniVersion030 = "0.3.0"
+	CniVersion031 = "0.3.1"
+	CniVersion040 = "0.4.0"
+)
+
+// SupportCNIVersions indicate the CNI version that spiderpool support.
+var SupportCNIVersions = []string{CniVersion030, CniVersion031, CniVersion040}
+
 const DefaultLogLevelStr = constant.LogInfoLevelStr
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
@@ -54,10 +62,6 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 		return nil, fmt.Errorf("Unable to parse CNI configuration \"%s\": %s", argsStdin, err)
 	}
 
-	if netConf.CNIVersion != SupportCNIVersion {
-		return nil, fmt.Errorf("Error: Mismatch the given CNI Version: %s, spiderpool supports CNI version %s", netConf.CNIVersion, SupportCNIVersion)
-	}
-
 	if netConf.IPAM.LogLevel == "" {
 		netConf.IPAM.LogLevel = DefaultLogLevelStr
 	}
@@ -66,5 +70,11 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 		netConf.IPAM.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
 	}
 
-	return netConf, nil
+	for _, vers := range SupportCNIVersions {
+		if netConf.CNIVersion == vers {
+			return netConf, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Error: Mismatch the given CNI Version: %s, spiderpool supports CNI version %#v", netConf.CNIVersion, SupportCNIVersions)
 }

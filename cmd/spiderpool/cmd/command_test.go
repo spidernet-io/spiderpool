@@ -63,7 +63,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			IfName:      ifname,
 		}
 
-		cniVersion = cmd.SupportCNIVersion
+		cniVersion = cmd.CniVersion031
 
 		netConf = cmd.NetConf{
 			CNIVersion: cniVersion,

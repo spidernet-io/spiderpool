@@ -30,7 +30,10 @@ var EnvInfo = []envConf{
 
 type ControllerContext struct {
 	// flags
-	ConfigDir string
+	ConfigDir         string
+	TlsServerCertPath string
+	TlsServerKeyPath  string
+	TlsCaPath         string
 
 	// env
 	LogLevel                   string
@@ -56,6 +59,9 @@ type ControllerContext struct {
 // BindControllerDaemonFlags bind controller cli daemon flags
 func (cc *ControllerContext) BindControllerDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&cc.ConfigDir, "config-dir", "/tmp/spiderpool/configmap", "config file")
+	flags.StringVar(&cc.TlsServerCertPath, "tls-server-cert", "", "file path of server cert")
+	flags.StringVar(&cc.TlsServerKeyPath, "tls-server-key", "", "file path of server key")
+	flags.StringVar(&cc.TlsCaPath, "tls-ca-cert", "", "file path of CA cert")
 }
 
 // RegisterEnv set the env to GlobalConfiguration
@@ -72,4 +78,10 @@ func (cc *ControllerContext) RegisterEnv() {
 			*(EnvInfo[i].associateKey) = EnvInfo[i].defaultValue
 		}
 	}
+}
+
+// verify after retrieve all config
+func (cc *ControllerContext) Verify() {
+	// TODO(Icarus9913)
+	// verify existence and availability for TlsServerCertPath , TlsServerKeyPath , TlsCaPath
 }

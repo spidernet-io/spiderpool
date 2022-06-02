@@ -40,9 +40,9 @@ ifeq ($(INSTALL_SPIDER),true)
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.method=provided" ; \
         else  \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			kubectl create secret tls spiderpool-controller-server-certs -n kube-system \
-					--from-file=key.pem=scripts/exampleProvidedTls/server.key \
-					--from-file=cert.pem=scripts/exampleProvidedTls/server.crt ; \
+			kubectl create secret generic spiderpool-controller-server-certs -n kube-system \
+					--from-file=tls.key=scripts/exampleProvidedTls/server.key \
+					--from-file=tls.crt=scripts/exampleProvidedTls/server.crt ; \
 			$(MAKE) -C $(ROOT_DIR) install  ; \
         fi
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist

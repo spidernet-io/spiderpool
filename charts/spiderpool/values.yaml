@@ -29,6 +29,8 @@ commonLabels: {}
 ca:
   cert: ""
   key: ""
+  # -- Generated certificates validity duration in days.
+  certValidityDuration: 1095
 
 ipamPlugin:
   # -- Configure the log file for IPAM
@@ -395,9 +397,6 @@ spiderpoolController:
     # - provided:     provide all certificates by helm options
     # - certmanager:  This method use cert-manager to generate & rotate certificates.
     method: provided
-
-    # -- Generated certificates validity duration in days.
-    certValidityDuration: 1095
 
     # If not specified, a CA issuer will be created.
     # used by method certmanager

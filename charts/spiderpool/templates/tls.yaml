@@ -21,7 +21,7 @@ spec:
   - {{ $ip | quote }}
   {{- end }}
   {{- end }}
-  duration: {{ printf "%dh" (mul .Values.spiderpoolController.tls.certValidityDuration 24) }}
+  duration: {{ printf "%dh" (mul .Values.ca.certValidityDuration 24) }}
 {{- end }}
 
 {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
@@ -42,7 +42,7 @@ data:
 {{- $cn := "*.spidernet.io" }}
 {{- $ip := .Values.spiderpoolController.tls.server.extraIpAddresses }}
 {{- $dns := prepend .Values.spiderpoolController.tls.server.extraDnsNames $cn }}
-{{- $cert := genSignedCert $cn $ip $dns (.Values.spiderpoolController.tls.certValidityDuration | int) .ca -}}
+{{- $cert := genSignedCert $cn $ip $dns (.Values.ca.certValidityDuration | int) .ca -}}
 ---
 apiVersion: v1
 kind: Secret

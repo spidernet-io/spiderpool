@@ -35,7 +35,7 @@ ifeq ($(INSTALL_SPIDER),true)
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
         elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			CA=` cat scripts/exampleTls/ca.crt  | tr -d '\n' ` ; \
+			CA=` cat scripts/exampleProvidedTls/ca.crt  | tr -d '\n' ` ; \
 			SERVER_CERT=` cat scripts/exampleProvidedTls/server.crt  | tr -d '\n' ` ; \
 			SERVER_KEY=` cat scripts/exampleProvidedTls/server.key  | tr -d '\n' ` ; \
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set ca.cert=\"$${CA}\" --set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.method=provided" ; \

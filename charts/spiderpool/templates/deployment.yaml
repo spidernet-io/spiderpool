@@ -85,6 +85,9 @@ spec:
         args:
         - daemon
         - --config-dir=/tmp/spiderpool/config-map
+        - --tls-server-cert=/etc/tls/server.crt
+        - --tls-server-key=/etc/tls/server.key
+        - --tls-ca-cert=/etc/tls/ca.crt
         {{- with .Values.spiderpoolController.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
@@ -203,6 +206,8 @@ spec:
                   path: server.crt
                 - key: tls.key
                   path: server.key
+                - key: ca.crt
+                  path: ca.crt
       {{- if .Values.spiderpoolController.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

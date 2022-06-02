@@ -27,7 +27,11 @@ for IMAGE in $IMAGE_CERT_MANAGER ; do
     kind load docker-image $IMAGE --name ${E2E_CLUSTER_NAME}
 done
 
-kubectl apply -f ${CERT_MANAGER_CHART_PATH}
+for (( CNT=0 ; CNT<3 ; CNT++ )) ; do
+  kubectl apply -f ${CERT_MANAGER_CHART_PATH}
+  (( $? == 0 )) && break
+  sleep 5
+done
 
 # must be ready and apply Issuer
 NAMESPACE=kube-system

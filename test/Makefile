@@ -35,13 +35,15 @@ ifeq ($(INSTALL_SPIDER),true)
 			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
         elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			CA=` echo ASDFF3QWF |  base64   | tr -d '\n' ` ; \
-			CERT=` echo fqwsadfsaf |  base64   | tr -d '\n' ` ; \
-			KEY=` echo 23dsafasdf |  base64   | tr -d '\n' ` ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set ca.cert=\"$${CA}\" --set spiderpoolController.tls.server.cert=\"$${CERT}\" --set spiderpoolController.tls.server.key=\"$${KEY}\" --set spiderpoolController.tls.method=provided" ; \
+			CA=` echo scripts/exampleTls/ca.crt  | tr -d '\n' ` ; \
+			SERVER_CERT=` echo scripts/exampleProvidedTls/server.crt  | tr -d '\n' ` ; \
+			SERVER_KEY=` echo scripts/exampleProvidedTls/server.key  | tr -d '\n' ` ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set ca.cert=\"$${CA}\" --set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.method=provided" ; \
         elif [ "$(USE_TLS_METHOD)" == "helm" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.method=helm" ; \
+			CA_CERT=` echo scripts/exampleProvidedTls/ca.crt  | tr -d '\n' ` ; \
+			CA_KEY=` echo scripts/exampleProvidedTls/ca.crt  | tr -d '\n' ` ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set ca.cert=\"$${CA_CERT}\" --set ca.key=\"$${CA_KEY}\" --set spiderpoolController.tls.method=helm" ; \
         else  \
             echo "miss tls cert" ;  \
 			exit 1 ; \

@@ -4,7 +4,6 @@ package framework
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -32,7 +31,7 @@ func (f *Framework) CreateDeployment(dpm *appsv1.Deployment, opts ...client.Crea
 	existing := &appsv1.Deployment{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create , a same deployment %v/%v exists", dpm.ObjectMeta.Namespace, dpm.ObjectMeta.Name)
+		return ErrAlreadyExisted
 	}
 	t := func() bool {
 		existing := &appsv1.Deployment{}
@@ -45,7 +44,7 @@ func (f *Framework) CreateDeployment(dpm *appsv1.Deployment, opts ...client.Crea
 		return true
 	}
 	if !tools.Eventually(t, f.Config.ResourceDeleteTimeout, time.Second) {
-		return fmt.Errorf("time out to wait a deleting deployment")
+		return ErrTimeOut
 	}
 	return f.CreateResource(dpm, opts...)
 }
@@ -130,7 +129,7 @@ func (f *Framework) WaitDeploymentReady(name, namespace string, ctx context.Cont
 	}
 	watchInterface, err := f.KClient.Watch(ctx, &appsv1.DeploymentList{}, l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Watch: %v", err)
+		return nil, ErrWatch
 	}
 	defer watchInterface.Stop()
 
@@ -139,18 +138,18 @@ func (f *Framework) WaitDeploymentReady(name, namespace string, ctx context.Cont
 		case event, ok := <-watchInterface.ResultChan():
 			f.t.Logf("deployment %v/%v\n", event, ok)
 			if !ok {
-				return nil, fmt.Errorf("channel is closed ")
+				return nil, ErrChanelClosed
 			}
 			f.t.Logf("deployment %v/%v %v event \n", namespace, name, event.Type)
 			switch event.Type {
 			case watch.Error:
-				return nil, fmt.Errorf("received error event: %+v", event)
+				return nil, ErrEvent
 			case watch.Deleted:
-				return nil, fmt.Errorf("resource is deleted")
+				return nil, ErrResDel
 			default:
 				dpm, ok := event.Object.(*appsv1.Deployment)
 				if !ok {
-					return nil, fmt.Errorf("failed to get metaObject")
+					return nil, ErrGetObj
 				}
 				f.t.Logf("deployment %v/%v readyReplicas=%+v\n", namespace, name, dpm.Status.ReadyReplicas)
 				if dpm.Status.ReadyReplicas == *(dpm.Spec.Replicas) {

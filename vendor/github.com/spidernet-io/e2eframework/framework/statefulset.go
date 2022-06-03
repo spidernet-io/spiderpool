@@ -4,7 +4,6 @@ package framework
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"k8s.io/utils/pointer"
@@ -32,7 +31,7 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 	existing := &appsv1.StatefulSet{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create , a same statefulSet %v/%v exists", sts.ObjectMeta.Namespace, sts.ObjectMeta.Name)
+		return ErrAlreadyExisted
 	}
 	t := func() bool {
 		existing := &appsv1.StatefulSet{}
@@ -45,7 +44,7 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 		return true
 	}
 	if !tools.Eventually(t, f.Config.ResourceDeleteTimeout, time.Second) {
-		return fmt.Errorf("time out to wait a deleting statefulset")
+		return ErrTimeOut
 	}
 
 	return f.CreateResource(sts, opts...)
@@ -129,7 +128,7 @@ func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Con
 	}
 	watchInterface, err := f.KClient.Watch(ctx, &appsv1.StatefulSetList{}, l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Watch: %v", err)
+		return nil, ErrWatch
 	}
 	defer watchInterface.Stop()
 
@@ -138,7 +137,7 @@ func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Con
 		// if sts not exist , got no event
 		case event, ok := <-watchInterface.ResultChan():
 			if !ok {
-				return nil, fmt.Errorf("channel is closed ")
+				return nil, ErrChanelClosed
 			}
 			f.t.Logf(" sts %v/%v %v event \n", namespace, name, event.Type)
 
@@ -149,14 +148,14 @@ func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Con
 			// Error    EventType = "ERROR"
 			switch event.Type {
 			case watch.Error:
-				return nil, fmt.Errorf("received error event: %+v", event)
+				return nil, ErrEvent
 			case watch.Deleted:
-				return nil, fmt.Errorf("resource is deleted")
+				return nil, ErrResDel
 			default:
 				sts, ok := event.Object.(*appsv1.StatefulSet)
 				// metaObject, ok := event.Object.(metav1.Object)
 				if !ok {
-					return nil, fmt.Errorf("failed to get metaObject")
+					return nil, ErrGetObj
 				}
 				f.t.Logf("sts %v/%v readyReplicas=%+v\n", namespace, name, sts.Status.ReadyReplicas)
 				if sts.Status.ReadyReplicas == *(sts.Spec.Replicas) && sts.Status.CurrentReplicas == *(sts.Spec.Replicas) {

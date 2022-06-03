@@ -41,7 +41,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			return true
 		}
 		if !tools.Eventually(t, f.Config.ResourceDeleteTimeout, time.Second) {
-			return fmt.Errorf("time out to wait a deleting pod")
+			return ErrTimeOut
 		}
 	}
 	return f.CreateResource(pod, opts...)
@@ -105,7 +105,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 	}
 	watchInterface, err := f.KClient.Watch(ctx, &corev1.PodList{}, l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Watch: %v", err)
+		return nil, ErrWatch
 	}
 	defer watchInterface.Stop()
 
@@ -114,7 +114,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		// if pod not exist , got no event
 		case event, ok := <-watchInterface.ResultChan():
 			if !ok {
-				return nil, fmt.Errorf("channel is closed ")
+				return nil, ErrChanelClosed
 			}
 			f.t.Logf("pod %v/%v %v event \n", namespace, name, event.Type)
 			// Added    EventType = "ADDED"

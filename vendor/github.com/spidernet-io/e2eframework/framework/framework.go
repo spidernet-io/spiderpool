@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mohae/deepcopy"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -159,7 +160,11 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 		}
 		err = appsv1.AddToScheme(scheme)
 		if err != nil {
-			return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
+			return nil, fmt.Errorf("failed to add appsv1 Scheme : %v", err)
+		}
+		err = batchv1.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add batchv1 Scheme")
 		}
 		err = apiextensions_v1.AddToScheme(scheme)
 		if err != nil {

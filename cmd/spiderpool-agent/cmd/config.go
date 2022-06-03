@@ -83,15 +83,21 @@ func (ac *AgentContext) RegisterEnv() error {
 	var result string
 
 	for i := range envInfo {
+
 		env, ok := os.LookupEnv(envInfo[i].envName)
 		if ok {
 			result = strings.TrimSpace(env)
-		} else if !ok && envInfo[i].required {
+		} else {
 			// if no env and required, set it to default value.
 			result = envInfo[i].defaultValue
-		} else {
-			// if no env and none-required, just use the empty value.
-			continue
+		}
+		if len(result) == 0 {
+			if envInfo[i].required {
+				logger.Fatal(fmt.Sprintf("empty value of %s", envInfo[i].envName))
+			} else {
+				// if no env and none-required, just use the empty value.
+				continue
+			}
 		}
 
 		if nil != envInfo[i].associateStrKey {

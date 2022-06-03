@@ -164,7 +164,7 @@ spec:
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolAgent.prometheus.port | quote }}
         - name: SPIDERPOOL_HEALTH_PORT
-          value: {{ .Values.spiderpoolAgent.httpPort | quote }}
+          value: {{ .Values.spiderpoolAgent.healthPort | quote }}
         {{- with .Values.spiderpoolAgent.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

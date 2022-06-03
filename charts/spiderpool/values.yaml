@@ -390,24 +390,28 @@ spiderpoolController:
     # - certmanager:  This method use cert-manager to generate & rotate certificates.
     method: provided
 
-    # If not specified, a CA issuer will be created.
-    # used by method certmanager
-    certManagerIssuerName: ""
-
     # the secret with same namespace
     secretName: "spiderpool-controller-server-certs"
 
-    # -- Generated certificates validity duration in days.
-    certValidityDuration: 3650
+    # for certmanager method
+    certmanager:
+      # -- Generated certificates validity duration in days.
+      certValidityDuration: 3650
 
-    # -- base64 encoded PEM values for the Hubble server certificate and private key
+      # If not specified, a CA issuer will be created.
+      # used by method certmanager
+      IssuerName: ""
+
+      # -- Extra DNS names added to certificate when it's auto generated
+      extraDnsNames: []
+      # -- Extra IP addresses added to certificate when it's auto generated
+      extraIpAddresses: []
+
+    # -- for provided method
     server:
       # used by method provided
       # encoded
       cert: ""
       key: ""
       ca: ""
-      # -- Extra DNS names added to certificate when it's auto generated
-      extraDnsNames: []
-      # -- Extra IP addresses added to certificate when it's auto generated
-      extraIpAddresses: []
+

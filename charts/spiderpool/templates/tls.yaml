@@ -7,21 +7,21 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   issuerRef:
-    name: {{ .Values.spiderpoolController.tls.certManagerIssuerName | trunc 63 | trimSuffix "-" }}
+    name: {{ .Values.spiderpoolController.tls.certmanager.IssuerName | trunc 63 | trimSuffix "-" }}
   secretName: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
   commonName: "spidernet"
   dnsNames:
     - "*.spidernet.io"
-  {{- range $dns := .Values.spiderpoolController.tls.server.extraDnsNames }}
+  {{- range $dns := .Values.spiderpoolController.tls.certmanager.extraDnsNames }}
   - {{ $dns | quote }}
   {{- end }}
-  {{- if .Values.spiderpoolController.tls.server.extraIpAddresses }}
+  {{- if .Values.spiderpoolController.tls.certmanager.extraIpAddresses }}
   ipAddresses:
-  {{- range $ip := .Values.spiderpoolController.tls.server.extraIpAddresses }}
+  {{- range $ip := .Values.spiderpoolController.tls.certmanager.extraIpAddresses }}
   - {{ $ip | quote }}
   {{- end }}
   {{- end }}
-  duration: {{ printf "%dh" (mul .Values.ca.certValidityDuration 24) }}
+  duration: {{ printf "%dh" (mul .Values.spiderpoolController.tls.certmanager.certValidityDuration 24) }}
 {{- end }}
 
 {{- if (eq .Values.spiderpoolController.tls.method "provided") }}

@@ -67,7 +67,10 @@ setup_spiderpool: BUILD_LOCAL_IMAGE := true
 setup_spiderpool: LOAD_IMAGE_TAG :=
 setup_spiderpool:
 	@ if [ "$(BUILD_LOCAL_IMAGE)" == "true" ] ; then  \
+            echo "------ build local image " \
 			$(MAKE) -C $(ROOT_DIR) build-image ; \
+		 else \
+		   echo "------ ignore building local image " \
 		fi
 	@ if [ -z "$(LOAD_IMAGE_TAG)" ] ; then  \
 			@echo "Load Image $(GIT_COMMIT_VERSION) to kind..." ; \
@@ -79,8 +82,8 @@ setup_spiderpool:
 			for i in $(IMAGES); do \
 				kind load docker-image $$i-ci:$(LOAD_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
 			done;  	\
-		fi ; \
-	@if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
+		fi
+	@ if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
 			HELM_OPTION="--set spiderpoolController.tls.certmanager.issuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \

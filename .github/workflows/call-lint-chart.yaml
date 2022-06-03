@@ -100,7 +100,9 @@ jobs:
           CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
           SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
           SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
-          HELM_OPTIONS=" --set spiderpoolController.tls.server.cert=${SERVER_CERT} --set spiderpoolController.tls.server.key=${SERVER_KEY} --set spiderpoolController.tls.server.ca=${CA} --set spiderpoolController.tls.method=provided "
-          ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --namespace kube-system --helm-extra-set-args "$HELM_OPTIONS"
+          ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --namespace kube-system \
+              --helm-extra-set-args "--set=spiderpoolController.tls.server.cert=${SERVER_CERT}" \
+              --helm-extra-set-args "--set=spiderpoolController.tls.server.key=${SERVER_KEY}" \
+              --helm-extra-set-args "--set=spiderpoolController.tls.server.ca=${CA}"
           # https://github.com/helm/helm/issues/8036 do below before   ct install
           # if [ -f "./Chart.lock" ]; then cat ./Chart.lock | grep repository | awk '{print $2}' | while read -r line ; do helm repo add $line $line; done; fi

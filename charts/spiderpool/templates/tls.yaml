@@ -32,7 +32,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: kubernetes.io/tls
 data:
-  ca.crt:  {{ .Values.ca.cert }}
+  ca.crt:  {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
   tls.crt: {{ .Values.spiderpoolController.tls.server.cert | required "missing spiderpoolController.tls.server.cert" }}
   tls.key: {{ .Values.spiderpoolController.tls.server.key  | required "missing spiderpoolController.tls.server.key"  }}
 {{- end }}

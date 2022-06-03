@@ -4,6 +4,10 @@ kind: MutatingWebhookConfiguration
 metadata:
   creationTimestamp: null
   name: mutating-webhook-configuration
+  {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  {{- end }}
 webhooks:
 - admissionReviewVersions:
   - v1
@@ -12,6 +16,9 @@ webhooks:
       name: webhook-service
       namespace: system
       path: /mutate-spiderpool-spidernet-io-v1-ippool
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
+    {{- end }}
   failurePolicy: Fail
   name: ippool-mutating.spiderpool.spidernet.io
   rules:
@@ -31,6 +38,10 @@ kind: ValidatingWebhookConfiguration
 metadata:
   creationTimestamp: null
   name: validating-webhook-configuration
+  {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  {{- end }}
 webhooks:
 - admissionReviewVersions:
   - v1
@@ -39,6 +50,9 @@ webhooks:
       name: webhook-service
       namespace: system
       path: /validate-spiderpool-spidernet-io-v1-ippool
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
+    {{- end }}
   failurePolicy: Fail
   name: ippool-validaing.spiderpool.spidernet.io
   rules:

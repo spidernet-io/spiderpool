@@ -8,9 +8,9 @@ env:
   DEFAULT_BRANCH: main
 
 on:
-  pull_request:
-    paths:
-      - "charts/**"
+  #pull_request:
+  #  paths:
+  #    - "charts/**"
   workflow_call:
     inputs:
       ref:

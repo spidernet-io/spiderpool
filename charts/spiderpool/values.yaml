@@ -400,7 +400,7 @@ spiderpoolController:
 
       # If not specified, a CA issuer will be created.
       # used by method certmanager
-      IssuerName: ""
+      issuerName: ""
 
       # -- Extra DNS names added to certificate when it's auto generated
       extraDnsNames: []

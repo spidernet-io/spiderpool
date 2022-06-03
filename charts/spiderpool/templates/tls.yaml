@@ -7,7 +7,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   issuerRef:
-    name: {{ .Values.spiderpoolController.tls.certmanager.IssuerName | trunc 63 | trimSuffix "-" }}
+    name: {{ .Values.spiderpoolController.tls.certmanager.issuerName | trunc 63 | trimSuffix "-" }}
   secretName: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
   commonName: "spidernet"
   dnsNames:

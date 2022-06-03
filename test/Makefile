@@ -32,7 +32,7 @@ ifeq ($(INSTALL_SPIDER),true)
 	@if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certManagerIssuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
+			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certmanager.issuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
         elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			scripts/generateCert.sh "$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls" ; \

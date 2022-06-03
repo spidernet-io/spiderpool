@@ -73,12 +73,12 @@ setup_spiderpool:
 		   echo "------ ignore building local image " ; \
 		fi
 	@ if [ -z "$(LOAD_IMAGE_TAG)" ] ; then  \
-			@echo "Load Image $(GIT_COMMIT_VERSION) to kind..." ; \
+			echo "Load Image $(GIT_COMMIT_VERSION) to kind..." ; \
 			for i in $(IMAGES); do \
 				kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
 			done;  \
 		else \
-			@echo "Load Image $(LOAD_IMAGE_TAG) to kind..." ; \
+			echo "Load Image $(LOAD_IMAGE_TAG) to kind..." ; \
 			for i in $(IMAGES); do \
 				kind load docker-image $$i-ci:$(LOAD_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
 			done;  	\
@@ -104,9 +104,9 @@ setup_spiderpool:
 			--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
 			--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
 			--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
-	@echo "waiting for deployment/spiderpool-controller ready"
+	@ echo "waiting for deployment/spiderpool-controller ready"
 	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
-	@echo "waiting for daemonset/spiderpool-agent ready"
+	@ echo "waiting for daemonset/spiderpool-agent ready"
 	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
 
 

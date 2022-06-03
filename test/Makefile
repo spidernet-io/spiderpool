@@ -67,10 +67,10 @@ setup_spiderpool: BUILD_LOCAL_IMAGE := true
 setup_spiderpool: LOAD_IMAGE_TAG :=
 setup_spiderpool:
 	@ if [ "$(BUILD_LOCAL_IMAGE)" == "true" ] ; then  \
-            echo "------ build local image " \
+            echo "------ build local image " ; \
 			$(MAKE) -C $(ROOT_DIR) build-image ; \
 		 else \
-		   echo "------ ignore building local image " \
+		   echo "------ ignore building local image " ; \
 		fi
 	@ if [ -z "$(LOAD_IMAGE_TAG)" ] ; then  \
 			@echo "Load Image $(GIT_COMMIT_VERSION) to kind..." ; \

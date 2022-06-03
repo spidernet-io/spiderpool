@@ -9,7 +9,7 @@ spec:
   issuerRef:
     name: {{ .Values.spiderpoolController.tls.certManagerIssuerName | trunc 63 | trimSuffix "-" }}
   secretName: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
-  commonName: "*.spidernet.io"
+  commonName: "spidernet"
   dnsNames:
     - "*.spidernet.io"
   {{- range $dns := .Values.spiderpoolController.tls.server.extraDnsNames }}

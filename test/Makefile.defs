@@ -25,6 +25,9 @@ CNI_PACKAGE_VERSION ?= v0.8.5
 #============ ginkgo-custom-flag ====================
 E2E_CLUSTER_NAME ?= spider
 
+RELEASE_NAME ?= spiderpool
+RELEASE_NAMESPACE ?= kube-system
+
 # multi flag separated by commas,like setup,ippool
 E2E_GINKGO_LABELS ?=
 

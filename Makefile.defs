@@ -31,8 +31,7 @@ CONTAINER_ENGINE?=docker
 REGISTER ?= ghcr.io
 GIT_REPO ?= spidernet-io/spiderpool
 IMAGES := ${REGISTER}/${GIT_REPO}/spiderpool-agent ${REGISTER}/${GIT_REPO}/spiderpool-controller
-RELEASE_NAME ?= spiderpool
-RELEASE_NAMESPACE ?= kube-system
+
 
 
 VERSION = $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/VERSION)

@@ -29,28 +29,10 @@ kind-init: check_env prepare
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_SPIDER),true)
 	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
-	@if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
-			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.certmanager.issuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
-        elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
-			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			$(ROOT_DIR)/tools/cert/generateCert.sh "$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls" ; \
-			CA=`cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/ca.crt  | base64 -w0 | tr -d '\n' ` ; \
-			SERVER_CERT=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.crt | base64 -w0 | tr -d '\n' ` ; \
-			SERVER_KEY=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.key | base64 -w0 | tr -d '\n' ` ; \
-			$(MAKE) -C $(ROOT_DIR) install -e HELM_OPTION="--set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.server.ca=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
-        else  \
-			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
-			exit 1 ; \
-        fi
 	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
 	$(QUIET) bash scripts/install-macvlan.sh \
 		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
-	@echo "waiting for deployment/spiderpool-controller ready"
-	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
-	@echo "waiting for daemonset/spiderpool-agent ready"
-	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
+	@ make setup_spiderpool
 else
 	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
 	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
@@ -77,6 +59,52 @@ endif
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
+
+
+
+.PHONY: setup_spiderpool
+setup_spiderpool: BUILD_LOCAL_IMAGE := true
+setup_spiderpool: LOAD_IMAGE_TAG :=
+setup_spiderpool:
+	@ if [ "$(BUILD_LOCAL_IMAGE)" == "true" ] ; then  \
+			$(MAKE) -C $(ROOT_DIR) build-image ; \
+		fi
+	@ if [ -z "$(LOAD_IMAGE_TAG)" ] ; then  \
+			@echo "Load Image $(GIT_COMMIT_VERSION) to kind..." ; \
+			for i in $(IMAGES); do \
+				kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
+			done;  \
+		else \
+			@echo "Load Image $(LOAD_IMAGE_TAG) to kind..." ; \
+			for i in $(IMAGES); do \
+				kind load docker-image $$i-ci:$(LOAD_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
+			done;  	\
+		fi ; \
+	@if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
+			HELM_OPTION="--set spiderpoolController.tls.certmanager.issuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
+        elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			$(ROOT_DIR)/tools/cert/generateCert.sh "$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls" ; \
+			CA=`cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/ca.crt  | base64 -w0 | tr -d '\n' ` ; \
+			SERVER_CERT=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.crt | base64 -w0 | tr -d '\n' ` ; \
+			SERVER_KEY=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.key | base64 -w0 | tr -d '\n' ` ; \
+			HELM_OPTION="--set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.server.ca=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
+        else  \
+			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			exit 1 ; \
+        fi ; \
+		helm install $(RELEASE_NAME) charts/spiderpool \
+			-n $(RELEASE_NAMESPACE) $(HELM_OPTION) \
+			--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
+			--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
+			--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
+			--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
+	@echo "waiting for deployment/spiderpool-controller ready"
+	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
+	@echo "waiting for daemonset/spiderpool-agent ready"
+	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
 
 
 .PHONY: clean

@@ -25,34 +25,17 @@ install-bash-completion:
 
 
 # ============ build-load-image ============
-install: build-image-to-tar load-image-to-kind apply-chart-to-kind
-.PHONY: build-image-to-tar
-build-image-to-tar:
+.PHONY: build-image
+build-image:
 	@echo "Build Image with tag: $(GIT_COMMIT_VERSION)"
 	@for i in $(IMAGES); do \
-		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) --build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) --build-arg VERSION=$(GIT_COMMIT_VERSION) --file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile --output type=tar,dest=$(DOWNLOAD_DIR)/"$${i##*/}"-race.tar --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
-		echo "$${i##*/} image-tar build success, path: $(DOWNLOAD_DIR)/$${i##*/}-race.tar" ; \
+		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
+				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
+				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
+				--output type=docker --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
+		echo "$${i##*/} build success" ; \
 	done
-
-.PHONY: load-image-to-kind
-load-image-to-kind:
-	@echo "Load Image to kind..."
-	@for i in $(IMAGES); do \
-        cat $(DOWNLOAD_DIR)/"$${i##*/}"-race.tar | docker import - $$i-ci:$(GIT_COMMIT_VERSION)-race; \
-    	kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
-    done;
-
-#=============apply-chart=================#
-.PHONY: apply-chart-to-kind
-apply-chart-to-kind:
-	helm install $(RELEASE_NAME) charts/spiderpool \
-		-n $(RELEASE_NAMESPACE) $(HELM_OPTION) \
-		--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
-		--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
-		--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
-		--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
-
-
 
 .PHONY: lint
 lint-golang:
@@ -270,7 +253,7 @@ unitest-tests: check_test_label
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
 .PHONY: e2e
-e2e:
+e2e: e2e_init e2e_test
 	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
 		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
 		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}

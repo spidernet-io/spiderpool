@@ -153,6 +153,7 @@ jobs:
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     steps:
       - name: Prepare
+        id: prepare
         run: |
           echo "ref: ${{ needs.get_ref.outputs.ref }} "
           echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}"
@@ -163,6 +164,9 @@ jobs:
           echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
           echo "===== chart "
           echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
+          TMP=` date +%m%d%H%M%S `
+          E2E_CLUSTER_NAME="spiderpool$${TMP}"
+          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
 
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -181,10 +185,6 @@ jobs:
           # install kind/p2ctl/helm/ginkgo
           bash ./test/scripts/install-tools.sh
 
-      - name: Init Kind Cluster
-        run: |
-          make -C test kind-init
-
       - name: Download spiderpool-agent image
         uses: actions/download-artifact@v3
         with:
@@ -197,9 +197,9 @@ jobs:
           name: image-tar-spiderpool-controller
           path: test/.download
 
-      - name: Load Image to Kind
+      - name: Load Image to docker
         run: |
-          make load-image-to-kind  E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
+          ls test/.download
 
       # test against commit version
       - name: Helm Install Spiderpool
@@ -209,14 +209,18 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            make apply-chart-to-kind  E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
+            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+                -e BUILD_LOCAL_IMAGE=false \
+                -e LOAD_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }}-race
 
       - name: Run e2e
         id: e2e
         continue-on-error: true
         run: |
           echo ${{ github.event.inputs.labels }}
-          make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
+          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+              -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
+              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
           if (($?==0)) ; then
               echo ::set-output name=pass::true
           else

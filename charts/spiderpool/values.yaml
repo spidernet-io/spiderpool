@@ -79,7 +79,7 @@ spiderpoolAgent:
     annotations: {}
 
   # -- http Port to listen to for health checking
-  healthPort: "5710"
+  healthPort: 5710
 
   updateStrategy:
     rollingUpdate:
@@ -348,13 +348,13 @@ spiderpoolController:
       periodSeconds: 10
 
   # -- http Port to listen to for health checking
-  healthPort: "5720"
+  healthPort: 5720
 
   # -- https Port to listen to webhook
-  webhookPort: "443"
+  webhookPort: 5722
 
   # -- https Port to listen to cli command
-  cliPort: "5722"
+  cliPort: 5723
 
   # -- Enable prometheus metrics for cilium-operator on the configured port at
   # /metrics

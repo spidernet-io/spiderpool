@@ -81,6 +81,9 @@ spiderpoolAgent:
     create: true
     annotations: {}
 
+  # -- http Port to listen to for health checking
+  healthPort: "5710"
+
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 2

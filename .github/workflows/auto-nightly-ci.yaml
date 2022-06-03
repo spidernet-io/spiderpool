@@ -131,6 +131,7 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
       push: false
 
+  # test against release version
   call_test_chart:
     needs: get_ref
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
@@ -140,7 +141,7 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
 
   call_release_chart:
-    needs: [call_test_chart, get_ref]
+    needs: [get_ref]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     uses: ./.github/workflows/call-release-chart.yaml
     with:
@@ -201,6 +202,7 @@ jobs:
         run: |
           make load-image-to-kind  E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
 
+      # test against commit version
       - name: Helm Install Spiderpool
         uses: nick-invision/retry@v2
         with:

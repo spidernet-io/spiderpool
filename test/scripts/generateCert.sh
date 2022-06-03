@@ -53,3 +53,5 @@ openssl req -new -key server.key -config server.conf \
 
 rm -f server.conf
 rm -f ca.srl
+
+echo "succeed to generate certifacte to $OUTPUT_DIR "

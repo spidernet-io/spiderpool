@@ -99,7 +99,7 @@ setup_spiderpool:
 			exit 1 ; \
         fi ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
-			-n $(RELEASE_NAMESPACE) $(HELM_OPTION) \
+			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
 			--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
 			--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
 			--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \

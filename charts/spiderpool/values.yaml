@@ -176,9 +176,6 @@ spiderpoolAgent:
   # inside the agent pod.
   hostConfDirMountPath: /host/etc/cni/net.d/spiderpool
 
-  # -- http Port for health checking
-  healthPort: "5710"
-
   healthChecking:
     startupProbe:
       # -- failure threshold of startup probe.
@@ -216,6 +213,7 @@ spiderpoolAgent:
   debug:
     logLevel: "INFO"
     pprofEnabled: false
+
 
 spiderpoolController:
   name: "spiderpool-controller"
@@ -319,15 +317,6 @@ spiderpoolController:
       cpu: 100m
       memory: 128Mi
 
-  # -- http Port to listen to for health checking
-  healthPort: "5720"
-
-  # -- https Port to listen to webhook
-  webhookPort: "443"
-
-  # -- https Port to listen to cli command
-  cliPort: "5721"
-
   # PodDisruptionBudget settings
   podDisruptionBudget:
     # -- enable PodDisruptionBudget
@@ -358,6 +347,15 @@ spiderpoolController:
       failureThreshold: 3
       # -- interval between checks of the readiness probe
       periodSeconds: 10
+
+  # -- http Port to listen to for health checking
+  healthPort: "5720"
+
+  # -- https Port to listen to webhook
+  webhookPort: "443"
+
+  # -- https Port to listen to cli command
+  cliPort: "5721"
 
   # -- Enable prometheus metrics for cilium-operator on the configured port at
   # /metrics

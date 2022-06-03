@@ -104,8 +104,4 @@ jobs:
           SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
           SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
           ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --namespace kube-system \
-              --helm-extra-set-args "--set=spiderpoolController.tls.server.cert=${SERVER_CERT}" \
-              --helm-extra-set-args "--set=spiderpoolController.tls.server.key=${SERVER_KEY}" \
-              --helm-extra-set-args "--set=spiderpoolController.tls.server.ca=${CA}"
-          # https://github.com/helm/helm/issues/8036 do below before   ct install
-          # if [ -f "./Chart.lock" ]; then cat ./Chart.lock | grep repository | awk '{print $2}' | while read -r line ; do helm repo add $line $line; done; fi
+              --helm-extra-set-args "--set=spiderpoolController.tls.server.cert=${SERVER_CERT} --set=spiderpoolController.tls.server.key=${SERVER_KEY} --set=spiderpoolController.tls.server.ca=${CA}"

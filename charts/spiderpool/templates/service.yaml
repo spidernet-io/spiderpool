@@ -51,10 +51,12 @@ metadata:
 spec:
   type: {{ .Values.spiderpoolController.service.type }}
   ports:
+    {{- if .Values.spiderpoolController.prometheus.enabled }}
     - name: metrics
       port: {{ .Values.spiderpoolController.prometheus.port }}
       targetPort: prometheus
       protocol: TCP
+    {{- end }}
     - name: webhook
       port: {{ .Values.spiderpoolController.webhookPort }}
       targetPort: webhook

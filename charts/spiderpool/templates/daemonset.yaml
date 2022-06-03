@@ -103,7 +103,7 @@ spec:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
-            port: {{ .Values.spiderpoolAgent.httpPort }}
+            port: {{ .Values.spiderpoolAgent.healthPort }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -116,7 +116,7 @@ spec:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
-            port: {{ .Values.spiderpoolAgent.httpPort }}
+            port: {{ .Values.spiderpoolAgent.healthPort }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -130,7 +130,7 @@ spec:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
-            port: {{ .Values.spiderpoolAgent.httpPort }}
+            port: {{ .Values.spiderpoolAgent.healthPort }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"

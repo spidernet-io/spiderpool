@@ -396,7 +396,7 @@ spiderpoolController:
     # for certmanager method
     certmanager:
       # -- Generated certificates validity duration in days.
-      certValidityDuration: 3650
+      certValidityDuration: 365
 
       # If not specified, a CA issuer will be created.
       # used by method certmanager

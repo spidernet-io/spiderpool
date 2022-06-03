@@ -3,7 +3,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   creationTimestamp: null
-  name: mutating-webhook-configuration
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
   annotations:
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
@@ -37,7 +37,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   creationTimestamp: null
-  name: validating-webhook-configuration
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
   annotations:
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs

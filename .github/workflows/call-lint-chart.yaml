@@ -95,6 +95,8 @@ jobs:
 
       #  It automatically detects charts changed
       - name: Run chart-testing (install)
-        run: ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }}
-        # https://github.com/helm/helm/issues/8036 do below before   ct install
-        # if [ -f "./Chart.lock" ]; then cat ./Chart.lock | grep repository | awk '{print $2}' | while read -r line ; do helm repo add $line $line; done; fi
+        run: |
+          tools/cert/generateCert.sh "/tmp/tls"
+          ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --set spiderpoolController.tls.server.cert="${SERVER_CERT}" --set spiderpoolController.tls.server.key="${SERVER_KEY}" --set spiderpoolController.tls.server.ca="${CA}" --set spiderpoolController.tls.method=provided
+          # https://github.com/helm/helm/issues/8036 do below before   ct install
+          # if [ -f "./Chart.lock" ]; then cat ./Chart.lock | grep repository | awk '{print $2}' | while read -r line ; do helm repo add $line $line; done; fi

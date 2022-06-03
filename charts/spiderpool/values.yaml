@@ -9,9 +9,6 @@ rbac:
 # default spiderpool
 nameOverride: ""
 
-configMap:
-  name: spiderpool
-
 clusterDnsDomain: "cluster.local"
 
 ## @param commonAnnotations Annotations to add to all deployed objects
@@ -217,7 +214,6 @@ spiderpoolAgent:
     logLevel: "INFO"
     pprofEnabled: false
 
-
 spiderpoolController:
   name: "spiderpool-controller"
 
@@ -422,4 +418,3 @@ spiderpoolController:
       cert: ""
       key: ""
       ca: ""
-

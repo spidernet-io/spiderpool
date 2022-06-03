@@ -1,9 +1,11 @@
 #!/bin/bash
 
+# Copyright 2022 Authors of spidernet-io
+# SPDX-License-Identifier: Apache-2.0
+
 set -o errexit
 set -o nounset
 set -o pipefail
-
 
 OUTPUT_DIR="$1"
 [ -z "$OUTPUT_DIR" ] && echo "error, miss OUTPUT_DIR" >&2 && exit 1
@@ -44,7 +46,6 @@ extendedKeyUsage = clientAuth, serverAuth
 subjectAltName = @alt_names
 
 [alt_names]
-IP.1    = 192.168.1.8
 DNS.1   = ${serviceName}
 DNS.2   = ${serviceName}.${nameSpace}
 DNS.3   = ${serviceName}.${nameSpace}.svc
@@ -61,4 +62,4 @@ openssl req -new -key server.key -config server.conf \
 rm -f server.conf
 rm -f ca.srl
 
-echo "succeed to generate certifacte for ${CommonName} to directory $OUTPUT_DIR "
+echo "succeed to generate certificate for ${CommonName} to directory $OUTPUT_DIR "

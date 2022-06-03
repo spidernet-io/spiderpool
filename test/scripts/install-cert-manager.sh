@@ -28,8 +28,7 @@ for IMAGE in $IMAGE_CERT_MANAGER ; do
 done
 
 for (( CNT=0 ; CNT<3 ; CNT++ )) ; do
-  kubectl apply -f ${CERT_MANAGER_CHART_PATH}
-  (( $? == 0 )) && break
+  kubectl apply -f ${CERT_MANAGER_CHART_PATH} && break
   sleep 5
 done
 

@@ -46,11 +46,11 @@ load-image-to-kind:
 .PHONY: apply-chart-to-kind
 apply-chart-to-kind:
 	helm install $(RELEASE_NAME) charts/spiderpool \
-	-n $(RELEASE_NAMESPACE) $(HELM_OPTION) \
-	--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
-	--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
-	--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
-	--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
+		-n $(RELEASE_NAMESPACE) $(HELM_OPTION) \
+		--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
+		--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
+		--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
+		--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
 
 
 

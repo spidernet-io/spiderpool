@@ -358,7 +358,7 @@ spiderpoolController:
   webhookPort: "443"
 
   # -- https Port to listen to cli command
-  cliPort: "5721"
+  cliPort: "5722"
 
   # -- Enable prometheus metrics for cilium-operator on the configured port at
   # /metrics

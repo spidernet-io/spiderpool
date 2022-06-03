@@ -69,6 +69,9 @@ jobs:
       # Pre-requisites: A GitHub repo containing a directory with your Helm charts (e.g: charts)
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.2.1
+        with:
+          #CT version
+          version: v3.6.0
 
       - name: Run chart-testing (list-changed)
         id: list-changed

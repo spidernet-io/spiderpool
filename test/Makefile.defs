@@ -39,9 +39,8 @@ IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:latest-$(ARCH)
 IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-$(ARCH)
 TEST_IMAGE_NAME := alpine:latest
 
-USE_TLS_METHOD := certmanager
-#USE_TLS_METHOD := provided
-#USE_TLS_METHOD := auto
+#USE_TLS_METHOD := certmanager
+USE_TLS_METHOD := provided
 
 CERT_MANAGER_VERSION := v1.8.0
 IMAGE_CERT_MANAGER_REPO := quay.io/jetstack

@@ -29,7 +29,6 @@ spec:
     {{- include "spiderpool.spiderpoolAgent.selectorLabels" . | nindent 4 }}
 {{- end }}
 ---
-{{- if .Values.spiderpoolController.prometheus.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -56,10 +55,13 @@ spec:
       port: {{ .Values.spiderpoolController.prometheus.port }}
       targetPort: prometheus
       protocol: TCP
-    - name: service
-      port: {{ .Values.spiderpoolController.httpPort }}
-      targetPort: http
+    - name: webhook
+      port: {{ .Values.spiderpoolController.webhookPort }}
+      targetPort: webhook
+      protocol: TCP
+    - name: cli
+      port: {{ .Values.spiderpoolController.cliPort }}
+      targetPort: cli
       protocol: TCP
   selector:
     {{- include "spiderpool.spiderpoolController.selectorLabels" . | nindent 4 }}
-{{- end }}

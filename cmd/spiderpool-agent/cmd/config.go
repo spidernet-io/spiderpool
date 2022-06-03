@@ -32,13 +32,12 @@ type envConf struct {
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
-// 'required' that means if there's no env value and we set 'required' true, we use the default value.
 var envInfo = []envConf{
 	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
 	{"SPIDERPOOL_ENABLED_PPROF", "", false, nil, &agentContext.Cfg.EnabledPprof},
 	{"SPIDERPOOL_ENABLED_METRIC", "", false, nil, &agentContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
-	{"SPIDERPOOL_HTTP_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
+	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
 }
 
 type Config struct {

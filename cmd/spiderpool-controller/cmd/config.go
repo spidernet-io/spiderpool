@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -23,9 +24,10 @@ type envConf struct {
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
-// 'required' that means if there's no env value and we set 'required' true, we use the default value.
 var EnvInfo = []envConf{
-	{"SPIDERPOOL_HTTP_PORT", "5720", true, &controllerContext.HttpPort},
+	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.HttpPort},
+	{"SPIDERPOOL_WEBHOOK_PORT", "443", true, &controllerContext.WebhookPort},
+	{"SPIDERPOOL_CLI_PORT", "5721", true, &controllerContext.CliPort},
 }
 
 type ControllerContext struct {
@@ -35,9 +37,14 @@ type ControllerContext struct {
 	TlsServerKeyPath  string
 
 	// env
-	LogLevel                   string
-	MetricHttpPort             string
-	HttpPort                   string
+	LogLevel       string
+	MetricHttpPort string
+	// health check
+	HttpPort string
+	// Webhook Port
+	WebhookPort string
+	// cli Port
+	CliPort                    string
 	EnabledPprof               bool
 	EnabledMetric              bool
 	EnabledGCIppool            bool
@@ -68,12 +75,11 @@ func (cc *ControllerContext) RegisterEnv() {
 		env, ok := os.LookupEnv(EnvInfo[i].envName)
 		if ok {
 			*(EnvInfo[i].associateKey) = strings.TrimSpace(env)
-		}
-
-		// if no env and required, set it to default value.
-		// if no env and none-required, just use the empty value.
-		if !ok && EnvInfo[i].required {
+		} else {
 			*(EnvInfo[i].associateKey) = EnvInfo[i].defaultValue
+		}
+		if EnvInfo[i].required && len(*(EnvInfo[i].associateKey)) == 0 {
+			logger.Fatal(fmt.Sprintf("empty value of %s", EnvInfo[i].envName))
 		}
 	}
 }

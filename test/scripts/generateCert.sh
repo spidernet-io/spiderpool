@@ -17,7 +17,12 @@ fi
 cd ${OUTPUT_DIR}
 
 #-------------
-CommonName="spidernet"
+# the https server, visited by service, so use service dns as CN
+serviceName=${serviceName:-"spiderpool-controller"}
+nameSpace=${nameSpace:-"kube-system"}
+clusterDomain=${clusterDomain:-"cluster.local"}
+
+CommonName="${serviceName}.${nameSpace}.svc"
 
 # CA cert
 openssl req -nodes -new -x509 -keyout ca.key -out ca.crt -subj "/CN=${CommonName}" -days 3650
@@ -40,8 +45,10 @@ subjectAltName = @alt_names
 
 [alt_names]
 IP.1    = 192.168.1.8
-DNS.1   = spiderpool.spidernet.io
-DNS.2   = *.spidernet.io
+DNS.1   = ${serviceName}
+DNS.2   = ${serviceName}.${nameSpace}
+DNS.3   = ${serviceName}.${nameSpace}.svc
+DNS.4   = ${serviceName}.${nameSpace}.svc.${clusterDomain}
 EOF
 
 #server key
@@ -54,4 +61,4 @@ openssl req -new -key server.key -config server.conf \
 rm -f server.conf
 rm -f ca.srl
 
-echo "succeed to generate certifacte to $OUTPUT_DIR "
+echo "succeed to generate certifacte for ${CommonName} to directory $OUTPUT_DIR "

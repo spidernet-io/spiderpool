@@ -13,14 +13,15 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: webhook-service
-      namespace: system
-      path: /mutate-spiderpool-spidernet-io-v1-ippool
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate
+      port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
     {{- end }}
   failurePolicy: Fail
-  name: ippool-mutating.spiderpool.spidernet.io
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   rules:
   - apiGroups:
     - spiderpool.spidernet.io
@@ -47,14 +48,15 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: webhook-service
-      namespace: system
-      path: /validate-spiderpool-spidernet-io-v1-ippool
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate
+      port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
     {{- end }}
   failurePolicy: Fail
-  name: ippool-validaing.spiderpool.spidernet.io
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   rules:
   - apiGroups:
     - spiderpool.spidernet.io

@@ -12,6 +12,8 @@ nameOverride: ""
 configMap:
   name: spiderpool
 
+clusterDnsDomain: "cluster.local"
+
 ## @param commonAnnotations Annotations to add to all deployed objects
 ##
 commonAnnotations: {}
@@ -175,7 +177,7 @@ spiderpoolAgent:
   hostConfDirMountPath: /host/etc/cni/net.d/spiderpool
 
   # -- http Port for health checking
-  httpPort: "5710"
+  healthPort: "5710"
 
   healthChecking:
     startupProbe:
@@ -317,8 +319,14 @@ spiderpoolController:
       cpu: 100m
       memory: 128Mi
 
-  # -- http Port to listen to for CLI and health checking
-  httpPort: "5720"
+  # -- http Port to listen to for health checking
+  healthPort: "5720"
+
+  # -- https Port to listen to webhook
+  webhookPort: "443"
+
+  # -- https Port to listen to cli command
+  cliPort: "5721"
 
   # PodDisruptionBudget settings
   podDisruptionBudget:
@@ -385,7 +393,6 @@ spiderpoolController:
   # -- TLS configuration for webhook
   tls:
     # -- Set the method to auto-generate certificates. Supported values:
-    # - auto:         managed by spiderpool self
     # - provided:     provide all certificates by helm options
     # - certmanager:  This method use cert-manager to generate & rotate certificates.
     method: provided

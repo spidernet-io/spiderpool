@@ -98,7 +98,7 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
         fi ; \
-		helm install $(RELEASE_NAME) charts/spiderpool \
+		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
 			-n $(RELEASE_NAMESPACE) $(HELM_OPTION) \
 			--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
 			--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \

@@ -105,4 +105,4 @@ jobs:
           SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
           ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --namespace kube-system \
               --helm-extra-set-args "--set=spiderpoolController.tls.server.cert=${SERVER_CERT} --set=spiderpoolController.tls.server.key=${SERVER_KEY} --set=spiderpoolController.tls.server.ca=${CA}" \
-              --helm-extra-args "--timeout 600s"
+              --helm-extra-args "--timeout 400s"

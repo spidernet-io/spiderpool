@@ -25,34 +25,17 @@ install-bash-completion:
 
 
 # ============ build-load-image ============
-install: build-image-to-tar load-image-to-kind apply-chart-to-kind
-.PHONY: build-image-to-tar
-build-image-to-tar:
-	@echo "Build Image with tag: $(GIT_COMMIT_VERSION)"
-	@for i in $(IMAGES); do \
-		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) --build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) --build-arg VERSION=$(GIT_COMMIT_VERSION) --file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile --output type=tar,dest=$(DOWNLOAD_DIR)/"$${i##*/}"-race.tar --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
-		echo "$${i##*/} image-tar build success, path: $(DOWNLOAD_DIR)/$${i##*/}-race.tar" ; \
+.PHONY: build_image
+build_image:
+	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
+	@for i in $(SPIDERPOOL_IMAGES); do \
+		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
+				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
+				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
+				--output type=docker --tag $${i}:$(TEST_IMAGE_TAG) . ; \
+		echo "$${i##*/} build success" ; \
 	done
-
-.PHONY: load-image-to-kind
-load-image-to-kind:
-	@echo "Load Image to kind..."
-	@for i in $(IMAGES); do \
-        cat $(DOWNLOAD_DIR)/"$${i##*/}"-race.tar | docker import - $$i-ci:$(GIT_COMMIT_VERSION)-race; \
-    	kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
-    done;
-
-#=============apply-chart=================#
-.PHONY: apply-chart-to-kind
-apply-chart-to-kind:
-	helm install $(RELEASE_NAME) charts/spiderpool \
-	-n $(RELEASE_NAMESPACE) \
-	--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
-	--set spiderpoolAgent.image.tag=$(GIT_COMMIT_VERSION)-race \
-	--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
-	--set spiderpoolController.image.tag=$(GIT_COMMIT_VERSION)-race --kubeconfig $(E2E_KUBECONFIG)
-
-
 
 .PHONY: lint
 lint-golang:
@@ -273,16 +256,24 @@ unitest-tests: check_test_label
 e2e:
 	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
 		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
-		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
+		make build_image ; \
+		make e2e_init -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME} ; \
+		make e2e_test -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
+
 
 .PHONY: e2e_init
 e2e_init:
+	for NAME in $(SPIDERPOOL_IMAGES); do \
+			$(CONTAINER_ENGINE) images $${NAME}:$(TEST_IMAGE_TAG) | grep "$(TEST_IMAGE_TAG)" &>/dev/null  ; \
+			(($$?==0)) && continue ;  \
+			echo "error, failed to find $${NAME}:$(TEST_IMAGE_TAG), please run 'make build_image' firstly " >&2 && false ; \
+		 done
 	$(QUIET)  make -C test kind-init
 
 
 .PHONY: e2e_test
 e2e_test:
-	$(QUIET)  make -C test e2e-test
+	$(QUIET)  make -C test e2e_test
 
 
 

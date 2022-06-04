@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -23,21 +24,31 @@ type envConf struct {
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
-// 'required' that means if there's no env value and we set 'required' true, we use the default value.
 var EnvInfo = []envConf{
-	{"SPIDERPOOL_HTTP_PORT", "5720", true, &controllerContext.HttpPort},
+	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.HttpPort},
+	{"SPIDERPOOL_CLI_PORT", "5721", true, &controllerContext.CliPort},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5722", true, &controllerContext.MetricHttpPort},
+	{"SPIDERPOOL_WEBHOOK_PORT", "443", true, &controllerContext.WebhookPort},
 }
 
 type ControllerContext struct {
 	// flags
-	ConfigDir string
+	ConfigDir         string
+	TlsServerCertPath string
+	TlsServerKeyPath  string
 
 	// env
-	LogLevel                   string
-	MetricHttpPort             string
-	HttpPort                   string
-	EnabledPprof               bool
-	EnabledMetric              bool
+	LogLevel string
+
+	EnabledMetric  bool
+	MetricHttpPort string
+
+	HttpPort    string
+	WebhookPort string
+	CliPort     string
+
+	EnabledPprof bool
+
 	EnabledGCIppool            bool
 	EnabledGCTerminatingPodIP  bool
 	GCTerminatingPodIPDuration time.Duration
@@ -56,6 +67,8 @@ type ControllerContext struct {
 // BindControllerDaemonFlags bind controller cli daemon flags
 func (cc *ControllerContext) BindControllerDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&cc.ConfigDir, "config-dir", "/tmp/spiderpool/configmap", "config file")
+	flags.StringVar(&cc.TlsServerCertPath, "tls-server-cert", "", "file path of server cert")
+	flags.StringVar(&cc.TlsServerKeyPath, "tls-server-key", "", "file path of server key")
 }
 
 // RegisterEnv set the env to GlobalConfiguration
@@ -64,12 +77,17 @@ func (cc *ControllerContext) RegisterEnv() {
 		env, ok := os.LookupEnv(EnvInfo[i].envName)
 		if ok {
 			*(EnvInfo[i].associateKey) = strings.TrimSpace(env)
-		}
-
-		// if no env and required, set it to default value.
-		// if no env and none-required, just use the empty value.
-		if !ok && EnvInfo[i].required {
+		} else {
 			*(EnvInfo[i].associateKey) = EnvInfo[i].defaultValue
 		}
+		if EnvInfo[i].required && len(*(EnvInfo[i].associateKey)) == 0 {
+			logger.Fatal(fmt.Sprintf("empty value of %s", EnvInfo[i].envName))
+		}
 	}
+}
+
+// verify after retrieve all config
+func (cc *ControllerContext) Verify() {
+	// TODO(Icarus9913)
+	// verify existence and availability for TlsServerCertPath , TlsServerKeyPath , TlsCaPath
 }

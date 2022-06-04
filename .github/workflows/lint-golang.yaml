@@ -163,7 +163,7 @@ jobs:
               echo "error, failed to check openapi sdk "
               flag="bad"
           fi
-          echo "Check K8S SDK and yaml"
+          echo "Check K8S SDK and chart"
           if make manifests-verify ; then
               echo " pass K8S SDK and yaml"
           else

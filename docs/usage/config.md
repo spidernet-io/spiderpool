@@ -104,7 +104,7 @@ data:
 | SPIDERPOOL_ENABLED_PPROF                 | enable pprof for debug | 5721                                        |                             |
 | SPIDERPOOL_ENABLED_METRIC                | enable metrics         | "true" or "false". default to "false"       |
 | SPIDERPOOL_METRIC_HTTP_PORT              | metrics port           | 5721                                        |
-| SPIDERPOOL_HTTP_PORT                     |                        |                                             |
+| SPIDERPOOL_HEALTH_PORT                     |                        |                                             |
 | SPIDERPOOL_GC_IPPOOL_ENABLED             |                        |                                             |
 | SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED |                        |                                             |
 | SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY   |                        |                                             |
@@ -119,4 +119,4 @@ data:
 | SPIDERPOOL_ENABLED_PPROF    | enable pprof for debug | 5721                                        |                             |
 | SPIDERPOOL_ENABLED_METRIC   | enable metrics         | "true" or "false". default to "false"       |
 | SPIDERPOOL_METRIC_HTTP_PORT | metrics port           | 5721                                        |
-| SPIDERPOOL_HTTP_PORT        |                        |                                             |
+| SPIDERPOOL_HEALTH_PORT      |                        |                                             |

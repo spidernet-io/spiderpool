@@ -30,10 +30,9 @@ CONTAINER_ENGINE?=docker
 #----------build-image--------
 REGISTER ?= ghcr.io
 GIT_REPO ?= spidernet-io/spiderpool
-IMAGES := ${REGISTER}/${GIT_REPO}/spiderpool-agent ${REGISTER}/${GIT_REPO}/spiderpool-controller
-RELEASE_NAME ?= spiderpool
-RELEASE_NAMESPACE ?= kube-system
-
+SPIDERPOOL_AGENT_IMAGE_NAME := ${REGISTER}/${GIT_REPO}/spiderpool-agent
+SPIDERPOOL_CONTROLLER_IMAGE_NAME := ${REGISTER}/${GIT_REPO}/spiderpool-controller
+SPIDERPOOL_IMAGES := $(SPIDERPOOL_AGENT_IMAGE_NAME) ${SPIDERPOOL_CONTROLLER_IMAGE_NAME}
 
 VERSION = $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/VERSION)
 
@@ -46,6 +45,8 @@ GIT_COMMIT_VERSION = $(shell git show -s --format='format:%H')
 GIT_COMMIT_TIME = $(shell git show -s --format='format:%aI')
 
 FULL_BUILD_VERSION = $(VERSION) $(GIT_COMMIT_VERSION)
+
+TEST_IMAGE_TAG := $(GIT_COMMIT_VERSION)
 
 #------------------
 

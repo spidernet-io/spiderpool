@@ -85,6 +85,8 @@ spec:
         args:
         - daemon
         - --config-dir=/tmp/spiderpool/config-map
+        - --tls-server-cert=/etc/tls/server.crt
+        - --tls-server-key=/etc/tls/server.key
         {{- with .Values.spiderpoolController.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
@@ -94,15 +96,21 @@ spec:
           containerPort: {{ .Values.spiderpoolController.prometheus.port }}
           protocol: TCP
         {{- end }}
-        - name: http
-          containerPort: {{ .Values.spiderpoolController.httpPort }}
+        - name: health
+          containerPort: {{ .Values.spiderpoolController.healthPort }}
+          protocol: TCP
+        - name: webhook
+          containerPort: {{ .Values.spiderpoolController.webhookPort }}
+          protocol: TCP
+        - name: cli
+          containerPort: {{ .Values.spiderpoolController.cliPort }}
           protocol: TCP
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
-            port: {{ .Values.spiderpoolController.httpPort }}
+            port: {{ .Values.spiderpoolController.healthPort }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -115,7 +123,7 @@ spec:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
-            port: {{ .Values.spiderpoolController.httpPort }}
+            port: {{ .Values.spiderpoolController.healthPort }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -129,7 +137,7 @@ spec:
           httpGet:
             host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
-            port: {{ .Values.spiderpoolController.httpPort }}
+            port: {{ .Values.spiderpoolController.healthPort }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -158,8 +166,12 @@ spec:
           value: {{ .Values.spiderpoolController.prometheus.enabled | quote }}
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolController.prometheus.port | quote }}
-        - name: SPIDERPOOL_HTTP_PORT
-          value: {{ .Values.spiderpoolController.httpPort | quote }}
+        - name: SPIDERPOOL_WEBHOOK_PORT
+          value: {{ .Values.spiderpoolController.webhookPort | quote }}
+        - name: SPIDERPOOL_CLI_PORT
+          value: {{ .Values.spiderpoolController.cliPort | quote }}
+        - name: SPIDERPOOL_HEALTH_PORT
+          value: {{ .Values.spiderpoolController.healthPort | quote }}
         - name: SPIDERPOOL_GC_IPPOOL_ENABLED
           value: {{ .Values.spiderpoolController.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
@@ -181,6 +193,9 @@ spec:
         - name: config-path
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
+        - name: tls
+          mountPath: /etc/tls
+          readOnly: true
         {{- if .Values.spiderpoolController.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
@@ -189,6 +204,17 @@ spec:
       - name: config-path
         configMap:
           name: {{ .Values.configmap.configCmName }}
+      - name: tls
+        projected:
+          defaultMode: 0400
+          sources:
+          - secret:
+              name: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
+              items:
+                - key: tls.crt
+                  path: server.crt
+                - key: tls.key
+                  path: server.key
       {{- if .Values.spiderpoolController.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

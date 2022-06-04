@@ -29,12 +29,19 @@ controller-gen() {
 manifests_gen() {
   output_dir=$1
 
+#  controller-gen \
+#      crd webhook rbac:roleName="spiderpool" \
+#      paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1;${PWD}/${PROJECT_ROOT}/pkg/webhook" \
+#      output:crd:artifacts:config="${output_dir}/crds" \
+#      output:webhook:artifacts:config="${output_dir}/webhook" \
+#      output:rbac:artifacts:config="${output_dir}/rbac"
+
   controller-gen \
-  crd webhook rbac:roleName="spiderpool" \
-  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1;${PWD}/${PROJECT_ROOT}/pkg/webhook" \
-  output:crd:artifacts:config="${output_dir}/crds" \
-  output:webhook:artifacts:config="${output_dir}/webhook" \
-  output:rbac:artifacts:config="${output_dir}/rbac"
+      crd rbac:roleName="spiderpool" \
+      paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1" \
+      output:crd:artifacts:config="${output_dir}/crds" \
+      output:rbac:artifacts:config="${output_dir}/rbac"
+
 }
 
 deepcopy_gen() {
@@ -42,8 +49,8 @@ deepcopy_gen() {
   cat ${PROJECT_ROOT}/tools/spdx-copyright-header.txt | sed -E 's?(.*)?// \1?' > ${tmp_header_file}
 
   controller-gen \
-  object:headerFile="${tmp_header_file}" \
-  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1"
+    object:headerFile="${tmp_header_file}" \
+    paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1"
 }
 
 manifests_verify() {
@@ -53,9 +60,9 @@ manifests_verify() {
     cp -ra ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
   fi
 
-  if [ "$(ls -A ${OUTPUT_BASE_DIR}/webhook)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/webhook ${OUTPUT_TMP_DIR}
-  fi
+  #if [ "$(ls -A ${OUTPUT_BASE_DIR}/webhook)" ]; then
+  #  cp -ra ${OUTPUT_BASE_DIR}/webhook ${OUTPUT_TMP_DIR}
+  #fi
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/rbac)" ]; then
     cp -ra ${OUTPUT_BASE_DIR}/rbac ${OUTPUT_TMP_DIR}

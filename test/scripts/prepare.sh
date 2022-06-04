@@ -13,16 +13,8 @@ echo "Using CNI_PACKAGE_VERSION: $CNI_PACKAGE_VERSION"
 [ -z "$ARCH" ] && echo "error, miss ARCH " && exit 1
 echo "Using ARCH: $ARCH"
 
-[ -z "$IMAGE_MULTUS" ] && echo "error, miss IMAGE_MULTUS " && exit 1
-echo "Using IMAGE_MUTLUS: $IMAGE_MULTUS"
-
-[ -z "$IMAGE_WHEREABOUTS" ] && echo "error, miss IMAGE_WHEREABOUTS " && exit 1
-echo "Using IMAGE_WHEREABOUTS: $IMAGE_WHEREABOUTS"
-
-[ -z "$TEST_IMAGE" ] && echo "error, miss TEST_IMAGE " && exit 1
-echo "Using TEST_IMAGE: $TEST_IMAGE"
-
-
+[ -z "$IMAGE_LIST" ] && echo "error, miss IMAGE_LIST " && exit 1
+echo "all images: $IMAGE_LIST"
 
 #=================================
 
@@ -39,19 +31,13 @@ fi
 
 #=================================
 
-# prepare image
-IMAGES="
-$IMAGE_MULTUS \
-$IMAGE_WHEREABOUTS \
-$TEST_IMAGE"
-
-for image in $IMAGES ; do
+for image in $IMAGE_LIST ; do
     PREFIX_IMAGE=$(echo $image | awk -F ':' '{print $1}')
     SUFFIX_IMAGE=$(echo $image | awk -F ':' '{print $2}')
     if docker images | grep -E "^${PREFIX_IMAGE}[[:space:]]+${SUFFIX_IMAGE} " &>/dev/null ; then
       echo "Image: $image already exist locally "
     else
-      echo "Image: $image not exist locally, Will pull..."
+      echo "Image: pulling $image"
       docker pull $image
     fi
 done

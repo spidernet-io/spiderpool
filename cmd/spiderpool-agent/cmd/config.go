@@ -32,13 +32,12 @@ type envConf struct {
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
-// 'required' that means if there's no env value and we set 'required' true, we use the default value.
 var envInfo = []envConf{
 	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
 	{"SPIDERPOOL_ENABLED_PPROF", "", false, nil, &agentContext.Cfg.EnabledPprof},
 	{"SPIDERPOOL_ENABLED_METRIC", "", false, nil, &agentContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
-	{"SPIDERPOOL_HTTP_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
+	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
 }
 
 type Config struct {
@@ -84,15 +83,21 @@ func (ac *AgentContext) RegisterEnv() error {
 	var result string
 
 	for i := range envInfo {
+
 		env, ok := os.LookupEnv(envInfo[i].envName)
 		if ok {
 			result = strings.TrimSpace(env)
-		} else if !ok && envInfo[i].required {
+		} else {
 			// if no env and required, set it to default value.
 			result = envInfo[i].defaultValue
-		} else {
-			// if no env and none-required, just use the empty value.
-			continue
+		}
+		if len(result) == 0 {
+			if envInfo[i].required {
+				logger.Fatal(fmt.Sprintf("empty value of %s", envInfo[i].envName))
+			} else {
+				// if no env and none-required, just use the empty value.
+				continue
+			}
 		}
 
 		if nil != envInfo[i].associateStrKey {

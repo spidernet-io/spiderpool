@@ -1,0 +1,41 @@
+{{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
+  namespace: {{ .Release.Namespace }}
+spec:
+  issuerRef:
+    name: {{ .Values.spiderpoolController.tls.certmanager.issuerName | trunc 63 | trimSuffix "-" }}
+  secretName: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
+  commonName: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}.svc
+  dnsNames:
+    - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+    - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}
+    - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}.svc
+    - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDnsDomain }}
+  {{- range $dns := .Values.spiderpoolController.tls.certmanager.extraDnsNames }}
+  - {{ $dns | quote }}
+  {{- end }}
+  {{- if .Values.spiderpoolController.tls.certmanager.extraIpAddresses }}
+  ipAddresses:
+  {{- range $ip := .Values.spiderpoolController.tls.certmanager.extraIpAddresses }}
+  - {{ $ip | quote }}
+  {{- end }}
+  {{- end }}
+  duration: {{ printf "%dh" (mul .Values.spiderpoolController.tls.certmanager.certValidityDuration 24) }}
+{{- end }}
+
+{{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+type: kubernetes.io/tls
+data:
+  ca.crt:  {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
+  tls.crt: {{ .Values.spiderpoolController.tls.server.cert | required "missing spiderpoolController.tls.server.cert" }}
+  tls.key: {{ .Values.spiderpoolController.tls.server.key  | required "missing spiderpoolController.tls.server.key"  }}
+{{- end }}

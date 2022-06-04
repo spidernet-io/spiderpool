@@ -22,7 +22,7 @@ run spiderpool agent daemon
     SPIDERPOOL_ENABLED_PPROF            enable pprof (true|false)
     SPIDERPOOL_ENABLED_METRIC           enable metrics (true|false)
     SPIDERPOOL_METRIC_HTTP_PORT         metric port (default to 5711)
-    SPIDERPOOL_HTTP_PORT                http port  (default to 5710)
+    SPIDERPOOL_HEALTH_PORT              http port  (default to 5710)
 ```
 
 ## spiderpool-agent shutdown

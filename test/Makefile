@@ -83,13 +83,13 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
         fi ; \
-        echo " load image tag $${TEST_IMAGE_TAG} to cluster" ; \
+        echo " load image tag $(TEST_IMAGE_TAG) to cluster" ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
-			--set spiderpoolAgent.image.tag=$${TEST_IMAGE_TAG} \
+			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-			--set spiderpoolController.image.tag=$${TEST_IMAGE_TAG} \
+			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)
 	@ echo "waiting for deployment/spiderpool-controller ready"
 	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }

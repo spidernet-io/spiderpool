@@ -1,4 +1,4 @@
-# develop
+# test
 
 you could follow the below steps to test:
 
@@ -37,6 +37,8 @@ you could follow the below steps to test:
         # !!! images is built by commit sha, so make sure the commit is submit locally
         $ make build_image
 
+        # setup the kind cluster
+        # !!! images is tested by commit sha, so make sure the commit is submit locally
         $ make e2e_init
           .......
           -----------------------------------------------------------------------------------------------------
@@ -46,7 +48,11 @@ you could follow the below steps to test:
                 kubectl get nodes
           -----------------------------------------------------------------------------------------------------        
 
+        # run all e2e test
         $ make e2e_test
+
+        # run smoke test
+        $ make e2e_test -e GINKGO_OPTION="--label-filter=smoke"
 
         # after finishing e2e case , you could test repeated for debugging flaky tests
         # example: run a case repeatedly

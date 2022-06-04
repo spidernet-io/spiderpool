@@ -278,7 +278,7 @@ e2e_init:
 
 .PHONY: e2e_test
 e2e_test:
-	$(QUIET)  make -C test e2e-test
+	$(QUIET)  make -C test e2e_test
 
 
 

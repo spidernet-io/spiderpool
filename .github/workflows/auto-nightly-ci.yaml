@@ -165,7 +165,7 @@ jobs:
           echo "===== chart "
           echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
           TMP=` date +%m%d%H%M%S `
-          E2E_CLUSTER_NAME="spiderpool$${TMP}"
+          E2E_CLUSTER_NAME="spiderpool${TMP}"
           echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
 
       - name: Checkout Code

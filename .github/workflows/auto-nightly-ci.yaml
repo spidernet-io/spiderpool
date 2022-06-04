@@ -197,12 +197,14 @@ jobs:
           name: image-tar-spiderpool-controller
           path: test/.download
 
-      - uses: docker-practice/actions-setup-docker@master
+      #- uses: docker-practice/actions-setup-docker@master
       - name: Load Image to docker
         run: |
           TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
           for ITEM in $TAR_FILES ; do
-              docker load -i test/.download/${ITEM}
+              IMAGE_NAME=${ITEM%*.tar}
+              cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}-ci:${{ needs.call_build_ci_image.outputs.imageTag }}
           done
 
       # test against commit version
@@ -215,7 +217,7 @@ jobs:
           command: |
             make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
                 -e BUILD_LOCAL_IMAGE=false \
-                -e LOAD_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }}-race
+                -e LOAD_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }}
 
       - name: Run e2e
         id: e2e

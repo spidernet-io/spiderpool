@@ -16,3 +16,4 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref }}
       suffix: 'beta'
+    secrets: inherit

@@ -268,7 +268,7 @@ e2e:
 
 .PHONY: e2e_init
 e2e_init:
-	for NAME in $(IMAGES); do \
+	@ for NAME in $(IMAGES); do \
 			$(CONTAINER_ENGINE) images $${NAME}-ci:$(GIT_COMMIT_VERSION)-race | grep "$${NAME}-ci" &>/dev/null  ; \
 			(($$?==0)) && continue ;  \
 			echo "error, please run 'make build_image' firstly " && exit 1 ; \

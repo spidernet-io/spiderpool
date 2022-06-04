@@ -12,29 +12,25 @@ jobs:
     with:
       image_name: spiderpool-controller-ci
       older_than: "2"
-    secrets:
-      WELAN_PAT: ${{ secrets.WELAN_PAT }}
+    secrets: inherit
 
   prune-agent-ci:
     uses: ./.github/workflows/call-clean-ghcr.yaml
     with:
       image_name: spiderpool-agent-ci
       older_than: "2"
-    secrets:
-      WELAN_PAT: ${{ secrets.WELAN_PAT }}
+    secrets: inherit
 
   prune-controller-beta:
     uses: ./.github/workflows/call-clean-ghcr.yaml
     with:
       image_name: spiderpool-controller-beta
       older_than: "2"
-    secrets:
-      WELAN_PAT: ${{ secrets.WELAN_PAT }}
+    secrets: inherit
 
   prune-agent-beta:
     uses: ./.github/workflows/call-clean-ghcr.yaml
     with:
       image_name: spiderpool-agent-beta
       older_than: "2"
-    secrets:
-      WELAN_PAT: ${{ secrets.WELAN_PAT }}
+    secrets: inherit

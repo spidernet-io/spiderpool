@@ -93,7 +93,7 @@ jobs:
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v4.0.4
         with:
           title: "robot update doc from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           commit-message: "robot update chart from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "

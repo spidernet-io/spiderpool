@@ -61,6 +61,7 @@ jobs:
     uses: ./.github/workflows/call-release-image.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
+    secrets: inherit
 
   release-chart:
     needs: [build-release-image, get-tag]
@@ -68,18 +69,21 @@ jobs:
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
       submit: true
+    secrets: inherit
 
   release-changelog:
     needs: [build-release-image, get-tag]
     uses: ./.github/workflows/call-release-changelog.yaml
     with:
       dest_tag: ${{ needs.get-tag.outputs.tag }}
+    secrets: inherit
 
   release-doc:
     needs: [build-release-image, get-tag]
     uses: ./.github/workflows/call-release-doc.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
+    secrets: inherit
 
   create-release:
     needs: [release-chart, release-changelog, get-tag]

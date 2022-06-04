@@ -121,6 +121,7 @@ jobs:
     uses: ./.github/workflows/lint-golang.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
 
   call_build_ci_image:
     needs: [get_ref]
@@ -130,6 +131,7 @@ jobs:
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
       push: false
+    secrets: inherit
 
   lint_chart_against_release_image:
     needs: get_ref
@@ -138,6 +140,7 @@ jobs:
     uses: ./.github/workflows/call-lint-chart.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
 
   call_release_chart:
     needs: [get_ref]
@@ -146,6 +149,7 @@ jobs:
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
       submit: false
+    secrets: inherit
 
   e2e_against_commit:
     runs-on: ubuntu-latest

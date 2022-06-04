@@ -38,7 +38,7 @@ func GenerateExampleDeploymentYaml(dpmName, namespace string, replica int32) *ap
 							Name:            "samplepod",
 							Image:           "alpine",
 							ImagePullPolicy: "IfNotPresent",
-							Command:         []string{"/bin/ash", "-c", "trap : TERM INT; sleep infinity & wait"},
+							Command:         []string{"/bin/ash", "-c", "sleep infinity"},
 						},
 					},
 				},

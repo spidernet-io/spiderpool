@@ -199,10 +199,9 @@ jobs:
 
       - name: Load Image to docker
         run: |
-          ls test/.download
-          TAR_FILES=`ls test/.download/*.tar`
+          TAR_FILES=` ls test/.download `
           for ITEM in $TAR_FILES ; do
-              docker load -i ${ITEM}
+              docker load -i test/.download/${ITEM}
           done
 
       # test against commit version

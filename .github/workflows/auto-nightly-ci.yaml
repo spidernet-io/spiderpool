@@ -197,6 +197,7 @@ jobs:
           name: image-tar-spiderpool-controller
           path: test/.download
 
+      - uses: docker-practice/actions-setup-docker@master
       - name: Load Image to docker
         run: |
           TAR_FILES=` ls test/.download `

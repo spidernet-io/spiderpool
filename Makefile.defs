@@ -46,7 +46,7 @@ GIT_COMMIT_TIME = $(shell git show -s --format='format:%aI')
 
 FULL_BUILD_VERSION = $(VERSION) $(GIT_COMMIT_VERSION)
 
-TEST_IMAGE_TAG := $(GIT_COMMIT_VERSION)-race
+TEST_IMAGE_TAG := $(GIT_COMMIT_VERSION)
 
 #------------------
 

@@ -91,7 +91,7 @@ spiderpoolAgent:
     annotations: {}
     type: ClusterIP
 
-  # -- Node tolerations
+  # --  Node tolerations
   # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
   tolerations:
     - effect: NoExecute

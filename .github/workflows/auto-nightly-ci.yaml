@@ -53,7 +53,7 @@ jobs:
               - '**/*.go'
               - 'go.mod'
               - 'go.sum'
-              - 'charts/'
+              - 'charts/**'
               - 'Makefile*'
               - '**/Makefile*'
             all_e2e:

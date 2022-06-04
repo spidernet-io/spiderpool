@@ -198,7 +198,7 @@ jobs:
           path: test/.download
 
       #- uses: docker-practice/actions-setup-docker@master
-      - name: Load Image to docker
+      - name: Load Spiderpool Image
         run: |
           TAR_FILES=` ls test/.download `
           echo $TAR_FILES
@@ -208,7 +208,7 @@ jobs:
           done
 
       # test against commit version
-      - name: Helm Install Spiderpool
+      - name: Setup Kind Cluster
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 10
@@ -219,9 +219,8 @@ jobs:
                 -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
-            
 
-      - name: Run e2e
+      - name: Run e2e Test
         id: e2e
         continue-on-error: true
         run: |

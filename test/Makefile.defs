@@ -38,7 +38,7 @@ E2E_TIMEOUT ?= 60m
 E2E_GINKGO_PROCS ?= 4
 
 #============Image version===========
-IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:latest-$(ARCH)
+IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:v3.8-$(ARCH)
 IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-$(ARCH)
 TEST_IMAGE_NAME := alpine:latest
 
@@ -49,6 +49,11 @@ CERT_MANAGER_VERSION := v1.8.0
 IMAGE_CERT_MANAGER_REPO := quay.io/jetstack
 IMAGE_CERT_MANAGER_NAME := $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-webhook:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-controller:$(CERT_MANAGER_VERSION)
 CERT_MANAGER_ISSUER_NAME := selfsigned
+
+#================= multus
+CNI_NAMESPACE := kube-system
+MULTUS_DEFAULT_CNI_NAME := macvlan-cni-default
+MULTUS_ADDITIONAL_CNI_NAME := macvlan-cni2
 
 
 #============Tmp Path================

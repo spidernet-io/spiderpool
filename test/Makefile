@@ -27,23 +27,18 @@ kind-init: check_env prepare
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
 	@echo -e "\033[35m [Step 4] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
-ifeq ($(INSTALL_MACVLAN)_$(INSTALL_WHEREABOUTS),true_true)
+ifeq ($(INSTALL_SPIDER),true)
+	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
+	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	$(QUIET) bash scripts/install-macvlan.sh \
+		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	@ make setup_spiderpool
+else
 	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
 	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
 			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 	ip_family=$(E2E_IP_FAMILY) type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
-endif
-ifeq ($(INSTALL_MACVLAN)_$(INSTALL_SPIDER),true_true)
-	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
-	$(MAKE) -C $(ROOT_DIR) install
-	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
-	$(QUIET) bash scripts/install-macvlan.sh \
-		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
-	@echo "waiting for deployment/spiderpool-controller ready"
-	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
-	@echo "waiting for daemonset/spiderpool-agent ready"
-	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
 endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
@@ -66,6 +61,42 @@ endif
 	@echo ""
 
 
+
+.PHONY: setup_spiderpool
+setup_spiderpool:
+	@ echo "Load Image $(TEST_IMAGE_TAG) to kind..." ; \
+			for i in $(SPIDERPOOL_IMAGES); do \
+				kind load docker-image $${i}:$(TEST_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
+			done;  	\
+	    if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
+			HELM_OPTION="--set spiderpoolController.tls.certmanager.issuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
+        elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			$(ROOT_DIR)/tools/cert/generateCert.sh "$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls" ; \
+			CA=`cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/ca.crt  | base64 -w0 | tr -d '\n' ` ; \
+			SERVER_CERT=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.crt | base64 -w0 | tr -d '\n' ` ; \
+			SERVER_KEY=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.key | base64 -w0 | tr -d '\n' ` ; \
+			HELM_OPTION="--set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.server.ca=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
+        else  \
+			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			exit 1 ; \
+        fi ; \
+        echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
+		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
+			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
+			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
+			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \
+			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
+			--kubeconfig $(E2E_KUBECONFIG)
+	@ echo "waiting for deployment/spiderpool-controller ready"
+	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
+	@ echo "waiting for daemonset/spiderpool-agent ready"
+	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
+
+
 .PHONY: clean
 clean:
 	@rm -rf $(CLUSTER_DIR)
@@ -84,17 +115,17 @@ prepare:
 	@echo -e "\033[35m [Step 2] Check The Tools For Ready: \033[0m"
 	$(QUEIT) JUST_CLI_CHECK=true scripts/install-tools.sh
 	$(QUEIT) mkdir -p $(DOWNLOAD_DIR)
-	$(QUEIT) ARCH=$(ARCH) \
-			 IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
-			 IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
-			 TEST_IMAGE=$(TEST_IMAGE_NAME) \
-			 CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION) \
-			 scripts/prepare.sh $(DOWNLOAD_DIR)
-
+	$(QUEIT) IMAGE_LIST="" ; \
+		 [ "$(USE_TLS_METHOD)" == "certmanager" ] && IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_CERT_MANAGER_NAME) " ; \
+		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_MULTUS_NAME) " ; \
+		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_WHEREABOUTS_NAME) " ; \
+		 IMAGE_LIST+=" $${IMAGE_LIST} $(TEST_IMAGE_NAME) " ; \
+		 ARCH=$(ARCH) IMAGE_LIST="$${IMAGE_LIST}" \
+		 	CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION)  scripts/prepare.sh $(DOWNLOAD_DIR)
 
 #============ e2e ====================
-.PHONY: e2e-test
-e2e-test:
+.PHONY: e2e_test
+e2e_test:
 	@echo -e "\033[35m Run e2e test on the cluster $(E2E_CLUSTER_NAME) \033[0m "
 	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} GINKGO_OPTION=${GINKGO_OPTION} \033[0m"
 	@  NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' ` ; \
@@ -113,7 +144,7 @@ e2e-test:
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
         if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
-        if [ "$(INSTALL_WHEREABOUTS)" == "true" ] ; then \
+        if [ "$(INSTALL_SPIDER)" != "true" ] ; then \
           	export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
           	export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \
         else  \

@@ -131,7 +131,7 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
       push: false
 
-  call_test_chart:
+  lint_chart_against_release_image:
     needs: get_ref
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     # forbid to specify version for local workflow, GITHUB_REF Same as the caller workflow
@@ -140,19 +140,20 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
 
   call_release_chart:
-    needs: [call_test_chart, get_ref]
+    needs: [get_ref]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     uses: ./.github/workflows/call-release-chart.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
       submit: false
 
-  call_e2e_test_smoke:
+  e2e_against_commit:
     runs-on: ubuntu-latest
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
     steps:
       - name: Prepare
+        id: prepare
         run: |
           echo "ref: ${{ needs.get_ref.outputs.ref }} "
           echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}"
@@ -163,6 +164,9 @@ jobs:
           echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
           echo "===== chart "
           echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
+          TMP=` date +%m%d%H%M%S `
+          E2E_CLUSTER_NAME="spiderpool${TMP}"
+          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
 
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -181,10 +185,6 @@ jobs:
           # install kind/p2ctl/helm/ginkgo
           bash ./test/scripts/install-tools.sh
 
-      - name: Init Kind Cluster
-        run: |
-          make -C test kind-init
-
       - name: Download spiderpool-agent image
         uses: actions/download-artifact@v3
         with:
@@ -197,25 +197,36 @@ jobs:
           name: image-tar-spiderpool-controller
           path: test/.download
 
-      - name: Load Image to Kind
+      - name: Load Spiderpool Image
         run: |
-          make load-image-to-kind  E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
+          TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
+          for ITEM in $TAR_FILES ; do
+              IMAGE_NAME=${ITEM%*.tar}
+              cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+          done
 
-      - name: Helm Install Spiderpool
+      # test against commit version
+      - name: Setup Kind Cluster
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 10
           max_attempts: 3
           shell: bash
           command: |
-            make apply-chart-to-kind  E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }}
+            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+                -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
 
-      - name: Run e2e
+      - name: Run e2e Test
         id: e2e
         continue-on-error: true
         run: |
           echo ${{ github.event.inputs.labels }}
-          make -C test e2e-test E2E_CLUSTER_NAME=${{ env.CLUSTER_NAME }} E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
+          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+              -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
+              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}
           if (($?==0)) ; then
               echo ::set-output name=pass::true
           else

@@ -28,6 +28,7 @@ var daemonCmd = &cobra.Command{
 func init() {
 	controllerContext.BindControllerDaemonFlags(daemonCmd.PersistentFlags())
 	controllerContext.RegisterEnv()
+	controllerContext.Verify()
 
 	rootCmd.AddCommand(daemonCmd)
 }

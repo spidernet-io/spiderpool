@@ -10,11 +10,8 @@ set -o pipefail
 OUTPUT_DIR="$1"
 [ -z "$OUTPUT_DIR" ] && echo "error, miss OUTPUT_DIR" >&2 && exit 1
 
-if [ -d "$OUTPUT_DIR" ] ;then
-  rm -rf ${OUTPUT_DIR}/* || true
-else
-  mkdir -p ${OUTPUT_DIR}
-fi
+mkdir -p ${OUTPUT_DIR}
+rm -rf ${OUTPUT_DIR:?}/* || true
 
 cd ${OUTPUT_DIR}
 

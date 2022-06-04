@@ -25,8 +25,8 @@ install-bash-completion:
 
 
 # ============ build-load-image ============
-.PHONY: build-image
-build-image:
+.PHONY: build_image
+build_image:
 	@echo "Build Image with tag: $(GIT_COMMIT_VERSION)"
 	@for i in $(IMAGES); do \
 		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
@@ -34,6 +34,11 @@ build-image:
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
 				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
 				--output type=docker --tag $$i-ci:$(GIT_COMMIT_VERSION)-race . ; \
+		docker buildx build   --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
+				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
+				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
+				--output type=docker --tag $$i-ci:$(GIT_COMMIT_VERSION) . ; \
 		echo "$${i##*/} build success" ; \
 	done
 
@@ -253,13 +258,21 @@ unitest-tests: check_test_label
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 
 .PHONY: e2e
-e2e: e2e_init e2e_test
+e2e:
 	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
 		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
-		make -C test e2e -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
+		make build_image ; \
+		make e2e_init -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME} ; \
+		make e2e_test -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
+
 
 .PHONY: e2e_init
 e2e_init:
+	for NAME in $(IMAGES); do \
+			$(CONTAINER_ENGINE) images $${NAME}-ci:$(GIT_COMMIT_VERSION)-race | grep "$${NAME}-ci" &>/dev/null  ; \
+			(($$?==0)) && continue ;  \
+			echo "error, please run 'make build_image' firstly " && exit 1 ; \
+		done
 	$(QUIET)  make -C test kind-init
 
 

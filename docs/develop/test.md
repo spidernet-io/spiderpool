@@ -1,4 +1,4 @@
-# e2e test
+# develop
 
 you could follow the below steps to test:
 
@@ -27,7 +27,15 @@ you could follow the below steps to test:
 
         # make e2e -e E2E_GINKGO_LABELS="lable1,label2"
 
-3. when developing e2e case, please follow the below steps
+3. you could do it step by step with the follow
+
+        # do some coding
+
+        $ git add .
+        $ git commit -s -m 'message'
+
+        # !!! images is built by commit sha, so make sure the commit is submit locally
+        $ make build_image
 
         $ make e2e_init
           .......
@@ -40,8 +48,8 @@ you could follow the below steps to test:
 
         $ make e2e_test
 
-        # after finish e2e case , you could test repeated for debugging flaky tests
-        # example: run a case repeated
+        # after finishing e2e case , you could test repeated for debugging flaky tests
+        # example: run a case repeatedly
         $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --repeat=10 "
 
         # example: run a case until fails

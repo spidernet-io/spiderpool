@@ -216,7 +216,6 @@ jobs:
           shell: bash
           command: |
             make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                -e BUILD_LOCAL_IMAGE=false \
                 -e LOAD_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }}
 
       - name: Run e2e

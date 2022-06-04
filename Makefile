@@ -271,7 +271,8 @@ e2e_init:
 	@ for NAME in $(IMAGES); do \
 			$(CONTAINER_ENGINE) images $${NAME}-ci:$(GIT_COMMIT_VERSION)-race | grep "$${NAME}-ci" &>/dev/null  ; \
 			(($$?==0)) && continue ;  \
-			echo "error, please run 'make build_image' firstly " && exit 1 ; \
+			echo "error, please run 'make build_image' firstly " >&2 ; \
+			exit 1 ; \
 		done
 	$(QUIET)  make -C test kind-init
 

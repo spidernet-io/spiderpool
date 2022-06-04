@@ -33,12 +33,7 @@ build_image:
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
 				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
-				--output type=docker --tag $${i}:$(GIT_COMMIT_VERSION)-race . ; \
-		docker buildx build   --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
-				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
-				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
-				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
-				--output type=docker --tag $${i}:$(GIT_COMMIT_VERSION) . ; \
+				--output type=docker --tag $${i}:$(TEST_IMAGE_TAG) . ; \
 		echo "$${i##*/} build success" ; \
 	done
 

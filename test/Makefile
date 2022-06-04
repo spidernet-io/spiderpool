@@ -63,21 +63,11 @@ endif
 
 
 .PHONY: setup_spiderpool
-setup_spiderpool: LOAD_IMAGE_TAG :=
 setup_spiderpool:
-	@ if [ -z "$(LOAD_IMAGE_TAG)" ] ; then  \
-			echo "Load Image $(GIT_COMMIT_VERSION) to kind..." ; \
-			for i in $(IMAGES); do \
-				kind load docker-image $$i-ci:$(GIT_COMMIT_VERSION)-race --name $(E2E_CLUSTER_NAME);	\
-			done;  \
-			IMAGE_TAG=$(GIT_COMMIT_VERSION)-race ; \
-		else \
-			echo "Load Image $(LOAD_IMAGE_TAG) to kind..." ; \
-			for i in $(IMAGES); do \
-				kind load docker-image $$i-ci:$(LOAD_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
+	@ echo "Load Image $(TEST_IMAGE_TAG) to kind..." ; \
+			for i in $(SPIDERPOOL_IMAGES); do \
+				kind load docker-image $${i}:$(TEST_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
 			done;  	\
-			IMAGE_TAG=$(LOAD_IMAGE_TAG) ; \
-		fi ; \
 	    if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
@@ -93,13 +83,13 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
         fi ; \
-        echo " load image tag $${IMAGE_TAG} to cluster" ; \
+        echo " load image tag $${TEST_IMAGE_TAG} to cluster" ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
-			--set spiderpoolAgent.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-agent-ci \
-			--set spiderpoolAgent.image.tag=$${IMAGE_TAG} \
-			--set spiderpoolController.image.repository=$(REGISTER)/$(GIT_REPO)/spiderpool-controller-ci \
-			--set spiderpoolController.image.tag=$${IMAGE_TAG} \
+			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
+			--set spiderpoolAgent.image.tag=$${TEST_IMAGE_TAG} \
+			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+			--set spiderpoolController.image.tag=$${TEST_IMAGE_TAG} \
 			--kubeconfig $(E2E_KUBECONFIG)
 	@ echo "waiting for deployment/spiderpool-controller ready"
 	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }

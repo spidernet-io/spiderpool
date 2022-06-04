@@ -204,7 +204,7 @@ jobs:
           echo $TAR_FILES
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
-              cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}-ci:${{ needs.call_build_ci_image.outputs.imageTag }}
+              cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
           done
 
       # test against commit version
@@ -216,7 +216,10 @@ jobs:
           shell: bash
           command: |
             make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                -e LOAD_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }}
+                -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
+            
 
       - name: Run e2e
         id: e2e

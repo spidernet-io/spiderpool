@@ -144,3 +144,5 @@ replicaset
 namesapceSelector
 coreDns
 keypair
+amd64
+arm64

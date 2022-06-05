@@ -12,7 +12,7 @@ import (
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
-var _ = Describe("test ip with statefulset case", Label("statefulSet"), func() {
+var _ = Describe("test ip with statefulset", Label("statefulSet"), func() {
 
 	var stsName, nsName string
 	var err error

@@ -14,17 +14,7 @@ e2e:  kind-init e2e-test
 .PHONY: kind-init
 kind-init: check_env prepare
 	@echo -e "\033[35m [Step 3] Init kind for the cluster: $(E2E_CLUSTER_NAME) \033[0m"
-	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
-	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
-	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
-	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
-			 standard_cluster=$(E2E_STANDARD_CLUSTER) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
-			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
-			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	$(QUIET) kind create cluster \
-		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
-		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
+	@ make setup_kind
 	@echo -e "\033[35m [Step 4] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_SPIDER),true)
@@ -41,15 +31,16 @@ ifeq ($(INSTALL_MULTUS),true)
 		INSTALL_SPIDER=$(INSTALL_SPIDER) \
 		TEST_IMAGE=$(TEST_IMAGE_NAME) \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
-		CNI_NAMESPACE=$(CNI_NAMESPACE) \
+		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
 		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage &>/dev/null
-	@ echo "wait for the cluster ready" && TEST_IMAGE=$(TEST_IMAGE_NAME) \
-		CNI_NAMESPACE=$(CNI_NAMESPACE) \
+	@ echo "wait for the cluster ready" ; \
+    	TEST_IMAGE=$(TEST_IMAGE_NAME) \
+		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
 		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
 		scripts/installTestPod.sh $(E2E_KUBECONFIG)
@@ -57,8 +48,8 @@ endif
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"
 	@echo "       install spiderpool: $(INSTALL_SPIDER)"
-	@echo "       multus default CNI: $(CNI_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
-	@echo "       multus addon CNI: $(CNI_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
+	@echo "       multus default CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
+	@echo "       multus addon CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
 	@echo ""
 	@echo -e "    succeeded to setup cluster $(E2E_CLUSTER_NAME) "
 	@echo -e "    you could use following command to access the cluster "
@@ -68,6 +59,22 @@ endif
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
+
+
+.PHONY: setup_kind
+setup_kind:
+	@ if [ "$(E2E_IP_FAMILY)" != "ipv4" ] ; then sysctl -w net.ipv6.conf.all.disable_ipv6=0 ; fi
+	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
+	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
+	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
+	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
+			 standard_cluster=$(E2E_STANDARD_CLUSTER) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
+			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
+			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
+	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
+	$(QUIET) kind create cluster \
+		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
+		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
 
 
 .PHONY: setup_spiderpool

@@ -19,7 +19,7 @@ func GenerateExampleDaemonSetYaml(dsName, namespace string) *appsv1.DaemonSet {
 			Name:      dsName,
 		},
 		Spec: appsv1.DaemonSetSpec{
-			//Replicas: pointer.Int32Ptr(replica),
+			// Replicas: pointer.Int32Ptr(replica),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": dsName,
@@ -37,7 +37,7 @@ func GenerateExampleDaemonSetYaml(dsName, namespace string) *appsv1.DaemonSet {
 							Name:            "samplepod",
 							Image:           "alpine",
 							ImagePullPolicy: "IfNotPresent",
-							Command:         []string{"/bin/ash", "-c", "trap : TERM INT; sleep infinity & wait"},
+							Command:         []string{"/bin/ash", "-c", "sleep infinity"},
 						},
 					},
 				},

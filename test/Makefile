@@ -14,7 +14,7 @@ e2e:  kind-init e2e-test
 .PHONY: kind-init
 kind-init: check_env prepare
 	@echo -e "\033[35m [Step 3] Init kind for the cluster: $(E2E_CLUSTER_NAME) \033[0m"
-	-@ kind delete cluster --name ${E2E_CLUSTER_NAME} &>/dev/null
+	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
 	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
@@ -28,28 +28,37 @@ kind-init: check_env prepare
 	@echo -e "\033[35m [Step 4] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_SPIDER),true)
-	@echo -e "\033[35m [Step 5] Install Macvlan + Spiderpool \033[0m"
-	type=spiderpool p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
-	$(QUIET) bash scripts/install-macvlan.sh \
-		$(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan-spider.conflist
+	@echo -e "\033[35m [Step 5] Install Default CNI: Macvlan + Spiderpool \033[0m"
 	@ make setup_spiderpool
 else
-	@echo -e "\033[35m [Step 5] Install Macvlan + Whereabouts \033[0m"
+	@echo -e "\033[35m [Step 5] Install Default CNI: Macvlan + Whereabouts \033[0m"
 	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
 			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
-	ip_family=$(E2E_IP_FAMILY) type=whereabouts p2ctl -t yamls/10-macvlan.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
-	$(QUIET) bash scripts/install-macvlan.sh $(E2E_CLUSTER_NAME) $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/10-macvlan.conflist
 endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
 	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
+		INSTALL_SPIDER=$(INSTALL_SPIDER) \
 		TEST_IMAGE=$(TEST_IMAGE_NAME) \
+		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+		CNI_NAMESPACE=$(CNI_NAMESPACE) \
+		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
+		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage &>/dev/null
+	@ echo "wait for the cluster ready" && TEST_IMAGE=$(TEST_IMAGE_NAME) \
+		CNI_NAMESPACE=$(CNI_NAMESPACE) \
+		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
+		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
+		scripts/installTestPod.sh $(E2E_KUBECONFIG)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
+	@echo "       ip family: $(E2E_IP_FAMILY)"
+	@echo "       install spiderpool: $(INSTALL_SPIDER)"
+	@echo "       multus default CNI: $(CNI_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
+	@echo "       multus addon CNI: $(CNI_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
 	@echo ""
 	@echo -e "    succeeded to setup cluster $(E2E_CLUSTER_NAME) "
 	@echo -e "    you could use following command to access the cluster "
@@ -59,7 +68,6 @@ endif
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
-
 
 
 .PHONY: setup_spiderpool
@@ -83,6 +91,13 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
         fi ; \
+		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
+			HELM_OPTION+=" --set configmap.config.enableIpv4=true --set configmap.config.enableIpv4=false " ; \
+		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
+			HELM_OPTION+=" --set configmap.config.enableIpv4=false --set configmap.config.enableIpv4=true " ; \
+		else \
+			HELM_OPTION+=" --set configmap.config.enableIpv4=true --set configmap.config.enableIpv4=true " ; \
+		fi ; \
         echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
@@ -105,7 +120,7 @@ clean:
 
 .PHONY: check_env
 check_env:
-	$(QUIET) [ -n "${E2E_CLUSTER_NAME}" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
+	$(QUIET) [ -n "$(E2E_CLUSTER_NAME)" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
 	$(QUIET) ( [ "$(E2E_IP_FAMILY)" == "ipv4" ] || [ "$(E2E_IP_FAMILY)" == "ipv6" ]  || [ "$(E2E_IP_FAMILY)" == "dual" ] ) \
 			|| { echo "error, E2E_IP_FAMILY=$(E2E_IP_FAMILY) must be ipv4/ipv6/dual" ;  exit 1 ; }
 
@@ -127,7 +142,7 @@ prepare:
 .PHONY: e2e_test
 e2e_test:
 	@echo -e "\033[35m Run e2e test on the cluster $(E2E_CLUSTER_NAME) \033[0m "
-	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=${E2E_GINKGO_LABELS} , timeout=${E2E_TIMEOUT} GINKGO_OPTION=${GINKGO_OPTION} \033[0m"
+	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=$(E2E_GINKGO_LABELS) , timeout=$(E2E_TIMEOUT) GINKGO_OPTION=$(GINKGO_OPTION) \033[0m"
 	@  NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		NODE_LIST=` echo "$${NODE_LIST}" | tr -d ' ' | tr '\n' ',' ` ; \
@@ -151,10 +166,12 @@ e2e_test:
         	export E2E_WHEREABOUT_IPAM_ENABLED=false ;  \
         	export E2E_SPIDERPOOL_IPAM_ENABLED=true ; \
        	fi ; \
+       	export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_NAME)" ; \
+       	export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_NAME)" ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none \
 			--json-report e2ereport.json --output-dir $(ROOT_DIR) --procs $(E2E_GINKGO_PROCS) \
-			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  ${GINKGO_OPTION} \
+			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  $(GINKGO_OPTION) \
 			-r e2e/*   ; \
 		(($$?!=0)) && echo "failed to run all test"  && exit 1 ; \
 		echo "" ; \

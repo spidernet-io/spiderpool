@@ -150,6 +150,6 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		},
 		// TODO (tao.yang), N controller replicas in Ippool for N IP, Through this template complete gc performance closed-loop test together
 		Entry("time cost of create、reboot、delete 60 pods through deployment", Label("P00002"), common.DeploymentNameString, int32(60), time.Second*300),
-		Entry("time cost of create、reboot、delete 30 pods through statefulSet", Label("P00003"), common.StatefulsetNameString, int32(30), time.Second*1200),
+		// Entry("time cost of create、reboot、delete 30 pods through statefulSet", Label("P00003"), common.StatefulsetNameString, int32(30), time.Second*1200),
 	)
 })

@@ -13,6 +13,10 @@
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json)
 
+## Status
+
+Currently, the spiderpool is under beta stage, not ready for production environment
+
 ## Introduction
 
 The Spiderpool is an IP Address Management (IPAM) CNI plugin that assigns IP addresses for kubernetes cluster.
@@ -43,7 +47,9 @@ But the spiderpool provides lots of different features, you could refer Feature 
 
 * Based on CRD storage. All operation could be done with kubernetes API-server
 
-* Support assigning IP for IPv4-only, IPv6-only and dual-stack case
+* Support assigning IP Address of IPv4-only, IPv6-only and dual-stack
+
+* Support working on the cluster of IPv4-only, IPv6-only and dual-stack
 
 * Support creating multiple ippool. Different namespace and application could monopolize or share an ippool
 
@@ -73,6 +79,8 @@ But the spiderpool provides lots of different features, you could refer Feature 
 * support global and ippool-range reserve IP, who will not assign even included in an ippool
 
 * reach metrics for look into IP usage and issue
+
+* support amd64 and arm64
 
 ## Components
 

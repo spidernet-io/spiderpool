@@ -4,6 +4,7 @@ networking:
   kubeProxyMode: {{ kube_proxy_mode }}
   disableDefaultCNI: {{ disable_default_cni }}
   ipFamily: {{ ip_family }}
+  # If you are using Docker on Windows or Mac, you will need to use an IPv4 port forward for the API Server from the host because IPv6 port forwards don't work on these platforms
   apiServerAddress: 127.0.0.1
 {%- if ip_family == "ipv4" %}
   podSubnet: "172.20.0.0/16"

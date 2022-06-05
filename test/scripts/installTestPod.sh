@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        k8s.v1.cni.cncf.io/networks: ${CNI_NAMESPACE}/${MULTUS_ADDITIONAL_CNI_NAME}
+        k8s.v1.cni.cncf.io/networks: ${MULTUS_CNI_NAMESPACE}/${MULTUS_ADDITIONAL_CNI_NAME}
       name: $NAME
       labels:
         app: $NAME

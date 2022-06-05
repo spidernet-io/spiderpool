@@ -29,6 +29,8 @@ you could follow the below steps to test:
 
 3. you could do it step by step with the follow
 
+    build the image
+
         # do some coding
 
         $ git add .
@@ -37,7 +39,9 @@ you could follow the below steps to test:
         # !!! images is built by commit sha, so make sure the commit is submit locally
         $ make build_image
 
-        # setup the kind cluster
+    setup the cluster
+
+        # setup the kind cluster of dual-stack
         # !!! images is tested by commit sha, so make sure the commit is submit locally
         $ make e2e_init
           .......
@@ -48,8 +52,22 @@ you could follow the below steps to test:
                 kubectl get nodes
           -----------------------------------------------------------------------------------------------------        
 
-        # run all e2e test
+        # setup the kind cluster of ipv4-only
+        $ make e2e_init -e E2E_IP_FAMILY=ipv4
+
+        # setup the kind cluster of ipv6-only
+        $ make e2e_init -e E2E_IP_FAMILY=ipv6
+
+    run the e2e test
+
+        # run all e2e test on dual-stack cluster
         $ make e2e_test
+
+        # run all e2e test on ipv4-only cluster
+        $ make e2e_test -e E2E_IP_FAMILY=ipv4
+
+        # run all e2e test on ipv6-only cluster
+        $ make e2e_test -e E2E_IP_FAMILY=ipv6
 
         # run smoke test
         $ make e2e_test -e GINKGO_OPTION="--label-filter=smoke"

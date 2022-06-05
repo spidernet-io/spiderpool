@@ -51,7 +51,7 @@ IMAGE_CERT_MANAGER_NAME := $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(
 CERT_MANAGER_ISSUER_NAME := selfsigned
 
 #================= multus
-CNI_NAMESPACE := kube-system
+MULTUS_CNI_NAMESPACE := kube-system
 MULTUS_DEFAULT_CNI_NAME := macvlan-cni-default
 MULTUS_ADDITIONAL_CNI_NAME := macvlan-cni2
 

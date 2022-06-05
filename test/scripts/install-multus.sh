@@ -38,7 +38,7 @@ echo "$CURRENT_FILENAME : E2E_IP_FAMILY $E2E_IP_FAMILY "
 
 MULTUS_DEFAULT_CNI_NAME=${MULTUS_DEFAULT_CNI_NAME:-"macvlan-cni-default"}
 MULTUS_ADDITIONAL_CNI_NAME=${MULTUS_ADDITIONAL_CNI_NAME:-"macvlan-cni2"}
-CNI_NAMESPACE=${CNI_NAMESPACE:-"kube-system"}
+MULTUS_CNI_NAMESPACE=${MULTUS_CNI_NAMESPACE:-"kube-system"}
 
 #==============
 
@@ -57,7 +57,7 @@ apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   name: ${MULTUS_DEFAULT_CNI_NAME}
-  namespace: ${CNI_NAMESPACE}
+  namespace: ${MULTUS_CNI_NAMESPACE}
 spec:
   config: '{
       "cniVersion": "0.3.1",
@@ -81,7 +81,7 @@ apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   name: ${MULTUS_ADDITIONAL_CNI_NAME}
-  namespace: ${CNI_NAMESPACE}
+  namespace: ${MULTUS_CNI_NAMESPACE}
 spec:
   config: '{
       "cniVersion": "0.3.1",
@@ -108,13 +108,11 @@ InstallCNI::Whereabout(){
     echo "install $MULTUS_DEFAULT_CNI_NAME  cni : macvlan + whereabout"
 
 if [ "${E2E_IP_FAMILY}" == "ipv4" ] ; then
-    DEFAULT_CNI_CONF='\
-           "range": "172.19.1.10-172.19.1.254/16",
+    DEFAULT_CNI_CONF='"range": "172.19.1.10-172.19.1.254/16",
            "gateway": "172.19.0.1",
            "routes": [ { "dst": "0.0.0.0/0" }],'
 
-    ADD_CNI_CONF='\
-           "range": "172.20.1.10-172.20.1.254/16",
+    ADD_CNI_CONF='"range": "172.20.1.10-172.20.1.254/16",
            "gateway": "172.20.0.1",
            "routes": [ { "dst": "0.0.0.0/0" }],'
 
@@ -153,7 +151,7 @@ apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   name: ${MULTUS_DEFAULT_CNI_NAME}
-  namespace: ${CNI_NAMESPACE}
+  namespace: ${MULTUS_CNI_NAMESPACE}
 spec:
   config: '{
       "cniVersion": "0.3.1",
@@ -175,7 +173,7 @@ apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   name: ${MULTUS_ADDITIONAL_CNI_NAME}
-  namespace: ${CNI_NAMESPACE}
+  namespace: ${MULTUS_CNI_NAMESPACE}
 spec:
   config: '{
       "cniVersion": "0.3.1",
@@ -200,6 +198,8 @@ EOF
 # tmplate
 sed 's?<<IMAGE_MULTUS>>?'"${IMAGE_MULTUS}"'?'   ${CURRENT_DIR_PATH}/../yamls/multus-daemonset-thick-plugin.tmpl > ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
 sed -i 's?<<MULTUS_DEFAULT_CNI_NAME>>?'"${MULTUS_DEFAULT_CNI_NAME}"'?' ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
+sed -i 's?<<MULTUS_CNI_NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?' ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
+
 
 kubectl apply -f ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml --kubeconfig ${E2E_KUBECONFIG}
 # for CRD is applied

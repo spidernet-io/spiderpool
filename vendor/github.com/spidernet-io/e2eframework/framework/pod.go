@@ -41,7 +41,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			return true
 		}
 		if !tools.Eventually(t, f.Config.ResourceDeleteTimeout, time.Second) {
-			return fmt.Errorf("time out to wait a deleting pod")
+			return ErrTimeOut
 		}
 	}
 	return f.CreateResource(pod, opts...)
@@ -105,7 +105,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 	}
 	watchInterface, err := f.KClient.Watch(ctx, &corev1.PodList{}, l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Watch: %v", err)
+		return nil, ErrWatch
 	}
 	defer watchInterface.Stop()
 
@@ -114,7 +114,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		// if pod not exist , got no event
 		case event, ok := <-watchInterface.ResultChan():
 			if !ok {
-				return nil, fmt.Errorf("channel is closed ")
+				return nil, ErrChanelClosed
 			}
 			f.t.Logf("pod %v/%v %v event \n", namespace, name, event.Type)
 			// Added    EventType = "ADDED"
@@ -180,16 +180,18 @@ func (f *Framework) CheckPodListIpReady(podlist *corev1.PodList) error {
 			return fmt.Errorf("pod %v failed to assign ip", podlist.Items[i].Name)
 		}
 		f.t.Logf("pod %v ips: %+v \n", podlist.Items[i].Name, podlist.Items[i].Status.PodIPs)
-
-		if !f.Info.IpV4Enabled || !tools.CheckPodIpv4IPReady(&podlist.Items[i]) {
-			return fmt.Errorf("pod %v failed to get ipv4 ip", podlist.Items[i].Name)
+		if f.Info.IpV4Enabled {
+			if !tools.CheckPodIpv4IPReady(&podlist.Items[i]) {
+				return fmt.Errorf("pod %v failed to get ipv4 ip", podlist.Items[i].Name)
+			}
+			f.t.Logf("succeeded to check pod %v ipv4 ip \n", podlist.Items[i].Name)
 		}
-		f.t.Logf("succeeded to check pod %v ipv4 ip \n", podlist.Items[i].Name)
-
-		if !f.Info.IpV6Enabled || !tools.CheckPodIpv6IPReady(&podlist.Items[i]) {
-			return fmt.Errorf("pod %v failed to get ipv6 ip", podlist.Items[i].Name)
+		if f.Info.IpV6Enabled {
+			if !tools.CheckPodIpv6IPReady(&podlist.Items[i]) {
+				return fmt.Errorf("pod %v failed to get ipv6 ip", podlist.Items[i].Name)
+			}
+			f.t.Logf("succeeded to check pod %v ipv6 ip \n", podlist.Items[i].Name)
 		}
-		f.t.Logf("succeeded to check pod %v ipv6 ip \n", podlist.Items[i].Name)
 	}
 	return nil
 }

@@ -4,12 +4,13 @@ package reliability_test
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	"sync"
-	"time"
 )
 
 var _ = Describe("test reliability", Label("reliability"), Serial, func() {
@@ -30,7 +31,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		})
 	})
 
-	DescribeTable("test IP allocation when some components are unstable",
+	DescribeTable("reliability test table",
 		func(componentName string, label map[string]string, startupTimeRequired time.Duration) {
 
 			// get component pod list
@@ -90,11 +91,13 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			e7 := frame.WaitPodListRunning(label, expectPodNum, ctx5)
 			Expect(e7).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("component %v running normally \n", componentName)
-
 		},
-		Entry("test IP allocation when etcd is not unstable", Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
-		Entry("test IP allocation when apiserver is not unstable", Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, time.Second*90),
-		Entry("test IP allocation when coredns is not unstable", Label("R00006"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Second*90),
+		Entry("finally succeed to run a pod during the ETCD is restarting",
+			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
+		Entry("finally succeed to run a pod during the API-server is restarting",
+			Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, time.Second*90),
+		Entry("finally succeed to run a pod during the coreDns is restarting",
+			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Second*90),
 		// TODO(bingzhesun) spiderpool
 	)
 })

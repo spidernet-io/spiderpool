@@ -1,6 +1,6 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-package ippool_test
+package assignip_test
 
 import (
 	"testing"
@@ -10,9 +10,9 @@ import (
 	e2e "github.com/spidernet-io/e2eframework/framework"
 )
 
-func TestIppool(t *testing.T) {
+func TestAssignIP(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ippool Suite")
+	RunSpecs(t, "AssiginIP Suite")
 }
 
 var frame *e2e.Framework

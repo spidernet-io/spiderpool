@@ -1,6 +1,6 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-package performance_test
+package configmap_test
 
 import (
 	"testing"
@@ -10,9 +10,9 @@ import (
 	e2e "github.com/spidernet-io/e2eframework/framework"
 )
 
-func TestPerformance(t *testing.T) {
+func TestConfigMap(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Performance Suite")
+	RunSpecs(t, "Configmap Suite")
 }
 
 var frame *e2e.Framework

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mohae/deepcopy"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,6 +37,9 @@ type ClusterInfo struct {
 	// docker container name for kind cluster
 	KindNodeList    []string
 	KindNodeListRaw string
+	// multus
+	MultusDefaultCni    string
+	MultusAdditionalCni string
 }
 
 var clusterInfo = &ClusterInfo{}
@@ -58,9 +62,14 @@ const (
 	E2E_SPIDERPOOL_IPAM_ENABLED = "E2E_SPIDERPOOL_IPAM_ENABLED"
 	E2E_WHEREABOUT_IPAM_ENABLED = "E2E_WHEREABOUT_IPAM_ENABLED"
 	E2E_KIND_CLUSTER_NODE_LIST  = "E2E_KIND_CLUSTER_NODE_LIST"
+	E2E_Multus_DefaultCni       = "E2E_Multus_DefaultCni"
+	E2E_Multus_AdditionalCni    = "E2E_Multus_AdditionalCni"
 )
 
 var envConfigList = []envconfig{
+	// --- multus field
+	{EnvName: E2E_Multus_DefaultCni, DestStr: &clusterInfo.MultusDefaultCni, Default: "", Required: false},
+	{EnvName: E2E_Multus_AdditionalCni, DestStr: &clusterInfo.MultusAdditionalCni, Default: "", Required: false},
 	// --- require field
 	{EnvName: E2E_CLUSTER_NAME, DestStr: &clusterInfo.ClusterName, Default: "", Required: true},
 	{EnvName: E2E_KUBECONFIG_PATH, DestStr: &clusterInfo.KubeConfigPath, Default: "", Required: true},
@@ -159,7 +168,11 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 		}
 		err = appsv1.AddToScheme(scheme)
 		if err != nil {
-			return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
+			return nil, fmt.Errorf("failed to add appsv1 Scheme : %v", err)
+		}
+		err = batchv1.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add batchv1 Scheme")
 		}
 		err = apiextensions_v1.AddToScheme(scheme)
 		if err != nil {

@@ -3,4 +3,6 @@
 package common
 
 var DeploymentNameString = "deployment"
-var StatefulsetNameString = "statefulSet"
+var StatefulSetNameString = "statefulSet"
+var DaemonSetNameString = "daemonSet"
+var ReplicaSetNameString = "replicaSet"

@@ -384,6 +384,7 @@ jobs:
           retention-days: 1
 
       - name: Show e2e Result For ipv4-only
+        if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
         run: |
           if ${{ steps.ipv4only_e2e.outputs.pass == 'true' }} ;then
               exit 0
@@ -438,6 +439,7 @@ jobs:
           retention-days: 1
 
       - name: Show e2e Result For ipv6-only
+        if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
         run: |
           if ${{ steps.ipv6only_e2e.outputs.pass == 'true' }} ;then
               exit 0

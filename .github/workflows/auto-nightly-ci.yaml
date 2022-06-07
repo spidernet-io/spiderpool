@@ -70,7 +70,7 @@ jobs:
               - 'Makefile*'
               - '**/Makefile*'
             all_e2e:
-              - 'test/e2e/**/*.go'
+              - 'test/**'
               - 'vendor/github.com/spidernet-io/**/*.go'
 
       - name: Get Ref

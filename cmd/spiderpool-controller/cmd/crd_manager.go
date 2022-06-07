@@ -6,7 +6,6 @@ package cmd
 import (
 	"path"
 	"strconv"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -34,6 +33,15 @@ func newCRDManager() (ctrl.Manager, error) {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		LeaderElection:                true,
+		LeaderElectionResourceLock:    "",    // 若不指定，则默认使用lease锁。还可以指定endpointLock或configmapLock
+		LeaderElectionNamespace:       "",    // TODO, 如果不填，则会使用Default the namespace (if running in cluster)
+		LeaderElectionID:              "",    // TODO, MUST
+		LeaderElectionReleaseOnCancel: false, // 若设置true，则新领导不需要首先等待LeaseDuration时间
+		LeaseDuration:                 nil,   // TODO
+		RenewDeadline:                 nil,   // TODO
+		RetryPeriod:                   nil,   // TODO
+
 		Scheme:                 scheme,
 		Port:                   port,
 		CertDir:                path.Dir(controllerContext.TlsServerCertPath),

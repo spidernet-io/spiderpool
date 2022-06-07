@@ -34,11 +34,13 @@ const (
 )
 
 const (
-	PodRunning     types.PodStatus = "Running"
-	PodTerminating types.PodStatus = "Terminating"
-	PodSucceeded   types.PodStatus = "Succeeded"
-	PodFailed      types.PodStatus = "Failed"
-	PodEvicted     types.PodStatus = "Evicted"
+	PodRunning      types.PodStatus = "Running"
+	PodTerminating  types.PodStatus = "Terminating"
+	PodGraceTimeOut types.PodStatus = "GraceTimeOut"
+	PodSucceeded    types.PodStatus = "Succeeded"
+	PodFailed       types.PodStatus = "Failed"
+	PodEvicted      types.PodStatus = "Evicted"
+	PodDeleted      types.PodStatus = "Deleted"
 )
 
 const (

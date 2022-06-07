@@ -10,3 +10,6 @@ subjects:
 - kind: ServiceAccount
   name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
+- kind: ServiceAccount
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}

@@ -89,7 +89,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		return nil, fmt.Errorf("failed to get pod %s: %v", *addArgs.PodName, err)
 	}
 
-	podStatus, allocatable := i.podManager.IsIPAllocatable(ctx, pod)
+	podStatus, allocatable := i.podManager.CheckPodStatus(ctx, pod)
 	if !allocatable {
 		return nil, fmt.Errorf("pod is %s: %w", podStatus, constant.ErrNotAllocatablePod)
 	}

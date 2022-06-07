@@ -24,7 +24,7 @@ import (
 type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
 	GetOwnerType(ctx context.Context, pod *corev1.Pod) types.OwnerType
-	IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (types.PodStatus, bool)
+	CheckPodStatus(ctx context.Context, pod *corev1.Pod) (types.PodStatus, bool)
 	MergeAnnotations(ctx context.Context, pod *corev1.Pod, annotations map[string]string) error
 	MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
@@ -87,14 +87,15 @@ func (r *podManager) GetOwnerType(ctx context.Context, pod *corev1.Pod) types.Ow
 	return ownerType
 }
 
-func (r *podManager) IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (types.PodStatus, bool) {
+func (r *podManager) CheckPodStatus(ctx context.Context, pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable bool) {
 	if pod.DeletionTimestamp != nil && pod.DeletionGracePeriodSeconds != nil {
 		now := time.Now()
 		deletionTime := pod.DeletionTimestamp.Time
 		deletionGracePeriod := time.Duration(*pod.DeletionGracePeriodSeconds) * time.Second
 		if now.After(deletionTime.Add(deletionGracePeriod)) {
-			return constant.PodTerminating, false
+			return constant.PodGraceTimeOut, false
 		}
+		return constant.PodTerminating, false
 	}
 
 	if pod.Status.Phase == corev1.PodSucceeded && pod.Spec.RestartPolicy != corev1.RestartPolicyAlways {

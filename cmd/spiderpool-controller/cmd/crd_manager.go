@@ -7,17 +7,19 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/webhook"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/spidernet-io/spiderpool/pkg/webhook"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 )
 
 var scheme = runtime.NewScheme()
@@ -33,7 +35,13 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
+	// leaderElectionID determines the name of the resource that leader election will use for holding the leader lock.
+	leaderElectionID := constant.AnnotationPre + "-" + resourcelock.LeasesResourceLock
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		LeaderElection:             true,
+		LeaderElectionID:           leaderElectionID,
+		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
+
 		Scheme:                 scheme,
 		Port:                   port,
 		CertDir:                path.Dir(controllerContext.Cfg.TlsServerCertPath),

@@ -59,6 +59,8 @@ jobs:
           fi
           echo ::set-output name=ref::${image_ref}
           [ -n "${image_suffix}" ] && echo ::set-output name=suffix::-${image_suffix}
+          # it is invalid if the ref is branch name "xx/xx/xx"
+          echo ::set-output name=imagetag::${image_ref##*/}
           exit 0
 
       - name: Checkout Source Code
@@ -85,7 +87,7 @@ jobs:
           push: true
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.ref }}
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.imagetag }}
           build-args: |
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
@@ -101,7 +103,7 @@ jobs:
           echo "${job_name_underscored}_DIGEST := \"${{ steps.docker_build_release.outputs.digest }}\"" > image-digest/makefile-digest.txt
           echo "### ${{ matrix.name }}" > image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.ref }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.imagetag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
           # ====== Image Digests Output =============
           cd image-digest/
@@ -121,13 +123,13 @@ jobs:
       - name: Upload artifact digests
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: image-digest-artifact-${{ steps.ref.outputs.ref }}
+          name: image-digest-artifact-${{ steps.ref.outputs.imagetag }}
           path: image-digest-output.txt
           retention-days: 1
 
       - name: Upload artifact digests
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: makefile-digest-artifact-${{ steps.ref.outputs.ref }}
+          name: makefile-digest-artifact-${{ steps.ref.outputs.imagetag }}
           path: Makefile.digests
           retention-days: 1

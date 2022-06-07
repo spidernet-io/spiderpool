@@ -98,7 +98,7 @@ for complex case, refer to [ippool usage](./docs/usage/allocation.md)
 
 ## Development
 
-[Development guide](docs/contributing/pullrequest.md) is a reference point for development helper commands
+[Development guide](docs/develop/pullrequest.md) is a reference point for development helper commands
 
 ## Roadmap
 

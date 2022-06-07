@@ -122,7 +122,9 @@ data:
       },
       "namespaceIsolation": false,
       "clusterNetwork": "<<MULTUS_DEFAULT_CNI_NAME>>",
+      "defaultNetworks": ["<<E2E_BRIDGE_CNI>>"],
       "multusNamespace": "<<MULTUS_CNI_NAMESPACE>>",
+      "systemNamespaces": ["unknown"],
       "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
     }
 ---

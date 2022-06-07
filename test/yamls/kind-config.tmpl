@@ -8,13 +8,13 @@ networking:
   apiServerAddress: 127.0.0.1
 {%- if ip_family == "ipv4" %}
   podSubnet: "172.20.0.0/16"
-  serviceSubnet: "172.31.0.0/16"
+  serviceSubnet: "{{K8S_IPV4_SERVICE_CIDR}}"
 {%- elif ip_family == "ipv6" %}
   podSubnet: "fd01::/48"
-  serviceSubnet: "fd99::/108"
+  serviceSubnet: "{{K8S_IPV6_SERVICE_CIDR}}"
 {%- else %}
   podSubnet: "172.20.0.0/16,fd01::/48"
-  serviceSubnet: "172.31.0.0/16,fd99::/108"
+  serviceSubnet: "{{K8S_IPV4_SERVICE_CIDR}},{{K8S_IPV6_SERVICE_CIDR}}"
 {%- endif %}
 kubeadmConfigPatches:
   - |

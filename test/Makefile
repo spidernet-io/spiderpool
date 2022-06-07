@@ -35,6 +35,13 @@ ifeq ($(INSTALL_MULTUS),true)
 		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
+		K8S_IPV4_SERVICE_CIDR=$(K8S_IPV4_SERVICE_CIDR) \
+		K8S_IPV6_SERVICE_CIDR=$(K8S_IPV6_SERVICE_CIDR) \
+		E2E_BRIDGE_V4_CIDR=$(E2E_BRIDGE_V4_CIDR) \
+		E2E_BRIDGE_V6_CIDR=$(E2E_BRIDGE_V6_CIDR) \
+		E2E_BRIDGE_V4_GW=$(E2E_BRIDGE_V4_GW) \
+		E2E_BRIDGE_V6_GW=$(E2E_BRIDGE_V6_GW) \
+		INSTALL_BRIDGE_CNI_FOR_SERVICE=true  \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage &>/dev/null
@@ -70,6 +77,8 @@ setup_kind:
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
 			 standard_cluster=$(E2E_STANDARD_CLUSTER) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
 			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
+			 K8S_IPV4_SERVICE_CIDR=$(K8S_IPV4_SERVICE_CIDR) \
+			 K8S_IPV6_SERVICE_CIDR=$(K8S_IPV6_SERVICE_CIDR) \
 			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	$(QUIET) kind create cluster \

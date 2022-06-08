@@ -3,6 +3,7 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -47,6 +48,28 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	return f.CreateResource(ns, opts...)
 }
 
+func (f *Framework) GetNamespace(nsName string) (*corev1.Namespace, error) {
+	if nsName == "" {
+		return nil, ErrWrongInput
+	}
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsName,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Namespace",
+			APIVersion: "v1",
+		},
+	}
+	key := client.ObjectKeyFromObject(ns)
+	namespace := &corev1.Namespace{}
+	err := f.GetResource(key, namespace)
+	if err != nil {
+		return nil, err
+	}
+	return namespace, nil
+}
+
 func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) error {
 
 	if nsName == "" {
@@ -59,4 +82,27 @@ func (f *Framework) DeleteNamespace(nsName string, opts ...client.DeleteOption) 
 		},
 	}
 	return f.DeleteResource(ns, opts...)
+}
+
+func (f *Framework) DeleteNamespaceUntilFinish(nsName string, ctx context.Context, opts ...client.DeleteOption) error {
+	if nsName == "" {
+		return ErrWrongInput
+	}
+	err := f.DeleteNamespace(nsName, opts...)
+	if err != nil {
+		return err
+	}
+	for {
+		select {
+		default:
+			namespace, _ := f.GetNamespace(nsName)
+			if namespace == nil {
+				return nil
+			}
+			time.Sleep(time.Second)
+		case <-ctx.Done():
+			return ErrTimeOut
+		}
+	}
+
 }

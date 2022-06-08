@@ -43,7 +43,7 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 
 		behavior := common.JobTypeRunningForever
 		jd := common.GenerateExampleJobYaml(behavior, jdName, nsName, pointer.Int32Ptr(2))
-
+		Expect(jd).NotTo(BeNil())
 		label := jd.Spec.Template.Labels
 		parallelism := jd.Spec.Parallelism
 
@@ -91,7 +91,7 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 			// create Job
 			GinkgoWriter.Printf("try to create Job %v/%v \n", nsName, jdName)
 			jd := common.GenerateExampleJobYaml(behavior, jdName, nsName, pointer.Int32Ptr(2))
-
+			Expect(jd).NotTo(BeNil())
 			GinkgoWriter.Printf("job behavior:\n %v \n", behavior)
 			e1 := frame.CreateJob(jd)
 			Expect(e1).NotTo(HaveOccurred(), "failed to create job \n")
@@ -109,8 +109,7 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 			case common.JobTypeFinish:
 				Expect(ok1).To(BeTrue())
 			default:
-				GinkgoWriter.Printf("input error\n")
-				return
+				Fail("input error")
 			}
 
 			Expect(e3).NotTo(HaveOccurred())

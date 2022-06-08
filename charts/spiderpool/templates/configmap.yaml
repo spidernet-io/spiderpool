@@ -13,7 +13,10 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 data:
-  {{- with .Values.configmap.config }}
   conf.yml: |
-    {{- toYaml . | trim | nindent 4 }}
-  {{- end }}
+    ipamUnixSocketPath: {{ .Values.configmap.config.ipamUnixSocketPath }}
+    networkMode: {{ .Values.configmap.config.networkMode }}
+    enableIPv4: {{ .Values.ipFamily.enableIPv4 }}
+    enableIPv6: {{ .Values.ipFamily.enableIPv6 }}
+    clusterDefaultIPv4IPPool: [{{ .Values.clusterDefaultPool.ipv4IPPoolName }}]
+    clusterDefaultIPv6IPPool: [{{ .Values.clusterDefaultPool.ipv6IPPoolName }}]

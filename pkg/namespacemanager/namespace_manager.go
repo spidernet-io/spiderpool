@@ -6,13 +6,15 @@ package namespacemanager
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type NamespaceManager interface {
@@ -24,20 +26,24 @@ type namespaceManager struct {
 	client client.Client
 }
 
-func NewNamespaceManager(c client.Client) NamespaceManager {
+func NewNamespaceManager(c client.Client) (NamespaceManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
+	}
+
 	return &namespaceManager{
 		client: c,
-	}
+	}, nil
 }
 
 func (r *namespaceManager) GetNSDefaultPools(ctx context.Context, nsName string) ([]string, []string, error) {
 	var namespace corev1.Namespace
-	if err := r.client.Get(ctx, types.NamespacedName{Name: nsName}, &namespace); err != nil {
+	if err := r.client.Get(ctx, apitypes.NamespacedName{Name: nsName}, &namespace); err != nil {
 		return nil, nil, err
 	}
 
-	var nsDefaultV4Pool constant.AnnoNSDefautlV4PoolValue
-	var nsDefaultV6Pool constant.AnnoNSDefautlV6PoolValue
+	var nsDefaultV4Pool types.AnnoNSDefautlV4PoolValue
+	var nsDefaultV6Pool types.AnnoNSDefautlV6PoolValue
 	if v, ok := namespace.Annotations[constant.AnnoNSDefautlV4Pool]; ok {
 		if err := json.Unmarshal([]byte(v), &nsDefaultV4Pool); err != nil {
 			return nil, nil, err

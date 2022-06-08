@@ -47,6 +47,9 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_ENABLED_METRIC", "", false, nil, &agentContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, &agentContext.Cfg.UpdateCRMaxRetrys, nil},
+	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords, nil},
+	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, &agentContext.Cfg.IPPoolMaxAllocatedIPs, nil},
 }
 
 type Config struct {
@@ -60,12 +63,16 @@ type Config struct {
 	EnabledPprof   bool
 	EnabledMetric  bool
 
+	UpdateCRMaxRetrys                 string
+	WorkloadEndpointMaxHistoryRecords string
+	IPPoolMaxAllocatedIPs             string
+
 	// configmap
 	IpamUnixSocketPath       string   `yaml:"ipamUnixSocketPath"`
-	EnableIPv4               bool     `yaml:"enableIpv4"`
-	EnableIPv6               bool     `yaml:"enableIpv6"`
-	ClusterDefaultIPv4IPPool []string `yaml:"clusterDefaultIpv4Ippool"`
-	ClusterDefaultIPv6IPPool []string `yaml:"clusterDefaultIpv6Ippool"`
+	EnableIPv4               bool     `yaml:"enableIPv4"`
+	EnableIPv6               bool     `yaml:"enableIPv6"`
+	ClusterDefaultIPv4IPPool []string `yaml:"clusterDefaultIPv4IPPool"`
+	ClusterDefaultIPv6IPPool []string `yaml:"clusterDefaultIPv6IPPool"`
 	NetworkMode              string   `yaml:"networkMode"`
 }
 

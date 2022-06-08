@@ -15,8 +15,9 @@ type IPPoolSpec struct {
 	// - "IPv4":
 	// - "IPv6":
 
-	// +kubebuilder:validation:Required
-	IPVersion IPVersion `json:"ipVersion"`
+	// +kubebuilder:default=IPv4
+	// +kubebuilder:validation:Optional
+	IPVersion *IPVersion `json:"ipVersion,omitempty"`
 
 	// TODO
 
@@ -30,8 +31,9 @@ type IPPoolSpec struct {
 
 	// TODO
 
-	// +kubebuilder:validation:Required
-	Disable bool `json:"disable"`
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	Disable *bool `json:"disable,omitempty"`
 
 	// TODO
 
@@ -50,6 +52,7 @@ type IPPoolSpec struct {
 
 	// TODO
 
+	// +kubebuilder:default=0
 	// +kubebuilder:validation:Optional
 	Vlan *Vlan `json:"vlan,omitempty"`
 

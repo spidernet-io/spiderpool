@@ -88,6 +88,11 @@ type IPAllocationDetail struct {
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="workloadendpoints",scope="Namespaced",shortName={swe},singular="workloadendpoint"
+// +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].interface",description="interface",name="INTERFACE",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv4Pool",description="ipv4Pool",name="IPV4POOL",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv4",description="ipv4",name="IPV4",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv6Pool",description="ipv6Pool",name="IPV6POOL",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv6",description="ipv6",name="IPV6",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.node",description="node",name="NODE",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.creationTime",description="creationTime",name="CREATETION TIME",type=date
 // +kubebuilder:object:root=true

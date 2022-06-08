@@ -61,6 +61,7 @@ spec:
             description: IPPoolSpec defines the desired state of IPPool
             properties:
               disable:
+                default: false
                 type: boolean
               excludeIPs:
                 items:
@@ -69,6 +70,7 @@ spec:
               gateway:
                 type: string
               ipVersion:
+                default: IPv4
                 enum:
                 - IPv4
                 - IPv6
@@ -233,13 +235,12 @@ spec:
               subnet:
                 type: string
               vlan:
+                default: 0
                 format: int32
                 maximum: 4095
                 minimum: 0
                 type: integer
             required:
-            - disable
-            - ipVersion
             - ips
             - subnet
             type: object

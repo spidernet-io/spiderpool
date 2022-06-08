@@ -20,6 +20,26 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - description: interface
+      jsonPath: .status.current.ips[0].interface
+      name: INTERFACE
+      type: string
+    - description: ipv4Pool
+      jsonPath: .status.current.ips[0].ipv4Pool
+      name: IPV4POOL
+      type: string
+    - description: ipv4
+      jsonPath: .status.current.ips[0].ipv4
+      name: IPV4
+      type: string
+    - description: ipv6Pool
+      jsonPath: .status.current.ips[0].ipv6Pool
+      name: IPV6POOL
+      type: string
+    - description: ipv6
+      jsonPath: .status.current.ips[0].ipv6
+      name: IPV6
+      type: string
     - description: node
       jsonPath: .status.current.node
       name: NODE

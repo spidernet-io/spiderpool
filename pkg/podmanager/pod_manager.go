@@ -5,51 +5,62 @@ package podmanager
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"math/rand"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
-	GetOwnerType(ctx context.Context, pod *corev1.Pod) constant.OwnerType
-	IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (constant.PodStatus, bool)
+	GetOwnerType(ctx context.Context, pod *corev1.Pod) types.OwnerType
+	IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (types.PodStatus, bool)
 	MergeAnnotations(ctx context.Context, pod *corev1.Pod, annotations map[string]string) error
 	MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
 
 type podManager struct {
-	client client.Client
+	client            client.Client
+	maxConflictRetrys int
 }
 
-func NewPodManager(c client.Client) PodManager {
-	return &podManager{
-		client: c,
+func NewPodManager(c client.Client, maxConflictRetrys int) (PodManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
 	}
+
+	return &podManager{
+		client:            c,
+		maxConflictRetrys: maxConflictRetrys,
+	}, nil
 }
 
 func (r *podManager) GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error) {
 	var pod corev1.Pod
-	if err := r.client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
 		return nil, err
 	}
 
 	return &pod, nil
 }
 
-func (r *podManager) GetOwnerType(ctx context.Context, pod *corev1.Pod) constant.OwnerType {
+func (r *podManager) GetOwnerType(ctx context.Context, pod *corev1.Pod) types.OwnerType {
 	owner := metav1.GetControllerOf(pod)
 	if owner == nil {
 		return constant.OwnerNone
 	}
 
-	var ownerType constant.OwnerType
-	switch constant.OwnerType(owner.Kind) {
+	var ownerType types.OwnerType
+	switch types.OwnerType(owner.Kind) {
 	case constant.OwnerDeployment:
 		ownerType = constant.OwnerDeployment
 	case constant.OwnerStatefuleSet:
@@ -63,7 +74,7 @@ func (r *podManager) GetOwnerType(ctx context.Context, pod *corev1.Pod) constant
 	return ownerType
 }
 
-func (r *podManager) IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (constant.PodStatus, bool) {
+func (r *podManager) IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (types.PodStatus, bool) {
 	if pod.DeletionTimestamp != nil && pod.DeletionGracePeriodSeconds != nil {
 		now := time.Now()
 		deletionTime := pod.DeletionTimestamp.Time
@@ -99,8 +110,20 @@ func (r *podManager) MergeAnnotations(ctx context.Context, pod *corev1.Pod, anno
 	}
 
 	pod.Annotations = merge
-	if err := r.client.Update(ctx, pod); err != nil {
-		return err
+
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i <= r.maxConflictRetrys; i++ {
+		if err := r.client.Update(ctx, pod); err != nil {
+			if apierrors.IsConflict(err) {
+				if i == r.maxConflictRetrys {
+					return fmt.Errorf("insufficient retries(<=%d) to update Pod annotations", r.maxConflictRetrys)
+				}
+
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				continue
+			}
+			return err
+		}
 	}
 
 	return nil

@@ -77,7 +77,19 @@ func init() {
             }
           },
           "500": {
-            "description": "Allocation failure"
+            "description": "Internal server error"
+          },
+          "512": {
+            "description": "Wrong input information"
+          },
+          "513": {
+            "description": "Not allocatable pod"
+          },
+          "514": {
+            "description": "No available IP pool"
+          },
+          "515": {
+            "description": "All IP used out"
           }
         }
       },
@@ -424,7 +436,19 @@ func init() {
             }
           },
           "500": {
-            "description": "Allocation failure"
+            "description": "Internal server error"
+          },
+          "512": {
+            "description": "Wrong input information"
+          },
+          "513": {
+            "description": "Not allocatable pod"
+          },
+          "514": {
+            "description": "No available IP pool"
+          },
+          "515": {
+            "description": "All IP used out"
           }
         }
       },

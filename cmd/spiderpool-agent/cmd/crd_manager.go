@@ -38,7 +38,7 @@ func newCRDManager() (ctrl.Manager, error) {
 
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &spiderpoolv1.ReservedIP{}, ".spec.ipVersion", func(raw client.Object) []string {
 		reservedIP := raw.(*spiderpoolv1.ReservedIP)
-		return []string{string(reservedIP.Spec.IPVersion)}
+		return []string{string(*reservedIP.Spec.IPVersion)}
 	}); err != nil {
 		return nil, err
 	}

@@ -5,6 +5,7 @@ package nodemanager
 
 import (
 	"context"
+	"errors"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,10 +20,14 @@ type nodeManager struct {
 	client client.Client
 }
 
-func NewNodeManager(c client.Client) NodeManager {
+func NewNodeManager(c client.Client) (NodeManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
+	}
+
 	return &nodeManager{
 		client: c,
-	}
+	}, nil
 }
 
 func (r *nodeManager) MatchLabelSelector(ctx context.Context, nodeName string, labelSelector *metav1.LabelSelector) (bool, error) {

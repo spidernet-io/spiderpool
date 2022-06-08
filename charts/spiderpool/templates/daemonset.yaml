@@ -101,7 +101,7 @@ spec:
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
-            host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
             port: {{ .Values.spiderpoolAgent.healthPort }}
             scheme: HTTP
@@ -114,7 +114,7 @@ spec:
         {{- end }}
         livenessProbe:
           httpGet:
-            host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolAgent.healthPort }}
             scheme: HTTP
@@ -128,7 +128,7 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            host: {{ .Values.configmap.config.enableIpv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolAgent.healthPort }}
             scheme: HTTP

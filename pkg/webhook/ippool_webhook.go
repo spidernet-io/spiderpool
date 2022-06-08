@@ -1,9 +1,6 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-// +kubebuilder:webhook:path=/mutate-spiderpool-spidernet-io-v1-ippool,mutating=true,failurePolicy=fail,sideEffects=None,groups=spiderpool.spidernet.io,resources=ippools,verbs=create;update,versions=v1,name=ippool-mutating.spiderpool.spidernet.io,admissionReviewVersions=v1
-// +kubebuilder:webhook:path=/validate-spiderpool-spidernet-io-v1-ippool,mutating=false,failurePolicy=fail,sideEffects=None,groups=spiderpool.spidernet.io,resources=ippools,verbs=create;update;delete,versions=v1,name=ippool-validaing.spiderpool.spidernet.io,admissionReviewVersions=v1
-
 package webhook
 
 import (

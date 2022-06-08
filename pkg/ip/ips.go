@@ -12,42 +12,57 @@ import (
 type IPs []net.IP
 
 func ParseIPRanges(ipRanges []string) IPs {
-	var ips IPs
+	var sum IPs
 	for _, r := range ipRanges {
-		ips = append(ips, parseIPRange(r)...)
+		ips := parseIPRange(r)
+		if ips == nil {
+			return nil
+		}
+		sum = append(sum, ips...)
 	}
 
-	return ips
+	return sum
 }
 
 func parseIPRange(ipRange string) IPs {
 	var ips IPs
 	arr := strings.Split(ipRange, "-")
-	if len(arr) == 2 {
+	n := len(arr)
+
+	if n == 1 {
+		if ip := net.ParseIP(arr[0]); ip != nil {
+			ips = append(ips, ip)
+		}
+	}
+
+	if n == 2 {
 		cur := net.ParseIP(arr[0])
 		end := net.ParseIP(arr[1])
+		if cur == nil || end == nil {
+			return nil
+		}
 		for Cmp(cur, end) <= 0 {
 			ips = append(ips, cur)
 			cur = NextIP(cur)
 		}
-	} else {
-		ips = append(ips, net.ParseIP(arr[0]))
 	}
 
 	return ips
 }
 
-func IPsDiffSet(src, target IPs) IPs {
+func IPsDiffSet(a, b IPs) IPs {
 	var ips IPs
 	marks := make(map[string]bool)
-	for _, ip := range src {
-		if _, ok := marks[ip.String()]; !ok {
+	for _, ip := range a {
+		if ip != nil {
 			marks[ip.String()] = true
 		}
 	}
 
-	for _, ip := range target {
-		delete(marks, ip.String())
+	for _, ip := range b {
+		if ip != nil {
+			delete(marks, ip.String())
+		}
 	}
 
 	for k := range marks {

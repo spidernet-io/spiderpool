@@ -4,10 +4,14 @@
 package cmd
 
 import (
+	"path"
+	"strconv"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/spidernet-io/spiderpool/pkg/webhook"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -24,9 +28,15 @@ func init() {
 }
 
 func newCRDManager() (ctrl.Manager, error) {
+	port, err := strconv.Atoi(controllerContext.WebhookPort)
+	if err != nil {
+		return nil, err
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: scheme,
-		// TODO(iiiceoo): Add port, cert dir...
+		Scheme:                 scheme,
+		Port:                   port,
+		CertDir:                path.Dir(controllerContext.TlsServerCertPath),
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 	})
@@ -34,12 +44,12 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	// if err = (&webhook.IPPoolWebhook{
-	// 	Client: mgr.GetClient(),
-	// 	Scheme: mgr.GetScheme(),
-	// }).SetupWebhookWithManager(mgr); err != nil {
-	// 	return nil, err
-	// }
+	if err = (&webhook.IPPoolWebhook{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWebhookWithManager(mgr); err != nil {
+		return nil, err
+	}
 
 	return mgr, nil
 }

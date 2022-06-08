@@ -45,6 +45,7 @@ spec:
             description: ReservedIPSpec defines the desired state of ReservedIP
             properties:
               ipVersion:
+                default: IPv4
                 enum:
                 - IPv4
                 - IPv6
@@ -54,7 +55,6 @@ spec:
                   type: string
                 type: array
             required:
-            - ipVersion
             - ips
             type: object
         type: object

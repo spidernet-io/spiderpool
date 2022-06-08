@@ -3,6 +3,8 @@
 
 package constant
 
+import "github.com/spidernet-io/spiderpool/pkg/types"
+
 // Network configurations
 const (
 	NetworkLegacy = "legacy"
@@ -23,24 +25,20 @@ const (
 	LogPanicLevelStr = "panic"
 )
 
-type OwnerType string
-
 const (
-	OwnerNone         OwnerType = "None"
-	OwnerDeployment   OwnerType = "Deployment"
-	OwnerStatefuleSet OwnerType = "StatefulSet"
-	OwnerDaemonSet    OwnerType = "DaemonSet"
-	OwnerCRD          OwnerType = "Unknown"
+	OwnerNone         types.OwnerType = "None"
+	OwnerDeployment   types.OwnerType = "Deployment"
+	OwnerStatefuleSet types.OwnerType = "StatefulSet"
+	OwnerDaemonSet    types.OwnerType = "DaemonSet"
+	OwnerCRD          types.OwnerType = "Unknown"
 )
 
-type PodStatus string
-
 const (
-	PodRunning     PodStatus = "Running"
-	PodTerminating PodStatus = "Terminating"
-	PodSucceeded   PodStatus = "Succeeded"
-	PodFailed      PodStatus = "Failed"
-	PodEvicted     PodStatus = "Evicted"
+	PodRunning     types.PodStatus = "Running"
+	PodTerminating types.PodStatus = "Terminating"
+	PodSucceeded   types.PodStatus = "Succeeded"
+	PodFailed      types.PodStatus = "Failed"
+	PodEvicted     types.PodStatus = "Evicted"
 )
 
 const (
@@ -48,43 +46,8 @@ const (
 	AnnoPodIPPool       = AnnotationPre + "/ippool"
 	AnnoPodIPPools      = AnnotationPre + "/ippools"
 	AnnoPodRoutes       = AnnotationPre + "/routes"
-	AnnoPodDns          = AnnotationPre + "/dns"
+	AnnoPodDNS          = AnnotationPre + "/dns"
 	AnnoPodStatus       = AnnotationPre + "/status"
 	AnnoNSDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
 	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )
-
-type AnnoPodIPPoolValue struct {
-	NIC       *string  `json:"interface,omitempty"`
-	IPv4Pools []string `json:"ipv4pools,omitempty"`
-	IPv6Pools []string `json:"ipv6pools,omitempty"`
-}
-
-type AnnoPodIPPoolsValue []AnnoIPPoolItem
-
-type AnnoIPPoolItem struct {
-	NIC          string   `json:"interface"`
-	IPv4Pools    []string `json:"ipv4pools,omitempty"`
-	IPv6Pools    []string `json:"ipv6pools,omitempty"`
-	DefaultRoute bool     `json:"defaultRoute"`
-}
-
-type AnnoPodRoutesValue []AnnoRouteItem
-
-type AnnoRouteItem struct {
-	Dst string `json:"dst"`
-	Gw  string `json:"gw"`
-}
-
-type AnnoPodAssignedEthxValue struct {
-	NIC      string `json:"interface"`
-	IPv4Pool string `json:"ipv4pool"`
-	IPv6Pool string `json:"ipv6pool"`
-	IPv4     string `json:"ipv4"`
-	IPv6     string `json:"ipv6"`
-	Vlan     string `json:"vlan"`
-}
-
-type AnnoNSDefautlV4PoolValue []string
-
-type AnnoNSDefautlV6PoolValue []string

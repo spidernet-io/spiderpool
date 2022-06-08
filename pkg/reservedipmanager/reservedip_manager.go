@@ -5,6 +5,7 @@ package reservedipmanager
 
 import (
 	"context"
+	"errors"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -12,22 +13,26 @@ import (
 )
 
 type ReservedIPManager interface {
-	GetReservedIPRanges(ctx context.Context, version spiderpoolv1.IPVersion) ([]string, error)
+	GetReservedIPRanges(ctx context.Context, version string) ([]string, error)
 }
 
 type reservedIPManager struct {
 	client client.Client
 }
 
-func NewReservedIPManager(c client.Client) ReservedIPManager {
+func NewReservedIPManager(c client.Client) (ReservedIPManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
+	}
+
 	return &reservedIPManager{
 		client: c,
-	}
+	}, nil
 }
 
-func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version spiderpoolv1.IPVersion) ([]string, error) {
+func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version string) ([]string, error) {
 	var reservedIPs spiderpoolv1.ReservedIPList
-	if err := r.client.List(ctx, &reservedIPs, client.MatchingFields{".spec.ipVersion": string(version)}); err != nil {
+	if err := r.client.List(ctx, &reservedIPs, client.MatchingFields{".spec.ipVersion": version}); err != nil {
 		return nil, err
 	}
 

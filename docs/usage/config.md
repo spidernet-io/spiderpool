@@ -60,33 +60,33 @@ metadata:
   namespace: kube-system
 data:
   ipamUnixSocketPath: "/var/run/spidernet/spiderpool.sock"
-  enableIpv4: true
-  enableIpv6: true
-  clusterDefaultIpv4Ippool: []
-  clusterDefaultIpv6Ippool: []
+  enableIPv4: true
+  enableIPv6: true
+  clusterDefaultIPv4IPPool: []
+  clusterDefaultIPv6IPPool: []
   networkMode: "legacy"
 ```
 
 * ipamUnixSocketPath
     the spiderpool agent pod will listen on this unix socket file, and handle IPAM request from the IPAM plugin
 
-* enableIpv4
+* enableIPv4
 
   * true: the spiderpool will assign ipv4 IP, if fail to assign an ipv4 IP, the IPAM plugin will fail for pod creating
   
   * false: the spiderpool will ignore assigning ipv4 IP
 
-* enableIpv6
+* enableIPv6
 
   * true: the spiderpool will assign ipv6 IP, if fail to assign an ipv6 IP, the IPAM plugin will fail for pod creating
 
   * false: the spiderpool will ignore assigning ipv6 IP
 
-* clusterDefaultIpv4Ippool
+* clusterDefaultIPv4IPPool
 
     the global default ippool of ipv4, it could set to multiple ippool for backup case. Notice, the IP version of these ippool must be IPv4.
 
-* clusterDefaultIpv6Ippool
+* clusterDefaultIPv6IPPool
 
     the global default ippool of ipv6, it could set to multiple ippool for backup case. Notice, the IP version of these ippool must be IPv6.
 

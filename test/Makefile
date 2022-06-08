@@ -46,7 +46,7 @@ ifeq ($(INSTALL_MULTUS),true)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage &>/dev/null
 	@ echo "wait for the cluster ready" ; \
-    	TEST_IMAGE=$(TEST_IMAGE_NAME) \
+		TEST_IMAGE=$(TEST_IMAGE_NAME) \
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
 		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
@@ -88,33 +88,55 @@ setup_kind:
 
 .PHONY: setup_spiderpool
 setup_spiderpool:
-	@ echo "Load Image $(TEST_IMAGE_TAG) to kind..." ; \
-			for i in $(SPIDERPOOL_IMAGES); do \
-				kind load docker-image $${i}:$(TEST_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
-			done;  	\
-	    if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
+	@echo "Load Image $(TEST_IMAGE_TAG) to kind..." ; \
+		for i in $(SPIDERPOOL_IMAGES); do \
+			kind load docker-image $${i}:$(TEST_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
+		done; \
+		if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
 			HELM_OPTION="--set spiderpoolController.tls.certmanager.issuerName=$(CERT_MANAGER_ISSUER_NAME) --set spiderpoolController.tls.method=certmanager" ; \
-        elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
+		elif [ "$(USE_TLS_METHOD)" == "provided" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(ROOT_DIR)/tools/cert/generateCert.sh "$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls" ; \
 			CA=`cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/ca.crt  | base64 -w0 | tr -d '\n' ` ; \
 			SERVER_CERT=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.crt | base64 -w0 | tr -d '\n' ` ; \
 			SERVER_KEY=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.key | base64 -w0 | tr -d '\n' ` ; \
 			HELM_OPTION="--set spiderpoolController.tls.server.cert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.key=\"$${SERVER_KEY}\" --set spiderpoolController.tls.server.ca=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
-        else  \
+		else \
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
-        fi ; \
-		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
-			HELM_OPTION+=" --set configmap.config.enableIpv4=true --set configmap.config.enableIpv4=false " ; \
-		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
-			HELM_OPTION+=" --set configmap.config.enableIpv4=false --set configmap.config.enableIpv4=true " ; \
-		else \
-			HELM_OPTION+=" --set configmap.config.enableIpv4=true --set configmap.config.enableIpv4=true " ; \
 		fi ; \
-        echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
+		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
+			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
+			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
+			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
+			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
+			HELM_OPTION+=" --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=false" ; \
+		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
+			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
+			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
+			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=false --set clusterDefaultPool.installIPv6IPPool=true" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
+			HELM_OPTION+=" --set ipFamily.enableIPv4=false --set ipFamily.enableIPv6=true" ; \
+		else \
+			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
+			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
+			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}') ; \
+			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
+			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
+			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=true" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet} --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
+			HELM_OPTION+=" --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=true" ; \
+		fi ; \
+		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
@@ -123,9 +145,9 @@ setup_spiderpool:
 			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)
 	@ echo "waiting for deployment/spiderpool-controller ready"
-	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
+	kubectl --kubeconfig $(E2E_KUBECONFIG) rollout status -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
 	@ echo "waiting for daemonset/spiderpool-agent ready"
-	kubectl rollout status --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
+	kubectl --kubeconfig $(E2E_KUBECONFIG) rollout status -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
 
 
 .PHONY: clean
@@ -174,17 +196,17 @@ e2e_test:
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
-        if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
-        if [ "$(INSTALL_SPIDER)" != "true" ] ; then \
-          	export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
-          	export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \
-        else  \
-        	export E2E_WHEREABOUT_IPAM_ENABLED=false ;  \
-        	export E2E_SPIDERPOOL_IPAM_ENABLED=true ; \
-       	fi ; \
-       	export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_NAME)" ; \
-       	export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_NAME)" ; \
-		$(ROOT_DIR)/tools/scripts/ginkgo.sh  \
+		if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
+		if [ "$(INSTALL_SPIDER)" != "true" ] ; then \
+			export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
+			export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \
+		else \
+			export E2E_WHEREABOUT_IPAM_ENABLED=false ; \
+			export E2E_SPIDERPOOL_IPAM_ENABLED=true ; \
+		fi ; \
+		export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_NAME)" ; \
+		export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_NAME)" ; \
+		$(ROOT_DIR)/tools/scripts/ginkgo.sh \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none \
 			--json-report e2ereport.json --output-dir $(ROOT_DIR) --procs $(E2E_GINKGO_PROCS) \
 			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  $(GINKGO_OPTION) \

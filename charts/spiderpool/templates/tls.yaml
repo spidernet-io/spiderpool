@@ -18,9 +18,9 @@ spec:
   {{- range $dns := .Values.spiderpoolController.tls.certmanager.extraDnsNames }}
   - {{ $dns | quote }}
   {{- end }}
-  {{- if .Values.spiderpoolController.tls.certmanager.extraIpAddresses }}
+  {{- if .Values.spiderpoolController.tls.certmanager.extraIPAddresses }}
   ipAddresses:
-  {{- range $ip := .Values.spiderpoolController.tls.certmanager.extraIpAddresses }}
+  {{- range $ip := .Values.spiderpoolController.tls.certmanager.extraIPAddresses }}
   - {{ $ip | quote }}
   {{- end }}
   {{- end }}

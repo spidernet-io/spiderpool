@@ -27,9 +27,9 @@ type envConf struct {
 // EnvInfo collects the env and relevant agentContext properties.
 var EnvInfo = []envConf{
 	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.HttpPort},
-	{"SPIDERPOOL_CLI_PORT", "5721", true, &controllerContext.CliPort},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5722", true, &controllerContext.MetricHttpPort},
-	{"SPIDERPOOL_WEBHOOK_PORT", "443", true, &controllerContext.WebhookPort},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.MetricHttpPort},
+	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.WebhookPort},
+	{"SPIDERPOOL_CLI_PORT", "5723", true, &controllerContext.CliPort},
 }
 
 type ControllerContext struct {

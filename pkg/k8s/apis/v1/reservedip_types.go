@@ -14,8 +14,9 @@ type ReservedIPSpec struct {
 	// - "IPv4":
 	// - "IPv6":
 
-	// +kubebuilder:validation:Required
-	IPVersion IPVersion `json:"ipVersion"`
+	// +kubebuilder:default=IPv4
+	// +kubebuilder:validation:Optional
+	IPVersion *IPVersion `json:"ipVersion,omitempty"`
 
 	// TODO
 

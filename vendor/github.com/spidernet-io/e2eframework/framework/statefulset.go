@@ -38,7 +38,7 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.t.Logf("waiting for a same statefulSet %v/%v to finish deleting \n", sts.ObjectMeta.Namespace, sts.ObjectMeta.Name)
+			f.Log("waiting for a same statefulSet %v/%v to finish deleting \n", sts.ObjectMeta.Namespace, sts.ObjectMeta.Name)
 			return false
 		}
 		return true
@@ -139,7 +139,7 @@ func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Con
 			if !ok {
 				return nil, ErrChanelClosed
 			}
-			f.t.Logf(" sts %v/%v %v event \n", namespace, name, event.Type)
+			f.Log("statefulSet %v/%v %v event \n", namespace, name, event.Type)
 
 			// Added    EventType = "ADDED"
 			// Modified EventType = "MODIFIED"
@@ -157,7 +157,7 @@ func (f *Framework) WaitStatefulSetReady(name, namespace string, ctx context.Con
 				if !ok {
 					return nil, ErrGetObj
 				}
-				f.t.Logf("sts %v/%v readyReplicas=%+v\n", namespace, name, sts.Status.ReadyReplicas)
+				f.Log("statefulSet %v/%v readyReplicas=%+v\n", namespace, name, sts.Status.ReadyReplicas)
 				if sts.Status.ReadyReplicas == *(sts.Spec.Replicas) && sts.Status.CurrentReplicas == *(sts.Spec.Replicas) {
 					return sts, nil
 				}

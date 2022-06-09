@@ -37,7 +37,7 @@ func (f *Framework) CreateDaemonSet(ds *appsv1.DaemonSet, opts ...client.CreateO
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.t.Logf("waiting for a same DaemonSet %v/%v to finish deleting \n", ds.ObjectMeta.Name, ds.ObjectMeta.Namespace)
+			f.Log("waiting for a same DaemonSet %v/%v to finish deleting \n", ds.ObjectMeta.Name, ds.ObjectMeta.Namespace)
 			return false
 		}
 
@@ -123,7 +123,7 @@ func (f *Framework) WaitDaemonSetReady(name, namespace string, ctx context.Conte
 			if !ok {
 				return nil, ErrChanelClosed
 			}
-			f.t.Logf(" ds %v/%v %v event \n", namespace, name, event.Type)
+			f.Log("DaemonSet %v/%v %v event \n", namespace, name, event.Type)
 
 			switch event.Type {
 			case watch.Error:

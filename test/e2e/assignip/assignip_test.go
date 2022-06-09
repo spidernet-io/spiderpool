@@ -24,12 +24,14 @@ var _ = Describe("test pod", Label("assignip"), func() {
 	var podlist *corev1.PodList
 
 	BeforeEach(func() {
+		// init namespace name and create
 		namespace = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", namespace)
 		err := frame.CreateNamespace(namespace)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
+		// init test pod name
 		testName = "pod" + tools.RandomName()
-
+		// clean test env
 		DeferCleanup(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err := frame.DeleteNamespace(namespace)
@@ -38,7 +40,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 	})
 
 	DescribeTable("test pod assign ip", func(annotationLength int) {
-		// create pod
+		// try to create pod
 		GinkgoWriter.Printf("create pod %v/%v with annotationLength= %v \n", namespace, testName, annotationLength)
 		podYaml := common.GenerateLongPodYaml(testName, namespace, annotationLength)
 		Expect(podYaml).NotTo(BeNil())
@@ -46,19 +48,19 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		Expect(pod).NotTo(BeNil())
 		Expect(pod.Annotations["test"]).To(Equal(podYaml.Annotations["test"]))
 		GinkgoWriter.Printf("create pod %v/%v successfully \n", namespace, testName)
-		// delete pod
+		// try to delete pod
 		GinkgoWriter.Printf("delete pod %v/%v \n", namespace, testName)
 		err = frame.DeletePod(testName, namespace)
 		Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", namespace, testName)
 	},
 		Entry("assign IP to a pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00001"), 0),
 		Entry("succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case",
-			Label("smoke", "E00007"), 100),
+			Label("E00007"), 100),
 	)
 
 	DescribeTable("assign IP to controller/pod for ipv4, ipv6 and dual-stack case",
 		func(controllerType string, replicas int32) {
-			// create controller
+			// try to create controller
 			GinkgoWriter.Printf("try to create controller %v: %v/%v \n", controllerType, testName, namespace)
 			switch {
 			case controllerType == common.DeploymentNameString:
@@ -98,7 +100,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			}
 			Expect(err).NotTo(HaveOccurred(), "time out to wait controller %v ready", controllerType)
 
-			// get controller pod list
+			// try to get controller pod list
 			switch {
 			case controllerType == common.DeploymentNameString:
 				podlist, err = frame.GetDeploymentPodList(dpm)
@@ -119,7 +121,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			err = frame.CheckPodListIpReady(podlist)
 			Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6")
 
-			// delete controller
+			// try to delete controller
 			GinkgoWriter.Printf("try to delete controller %v: %v/%v \n", controllerType, testName, namespace)
 			switch {
 			case controllerType == common.DeploymentNameString:
@@ -133,9 +135,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			}
 			Expect(err).NotTo(HaveOccurred(), "failed to delete controller %v: %v/%v \n", controllerType, testName, namespace)
 		},
-		Entry("assign IP to deployment/pod for ipv4, ipv6 and dual-stack case", Label("E00002"), common.DeploymentNameString, int32(2)),
-		Entry("assign IP to statefulSet/pod for ipv4, ipv6 and dual-stack case", Label("E00003"), common.StatefulSetNameString, int32(2)),
-		Entry("assign IP to daemonset/pod for ipv4, ipv6 and dual-stack case", Label("E00004"), common.DaemonSetNameString, int32(0)),
-		Entry("assign IP to replicaset/pod for ipv4, ipv6 and dual-stack case", Label("E00006"), common.ReplicaSetNameString, int32(2)),
+		Entry("assign IP to deployment/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00002"), common.DeploymentNameString, int32(2)),
+		Entry("assign IP to statefulSet/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00003"), common.StatefulSetNameString, int32(2)),
+		Entry("assign IP to daemonset/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00004"), common.DaemonSetNameString, int32(0)),
+		Entry("assign IP to replicaset/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00006"), common.ReplicaSetNameString, int32(2)),
 	)
 })

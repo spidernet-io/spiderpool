@@ -28,7 +28,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		err := frame.CreateNamespace(nsName)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
-		// init assignip performance test name
+		// init performance deployment test name
 		perName = "per" + tools.RandomName()
 
 		// clean test env
@@ -43,6 +43,10 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 	DescribeTable("time cost for creating, rebooting, deleting deployment pod in batches",
 		// waiting to expand GC content
 		func(controllerType string, replicas int32, overtimeCheck time.Duration) {
+
+			GinkgoWriter.Printf("disable api log to reduce logs")
+			frame.EnableLog = false
+
 			// try to create controller
 			GinkgoWriter.Printf("try to create controller %v: %v/%v,replicas is %v \n", controllerType, nsName, perName, replicas)
 			switch {
@@ -91,7 +95,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6")
 
 			// try to delete controller
-			GinkgoWriter.Printf("try to delete controller %v: %v/%v \n", controllerType, nsName, perName)
+			GinkgoWriter.Printf("try to delete controller %v: %v/%v, delete replicas is %v \n", controllerType, nsName, perName, replicas)
 			err = frame.DeleteDeployment(perName, nsName)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete controller %v: %v/%v", controllerType, nsName, perName)
 

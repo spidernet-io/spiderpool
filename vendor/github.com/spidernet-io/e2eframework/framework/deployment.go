@@ -38,7 +38,7 @@ func (f *Framework) CreateDeployment(dpm *appsv1.Deployment, opts ...client.Crea
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.t.Logf("waiting for a same deployment %v/%v to finish deleting \n", dpm.ObjectMeta.Namespace, dpm.ObjectMeta.Name)
+			f.Log("waiting for a same deployment %v/%v to finish deleting \n", dpm.ObjectMeta.Namespace, dpm.ObjectMeta.Name)
 			return false
 		}
 		return true
@@ -136,11 +136,11 @@ func (f *Framework) WaitDeploymentReady(name, namespace string, ctx context.Cont
 	for {
 		select {
 		case event, ok := <-watchInterface.ResultChan():
-			f.t.Logf("deployment %v/%v\n", event, ok)
+			f.Log("deployment %v/%v\n", event, ok)
 			if !ok {
 				return nil, ErrChanelClosed
 			}
-			f.t.Logf("deployment %v/%v %v event \n", namespace, name, event.Type)
+			f.Log("deployment %v/%v %v event \n", namespace, name, event.Type)
 			switch event.Type {
 			case watch.Error:
 				return nil, ErrEvent
@@ -151,7 +151,7 @@ func (f *Framework) WaitDeploymentReady(name, namespace string, ctx context.Cont
 				if !ok {
 					return nil, ErrGetObj
 				}
-				f.t.Logf("deployment %v/%v readyReplicas=%+v\n", namespace, name, dpm.Status.ReadyReplicas)
+				f.Log("deployment %v/%v readyReplicas=%+v\n", namespace, name, dpm.Status.ReadyReplicas)
 				if dpm.Status.ReadyReplicas == *(dpm.Spec.Replicas) {
 					return dpm, nil
 				}

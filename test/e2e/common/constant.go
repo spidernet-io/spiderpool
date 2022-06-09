@@ -12,4 +12,6 @@ var SpiderPoolConfigmapNameSpace = "kube-system"
 
 var CNIFailedToSetUpNetwork = "failed to setup network for sandbox"
 
+var GetIpamAllocationFailed = "get ipam allocation failed"
+
 var PodEventKind = "Pod"

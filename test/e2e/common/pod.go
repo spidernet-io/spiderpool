@@ -16,22 +16,14 @@ import (
 )
 
 func GenerateExamplePodYaml(podName, namespace string) *corev1.Pod {
-	return GenerateLongPodYaml(podName, namespace, 0)
-}
-
-func GenerateLongPodYaml(podName, namespace string, annotationLength int) *corev1.Pod {
 	Expect(podName).NotTo(BeEmpty(), "podName is a empty string")
 	Expect(namespace).NotTo(BeEmpty(), "namespace is a empty string")
 
-	annotationStr := GenerateString(annotationLength)
-
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      podName,
-			Annotations: map[string]string{
-				"test": annotationStr,
-			},
+			Namespace:   namespace,
+			Name:        podName,
+			Annotations: map[string]string{},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{

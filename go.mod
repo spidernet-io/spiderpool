@@ -21,7 +21,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
-	github.com/spidernet-io/e2eframework v0.0.0-20220605141255-1972dd306d76
+	github.com/spidernet-io/e2eframework v0.0.0-20220609023538-a93c15d7f7c9
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/tools v0.1.10

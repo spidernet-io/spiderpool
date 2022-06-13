@@ -146,7 +146,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 	}
 }
 
-func (f *Framework) WaitPodDeleteUntilComplete(namespace string, label map[string]string, ctx context.Context) error {
+func (f *Framework) CheckPodListNotExistsByLabel(namespace string, label map[string]string, ctx context.Context) error {
 	// Query all pods corresponding to the label
 	// Delete the resource until the query is empty
 
@@ -169,28 +169,53 @@ func (f *Framework) WaitPodDeleteUntilComplete(namespace string, label map[strin
 			} else if len(podlist.Items) == 0 {
 				return nil
 			}
+			time.Sleep(time.Second)
 		}
 	}
 }
 
-func (f *Framework) CheckPodListIpReady(podlist *corev1.PodList) error {
-
-	for i := 0; i < len(podlist.Items); i++ {
-		if podlist.Items[i].Status.PodIPs == nil {
-			return fmt.Errorf("pod %v failed to assign ip", podlist.Items[i].Name)
-		}
-		f.t.Logf("pod %v ips: %+v \n", podlist.Items[i].Name, podlist.Items[i].Status.PodIPs)
-		if f.Info.IpV4Enabled {
-			if !tools.CheckPodIpv4IPReady(&podlist.Items[i]) {
-				return fmt.Errorf("pod %v failed to get ipv4 ip", podlist.Items[i].Name)
+func (f *Framework) DeletePodUntilFinish(name, namespace string, ctx context.Context) error {
+	// Query all pods by name in namespace
+	// Delete the resource until the query is empty
+	if namespace == "" || name == "" {
+		return ErrWrongInput
+	}
+	err := f.DeletePod(name, namespace)
+	if err != nil {
+		return err
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return ErrTimeOut
+		default:
+			pod, _ := f.GetPod(name, namespace)
+			if pod == nil {
+				return nil
 			}
-			f.t.Logf("succeeded to check pod %v ipv4 ip \n", podlist.Items[i].Name)
+			time.Sleep(time.Second)
+		}
+	}
+}
+
+func (f *Framework) CheckPodListIpReady(podList *corev1.PodList) error {
+
+	for i := 0; i < len(podList.Items); i++ {
+		if podList.Items[i].Status.PodIPs == nil {
+			return fmt.Errorf("pod %v failed to assign ip", podList.Items[i].Name)
+		}
+		f.t.Logf("pod %v ips: %+v \n", podList.Items[i].Name, podList.Items[i].Status.PodIPs)
+		if f.Info.IpV4Enabled {
+			if !tools.CheckPodIpv4IPReady(&podList.Items[i]) {
+				return fmt.Errorf("pod %v failed to get ipv4 ip", podList.Items[i].Name)
+			}
+			f.t.Logf("succeeded to check pod %v ipv4 ip \n", podList.Items[i].Name)
 		}
 		if f.Info.IpV6Enabled {
-			if !tools.CheckPodIpv6IPReady(&podlist.Items[i]) {
-				return fmt.Errorf("pod %v failed to get ipv6 ip", podlist.Items[i].Name)
+			if !tools.CheckPodIpv6IPReady(&podList.Items[i]) {
+				return fmt.Errorf("pod %v failed to get ipv6 ip", podList.Items[i].Name)
 			}
-			f.t.Logf("succeeded to check pod %v ipv6 ip \n", podlist.Items[i].Name)
+			f.t.Logf("succeeded to check pod %v ipv6 ip \n", podList.Items[i].Name)
 		}
 	}
 	return nil

@@ -209,4 +209,91 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
 		})
 	})
+	Context("annotation priority", func() {
+		var v4PoolName, v6PoolName, nic, podIppoolAnnoStr, podIppoolsAnnoStr string
+		var iPv4PoolObj, iPv6PoolObj *spiderpool.IPPool
+		var v4PoolNameList, v6PoolNameList []string
+		var defaultRouteBool bool
+		BeforeEach(func() {
+			nic = "eth0"
+			defaultRouteBool = false
+			// create ipv4pool
+			if frame.Info.IpV4Enabled {
+				// Generate v4PoolName and ipv4pool object
+				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject()
+				v4PoolNameList = append(v4PoolNameList, v4PoolName)
+				GinkgoWriter.Printf("try to create ipv4pool: %v/%v \n", v4PoolName, iPv4PoolObj)
+				err := common.CreateIppool(frame, iPv4PoolObj)
+				Expect(err).NotTo(HaveOccurred(), "fail to create ipv4pool: %v \n", v4PoolName)
+			}
+			// create ipv6pool
+			if frame.Info.IpV6Enabled {
+				// Generate v6PoolName and ipv6pool object
+				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject()
+				v6PoolNameList = append(v6PoolNameList, v6PoolName)
+				GinkgoWriter.Printf("try to create ipv6pool: %v/%v \n", v6PoolName, iPv6PoolObj)
+				err := common.CreateIppool(frame, iPv6PoolObj)
+				Expect(err).NotTo(HaveOccurred(), "fail to create ipv6pool: %v \n", v6PoolName)
+			}
+			DeferCleanup(func() {
+				if frame.Info.IpV4Enabled {
+					err := common.DeleteIPPoolByName(frame, v4PoolName)
+					Expect(err).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					err := common.DeleteIPPoolByName(frame, v6PoolName)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			})
+		})
+		It(`the "ippools" annotation has the higher priority over the "ippool" annotation`, Label("A00005"), func() {
+			// get cluster default ipv4/ipv6 ippool
+			clusterDefaultIPv4IPPoolList, clusterDefaultIPv6IPPoolList, err := common.GetClusterDefaultIppool(frame)
+			Expect(err).NotTo(HaveOccurred())
+			// ippool annotation
+			podIppoolAnno := types.AnnoPodIPPoolValue{
+				NIC:       &nic,
+				IPv4Pools: clusterDefaultIPv4IPPoolList,
+				IPv6Pools: clusterDefaultIPv6IPPoolList,
+			}
+			b, err := json.Marshal(podIppoolAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podIppoolAnnoStr = string(b)
+			// ippools annotation
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				types.AnnoIPPoolItem{
+					NIC:          nic,
+					IPv4Pools:    v4PoolNameList,
+					IPv6Pools:    v6PoolNameList,
+					DefaultRoute: defaultRouteBool,
+				},
+			}
+			b, err = json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podIppoolsAnnoStr = string(b)
+			// Generate Pod Yaml
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			Expect(podYaml).NotTo(BeNil())
+			podYaml.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPool:  podIppoolAnnoStr,
+				pkgconstant.AnnoPodIPPools: podIppoolsAnnoStr,
+			}
+			GinkgoWriter.Printf("podYaml: %v \n", podYaml)
+			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, time.Second*30)
+			GinkgoWriter.Printf("pod %v/%v: podIPv4: %v, podIPv6: %v \n", nsName, podName, podIPv4, podIPv6)
+
+			// Check pod ip in v4PoolName、v6PoolName
+			v := &corev1.PodList{
+				Items: []corev1.Pod{*pod},
+			}
+			ok, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, v)
+			Expect(e).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// try to delete pod
+			GinkgoWriter.Printf("try to delete pod %v/%v \n", nsName, podName)
+			err = frame.DeletePod(podName, nsName)
+			Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
+		})
+	})
 })

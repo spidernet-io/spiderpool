@@ -36,7 +36,7 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
-				f.t.Logf("waiting for a same namespace %v to finish deleting \n", nsName)
+				f.Log("waiting for a same namespace %v to finish deleting \n", nsName)
 				return false
 			}
 			return true

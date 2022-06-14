@@ -37,7 +37,7 @@ func (f *Framework) CreateReplicaSet(rs *appsv1.ReplicaSet, opts ...client.Creat
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.t.Logf("waiting for a same ReplicaSet %v/%v to finish deleting \n", rs.ObjectMeta.Namespace, rs.ObjectMeta.Name)
+			f.Log("waiting for a same ReplicaSet %v/%v to finish deleting \n", rs.ObjectMeta.Namespace, rs.ObjectMeta.Name)
 			return false
 		}
 		return true
@@ -134,11 +134,11 @@ func (f *Framework) WaitReplicaSetReady(name, namespace string, ctx context.Cont
 	for {
 		select {
 		case event, ok := <-watchInterface.ResultChan():
-			f.t.Logf("ReplicaSet %v/%v\n", event, ok)
+			f.Log("ReplicaSet %v/%v\n", event, ok)
 			if !ok {
 				return nil, ErrChanelClosed
 			}
-			f.t.Logf("ReplicaSet %v/%v %v event \n", namespace, name, event.Type)
+			f.Log("ReplicaSet %v/%v %v event \n", namespace, name, event.Type)
 			switch event.Type {
 			case watch.Error:
 				return nil, ErrEvent
@@ -149,7 +149,7 @@ func (f *Framework) WaitReplicaSetReady(name, namespace string, ctx context.Cont
 				if !ok {
 					return nil, ErrGetObj
 				}
-				f.t.Logf("ReplicaSet %v/%v readyReplicas=%+v\n", namespace, name, rs.Status.ReadyReplicas)
+				f.Log("ReplicaSet %v/%v readyReplicas=%+v\n", namespace, name, rs.Status.ReadyReplicas)
 				if rs.Status.ReadyReplicas == *(rs.Spec.Replicas) {
 					return rs, nil
 				}

@@ -35,7 +35,7 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
-				f.t.Logf("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+				f.Log("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 				return false
 			}
 			return true
@@ -116,7 +116,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 			if !ok {
 				return nil, ErrChanelClosed
 			}
-			f.t.Logf("pod %v/%v %v event \n", namespace, name, event.Type)
+			f.Log("pod %v/%v %v event \n", namespace, name, event.Type)
 			// Added    EventType = "ADDED"
 			// Modified EventType = "MODIFIED"
 			// Deleted  EventType = "DELETED"
@@ -133,7 +133,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 				if !ok {
 					return nil, fmt.Errorf("failed to get metaObject")
 				}
-				f.t.Logf("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
+				f.Log("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
 				if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
 					break
 				} else {
@@ -174,13 +174,13 @@ func (f *Framework) CheckPodListNotExistsByLabel(namespace string, label map[str
 	}
 }
 
-func (f *Framework) DeletePodUntilFinish(name, namespace string, ctx context.Context) error {
+func (f *Framework) DeletePodUntilFinish(name, namespace string, ctx context.Context, opts ...client.DeleteOption) error {
 	// Query all pods by name in namespace
 	// Delete the resource until the query is empty
 	if namespace == "" || name == "" {
 		return ErrWrongInput
 	}
-	err := f.DeletePod(name, namespace)
+	err := f.DeletePod(name, namespace, opts...)
 	if err != nil {
 		return err
 	}
@@ -204,18 +204,18 @@ func (f *Framework) CheckPodListIpReady(podList *corev1.PodList) error {
 		if podList.Items[i].Status.PodIPs == nil {
 			return fmt.Errorf("pod %v failed to assign ip", podList.Items[i].Name)
 		}
-		f.t.Logf("pod %v ips: %+v \n", podList.Items[i].Name, podList.Items[i].Status.PodIPs)
+		f.Log("pod %v ips: %+v \n", podList.Items[i].Name, podList.Items[i].Status.PodIPs)
 		if f.Info.IpV4Enabled {
 			if !tools.CheckPodIpv4IPReady(&podList.Items[i]) {
 				return fmt.Errorf("pod %v failed to get ipv4 ip", podList.Items[i].Name)
 			}
-			f.t.Logf("succeeded to check pod %v ipv4 ip \n", podList.Items[i].Name)
+			f.Log("succeeded to check pod %v ipv4 ip \n", podList.Items[i].Name)
 		}
 		if f.Info.IpV6Enabled {
 			if !tools.CheckPodIpv6IPReady(&podList.Items[i]) {
 				return fmt.Errorf("pod %v failed to get ipv6 ip", podList.Items[i].Name)
 			}
-			f.t.Logf("succeeded to check pod %v ipv6 ip \n", podList.Items[i].Name)
+			f.Log("succeeded to check pod %v ipv6 ip \n", podList.Items[i].Name)
 		}
 	}
 	return nil
@@ -243,12 +243,12 @@ func (f *Framework) CheckPodListRunning(podList *corev1.PodList) bool {
 	return true
 }
 
-func (f *Framework) DeletePodList(podList *corev1.PodList) error {
+func (f *Framework) DeletePodList(podList *corev1.PodList, opts ...client.DeleteOption) error {
 	if podList == nil {
 		return ErrWrongInput
 	}
 	for _, item := range podList.Items {
-		err := f.DeletePod(item.Name, item.Namespace)
+		err := f.DeletePod(item.Name, item.Namespace, opts...)
 		if err != nil {
 			return err
 		}
@@ -283,7 +283,7 @@ func (f *Framework) WaitPodListRunning(label map[string]string, expectedPodNum i
 	}
 }
 
-func (f *Framework) DeletePodListRepeatedly(label map[string]string, interval time.Duration, ctx context.Context) error {
+func (f *Framework) DeletePodListRepeatedly(label map[string]string, interval time.Duration, ctx context.Context, opts ...client.DeleteOption) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -293,7 +293,7 @@ func (f *Framework) DeletePodListRepeatedly(label map[string]string, interval ti
 			if e1 != nil {
 				return e1
 			}
-			e2 := f.DeletePodList(podList)
+			e2 := f.DeletePodList(podList, opts...)
 			if e2 != nil {
 				return e2
 			}

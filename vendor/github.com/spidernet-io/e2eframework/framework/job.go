@@ -37,7 +37,7 @@ func (f *Framework) CreateJob(jb *batchv1.Job, opts ...client.CreateOption) erro
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.t.Logf("waiting for a same Job %v/%v to finish deleting \n", jb.ObjectMeta.Name, jb.ObjectMeta.Namespace)
+			f.Log("waiting for a same Job %v/%v to finish deleting \n", jb.ObjectMeta.Name, jb.ObjectMeta.Namespace)
 			return false
 		}
 		return true

@@ -99,8 +99,9 @@ type Framework struct {
 	// cluster info
 	Info ClusterInfo
 
-	t      TestingT
-	Config FConfig
+	t         TestingT
+	Config    FConfig
+	EnableLog bool
 }
 
 // -------------------------------------------
@@ -136,6 +137,7 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 
 	f := &Framework{}
 	f.t = t
+	f.EnableLog = true
 
 	v := deepcopy.Copy(*clusterInfo)
 	f.Info, ok = v.(ClusterInfo)
@@ -253,4 +255,10 @@ func initClusterInfo() error {
 	}
 	return nil
 
+}
+
+func (f *Framework) Log(format string, args ...interface{}) {
+	if f.EnableLog {
+		f.t.Logf(format, args...)
+	}
 }

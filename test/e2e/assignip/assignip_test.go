@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
@@ -39,16 +40,16 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
 		})
 	})
-
-	DescribeTable("test pod assign ip", func(annotationLength int) {
-		// try to create pod
+	DescribeTable("test pod assign ip", func(annotationKeyName string, annotationLength int) {
+		// create pod
 		GinkgoWriter.Printf("create pod %v/%v with annotationLength= %v \n", namespace, testName, annotationLength)
-		podYaml := common.GenerateLongPodYaml(testName, namespace, annotationLength)
+		podYaml := common.GenerateExamplePodYaml(testName, namespace)
+		podYaml.Annotations = map[string]string{annotationKeyName: common.GenerateString(annotationLength)}
 		Expect(podYaml).NotTo(BeNil())
 
 		pod, _, _ := common.CreatePodUntilReady(frame, podYaml, testName, namespace, time.Second*30)
 		Expect(pod).NotTo(BeNil())
-		Expect(pod.Annotations["test"]).To(Equal(podYaml.Annotations["test"]))
+		Expect(pod.Annotations[annotationKeyName]).To(Equal(podYaml.Annotations[annotationKeyName]))
 		GinkgoWriter.Printf("create pod %v/%v successfully \n", namespace, testName)
 
 		v := &corev1.PodList{
@@ -64,8 +65,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		err = frame.DeletePod(testName, namespace)
 		Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", namespace, testName)
 	},
-		Entry("assign IP to a pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00001"), 0),
-		Entry("succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case", Label("E00007"), 100),
+		Entry("assign IP to a pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00001"), "test", 0),
+		Entry("succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case",
+			Label("E00007"), "test", 100),
 	)
 
 	DescribeTable("assign IP to controller/pod for ipv4, ipv6 and dual-stack case",

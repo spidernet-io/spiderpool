@@ -92,8 +92,8 @@ CNI_PATH
 ipam.spidernet.io
 defaultv4ippool
 defaultv6ippool
-clusterDefaultIpv4Ippool
-clusterDefaultIpv6Ippool
+clusterDefaultIPv4IPPool
+clusterDefaultIPv6IPPool
 configmap
 ipversion
 podSelector
@@ -106,8 +106,8 @@ finalizer
 ipv4pool
 ipv6pool
 comma-seperated
-enableIpv4
-enableIpv6
+enableIPv4
+enableIPv6
 defaultRoute
 30d
 ipamUnixSocketPath

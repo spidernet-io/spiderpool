@@ -3,16 +3,7 @@
 
 package constant
 
-const (
-	AnnotationPre              = "ipam.spidernet.io"
-	AnnoPodIppool              = AnnotationPre + "/ippool"
-	AnnoPodIppools             = AnnotationPre + "/ippools"
-	AnnoPodRoute               = AnnotationPre + "/routes"
-	AnnoPodDns                 = AnnotationPre + "/dns"
-	AnnoPodStatus              = AnnotationPre + "/status"
-	AnnoNamespaceDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
-	AnnoNamespaceDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
-)
+import "github.com/spidernet-io/spiderpool/pkg/types"
 
 // Network configurations
 const (
@@ -32,4 +23,31 @@ const (
 	LogErrorLevelStr = "error"
 	LogFatalLevelStr = "fatal"
 	LogPanicLevelStr = "panic"
+)
+
+const (
+	OwnerNone         types.OwnerType = "None"
+	OwnerDeployment   types.OwnerType = "Deployment"
+	OwnerStatefuleSet types.OwnerType = "StatefulSet"
+	OwnerDaemonSet    types.OwnerType = "DaemonSet"
+	OwnerCRD          types.OwnerType = "Unknown"
+)
+
+const (
+	PodRunning     types.PodStatus = "Running"
+	PodTerminating types.PodStatus = "Terminating"
+	PodSucceeded   types.PodStatus = "Succeeded"
+	PodFailed      types.PodStatus = "Failed"
+	PodEvicted     types.PodStatus = "Evicted"
+)
+
+const (
+	AnnotationPre       = "ipam.spidernet.io"
+	AnnoPodIPPool       = AnnotationPre + "/ippool"
+	AnnoPodIPPools      = AnnotationPre + "/ippools"
+	AnnoPodRoutes       = AnnotationPre + "/routes"
+	AnnoPodDNS          = AnnotationPre + "/dns"
+	AnnoPodStatus       = AnnotationPre + "/status"
+	AnnoNSDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
+	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )

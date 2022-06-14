@@ -1,0 +1,70 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: spiderpool-admin
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - nodes
+  - pods
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - ippools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - ippools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - reservedips
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - workloadendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - workloadendpoints/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -15,8 +15,9 @@ type IPPoolSpec struct {
 	// - "IPv4":
 	// - "IPv6":
 
-	// +kubebuilder:validation:Required
-	IPVersion IPVersion `json:"ipVersion"`
+	// +kubebuilder:default=IPv4
+	// +kubebuilder:validation:Optional
+	IPVersion *IPVersion `json:"ipVersion,omitempty"`
 
 	// TODO
 
@@ -51,6 +52,7 @@ type IPPoolSpec struct {
 
 	// TODO
 
+	// +kubebuilder:default=0
 	// +kubebuilder:validation:Optional
 	Vlan *Vlan `json:"vlan,omitempty"`
 
@@ -93,8 +95,8 @@ type Route struct {
 
 	// TODO
 
-	// +kubebuilder:validation:Optional
-	Gw *string `json:"gw,omitempty"`
+	// +kubebuilder:validation:Required
+	Gw string `json:"gw"`
 }
 
 // IPPoolStatus defines the observed state of IPPool
@@ -137,7 +139,7 @@ type PoolIPAllocation struct {
 	// TODO
 
 	// +kubebuilder:validation:Required
-	Containerid string `json:"containerid"`
+	ContainerID string `json:"containerID"`
 
 	// TODO
 

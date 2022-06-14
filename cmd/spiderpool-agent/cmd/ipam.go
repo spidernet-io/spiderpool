@@ -4,9 +4,15 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
+
+var ipamAPILogger = logutils.Logger.Named("IPAM")
 
 // Singleton
 var (
@@ -21,8 +27,27 @@ type _unixPostAgentIpamIp struct{}
 // Handle handles POST requests for /ipam/ip .
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
+	resp, err := agentContext.IPAM.Allocate(params.HTTPRequest.Context(), params.IpamAddArgs)
+	if err != nil {
+		ipamAPILogger.Sugar().Errorf("Failed to allocate: %v", err)
 
-	return daemonset.NewPostIpamIPOK()
+		if errors.Is(err, constant.ErrWrongInput) {
+			return daemonset.NewPostIpamIPStatus512()
+		}
+		if errors.Is(err, constant.ErrNotAllocatablePod) {
+			return daemonset.NewPostIpamIPStatus513()
+		}
+		if errors.Is(err, constant.ErrNoAvailablePool) {
+			return daemonset.NewPostIpamIPStatus514()
+		}
+		if errors.Is(err, constant.ErrIPUsedOut) {
+			return daemonset.NewPostIpamIPStatus515()
+		}
+
+		return daemonset.NewDeleteIpamIPInternalServerError()
+	}
+
+	return daemonset.NewPostIpamIPOK().WithPayload(resp)
 }
 
 type _unixDeleteAgentIpamIp struct{}

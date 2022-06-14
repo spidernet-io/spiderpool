@@ -63,7 +63,7 @@ func (o *PostIpamIPOK) WriteResponse(rw http.ResponseWriter, producer runtime.Pr
 // PostIpamIPInternalServerErrorCode is the HTTP code returned for type PostIpamIPInternalServerError
 const PostIpamIPInternalServerErrorCode int = 500
 
-/*PostIpamIPInternalServerError Allocation failure
+/*PostIpamIPInternalServerError Internal server error
 
 swagger:response postIpamIpInternalServerError
 */
@@ -82,4 +82,100 @@ func (o *PostIpamIPInternalServerError) WriteResponse(rw http.ResponseWriter, pr
 	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
 
 	rw.WriteHeader(500)
+}
+
+// PostIpamIPStatus512Code is the HTTP code returned for type PostIpamIPStatus512
+const PostIpamIPStatus512Code int = 512
+
+/*PostIpamIPStatus512 Wrong input information
+
+swagger:response postIpamIpStatus512
+*/
+type PostIpamIPStatus512 struct {
+}
+
+// NewPostIpamIPStatus512 creates PostIpamIPStatus512 with default headers values
+func NewPostIpamIPStatus512() *PostIpamIPStatus512 {
+
+	return &PostIpamIPStatus512{}
+}
+
+// WriteResponse to the client
+func (o *PostIpamIPStatus512) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
+
+	rw.WriteHeader(512)
+}
+
+// PostIpamIPStatus513Code is the HTTP code returned for type PostIpamIPStatus513
+const PostIpamIPStatus513Code int = 513
+
+/*PostIpamIPStatus513 Not allocatable pod
+
+swagger:response postIpamIpStatus513
+*/
+type PostIpamIPStatus513 struct {
+}
+
+// NewPostIpamIPStatus513 creates PostIpamIPStatus513 with default headers values
+func NewPostIpamIPStatus513() *PostIpamIPStatus513 {
+
+	return &PostIpamIPStatus513{}
+}
+
+// WriteResponse to the client
+func (o *PostIpamIPStatus513) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
+
+	rw.WriteHeader(513)
+}
+
+// PostIpamIPStatus514Code is the HTTP code returned for type PostIpamIPStatus514
+const PostIpamIPStatus514Code int = 514
+
+/*PostIpamIPStatus514 No available IP pool
+
+swagger:response postIpamIpStatus514
+*/
+type PostIpamIPStatus514 struct {
+}
+
+// NewPostIpamIPStatus514 creates PostIpamIPStatus514 with default headers values
+func NewPostIpamIPStatus514() *PostIpamIPStatus514 {
+
+	return &PostIpamIPStatus514{}
+}
+
+// WriteResponse to the client
+func (o *PostIpamIPStatus514) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
+
+	rw.WriteHeader(514)
+}
+
+// PostIpamIPStatus515Code is the HTTP code returned for type PostIpamIPStatus515
+const PostIpamIPStatus515Code int = 515
+
+/*PostIpamIPStatus515 All IP used out
+
+swagger:response postIpamIpStatus515
+*/
+type PostIpamIPStatus515 struct {
+}
+
+// NewPostIpamIPStatus515 creates PostIpamIPStatus515 with default headers values
+func NewPostIpamIPStatus515() *PostIpamIPStatus515 {
+
+	return &PostIpamIPStatus515{}
+}
+
+// WriteResponse to the client
+func (o *PostIpamIPStatus515) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
+
+	rw.WriteHeader(515)
 }

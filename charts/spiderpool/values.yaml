@@ -2,6 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+ipFamily:
+  enableIPv4: true
+  enableIPv6: true
+
 rbac:
   # -- Enable creation of Resource-Based Access Control configuration.
   create: true
@@ -43,15 +47,22 @@ ipamPlugin:
   ipam_unix_socket_dir: /var/run/spidernet
   ipam_unix_socket_path: /var/run/spidernet/spiderpool.sock
 
+clusterDefaultPool:
+  installIPv4IPPool: false
+  installIPv6IPPool: false
+  ipv4IPPoolName: ""
+  ipv6IPPoolName: ""
+  ipv4Subnet: ""
+  ipv6Subnet: ""
+  ipv4IPRanges: []
+  ipv6IPRanges: []
+
 configmap:
   configCmName: "spiderpool-conf"
+
   config:
     # -- Unix domain socket path to listen for ipam plugin.
     ipamUnixSocketPath: "/var/run/spidernet/spiderpool.sock"
-    enableIpv4: true
-    enableIpv6: true
-    clusterDefaultIpv4Ippool: []
-    clusterDefaultIpv6Ippool: []
     networkMode: "legacy"
 
 spiderpoolAgent:
@@ -394,13 +405,13 @@ spiderpoolController:
     # global enable
     enabled: true
     # if enabled=false, ignore this
-    gcTerminatingPodIpEnabled: true
+    gcTerminatingPodIPEnabled: true
     # delay to gc pod ip after pod graceful time, second
-    gcTerminatingPodIpDelay: 0
+    gcTerminatingPodIPDelay: 0
     # if enabled=false, ignore this
-    gcEvictedPodIpEnabled: true
+    gcEvictedPodIPEnabled: true
     # delay to gc pod ip after pod graceful time, second
-    gcEvictedPodIpDelay: 0
+    gcEvictedPodIPDelay: 0
 
   # -- TLS configuration for webhook
   tls:
@@ -424,7 +435,7 @@ spiderpoolController:
       # -- Extra DNS names added to certificate when it's auto generated
       extraDnsNames: []
       # -- Extra IP addresses added to certificate when it's auto generated
-      extraIpAddresses: []
+      extraIPAddresses: []
 
     # -- for provided method
     server:

@@ -29,19 +29,11 @@ controller-gen() {
 manifests_gen() {
   output_dir=$1
 
-#  controller-gen \
-#      crd webhook rbac:roleName="spiderpool" \
-#      paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1;${PWD}/${PROJECT_ROOT}/pkg/webhook" \
-#      output:crd:artifacts:config="${output_dir}/crds" \
-#      output:webhook:artifacts:config="${output_dir}/webhook" \
-#      output:rbac:artifacts:config="${output_dir}/rbac"
-
   controller-gen \
-      crd rbac:roleName="spiderpool" \
-      paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1" \
-      output:crd:artifacts:config="${output_dir}/crds" \
-      output:rbac:artifacts:config="${output_dir}/rbac"
-
+  crd rbac:roleName="spiderpool-admin" \
+  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/v1" \
+  output:crd:artifacts:config="${output_dir}/crds" \
+  output:rbac:artifacts:config="${output_dir}/templates"
 }
 
 deepcopy_gen() {
@@ -55,17 +47,13 @@ deepcopy_gen() {
 
 manifests_verify() {
   # Aggregate the artifacts currently in use
-  mkdir -p ${OUTPUT_TMP_DIR}
+  mkdir -p ${OUTPUT_TMP_DIR}/templates
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/crds)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
+    cp -a ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
   fi
 
-  #if [ "$(ls -A ${OUTPUT_BASE_DIR}/webhook)" ]; then
-  #  cp -ra ${OUTPUT_BASE_DIR}/webhook ${OUTPUT_TMP_DIR}
-  #fi
-
-  if [ "$(ls -A ${OUTPUT_BASE_DIR}/rbac)" ]; then
-    cp -ra ${OUTPUT_BASE_DIR}/rbac ${OUTPUT_TMP_DIR}
+  if [ "$(ls -A ${OUTPUT_BASE_DIR}/templates)" ]; then
+    cp -a ${OUTPUT_BASE_DIR}/templates/role.yaml ${OUTPUT_TMP_DIR}/templates
   fi
 
   # Generator the latest artifacts

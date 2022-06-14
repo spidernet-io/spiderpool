@@ -4,17 +4,20 @@
 package cmd
 
 import (
+	"path"
+	"strconv"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/spidernet-io/spiderpool/pkg/webhook"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/webhook"
 )
 
 var scheme = runtime.NewScheme()
@@ -24,14 +27,19 @@ func init() {
 	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
 }
 
-func newControllerManager() (ctrl.Manager, error) {
+func newCRDManager() (ctrl.Manager, error) {
+	port, err := strconv.Atoi(controllerContext.WebhookPort)
+	if err != nil {
+		return nil, err
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: scheme,
-		// TODO (Icarus9913): Add port...
+		Scheme:                 scheme,
+		Port:                   port,
+		CertDir:                path.Dir(controllerContext.TlsServerCertPath),
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 	})
-
 	if nil != err {
 		return nil, err
 	}
@@ -43,5 +51,5 @@ func newControllerManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	return mgr, err
+	return mgr, nil
 }

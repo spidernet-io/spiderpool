@@ -37,7 +37,7 @@ spec:
         image: ${TEST_IMAGE}
         imagePullPolicy: IfNotPresent
         command:
-        - "/bin/ash"
+        - "/bin/sh"
         args:
         - "-c"
         - "sleep infinity"

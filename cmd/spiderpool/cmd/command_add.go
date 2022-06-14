@@ -17,6 +17,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
 )
@@ -181,7 +182,7 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 				nicIndex := tmpIndex
 
 				v4ip.Interface = &nicIndex
-				v4ip.Address = net.IPNet{IP: net.ParseIP(*ipconfig.Address), Mask: net.CIDRMask(32, 32)}
+				v4ip.Address = *ip.ParseIP(*ipconfig.Address)
 				v4ip.Gateway = net.ParseIP(ipconfig.Gateway)
 
 				result.IPs = append(result.IPs, &v4ip)
@@ -190,7 +191,7 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 				nicIndex := tmpIndex
 
 				v6ip.Interface = &nicIndex
-				v6ip.Address = net.IPNet{IP: net.ParseIP(*ipconfig.Address), Mask: net.CIDRMask(128, 128)}
+				v6ip.Address = *ip.ParseIP(*ipconfig.Address)
 				v6ip.Gateway = net.ParseIP(ipconfig.Gateway)
 
 				result.IPs = append(result.IPs, &v6ip)

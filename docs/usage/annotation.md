@@ -13,9 +13,9 @@ Pod could specify spiderpool annotation for special request
 
   * interface: optional, when integrate with [multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), it could specify which ippool is used to the interface.
   
-  * ipv4pool: specify which ippool is used to assign ipv4 ip. It could set with multiple ippool by comma-seperated string. When enableIpv4 in configmap "spiderpool-conf" is set to true, this filed is required.
+  * ipv4pool: specify which ippool is used to assign ipv4 ip. It could set with multiple ippool by comma-seperated string. When enableIPv4 in configmap "spiderpool-conf" is set to true, this filed is required.
   
-  * ipv6pool: specify which ippool is used to assign ipv6 ip. It could set with multiple ippool by comma-seperated string. When enableIpv6 in configmap "spiderpool-conf" is set to true, this filed is required.
+  * ipv6pool: specify which ippool is used to assign ipv6 ip. It could set with multiple ippool by comma-seperated string. When enableIPv6 in configmap "spiderpool-conf" is set to true, this filed is required.
 
 * "ipam.spidernet.io/ippools", this one is similar to "ipam.spidernet.io/ippool", but could be used to multiple interface case. BTW, the "ipam.spidernet.io/ippools" has precedence over "ipam.spidernet.io/ippool".
 

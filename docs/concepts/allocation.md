@@ -11,7 +11,7 @@ when a pod is creating, it observes following steps to assign ip:
     * Namespace annotation. "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool" could be used for specify ippool. It could refer to [namespace annotation](./annotation.md) for detail.
 
     * Cluster default ippool.
-    Cluster default ippool could be set to "clusterDefaultIpv4Ippool" and "clusterDefaultIpv6Ippool" in configmap "spiderpool-conf". It could refer to [configuration](./config.md) for detail.
+    Cluster default ippool could be set to "clusterDefaultIPv4IPPool" and "clusterDefaultIPv6IPPool" in configmap "spiderpool-conf". It could refer to [configuration](./config.md) for detail.
 
 2. filter valid ippool candidate
 

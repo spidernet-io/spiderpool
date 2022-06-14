@@ -70,6 +70,7 @@ spec:
               gateway:
                 type: string
               ipVersion:
+                default: IPv4
                 enum:
                 - IPv4
                 - IPv6
@@ -228,17 +229,18 @@ spec:
                       type: string
                   required:
                   - dst
+                  - gw
                   type: object
                 type: array
               subnet:
                 type: string
               vlan:
+                default: 0
                 format: int32
                 maximum: 4095
                 minimum: 0
                 type: integer
             required:
-            - ipVersion
             - ips
             - subnet
             type: object
@@ -257,7 +259,7 @@ spec:
                 additionalProperties:
                   description: PoolIPAllocation is an IP already has been allocated
                   properties:
-                    containerid:
+                    containerID:
                       type: string
                     interface:
                       type: string
@@ -268,7 +270,7 @@ spec:
                     pod:
                       type: string
                   required:
-                  - containerid
+                  - containerID
                   - interface
                   - namespace
                   - node

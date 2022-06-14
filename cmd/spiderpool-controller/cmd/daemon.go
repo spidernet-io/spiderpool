@@ -19,7 +19,21 @@ func DaemonMain() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go WatchSignal(sigCh)
 
-	controllerContext.ControllerManagerCtx, controllerContext.ControllerManagerCancel = context.WithCancel(context.Background())
+	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
+
+	logger.Info("Begin to initialize spiderpool-controller CRD Manager")
+	mgr, err := newCRDManager()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.CRDManager = mgr
+
+	go func() {
+		logger.Info("Starting spiderpool-controller CRD Manager")
+		if err := mgr.Start(controllerContext.InnerCtx); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}()
 
 	logger.Info("Begin to initialize http server")
 	// new controller http server
@@ -28,6 +42,7 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.HttpServer = srv
+
 	// serve controller http
 	go func() {
 		if err = srv.Serve(); nil != err {
@@ -40,21 +55,6 @@ func DaemonMain() {
 
 	// ...
 	time.Sleep(100 * time.Hour)
-
-	logger.Info("Begin to initialize spiderpool-controller Controller Manager")
-	mgr, err := newControllerManager()
-	if nil != err {
-		logger.Fatal(err.Error())
-	}
-
-	// TODO (iiiceoo): miss tls cert
-	go func() {
-		logger.Info("Starting spiderpool-agent Controller Manager")
-		if err := mgr.Start(controllerContext.ControllerManagerCtx); err != nil {
-			logger.Fatal(err.Error())
-		}
-	}()
-
 }
 
 // WatchSignal notifies the signal to shut down controllerContext handlers.
@@ -64,10 +64,10 @@ func WatchSignal(sigCh chan os.Signal) {
 
 		// TODO (Icarus9913):  filter some signals
 
-		// Cancel the context of Controller Manager.
-		// This stops things like the CRD's Informer, Webhook, Controller, etc.
-		if controllerContext.ControllerManagerCancel != nil {
-			controllerContext.ControllerManagerCancel()
+		// Cancel the internal context of spiderpool-controller.
+		// This stops things like the CRD Manager, GC, etc.
+		if controllerContext.InnerCancel != nil {
+			controllerContext.InnerCancel()
 		}
 
 		// shut down http server

@@ -38,6 +38,30 @@ func (o *PostIpamIPReader) ReadResponse(response runtime.ClientResponse, consume
 			return nil, err
 		}
 		return nil, result
+	case 512:
+		result := NewPostIpamIPStatus512()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 513:
+		result := NewPostIpamIPStatus513()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 514:
+		result := NewPostIpamIPStatus514()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 515:
+		result := NewPostIpamIPStatus515()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	default:
 		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
 	}
@@ -82,7 +106,7 @@ func NewPostIpamIPInternalServerError() *PostIpamIPInternalServerError {
 
 /* PostIpamIPInternalServerError describes a response with status code 500, with default header values.
 
-Allocation failure
+Internal server error
 */
 type PostIpamIPInternalServerError struct {
 }
@@ -92,6 +116,90 @@ func (o *PostIpamIPInternalServerError) Error() string {
 }
 
 func (o *PostIpamIPInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewPostIpamIPStatus512 creates a PostIpamIPStatus512 with default headers values
+func NewPostIpamIPStatus512() *PostIpamIPStatus512 {
+	return &PostIpamIPStatus512{}
+}
+
+/* PostIpamIPStatus512 describes a response with status code 512, with default header values.
+
+Wrong input information
+*/
+type PostIpamIPStatus512 struct {
+}
+
+func (o *PostIpamIPStatus512) Error() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus512 ", 512)
+}
+
+func (o *PostIpamIPStatus512) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewPostIpamIPStatus513 creates a PostIpamIPStatus513 with default headers values
+func NewPostIpamIPStatus513() *PostIpamIPStatus513 {
+	return &PostIpamIPStatus513{}
+}
+
+/* PostIpamIPStatus513 describes a response with status code 513, with default header values.
+
+Not allocatable pod
+*/
+type PostIpamIPStatus513 struct {
+}
+
+func (o *PostIpamIPStatus513) Error() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus513 ", 513)
+}
+
+func (o *PostIpamIPStatus513) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewPostIpamIPStatus514 creates a PostIpamIPStatus514 with default headers values
+func NewPostIpamIPStatus514() *PostIpamIPStatus514 {
+	return &PostIpamIPStatus514{}
+}
+
+/* PostIpamIPStatus514 describes a response with status code 514, with default header values.
+
+No available IP pool
+*/
+type PostIpamIPStatus514 struct {
+}
+
+func (o *PostIpamIPStatus514) Error() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus514 ", 514)
+}
+
+func (o *PostIpamIPStatus514) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	return nil
+}
+
+// NewPostIpamIPStatus515 creates a PostIpamIPStatus515 with default headers values
+func NewPostIpamIPStatus515() *PostIpamIPStatus515 {
+	return &PostIpamIPStatus515{}
+}
+
+/* PostIpamIPStatus515 describes a response with status code 515, with default header values.
+
+All IP used out
+*/
+type PostIpamIPStatus515 struct {
+}
+
+func (o *PostIpamIPStatus515) Error() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus515 ", 515)
+}
+
+func (o *PostIpamIPStatus515) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	return nil
 }

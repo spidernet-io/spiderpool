@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var controllerContext = new(ControllerContext)
@@ -26,9 +27,9 @@ type envConf struct {
 // EnvInfo collects the env and relevant agentContext properties.
 var EnvInfo = []envConf{
 	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.HttpPort},
-	{"SPIDERPOOL_CLI_PORT", "5721", true, &controllerContext.CliPort},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5722", true, &controllerContext.MetricHttpPort},
-	{"SPIDERPOOL_WEBHOOK_PORT", "443", true, &controllerContext.WebhookPort},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.MetricHttpPort},
+	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.WebhookPort},
+	{"SPIDERPOOL_CLI_PORT", "5723", true, &controllerContext.CliPort},
 }
 
 type ControllerContext struct {
@@ -55,12 +56,13 @@ type ControllerContext struct {
 	EnabledGCEvictedPodIP      bool
 	GCEvictedPodIPDuration     time.Duration
 
-	// ControllerManagerCtx is the context that can be used during shutdown.
+	// InnerCtx is the context that can be used during shutdown.
 	// It will be cancelled after receiving an interrupt or termination signal.
-	ControllerManagerCtx    context.Context
-	ControllerManagerCancel context.CancelFunc
+	InnerCtx    context.Context
+	InnerCancel context.CancelFunc
 
 	// handler
+	CRDManager ctrl.Manager
 	HttpServer *server.Server
 }
 

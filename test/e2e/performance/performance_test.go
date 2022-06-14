@@ -15,7 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("performance test case", Serial, Label("performance"), func() {
+var _ = Describe("performance test case", Serial, Label("performance"), Pending, func() {
 	var perName, nsName string
 	var err error
 	var dpm *appsv1.Deployment

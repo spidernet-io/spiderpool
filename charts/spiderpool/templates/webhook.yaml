@@ -15,7 +15,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /mutate
+      path: /mutate-spiderpool-spidernet-io-v1-ippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
@@ -50,7 +50,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /validate
+      path: /validate-spiderpool-spidernet-io-v1-ippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}

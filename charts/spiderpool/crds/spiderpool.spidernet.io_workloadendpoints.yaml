@@ -21,27 +21,27 @@ spec:
   versions:
   - additionalPrinterColumns:
     - description: interface
-      jsonPath: .status.ips.interface
+      jsonPath: .status.current.ips[0].interface
       name: INTERFACE
       type: string
     - description: ipv4Pool
-      jsonPath: .status.ips.ipv4Pool
+      jsonPath: .status.current.ips[0].ipv4Pool
       name: IPV4POOL
       type: string
     - description: ipv4
-      jsonPath: .status.ips.ipv4
+      jsonPath: .status.current.ips[0].ipv4
       name: IPV4
       type: string
     - description: ipv6Pool
-      jsonPath: .status.ips.ipv6Pool
+      jsonPath: .status.current.ips[0].ipv6Pool
       name: IPV6POOL
       type: string
     - description: ipv6
-      jsonPath: .status.ips.ipv6
+      jsonPath: .status.current.ips[0].ipv6
       name: IPV6
       type: string
     - description: node
-      jsonPath: .status.node
+      jsonPath: .status.current.node
       name: NODE
       type: string
     - description: creationTime
@@ -71,7 +71,7 @@ spec:
               current:
                 description: TODO
                 properties:
-                  containerid:
+                  containerID:
                     type: string
                   creationTime:
                     format: date-time
@@ -92,15 +92,18 @@ spec:
                           type: string
                         ipv6Pool:
                           type: string
-                        route:
-                          properties:
-                            dst:
-                              type: string
-                            gw:
-                              type: string
-                          required:
-                          - dst
-                          type: object
+                        routes:
+                          items:
+                            properties:
+                              dst:
+                                type: string
+                              gw:
+                                type: string
+                            required:
+                            - dst
+                            - gw
+                            type: object
+                          type: array
                         vlan:
                           format: int32
                           maximum: 4095
@@ -114,7 +117,7 @@ spec:
                   node:
                     type: string
                 required:
-                - containerid
+                - containerID
                 - creationTime
                 - ips
                 - node
@@ -123,7 +126,7 @@ spec:
                 items:
                   description: TODO
                   properties:
-                    containerid:
+                    containerID:
                       type: string
                     creationTime:
                       format: date-time
@@ -144,15 +147,18 @@ spec:
                             type: string
                           ipv6Pool:
                             type: string
-                          route:
-                            properties:
-                              dst:
-                                type: string
-                              gw:
-                                type: string
-                            required:
-                            - dst
-                            type: object
+                          routes:
+                            items:
+                              properties:
+                                dst:
+                                  type: string
+                                gw:
+                                  type: string
+                              required:
+                              - dst
+                              - gw
+                              type: object
+                            type: array
                           vlan:
                             format: int32
                             maximum: 4095
@@ -166,14 +172,12 @@ spec:
                     node:
                       type: string
                   required:
-                  - containerid
+                  - containerID
                   - creationTime
                   - ips
                   - node
                   type: object
                 type: array
-            required:
-            - current
             type: object
         type: object
     served: true

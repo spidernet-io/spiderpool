@@ -28,7 +28,7 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 		// init Job name
 		jdName = "jd" + tools.RandomName()
 
-		//clean test env
+		// clean test env
 		DeferCleanup(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", nsName)
 			err = frame.DeleteNamespace(nsName)
@@ -118,7 +118,7 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 
 			// TODO(weiyang) check ip release
 
-			//delete job
+			// delete job
 			GinkgoWriter.Printf("delete job: %v \n", jdName)
 			err := frame.DeleteJob(jdName, nsName)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)

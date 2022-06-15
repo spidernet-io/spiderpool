@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 
 	"fmt"
 	"os"
@@ -119,7 +120,8 @@ var (
 
 // NewFramework init Framework struct
 // fakeClient for unitest
-func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error) {
+//func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme)error , fakeClient ...client.WithWatch) (*Framework, error) {
+func NewFramework(t TestingT , fakeClient ...client.WithWatch) (*Framework, error) {
 
 	if t == nil {
 		return nil, fmt.Errorf("miss TestingT")
@@ -181,6 +183,19 @@ func NewFramework(t TestingT, fakeClient ...client.WithWatch) (*Framework, error
 			return nil, fmt.Errorf("failed to add apiextensions_v1 Scheme : %v", err)
 		}
 		// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
+
+		// for n , v := range schemeRegisterList {
+		// 	err = v(scheme)
+		// 	if err != nil {
+		// 		return nil, fmt.Errorf("failed to add schemeRegisterList[%v] ", n)
+		// 	}
+		// }
+
+		err = spiderpool.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add spiderpool Scheme")
+		}
+
 		f.KClient, err = client.NewWithWatch(f.KConfig, client.Options{Scheme: scheme})
 		if err != nil {
 			return nil, fmt.Errorf("failed to new clientset: %v", err)

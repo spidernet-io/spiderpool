@@ -5,23 +5,19 @@ package common
 import (
 	frame "github.com/spidernet-io/e2eframework/framework"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
+	// "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetIppoolByName(f frame.Framework, name string) *spiderpool.IPPool {
-	if name == "" {
+func GetIppoolByName(f *frame.Framework, poolName string) *spiderpool.IPPool {
+	if poolName == "" {
 		return nil
 	}
 
-	pod := &spiderpool.IPPool{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-	}
-	key := client.ObjectKeyFromObject(pod)
+	v := apitypes.NamespacedName{Name: poolName}
 	existing := &spiderpool.IPPool{}
-	e := f.GetResource(key, existing)
+	e := f.GetResource(v, existing)
 	if e != nil {
 		return nil
 	}

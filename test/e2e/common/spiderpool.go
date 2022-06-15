@@ -8,7 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	// . "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -153,6 +155,7 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 			GinkgoWriter.Printf("succeeded to check pod %v/%v with ip %v in ippool %v\n", v.Namespace, v.Name, ip.String(), v6IppoolNameList)
 		}
 	}
+	GinkgoWriter.Printf("succeeded to check ippool for all ip of pods \n")
 	return true, nil
 }
 
@@ -166,6 +169,17 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 		return nil, nil, e
 	}
 	GinkgoWriter.Printf("configmap: %+v \n", t.Data)
+
+	data, ok := t.Data["conf.yml"]
+	if !ok || len(data) == 0 {
+		return nil, nil, errors.New("failed to find cluster default ippool")
+	}
+
+	d := cmd.Config{}
+	if err := yaml.Unmarshal(data, &d); nil != err {
+		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
+		return nil, nil, errors.New("failed to find cluster default ippool")
+	}
 
 	return
 }

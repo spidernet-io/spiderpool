@@ -112,21 +112,21 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 				return false, errors.New("failed to get pod ipv4 address")
 			}
 			bingo := false
-			for _, v := range v4ippoolList {
-				ok, e := CheckIppoolForUsedIP(f, v, v.Name, v.Namespace, ip)
+			for _, m := range v4ippoolList {
+				ok, e := CheckIppoolForUsedIP(f, m, v.Name, v.Namespace, ip)
 				if e != nil || !ok {
-					GinkgoWriter.Printf("pod %v/%v : ip %v not recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), v.Name)
-					GinkgoWriter.Printf("ippool %v status : %v \n", v.Name, v.Status.AllocatedIPs)
+					GinkgoWriter.Printf("pod %v/%v : ip %v not recorded in ippool %v\n", v.Namespace, v.Name, ip.IP, m.Name)
+					GinkgoWriter.Printf("ippool %v status : %v \n", v.Name, m.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
-				GinkgoWriter.Printf("pod %v/%v : ip %v recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), v.Name)
+				GinkgoWriter.Printf("pod %v/%v : ip %v recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), m.Name)
 				break
 			}
 			if bingo == false {
 				return false, nil
 			}
-			GinkgoWriter.Printf("succeeded to check pod %v/%v with ip %v in ippool %v\n", v.Namespace, v.Name, ip.String(), v4IppoolNameList)
+			GinkgoWriter.Printf("succeeded to check pod %v/%v with ip %v in ippool %v\n", v.Namespace, v.Name, ip.IP, v4IppoolNameList)
 		}
 
 		if f.Info.IpV6Enabled == true {
@@ -136,15 +136,15 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 				return false, errors.New("failed to get pod ipv6 address")
 			}
 			bingo := false
-			for _, v := range v6ippoolList {
-				ok, e := CheckIppoolForUsedIP(f, v, v.Name, v.Namespace, ip)
+			for _, m := range v6ippoolList {
+				ok, e := CheckIppoolForUsedIP(f, m, v.Name, v.Namespace, ip)
 				if e != nil || !ok {
-					GinkgoWriter.Printf("pod %v/%v : ip %v not recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), v.Name)
-					GinkgoWriter.Printf("ippool %v status : %v \n", v.Name, v.Status.AllocatedIPs)
+					GinkgoWriter.Printf("pod %v/%v : ip %v not recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), m.Name)
+					GinkgoWriter.Printf("ippool %v status : %v \n", v.Name, m.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
-				GinkgoWriter.Printf("pod %v/%v : ip %v recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), v.Name)
+				GinkgoWriter.Printf("pod %v/%v : ip %v recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), m.Name)
 				break
 			}
 			if bingo == false {

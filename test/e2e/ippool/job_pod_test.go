@@ -36,19 +36,6 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 		})
 	})
 
-	It("get ippool", Label("ippool"), func() {
-
-		poolName := "default-v4-ippool"
-		p := common.GetIppoolByName(frame, poolName)
-		GinkgoWriter.Printf("ippool %+v \n", p)
-
-		name := "test-pod-6c5cdc6fb6-s4vjc"
-		ns := "default"
-		v := common.GetWorkloadByName(frame, ns, name)
-		GinkgoWriter.Printf("workload %+v \n", v)
-
-	})
-
 	It("one Job 2 pods allocate/release ipv4 and ipv6 addresses", Label("smoke", "E00005"), func() {
 
 		// create Job

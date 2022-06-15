@@ -39,7 +39,12 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 	It("get ippool", Label("ippool"), func() {
 
 		poolName := "default-v4-ippool"
-		p := common.GetIppoolByName(frame, poolName)
+		p, e := frame.GetIppoolByName(poolName)
+		GinkgoWriter.Printf("ippool %+v \n", p)
+
+		name := "test-pod-6c5cdc6fb6-s4vjc"
+		ns := "default"
+		p, e := frame.GetWorkloadByName(ns, name)
 		GinkgoWriter.Printf("ippool %+v \n", p)
 
 	})

@@ -7,19 +7,15 @@ import (
 	"context"
 	"strings"
 	"time"
-
 	"github.com/mohae/deepcopy"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-
 	"fmt"
 	"os"
 	"strconv"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"

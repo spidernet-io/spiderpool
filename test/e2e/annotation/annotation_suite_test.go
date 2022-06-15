@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestAnnotation(t *testing.T) {
@@ -21,9 +22,7 @@ var frame *e2e.Framework
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT(),[]
-	{
-		spiderpool.AddToScheme
-	} )
+	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
+
 	Expect(e).NotTo(HaveOccurred())
 })

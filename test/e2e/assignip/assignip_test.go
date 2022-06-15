@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"fmt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
@@ -44,18 +45,29 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		GinkgoWriter.Printf("create pod %v/%v with annotationLength= %v \n", namespace, testName, annotationLength)
 		podYaml := common.GenerateLongPodYaml(testName, namespace, annotationLength)
 		Expect(podYaml).NotTo(BeNil())
+
 		pod, _, _ := common.CreatePodUntilReady(frame, podYaml, testName, namespace, time.Second*30)
 		Expect(pod).NotTo(BeNil())
 		Expect(pod.Annotations["test"]).To(Equal(podYaml.Annotations["test"]))
 		GinkgoWriter.Printf("create pod %v/%v successfully \n", namespace, testName)
+
+		v4IppoolName := "default-v4-ippool"
+		v6IppoolName := "default-v6-ippool"
+		v := &corev1.PodList{
+			Items: []corev1.Pod{*pod},
+		}
+		ok, e := common.CheckPodIpRecordInIppool(frame, v4IppoolName, v6IppoolName, v)
+		if e != nil || !ok {
+			Fail(fmt.Sprintf("failed to CheckPodIpRecordInIppool, reason=%v", e))
+		}
+
 		// try to delete pod
 		GinkgoWriter.Printf("delete pod %v/%v \n", namespace, testName)
 		err = frame.DeletePod(testName, namespace)
 		Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", namespace, testName)
 	},
 		Entry("assign IP to a pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00001"), 0),
-		Entry("succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case",
-			Label("E00007"), 100),
+		Entry("succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case", Label("E00007"), 100),
 	)
 
 	DescribeTable("assign IP to controller/pod for ipv4, ipv6 and dual-stack case",

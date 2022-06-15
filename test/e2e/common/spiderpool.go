@@ -116,6 +116,7 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 				ok, e := CheckIppoolForUsedIP(f, v, v.Name, v.Namespace, ip)
 				if e != nil || !ok {
 					GinkgoWriter.Printf("pod %v/%v : ip %v not recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), v.Name)
+					GinkgoWriter.Printf("ippool %v status : %v \n", v.Name, v.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
@@ -139,6 +140,7 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 				ok, e := CheckIppoolForUsedIP(f, v, v.Name, v.Namespace, ip)
 				if e != nil || !ok {
 					GinkgoWriter.Printf("pod %v/%v : ip %v not recorded in ippool %v\n", v.Namespace, v.Name, ip.String(), v.Name)
+					GinkgoWriter.Printf("ippool %v status : %v \n", v.Name, v.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
@@ -163,7 +165,7 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 	if e != nil {
 		return nil, nil, e
 	}
-	GinkgoWriter.Printf("configmap: %+v \n", t)
+	GinkgoWriter.Printf("configmap: %+v \n", t.Data)
 
 	return
 }

@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 )
 
 func TestReliability(t *testing.T) {
@@ -20,6 +21,9 @@ var frame *e2e.Framework
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT())
+	frame, e = e2e.NewFramework(GinkgoT(),[]
+	{
+		spiderpool.AddToScheme
+	} )
 	Expect(e).NotTo(HaveOccurred())
 })

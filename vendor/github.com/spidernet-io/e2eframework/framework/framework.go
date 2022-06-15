@@ -120,8 +120,7 @@ var (
 
 // NewFramework init Framework struct
 // fakeClient for unitest
-//func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme)error , fakeClient ...client.WithWatch) (*Framework, error) {
-func NewFramework(t TestingT , fakeClient ...client.WithWatch) (*Framework, error) {
+func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme)error , fakeClient ...client.WithWatch) (*Framework, error) {
 
 	if t == nil {
 		return nil, fmt.Errorf("miss TestingT")
@@ -184,17 +183,13 @@ func NewFramework(t TestingT , fakeClient ...client.WithWatch) (*Framework, erro
 		}
 		// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
 
-		// for n , v := range schemeRegisterList {
-		// 	err = v(scheme)
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("failed to add schemeRegisterList[%v] ", n)
-		// 	}
-		// }
-
-		err = spiderpool.AddToScheme(scheme)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add spiderpool Scheme")
+		for n , v := range schemeRegisterList {
+			err = v(scheme)
+			if err != nil {
+				return nil, fmt.Errorf("failed to add schemeRegisterList[%v] ", n)
+			}
 		}
+		
 
 		f.KClient, err = client.NewWithWatch(f.KConfig, client.Options{Scheme: scheme})
 		if err != nil {

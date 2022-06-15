@@ -180,6 +180,7 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
 		return nil, nil, errors.New("failed to find cluster default ippool")
 	}
+	GinkgoWriter.Printf("yaml config: %v \n", d)
 
 	return
 }

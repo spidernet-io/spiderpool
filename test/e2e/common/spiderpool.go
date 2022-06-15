@@ -46,7 +46,7 @@ func CheckIppoolForUsedIP(f *frame.Framework, ippool *spiderpool.IPPool, PodName
 		return false, errors.New("wrong input")
 	}
 
-	t, ok := ippool.Status.AllocatedIPs[ipAddrress.String()]
+	t, ok := ippool.Status.AllocatedIPs[ipAddrress.IP]
 	if ok == false {
 		return false, nil
 	}

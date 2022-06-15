@@ -51,12 +51,14 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		Expect(pod.Annotations["test"]).To(Equal(podYaml.Annotations["test"]))
 		GinkgoWriter.Printf("create pod %v/%v successfully \n", namespace, testName)
 
-		v4IppoolName := "default-v4-ippool"
-		v6IppoolName := "default-v6-ippool"
+		common.GetClusterDefaultIppool(frame)
+
+		v4IppoolNameList := []string{"default-v4-ippool"}
+		v6IppoolNameList := []string{"default-v6-ippool"}
 		v := &corev1.PodList{
 			Items: []corev1.Pod{*pod},
 		}
-		ok, e := common.CheckPodIpRecordInIppool(frame, v4IppoolName, v6IppoolName, v)
+		ok, e := common.CheckPodIpRecordInIppool(frame, v4IppoolNameList, v6IppoolNameList, v)
 		if e != nil || !ok {
 			Fail(fmt.Sprintf("failed to CheckPodIpRecordInIppool, reason=%v", e))
 		}

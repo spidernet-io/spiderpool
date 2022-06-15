@@ -176,13 +176,13 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 	}
 
 	d := cmd.Config{}
-	if err := yaml.Unmarshal(data, &d); nil != err {
+	if err := yaml.Unmarshal([]byte(data), &d); nil != err {
 		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
 		return nil, nil, errors.New("failed to find cluster default ippool")
 	}
 	GinkgoWriter.Printf("yaml config: %v \n", d)
 
-	return
+	return d.ClusterDefaultIPv4IPPool, d.ClusterDefaultIPv6IPPool, nil
 }
 
 func GetNamespaceDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []string, e error) {

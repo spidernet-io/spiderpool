@@ -7,15 +7,18 @@ import (
 	"context"
 	"strings"
 	"time"
+
 	"github.com/mohae/deepcopy"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"fmt"
 	"os"
 	"strconv"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions_v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -116,7 +119,7 @@ var (
 
 // NewFramework init Framework struct
 // fakeClient for unitest
-func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme)error , fakeClient ...client.WithWatch) (*Framework, error) {
+func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme) error, fakeClient ...client.WithWatch) (*Framework, error) {
 
 	if t == nil {
 		return nil, fmt.Errorf("miss TestingT")
@@ -179,13 +182,11 @@ func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme)error , 
 		}
 		// f.Client, err = client.New(f.kConfig, client.Options{Scheme: scheme})
 
-		for n , v := range schemeRegisterList {
-			err = v(scheme)
-			if err != nil {
-				return nil, fmt.Errorf("failed to add schemeRegisterList[%v] ", n)
+		for n, v := range schemeRegisterList {
+			if err := v(scheme); err != nil {
+				return nil, fmt.Errorf("failed to add schemeRegisterList[%v], reason=%v ", n, err)
 			}
 		}
-		
 
 		f.KClient, err = client.NewWithWatch(f.KConfig, client.Options{Scheme: scheme})
 		if err != nil {

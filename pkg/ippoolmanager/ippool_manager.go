@@ -27,11 +27,9 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-var logger = logutils.Logger.Named("IPPool Manager")
-
 type IPPoolManager interface {
 	AllocateIP(ctx context.Context, ownerType types.OwnerType, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error)
-	ReleaseIP(ctx context.Context, poolName, containerID string, pod *corev1.Pod) error
+	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndContainerID) error
 	ListPoolAll(ctx context.Context) (*spiderpoolv1.IPPoolList, error)
 	SelectByPod(ctx context.Context, version string, poolName string, pod *corev1.Pod) (bool, error)
 	CheckVlanSame(ctx context.Context, poolList []string) (map[spiderpoolv1.Vlan][]string, bool, error)
@@ -129,23 +127,19 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 		}
 
 		// TODO(iiiceoo): Remove when Defaulter webhook work
-		if ipPool.Status.AllocateCount == nil {
-			ipPool.Status.AllocateCount = new(int64)
-		}
 		if ipPool.Status.AllocatedIPCount == nil {
 			ipPool.Status.AllocatedIPCount = new(int32)
 		}
 
-		*ipPool.Status.AllocateCount++
 		*ipPool.Status.AllocatedIPCount++
 		if *ipPool.Status.AllocatedIPCount > int32(r.maxAllocatedIPs) {
-			return nil, fmt.Errorf("threshold for the sum of IP allocations(<=%d) exceeded: %w", r.maxAllocatedIPs, constant.ErrIPUsedOut)
+			return nil, fmt.Errorf("threshold of IP allocations(<=%d) for IP pool exceeded: %w", r.maxAllocatedIPs, constant.ErrIPUsedOut)
 		}
 
 		if err := r.client.Status().Update(ctx, &ipPool); err != nil {
 			if apierrors.IsConflict(err) {
 				if i == r.maxConflictRetrys {
-					return nil, fmt.Errorf("insufficient retries(<=%d) to update IP pool", r.maxConflictRetrys)
+					return nil, fmt.Errorf("insufficient retries(<=%d) to allocate IP from IP pool %s", r.maxConflictRetrys, poolName)
 				}
 
 				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
@@ -154,10 +148,9 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 			return nil, err
 		}
 
-		var address string
 		ipNet := ip.ParseIP(ipPool.Spec.Subnet)
 		ipNet.IP = allocateIP
-		address = ipNet.String()
+		address := ipNet.String()
 
 		var version int64
 		if *ipPool.Spec.IPVersion == spiderpoolv1.IPv4 {
@@ -175,6 +168,7 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 		ipConfig = &models.IPConfig{
 			Address: &address,
 			Gateway: gateway,
+			IPPool:  poolName,
 			Nic:     &nic,
 			Version: &version,
 			Vlan:    int64(*ipPool.Spec.Vlan),
@@ -185,7 +179,56 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 	return ipConfig, nil
 }
 
-func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName, containerID string, pod *corev1.Pod) error {
+type IPAndContainerID struct {
+	IP          string
+	ContainerID string
+}
+
+func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndContainerID) error {
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i <= r.maxConflictRetrys; i++ {
+		var ipPool spiderpoolv1.IPPool
+		if err := r.client.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
+			return err
+		}
+
+		// TODO(iiiceoo): Remove when Defaulter webhook work
+		if ipPool.Status.AllocatedIPs == nil {
+			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
+		}
+		if ipPool.Status.AllocatedIPCount == nil {
+			ipPool.Status.AllocatedIPCount = new(int32)
+		}
+
+		needRelease := false
+		for _, e := range ipAndCIDs {
+			if a, ok := ipPool.Status.AllocatedIPs[e.IP]; ok {
+				if a.ContainerID == e.ContainerID {
+					delete(ipPool.Status.AllocatedIPs, e.IP)
+					*ipPool.Status.AllocatedIPCount--
+					needRelease = true
+				}
+			}
+		}
+
+		if !needRelease {
+			return nil
+		}
+
+		if err := r.client.Status().Update(ctx, &ipPool); err != nil {
+			if apierrors.IsConflict(err) {
+				if i == r.maxConflictRetrys {
+					return fmt.Errorf("insufficient retries(<=%d) to release IP %+v from IP pool %s", r.maxConflictRetrys, ipAndCIDs, poolName)
+				}
+
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				continue
+			}
+			return err
+		}
+		break
+	}
+
 	return nil
 }
 
@@ -194,6 +237,8 @@ func (r *ipPoolManager) ListPoolAll(ctx context.Context) (*spiderpoolv1.IPPoolLi
 }
 
 func (r *ipPoolManager) SelectByPod(ctx context.Context, version string, poolName string, pod *corev1.Pod) (bool, error) {
+	logger := logutils.FromContext(ctx).Named("IPPoolManager")
+
 	var ipPool spiderpoolv1.IPPool
 	if err := r.client.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
 		logger.Sugar().Warnf("IP pool %s is not found", poolName)
@@ -252,7 +297,7 @@ func (r *ipPoolManager) SelectByPod(ctx context.Context, version string, poolNam
 }
 
 func (r *ipPoolManager) CheckVlanSame(ctx context.Context, poolList []string) (map[spiderpoolv1.Vlan][]string, bool, error) {
-	vlanToPools := make(map[spiderpoolv1.Vlan][]string)
+	vlanToPools := map[spiderpoolv1.Vlan][]string{}
 	for _, p := range poolList {
 		var ipPool spiderpoolv1.IPPool
 		if err := r.client.Get(ctx, apitypes.NamespacedName{Name: p}, &ipPool); err != nil {

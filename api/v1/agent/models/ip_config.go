@@ -30,6 +30,9 @@ type IPConfig struct {
 	// gateway
 	Gateway string `json:"gateway,omitempty"`
 
+	// ip pool
+	IPPool string `json:"ipPool,omitempty"`
+
 	// nic
 	// Required: true
 	Nic *string `json:"nic"`

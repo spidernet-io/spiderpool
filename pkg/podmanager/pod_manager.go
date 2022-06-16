@@ -14,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -30,16 +31,29 @@ type PodManager interface {
 
 type podManager struct {
 	client            client.Client
+	runtimeMgr        ctrl.Manager
 	maxConflictRetrys int
 }
 
-func NewPodManager(c client.Client, maxConflictRetrys int) (PodManager, error) {
+func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int) (PodManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
 
+	if mgr == nil {
+		return nil, errors.New("runtime manager must be specified")
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, metav1.ObjectNameField, func(raw client.Object) []string {
+		pod := raw.(*corev1.Pod)
+		return []string{pod.Name}
+	}); err != nil {
+		return nil, err
+	}
+
 	return &podManager{
 		client:            c,
+		runtimeMgr:        mgr,
 		maxConflictRetrys: maxConflictRetrys,
 	}, nil
 }
@@ -100,7 +114,7 @@ func (r *podManager) IsIPAllocatable(ctx context.Context, pod *corev1.Pod) (type
 }
 
 func (r *podManager) MergeAnnotations(ctx context.Context, pod *corev1.Pod, annotations map[string]string) error {
-	merge := make(map[string]string)
+	merge := map[string]string{}
 	for k, v := range pod.Annotations {
 		merge[k] = v
 	}
@@ -116,7 +130,7 @@ func (r *podManager) MergeAnnotations(ctx context.Context, pod *corev1.Pod, anno
 		if err := r.client.Update(ctx, pod); err != nil {
 			if apierrors.IsConflict(err) {
 				if i == r.maxConflictRetrys {
-					return fmt.Errorf("insufficient retries(<=%d) to update Pod annotations", r.maxConflictRetrys)
+					return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", r.maxConflictRetrys)
 				}
 
 				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
@@ -124,6 +138,7 @@ func (r *podManager) MergeAnnotations(ctx context.Context, pod *corev1.Pod, anno
 			}
 			return err
 		}
+		break
 	}
 
 	return nil
@@ -141,7 +156,7 @@ func (r *podManager) MatchLabelSelector(ctx context.Context, namespace, podName 
 		&pods,
 		client.InNamespace(namespace),
 		client.MatchingLabelsSelector{Selector: selector},
-		client.MatchingFields{".metadata.name": podName},
+		client.MatchingFields{metav1.ObjectNameField: podName},
 	)
 	if err != nil {
 		return false, err

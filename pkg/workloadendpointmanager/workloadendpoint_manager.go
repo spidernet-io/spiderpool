@@ -13,12 +13,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 type WorkloadEndpointManager interface {
 	RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error)
 	UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
-	ClearCurrentIPs(ctx context.Context, namspace, podName, containerID string) error
+	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID, nic string) error
 	Delete(ctx context.Context, we *spiderpoolv1.WorkloadEndpoint) error
 }
 
@@ -41,23 +42,26 @@ func NewWorkloadEndpointManager(c client.Client, maxHistoryRecords int) (Workloa
 func (r *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error) {
 	var we spiderpoolv1.WorkloadEndpoint
 	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, false, nil
+		}
 		return nil, false, err
 	}
 
-	if we.Status.Current.ContainerID == containerID {
+	if we.Status.Current != nil && we.Status.Current.ContainerID == containerID {
 		for _, d := range we.Status.Current.IPs {
 			if d.NIC == nic {
 				return we.Status.Current, true, nil
 			}
 		}
-	} else {
-		if includeHistory {
-			for _, a := range we.Status.History {
-				if a.ContainerID == containerID {
-					for _, d := range a.IPs {
-						if d.NIC == nic {
-							return &a, false, nil
-						}
+	}
+
+	if includeHistory {
+		for _, a := range we.Status.History[1:] {
+			if a.ContainerID == containerID {
+				for _, d := range a.IPs {
+					if d.NIC == nic {
+						return &a, false, nil
 					}
 				}
 			}
@@ -68,6 +72,8 @@ func (r *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, names
 }
 
 func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error {
+	logger := logutils.FromContext(ctx)
+
 	var we spiderpoolv1.WorkloadEndpoint
 	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -91,13 +97,14 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 			return err
 		}
 	} else {
-		if we.Status.Current.ContainerID == allocation.ContainerID {
+		if we.Status.Current != nil && we.Status.Current.ContainerID == allocation.ContainerID {
 			we.Status.Current.IPs = append(we.Status.Current.IPs, allocation.IPs...)
 			we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
 		} else {
 			we.Status.Current = allocation
 			we.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, we.Status.History...)
 			if len(we.Status.History) > r.maxHistoryRecords {
+				logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", r.maxHistoryRecords)
 				we.Status.History = we.Status.History[:r.maxHistoryRecords]
 			}
 		}
@@ -110,7 +117,31 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 	return nil
 }
 
-func (r *workloadEndpointManager) ClearCurrentIPs(ctx context.Context, namspace, podName, containerID string) error {
+func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID, nic string) error {
+	var we spiderpoolv1.WorkloadEndpoint
+	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	if we.Status.Current == nil {
+		return nil
+	}
+
+	if we.Status.Current.ContainerID != containerID {
+		return nil
+	}
+
+	we.Status.Current = nil
+	if err := r.client.Status().Update(ctx, &we); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
 	return nil
 }
 

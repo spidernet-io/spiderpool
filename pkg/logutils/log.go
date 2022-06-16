@@ -4,6 +4,7 @@
 package logutils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -217,4 +218,25 @@ func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge,
 	}
 	LoggerFile = l
 	return nil
+}
+
+// loggerKey is how we find Loggers in a context.Context.
+type loggerKey struct{}
+
+// FromContext returns a logger with predefined values from a context.Context.
+func FromContext(ctx context.Context) *zap.Logger {
+	log := Logger
+	if ctx != nil {
+		if logger, ok := ctx.Value(loggerKey{}).(*zap.Logger); ok {
+			log = logger
+		}
+	}
+
+	return log
+}
+
+// IntoContext takes a context and sets the logger as one of its values.
+// Use FromContext function to retrieve the logger.
+func IntoContext(ctx context.Context, logger *zap.Logger) context.Context {
+	return context.WithValue(ctx, loggerKey{}, logger)
 }

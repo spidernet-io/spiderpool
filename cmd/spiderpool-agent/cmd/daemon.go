@@ -67,21 +67,21 @@ func DaemonMain() {
 	agentContext.WEManager = weManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(mgr.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(mgr.GetClient(), mgr)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.RIPManager = rIPManager
 
 	logger.Debug("Begin to initialize Node Manager")
-	nodeManager, err := nodemanager.NewNodeManager(mgr.GetClient())
+	nodeManager, err := nodemanager.NewNodeManager(mgr.GetClient(), mgr)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace Manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(mgr.GetClient())
+	nsManager, err := namespacemanager.NewNamespaceManager(mgr.GetClient(), mgr)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -92,7 +92,7 @@ func DaemonMain() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	podManager, err := podmanager.NewPodManager(mgr.GetClient(), retrys)
+	podManager, err := podmanager.NewPodManager(mgr.GetClient(), mgr, retrys)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

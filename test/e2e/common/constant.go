@@ -9,3 +9,7 @@ var ReplicaSetNameString = "replicaSet"
 
 var SpiderPoolConfigmapName = "spiderpool-conf"
 var SpiderPoolConfigmapNameSpace = "kube-system"
+
+var InvalidInputPodFailReturn = "failed to setup network for sandbox"
+
+var PodEventKind = "Pod"

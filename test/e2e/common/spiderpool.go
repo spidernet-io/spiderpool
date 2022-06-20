@@ -3,12 +3,16 @@
 package common
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/spidernet-io/spiderpool/pkg/types"
+
 	// . "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -185,9 +189,34 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 	return d.ClusterDefaultIPv4IPPool, d.ClusterDefaultIPv6IPPool, nil
 }
 
-func GetNamespaceDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []string, e error) {
-	// TODO (binzeSun)
-	return nil, nil, nil
+func GetNamespaceDefaultIppool(f *frame.Framework, namespace string) (v4IppoolList, v6IppoolList []string, e error) {
+	ns, err := f.GetNamespace(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	GinkgoWriter.Printf("Get DefaultIppool for namespace: %v\n", ns)
+
+	annoNSIPv4 := types.AnnoNSDefautlV4PoolValue{}
+	annoNSIPv6 := types.AnnoNSDefautlV6PoolValue{}
+
+	v4Data, v4OK := ns.Annotations[constant.AnnoNSDefautlV4Pool]
+	v6Data, v6OK := ns.Annotations[constant.AnnoNSDefautlV6Pool]
+
+	if v4OK && len(v4Data) > 0 {
+		if err := json.Unmarshal([]byte(v4Data), &annoNSIPv4); err != nil {
+			GinkgoWriter.Printf("fail to decode namespace annotation v4 value: %v\n", v4Data)
+			return nil, nil, errors.New("invalid namespace annotation")
+		}
+		v4IppoolList = annoNSIPv4
+	}
+	if v6OK && len(v6Data) > 0 {
+		if err := json.Unmarshal([]byte(v6Data), &annoNSIPv6); err != nil {
+			GinkgoWriter.Printf("fail to decode namespace annotation v6 value: %v\n", v6Data)
+			return nil, nil, errors.New("invalid namespace annotation")
+		}
+		v6IppoolList = annoNSIPv6
+	}
+	return v4IppoolList, v6IppoolList, nil
 }
 
 func GetWorkloadByName(f *frame.Framework, namespace, name string) *spiderpool.WorkloadEndpoint {

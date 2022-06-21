@@ -105,7 +105,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			// notice: the controller deletion is instantaneous
 			// check time cose of all replicas are deleted time
 			startT3 := time.Now()
-			err = frame.CheckPodListNotExistsByLabel(nsName, dpm.Spec.Selector.MatchLabels, ctx3)
+			err = frame.WaitPodListDeleted(nsName, dpm.Spec.Selector.MatchLabels, ctx3)
 			Expect(err).NotTo(HaveOccurred(), "time out to wait controller %v replicas delete", controllerType)
 			endT3 := time.Since(startT3)
 

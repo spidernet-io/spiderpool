@@ -64,7 +64,7 @@ func (f *Framework) DeleteDeployment(name, namespace string, opts ...client.Dele
 	return f.DeleteResource(pod, opts...)
 }
 
-func (f *Framework) GetDeploymnet(name, namespace string) (*appsv1.Deployment, error) {
+func (f *Framework) GetDeployment(name, namespace string) (*appsv1.Deployment, error) {
 
 	if name == "" || namespace == "" {
 		return nil, ErrWrongInput
@@ -160,4 +160,67 @@ func (f *Framework) WaitDeploymentReady(name, namespace string, ctx context.Cont
 			return nil, ErrTimeOut
 		}
 	}
+}
+
+func (f *Framework) CreateDeploymentUntilReady(deployObj *appsv1.Deployment, timeOut time.Duration, opts ...client.CreateOption) (*appsv1.Deployment, error) {
+	if deployObj == nil {
+		return nil, ErrWrongInput
+	}
+
+	// create deployment
+	err := f.CreateDeployment(deployObj, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// wait deployment ready
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
+	deploy, e := f.WaitDeploymentReady(deployObj.Name, deployObj.Namespace, ctx)
+	if e != nil {
+		return nil, e
+	}
+	return deploy, nil
+}
+
+func (f *Framework) DeleteDeploymentUntilFinish(deployName, namespace string, timeOut time.Duration, opts ...client.DeleteOption) error {
+	if deployName == "" || namespace == "" {
+		return ErrWrongInput
+	}
+	// get deployment
+	deployment, err1 := f.GetDeployment(deployName, namespace)
+	if err1 != nil {
+		return err1
+	}
+	// delete deployment
+	err := f.DeleteDeployment(deployment.Name, deployment.Namespace, opts...)
+	if err != nil {
+		return err
+	}
+	// check delete deployment successfully
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
+	b, e := func() (bool, error) {
+		for {
+			select {
+			case <-ctx.Done():
+				return false, ErrTimeOut
+			default:
+				deployment, _ := f.GetDeployment(deployment.Name, deployment.Namespace)
+				if deployment == nil {
+					return true, nil
+				}
+				time.Sleep(time.Second)
+			}
+		}
+	}()
+	if b {
+		// check PodList not exists by label
+		err := f.WaitPodListDeleted(deployment.Namespace, deployment.Spec.Selector.MatchLabels, ctx)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return e
 }

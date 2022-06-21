@@ -247,10 +247,6 @@ spec:
           status:
             description: IPPoolStatus defines the observed state of IPPool
             properties:
-              allocateCount:
-                format: int64
-                minimum: 0
-                type: integer
               allocatedIPCount:
                 format: int32
                 minimum: 0
@@ -279,10 +275,6 @@ spec:
                 description: PoolIPAllocations is a map of allocated IPs indexed by
                   IP
                 type: object
-              deallocateCount:
-                format: int64
-                minimum: 0
-                type: integer
               totalIPCount:
                 format: int32
                 minimum: 0

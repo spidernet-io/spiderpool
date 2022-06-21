@@ -80,30 +80,20 @@ spec:
                     items:
                       description: TODO
                       properties:
-                        gateway:
-                          type: string
                         interface:
                           type: string
                         ipv4:
+                          type: string
+                        ipv4Gateway:
                           type: string
                         ipv4Pool:
                           type: string
                         ipv6:
                           type: string
+                        ipv6Gateway:
+                          type: string
                         ipv6Pool:
                           type: string
-                        routes:
-                          items:
-                            properties:
-                              dst:
-                                type: string
-                              gw:
-                                type: string
-                            required:
-                            - dst
-                            - gw
-                            type: object
-                          type: array
                         vlan:
                           format: int32
                           maximum: 4095
@@ -135,30 +125,20 @@ spec:
                       items:
                         description: TODO
                         properties:
-                          gateway:
-                            type: string
                           interface:
                             type: string
                           ipv4:
+                            type: string
+                          ipv4Gateway:
                             type: string
                           ipv4Pool:
                             type: string
                           ipv6:
                             type: string
+                          ipv6Gateway:
+                            type: string
                           ipv6Pool:
                             type: string
-                          routes:
-                            items:
-                              properties:
-                                dst:
-                                  type: string
-                                gw:
-                                  type: string
-                              required:
-                              - dst
-                              - gw
-                              type: object
-                            type: array
                           vlan:
                             format: int32
                             maximum: 4095

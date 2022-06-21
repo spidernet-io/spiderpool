@@ -110,18 +110,6 @@ type IPPoolStatus struct {
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	AllocateCount *int64 `json:"allocateCount,omitempty"`
-
-	// TODO
-
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	DeallocateCount *int64 `json:"deallocateCount,omitempty"`
-
-	// TODO
-
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
 	TotalIPCount *int32 `json:"totalIPCount,omitempty"`
 
 	// TODO

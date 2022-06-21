@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -23,16 +24,29 @@ type NamespaceManager interface {
 }
 
 type namespaceManager struct {
-	client client.Client
+	client     client.Client
+	runtimeMgr ctrl.Manager
 }
 
-func NewNamespaceManager(c client.Client) (NamespaceManager, error) {
+func NewNamespaceManager(c client.Client, mgr ctrl.Manager) (NamespaceManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
 
+	if mgr == nil {
+		return nil, errors.New("runtime manager must be specified")
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Namespace{}, metav1.ObjectNameField, func(raw client.Object) []string {
+		namespace := raw.(*corev1.Namespace)
+		return []string{namespace.Name}
+	}); err != nil {
+		return nil, err
+	}
+
 	return &namespaceManager{
-		client: c,
+		client:     c,
+		runtimeMgr: mgr,
 	}, nil
 }
 
@@ -70,7 +84,7 @@ func (r *namespaceManager) MatchLabelSelector(ctx context.Context, nsName string
 		ctx,
 		&namespaces,
 		client.MatchingLabelsSelector{Selector: selector},
-		client.MatchingFields{".metadata.name": nsName},
+		client.MatchingFields{metav1.ObjectNameField: nsName},
 	)
 	if err != nil {
 		return false, err

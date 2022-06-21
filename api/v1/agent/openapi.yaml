@@ -234,6 +234,8 @@ definitions:
           - 6
       address:
         type: string
+      ipPool:
+        type: string
       gateway:
         type: string
       nic:

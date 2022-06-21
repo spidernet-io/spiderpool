@@ -10,9 +10,10 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"go.uber.org/zap"
 )
 
-var ipamAPILogger = logutils.Logger.Named("IPAM")
+var ipamLogger = logutils.Logger.Named("IPAM")
 
 // Singleton
 var (
@@ -26,11 +27,17 @@ type _unixPostAgentIpamIp struct{}
 
 // Handle handles POST requests for /ipam/ip .
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
-	// TODO (Icarus9913): return the http status code with logic.
-	resp, err := agentContext.IPAM.Allocate(params.HTTPRequest.Context(), params.IpamAddArgs)
-	if err != nil {
-		ipamAPILogger.Sugar().Errorf("Failed to allocate: %v", err)
+	logger := ipamLogger.With(zap.String("CNICommand", "ADD"),
+		zap.String("ContainerID", *params.IpamAddArgs.ContainerID),
+		zap.String("IfName", *params.IpamAddArgs.IfName),
+		zap.String("NetNamespace", *params.IpamAddArgs.NetNamespace),
+		zap.String("PodNamespace", *params.IpamAddArgs.PodNamespace),
+		zap.String("PodName", *params.IpamAddArgs.PodName))
+	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
+	resp, err := agentContext.IPAM.Allocate(ctx, params.IpamAddArgs)
+	if err != nil {
+		logger.Sugar().Errorf("Failed to allocate: %v", err)
 		if errors.Is(err, constant.ErrWrongInput) {
 			return daemonset.NewPostIpamIPStatus512()
 		}
@@ -43,8 +50,7 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 		if errors.Is(err, constant.ErrIPUsedOut) {
 			return daemonset.NewPostIpamIPStatus515()
 		}
-
-		return daemonset.NewDeleteIpamIPInternalServerError()
+		return daemonset.NewPostIpamIPInternalServerError()
 	}
 
 	return daemonset.NewPostIpamIPOK().WithPayload(resp)
@@ -54,7 +60,18 @@ type _unixDeleteAgentIpamIp struct{}
 
 // Handle handles DELETE requests for /ipam/ip .
 func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
-	// TODO (Icarus9913): return the http status code with logic.
+	logger := ipamLogger.With(zap.String("CNICommand", "DEL"),
+		zap.String("ContainerID", *params.IpamDelArgs.ContainerID),
+		zap.String("IfName", *params.IpamDelArgs.IfName),
+		zap.String("NetNamespace", params.IpamDelArgs.NetNamespace),
+		zap.String("PodNamespace", *params.IpamDelArgs.PodNamespace),
+		zap.String("PodName", *params.IpamDelArgs.PodName))
+	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
+
+	if err := agentContext.IPAM.Release(ctx, params.IpamDelArgs); err != nil {
+		logger.Sugar().Errorf("Failed to release: %v", err)
+		return daemonset.NewDeleteIpamIPInternalServerError()
+	}
 
 	return daemonset.NewDeleteIpamIPOK()
 }

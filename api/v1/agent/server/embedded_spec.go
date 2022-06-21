@@ -263,6 +263,9 @@ func init() {
         "gateway": {
           "type": "string"
         },
+        "ipPool": {
+          "type": "string"
+        },
         "nic": {
           "type": "string"
         },
@@ -620,6 +623,9 @@ func init() {
           "type": "string"
         },
         "gateway": {
+          "type": "string"
+        },
+        "ipPool": {
           "type": "string"
         },
         "nic": {

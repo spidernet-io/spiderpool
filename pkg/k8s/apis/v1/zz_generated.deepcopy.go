@@ -41,13 +41,13 @@ func (in *IPAllocationDetail) DeepCopyInto(out *IPAllocationDetail) {
 		*out = new(Vlan)
 		**out = **in
 	}
-	if in.Routes != nil {
-		in, out := &in.Routes, &out.Routes
-		*out = make([]Route, len(*in))
-		copy(*out, *in)
+	if in.IPv4Gateway != nil {
+		in, out := &in.IPv4Gateway, &out.IPv4Gateway
+		*out = new(string)
+		**out = **in
 	}
-	if in.Gateway != nil {
-		in, out := &in.Gateway, &out.Gateway
+	if in.IPv6Gateway != nil {
+		in, out := &in.IPv6Gateway, &out.IPv6Gateway
 		*out = new(string)
 		**out = **in
 	}
@@ -196,16 +196,6 @@ func (in *IPPoolStatus) DeepCopyInto(out *IPPoolStatus) {
 		for key, val := range *in {
 			(*out)[key] = val
 		}
-	}
-	if in.AllocateCount != nil {
-		in, out := &in.AllocateCount, &out.AllocateCount
-		*out = new(int64)
-		**out = **in
-	}
-	if in.DeallocateCount != nil {
-		in, out := &in.DeallocateCount, &out.DeallocateCount
-		*out = new(int64)
-		**out = **in
 	}
 	if in.TotalIPCount != nil {
 		in, out := &in.TotalIPCount, &out.TotalIPCount

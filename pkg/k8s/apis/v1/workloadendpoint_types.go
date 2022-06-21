@@ -79,12 +79,12 @@ type IPAllocationDetail struct {
 	// TODO
 
 	// +kubebuilder:validation:Optional
-	Routes []Route `json:"routes,omitempty"`
+	IPv4Gateway *string `json:"ipv4Gateway,omitempty"`
 
 	// TODO
 
 	// +kubebuilder:validation:Optional
-	Gateway *string `json:"gateway,omitempty"`
+	IPv6Gateway *string `json:"ipv6Gateway,omitempty"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="workloadendpoints",scope="Namespaced",shortName={swe},singular="workloadendpoint"

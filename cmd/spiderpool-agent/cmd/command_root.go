@@ -30,5 +30,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
 	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(BinNameAgent, rootCmd, logger))
 }

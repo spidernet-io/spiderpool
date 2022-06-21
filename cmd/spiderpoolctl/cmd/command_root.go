@@ -29,5 +29,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
 	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(SPIDERPOOL_CTL, rootCmd, logger))
 }

@@ -5,20 +5,70 @@ package common
 import (
 	"encoding/json"
 	"errors"
+	"time"
+
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 
 	// . "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func CreateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.CreateOption) error {
+	if f == nil || ippool == nil {
+		return errors.New("wrong input")
+	}
+	// try to wait for finish last deleting
+	fake := &spiderpool.IPPool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ippool.ObjectMeta.Name,
+		},
+	}
+	key := client.ObjectKeyFromObject(fake)
+	existing := &spiderpool.IPPool{}
+	e := f.GetResource(key, existing)
+	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+		return errors.New("failed to create , a same Ippool exists")
+	} else {
+		t := func() bool {
+			existing := &spiderpool.IPPool{}
+			e := f.GetResource(key, existing)
+			b := api_errors.IsNotFound(e)
+			if !b {
+				GinkgoWriter.Printf("waiting for a same Ippool %v to finish deleting \n", ippool.ObjectMeta.Name)
+				return false
+			}
+			return true
+		}
+		if !tools.Eventually(t, f.Config.ResourceDeleteTimeout, time.Second) {
+			return errors.New("failed to create , a same Ippool exists")
+		}
+	}
+	return f.CreateResource(ippool, opts...)
+}
+
+func DeleteIppool(f *frame.Framework, poolName string, opts ...client.DeleteOption) error {
+	if poolName == "" || f == nil {
+		return errors.New("wrong input")
+	}
+	pool := &spiderpool.IPPool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: poolName,
+		},
+	}
+	return f.DeleteResource(pool, opts...)
+}
 
 func GetIppoolByName(f *frame.Framework, poolName string) *spiderpool.IPPool {
 	if poolName == "" || f == nil {

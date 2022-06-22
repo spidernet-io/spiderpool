@@ -12,13 +12,12 @@ import (
 	"reflect"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/connectivity"
@@ -36,7 +35,6 @@ const (
 	healthCheckRoute = "/v1/ipam/healthy"
 	ipamReqRoute     = "/v1/ipam/ip"
 )
-
 const CNIVersion010 = "0.1.0"
 const CNIVersion020 = "0.2.0"
 
@@ -247,7 +245,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}}
 				return expectResult
 			}),
-			Entry(fmt.Sprintf("support CNI version '%s'", cmd.CniVersion030), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+			Entry(fmt.Sprintf("it should succeed for supported CNI version '%s'", cmd.CniVersion030), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
 				netConf.CNIVersion = cmd.CniVersion030
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
@@ -296,7 +294,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.Interfaces = []*current.Interface{{Name: ifname}}
 				return expectResult
 			}),
-			Entry(fmt.Sprintf("support CNI version '%s'", cmd.CniVersion040), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+			Entry(fmt.Sprintf("it should succeed for supported CNI version '%s'", cmd.CniVersion040), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
 				netConf.CNIVersion = cmd.CniVersion030
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
@@ -333,20 +331,29 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.Interfaces = []*current.Interface{{Name: ifname}}
 				return expectResult
 			}),
-			Entry(fmt.Sprintf("support CNI version '%s'", CNIVersion010), ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+			Entry(fmt.Sprintf("it should go wrong for unsupported CNI version  '%s'", CNIVersion010), ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
 				netConf.CNIVersion = CNIVersion010
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}, nil, nil),
-			Entry(fmt.Sprintf("support CNI version '%s'", CNIVersion020), ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+			Entry(fmt.Sprintf("it should go wrong for unsupported CNI version '%s'", CNIVersion020), ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
 				netConf.CNIVersion = CNIVersion010
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}, nil, nil),
+			Entry("plugin validation fail with the empty response from the spider-agent", ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, func() *models.IpamAddResponse {
+				ipamAddResp := &models.IpamAddResponse{}
+				return ipamAddResp
+			}, nil),
 		)
 
 		DescribeTable("test cmdDel",
@@ -413,71 +420,50 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		)
 	})
 
-	// TODO (Icarus9913): refactoring below
-	Describe("test ipam plugin configuration ", func() {
-		It(fmt.Sprintf("[%s] is returning an error on conf broken with ADD/DEL", cniVersion), func() {
+	// Reconstruction with DescribeTable
+	DescribeTable("test ipam plugin configuration ", func(ExpectErr string, cmdArgs func() *skel.CmdArgs) {
+		// Allocate the IP
+		go func() {
+			defer GinkgoRecover()
+			_, _, err := testutils.CmdAddWithArgs(cmdArgs(), func() error {
+				return cmd.CmdAdd(cmdArgs())
+			})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).Should(ContainSubstring(ExpectErr))
+			close(addChan)
+		}()
+		Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+
+		// Release the IP
+		go func() {
+			defer GinkgoRecover()
+			err := testutils.CmdDelWithArgs(cmdArgs(), func() error {
+				return cmd.CmdDel(cmdArgs())
+			})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).Should(ContainSubstring(ExpectErr))
+			close(delChan)
+		}()
+		Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+
+	},
+		Entry("IPAM should return an error when CNI configuration is broken", "'}'", func() *skel.CmdArgs {
+			// Passing a misconfiguration
 			confBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
 			confBytes = append(confBytes, []byte("}")...)
 			args.StdinData = confBytes
-
-			// Allocate the IP
-			go func() {
-				defer GinkgoRecover()
-
-				_, _, err := testutils.CmdAddWithArgs(args, func() error {
-					return cmd.CmdAdd(args)
-				})
-				Expect(err).To(HaveOccurred())
-				close(addChan)
-			}()
-			Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-
-			// Release the IP
-			go func() {
-				defer GinkgoRecover()
-
-				err = testutils.CmdDelWithArgs(args, func() error {
-					return cmd.CmdDel(args)
-				})
-				Expect(err).To(HaveOccurred())
-				close(delChan)
-			}()
-			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-		})
-
-		It(fmt.Sprintf("[%s] is returning an error on bad log configuration with ADD/DEL", cniVersion), func() {
+			return args
+		}),
+		Entry("IPAM should return an error for wrong log level in CNI configuration", "bad", func() *skel.CmdArgs {
+			// Passing a bad log configuration
 			netConf.IPAM.LogLevel = "bad"
 			netConfBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
 			args.StdinData = netConfBytes
-
-			// Allocate the IP
-			go func() {
-				defer GinkgoRecover()
-
-				_, _, err := testutils.CmdAddWithArgs(args, func() error {
-					return cmd.CmdAdd(args)
-				})
-				Expect(err).To(HaveOccurred())
-				close(addChan)
-			}()
-			Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-
-			// Release the IP
-			go func() {
-				defer GinkgoRecover()
-
-				err = testutils.CmdDelWithArgs(args, func() error {
-					return cmd.CmdDel(args)
-				})
-				Expect(err).To(HaveOccurred())
-				close(delChan)
-			}()
-			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
-		})
-
-		It("Check default network configuration", func() {
+			return args
+		}),
+		Entry("IPAM should return default value when passing empty value", "health", func() *skel.CmdArgs {
 			// set some configurations with empty value.
 			netConf.IPAM.LogLevel = ""
 			netConf.IPAM.IpamUnixSocketPath = ""
@@ -490,8 +476,11 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 
 			Expect(conf.IPAM.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
 			Expect(conf.IPAM.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
-		})
-	})
+			args.StdinData = netConfBytes
+			return args
+
+		}),
+	)
 
 })
 

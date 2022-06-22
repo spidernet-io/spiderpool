@@ -100,4 +100,63 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Second*90),
 		// TODO(bingzhesun) spiderpool
 	)
+
+	DescribeTable("check ip assign after reboot node",
+		func(replicas int32) {
+			GinkgoWriter.Printf("create Deployment")
+			// create Deployment
+			GinkgoWriter.Printf("try to create Deployment %v/%v \n", podName, namespace)
+			dep := common.GenerateExampleDeploymentYaml(podName, namespace, replicas)
+			err := frame.CreateDeployment(dep)
+			Expect(err).NotTo(HaveOccurred(), "failed to create Deployment")
+
+			// wait deployment ready and check ip assign ok
+			podlist, errip := frame.WaitDeploymentReadyAndCheckIP(podName, namespace)
+			Expect(errip).ShouldNot(HaveOccurred())
+
+			// before reboot node check ip in ipppool
+			defaultv4, defaultv6, err := common.GetClusterDefaultIppool(frame)
+			Expect(err).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("default ip4 ippool name is %v\n default ip6 ippool name is %v\n,", defaultv4, defaultv6)
+			inippool, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlist)
+			Eventually(inippool).Should(BeTrue())
+			Expect(errpool).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("check pod inippool：%v\n", inippool)
+
+			// get nodename list
+			nodeMap := make(map[string]bool)
+			for _, item := range podlist.Items {
+				GinkgoWriter.Printf("item.Status.NodeName:%v\n", item.Spec.NodeName)
+				nodeMap[item.Spec.NodeName] = true
+			}
+			GinkgoWriter.Printf("get nodeMap is：%v\n", nodeMap)
+
+			// send cmd to reboot node
+			common.ExecCommandRebootNode(nodeMap)
+
+			// check node ready
+			readyok, err := frame.IsClusterNodeReady()
+			Expect(err).ShouldNot(HaveOccurred())
+			Eventually(readyok).Should(BeTrue())
+
+			// check pod ip assign ok
+			_, errip2 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace)
+			Expect(errip2).ShouldNot(HaveOccurred())
+
+			// after reboot node check ip in ipppool
+			defaultv4a, defaultv6a, err := common.GetClusterDefaultIppool(frame)
+			Expect(err).ShouldNot(HaveOccurred())
+			inippoola, errpoola := common.CheckPodIpRecordInIppool(frame, defaultv4a, defaultv6a, podlist)
+			Eventually(inippoola).Should(BeTrue())
+			Expect(errpoola).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("check pod inippool：%v\n", inippool)
+
+			//delete Deployment
+			errdel := frame.DeleteDeployment(podName, namespace)
+			Expect(errdel).NotTo(HaveOccurred(), "failed to delete Deployment %v: %v/%v \n", podName, namespace)
+
+		},
+		//Entry("pod Replicas is 1", Label("R00006"), int32(1)),
+		Entry("pod Replicas is 2", Label("R00006"), int32(2)),
+	)
 })

@@ -35,7 +35,7 @@ type AnnoPodAssignedEthxValue struct {
 	IPv6Pool string `json:"ipv6pool"`
 	IPv4     string `json:"ipv4"`
 	IPv6     string `json:"ipv6"`
-	Vlan     string `json:"vlan"`
+	Vlan     int    `json:"vlan"`
 }
 
 type AnnoNSDefautlV4PoolValue []string

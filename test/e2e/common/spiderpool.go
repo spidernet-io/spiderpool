@@ -5,11 +5,11 @@ package common
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 
 	// . "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
@@ -17,6 +17,7 @@ import (
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -58,7 +59,7 @@ func CreateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.
 	return f.CreateResource(ippool, opts...)
 }
 
-func DeleteIppool(f *frame.Framework, poolName string, opts ...client.DeleteOption) error {
+func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.DeleteOption) error {
 	if poolName == "" || f == nil {
 		return errors.New("wrong input")
 	}
@@ -281,4 +282,55 @@ func GetWorkloadByName(f *frame.Framework, namespace, name string) *spiderpool.W
 		return nil
 	}
 	return existing
+}
+
+func GenerateExampleIpv4poolObject() (string, *spiderpool.IPPool) {
+
+	var v4Ipversion = new(spiderpool.IPVersion)
+	*v4Ipversion = spiderpool.IPv4
+
+	var iPv4PoolObj *spiderpool.IPPool
+	// Generate ipv4pool name
+	var v4PoolName string = "v4pool-" + tools.RandomName()
+	// Generate random number
+	var randomNumber1 string = GenerateRandomNumber(255)
+	var randomNumber2 string = GenerateRandomNumber(255)
+	iPv4PoolObj = &spiderpool.IPPool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: v4PoolName,
+		},
+		Spec: spiderpool.IPPoolSpec{
+			IPVersion: v4Ipversion,
+			Subnet:    fmt.Sprintf("10.%s.%s.0/24", randomNumber1, randomNumber2),
+			IPs:       []string{fmt.Sprintf("10.%s.%s.10-10.%s.%s.250", randomNumber1, randomNumber2, randomNumber1, randomNumber2)},
+			ExcludeIPs: []string{fmt.Sprintf("10.%s.%s.2", randomNumber1, randomNumber2),
+				fmt.Sprintf("10.%s.%s.254", randomNumber1, randomNumber2)},
+		},
+	}
+	return v4PoolName, iPv4PoolObj
+}
+
+func GenerateExampleIpv6poolObject() (string, *spiderpool.IPPool) {
+
+	var v6Ipversion = new(spiderpool.IPVersion)
+	*v6Ipversion = spiderpool.IPv6
+
+	// Generate ipv6pool name
+	var v6PoolName string = "v6pool-" + tools.RandomName()
+	// Generate random number
+	var randomNumber string = GenerateRandomNumber(9999)
+
+	iPv6PoolObj := &spiderpool.IPPool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: v6PoolName,
+		},
+		Spec: spiderpool.IPPoolSpec{
+			IPVersion: v6Ipversion,
+			Subnet:    fmt.Sprintf("fd00:%s::/120", randomNumber),
+			IPs:       []string{fmt.Sprintf("fd00:%s::10-fd00:%s::250", randomNumber, randomNumber)},
+			ExcludeIPs: []string{fmt.Sprintf("fd00:%s::2", randomNumber),
+				fmt.Sprintf("fd00:%s::254", randomNumber)},
+		},
+	}
+	return v6PoolName, iPv6PoolObj
 }

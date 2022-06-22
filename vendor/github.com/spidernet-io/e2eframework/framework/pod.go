@@ -146,7 +146,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 	}
 }
 
-func (f *Framework) CheckPodListNotExistsByLabel(namespace string, label map[string]string, ctx context.Context) error {
+func (f *Framework) WaitPodListDeleted(namespace string, label map[string]string, ctx context.Context) error {
 	// Query all pods corresponding to the label
 	// Delete the resource until the query is empty
 

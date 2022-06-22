@@ -4,6 +4,7 @@ package common
 
 import (
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,4 +18,10 @@ func GenerateString(lenNum int) string {
 		str.WriteString(chars[rand.Intn(length)])
 	}
 	return str.String()
+}
+
+func GenerateRandomNumber(max int) string {
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(max)
+	return strconv.Itoa(randomNumber)
 }

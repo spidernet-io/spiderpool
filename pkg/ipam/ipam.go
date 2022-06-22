@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -467,7 +466,7 @@ func execAllocate(ctx context.Context, ipPoolManager ippoolmanager.IPPoolManager
 
 				annoPodAssigned.IPv4Pool = ipv4.IPPool
 				annoPodAssigned.IPv4 = *ipv4.Address
-				annoPodAssigned.Vlan = strconv.FormatInt(ipv4.Vlan, 10)
+				annoPodAssigned.Vlan = int(ipv4.Vlan)
 
 				v4Succeed = true
 				break
@@ -492,7 +491,7 @@ func execAllocate(ctx context.Context, ipPoolManager ippoolmanager.IPPoolManager
 
 				annoPodAssigned.IPv6Pool = ipv6.IPPool
 				annoPodAssigned.IPv6 = *ipv6.Address
-				annoPodAssigned.Vlan = strconv.FormatInt(ipv6.Vlan, 10)
+				annoPodAssigned.Vlan = int(ipv6.Vlan)
 
 				v6Succeed = true
 				break
@@ -505,7 +504,7 @@ func execAllocate(ctx context.Context, ipPoolManager ippoolmanager.IPPoolManager
 
 		v, err := json.Marshal(annoPodAssigned)
 		if err != nil {
-			return nil, nil, err
+			return resIPs, nil, err
 		}
 		podAnnotations[constant.AnnotationPre+"/assigned-"+e.NIC] = string(v)
 	}

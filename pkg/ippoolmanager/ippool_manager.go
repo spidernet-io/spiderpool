@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,8 +30,7 @@ import (
 
 type IPPoolManager interface {
 	AllocateIP(ctx context.Context, ownerType types.OwnerType, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error)
-	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndContainerID) error
-	ListPoolAll(ctx context.Context) (*spiderpoolv1.IPPoolList, error)
+	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndCID) error
 	SelectByPod(ctx context.Context, version string, poolName string, pod *corev1.Pod) (bool, error)
 	CheckVlanSame(ctx context.Context, poolList []string) (map[spiderpoolv1.Vlan][]string, bool, error)
 	CheckPoolCIDROverlap(ctx context.Context, poolList1 []string, poolList2 []string) (bool, error)
@@ -50,19 +50,15 @@ func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPMa
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
-
 	if rIPManager == nil {
 		return nil, errors.New("reserved IP manager must be specified")
 	}
-
 	if nodeManager == nil {
 		return nil, errors.New("node manager must be specified")
 	}
-
 	if nsManager == nil {
 		return nil, errors.New("namespace manager must be specified")
 	}
-
 	if podManager == nil {
 		return nil, errors.New("pod manager must be specified")
 	}
@@ -82,7 +78,6 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 	var ipConfig *models.IPConfig
 
 	// TODO(iiiceoo): STS static ip, check "EnableStatuflsetIP"
-
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= r.maxConflictRetrys; i++ {
 		var ipPool spiderpoolv1.IPPool
@@ -92,27 +87,20 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 
 		// TODO(iiiceoo): Check TotalIPCount - AllocatedIPCount
 
-		reservedIPRanges, err := r.rIPManager.GetReservedIPRanges(ctx, string(*ipPool.Spec.IPVersion))
+		reserved, err := r.rIPManager.GetReservedIPRanges(ctx, string(*ipPool.Spec.IPVersion))
 		if err != nil {
 			return nil, err
 		}
-		reservedIPs := ip.ParseIPRanges(reservedIPRanges)
 
-		var usedIPRanges []string
-		for k := range ipPool.Status.AllocatedIPs {
-			usedIPRanges = append(usedIPRanges, k)
+		var used []string
+		for ip := range ipPool.Status.AllocatedIPs {
+			used = append(used, ip)
 		}
-		usedIPs := ip.ParseIPRanges(usedIPRanges)
 
-		expectIPs := ip.ParseIPRanges(ipPool.Spec.IPs)
-		excludeIPs := ip.ParseIPRanges(ipPool.Spec.ExcludeIPs)
-		disableIPs := append(reservedIPs, append(usedIPs, excludeIPs...)...)
-		availableIPs := ip.IPsDiffSet(expectIPs, disableIPs)
-
-		if len(availableIPs) == 0 {
-			return nil, constant.ErrIPUsedOut
+		allocateIP, err := randomIP(ipPool.Spec.IPs, used, ipPool.Spec.ExcludeIPs, reserved)
+		if err != nil {
+			return nil, err
 		}
-		allocateIP := availableIPs[rand.Int()%len(availableIPs)]
 
 		// TODO(iiiceoo): Remove when Defaulter webhook work
 		if ipPool.Status.AllocatedIPs == nil {
@@ -148,43 +136,62 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 			return nil, err
 		}
 
-		ipNet := ip.ParseIP(ipPool.Spec.Subnet)
-		ipNet.IP = allocateIP
-		address := ipNet.String()
-
-		var version int64
-		if *ipPool.Spec.IPVersion == spiderpoolv1.IPv4 {
-			version = 4
-		} else {
-			version = 6
-		}
-
-		// TODO(iiiceoo): Remove when Defaulter webhook work
-		var gateway string
-		if ipPool.Spec.Gateway != nil {
-			gateway = *ipPool.Spec.Gateway
-		}
-
-		ipConfig = &models.IPConfig{
-			Address: &address,
-			Gateway: gateway,
-			IPPool:  poolName,
-			Nic:     &nic,
-			Version: &version,
-			Vlan:    int64(*ipPool.Spec.Vlan),
-		}
+		ipConfig = genResIPConfig(allocateIP, &ipPool.Spec, nic, poolName)
 		break
 	}
 
 	return ipConfig, nil
 }
 
-type IPAndContainerID struct {
+func randomIP(all []string, used []string, exclude []string, reserved []string) (net.IP, error) {
+	// TODO(iiiceoo): Check nil
+	reservedIPs := ip.ParseIPRanges(reserved)
+	usedIPs := ip.ParseIPRanges(used)
+	expectIPs := ip.ParseIPRanges(all)
+	excludeIPs := ip.ParseIPRanges(exclude)
+	availableIPs := ip.IPsDiffSet(expectIPs, append(reservedIPs, append(usedIPs, excludeIPs...)...))
+
+	if len(availableIPs) == 0 {
+		return nil, constant.ErrIPUsedOut
+	}
+
+	return availableIPs[rand.Int()%len(availableIPs)], nil
+}
+
+func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, poolName string) *models.IPConfig {
+	ipNet := ip.ParseIP(poolSpec.Subnet)
+	ipNet.IP = allocateIP
+	address := ipNet.String()
+
+	var version int64
+	if *poolSpec.IPVersion == spiderpoolv1.IPv4 {
+		version = 4
+	} else {
+		version = 6
+	}
+
+	// TODO(iiiceoo): Remove when Defaulter webhook work
+	var gateway string
+	if poolSpec.Gateway != nil {
+		gateway = *poolSpec.Gateway
+	}
+
+	return &models.IPConfig{
+		Address: &address,
+		Gateway: gateway,
+		IPPool:  poolName,
+		Nic:     &nic,
+		Version: &version,
+		Vlan:    int64(*poolSpec.Vlan),
+	}
+}
+
+type IPAndCID struct {
 	IP          string
 	ContainerID string
 }
 
-func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndContainerID) error {
+func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndCID) error {
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= r.maxConflictRetrys; i++ {
 		var ipPool spiderpoolv1.IPPool
@@ -230,10 +237,6 @@ func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCID
 	}
 
 	return nil
-}
-
-func (r *ipPoolManager) ListPoolAll(ctx context.Context) (*spiderpoolv1.IPPoolList, error) {
-	return nil, nil
 }
 
 func (r *ipPoolManager) SelectByPod(ctx context.Context, version string, poolName string, pod *corev1.Pod) (bool, error) {

@@ -88,7 +88,7 @@ spec:
         - {{ .Values.spiderpoolAgent.binName }}
         args:
         - daemon
-        - --config-dir=/tmp/spiderpool/config-map/conf.yml
+        - --config-path=/tmp/spiderpool/config-map/conf.yml
         {{- with .Values.spiderpoolAgent.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}

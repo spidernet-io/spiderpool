@@ -43,10 +43,10 @@ type envConf struct {
 // EnvInfo collects the env and relevant agentContext properties.
 var envInfo = []envConf{
 	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
-	{"SPIDERPOOL_ENABLED_PPROF", "", false, nil, &agentContext.Cfg.EnabledPprof},
-	{"SPIDERPOOL_ENABLED_METRIC", "", false, nil, &agentContext.Cfg.EnabledMetric},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
+	{"SPIDERPOOL_ENABLED_PPROF", "false", false, nil, &agentContext.Cfg.EnabledPprof},
+	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, &agentContext.Cfg.UpdateCRMaxRetrys, nil},
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords, nil},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, &agentContext.Cfg.IPPoolMaxAllocatedIPs, nil},
@@ -54,14 +54,15 @@ var envInfo = []envConf{
 
 type Config struct {
 	// flags
-	ConfigmapPath string
+	ConfigPath string
 
 	// env
-	LogLevel       string
-	MetricHttpPort string
+	LogLevel      string
+	EnabledPprof  bool
+	EnabledMetric bool
+
 	HttpPort       string
-	EnabledPprof   bool
-	EnabledMetric  bool
+	MetricHttpPort string
 
 	UpdateCRMaxRetrys                 string
 	WorkloadEndpointMaxHistoryRecords string
@@ -101,7 +102,7 @@ type AgentContext struct {
 
 // BindAgentDaemonFlags bind agent cli daemon flags
 func (ac *AgentContext) BindAgentDaemonFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&ac.Cfg.ConfigmapPath, "config-dir", "/tmp/spiderpool/config-map/conf.yml", "configmap file")
+	flags.StringVar(&ac.Cfg.ConfigPath, "config-path", "/tmp/spiderpool/config-map/conf.yml", "spiderpool-agent configmap file")
 }
 
 // RegisterEnv set the env to AgentConfiguration
@@ -142,7 +143,7 @@ func (ac *AgentContext) RegisterEnv() error {
 
 // LoadConfigmap reads configmap data from cli flag config-path
 func (ac *AgentContext) LoadConfigmap() error {
-	configmapBytes, err := ioutil.ReadFile(ac.Cfg.ConfigmapPath)
+	configmapBytes, err := ioutil.ReadFile(ac.Cfg.ConfigPath)
 	if nil != err {
 		return fmt.Errorf("Read configmap file failed: %v", err)
 	}

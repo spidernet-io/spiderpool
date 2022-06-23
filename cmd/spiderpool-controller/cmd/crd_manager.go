@@ -28,7 +28,7 @@ func init() {
 }
 
 func newCRDManager() (ctrl.Manager, error) {
-	port, err := strconv.Atoi(controllerContext.WebhookPort)
+	port, err := strconv.Atoi(controllerContext.Cfg.WebhookPort)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func newCRDManager() (ctrl.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Port:                   port,
-		CertDir:                path.Dir(controllerContext.TlsServerCertPath),
+		CertDir:                path.Dir(controllerContext.Cfg.TlsServerCertPath),
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 	})

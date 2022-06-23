@@ -84,7 +84,7 @@ spec:
         - {{ .Values.spiderpoolController.binName }}
         args:
         - daemon
-        - --config-dir=/tmp/spiderpool/config-map
+        - --config-path=/tmp/spiderpool/config-map/conf.yml
         - --tls-server-cert=/etc/tls/tls.crt
         - --tls-server-key=/etc/tls/tls.key
         {{- with .Values.spiderpoolController.extraArgs }}

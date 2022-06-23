@@ -28,7 +28,7 @@ var daemonCmd = &cobra.Command{
 func init() {
 	agentContext.BindAgentDaemonFlags(daemonCmd.PersistentFlags())
 	if err := agentContext.RegisterEnv(); nil != err {
-		logger.Fatal("spider-agent register ENV failed: " + err.Error())
+		logger.Fatal("Spiderpool-agent register ENV failed: " + err.Error())
 	}
 
 	rootCmd.AddCommand(daemonCmd)

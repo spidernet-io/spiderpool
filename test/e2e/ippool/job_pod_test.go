@@ -54,7 +54,7 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 
 		// wait job pod list running
 		GinkgoWriter.Printf("wait job pod list running \n")
-		ctx1, cancel1 := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel1()
 		e2 := frame.WaitPodListRunning(label, int(*parallelism), ctx1)
 		Expect(e2).NotTo(HaveOccurred())

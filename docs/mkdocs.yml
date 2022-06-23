@@ -5,20 +5,15 @@ repo_name: spidernet-io/spiderpool
 repo_url: https://github.com/spidernet-io/spiderpool
 remote_branch: github_pages
 theme:
-  name: material
+  name: readthedocs
   # The maximum depth of the navigation tree in the sidebar
   navigation_depth: 2
   palette:
     scheme: default
-    primary: blue
-    language: zh
   features:
     - navigation.instant
-    - navigation.tracking
-    - navigation.indexes
-    - navigation.tabs
-    - navigation.tabs.sticky
     - navigation.top
+    - navigation.tracking
     - search.highlight
     - search.suggest
     - search.share

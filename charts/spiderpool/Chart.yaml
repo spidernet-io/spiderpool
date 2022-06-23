@@ -4,7 +4,7 @@ home: "https://spidernet-io.github.io/spiderpool"
 # application or library
 type: application
 # no need to modify this version , CI will auto update it with /VERSION
-version: v0.0.2
+version: v0.0.3
 # This field is informational, and has no impact on chart version calculations .
 # Leaving it unquoted can lead to parsing issues in some cases
 # no need to modify this version , CI will auto update it with /VERSION

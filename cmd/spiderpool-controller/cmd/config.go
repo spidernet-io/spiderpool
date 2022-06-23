@@ -30,12 +30,13 @@ type envConf struct {
 // EnvInfo collects the env and relevant agentContext properties.
 var envInfo = []envConf{
 	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &controllerContext.Cfg.LogLevel, nil},
-	{"SPIDERPOOL_ENABLED_PPROF", "false", false, nil, &controllerContext.Cfg.EnabledPprof},
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil},
 	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil},
 	{"SPIDERPOOL_CLI_PORT", "5723", true, &controllerContext.Cfg.CliPort, nil},
+	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5724", false, &controllerContext.Cfg.GopsListenPort, nil},
+	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil},
 }
 
 type Config struct {
@@ -46,13 +47,15 @@ type Config struct {
 
 	// env
 	LogLevel      string
-	EnabledPprof  bool
 	EnabledMetric bool
 
 	HttpPort       string
 	MetricHttpPort string
 	WebhookPort    string
 	CliPort        string
+
+	GopsListenPort   string
+	PyroscopeAddress string
 
 	// TODO(iiiceoo): Configmap
 	EnabledGCIppool            bool

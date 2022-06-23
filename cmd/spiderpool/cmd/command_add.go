@@ -70,7 +70,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
-	logger.Sugar().Debugf("CNI ADD Args: %#v", k8sArgs)
+	logger.Sugar().Info("CNI ADD Args: %#v", k8sArgs)
 
 	// register some args into logger
 	logger = logger.With(zap.String("Action", "Add"),
@@ -79,7 +79,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 		zap.String("IfName", args.IfName))
-	logger.Info("Generate IPAM configuration")
+	logger.Debug("Generate IPAM configuration")
 
 	// new unix client
 	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IpamUnixSocketPath)
@@ -98,7 +98,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Debug("Health check succeed.")
 
 	// POST /ipam/ip
-	logger.Info("Sending IP assignment request to spider agent.")
+	logger.Debug("Sending IP assignment request to spider agent.")
 	ipamAddArgs := &models.IpamAddArgs{
 		ContainerID:  &args.ContainerID,
 		IfName:       &args.IfName,

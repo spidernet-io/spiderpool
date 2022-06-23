@@ -118,7 +118,6 @@ spiderpool.log
 unix
 networkMode
 SPIDERPOOL_LOG_LEVEL
-SPIDERPOOL_ENABLED_PPROF
 pprof
 SPIDERPOOL_ENABLED_METRIC
 SPIDERPOOL_METRIC_HTTP_PORT
@@ -157,3 +156,6 @@ bool
 args
 env
 backend
+SPIDERPOOL_GOPS_LISTEN_PORT
+gops
+flamegraph

@@ -160,12 +160,12 @@ spec:
         env:
         - name: SPIDERPOOL_LOG_LEVEL
           value: {{ .Values.spiderpoolController.debug.logLevel | quote }}
-        - name: SPIDERPOOL_ENABLED_PPROF
-          value: {{ .Values.spiderpoolController.debug.pprofEnabled | quote }}
         - name: SPIDERPOOL_ENABLED_METRIC
           value: {{ .Values.spiderpoolController.prometheus.enabled | quote }}
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolController.prometheus.port | quote }}
+        - name: SPIDERPOOL_GOPS_LISTEN_PORT
+          value: {{ .Values.spiderpoolController.debug.gopsPort | quote }}
         - name: SPIDERPOOL_WEBHOOK_PORT
           value: {{ .Values.spiderpoolController.webhookPort | quote }}
         - name: SPIDERPOOL_CLI_PORT

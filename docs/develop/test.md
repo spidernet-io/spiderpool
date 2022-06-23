@@ -70,11 +70,11 @@ you could follow the below steps to test:
         $ make e2e_test -e E2E_IP_FAMILY=ipv6
 
         # run smoke test
-        $ make e2e_test -e GINKGO_OPTION="--label-filter=smoke"
+        $ make e2e_test -e E2E_GINKGO_LABELS=smoke
 
         # after finishing e2e case , you could test repeated for debugging flaky tests
         # example: run a case repeatedly
-        $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --repeat=10 "
+        $ make e2e_test -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
 
         # example: run a case until fails
         $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
@@ -96,3 +96,5 @@ you could follow the below steps to test:
 
         # run all e2e test
         $ make e2e_test
+
+5 finally, you could visit "http://HostIp:4040" the in the browser of your desktop, and get flamegraph

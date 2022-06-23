@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"strings"
 )
 
 // Pre-define log instance with default info level.
@@ -67,6 +69,26 @@ const (
 	PanicLevel = zapcore.PanicLevel
 	FatalLevel = zapcore.FatalLevel
 )
+
+func ConvertLogLevel(level string) *LogLevel {
+	var logLevel LogLevel
+	if strings.EqualFold(level, constant.LogDebugLevelStr) {
+		logLevel = DebugLevel
+	} else if strings.EqualFold(level, constant.LogInfoLevelStr) {
+		logLevel = InfoLevel
+	} else if strings.EqualFold(level, constant.LogWarnLevelStr) {
+		logLevel = WarnLevel
+	} else if strings.EqualFold(level, constant.LogErrorLevelStr) {
+		logLevel = ErrorLevel
+	} else if strings.EqualFold(level, constant.LogFatalLevelStr) {
+		logLevel = FatalLevel
+	} else if strings.EqualFold(level, constant.LogPanicLevelStr) {
+		logLevel = PanicLevel
+	} else {
+		return nil
+	}
+	return &logLevel
+}
 
 func init() {
 	err := InitStdoutLogger(InfoLevel)

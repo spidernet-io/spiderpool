@@ -71,25 +71,25 @@ data:
 
 ## Spiderpool-agent env
 
-| env                                             | default | description                                                  |
-| ----------------------------------------------- | ------- | ------------------------------------------------------------ |
-| SPIDERPOOL_LOG_LEVEL                            | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
-| SPIDERPOOL_ENABLED_PPROF                        | false   | Whether to enable pprof for debug.                           |
-| SPIDERPOOL_ENABLED_METRIC                       | false   | Whether to enable metrics.                                   |
-| SPIDERPOOL_HEALTH_PORT                          | 5710    | Metric HTTP server port.                                     |
-| SPIDERPOOL_METRIC_HTTP_PORT                     | 5711    | Spiderpool-agent backend HTTP server port.                   |
-| SPIDERPOOL_UPDATE_CR_MAX_RETRYS                 | 3       | Max retries to update k8s resources.                         |
+| env                                             | default | description                                                                                     |
+|-------------------------------------------------|---------|-------------------------------------------------------------------------------------------------|
+| SPIDERPOOL_LOG_LEVEL                            | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic".              |
+| SPIDERPOOL_ENABLED_METRIC                       | false   | Whether to enable metrics.                                                                      |
+| SPIDERPOOL_HEALTH_PORT                          | 5710    | Metric HTTP server port.                                                                        |
+| SPIDERPOOL_METRIC_HTTP_PORT                     | 5711    | Spiderpool-agent backend HTTP server port.                                                      |
+| SPIDERPOOL_UPDATE_CR_MAX_RETRYS                 | 3       | Max retries to update k8s resources.                                                            |
 | SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS | 100     | Max historical IP allocation information allowed for a single Pod recorded in WorkloadEndpoint. |
-| SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.          |
+| SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.                                             |
+| SPIDERPOOL_GOPS_LISTEN_PORT                     | 5712    | the port that gops is listen on , set to empty to disable it                                    |
 
 ## Spiderpool-controller env
 
-| env                         | default | description                                                  |
-| --------------------------- | ------- | ------------------------------------------------------------ |
-| SPIDERPOOL_LOG_LEVEL        | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
-| SPIDERPOOL_ENABLED_PPROF    | false   | Whether to enable pprof for debug.                           |
-| SPIDERPOOL_ENABLED_METRIC   | false   | Whether to enable metrics.                                   |
-| SPIDERPOOL_HEALTH_PORT      | 5720    | Spiderpool-controller backend HTTP server port.              |
-| SPIDERPOOL_METRIC_HTTP_PORT | 5721    | Metric HTTP server port.                                     |
-| SPIDERPOOL_WEBHOOK_PORT     | 5722    | Webhook HTTP server port.                                    |
-| SPIDERPOOL_CLI_PORT         | 5723    | Spiderpool-CLI HTTP server port.                             |
+| env                          | default | description                                                                        |
+|------------------------------|---------|------------------------------------------------------------------------------------|
+| SPIDERPOOL_LOG_LEVEL         | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
+| SPIDERPOOL_ENABLED_METRIC    | false   | Whether to enable metrics.                                                         |
+| SPIDERPOOL_HEALTH_PORT       | 5720    | Spiderpool-controller backend HTTP server port.                                    |
+| SPIDERPOOL_METRIC_HTTP_PORT  | 5721    | Metric HTTP server port.                                                           |
+| SPIDERPOOL_WEBHOOK_PORT      | 5722    | Webhook HTTP server port.                                                          |
+| SPIDERPOOL_CLI_PORT          | 5723    | Spiderpool-CLI HTTP server port.                                                   |
+| SPIDERPOOL_GOPS_LISTEN_PORT  | 5724    | the port that gops is listen on , set to empty to disable it                       |

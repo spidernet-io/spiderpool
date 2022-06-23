@@ -18,7 +18,6 @@ run spiderpool controller daemon
 
 ```
     SPIDERPOOL_LOG_LEVEL                        log level (DEBUG|INFO|ERROR)
-    SPIDERPOOL_ENABLED_PPROF                    enable pprof (true|false)
     SPIDERPOOL_ENABLED_METRIC                   enable metrics (true|false)
     SPIDERPOOL_METRIC_HTTP_PORT                 metric port (default to 5721)
     SPIDERPOOL_GC_IPPOOL_ENABLED                enable GC ip in ippool, prior to other GC environment (true|false, default to true)

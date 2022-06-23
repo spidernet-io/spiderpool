@@ -5,6 +5,8 @@ package cmd
 
 import (
 	"context"
+	"github.com/google/gops/agent"
+	"github.com/pyroscope-io/client/pyroscope"
 	"net"
 	"net/http"
 	"os"
@@ -15,8 +17,10 @@ import (
 
 	"go.uber.org/zap"
 
+	"fmt"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -26,8 +30,19 @@ import (
 
 // DaemonMain runs agentContext handlers.
 func DaemonMain() {
+	// reinitialize the logger
+	v := logutils.ConvertLogLevel(agentContext.Cfg.LogLevel)
+	if v == nil {
+		panic(fmt.Sprintf("unknown log level %s \n", agentContext.Cfg.LogLevel))
+	}
+	err := logutils.InitStdoutLogger(*v)
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize logger with level %s, reason=%v \n", agentContext.Cfg.LogLevel, err))
+	}
+	logger = logutils.Logger.Named(BinNameAgent)
+
 	// load Configmap
-	err := agentContext.LoadConfigmap()
+	err = agentContext.LoadConfigmap()
 	if nil != err {
 		logger.Fatal("Load configmap failed, " + err.Error())
 	}
@@ -47,6 +62,44 @@ func DaemonMain() {
 	go WatchSignal(sigCh)
 
 	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
+
+	if agentContext.Cfg.GopsListenPort != "" {
+		address := "127.0.0.1:" + agentContext.Cfg.GopsListenPort
+		op := agent.Options{
+			ShutdownCleanup: true,
+			Addr:            address,
+		}
+		if err := agent.Listen(op); err != nil {
+			logger.Sugar().Fatalf("gops failed to listen on port %s, reason=%v", address, err)
+		}
+		logger.Sugar().Infof("gops is listening on %s ", address)
+		defer agent.Close()
+	}
+
+	if agentContext.Cfg.PyroscopeAddress != "" {
+		// push mode ,  push to pyroscope server
+		logger.Sugar().Infof("pyroscope works in push mode, server %s ", agentContext.Cfg.PyroscopeAddress)
+		node, e := os.Hostname()
+		if e != nil || len(node) == 0 {
+			logger.Sugar().Fatalf("failed to get hostname, reason=%v", e)
+		}
+		_, e = pyroscope.Start(pyroscope.Config{
+			ApplicationName: BinNameAgent,
+			ServerAddress:   agentContext.Cfg.PyroscopeAddress,
+			Logger:          pyroscope.StandardLogger,
+			Tags:            map[string]string{"node": node},
+			ProfileTypes: []pyroscope.ProfileType{
+				pyroscope.ProfileCPU,
+				pyroscope.ProfileAllocObjects,
+				pyroscope.ProfileAllocSpace,
+				pyroscope.ProfileInuseObjects,
+				pyroscope.ProfileInuseSpace,
+			},
+		})
+		if e != nil {
+			logger.Sugar().Fatalf("failed to setup pyroscope, reason=%v", e)
+		}
+	}
 
 	logger.Info("Begin to initialize spiderpool-agent CRD Manager")
 	mgr, err := newCRDManager()

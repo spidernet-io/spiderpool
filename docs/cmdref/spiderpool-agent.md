@@ -19,7 +19,6 @@ run spiderpool agent daemon
 
 ```
     SPIDERPOOL_LOG_LEVEL                log level (DEBUG|INFO|ERROR)
-    SPIDERPOOL_ENABLED_PPROF            enable pprof (true|false)
     SPIDERPOOL_ENABLED_METRIC           enable metrics (true|false)
     SPIDERPOOL_METRIC_HTTP_PORT         metric port (default to 5711)
     SPIDERPOOL_HEALTH_PORT              http port  (default to 5710)

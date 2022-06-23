@@ -84,6 +84,7 @@ setup_kind:
 	$(QUIET) kind create cluster \
 		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
+	- kubectl taint nodes --all node-role.kubernetes.io/master-
 
 
 .PHONY: setup_spiderpool
@@ -107,6 +108,7 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
 		fi ; \
+		HELM_OPTION+=" --set ipamPlugin.log_level=debug  --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
@@ -144,6 +146,17 @@ setup_spiderpool:
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)
+	@ if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
+			docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
+			docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
+			ServerAddress=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
+			echo "setup pyroscope on $${ServerAddress}:$(PYROSCOPE_LOCAL_PORT)" ; \
+			docker run -d --name $(PYROSCOPE_CONTAINER_NAME) -p $(PYROSCOPE_LOCAL_PORT):4040 $(IMAGE_PYROSCOPE_NAME) server ; \
+			echo "set env to spiderpool " ; \
+			kubectl --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  set env deployment spiderpool-controller SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) ; \
+			kubectl --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  set env daemonset  spiderpool-agent SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) ; \
+			echo "finish setuping pyroscope " ; \
+  	 	fi
 	@ echo "waiting for deployment/spiderpool-controller ready"
 	kubectl --kubeconfig $(E2E_KUBECONFIG) rollout status -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
 	@ echo "waiting for daemonset/spiderpool-agent ready"
@@ -154,7 +167,8 @@ setup_spiderpool:
 clean:
 	@rm -rf $(CLUSTER_DIR)
 	-@  kind get clusters | xargs -n1  kind delete cluster --name
-
+	-@ docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
+	-@ docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
 
 .PHONY: check_env
 check_env:
@@ -169,10 +183,11 @@ prepare:
 	$(QUEIT) JUST_CLI_CHECK=true scripts/install-tools.sh
 	$(QUEIT) mkdir -p $(DOWNLOAD_DIR)
 	$(QUEIT) IMAGE_LIST="" ; \
-		 [ "$(USE_TLS_METHOD)" == "certmanager" ] && IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_CERT_MANAGER_NAME) " ; \
-		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_MULTUS_NAME) " ; \
-		 IMAGE_LIST+=" $${IMAGE_LIST} $(IMAGE_WHEREABOUTS_NAME) " ; \
-		 IMAGE_LIST+=" $${IMAGE_LIST} $(TEST_IMAGE_NAME) " ; \
+		 [ "$(USE_TLS_METHOD)" == "certmanager" ] && IMAGE_LIST+=" $(IMAGE_CERT_MANAGER_NAME) " ; \
+		 [ -n "$(PYROSCOPE_LOCAL_PORT)" ] && IMAGE_LIST+=" $(IMAGE_PYROSCOPE_NAME) " ; \
+		 IMAGE_LIST+=" $(IMAGE_MULTUS_NAME) " ; \
+		 IMAGE_LIST+=" $(IMAGE_WHEREABOUTS_NAME) " ; \
+		 IMAGE_LIST+=" $(TEST_IMAGE_NAME) " ; \
 		 ARCH=$(ARCH) IMAGE_LIST="$${IMAGE_LIST}" \
 		 	CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION)  scripts/prepare.sh $(DOWNLOAD_DIR)
 

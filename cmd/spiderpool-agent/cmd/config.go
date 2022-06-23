@@ -43,13 +43,14 @@ type envConf struct {
 // EnvInfo collects the env and relevant agentContext properties.
 var envInfo = []envConf{
 	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
-	{"SPIDERPOOL_ENABLED_PPROF", "false", false, nil, &agentContext.Cfg.EnabledPprof},
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, &agentContext.Cfg.UpdateCRMaxRetrys, nil},
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords, nil},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, &agentContext.Cfg.IPPoolMaxAllocatedIPs, nil},
+	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil},
+	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil},
 }
 
 type Config struct {
@@ -58,11 +59,12 @@ type Config struct {
 
 	// env
 	LogLevel      string
-	EnabledPprof  bool
 	EnabledMetric bool
 
-	HttpPort       string
-	MetricHttpPort string
+	HttpPort         string
+	MetricHttpPort   string
+	GopsListenPort   string
+	PyroscopeAddress string
 
 	UpdateCRMaxRetrys                 string
 	WorkloadEndpointMaxHistoryRecords string

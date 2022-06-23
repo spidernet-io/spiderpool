@@ -1,56 +1,46 @@
 # Configuration
 
+>Instructions for global configuration and environment args of Spiderpool.
+
+[toc]
+
 ## IPAM Plugin Configuration
 
-the following is an example for IPAM configuration
+There is an example of IPAM configuration.
 
-```yaml
+```json
 {
-    "cniVersion": "0.3.1",
-    "name": "macvlan-pod-network",
-    "plugins": [
+    "cniVersion":"0.3.1",
+    "name":"macvlan-pod-network",
+    "plugins":[
         {
-            "name": "macvlan-pod-network",
-            "type": "macvlan",
-            "master": "ens256",
-            "mode": "bridge",
-            "mtu": 1500,
-            "ipam": {
-                "type": "spiderpool",
-                "log_file_path": "/var/run/spidernet/spiderpool.log",
-                "log_file_max_size": "100M",
-                "log_file_max_age": "30d",
-                "log_file_max_count": 7,
-                "log_level": "INFO"
+            "name":"macvlan-pod-network",
+            "type":"macvlan",
+            "master":"ens256",
+            "mode":"bridge",
+            "mtu":1500,
+            "ipam":{
+                "type":"spiderpool",
+                "log_file_path":"/var/run/spidernet/spiderpool.log",
+                "log_file_max_size":"100M",
+                "log_file_max_age":"30d",
+                "log_file_max_count":7,
+                "log_level":"INFO"
             }
         }
-      ]
+    ]
 }
 ```
 
-* log_file_path
-
-    optional, log file path of the IPAM plugin, default to "/var/run/spidernet/spiderpool.log"
-
-* log_file_max_size
-
-    optional, max file size for each rotated file, default to "100M"
-
-* log_file_max_age
-
-    optional, max file age for each rotated file, default to "30d"
-
-* log_file_max_count
-
-    optional, max number of rotated file, default to "7"
-
-* log_level
-
-    optional, log level, default to "INFO". It could be "INFO", "DEBUG", "WARN", "ERROR"
+- `log_file_path` (string, optional): Path to log file  of IPAM plugin, default to `"/var/run/spidernet/spiderpool.log"`.
+- `log_file_max_size` (string, optional): Max size of each rotated file, default to `"100M"`.
+- `log_file_max_age` (string, optional): Max age of each rotated file, default to `"30d"`.
+- `log_file_max_count` (string, optional): Max number of rotated file, default to `"7"`.
+- `log_level` (string, optional): Log level, default to `"INFO"`. It could be `"INFO"`, `"DEBUG"`, `"WARN"`, `"ERROR"`.
 
 ## Configmap Configuration
 
-The configmap "spiderpool-conf" is the global configuration of spiderpool.
+Configmap "spiderpool-conf" is the global configuration of Spiderpool.
 
 ```yaml
 apiVersion: v1
@@ -60,63 +50,46 @@ metadata:
   namespace: kube-system
 data:
   ipamUnixSocketPath: "/var/run/spidernet/spiderpool.sock"
+  networkMode: legacy
   enableIPv4: true
   enableIPv6: true
   clusterDefaultIPv4IPPool: []
   clusterDefaultIPv6IPPool: []
-  networkMode: "legacy"
 ```
 
-* ipamUnixSocketPath
-    the spiderpool agent pod will listen on this unix socket file, and handle IPAM request from the IPAM plugin
+- `ipamUnixSocketPath` (string): Spiderpool agent will listen on this unix socket file, and handle IPAM request from the IPAM plugin.
+- `networkMode`:
+  - `legacy`: Applicable to the traditional physical machine network.
+- `enableIPv4` (bool):
+  - `true`: Spiderpool will assign ipv4 IP, if fail to assign an IPv4 IP, the IPAM plugin will fail when pod creating.
+  - `false`: Spiderpool will ignore assigning IPv4 IP.
+- `enableIPv6` (bool):
+  - `true`: Spiderpool will assign IPv6 IP, if fail to assign an IPv6 IP, the IPAM plugin will fail when pod creating.
+  - `false`: Spiderpool will ignore assigning IPv6 IP.
+- `clusterDefaultIPv4IPPool` (array): Global default ippools of IPv4, it could set to multiple ippools in backup case. Notice, the IP version of these ippools must be IPv4.
+- `clusterDefaultIPv6IPPool` (array): Global default ippools of ipv6, it could set to multiple ippools in backup case. Notice, the IP version of these ippools must be IPv6.
 
-* enableIPv4
+## Spiderpool-agent env
 
-  * true: the spiderpool will assign ipv4 IP, if fail to assign an ipv4 IP, the IPAM plugin will fail for pod creating
-  
-  * false: the spiderpool will ignore assigning ipv4 IP
+| env                                             | default | description                                                  |
+| ----------------------------------------------- | ------- | ------------------------------------------------------------ |
+| SPIDERPOOL_LOG_LEVEL                            | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
+| SPIDERPOOL_ENABLED_PPROF                        | false   | Whether to enable pprof for debug.                           |
+| SPIDERPOOL_ENABLED_METRIC                       | false   | Whether to enable metrics.                                   |
+| SPIDERPOOL_HEALTH_PORT                          | 5710    | Metric HTTP server port.                                     |
+| SPIDERPOOL_METRIC_HTTP_PORT                     | 5711    | Spiderpool-agent backend HTTP server port.                   |
+| SPIDERPOOL_UPDATE_CR_MAX_RETRYS                 | 3       | Max retries to update k8s resources.                         |
+| SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS | 100     | Max historical IP allocation information allowed for a single Pod recorded in WorkloadEndpoint. |
+| SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.          |
 
-* enableIPv6
+## Spiderpool-controller env
 
-  * true: the spiderpool will assign ipv6 IP, if fail to assign an ipv6 IP, the IPAM plugin will fail for pod creating
-
-  * false: the spiderpool will ignore assigning ipv6 IP
-
-* clusterDefaultIPv4IPPool
-
-    the global default ippool of ipv4, it could set to multiple ippool for backup case. Notice, the IP version of these ippool must be IPv4.
-
-* clusterDefaultIPv6IPPool
-
-    the global default ippool of ipv6, it could set to multiple ippool for backup case. Notice, the IP version of these ippool must be IPv6.
-
-* networkMode
-
-    network mode of spiderpool, currently, it only support:
-
-  * "legacy"
-
-## spiderpool controller environment
-
-| environment                              | description            | value                                       |
-|------------------------------------------|------------------------|---------------------------------------------|
-| SPIDERPOOL_LOG_LEVEL                     | log level              | "INFO", "DEBUG", "ERROR", default to "INFO" |
-| SPIDERPOOL_ENABLED_PPROF                 | enable pprof for debug | 5721                                        |                             |
-| SPIDERPOOL_ENABLED_METRIC                | enable metrics         | "true" or "false". default to "false"       |
-| SPIDERPOOL_METRIC_HTTP_PORT              | metrics port           | 5721                                        |
-| SPIDERPOOL_HEALTH_PORT                     |                        |                                             |
-| SPIDERPOOL_GC_IPPOOL_ENABLED             |                        |                                             |
-| SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED |                        |                                             |
-| SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY   |                        |                                             |
-| SPIDERPOOL_GC_EVICTED_POD_IP_ENABLED     |                        |                                             |
-| SPIDERPOOL_GC_EVICTED_POD_IP_DELAY       |                        |                                             |
-
-## spiderpool agent environment
-
-| environment                 | description            | value                                       |
-|-----------------------------|------------------------|---------------------------------------------|
-| SPIDERPOOL_LOG_LEVEL        | log level              | "INFO", "DEBUG", "ERROR", default to "INFO" |
-| SPIDERPOOL_ENABLED_PPROF    | enable pprof for debug | 5721                                        |                             |
-| SPIDERPOOL_ENABLED_METRIC   | enable metrics         | "true" or "false". default to "false"       |
-| SPIDERPOOL_METRIC_HTTP_PORT | metrics port           | 5721                                        |
-| SPIDERPOOL_HEALTH_PORT      |                        |                                             |
+| env                         | default | description                                                  |
+| --------------------------- | ------- | ------------------------------------------------------------ |
+| SPIDERPOOL_LOG_LEVEL        | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
+| SPIDERPOOL_ENABLED_PPROF    | false   | Whether to enable pprof for debug.                           |
+| SPIDERPOOL_ENABLED_METRIC   | false   | Whether to enable metrics.                                   |
+| SPIDERPOOL_HEALTH_PORT      | 5720    | Spiderpool-controller backend HTTP server port.              |
+| SPIDERPOOL_METRIC_HTTP_PORT | 5721    | Metric HTTP server port.                                     |
+| SPIDERPOOL_WEBHOOK_PORT     | 5722    | Webhook HTTP server port.                                    |
+| SPIDERPOOL_CLI_PORT         | 5723    | Spiderpool-CLI HTTP server port.                             |

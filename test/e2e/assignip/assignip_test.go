@@ -56,7 +56,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		v := &corev1.PodList{
 			Items: []corev1.Pod{*pod},
 		}
-		ok, e := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, v)
+		ok, _, _, e := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, v)
 		if e != nil || !ok {
 			Fail(fmt.Sprintf("failed to CheckPodIpRecordInIppool, reason=%v", e))
 		}

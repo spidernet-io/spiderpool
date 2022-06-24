@@ -389,3 +389,10 @@ func GenerateExampleIpv6poolObject() (string, *spiderpool.IPPool) {
 	}
 	return v6PoolName, iPv6PoolObj
 }
+
+func UpdateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.UpdateOption) error {
+	if ippool == nil || f == nil {
+		return errors.New("wrong input")
+	}
+	return f.UpdateResource(ippool, opts...)
+}

@@ -3,7 +3,13 @@
 package common
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	e2e "github.com/spidernet-io/e2eframework/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,5 +50,46 @@ func GenerateExampleDeploymentYaml(dpmName, namespace string, replica int32) *ap
 				},
 			},
 		},
+	}
+}
+
+func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deployment, expectedReplicas int, ctx context.Context) (addedPod, removedPod []corev1.Pod, err error) {
+
+	if frame == nil || deploy == nil || expectedReplicas <= 0 || int32(expectedReplicas) == *deploy.Spec.Replicas {
+		return nil, nil, e2e.ErrWrongInput
+	}
+
+	var newPodList *corev1.PodList
+
+	podList, err := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+	Expect(err).NotTo(HaveOccurred())
+	GinkgoWriter.Printf("deloyment %v/%v scale replicas from %v to %v \n", deploy.Namespace, deploy.Name, len(podList.Items), expectedReplicas)
+
+	deploy, err = frame.ScaleDeployment(deploy, int32(expectedReplicas))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(*deploy.Spec.Replicas).To(Equal(int32(expectedReplicas)))
+	GinkgoWriter.Printf("Successful scale order to start waiting for expected replicas: %v \n", expectedReplicas)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, nil, fmt.Errorf("time out to wait expected replicas: %v ", expectedReplicas)
+		default:
+			newPodList, err = frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+			Expect(err).NotTo(HaveOccurred())
+			if len(newPodList.Items) != expectedReplicas {
+				break
+			}
+			// return the diff pod
+			if expectedReplicas > len(podList.Items) {
+				addedPod := GetAdditionalPods(podList, newPodList)
+				return addedPod, nil, nil
+			}
+			if expectedReplicas < len(podList.Items) {
+				removedPod := GetAdditionalPods(newPodList, podList)
+				return nil, removedPod, nil
+			}
+		}
+		time.Sleep(time.Second)
 	}
 }

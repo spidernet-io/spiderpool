@@ -1,6 +1,6 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-package editcrd_test
+package ippoolcr_test
 
 import (
 	"testing"
@@ -12,9 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func TestEditCRD(t *testing.T) {
+func TestIppoolCR(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Editcrd Suite")
+	RunSpecs(t, "IPPool CR Suite")
 }
 
 var frame *e2e.Framework

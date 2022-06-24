@@ -20,7 +20,6 @@ type WorkloadEndpointManager interface {
 	RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error)
 	UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
 	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID, nic string) error
-	Delete(ctx context.Context, we *spiderpoolv1.WorkloadEndpoint) error
 }
 
 type workloadEndpointManager struct {
@@ -142,9 +141,5 @@ func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, 
 		return err
 	}
 
-	return nil
-}
-
-func (r *workloadEndpointManager) Delete(ctx context.Context, we *spiderpoolv1.WorkloadEndpoint) error {
 	return nil
 }

@@ -39,7 +39,6 @@ func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int) (Po
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
-
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}

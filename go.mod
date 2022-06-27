@@ -21,7 +21,7 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/pyroscope-io/client v0.2.3
 	github.com/sasha-s/go-deadlock v0.3.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spidernet-io/e2eframework v0.0.0-20220622100614-42a93a6edc42
 	go.uber.org/zap v1.21.0
@@ -47,7 +47,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect

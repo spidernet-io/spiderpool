@@ -143,7 +143,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// create ipv4pool
 			if frame.Info.IpV4Enabled {
 				// Generate v4PoolName and ipv4pool object
-				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject()
+				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(200)
 				iPv4PoolObj.Spec.Vlan = ipv4vlan
 				GinkgoWriter.Printf("try to create ipv4pool: %v/%v \n", v4PoolName, iPv4PoolObj)
 				err := common.CreateIppool(frame, iPv4PoolObj)
@@ -152,7 +152,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// create ipv6pool
 			if frame.Info.IpV6Enabled {
 				// Generate v6PoolName and ipv6pool object
-				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject()
+				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(200)
 				iPv6PoolObj.Spec.Vlan = ipv6vlan
 				GinkgoWriter.Printf("try to create ipv6pool: %v/%v \n", v6PoolName, iPv6PoolObj)
 				err := common.CreateIppool(frame, iPv6PoolObj)
@@ -220,7 +220,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// create ipv4pool
 			if frame.Info.IpV4Enabled {
 				// Generate v4PoolName and ipv4pool object
-				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject()
+				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(200)
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				GinkgoWriter.Printf("try to create ipv4pool: %v/%v \n", v4PoolName, iPv4PoolObj)
 				err := common.CreateIppool(frame, iPv4PoolObj)
@@ -229,7 +229,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// create ipv6pool
 			if frame.Info.IpV6Enabled {
 				// Generate v6PoolName and ipv6pool object
-				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject()
+				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(200)
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 				GinkgoWriter.Printf("try to create ipv6pool: %v/%v \n", v6PoolName, iPv6PoolObj)
 				err := common.CreateIppool(frame, iPv6PoolObj)
@@ -286,7 +286,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v := &corev1.PodList{
 				Items: []corev1.Pod{*pod},
 			}
-			ok, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, v)
+			ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, v)
 			Expect(e).NotTo(HaveOccurred())
 			Expect(ok).To(BeTrue())
 

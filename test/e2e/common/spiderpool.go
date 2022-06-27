@@ -7,12 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
-
-	// . "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
@@ -339,8 +338,11 @@ func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameLis
 	}
 }
 
-func GenerateExampleIpv4poolObject() (string, *spiderpool.IPPool) {
-
+func GenerateExampleIpv4poolObject(ipNum int) (string, *spiderpool.IPPool) {
+	if ipNum < 1 || ipNum > 65533 {
+		GinkgoWriter.Println("the IP range should be between 1 and 65533")
+		Fail("the IP range should be between 1 and 65533")
+	}
 	var v4Ipversion = new(spiderpool.IPVersion)
 	*v4Ipversion = spiderpool.IPv4
 
@@ -350,22 +352,38 @@ func GenerateExampleIpv4poolObject() (string, *spiderpool.IPPool) {
 	// Generate random number
 	var randomNumber1 string = GenerateRandomNumber(255)
 	var randomNumber2 string = GenerateRandomNumber(255)
+
 	iPv4PoolObj = &spiderpool.IPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v4PoolName,
 		},
 		Spec: spiderpool.IPPoolSpec{
 			IPVersion: v4Ipversion,
-			Subnet:    fmt.Sprintf("10.%s.%s.0/24", randomNumber1, randomNumber2),
-			IPs:       []string{fmt.Sprintf("10.%s.%s.10-10.%s.%s.250", randomNumber1, randomNumber2, randomNumber1, randomNumber2)},
-			ExcludeIPs: []string{fmt.Sprintf("10.%s.%s.2", randomNumber1, randomNumber2),
-				fmt.Sprintf("10.%s.%s.254", randomNumber1, randomNumber2)},
 		},
+	}
+
+	if ipNum <= 253 {
+		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randomNumber1, randomNumber2)
+		if ipNum == 1 {
+			iPv4PoolObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2", randomNumber1, randomNumber2)}
+		} else {
+			a := strconv.Itoa(ipNum + 1)
+			iPv4PoolObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2-10.%s.%s.%s", randomNumber1, randomNumber2, randomNumber1, randomNumber2, a)}
+		}
+	} else {
+		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randomNumber1)
+		a := fmt.Sprintf("%.0f", float64((ipNum+1)/256))
+		b := strconv.Itoa((ipNum + 1) % 256)
+		iPv4PoolObj.Spec.IPs = []string{fmt.Sprintf("10.%s.0.2-10.%s.%s.%s", randomNumber1, randomNumber1, a, b)}
 	}
 	return v4PoolName, iPv4PoolObj
 }
 
-func GenerateExampleIpv6poolObject() (string, *spiderpool.IPPool) {
+func GenerateExampleIpv6poolObject(ipNum int) (string, *spiderpool.IPPool) {
+	if ipNum < 1 || ipNum > 65533 {
+		GinkgoWriter.Println("the IP range should be between 1 and 65533")
+		Fail("the IP range should be between 1 and 65533")
+	}
 
 	var v6Ipversion = new(spiderpool.IPVersion)
 	*v6Ipversion = spiderpool.IPv6
@@ -381,11 +399,42 @@ func GenerateExampleIpv6poolObject() (string, *spiderpool.IPPool) {
 		},
 		Spec: spiderpool.IPPoolSpec{
 			IPVersion: v6Ipversion,
-			Subnet:    fmt.Sprintf("fd00:%s::/120", randomNumber),
-			IPs:       []string{fmt.Sprintf("fd00:%s::10-fd00:%s::250", randomNumber, randomNumber)},
-			ExcludeIPs: []string{fmt.Sprintf("fd00:%s::2", randomNumber),
-				fmt.Sprintf("fd00:%s::254", randomNumber)},
 		},
 	}
+
+	if ipNum <= 253 {
+		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randomNumber)
+	} else {
+		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randomNumber)
+	}
+
+	if ipNum == 1 {
+		iPv6PoolObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2", randomNumber)}
+	} else {
+		bStr := fmt.Sprintf("%x", ipNum+1)
+		iPv6PoolObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2-fd00:%s::%s", randomNumber, randomNumber, bStr)}
+	}
 	return v6PoolName, iPv6PoolObj
+}
+
+func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Context, opts ...client.DeleteOption) error {
+	if poolName == "" {
+		return frame.ErrWrongInput
+	}
+	err := DeleteIPPoolByName(f, poolName, opts...)
+	if err != nil {
+		return err
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return frame.ErrTimeOut
+		default:
+			pool := GetIppoolByName(f, poolName)
+			if pool == nil {
+				return nil
+			}
+			time.Sleep(time.Second)
+		}
+	}
 }

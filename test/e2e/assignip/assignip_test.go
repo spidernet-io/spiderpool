@@ -4,6 +4,11 @@ package assignip_test
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/types"
+	"strings"
 	"time"
 
 	"fmt"
@@ -153,4 +158,142 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		Entry("assign IP to daemonset/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00004"), common.DaemonSetNameString, int32(0)),
 		Entry("assign IP to replicaset/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00006"), common.ReplicaSetNameString, int32(2)),
 	)
+
+	Context("fail to run a pod when IP resource of an ippool is exhausted or its IP been set excludeIPs", func() {
+		var deployName, v4PoolName, v6PoolName, nic, podAnnoStr string
+		var v4PoolNameList, v6PoolNameList []string
+		var v4PoolObj, v6PoolObj *spiderpoolv1.IPPool
+
+		BeforeEach(func() {
+			nic = "eth0"
+
+			if frame.Info.IpV4Enabled {
+				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(3)
+				v4PoolObj.Spec.ExcludeIPs = strings.Split(v4PoolObj.Spec.IPs[0], "-")[:1]
+				v4PoolNameList = append(v4PoolNameList, v4PoolName)
+
+				// create ipv4 pool
+				createIPPool(v4PoolObj)
+			}
+			if frame.Info.IpV6Enabled {
+				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(3)
+				v6PoolObj.Spec.ExcludeIPs = strings.Split(v6PoolObj.Spec.IPs[0], "-")[:1]
+				v6PoolNameList = append(v6PoolNameList, v6PoolName)
+
+				// create ipv6 pool
+				createIPPool(v6PoolObj)
+			}
+
+			deployName = "deploy" + tools.RandomName()
+
+			// pod annotations
+			podAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
+			if frame.Info.IpV4Enabled {
+				podAnno.IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podAnno.IPv6Pools = []string{v6PoolName}
+			}
+			b, e1 := json.Marshal(podAnno)
+			Expect(e1).NotTo(HaveOccurred())
+			podAnnoStr = string(b)
+
+			DeferCleanup(func() {
+				// delete ippool
+				if frame.Info.IpV4Enabled {
+					deleteIPPoolUntilFinish(v4PoolName)
+				}
+				if frame.Info.IpV6Enabled {
+					deleteIPPoolUntilFinish(v6PoolName)
+				}
+			})
+		})
+
+		It(" fail to run a pod when IP resource of an ippool is exhausted and an IP who is set in excludeIPs field of ippool, should not be assigned to a pod",
+			Label("E00015", "S00002"), func() {
+				// generate deployment yaml
+				GinkgoWriter.Println("generate deploy yaml")
+				deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, int32(2))
+
+				deployYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
+
+				// create deployment until ready
+				deploy, e1 := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+				Expect(e1).NotTo(HaveOccurred())
+
+				// get podList
+				GinkgoWriter.Println("get podList")
+				podList, e2 := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+				Expect(e2).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("podList Num:%v\n", len(podList.Items))
+
+				// check podIP record in IPPool
+				GinkgoWriter.Println("check podIP record in ippool")
+				ok, _, _, e3 := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+				Expect(e3).NotTo(HaveOccurred())
+				Expect(ok).To(BeTrue())
+
+				// scale deployment
+				GinkgoWriter.Println("scale deployment to exhaust ip resource")
+				_, e4 := frame.ScaleDeployment(deploy, int32(3))
+				Expect(e4).NotTo(HaveOccurred())
+
+				// wait expected number of pods
+				GinkgoWriter.Println("wait expected number of pods")
+				ctx5, cancel5 := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel5()
+				var podList1 *corev1.PodList
+				for {
+					select {
+					case <-ctx5.Done():
+						Fail("time out to wait expected number of pods")
+					default:
+						podList1, err = frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+						Expect(err).NotTo(HaveOccurred())
+						if len(podList1.Items) == 3 {
+							goto WAITOK
+						}
+						time.Sleep(time.Second)
+					}
+				}
+			WAITOK:
+
+				// check event message is expected
+				GinkgoWriter.Println("check event message is expected")
+				pods := common.GetAdditionalPods(podList, podList1)
+				Expect(len(pods)).To(Equal(1))
+
+				newPod := &pods[0]
+				ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel1()
+				Expect(frame.WaitExceptEventOccurred(ctx1, common.PodEventKind, newPod.Name, newPod.Namespace, common.GetIpamAllocationFailed)).To(Succeed())
+				GinkgoWriter.Printf("succeeded to detect the message expected: %v\n", common.GetIpamAllocationFailed)
+
+				// delete deployment util finish
+				GinkgoWriter.Printf("delete deployment %v/%v until finish\n", namespace, deployName)
+				Expect(frame.DeleteDeploymentUntilFinish(deployName, namespace, time.Minute)).To(Succeed())
+
+				// check ip release successfully
+				GinkgoWriter.Println("check ip is release successfully")
+				_, ok7, _, e7 := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+				Expect(e7).NotTo(HaveOccurred())
+				Expect(ok7).To(BeTrue())
+				GinkgoWriter.Println("succeeded to release ip")
+			})
+	})
 })
+
+func deleteIPPoolUntilFinish(poolName string) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	GinkgoWriter.Printf("delete ippool %v\n", poolName)
+	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed())
+}
+
+func createIPPool(IPPoolObj *spiderpoolv1.IPPool) {
+	GinkgoWriter.Printf("create ippool %v\n", IPPoolObj.Name)
+	Expect(common.CreateIppool(frame, IPPoolObj)).To(Succeed())
+	GinkgoWriter.Printf("create ippool %v succceed\n", IPPoolObj.Name)
+}

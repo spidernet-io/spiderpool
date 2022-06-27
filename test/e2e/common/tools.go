@@ -3,6 +3,7 @@
 package common
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -24,4 +25,22 @@ func GenerateRandomNumber(max int) string {
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(max)
 	return strconv.Itoa(randomNumber)
+}
+
+func CheckPodListInclude(list *corev1.PodList, pod *corev1.Pod) bool {
+	tempMap := make(map[string]struct{})
+	for _, p := range list.Items {
+		tempMap[p.Name] = struct{}{}
+	}
+	_, ok := tempMap[pod.Name]
+	return ok
+}
+
+func GetAdditionalPods(previous, latter *corev1.PodList) (pods []corev1.Pod) {
+	for _, pod := range latter.Items {
+		if !CheckPodListInclude(previous, &pod) {
+			pods = append(pods, pod)
+		}
+	}
+	return pods
 }

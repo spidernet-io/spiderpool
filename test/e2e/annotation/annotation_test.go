@@ -14,7 +14,9 @@ import (
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("test annotation", Label("annotation"), func() {
@@ -296,4 +298,158 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
 		})
 	})
+
+	Context("ippool priority", func() {
+		var deployName, v4PoolName1, v4PoolName2, v6PoolName1, v6PoolName2, nic, podAnnoStr string
+		var v4PoolObj1, v4PoolObj2, v6PoolObj1, v6PoolObj2 *spiderpool.IPPool
+
+		BeforeEach(func() {
+			// label namespace
+			ns, e1 := frame.GetNamespace(nsName)
+			Expect(e1).NotTo(HaveOccurred())
+			Expect(ns).NotTo(BeNil())
+
+			ns.Labels = map[string]string{
+				"namespace": nsName,
+			}
+			Expect(frame.UpdateResource(ns)).To(Succeed())
+
+			nic = "eth0"
+
+			// create ippool
+			if frame.Info.IpV4Enabled {
+				// create ippool v4PoolName1
+				v4PoolName1, v4PoolObj1 = common.GenerateExampleIpv4poolObject(3)
+				createIPPool(v4PoolObj1)
+
+				// create ippool v4PoolName2
+				v4PoolName2, v4PoolObj2 = common.GenerateExampleIpv4poolObject(3)
+				v4PoolObj2.Spec.NodeSelector = &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"namespace": nsName,
+					},
+				}
+				createIPPool(v4PoolObj2)
+			}
+			if frame.Info.IpV6Enabled {
+				// create ippool v6PoolName1
+				v6PoolName1, v6PoolObj1 = common.GenerateExampleIpv6poolObject(3)
+				createIPPool(v6PoolObj1)
+
+				// create ippool v6PoolName2
+				v6PoolName2, v6PoolObj2 = common.GenerateExampleIpv6poolObject(3)
+				v6PoolObj2.Spec.NodeSelector = &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"namespace": nsName,
+					},
+				}
+				createIPPool(v6PoolObj2)
+			}
+
+			deployName = "deploy" + tools.RandomName()
+
+			// pod annotations
+			podAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
+			if frame.Info.IpV4Enabled {
+				podAnno.IPv4Pools = []string{v4PoolName1}
+			}
+			if frame.Info.IpV6Enabled {
+				podAnno.IPv6Pools = []string{v6PoolName1}
+			}
+			b, e2 := json.Marshal(podAnno)
+			Expect(e2).NotTo(HaveOccurred())
+			podAnnoStr = string(b)
+
+			DeferCleanup(func() {
+				// delete ippool
+				if frame.Info.IpV4Enabled {
+					deleteIPPoolUntilFinish(v4PoolName1)
+					deleteIPPoolUntilFinish(v4PoolName2)
+				}
+				if frame.Info.IpV6Enabled {
+					deleteIPPoolUntilFinish(v6PoolName1)
+					deleteIPPoolUntilFinish(v6PoolName2)
+				}
+			})
+		})
+
+		It("the pod annotation has the highest priority over namespace and global default ippool", Label("A00004"), func() {
+			// generate deployment yaml
+			GinkgoWriter.Println("generate deploy yaml")
+			deployYaml := common.GenerateExampleDeploymentYaml(deployName, nsName, int32(3))
+
+			deployYaml.Spec.Template.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podAnnoStr}
+
+			// create deployment until ready
+			deploy, e1 := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+			Expect(e1).NotTo(HaveOccurred())
+
+			// get podList
+			GinkgoWriter.Println("get podList")
+			podList, e2 := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+			Expect(e2).NotTo(HaveOccurred())
+			GinkgoWriter.Printf("podList Num:%v\n", len(podList.Items))
+
+			// check podIP record in IPPool
+			GinkgoWriter.Println("check podIP record in ippool --- pod level")
+			ok3, _, _, e3 := common.CheckPodIpRecordInIppool(frame, []string{v4PoolName1}, []string{v6PoolName1}, podList)
+			Expect(e3).NotTo(HaveOccurred())
+			Expect(ok3).To(BeTrue())
+
+			// scale deployment and check ip recorded in ippool --- pod and namespace level
+			scaleDeployCheckIpRecord(deploy, nsName, 6, []string{v4PoolName1, v4PoolName2}, []string{v6PoolName1, v6PoolName2}, time.Minute)
+
+			// scale deployment and check ip recorded in ippool --- pod、namespace and cluster level
+			v4poolNames := append(ClusterDefaultV4IpoolList, v4PoolName1, v4PoolName2)
+			v6poolNames := append(ClusterDefaultV6IpoolList, v6PoolName1, v6PoolName2)
+			scaleDeployCheckIpRecord(deploy, nsName, 9, v4poolNames, v6poolNames, time.Minute)
+
+			// delete deployment
+			GinkgoWriter.Printf("delete deployment %v/%v\n", nsName, deployName)
+			Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, time.Minute)).To(Succeed())
+		})
+	})
 })
+
+func createIPPool(IPPoolObj *spiderpool.IPPool) {
+	GinkgoWriter.Printf("create ippool %v\n", IPPoolObj.Name)
+	Expect(common.CreateIppool(frame, IPPoolObj)).To(Succeed())
+	GinkgoWriter.Printf("create ippool %v succceed\n", IPPoolObj.Name)
+}
+
+func deleteIPPoolUntilFinish(poolName string) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	GinkgoWriter.Printf("delete ippool %v\n", poolName)
+	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed())
+}
+
+func scaleDeployCheckIpRecord(deploy *appsv1.Deployment, namespace string, scaleNum int, v4PoolNames, v6PoolNames []string, timeOut time.Duration) {
+	var e error
+	// scale deployment
+	GinkgoWriter.Println("scale deployment")
+	_, e = frame.ScaleDeployment(deploy, int32(scaleNum))
+	Expect(e).NotTo(HaveOccurred())
+
+	// wait deployment ready
+	GinkgoWriter.Printf("wait deployment ready %v/%v\n", namespace, deploy.Name)
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
+	deployment, e := frame.WaitDeploymentReady(deploy.Name, namespace, ctx)
+	Expect(deployment).NotTo(BeNil())
+	Expect(e).NotTo(HaveOccurred())
+
+	// get pod list
+	GinkgoWriter.Println("get podList")
+	podList, e := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+	Expect(e).NotTo(HaveOccurred())
+	GinkgoWriter.Printf("podList Num:%v\n", len(podList.Items))
+
+	// check podIP record in IPPool
+	GinkgoWriter.Println("check podIP record in ippool")
+	ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNames, v6PoolNames, podList)
+	Expect(e).NotTo(HaveOccurred())
+	Expect(ok).To(BeTrue())
+}

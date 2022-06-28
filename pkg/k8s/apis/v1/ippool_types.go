@@ -64,7 +64,7 @@ type IPPoolSpec struct {
 	// TODO
 
 	// +kubebuilder:validation:Optional
-	NamesapceSelector *metav1.LabelSelector `json:"namesapceSelector,omitempty"`
+	NamesapceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 
 	// TODO
 

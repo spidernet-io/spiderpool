@@ -42,11 +42,9 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			expectPodNum := len(podList.Items)
 			GinkgoWriter.Printf("the %v pod number is: %v \n", componentName, expectPodNum)
 
-			// delete component pod repeatedly every 2 seconds for 6 seconds
-			GinkgoWriter.Printf("delete %v %v pod repeatedly every 2 seconds for 6 seconds \n", expectPodNum, componentName)
-			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*6)
-			defer cancel1()
-			e2 := frame.DeletePodListRepeatedly(label, time.Second*2, ctx1)
+			// delete component pod
+			GinkgoWriter.Printf("delete %v %v pod \n", expectPodNum, componentName)
+			e2 := frame.DeletePodList(podList)
 			Expect(e2).NotTo(HaveOccurred())
 
 			// wait component pod ready
@@ -63,15 +61,15 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			e4 := frame.CreatePod(podYaml)
 			Expect(e4).NotTo(HaveOccurred())
 
-			// at the same time, use goroutine delete component pod repeatedly every 2 seconds for 6 seconds
-			GinkgoWriter.Printf("at the same time delete %v pod repeatedly every 2 seconds for 6 seconds \n", componentName)
-			ctx3, cancel3 := context.WithTimeout(context.Background(), time.Second*6)
-			defer cancel3()
-
+			// at the same time, use goroutine delete component pod
 			wg.Add(1)
 			go func() {
 				GinkgoRecover()
-				e5 := frame.DeletePodListRepeatedly(label, time.Second*2, ctx3)
+				podList2, err8 := frame.GetPodListByLabel(label)
+				Expect(err8).NotTo(HaveOccurred())
+				Expect(podList2).NotTo(BeNil())
+
+				e5 := frame.DeletePodList(podList2)
 				Expect(e5).NotTo(HaveOccurred())
 				wg.Done()
 			}()

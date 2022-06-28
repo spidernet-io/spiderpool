@@ -26,7 +26,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		GinkgoWriter.Printf("create namespace %v \n", nsName)
 		err := frame.CreateNamespace(nsName)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
-
 		// init test name
 		podName = "pod" + tools.RandomName()
 		// clean test env
@@ -203,7 +202,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pod.Status.Phase).To(Equal(corev1.PodPending))
 
-			// // try to delete pod
+			// try to delete pod
 			GinkgoWriter.Printf("try to delete pod %v/%v \n", nsName, podName)
 			err = frame.DeletePod(podName, nsName)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
@@ -294,6 +293,60 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			GinkgoWriter.Printf("try to delete pod %v/%v \n", nsName, podName)
 			err = frame.DeletePod(podName, nsName)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
+		})
+		It(`the namespace annotation has precedence over global default ippool`, Label("A00006", "smoke"), func() {
+			var v4NamespaceIppoolAnnoStr, v6NamespaceIppoolAnnoStr string
+
+			// get namespace object
+			namespaceObject, err := frame.GetNamespace(nsName)
+			Expect(err).NotTo(HaveOccurred())
+
+			// namespace annotation
+			namespaceObject.Annotations = make(map[string]string)
+			if frame.Info.IpV4Enabled {
+				v4IppoolAnnoValue := types.AnnoNSDefautlV4PoolValue{}
+				b, err := json.Marshal(append(v4IppoolAnnoValue, v4PoolNameList...))
+				Expect(err).NotTo(HaveOccurred())
+				v4NamespaceIppoolAnnoStr = string(b)
+				namespaceObject.Annotations[pkgconstant.AnnoNSDefautlV4Pool] = v4NamespaceIppoolAnnoStr
+			}
+			if frame.Info.IpV6Enabled {
+				v6IppoolAnnoValue := types.AnnoNSDefautlV6PoolValue{}
+				b, err := json.Marshal(append(v6IppoolAnnoValue, v6PoolNameList...))
+				Expect(err).NotTo(HaveOccurred())
+				v6NamespaceIppoolAnnoStr = string(b)
+				namespaceObject.Annotations[pkgconstant.AnnoNSDefautlV6Pool] = v6NamespaceIppoolAnnoStr
+			}
+
+			// update to namespace object
+			GinkgoWriter.Printf("namespaceObject: %v \n", namespaceObject)
+			err = frame.UpdateResource(namespaceObject)
+			Expect(err).NotTo(HaveOccurred())
+
+			// generate pod yaml and succeeded to create pod
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			Expect(podYaml).NotTo(BeNil())
+			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, time.Second*30)
+			GinkgoWriter.Printf("pod %v/%v: podIPv4: %v, podIPv6: %v \n", nsName, podName, podIPv4, podIPv6)
+
+			// check pod ip recorded in ippool
+			podlist := &corev1.PodList{
+				Items: []corev1.Pod{*pod},
+			}
+			ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+			Expect(e).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// try to delete pod
+			GinkgoWriter.Printf("try to delete pod %v/%v \n", nsName, podName)
+			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel1()
+			err = frame.DeletePodUntilFinish(podName, nsName, ctx1)
+			Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
+
+			// check if the pod ip in ippool reclaimed normally
+			GinkgoWriter.Println("check ip is release successfully")
+			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, time.Minute)).To(Succeed())
 		})
 	})
 })

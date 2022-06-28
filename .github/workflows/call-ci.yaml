@@ -1,4 +1,4 @@
-name: call CI
+name: call E2E CI
 
 env:
   CLUSTER_NAME: spider

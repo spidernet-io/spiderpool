@@ -1,4 +1,4 @@
-name: Auto Nightly CI
+name: Auto Nightly E2E CI
 
 permissions: write-all
 

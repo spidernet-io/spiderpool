@@ -1,4 +1,4 @@
-name: Auto PR CI
+name: Auto PR E2E CI
 
 permissions: write-all
 

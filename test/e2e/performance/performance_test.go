@@ -3,13 +3,16 @@
 package performance_test
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,88 +41,138 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", nsName)
 		})
 	})
+	Context("time cost for creating, rebuilding, deleting deployment pod in batches", func() {
+		var v4PoolName, v6PoolName, nic, podIppoolAnnoStr string
+		var iPv4PoolObj, iPv6PoolObj *spiderpoolv1.IPPool
+		var v4PoolNameList, v6PoolNameList []string
+		BeforeEach(func() {
+			nic = "eth0"
+			DeferCleanup(func() {
+				if frame.Info.IpV4Enabled {
+					err := common.DeleteIPPoolByName(frame, v4PoolName)
+					Expect(err).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					err := common.DeleteIPPoolByName(frame, v6PoolName)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			})
+		})
+		DescribeTable("time cost for creating, rebuilding, deleting deployment pod in batches",
+			func(controllerType string, replicas int32, overtimeCheck time.Duration) {
+				// pod annotation
+				podAnno := types.AnnoPodIPPoolValue{
+					NIC: &nic,
+				}
+				if frame.Info.IpV4Enabled {
+					v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(int(replicas))
+					v4PoolNameList = append(v4PoolNameList, v4PoolName)
+					GinkgoWriter.Printf("try to create ipv4pool: %v/%v \n", v4PoolName, iPv4PoolObj)
+					err := common.CreateIppool(frame, iPv4PoolObj)
+					Expect(err).NotTo(HaveOccurred(), "failed to create ipv4pool: %v \n", v4PoolName)
+					// v4 annotation
+					podAnno.IPv4Pools = v4PoolNameList
+				}
+				if frame.Info.IpV6Enabled {
+					v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(int(replicas))
+					v6PoolNameList = append(v6PoolNameList, v6PoolName)
+					GinkgoWriter.Printf("try to create ipv6pool: %v/%v \n", v6PoolName, iPv6PoolObj)
+					err := common.CreateIppool(frame, iPv6PoolObj)
+					Expect(err).NotTo(HaveOccurred(), "failed to create ipv6pool: %v \n", v6PoolName)
+					// v6 annotation
+					podAnno.IPv6Pools = v6PoolNameList
+				}
+				b, e1 := json.Marshal(podAnno)
+				Expect(e1).NotTo(HaveOccurred())
+				podIppoolAnnoStr = string(b)
 
-	// time cost of create、reboot、delete different number pods through different controller
-	DescribeTable("time cost for creating, rebooting, deleting deployment pod in batches",
-		// waiting to expand GC content
-		func(controllerType string, replicas int32, overtimeCheck time.Duration) {
+				switch {
+				// Generate deployment object
+				case controllerType == common.DeploymentNameString:
+					dpm = common.GenerateExampleDeploymentYaml(perName, nsName, replicas)
+					// Specify ippool by annotation
+					dpm.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+				default:
+					Fail("input variable is not valid")
+				}
 
-			GinkgoWriter.Printf("disable api log to reduce logs")
-			frame.EnableLog = false
+				// Disable api logging
+				GinkgoWriter.Printf("disable api logging to reduce logging \n")
+				frame.EnableLog = false
 
-			// try to create controller
-			GinkgoWriter.Printf("try to create controller %v: %v/%v,replicas is %v \n", controllerType, nsName, perName, replicas)
-			switch {
-			case controllerType == common.DeploymentNameString:
-				podYaml := common.GenerateExampleDeploymentYaml(perName, nsName, replicas)
-				err = frame.CreateDeployment(podYaml)
-			default:
-				Fail("input variable is not valid")
-			}
-			Expect(err).NotTo(HaveOccurred(), "failed to create controller %v : %v/%v", controllerType, nsName, perName)
+				// Calculate the time cost of creating a controller until completion
+				startT1 := time.Now()
 
-			// setting timeout, as the replicas increase，can change the waiting time。
-			// but the same case，last time it worked, this time it didn't，please check performance
-			ctx1, cancel1 := context.WithTimeout(context.Background(), overtimeCheck)
-			defer cancel1()
+				// create deployment until ready
+				GinkgoWriter.Printf("try to create controller %v: %v/%v,replicas is %v \n", controllerType, nsName, perName, replicas)
+				dpm, err = frame.CreateDeploymentUntilReady(dpm, overtimeCheck)
+				Expect(dpm).NotTo(BeNil())
+				Expect(err).NotTo(HaveOccurred(), "failed to create controller %v : %v/%v", controllerType, nsName, perName)
 
-			// computing create controller time cost
-			startT1 := time.Now()
-			dpm, err = frame.WaitDeploymentReady(perName, nsName, ctx1)
-			Expect(dpm).NotTo(BeNil())
-			Expect(err).NotTo(HaveOccurred(), "time out to wait %v : %v/%v ready", controllerType, nsName, perName)
-			endT1 := time.Since(startT1)
+				// get pod list
+				podlist, err = frame.GetPodListByLabel(dpm.Spec.Template.Labels)
+				Expect(err).NotTo(HaveOccurred(), "failed to get pod list")
+				Expect(int32(len(podlist.Items))).Should(Equal(dpm.Status.ReadyReplicas))
+				GinkgoWriter.Printf("succeeded to get the pod list %v/%v, Replicas is %v \n", nsName, perName, len(podlist.Items))
 
-			// get controller pod list for reboot and check ip
-			podlist, err = frame.GetDeploymentPodList(dpm)
-			Expect(err).NotTo(HaveOccurred(), "failed to list pod")
-			Expect(int32(len(podlist.Items))).Should(Equal(dpm.Status.ReadyReplicas))
+				// succeeded to assign ipv4、ipv6 ip for pod
+				err = frame.CheckPodListIpReady(podlist)
+				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("succeeded to assign ipv4、ipv6 ip for pod %v/%v \n", nsName, perName)
 
-			// check all pods to created by controller，it`s assign ipv4 and ipv6 addresses success
-			err = frame.CheckPodListIpReady(podlist)
-			Expect(err).NotTo(HaveOccurred(), "failed to checkout ipv4、ipv6")
+				// check pod ip recorded in ippool
+				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+				Expect(e).NotTo(HaveOccurred())
+				Expect(ok).To(BeTrue())
+				GinkgoWriter.Printf("pod %v/%v ip recorded in ippool %v %v \n", nsName, perName, v4PoolNameList, v6PoolNameList)
+				endT1 := time.Since(startT1)
 
-			// try to reboot controller
-			GinkgoWriter.Printf("try to reboot controller %v : %v/%v, reboot replicas is %v \n", controllerType, nsName, perName, replicas)
-			err = frame.DeletePodList(podlist)
-			Expect(err).NotTo(HaveOccurred(), "failed to reboot controller %v: %v/%v", controllerType, nsName, perName)
+				// Calculate the rebuild time cost of controller until completion
+				startT2 := time.Now()
+				err = frame.RestartDeploymentPodUntilReady(perName, nsName, overtimeCheck)
+				Expect(err).NotTo(HaveOccurred(), "failed to rebuild controller %v: %v/%v", controllerType, nsName, perName)
+				GinkgoWriter.Printf("succeeded to rebuild controller %v : %v/%v, rebuild replicas is %v \n", controllerType, nsName, perName, replicas)
 
-			// waiting for controller replicas to be ready
-			startT2 := time.Now()
-			dpm, err = frame.WaitDeploymentReady(perName, nsName, ctx1)
-			Expect(dpm).NotTo(BeNil())
-			endT2 := time.Since(startT2)
+				// Get the rebuild pod list
+				podlist, err = frame.GetPodListByLabel(dpm.Spec.Template.Labels)
+				Expect(err).NotTo(HaveOccurred(), "failed to get pod list \n")
+				Expect(int32(len(podlist.Items))).Should(Equal(dpm.Status.ReadyReplicas))
+				GinkgoWriter.Printf("succeeded to get the rebuild pod %v/%v, replicas is %v \n", nsName, perName, len(podlist.Items))
 
-			// check all pods to reboot by controller，its assign ipv4 and ipv6 addresses success
-			err = frame.CheckPodListIpReady(podlist)
-			Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6")
+				// succeeded to assign ipv4、ipv6 ip for pod
+				err = frame.CheckPodListIpReady(podlist)
+				Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6")
+				GinkgoWriter.Printf("succeeded to assign ipv4、ipv6 ip for pod %v/%v \n", nsName, perName)
 
-			// try to delete controller
-			GinkgoWriter.Printf("try to delete controller %v: %v/%v, delete replicas is %v \n", controllerType, nsName, perName, replicas)
-			err = frame.DeleteDeployment(perName, nsName)
-			Expect(err).NotTo(HaveOccurred(), "failed to delete controller %v: %v/%v", controllerType, nsName, perName)
+				// check pod ip recorded in ippool
+				ok, _, _, e = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+				Expect(e).NotTo(HaveOccurred())
+				Expect(ok).To(BeTrue())
+				GinkgoWriter.Printf("pod %v/%v ip recorded in ippool %v %v \n", nsName, perName, v4PoolNameList, v6PoolNameList)
+				endT2 := time.Since(startT2)
 
-			ctx3, cancel3 := context.WithTimeout(context.Background(), overtimeCheck)
-			defer cancel3()
+				// Calculate the time cost of deleting the controller until completion
+				startT3 := time.Now()
+				Expect(frame.DeleteDeploymentUntilFinish(perName, nsName, overtimeCheck)).To(Succeed())
+				GinkgoWriter.Printf("delete controller %v:%v/%v success \n", controllerType, nsName, perName)
 
-			// notice: the controller deletion is instantaneous
-			// check time cose of all replicas are deleted time
-			startT3 := time.Now()
-			err = frame.WaitPodListDeleted(nsName, dpm.Spec.Selector.MatchLabels, ctx3)
-			Expect(err).NotTo(HaveOccurred(), "time out to wait controller %v replicas delete", controllerType)
-			endT3 := time.Since(startT3)
+				// check if the pod ip in ippool reclaimed normally
+				GinkgoWriter.Println("check ip is release successfully")
+				Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, time.Minute)).To(Succeed())
+				endT3 := time.Since(startT3)
 
-			// output the performance results
-			GinkgoWriter.Printf("time cost for create %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT1)
-			GinkgoWriter.Printf("time cost for reboot %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT2)
-			GinkgoWriter.Printf("time cost for delete %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT3)
-			// attaching Data to Reports
-			AddReportEntry("Performance Results",
-				fmt.Sprintf(`{ "controllerType" : "%s", "replicas": %d, "createTime": %d , "rebuildTime": %d, "deleteTime": %d }`,
-					controllerType, replicas, int(endT1.Seconds()), int(endT2.Seconds()), int(endT3.Seconds())))
-		},
-		// TODO (tao.yang), N controller replicas in Ippool for N IP, Through this template complete gc performance closed-loop test together
-		Entry("time cost for creating, rebooting, deleting deployment pod in batches",
-			Label("P00002"), common.DeploymentNameString, int32(60), time.Second*300),
-	)
+				// output the performance results
+				GinkgoWriter.Printf("time cost for create  %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT1)
+				GinkgoWriter.Printf("time cost for rebuild %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT2)
+				GinkgoWriter.Printf("time cost for delete  %v: %v/%v of %v replicas = %v \n", controllerType, nsName, perName, replicas, endT3)
+				// attaching Data to Reports
+				AddReportEntry("Performance Results",
+					fmt.Sprintf(`{ "controllerType" : "%s", "replicas": %d, "createTime": %d , "rebuildTime": %d, "deleteTime": %d }`,
+						controllerType, replicas, int(endT1.Seconds()), int(endT2.Seconds()), int(endT3.Seconds())))
+			},
+			// TODO (tao.yang), N controller replicas in Ippool for N IP, Through this template complete gc performance closed-loop test together
+			Entry("time cost for creating, rebuilding, deleting deployment pod in batches",
+				Label("P00002"), common.DeploymentNameString, int32(60), time.Minute*15),
+		)
+	})
 })

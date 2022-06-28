@@ -5,33 +5,34 @@ package tools
 import (
 	"github.com/asaskevich/govalidator"
 	corev1 "k8s.io/api/core/v1"
+
 	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"fmt"
 	"time"
 )
 
-func CheckPodIpv4IPReady(pod *corev1.Pod) bool {
+func CheckPodIpv4IPReady(pod *corev1.Pod) (string, bool) {
 	if pod == nil {
-		return false
+		return "", false
 	}
 	for _, v := range pod.Status.PodIPs {
 		if govalidator.IsIPv4(v.IP) {
-			return true
+			return v.IP, true
 		}
 	}
-	return false
+	return "", false
 }
 
-func CheckPodIpv6IPReady(pod *corev1.Pod) bool {
+func CheckPodIpv6IPReady(pod *corev1.Pod) (string, bool) {
 	if pod == nil {
-		return false
+		return "", false
 	}
 	for _, v := range pod.Status.PodIPs {
 		if govalidator.IsIPv6(v.IP) {
-			return true
+			return v.IP, true
 		}
 	}
-	return false
+	return "", false
 }
 
 func RandomName() string {

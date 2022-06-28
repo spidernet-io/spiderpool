@@ -1,0 +1,15 @@
+name: Auto PR CI
+
+permissions: write-all
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  run-ci:
+    uses: ./.github/workflows/call-ci.yaml
+    secrets: inherit

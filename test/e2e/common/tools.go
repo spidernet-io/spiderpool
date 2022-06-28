@@ -3,11 +3,17 @@
 package common
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"fmt"
 	"math/rand"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func GenerateString(lenNum int) string {
@@ -43,4 +49,23 @@ func GetAdditionalPods(previous, latter *corev1.PodList) (pods []corev1.Pod) {
 		}
 	}
 	return pods
+}
+
+func ExecCommandOnKindNode(nodeNameList []string, command string, timeOut time.Duration) {
+	for _, node := range nodeNameList {
+		arg := fmt.Sprintf("docker exec -i %s %s", node, command)
+		cmd := exec.Command("/bin/bash", "-c", arg)
+		out, exitCode := execCommand(cmd, timeOut)
+		GinkgoWriter.Printf("on node: %v, run cmd: %v, stdout: %v, exitCode: %v\n", node, cmd, out, exitCode)
+		Expect(exitCode).To(Equal(0))
+	}
+}
+
+func execCommand(cmd *exec.Cmd, timeOut time.Duration) (stdout string, exitCode int) {
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	session.Wait(timeOut)
+	stdout = string(session.Out.Contents())
+	exitCode = session.ExitCode()
+	return
 }

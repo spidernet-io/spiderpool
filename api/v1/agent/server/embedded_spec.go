@@ -295,6 +295,18 @@ func init() {
         "containerID": {
           "type": "string"
         },
+        "defaultIPv4IPPool": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "defaultIPv6IPPool": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "ifName": {
           "type": "string"
         },
@@ -656,6 +668,18 @@ func init() {
       "properties": {
         "containerID": {
           "type": "string"
+        },
+        "defaultIPv4IPPool": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "defaultIPv6IPPool": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "ifName": {
           "type": "string"

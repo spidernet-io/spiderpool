@@ -100,11 +100,13 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// POST /ipam/ip
 	logger.Debug("Sending IP assignment request to spider agent.")
 	ipamAddArgs := &models.IpamAddArgs{
-		ContainerID:  &args.ContainerID,
-		IfName:       &args.IfName,
-		NetNamespace: &args.Netns,
-		PodName:      (*string)(&k8sArgs.K8S_POD_NAME),
-		PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+		ContainerID:       &args.ContainerID,
+		IfName:            &args.IfName,
+		NetNamespace:      &args.Netns,
+		PodName:           (*string)(&k8sArgs.K8S_POD_NAME),
+		PodNamespace:      (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+		DefaultIPV4IPPool: conf.IPAM.DefaultIPv4IPPool,
+		DefaultIPV6IPPool: conf.IPAM.DefaultIPv6IPPool,
 	}
 
 	params := daemonset.NewPostIpamIPParams()

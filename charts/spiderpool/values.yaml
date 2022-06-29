@@ -28,25 +28,16 @@ commonLabels: {}
 #  labele: v2
 
 ipamPlugin:
-  # -- Configure the log file for IPAM
-  log_file_path: /var/run/spidernet/spiderpool.log
-  log_file_max_size: 100M
-  log_file_max_age: 30d
-  log_file_max_count: 7
-  # debug, info, warn, error, fatal, panic
-  log_level: "info"
-
   # -- Configure the path to the configuration directory on the host.
   confPath: /etc/cni/net.d/spiderpool
-
   binPath: /opt/cni/bin
 
   # -- Configure the path to the binary directory on the host.
   ipamBinPath: /opt/cni/bin
 
   # -- Configure the unix socket path to connect with the spiderpool agent.
-  ipam_unix_socket_dir: /var/run/spidernet
-  ipam_unix_socket_path: /var/run/spidernet/spiderpool.sock
+  ipamUNIXSocketDir: /var/run/spidernet
+  ipamUNIXSocketPath: /var/run/spidernet/spiderpool.sock
 
 clusterDefaultPool:
   installIPv4IPPool: false

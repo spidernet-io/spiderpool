@@ -319,17 +319,6 @@ jobs:
           # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
           echo ::set-output name=result::${TODO_STATUS}
 
-      - name: Update Badge For Dual-stack
-        if: ${{ steps.get_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: schneegans/dynamic-badges-action@v1.4.0
-        with:
-          auth: ${{ secrets.WELAN_PAT }}
-          gistID: 38d00a872e830eedb46870c886549561
-          filename: spiderpoolperformance.json
-          label: performance
-          message: ${{ steps.get_performance.outputs.result }}
-          color: lightgrey
-
       # ------------------ ipv4-only
       # test against commit version
       - name: Setup Kind Cluster For ipv4-only

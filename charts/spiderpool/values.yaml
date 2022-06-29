@@ -63,8 +63,8 @@ configmap:
 
   config:
     # -- Unix domain socket path to listen for ipam plugin.
-    ipamUnixSocketPath: "/var/run/spidernet/spiderpool.sock"
-    networkMode: "legacy"
+    ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
+    networkMode: legacy
 
 spiderpoolAgent:
   name: "spiderpool-agent"

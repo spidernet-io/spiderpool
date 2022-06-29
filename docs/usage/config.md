@@ -47,25 +47,25 @@ metadata:
   name: spiderpool-conf
   namespace: kube-system
 data:
-  ipamUnixSocketPath: "/var/run/spidernet/spiderpool.sock"
+  ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
   networkMode: legacy
   enableIPv4: true
   enableIPv6: true
-  clusterDefaultIPv4IPPool: ["v4pool1"]
-  clusterDefaultIPv6IPPool: ["v6pool1"]
+  clusterDefaultIPv4IPPool: [default-v4-ippool]
+  clusterDefaultIPv6IPPool: [default-v6-ippool]
 ```
 
-- `ipamUnixSocketPath` (string): Spiderpool agent will listen on this unix socket file, and handle IPAM request from the IPAM plugin.
+- `ipamUnixSocketPath` (string): Spiderpool agent listens to this UNIX socket file and handle IPAM requests from IPAM plugin.
 - `networkMode`:
   - `legacy`: Applicable to the traditional physical machine network.
 - `enableIPv4` (bool):
-  - `true`: Spiderpool will assign ipv4 IP, if fail to assign an IPv4 IP, the IPAM plugin will fail when pod creating.
-  - `false`: Spiderpool will ignore assigning IPv4 IP.
+  - `true`: Enable IPv4 IP allocation capability of Spiderpool.
+  - `false`: Disable IPv4 IP allocation capability of Spiderpool.
 - `enableIPv6` (bool):
-  - `true`: Spiderpool will assign IPv6 IP, if fail to assign an IPv6 IP, the IPAM plugin will fail when pod creating.
-  - `false`: Spiderpool will ignore assigning IPv6 IP.
-- `clusterDefaultIPv4IPPool` (array): Global default ippools of IPv4, it could set to multiple ippools in backup case. Notice, the IP version of these ippools must be IPv4.
-- `clusterDefaultIPv6IPPool` (array): Global default ippools of ipv6, it could set to multiple ippools in backup case. Notice, the IP version of these ippools must be IPv6.
+  - `true`: Enable IPv6 IP allocation capability of Spiderpool.
+  - `false`: Disable IPv6 IP allocation capability of Spiderpool.
+- `clusterDefaultIPv4IPPool` (array): Global default IPv4 ippools. It takes effect throughout the cluster.
+- `clusterDefaultIPv6IPPool` (array): Global default IPv6 ippools. It takes effect throughout the cluster.
 
 ## Spiderpool-agent env
 

@@ -321,21 +321,45 @@ func (f *Framework) DeletePodListUntilReady(podList *corev1.PodList, timeOut tim
 
 	err := f.DeletePodList(podList, opts...)
 	if err != nil {
+		f.Log("failed to DeletePodList")
 		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 	defer cancel()
-	err = f.WaitPodListRunning(podList.Items[0].Labels, len(podList.Items), ctx)
-	if err != nil {
-		return nil, err
+OUTER:
+	for {
+		time.Sleep(time.Duration(time.Second))
+		select {
+		case <-ctx.Done():
+			return nil, ErrTimeOut
+		default:
+		}
+		f.Log("checking restarted pod ")
+
+		l, err := f.GetPodListByLabel(podList.Items[0].Labels)
+		if err != nil {
+			f.Log("failed to GetPodListByLabel , reason=%v", err)
+			continue
+		}
+
+		if len(l.Items) != len(podList.Items) {
+			continue
+		}
+
+		for _, newPod := range l.Items {
+			if newPod.Status.Phase != corev1.PodRunning || newPod.DeletionTimestamp != nil {
+				continue OUTER
+			}
+			for _, oldPod := range podList.Items {
+				if newPod.Name == oldPod.Name {
+					continue OUTER
+				}
+			}
+		}
+
+		return l, nil
+
 	}
-	l, err := f.GetPodListByLabel(podList.Items[0].Labels)
-	if err != nil {
-		return nil, err
-	}
-	if len(l.Items) != len(podList.Items) {
-		return nil, ErrTimeOut
-	}
-	return podList, nil
+
 }

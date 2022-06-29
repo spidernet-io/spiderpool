@@ -138,7 +138,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				}
 				if frame.Info.IpV6Enabled {
 					GinkgoWriter.Println("check pod ipv6")
-					podIPv6 := common.GetPodIPv4Address(pod3)
+					podIPv6 := common.GetPodIPv6Address(pod3)
 					Expect(podIPv6).NotTo(BeNil())
 					GinkgoWriter.Printf("pod ipv6: %v\n", podIPv6)
 				}

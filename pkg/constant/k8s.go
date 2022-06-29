@@ -51,3 +51,5 @@ const (
 	AnnoNSDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
 	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )
+
+const SpiderWorkloadEndpointFinalizer = "spiderpool.spidernet.io"

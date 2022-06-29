@@ -57,6 +57,16 @@ kind load docker-image $TEST_IMAGE --name ${E2E_CLUSTER_NAME}
 
 InstallCNI::Spiderpool(){
     echo "install $MULTUS_DEFAULT_CNI_NAME  cni : macvlan + spiderpool"
+
+    if [ "${E2E_IP_FAMILY}" == "ipv4" ] ; then
+        DEFAULT_IPPOOL='"default_ipv4_ippool": ["default-v4-ippool"],'
+    elif [ "${E2E_IP_FAMILY}" == "ipv6" ] ; then
+        DEFAULT_IPPOOL='"default_ipv6_ippool": ["default-v6-ippool"],'
+    else
+        DEFAULT_IPPOOL='"default_ipv4_ippool": ["default-v4-ippool"],
+            "default_ipv6_ippool": ["default-v6-ippool"],'
+    fi
+
     cat <<EOF | kubectl  create --kubeconfig ${E2E_KUBECONFIG} -f -
 apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
@@ -71,6 +81,7 @@ spec:
       "master": "eth0",
       "name": "${MULTUS_DEFAULT_CNI_NAME}",
       "ipam": {
+          ${DEFAULT_IPPOOL}
           "type": "spiderpool",
           "log_level" : "DEBUG",
           "log_file_path" : "/var/log/spidernet/spiderpool.log",
@@ -95,6 +106,7 @@ spec:
       "master": "eth0",
       "name": "${MULTUS_ADDITIONAL_CNI_NAME}",
       "ipam": {
+          ${DEFAULT_IPPOOL}
           "type": "spiderpool",
           "log_level" : "DEBUG",
           "log_file_path" : "/var/log/spidernet/spiderpool.log",

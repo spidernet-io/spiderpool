@@ -181,7 +181,7 @@ spec:
         - name: cni-bin-path
           mountPath: /host/{{ .Values.ipamPlugin.binPath }}
         - name: ipam-unix-socket-dir
-          mountPath: {{ .Values.ipamPlugin.ipam_unix_socket_dir }}
+          mountPath: {{ .Values.ipamPlugin.ipamUNIXSocketDir }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
@@ -204,7 +204,7 @@ spec:
         # To create unix socket dir in the host
       - name: ipam-unix-socket-dir
         hostPath:
-          path: {{ .Values.ipamPlugin.ipam_unix_socket_dir }}
+          path: {{ .Values.ipamPlugin.ipamUNIXSocketDir }}
           type: DirectoryOrCreate
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

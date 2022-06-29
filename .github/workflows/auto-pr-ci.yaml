@@ -283,12 +283,25 @@ jobs:
           else
               echo ::set-output name=pass::false
           fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo ::set-output name=updaloadlog::true
+          else
+              echo ::set-output name=updaloadlog::false
+          fi
           if [ -f "./e2ereport.json" ] ; then
               echo "error, did not find e2e report"
               echo ::set-output name=upload::true
           else
               echo ::set-output name=upload::false
           fi
+
+      - name: Upload e2e log For Dual-stack
+        if: ${{ steps.dualstack_e2e.outputs.updaloadlog == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: dualstack-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 1
 
       - name: Upload e2e report For Dual-stack
         if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
@@ -318,6 +331,17 @@ jobs:
           TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
           # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
           echo ::set-output name=result::${TODO_STATUS}
+
+      - name: Update Badge For Dual-stack
+        if: ${{ steps.get_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        uses: schneegans/dynamic-badges-action@v1.4.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: 38d00a872e830eedb46870c886549561
+          filename: spiderpoolperformance.json
+          label: performance
+          message: ${{ steps.get_performance.outputs.result }}
+          color: lightgrey
 
       # ------------------ ipv4-only
       # test against commit version
@@ -350,12 +374,25 @@ jobs:
           else
               echo ::set-output name=pass::false
           fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo ::set-output name=updaloadlog::true
+          else
+              echo ::set-output name=updaloadlog::false
+          fi
           if [ -f "./e2ereport.json" ] ; then
               echo "error, did not find e2e report"
               echo ::set-output name=upload::true
           else
               echo ::set-output name=upload::false
           fi
+
+      - name: Upload e2e log For ipv4-only
+        if: ${{ steps.ipv4only_e2e.outputs.updaloadlog == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ipv4Only-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 1
 
       - name: Upload e2e report For ipv4-only
         if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
@@ -405,12 +442,25 @@ jobs:
           else
               echo ::set-output name=pass::false
           fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo ::set-output name=updaloadlog::true
+          else
+              echo ::set-output name=updaloadlog::false
+          fi
           if [ -f "./e2ereport.json" ] ; then
               echo "error, did not find e2e report"
               echo ::set-output name=upload::true
           else
               echo ::set-output name=upload::false
           fi
+
+      - name: Upload e2e log For ipv6-only
+        if: ${{ steps.ipv6only_e2e.outputs.updaloadlog == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ipv6Only-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 1
 
       - name: Upload e2e report For ipv6-only
         if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}

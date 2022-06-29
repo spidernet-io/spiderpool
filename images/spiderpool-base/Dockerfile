@@ -7,6 +7,8 @@
 ARG GOLANG_IMAGE=docker.io/library/golang:1.18.2@sha256:02c05351ed076c581854c554fa65cb2eca47b4389fb79a1fc36f21b8df59c24f
 ARG UBUNTU_IMAGE=docker.io/library/ubuntu:20.04@sha256:bea6d19168bbfd6af8d77c2cc3c572114eb5d113e6f422573c93cb605a0e2ffb
 
+
+
 #========= build gops ===============
 FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as gops-cni-builder
 COPY /build-gops.sh /build-gops.sh
@@ -53,7 +55,3 @@ RUN chmod +x /test-image.sh && /test-image.sh && rm -f /test-image.sh
 FROM scratch
 LABEL maintainer="maintainer@spidernet-io"
 COPY --from=rootfs / /
-
-
-
-

@@ -221,16 +221,30 @@ e2e_test:
 		fi ; \
 		export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_NAME)" ; \
 		export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_NAME)" ; \
+		rm -f $(E2E_LOG_FILE) || true ; \
+		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "gops" "$(E2E_LOG_FILE)" ; \
+		RESULT=0 ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none \
 			--json-report e2ereport.json --output-dir $(ROOT_DIR) --procs $(E2E_GINKGO_PROCS) \
-			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --keep-going  $(GINKGO_OPTION) \
-			-r e2e/*   ; \
-		(($$?!=0)) && echo "failed to run all test"  && exit 1 ; \
+			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --fail-fast  $(GINKGO_OPTION) \
+			-r e2e/*  || RESULT=1  ; \
+		echo "=========== after test `date` ===========" >> $(E2E_LOG_FILE) ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "gops" "$(E2E_LOG_FILE)" ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "longlock" "$(E2E_LOG_FILE)" || RESULT=1 ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "datarace" "$(E2E_LOG_FILE)" || RESULT=1 ; \
+		if (($${RESULT} != 0)) ; then \
+		   echo "failed to run e2e test"  ; \
+		   exit 1 ; \
+		fi ; \
 		echo "" ; \
 		echo "============================================" ; \
 		echo "succeeded to run all test" ; \
-		echo "output report to e2ereport.json"
+		echo "output report to e2ereport.json" ; \
+		echo "output env log to $(E2E_LOG_FILE) "
+
 
 
 .PHONY: usage

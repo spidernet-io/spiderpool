@@ -7,11 +7,15 @@ import (
 	"context"
 	"errors"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
@@ -24,16 +28,21 @@ type WorkloadEndpointManager interface {
 
 type workloadEndpointManager struct {
 	client            client.Client
+	runtimeMgr        ctrl.Manager
 	maxHistoryRecords int
 }
 
-func NewWorkloadEndpointManager(c client.Client, maxHistoryRecords int) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(c client.Client, mgr ctrl.Manager, maxHistoryRecords int) (WorkloadEndpointManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
+	}
+	if mgr == nil {
+		return nil, errors.New("runtime manager must be specified")
 	}
 
 	return &workloadEndpointManager{
 		client:            c,
+		runtimeMgr:        mgr,
 		maxHistoryRecords: maxHistoryRecords,
 	}, nil
 }
@@ -79,11 +88,21 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 			return err
 		}
 
+		var pod corev1.Pod
+		if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+			return err
+		}
+
 		newWE := &spiderpoolv1.WorkloadEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      podName,
 				Namespace: namespace,
 			},
+		}
+
+		controllerutil.AddFinalizer(newWE, constant.SpiderWorkloadEndpointFinalizer)
+		if err := controllerutil.SetOwnerReference(&pod, newWE, r.runtimeMgr.GetScheme()); err != nil {
+			return nil
 		}
 
 		if err := r.client.Create(ctx, newWE); err != nil {

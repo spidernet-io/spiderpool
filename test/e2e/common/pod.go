@@ -6,7 +6,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
@@ -57,42 +56,16 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 	GinkgoWriter.Printf("pod: %v/%v, ips: %+v \n", namespace, podName, pod.Status.PodIPs)
 
 	if frame.Info.IpV4Enabled {
-		Expect(tools.CheckPodIpv4IPReady(pod)).To(BeTrue(), "pod failed to get ipv4 ip")
-		GinkgoWriter.Println("succeeded to check pod ipv4 ip")
-		// get ipv4
-		GinkgoWriter.Println("get IPv4")
-		podIPv4 = GetPodIPv4(pod)
-		GinkgoWriter.Printf("pod IPv4: %+v \n", podIPv4)
+		podIPv4, ok := tools.CheckPodIpv4IPReady(pod)
+		Expect(ok).NotTo(BeFalse(), "failed to get ipv4 ip")
 		Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
+		GinkgoWriter.Println("succeeded to check pod ipv4 ip")
 	}
 	if frame.Info.IpV6Enabled {
-		Expect(tools.CheckPodIpv6IPReady(pod)).To(BeTrue(), "pod failed to get ipv6 ip")
-		GinkgoWriter.Println("succeeded to check pod ipv6 ip")
-		// get ipv6
-		GinkgoWriter.Println("get IPv6")
-		podIPv6 = GetPodIPv6(pod)
-		GinkgoWriter.Printf("pod IPv6: %+v\n", podIPv6)
+		podIPv6, ok := tools.CheckPodIpv6IPReady(pod)
+		Expect(ok).NotTo(BeFalse(), "failed to get ipv6 ip")
 		Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
+		GinkgoWriter.Println("succeeded to check pod ipv6 ip")
 	}
 	return
-}
-
-func GetPodIPv4(pod *corev1.Pod) string {
-	podIPs := pod.Status.PodIPs
-	for _, v := range podIPs {
-		if govalidator.IsIPv4(v.IP) {
-			return v.IP
-		}
-	}
-	return ""
-}
-
-func GetPodIPv6(pod *corev1.Pod) string {
-	podIPs := pod.Status.PodIPs
-	for _, v := range podIPs {
-		if govalidator.IsIPv6(v.IP) {
-			return v.IP
-		}
-	}
-	return ""
 }

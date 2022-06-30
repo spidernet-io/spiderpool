@@ -199,23 +199,35 @@ func (f *Framework) DeletePodUntilFinish(name, namespace string, ctx context.Con
 }
 
 func (f *Framework) CheckPodListIpReady(podList *corev1.PodList) error {
+	var v4IpList = make(map[string]string)
+	var v6IpList = make(map[string]string)
 
-	for i := 0; i < len(podList.Items); i++ {
-		if podList.Items[i].Status.PodIPs == nil {
-			return fmt.Errorf("pod %v failed to assign ip", podList.Items[i].Name)
+	for _, pod := range podList.Items {
+		if pod.Status.PodIPs == nil {
+			return fmt.Errorf("pod %v failed to assign ip", pod.Name)
 		}
-		f.Log("pod %v ips: %+v \n", podList.Items[i].Name, podList.Items[i].Status.PodIPs)
+		f.Log("pod %v ips: %+v \n", pod.Name, pod.Status.PodIPs)
 		if f.Info.IpV4Enabled {
-			if !tools.CheckPodIpv4IPReady(&podList.Items[i]) {
-				return fmt.Errorf("pod %v failed to get ipv4 ip", podList.Items[i].Name)
+			ip, ok := tools.CheckPodIpv4IPReady(&pod)
+			if !ok {
+				return fmt.Errorf("pod %v failed to get ipv4 ip", pod.Name)
 			}
-			f.Log("succeeded to check pod %v ipv4 ip \n", podList.Items[i].Name)
+			if d, ok := v4IpList[ip]; ok {
+				return fmt.Errorf("pod %v and %v have conflicted ipv4 ip %v", pod.Name, v4IpList[ip], d)
+			}
+			v4IpList[ip] = pod.Name
+			f.Log("succeeded to check pod %v ipv4 ip \n", pod.Name)
 		}
 		if f.Info.IpV6Enabled {
-			if !tools.CheckPodIpv6IPReady(&podList.Items[i]) {
-				return fmt.Errorf("pod %v failed to get ipv6 ip", podList.Items[i].Name)
+			ip, err := tools.CheckPodIpv6IPReady(&pod)
+			if !err {
+				return fmt.Errorf("pod %v failed to get ipv6 ip", pod.Name)
 			}
-			f.Log("succeeded to check pod %v ipv6 ip \n", podList.Items[i].Name)
+			if d, ok := v6IpList[ip]; ok {
+				return fmt.Errorf("pod %v and %v have conflicted ipv6 ip %v", pod.Name, v6IpList[ip], d)
+			}
+			v6IpList[ip] = pod.Name
+			f.Log("succeeded to check pod %v ipv6 ip \n", pod.Name)
 		}
 	}
 	return nil
@@ -300,4 +312,30 @@ func (f *Framework) DeletePodListRepeatedly(label map[string]string, interval ti
 			time.Sleep(interval)
 		}
 	}
+}
+
+func (f *Framework) DeletePodListUntilReady(podList *corev1.PodList, timeOut time.Duration, opts ...client.DeleteOption) (*corev1.PodList, error) {
+	if podList == nil {
+		return nil, ErrWrongInput
+	}
+
+	err := f.DeletePodList(podList, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
+	err = f.WaitPodListRunning(podList.Items[0].Labels, len(podList.Items), ctx)
+	if err != nil {
+		return nil, err
+	}
+	l, err := f.GetPodListByLabel(podList.Items[0].Labels)
+	if err != nil {
+		return nil, err
+	}
+	if len(l.Items) != len(podList.Items) {
+		return nil, ErrTimeOut
+	}
+	return podList, nil
 }

@@ -256,11 +256,12 @@ jobs:
         continue-on-error: true
         run: |
           echo ${{ github.event.inputs.labels }}
+          RESULT=0
           make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
-              -e E2E_IP_FAMILY=dual
-          if (($?==0)) ; then
+              -e E2E_IP_FAMILY=dual || RESULT=1
+          if ((RESULT==0)) ; then
               echo ::set-output name=pass::true
           else
               echo ::set-output name=pass::false
@@ -278,7 +279,7 @@ jobs:
           fi
 
       - name: Upload e2e log For Dual-stack
-        if: ${{ steps.dualstack_e2e.outputs.updaloadlog == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dualstack-debuglog.txt
@@ -347,11 +348,12 @@ jobs:
         continue-on-error: true
         run: |
           echo ${{ github.event.inputs.labels }}
+          RESULT=0
           make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
-              -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT=""
-          if (($?==0)) ; then
+              -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT="" || RESULT=1
+          if ((RESULT==0)) ; then
               echo ::set-output name=pass::true
           else
               echo ::set-output name=pass::false
@@ -369,7 +371,7 @@ jobs:
           fi
 
       - name: Upload e2e log For ipv4-only
-        if: ${{ steps.ipv4only_e2e.outputs.updaloadlog == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+        if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
         uses: actions/upload-artifact@v3.1.0
         with:
           name: ipv4Only-debuglog.txt
@@ -415,11 +417,12 @@ jobs:
         continue-on-error: true
         run: |
           echo ${{ github.event.inputs.labels }}
+          RESULT=0
           make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
-              -e E2E_IP_FAMILY=ipv6 -e PYROSCOPE_LOCAL_PORT=""
-          if (($?==0)) ; then
+              -e E2E_IP_FAMILY=ipv6 -e PYROSCOPE_LOCAL_PORT="" || RESULT=1
+          if ((RESULT==0)) ; then
               echo ::set-output name=pass::true
           else
               echo ::set-output name=pass::false
@@ -437,7 +440,7 @@ jobs:
           fi
 
       - name: Upload e2e log For ipv6-only
-        if: ${{ steps.ipv6only_e2e.outputs.updaloadlog == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+        if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
         uses: actions/upload-artifact@v3.1.0
         with:
           name: ipv6Only-debuglog.txt

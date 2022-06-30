@@ -28,29 +28,32 @@ install-bash-completion:
 .PHONY: build_image
 build_image:
 	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
-	@for i in $(SPIDERPOOL_IMAGES); do \
+	@for NAME in $(SPIDERPOOL_IMAGES); do \
 		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
-				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
-				--output type=docker --tag $${i}:$(TEST_IMAGE_TAG) . ; \
-		echo "$${i##*/} build success" ; \
+				--file $(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile \
+				--output type=docker --tag $${NAME}:$(TEST_IMAGE_TAG) . ; \
+		echo "$${NAME##*/} build success" ; \
 	done
 
 # for local debug, if buildx fail to pull images
 .PHONY: build_docker_image
 build_docker_image:
 	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
-	@for i in $(SPIDERPOOL_IMAGES); do \
+	@for NAME in $(SPIDERPOOL_IMAGES); do \
+  		DOCKER_FILE=$(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile ; \
+  		sed -i '2 a \ARG BUILDPLATFORM' $${DOCKER_FILE} ; \
 		docker build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
 		        --build-arg BUILDPLATFORM="linux/$(TARGETARCH)" \
 		        --build-arg TARGETOS=linux \
 		        --build-arg TARGETARCH=$(TARGETARCH) \
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
-				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
-				--tag $${i}:$(TEST_IMAGE_TAG) . ; \
-		echo "$${i##*/} build success" ; \
+				--file $${DOCKER_FILE} \
+				--tag $${NAME}:$(TEST_IMAGE_TAG) . ; \
+		sed -i '3 d'  $${DOCKER_FILE} ; \
+		echo "$${NAME##*/} build success" ; \
 	done
 
 

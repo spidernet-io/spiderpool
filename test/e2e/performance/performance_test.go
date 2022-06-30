@@ -106,23 +106,23 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				// create deployment until ready
 				GinkgoWriter.Printf("try to create controller %v: %v/%v,replicas is %v \n", controllerType, nsName, perName, replicas)
 				dpm, err = frame.CreateDeploymentUntilReady(dpm, overtimeCheck)
+				Expect(err).NotTo(HaveOccurred(), "failed to create controller %v : %v/%v, reason=%v", controllerType, nsName, perName, err)
 				Expect(dpm).NotTo(BeNil())
-				Expect(err).NotTo(HaveOccurred(), "failed to create controller %v : %v/%v", controllerType, nsName, perName)
 
 				// get pod list
 				podlist, err = frame.GetPodListByLabel(dpm.Spec.Template.Labels)
-				Expect(err).NotTo(HaveOccurred(), "failed to get pod list")
+				Expect(err).NotTo(HaveOccurred(), "failed to get pod list, reason=%v", err)
 				Expect(int32(len(podlist.Items))).Should(Equal(dpm.Status.ReadyReplicas))
 				GinkgoWriter.Printf("succeeded to get the pod list %v/%v, Replicas is %v \n", nsName, perName, len(podlist.Items))
 
 				// succeeded to assign ipv4、ipv6 ip for pod
 				err = frame.CheckPodListIpReady(podlist)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred(), "failed to CheckPodListIpReady, reason=%v", err)
 				GinkgoWriter.Printf("succeeded to assign ipv4、ipv6 ip for pod %v/%v \n", nsName, perName)
 
 				// check pod ip recorded in ippool
 				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
-				Expect(e).NotTo(HaveOccurred())
+				Expect(e).NotTo(HaveOccurred(), "failed to CheckPodIpRecordInIppool, reason=%v", e)
 				Expect(ok).To(BeTrue())
 				GinkgoWriter.Printf("pod %v/%v ip recorded in ippool %v %v \n", nsName, perName, v4PoolNameList, v6PoolNameList)
 				endT1 := time.Since(startT1)
@@ -130,23 +130,23 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				// Calculate the rebuild time cost of controller until completion
 				startT2 := time.Now()
 				err = frame.RestartDeploymentPodUntilReady(perName, nsName, overtimeCheck)
-				Expect(err).NotTo(HaveOccurred(), "failed to rebuild controller %v: %v/%v", controllerType, nsName, perName)
+				Expect(err).NotTo(HaveOccurred(), "failed to rebuild controller %v: %v/%v, maybe GC go wrong , reason=%v ", controllerType, nsName, perName, err)
 				GinkgoWriter.Printf("succeeded to rebuild controller %v : %v/%v, rebuild replicas is %v \n", controllerType, nsName, perName, replicas)
 
 				// Get the rebuild pod list
 				podlist, err = frame.GetPodListByLabel(dpm.Spec.Template.Labels)
-				Expect(err).NotTo(HaveOccurred(), "failed to get pod list \n")
+				Expect(err).NotTo(HaveOccurred(), "failed to get pod list ,reason=%v \n", err)
 				Expect(int32(len(podlist.Items))).Should(Equal(dpm.Status.ReadyReplicas))
-				GinkgoWriter.Printf("succeeded to get the rebuild pod %v/%v, replicas is %v \n", nsName, perName, len(podlist.Items))
+				GinkgoWriter.Printf("succeeded to get the restarted pod %v/%v, replicas is %v \n", nsName, perName, len(podlist.Items))
 
 				// succeeded to assign ipv4、ipv6 ip for pod
 				err = frame.CheckPodListIpReady(podlist)
-				Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6")
+				Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6 ,reason=%v \n", err)
 				GinkgoWriter.Printf("succeeded to assign ipv4、ipv6 ip for pod %v/%v \n", nsName, perName)
 
 				// check pod ip recorded in ippool
 				ok, _, _, e = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
-				Expect(e).NotTo(HaveOccurred())
+				Expect(e).NotTo(HaveOccurred(), "failed to CheckPodIpRecordInIppool ,reason=%v \n", err)
 				Expect(ok).To(BeTrue())
 				GinkgoWriter.Printf("pod %v/%v ip recorded in ippool %v %v \n", nsName, perName, v4PoolNameList, v6PoolNameList)
 				endT2 := time.Since(startT2)
@@ -172,7 +172,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			},
 			// TODO (tao.yang), N controller replicas in Ippool for N IP, Through this template complete gc performance closed-loop test together
 			Entry("time cost for creating, rebuilding, deleting deployment pod in batches",
-				Label("P00002"), common.DeploymentNameString, int32(60), time.Minute*15),
+				Label("P00002"), common.DeploymentNameString, int32(60), time.Minute*4),
 		)
 	})
 })

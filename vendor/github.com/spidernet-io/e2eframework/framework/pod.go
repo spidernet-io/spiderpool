@@ -321,6 +321,7 @@ func (f *Framework) DeletePodListUntilReady(podList *corev1.PodList, timeOut tim
 
 	err := f.DeletePodList(podList, opts...)
 	if err != nil {
+		f.Log("failed to DeletePodList")
 		return nil, err
 	}
 
@@ -328,13 +329,16 @@ func (f *Framework) DeletePodListUntilReady(podList *corev1.PodList, timeOut tim
 	defer cancel()
 	err = f.WaitPodListRunning(podList.Items[0].Labels, len(podList.Items), ctx)
 	if err != nil {
+		f.Log("failed to WaitPodListRunning")
 		return nil, err
 	}
 	l, err := f.GetPodListByLabel(podList.Items[0].Labels)
 	if err != nil {
+		f.Log("failed to GetPodListByLabel")
 		return nil, err
 	}
 	if len(l.Items) != len(podList.Items) {
+		f.Log("failed to get right pod number")
 		return nil, ErrTimeOut
 	}
 	return podList, nil

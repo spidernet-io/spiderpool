@@ -118,6 +118,10 @@ func DaemonMain() {
 		}
 	}()
 
+	// init IP GC manager
+	logger.Debug("Begin to initialize IP GC Manager")
+	initGCManager(controllerContext.InnerCtx)
+
 	// ...
 	time.Sleep(100 * time.Hour)
 }
@@ -195,8 +199,9 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.IPPoolManager = ipPoolManager
+}
 
-	logger.Debug("Begin to initialize IP GC Manager")
+func initGCManager(ctx context.Context) {
 	gcConfig := &gcmanager.GarbageCollectionConfig{
 		EnableGCIP:                controllerContext.Cfg.EnableGCIP,
 		EnableGCForTerminatingPod: controllerContext.Cfg.EnableGCForTerminatingPod,

@@ -20,7 +20,7 @@ type gcIPPoolIPIdentify struct {
 
 // tracePodWorker will circle traverse PodEntry database
 func (s *SpiderGC) tracePodWorker() {
-	logger.Info("Starting trace pod worker...")
+	logger.Info("starting trace pod worker")
 
 	for {
 		podEntryList := s.PodDB.ListAllPodEntries()

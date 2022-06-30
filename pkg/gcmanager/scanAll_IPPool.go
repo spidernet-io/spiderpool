@@ -19,10 +19,13 @@ import (
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
 func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
-	logger.Debug("start to monitor gc signal for CLI or default GC interval.")
+	logger.Debug("start to monitor gc signal for CLI or default GC interval")
 
 	timer := time.NewTimer(s.gcConfig.DefaultGCIntervalDuration)
 	defer timer.Stop()
+
+	logger.Debug("initial scan all for cluster firstly")
+	s.gcSignal <- struct{}{}
 
 	for {
 		select {

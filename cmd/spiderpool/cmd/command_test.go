@@ -37,12 +37,26 @@ const (
 	ipamReqRoute     = "/v1/ipam/ip"
 )
 
+const CNIVersion010 = "0.1.0"
+const CNIVersion020 = "0.2.0"
+
 var cniVersion string
 var args *skel.CmdArgs
 var netConf cmd.NetConf
 var sockPath string
 
 var addChan, delChan chan struct{}
+
+type ConfigWorkableSets struct {
+	// decide the IPAM plugin configuration is all good
+	isPreConfigGood bool
+	// decide the spiderpool agent is able to respond route 'healthy'
+	isHealthy bool
+	// decide the spiderpool agent is able to assign IP
+	isPostIPAM bool
+	// decide the spiderpool agent is able to release IP
+	isDeleteIPAM bool
+}
 
 var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func() {
 
@@ -93,14 +107,14 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		})
 
 		DescribeTable("test cmdAdd",
-			func(isHealthy, isPostIPAM bool, cmdArgs func() *skel.CmdArgs, mockServerResponse func() *models.IpamAddResponse, expectResponse func() *current.Result) {
+			func(configSets ConfigWorkableSets, cmdArgs func() *skel.CmdArgs, mockServerResponse func() *models.IpamAddResponse, expectResponse func() *current.Result) {
 				var ipamPostHandleFunc http.HandlerFunc
 
 				// GET /v1/ipam/healthy
-				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(isHealthy)))
+				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(configSets.isHealthy)))
 
 				// POST /v1/ipam/ip
-				if isPostIPAM {
+				if configSets.isPostIPAM {
 					// You must pre-define this even if the mockServerResponse is nil!
 					// And mockServerResponse is nil only use for bad health check!
 					var mockServerResp *models.IpamAddResponse
@@ -119,20 +133,24 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				})
 
 				// bad response check
-				if !isHealthy || !isPostIPAM {
-					var expectErr error
-					if !isHealthy {
-						expectErr = cmd.ErrAgentHealthCheck
-					} else {
-						expectErr = cmd.ErrPostIPAM
-					}
+				var expectErr error
+				if !configSets.isPreConfigGood {
+					Expect(err).To(HaveOccurred())
+					By("Expect to match error: " + err.Error())
+					return
+				} else if !configSets.isHealthy {
+					expectErr = cmd.ErrAgentHealthCheck
+				} else if !configSets.isPostIPAM {
+					expectErr = cmd.ErrPostIPAM
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
 
+				if expectErr != nil {
 					Expect(err).To(HaveOccurred())
 					Expect(err).Should(MatchError(expectErr))
 					return
 				}
-
-				Expect(err).NotTo(HaveOccurred())
 
 				addResult, err := current.GetResult(r)
 				Expect(err).NotTo(HaveOccurred())
@@ -158,13 +176,13 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				// check Result.Routes
 				Expect(reflect.DeepEqual(addResult.Routes, expectResp.Routes))
 			},
-			Entry("returning an error on bad health check with ADD", false, true, func() *skel.CmdArgs {
+			Entry("returning an error on bad health check with ADD", ConfigWorkableSets{isPreConfigGood: true, isHealthy: false, isPostIPAM: true}, func() *skel.CmdArgs {
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}, nil, nil),
-			Entry("allocates addresses with ADD", true, true, func() *skel.CmdArgs {
+			Entry(fmt.Sprintf("allocates addresses with ADD in CNI version '%s'", cmd.CniVersion031), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
@@ -183,14 +201,12 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 							Gateway: "10.1.0.1",
 							Nic:     new(string),
 							Version: new(int64),
-							Vlan:    8,
 						},
 						{
 							Address: new(string),
 							Gateway: "1.2.3.1",
 							Nic:     new(string),
 							Version: new(int64),
-							Vlan:    6,
 						},
 					},
 					Routes: []*models.Route{{Dst: new(string), Gw: new(string)}},
@@ -231,17 +247,117 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}}
 				return expectResult
 			}),
+			Entry(fmt.Sprintf("support CNI version '%s'", cmd.CniVersion030), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+				netConf.CNIVersion = cmd.CniVersion030
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, func() *models.IpamAddResponse {
+				ipamAddResp := &models.IpamAddResponse{
+					DNS: &models.DNS{
+						Domain:      "local",
+						Nameservers: []string{"10.1.0.2"},
+						Options:     []string{"domain.com"},
+						Search:      []string{"bar"},
+					},
+					Ips: []*models.IPConfig{
+						{
+							Address: new(string),
+							Gateway: "10.1.0.2",
+							Nic:     new(string),
+							Version: new(int64),
+						},
+					},
+				}
+
+				*ipamAddResp.Ips[0].Address = "10.1.0.6/24"
+				*ipamAddResp.Ips[0].Nic = ifname
+				*ipamAddResp.Ips[0].Version = 4
+
+				return ipamAddResp
+			}, func() *current.Result {
+				expectResult := new(current.Result)
+				// CNIVersion
+				expectResult.CNIVersion = cmd.CniVersion030
+				// DNS
+				expectResult.DNS = types.DNS{
+					Nameservers: []string{"10.1.0.2"},
+					Domain:      "local",
+					Search:      []string{"bar"},
+					Options:     []string{"domain.com"},
+				}
+				// IPs
+				expectResult.IPs = []*current.IPConfig{{Interface: new(int)}}
+				*expectResult.IPs[0].Interface = 0
+				expectResult.IPs[0].Gateway = net.ParseIP("10.1.0.2")
+				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("10.1.0.6"), Mask: net.CIDRMask(24, 32)}
+				//Interfaces
+				expectResult.Interfaces = []*current.Interface{{Name: ifname}}
+				return expectResult
+			}),
+			Entry(fmt.Sprintf("support CNI version '%s'", cmd.CniVersion040), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+				netConf.CNIVersion = cmd.CniVersion030
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, func() *models.IpamAddResponse {
+				ipamAddResp := &models.IpamAddResponse{
+					DNS: &models.DNS{},
+					Ips: []*models.IPConfig{
+						{
+							Address: new(string),
+							Nic:     new(string),
+							Version: new(int64),
+						},
+					},
+				}
+
+				*ipamAddResp.Ips[0].Address = "10.1.0.7/24"
+				*ipamAddResp.Ips[0].Nic = ifname
+				*ipamAddResp.Ips[0].Version = 4
+
+				return ipamAddResp
+			}, func() *current.Result {
+				expectResult := new(current.Result)
+				// CNIVersion
+				expectResult.CNIVersion = cmd.CniVersion040
+				// DNS
+				expectResult.DNS = types.DNS{}
+				// IPs
+				expectResult.IPs = []*current.IPConfig{{Interface: new(int)}}
+				*expectResult.IPs[0].Interface = 0
+				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("10.1.0.7"), Mask: net.CIDRMask(24, 32)}
+				//Interfaces
+				expectResult.Interfaces = []*current.Interface{{Name: ifname}}
+				return expectResult
+			}),
+			Entry(fmt.Sprintf("support CNI version '%s'", CNIVersion010), ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+				netConf.CNIVersion = CNIVersion010
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, nil, nil),
+			Entry(fmt.Sprintf("support CNI version '%s'", CNIVersion020), ConfigWorkableSets{isPreConfigGood: false, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
+				netConf.CNIVersion = CNIVersion010
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, nil, nil),
 		)
 
 		DescribeTable("test cmdDel",
-			func(isHealthy, isDeleteIPAM bool, cmdArgs func() *skel.CmdArgs) {
+			func(configSets ConfigWorkableSets, cmdArgs func() *skel.CmdArgs) {
 				var ipamDeleteHandleFunc http.HandlerFunc
 
 				// GET /v1/ipam/healthy
-				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(isHealthy)))
+				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(configSets.isHealthy)))
 
 				// DELETE /v1/ipam/ip
-				if isDeleteIPAM {
+				if configSets.isDeleteIPAM {
 					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPOKCode, nil)
 				} else {
 					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPInternalServerErrorCode, nil)
@@ -254,36 +370,40 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				})
 
 				// bad response check
-				if !isHealthy || !isDeleteIPAM {
-					var expectErr error
-					if !isHealthy {
-						expectErr = cmd.ErrAgentHealthCheck
-					} else {
-						expectErr = cmd.ErrDeleteIPAM
-					}
+				var expectErr error
+				if !configSets.isPreConfigGood {
+					Expect(err).To(HaveOccurred())
+					By("Expect to match error: " + err.Error())
+					return
+				} else if !configSets.isHealthy {
+					expectErr = cmd.ErrAgentHealthCheck
+				} else if !configSets.isDeleteIPAM {
+					expectErr = cmd.ErrDeleteIPAM
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
 
+				if expectErr != nil {
 					Expect(err).To(HaveOccurred())
 					Expect(err).Should(MatchError(expectErr))
 					return
 				}
-
-				Expect(err).NotTo(HaveOccurred())
 			},
-			Entry("returning an error on bad health check with DEL", false, true, func() *skel.CmdArgs {
+			Entry("returning an error on bad health check with DEL", ConfigWorkableSets{isPreConfigGood: true, isHealthy: false, isDeleteIPAM: true}, func() *skel.CmdArgs {
 				netConf.IPAM.LogLevel = constant.LogInfoLevelStr
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}),
-			Entry("release addresses with DEL", true, true, func() *skel.CmdArgs {
+			Entry("release addresses with DEL successfully", ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isDeleteIPAM: true}, func() *skel.CmdArgs {
 				netConf.IPAM.LogLevel = constant.LogWarnLevelStr
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
 				return args
 			}),
-			Entry("release addresses with DEL", true, false, func() *skel.CmdArgs {
+			Entry("failed to release addresses with bad spiderpool agent response", ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isDeleteIPAM: false}, func() *skel.CmdArgs {
 				netConf.IPAM.LogLevel = constant.LogErrorLevelStr
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())

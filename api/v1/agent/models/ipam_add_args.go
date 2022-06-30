@@ -26,6 +26,12 @@ type IpamAddArgs struct {
 	// Required: true
 	ContainerID *string `json:"containerID"`
 
+	// default IPv4 IP pool
+	DefaultIPV4IPPool []string `json:"defaultIPv4IPPool"`
+
+	// default IPv6 IP pool
+	DefaultIPV6IPPool []string `json:"defaultIPv6IPPool"`
+
 	// if name
 	// Required: true
 	IfName *string `json:"ifName"`

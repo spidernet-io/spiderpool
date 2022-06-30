@@ -37,6 +37,23 @@ build_image:
 		echo "$${i##*/} build success" ; \
 	done
 
+# for local debug, if buildx fail to pull images
+.PHONY: build_docker_image
+build_docker_image:
+	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
+	@for i in $(SPIDERPOOL_IMAGES); do \
+		docker build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+		        --build-arg BUILDPLATFORM="linux/$(TARGETARCH)" \
+		        --build-arg TARGETOS=linux \
+		        --build-arg TARGETARCH=$(TARGETARCH) \
+				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
+				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
+				--file $(ROOT_DIR)/images/"$${i##*/}"/Dockerfile \
+				--tag $${i}:$(TEST_IMAGE_TAG) . ; \
+		echo "$${i##*/} build success" ; \
+	done
+
+
 .PHONY: lint
 lint-golang:
 	@$(ECHO_CHECK) contrib/scripts/check-go-fmt.sh

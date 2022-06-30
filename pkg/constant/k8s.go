@@ -34,11 +34,13 @@ const (
 )
 
 const (
-	PodRunning     types.PodStatus = "Running"
-	PodTerminating types.PodStatus = "Terminating"
-	PodSucceeded   types.PodStatus = "Succeeded"
-	PodFailed      types.PodStatus = "Failed"
-	PodEvicted     types.PodStatus = "Evicted"
+	PodRunning      types.PodStatus = "Running"
+	PodTerminating  types.PodStatus = "Terminating"
+	PodGraceTimeOut types.PodStatus = "GraceTimeOut"
+	PodSucceeded    types.PodStatus = "Succeeded"
+	PodFailed       types.PodStatus = "Failed"
+	PodEvicted      types.PodStatus = "Evicted"
+	PodDeleted      types.PodStatus = "Deleted"
 )
 
 const (
@@ -51,3 +53,5 @@ const (
 	AnnoNSDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
 	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )
+
+const SpiderWorkloadEndpointFinalizer = "spiderpool.spidernet.io"

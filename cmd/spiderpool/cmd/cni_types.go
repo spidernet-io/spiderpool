@@ -50,6 +50,9 @@ type IPAMConfig struct {
 	LogFileMaxAge   int    `json:"log_file_max_age"`
 	LogFileMaxCount int    `json:"log_file_max_count"`
 
+	DefaultIPv4IPPool []string `json:"default_ipv4_ippool"`
+	DefaultIPv6IPPool []string `json:"default_ipv6_ippool"`
+
 	IpamUnixSocketPath string `json:"ipam_unix_socket_path"`
 }
 

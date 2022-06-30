@@ -89,7 +89,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		return nil, fmt.Errorf("failed to get pod %s: %v", *addArgs.PodName, err)
 	}
 
-	podStatus, allocatable := i.podManager.IsIPAllocatable(ctx, pod)
+	podStatus, allocatable := i.podManager.CheckPodStatus(ctx, pod)
 	if !allocatable {
 		return nil, fmt.Errorf("pod is %s: %w", podStatus, constant.ErrNotAllocatablePod)
 	}
@@ -110,7 +110,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		return addResp, nil
 	}
 
-	preliminary, err := i.getPoolCandidates(ctx, *addArgs.IfName, pod)
+	preliminary, err := i.getPoolCandidates(ctx, *addArgs.IfName, addArgs.DefaultIPV4IPPool, addArgs.DefaultIPV6IPPool, pod)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (i *ipam) allocate(ctx context.Context, tt []ToBeAllocated, ownerType types
 	return resIPs, podAnnotations, nil
 }
 
-func (i *ipam) getPoolCandidates(ctx context.Context, nic string, pod *corev1.Pod) ([]ToBeAllocated, error) {
+func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, pod *corev1.Pod) ([]ToBeAllocated, error) {
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
 		return i.getPoolFromPodAnnoPools(ctx, anno)
 	}
@@ -253,6 +253,11 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, pod *corev1.Po
 		return nil, err
 	}
 	if len(t.V4PoolCandidates) != 0 || len(t.V6PoolCandidates) != 0 {
+		return []ToBeAllocated{*t}, nil
+	}
+
+	if len(netConfV4Pool) != 0 || len(netConfV6Pool) != 0 {
+		t := i.getPoolFromNetConf(ctx, nic, netConfV4Pool, netConfV6Pool)
 		return []ToBeAllocated{*t}, nil
 	}
 
@@ -322,6 +327,17 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace string, nic string) 
 		V4PoolCandidates: nsDefautlV4Pools,
 		V6PoolCandidates: nsDefautlV6Pools,
 	}, nil
+}
+
+func (i *ipam) getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string) *ToBeAllocated {
+	logger := logutils.FromContext(ctx)
+	logger.Info("Use IP pools from CNI network configuration")
+
+	return &ToBeAllocated{
+		NIC:              nic,
+		V4PoolCandidates: netConfV4Pool,
+		V6PoolCandidates: netConfV6Pool,
+	}
 }
 
 func (i *ipam) getClusterDefaultPool(ctx context.Context, nic string) (*ToBeAllocated, error) {

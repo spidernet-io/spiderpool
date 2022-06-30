@@ -9,11 +9,18 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/spf13/pflag"
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
+
+	"github.com/spf13/pflag"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -25,18 +32,32 @@ type envConf struct {
 	required         bool
 	associateStrKey  *string
 	associateBoolKey *bool
+	associateIntKey  *int
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
 var envInfo = []envConf{
-	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &controllerContext.Cfg.LogLevel, nil},
-	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnabledMetric},
-	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil},
-	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil},
-	{"SPIDERPOOL_CLI_PORT", "5723", true, &controllerContext.Cfg.CliPort, nil},
-	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5724", false, &controllerContext.Cfg.GopsListenPort, nil},
-	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil},
+	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &controllerContext.Cfg.LogLevel, nil, nil},
+	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnabledMetric, nil},
+	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil, nil},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil, nil},
+	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil, nil},
+	{"SPIDERPOOL_CLI_PORT", "5723", true, &controllerContext.Cfg.CliPort, nil, nil},
+	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5724", false, &controllerContext.Cfg.GopsListenPort, nil, nil},
+	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil, nil},
+	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
+	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetrys},
+	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &controllerContext.Cfg.EnableGCIP, nil},
+	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &controllerContext.Cfg.EnableGCForTerminatingPod, nil},
+	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &controllerContext.Cfg.ReleaseIPWorkerNum},
+	{"SPIDERPOOL_GC_CHANNEL_BUFFER", "5000", true, nil, nil, &controllerContext.Cfg.GCIPChannelBuffer},
+	{"SPIDERPOOL_GC_MAX_PODENTRY_DB_CAP", "100000", true, nil, nil, &controllerContext.Cfg.MaxPodEntryDatabaseCap},
+	{"SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION", "600", true, nil, nil, &controllerContext.Cfg.DefaultGCIntervalDuration},
+	{"SPIDERPOOL_GC_TRACE_POD_GAP_DURATION", "5", true, nil, nil, &controllerContext.Cfg.TracePodGapDuration},
+	{"SPIDERPOOL_GC_SIGNAL_TIMEOUT_DURATION", "3", true, nil, nil, &controllerContext.Cfg.GCSignalTimeoutDuration},
+	{"SPIDERPOOL_GC_HTTP_REQUEST_TIME_GAP", "1", true, nil, nil, &controllerContext.Cfg.GCSignalGapDuration},
+	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "5", true, nil, nil, &controllerContext.Cfg.AdditionalGraceDelay},
 }
 
 type Config struct {
@@ -57,12 +78,21 @@ type Config struct {
 	GopsListenPort   string
 	PyroscopeAddress string
 
-	// TODO(iiiceoo): Configmap
-	EnabledGCIppool            bool
-	EnabledGCTerminatingPodIP  bool
-	GCTerminatingPodIPDuration time.Duration
-	EnabledGCEvictedPodIP      bool
-	GCEvictedPodIPDuration     time.Duration
+	UpdateCRMaxRetrys                 int
+	WorkloadEndpointMaxHistoryRecords int
+	IPPoolMaxAllocatedIPs             int
+
+	// env for spiderpool IP GC
+	EnableGCIP                bool
+	EnableGCForTerminatingPod bool
+	ReleaseIPWorkerNum        int
+	GCIPChannelBuffer         int
+	MaxPodEntryDatabaseCap    int
+	DefaultGCIntervalDuration int
+	TracePodGapDuration       int
+	GCSignalTimeoutDuration   int
+	GCSignalGapDuration       int
+	AdditionalGraceDelay      int
 }
 
 type ControllerContext struct {
@@ -73,8 +103,17 @@ type ControllerContext struct {
 	InnerCtx    context.Context
 	InnerCancel context.CancelFunc
 
+	// manager
+	CRDManager    ctrl.Manager
+	WEPManager    workloadendpointmanager.WorkloadEndpointManager
+	RIPManager    reservedipmanager.ReservedIPManager
+	NodeManager   nodemanager.NodeManager
+	NSManager     namespacemanager.NamespaceManager
+	IPPoolManager ippoolmanager.IPPoolManager
+	PodManager    podmanager.PodManager
+	GCManager     gcmanager.GCManager
+
 	// handler
-	CRDManager ctrl.Manager
 	HttpServer *server.Server
 }
 
@@ -90,7 +129,6 @@ func (cc *ControllerContext) RegisterEnv() error {
 	var result string
 
 	for i := range envInfo {
-
 		env, ok := os.LookupEnv(envInfo[i].envName)
 		if ok {
 			result = strings.TrimSpace(env)
@@ -107,14 +145,22 @@ func (cc *ControllerContext) RegisterEnv() error {
 			}
 		}
 
-		if nil != envInfo[i].associateStrKey {
+		if envInfo[i].associateStrKey != nil {
 			*(envInfo[i].associateStrKey) = result
-		} else {
+		} else if envInfo[i].associateBoolKey != nil {
 			b, err := strconv.ParseBool(result)
 			if nil != err {
-				return fmt.Errorf("Error: %s require a bool value, but get %s", envInfo[i].envName, result)
+				return fmt.Errorf("error: %s require a bool value, but get %s", envInfo[i].envName, result)
 			}
 			*(envInfo[i].associateBoolKey) = b
+		} else if envInfo[i].associateIntKey != nil {
+			intVal, err := strconv.Atoi(result)
+			if nil != err {
+				return fmt.Errorf("error: %s require a int value, but get %s", envInfo[i].envName, result)
+			}
+			*(envInfo[i].associateIntKey) = intVal
+		} else {
+			return fmt.Errorf("error: %s doesn't match any controller context", envInfo[i].envName)
 		}
 	}
 

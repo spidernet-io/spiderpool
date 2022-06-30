@@ -6,7 +6,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
@@ -67,27 +66,6 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 		Expect(ok).NotTo(BeFalse(), "failed to get ipv6 ip")
 		Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
 		GinkgoWriter.Println("succeeded to check pod ipv6 ip")
-
 	}
 	return
-}
-
-func GetPodIPv4(pod *corev1.Pod) string {
-	podIPs := pod.Status.PodIPs
-	for _, v := range podIPs {
-		if govalidator.IsIPv4(v.IP) {
-			return v.IP
-		}
-	}
-	return ""
-}
-
-func GetPodIPv6(pod *corev1.Pod) string {
-	podIPs := pod.Status.PodIPs
-	for _, v := range podIPs {
-		if govalidator.IsIPv6(v.IP) {
-			return v.IP
-		}
-	}
-	return ""
 }

@@ -6,14 +6,23 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/google/gops/agent"
-	"github.com/pyroscope-io/client/pyroscope"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
+
+	"github.com/google/gops/agent"
+	"github.com/pyroscope-io/client/pyroscope"
 )
 
 // DaemonMain runs controllerContext handlers.
@@ -81,6 +90,9 @@ func DaemonMain() {
 	}
 	controllerContext.CRDManager = mgr
 
+	// init managers...
+	initControllerServiceManagers(controllerContext.InnerCtx)
+
 	go func() {
 		logger.Info("Starting spiderpool-controller CRD Manager")
 		if err := mgr.Start(controllerContext.InnerCtx); err != nil {
@@ -132,5 +144,82 @@ func WatchSignal(sigCh chan os.Signal) {
 
 		// others...
 
+	}
+}
+
+func initControllerServiceManagers(ctx context.Context) {
+	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
+	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
+
+	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, historySize)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.WEPManager = wepManager
+
+	logger.Debug("Begin to initialize ReservedIP Manager")
+	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.RIPManager = rIPManager
+
+	logger.Debug("Begin to initialize Node Manager")
+	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.NodeManager = nodeManager
+
+	logger.Debug("Begin to initialize Namespace Manager")
+	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.NSManager = nsManager
+
+	logger.Debug("Begin to initialize Pod Manager")
+	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
+
+	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, retrys)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.PodManager = podManager
+
+	logger.Debug("Begin to initialize IPPool Manager")
+	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs
+
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager.GetClient(), controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, retrys, poolSize)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.IPPoolManager = ipPoolManager
+
+	logger.Debug("Begin to initialize IP GC Manager")
+	gcConfig := &gcmanager.GarbageCollectionConfig{
+		EnableGCIP:                controllerContext.Cfg.EnableGCIP,
+		EnableGCForTerminatingPod: controllerContext.Cfg.EnableGCForTerminatingPod,
+		ReleaseIPWorkerNum:        controllerContext.Cfg.ReleaseIPWorkerNum,
+		GCIPChannelBuffer:         controllerContext.Cfg.GCIPChannelBuffer,
+		MaxPodEntryDatabaseCap:    controllerContext.Cfg.MaxPodEntryDatabaseCap,
+		DefaultGCIntervalDuration: time.Duration(controllerContext.Cfg.DefaultGCIntervalDuration) * time.Second,
+		TracePodGapDuration:       time.Duration(controllerContext.Cfg.TracePodGapDuration) * time.Second,
+		GCSignalTimeoutDuration:   time.Duration(controllerContext.Cfg.GCSignalTimeoutDuration) * time.Second,
+		GCSignalGapDuration:       time.Duration(controllerContext.Cfg.GCSignalGapDuration) * time.Second,
+		AdditionalGraceDelay:      time.Duration(controllerContext.Cfg.AdditionalGraceDelay) * time.Second,
+	}
+
+	gcManager, err := gcmanager.NewGCManager(controllerContext.CRDManager.GetClient(), gcConfig, controllerContext.CRDManager,
+		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager)
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+
+	controllerContext.GCManager = gcManager
+
+	err = controllerContext.GCManager.Start(ctx)
+	if nil != err {
+		logger.Fatal(fmt.Sprintf("start gc manager failed, err: '%v'", err))
 	}
 }

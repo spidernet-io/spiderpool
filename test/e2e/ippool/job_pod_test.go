@@ -114,12 +114,9 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)
 
 		},
-
 		Entry("check ip release when job is failed", Label("E00005"), common.JobTypeFail),
 		Entry("check ip release when job is succeeded", Label("E00005"), common.JobTypeFinish),
 
 		// TODO(yangwei) check to release
-
 	)
-
 })

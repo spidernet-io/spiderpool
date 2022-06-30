@@ -28,25 +28,16 @@ commonLabels: {}
 #  labele: v2
 
 ipamPlugin:
-  # -- Configure the log file for IPAM
-  log_file_path: /var/run/spidernet/spiderpool.log
-  log_file_max_size: 100M
-  log_file_max_age: 30d
-  log_file_max_count: 7
-  # debug, info, warn, error, fatal, panic
-  log_level: "info"
-
   # -- Configure the path to the configuration directory on the host.
   confPath: /etc/cni/net.d/spiderpool
-
   binPath: /opt/cni/bin
 
   # -- Configure the path to the binary directory on the host.
   ipamBinPath: /opt/cni/bin
 
   # -- Configure the unix socket path to connect with the spiderpool agent.
-  ipam_unix_socket_dir: /var/run/spidernet
-  ipam_unix_socket_path: /var/run/spidernet/spiderpool.sock
+  ipamUNIXSocketDir: /var/run/spidernet
+  ipamUNIXSocketPath: /var/run/spidernet/spiderpool.sock
 
 clusterDefaultPool:
   installIPv4IPPool: false
@@ -63,8 +54,8 @@ configmap:
 
   config:
     # -- Unix domain socket path to listen for ipam plugin.
-    ipamUnixSocketPath: "/var/run/spidernet/spiderpool.sock"
-    networkMode: "legacy"
+    ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
+    networkMode: legacy
 
 spiderpoolAgent:
   name: "spiderpool-agent"
@@ -168,17 +159,17 @@ spiderpoolAgent:
   # -- Configure the path to where to mount the ConfigMap inside the agent pod.
   confFileMountPath: /tmp/cni-configuration
 
-  resources: {}
+  resources:
     # We usually recommend not to specify default resources and to leave this as a conscious
     # choice for the user. This also increases chances charts run on environments with little
     # resources, such as Minikube. If you do want to specify resources, uncomment the following
     # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-    # limits:
-    #   cpu: 1000m
-    #   memory: 512Mi
-    # requests:
-    #   cpu: 100m
-    #   memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
 
   # -- Security context to be added to agent pods
   securityContext: {}
@@ -339,7 +330,7 @@ spiderpoolController:
     # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 1024Mi
     requests:
       cpu: 100m
       memory: 128Mi

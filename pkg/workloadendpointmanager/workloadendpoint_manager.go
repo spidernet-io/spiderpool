@@ -6,34 +6,49 @@ package workloadendpointmanager
 import (
 	"context"
 	"errors"
+	"strings"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type WorkloadEndpointManager interface {
 	RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error)
 	UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
 	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID, nic string) error
+	Get(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
+	RemoveFinalizer(ctx context.Context, namespace, podName string) error
+	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
+	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
 }
 
 type workloadEndpointManager struct {
 	client            client.Client
+	runtimeMgr        ctrl.Manager
 	maxHistoryRecords int
 }
 
-func NewWorkloadEndpointManager(c client.Client, maxHistoryRecords int) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(c client.Client, mgr ctrl.Manager, maxHistoryRecords int) (WorkloadEndpointManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
+	}
+	if mgr == nil {
+		return nil, errors.New("runtime manager must be specified")
 	}
 
 	return &workloadEndpointManager{
 		client:            c,
+		runtimeMgr:        mgr,
 		maxHistoryRecords: maxHistoryRecords,
 	}, nil
 }
@@ -79,11 +94,21 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 			return err
 		}
 
+		var pod corev1.Pod
+		if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+			return err
+		}
+
 		newWE := &spiderpoolv1.WorkloadEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      podName,
 				Namespace: namespace,
 			},
+		}
+
+		controllerutil.AddFinalizer(newWE, constant.SpiderWorkloadEndpointFinalizer)
+		if err := controllerutil.SetOwnerReference(&pod, newWE, r.runtimeMgr.GetScheme()); err != nil {
+			return nil
 		}
 
 		if err := r.client.Create(ctx, newWE); err != nil {
@@ -142,4 +167,117 @@ func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, 
 	}
 
 	return nil
+}
+
+func (r *workloadEndpointManager) Get(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error) {
+	wep := &spiderpoolv1.WorkloadEndpoint{}
+	err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, wep)
+	if nil != err {
+		return nil, err
+	}
+
+	return wep, nil
+}
+
+// RemoveFinalizer removes a specific finalizer field in finalizers string array.
+func (r *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
+	logger := logutils.FromContext(ctx)
+
+	wep := &spiderpoolv1.WorkloadEndpoint{}
+	err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, wep)
+	if nil != err {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Debugf("wep '%s/%s' not found", namespace, podName)
+			return nil
+		}
+
+		return err
+	}
+
+	// remove wep finalizer
+	controllerutil.RemoveFinalizer(wep, constant.SpiderWorkloadEndpointFinalizer)
+
+	err = r.client.Update(ctx, wep)
+	if nil != err {
+		return err
+	}
+
+	return nil
+}
+
+// ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.
+func (r *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error) {
+	wep, err := r.Get(ctx, namespace, podName)
+	if nil != err {
+		return nil, err
+	}
+
+	recordHistoryIPs := func(historyIPs map[string][]ippoolmanager.IPAndCID, poolName, ipAndCIDR *string, podName, podNS, containerID string) {
+		if poolName != nil {
+			if ipAndCIDR == nil {
+				logutils.Logger.Sugar().Errorf("WEP data broken, pod '%s/%s' containerID '%s' used ippool '%s' with no ip")
+				return
+			}
+
+			ip, _, _ := strings.Cut(*ipAndCIDR, "/")
+
+			ips, ok := historyIPs[*poolName]
+			if !ok {
+				ips = []ippoolmanager.IPAndCID{{IP: ip, ContainerID: containerID}}
+			} else {
+				ips = append(ips, ippoolmanager.IPAndCID{IP: ip, ContainerID: containerID})
+			}
+			historyIPs[*poolName] = ips
+		}
+	}
+
+	wepHistoryIPs := make(map[string][]ippoolmanager.IPAndCID)
+
+	// circle to traverse each allocation
+	for _, PodIPAllocation := range wep.Status.History {
+		// circle to traverse each NIC
+		for _, ipAllocationDetail := range PodIPAllocation.IPs {
+			// collect IPv4
+			recordHistoryIPs(wepHistoryIPs, ipAllocationDetail.IPv4Pool, ipAllocationDetail.IPv4, wep.Name, wep.Namespace, PodIPAllocation.ContainerID)
+
+			// collect IPv6
+			recordHistoryIPs(wepHistoryIPs, ipAllocationDetail.IPv6Pool, ipAllocationDetail.IPv6, wep.Name, wep.Namespace, PodIPAllocation.ContainerID)
+		}
+	}
+
+	return wepHistoryIPs, nil
+}
+
+// IsIPBelongWEPCurrent will check the given IP whether belong to the wep current IPs.
+func (r *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error) {
+	wep, err := r.Get(ctx, namespace, podName)
+	if nil != err {
+		return false, err
+	}
+
+	isBelongWEPCurrent := false
+	if wep.Status.Current != nil {
+		// wep will record the IP address and CIDR and the given arg poolIP doesn't contain CIDR
+		for _, wepCurrentAllocationDetail := range wep.Status.Current.IPs {
+			var currentIPv4, currentIPv6 string
+
+			if wepCurrentAllocationDetail.IPv4 != nil {
+				currentIPv4AndCIDR := *wepCurrentAllocationDetail.IPv4
+				currentIPv4, _, _ = strings.Cut(currentIPv4AndCIDR, "/")
+			}
+
+			if wepCurrentAllocationDetail.IPv6 != nil {
+				currentIPv6AndCIDR := *wepCurrentAllocationDetail.IPv6
+				currentIPv6, _, _ = strings.Cut(currentIPv6AndCIDR, "/")
+			}
+
+			// if the given poolIP is same with the current IP, just break
+			if poolIP == currentIPv4 || poolIP == currentIPv6 {
+				isBelongWEPCurrent = true
+				break
+			}
+		}
+	}
+
+	return isBelongWEPCurrent, nil
 }

@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 	var err error
-	var podName, namespace, podIPv4, podIPv6 string
+	var podName, namespace string
 
 	BeforeEach(func() {
 		// create namespace
@@ -132,14 +132,14 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(e3).NotTo(HaveOccurred())
 				if frame.Info.IpV4Enabled {
 					GinkgoWriter.Println("check pod ipv4")
-					podIPv4 = common.GetPodIPv4(pod3)
-					Expect(podIPv4).NotTo(BeEmpty())
+					podIPv4 := common.GetPodIPv4Address(pod3)
+					Expect(podIPv4).NotTo(BeNil())
 					GinkgoWriter.Printf("pod ipv4: %v\n", podIPv4)
 				}
 				if frame.Info.IpV6Enabled {
 					GinkgoWriter.Println("check pod ipv6")
-					podIPv6 = common.GetPodIPv6(pod3)
-					Expect(podIPv6).NotTo(BeEmpty())
+					podIPv6 := common.GetPodIPv4Address(pod3)
+					Expect(podIPv6).NotTo(BeNil())
 					GinkgoWriter.Printf("pod ipv6: %v\n", podIPv6)
 				}
 

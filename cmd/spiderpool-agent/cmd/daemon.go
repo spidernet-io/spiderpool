@@ -5,8 +5,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/google/gops/agent"
-	"github.com/pyroscope-io/client/pyroscope"
 	"net"
 	"net/http"
 	"os"
@@ -15,9 +13,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/gops/agent"
+	"github.com/pyroscope-io/client/pyroscope"
+
 	"go.uber.org/zap"
 
 	"fmt"
+
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -113,7 +115,7 @@ func DaemonMain() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(mgr.GetClient(), historySize)
+	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(mgr.GetClient(), mgr, historySize)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

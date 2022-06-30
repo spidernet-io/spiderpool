@@ -380,30 +380,34 @@ func (i *ipam) checkIPVersionEnable(ctx context.Context, tt []ToBeAllocated) err
 	return nil
 }
 
-func (i *ipam) filterPoolCandidates(ctx context.Context, tt []ToBeAllocated, pod *corev1.Pod) ([]ToBeAllocated, error) {
-	for idx, t := range tt {
-		for idx, pool := range t.V4PoolCandidates {
-			eligible, err := i.ipPoolManager.SelectByPod(ctx, string(spiderpoolv1.IPv4), pool, pod)
+// TODO(iiiceoo): refactor
+func (ipam *ipam) filterPoolCandidates(ctx context.Context, tt []ToBeAllocated, pod *corev1.Pod) ([]ToBeAllocated, error) {
+	for i := 0; i < len(tt); i++ {
+		for j := 0; j < len(tt[i].V4PoolCandidates); j++ {
+			eligible, err := ipam.ipPoolManager.SelectByPod(ctx, string(spiderpoolv1.IPv4), tt[i].V4PoolCandidates[j], pod)
 			if err != nil {
 				return nil, err
 			}
 			if !eligible {
-				t.V4PoolCandidates = append(t.V4PoolCandidates[:idx], t.V4PoolCandidates[idx+1:]...)
+				tt[i].V4PoolCandidates = append(tt[i].V4PoolCandidates[:j], tt[i].V4PoolCandidates[j+1:]...)
+				j--
 			}
 		}
 
-		for _, pool := range t.V6PoolCandidates {
-			eligible, err := i.ipPoolManager.SelectByPod(ctx, string(spiderpoolv1.IPv6), pool, pod)
+		for j := 0; j < len(tt[i].V6PoolCandidates); j++ {
+			eligible, err := ipam.ipPoolManager.SelectByPod(ctx, string(spiderpoolv1.IPv6), (tt[i].V6PoolCandidates)[j], pod)
 			if err != nil {
 				return nil, err
 			}
 			if !eligible {
-				t.V4PoolCandidates = append(t.V6PoolCandidates[:idx], t.V6PoolCandidates[idx+1:]...)
+				tt[i].V6PoolCandidates = append(tt[i].V6PoolCandidates[:j], tt[i].V6PoolCandidates[j+1:]...)
+				j--
 			}
 		}
 
-		if len(t.V4PoolCandidates) == 0 && len(t.V6PoolCandidates) == 0 {
-			tt = append(tt[:idx], tt[idx+1:]...)
+		if (ipam.ipamConfig.EnableIPv4 && len(tt[i].V4PoolCandidates) == 0) || (ipam.ipamConfig.EnableIPv6 && len(tt[i].V6PoolCandidates) == 0) {
+			tt = append(tt[:i], tt[i+1:]...)
+			i--
 		}
 	}
 
@@ -413,7 +417,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []ToBeAllocated, pod
 
 	for _, t := range tt {
 		allPools := append(t.V4PoolCandidates, t.V6PoolCandidates...)
-		vlanToPools, same, err := i.ipPoolManager.CheckVlanSame(ctx, allPools)
+		vlanToPools, same, err := ipam.ipPoolManager.CheckVlanSame(ctx, allPools)
 		if err != nil {
 			return nil, err
 		}

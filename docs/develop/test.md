@@ -38,6 +38,8 @@ you could follow the below steps to test:
 
         # !!! images is built by commit sha, so make sure the commit is submit locally
         $ make build_image
+        # or (if buildx fail to pull images)
+        $ make build_docker_image
 
     setup the cluster
 

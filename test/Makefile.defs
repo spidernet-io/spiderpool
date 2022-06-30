@@ -78,3 +78,4 @@ E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
 #=============http_proxy=============
 http_proxy ?=
 
+E2E_LOG_FILE ?= $(ROOT_DIR)/test/e2edebugLog.txt

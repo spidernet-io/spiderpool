@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.7">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.8">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.4a0965b7.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.1d29e8d0.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -732,6 +732,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../select-ippool/" class="md-nav__link">
+        Select ippool
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -817,7 +831,6 @@
 <blockquote>
 <p>Instructions for global configuration and environment args of Spiderpool.</p>
 </blockquote>
-<p>[toc]</p>
 <h2 id="ipam-plugin-configuration">IPAM Plugin Configuration</h2>
 <p>There is an example of IPAM configuration.</p>
 <pre><code class="language-json">{
@@ -857,25 +870,25 @@ metadata:
   name: spiderpool-conf
   namespace: kube-system
 data:
-  ipamUnixSocketPath: &quot;/var/run/spidernet/spiderpool.sock&quot;
+  ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
   networkMode: legacy
   enableIPv4: true
   enableIPv6: true
-  clusterDefaultIPv4IPPool: []
-  clusterDefaultIPv6IPPool: []
+  clusterDefaultIPv4IPPool: [default-v4-ippool]
+  clusterDefaultIPv6IPPool: [default-v6-ippool]
 </code></pre>
 <ul>
-<li><code>ipamUnixSocketPath</code> (string): Spiderpool agent will listen on this unix socket file, and handle IPAM request from the IPAM plugin.</li>
+<li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handle IPAM requests from IPAM plugin.</li>
 <li><code>networkMode</code>:</li>
 <li><code>legacy</code>: Applicable to the traditional physical machine network.</li>
 <li><code>enableIPv4</code> (bool):</li>
-<li><code>true</code>: Spiderpool will assign ipv4 IP, if fail to assign an IPv4 IP, the IPAM plugin will fail when pod creating.</li>
-<li><code>false</code>: Spiderpool will ignore assigning IPv4 IP.</li>
+<li><code>true</code>: Enable IPv4 IP allocation capability of Spiderpool.</li>
+<li><code>false</code>: Disable IPv4 IP allocation capability of Spiderpool.</li>
 <li><code>enableIPv6</code> (bool):</li>
-<li><code>true</code>: Spiderpool will assign IPv6 IP, if fail to assign an IPv6 IP, the IPAM plugin will fail when pod creating.</li>
-<li><code>false</code>: Spiderpool will ignore assigning IPv6 IP.</li>
-<li><code>clusterDefaultIPv4IPPool</code> (array): Global default ippools of IPv4, it could set to multiple ippools in backup case. Notice, the IP version of these ippools must be IPv4.</li>
-<li><code>clusterDefaultIPv6IPPool</code> (array): Global default ippools of ipv6, it could set to multiple ippools in backup case. Notice, the IP version of these ippools must be IPv6.</li>
+<li><code>true</code>: Enable IPv6 IP allocation capability of Spiderpool.</li>
+<li><code>false</code>: Disable IPv6 IP allocation capability of Spiderpool.</li>
+<li><code>clusterDefaultIPv4IPPool</code> (array): Global default IPv4 ippools. It takes effect throughout the cluster.</li>
+<li><code>clusterDefaultIPv6IPPool</code> (array): Global default IPv6 ippools. It takes effect throughout the cluster.</li>
 </ul>
 <h2 id="spiderpool-agent-env">Spiderpool-agent env</h2>
 <table>
@@ -908,6 +921,11 @@ data:
 <td>Spiderpool-agent backend HTTP server port.</td>
 </tr>
 <tr>
+<td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
+<td>5712</td>
+<td>Port that gops is listen on , set to empty to disable it.</td>
+</tr>
+<tr>
 <td>SPIDERPOOL_UPDATE_CR_MAX_RETRYS</td>
 <td>3</td>
 <td>Max retries to update k8s resources.</td>
@@ -921,11 +939,6 @@ data:
 <td>SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS</td>
 <td>5000</td>
 <td>Max number of IP that a single IP pool can provide.</td>
-</tr>
-<tr>
-<td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
-<td>5712</td>
-<td>the port that gops is listen on , set to empty to disable it</td>
 </tr>
 </tbody>
 </table>
@@ -972,7 +985,7 @@ data:
 <tr>
 <td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
 <td>5724</td>
-<td>the port that gops is listen on , set to empty to disable it</td>
+<td>Port that gops is listen on , set to empty to disable it.</td>
 </tr>
 </tbody>
 </table>

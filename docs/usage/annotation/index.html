@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.7">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.8">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.4a0965b7.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.1d29e8d0.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -772,6 +772,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../select-ippool/" class="md-nav__link">
+        Select ippool
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -897,52 +911,51 @@
 <blockquote>
 <p>Spiderpool provides annotations for configuring custom ippools and routes.</p>
 </blockquote>
-<p>[toc]</p>
 <h2 id="pod-annotation">Pod Annotation</h2>
 <p>Pod could specify Spiderpool annotations for special request.</p>
 <h3 id="ipamspidernetioippool">ipam.spidernet.io/ippool</h3>
-<p>Specify which ippool is used for the assigning IP.</p>
+<p>Specify the ippools used to allocate IP.</p>
 <pre><code class="language-yaml">ipam.spidernet.io/ippool: |-
   {
     &quot;interface&quot;: &quot;eth0&quot;,
-    &quot;ipv4pools&quot;: [&quot;v4pool1&quot;],
-    &quot;ipv6pools&quot;: [&quot;v6pool1&quot;, &quot;v6pool2&quot;]
+    &quot;ipv4pools&quot;: [&quot;v4-ippool1&quot;],
+    &quot;ipv6pools&quot;: [&quot;v6-ippool1&quot;, &quot;v6-ippool2&quot;]
   }
 </code></pre>
 <ul>
 <li><code>interface</code> (string, optional): When integrate with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">multus CNI</a>, it could specify which ippool is used to the interface. The interface information in the CNI request will be used as the default value when this field is not specified.</li>
-<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to assign IPv4 IP. When <code>enableIPv4</code> in Configmap "spiderpool-conf" is set to true,  this filed must be specified.</li>
-<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to assign IPv6 IP. When <code>enableIPv6</code> in Configmap "spiderpool-conf" is set to true, this filed must be specified.</li>
+<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to allocate IPv4 IP. When <code>enableIPv4</code> in Configmap <code>spiderpool-conf</code> is set to true,  this filed must be specified.</li>
+<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to allocate IPv6 IP. When <code>enableIPv6</code> in Configmap <code>spiderpool-conf</code> is set to true, this filed must be specified.</li>
 </ul>
 <h3 id="ipamspidernetioippools">ipam.spidernet.io/ippools</h3>
-<p>This one is similar to "ipam.spidernet.io/ippool", but could be used to multiple interface mode. BTW, the "ipam.spidernet.io/ippools" has precedence over "ipam.spidernet.io/ippool".</p>
+<p>It is similar to <code>ipam.spidernet.io/ippool</code>, but could be used to multiple interfaces case. BTW, <code>ipam.spidernet.io/ippools</code> has precedence over <code>ipam.spidernet.io/ippool</code>.</p>
 <pre><code class="language-yaml">ipam.spidernet.io/ippools: |-
   [{
       &quot;interface&quot;: &quot;eth0&quot;,
-      &quot;ipv4pools&quot;: [&quot;v4pool1&quot;],
-      &quot;ipv6pools&quot;: [&quot;v6pool1&quot;],
-      &quot;defaultRoute&quot;: true,
+      &quot;ipv4pools&quot;: [&quot;v4-ippool1&quot;],
+      &quot;ipv6pools&quot;: [&quot;v6-ippool1&quot;],
+      &quot;defaultRoute&quot;: true
    },{
       &quot;interface&quot;: &quot;eth1&quot;,
-      &quot;ipv4pools&quot;: [&quot;v4pool2&quot;],
-      &quot;ipv6pools&quot;: [&quot;v6pool2&quot;],
+      &quot;ipv4pools&quot;: [&quot;v4-ippool2&quot;],
+      &quot;ipv6pools&quot;: [&quot;v6-ippool2&quot;],
       &quot;defaultRoute&quot;: false
   }]
 </code></pre>
 <ul>
-<li><code>interface</code> (string, required): Because of CNI request that only carry information of one interface, the interface field must be specified in the case of multiple interface mode.</li>
-<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to assign IPv4 IP. When <code>enableIPv4</code> in Configmap "spiderpool-conf" is set to true, this filed must be specified.</li>
-<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to assign IPv6 IP. When <code>enableIPv6</code> in Configmap "spiderpool-conf" is set to true, this filed must be specified.</li>
+<li><code>interface</code> (string, required): Since CNI request only carries the information of one interface, in the case of multiple interfaces, the interface field must be specified to distinguish.</li>
+<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to allocate IPv4 IP. When <code>enableIPv4</code> in Configmap <code>spiderpool-conf</code> is set to true, this filed must be specified.</li>
+<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to allocate IPv6 IP. When <code>enableIPv6</code> in Configmap <code>spiderpool-conf</code> is set to true, this filed must be specified.</li>
 <li><code>defaultRoute</code> (bool, optional): If set to be true, the IPAM plugin will return the default gateway route recorded in the ippool.</li>
 </ul>
-<p>For different interface, it is forbid to use ippools in a same subnet.</p>
+<p>For different interfaces, it is not recommended to use ippools of the same subnet.</p>
 <h3 id="ipamspidernetioroutes">ipam.spidernet.io/routes</h3>
-<p>End-users could use this to take effect additional routes.</p>
-<pre><code class="language-yaml">ipam.spidernet.io/ippools: |-
+<p>Users could use this to take effect additional routes.</p>
+<pre><code class="language-yaml">ipam.spidernet.io/routes: |-
   [{
       &quot;interface&quot;: &quot;eth0&quot;,
       &quot;dst&quot;: &quot;10.0.0.0/16&quot;,
-      &quot;gw&quot;: &quot;192.168.1.1&quot;,
+      &quot;gw&quot;: &quot;192.168.1.1&quot;
   }]
 </code></pre>
 <ul>
@@ -951,27 +964,27 @@
 <li><code>gw</code> (string, required): The forwarding or next hop IP address.</li>
 </ul>
 <h3 id="ipamspidernetioassigned-interface">ipam.spidernet.io/assigned-{INTERFACE}</h3>
-<p>This is the IP assigned result of the interface. It is only used by Spiderpool, not reserved for end-users.</p>
-<pre><code class="language-yaml">ipam.spidernet.io/ippool: |-
+<p>It is the IP allocation result of the interface. It is only used by Spiderpool, not reserved for users.</p>
+<pre><code class="language-yaml">ipam.spidernet.io/assigned-eth0: |-
   {
     &quot;interface&quot;: &quot;eth0&quot;,
-    &quot;ipv4pool&quot;: &quot;v4pool1&quot;,
-    &quot;ipv6pool&quot;: &quot;v6pool1&quot;,
+    &quot;ipv4pool&quot;: &quot;v4-ippool1&quot;,
+    &quot;ipv6pool&quot;: &quot;v6-ippool1&quot;,
     &quot;ipv4&quot;: &quot;172.16.0.100/16&quot;,
     &quot;ipv6&quot;: &quot;fd00::100/64&quot;,
-    &quot;vlan&quot;: 100,
+    &quot;vlan&quot;: 100
   }
 </code></pre>
 <h2 id="namespace-annotation">Namespace Annotation</h2>
-<p>Namespace could set following annotations to specify default ippools, to override the default ippools of the cluster recorded in Configmap "spiderpool-conf".</p>
+<p>Namespace could set following annotations to specify default ippools. They are valid for all Pods under the Namespace.</p>
 <h3 id="ipamspidernetiodefaultv4ippool">ipam.spidernet.io/defaultv4ippool</h3>
-<pre><code class="language-yaml">&quot;ipam.spidernet.io/defaultv4ippool&quot;: [&quot;ipv4pool1&quot;,&quot;ipv4pool2&quot;]
+<pre><code class="language-yaml">ipam.spidernet.io/defaultv4ippool: '[&quot;ns-v4-ippool1&quot;,&quot;ns-v4-ippool2&quot;]'
 </code></pre>
-<p>If multiple ippools are listed, it will try to assign IP from the later ippool when the former one is not allocatable.</p>
+<p>If multiple ippools are listed, it will try to allocate IP from the later ippool when the former one is not allocatable.</p>
 <h3 id="ipamspidernetiodefaultv6ippool">ipam.spidernet.io/defaultv6ippool</h3>
-<pre><code class="language-yaml">&quot;ipam.spidernet.io/defaultv6ippool&quot;: [&quot;ipv6pool1&quot;,&quot;ipv6pool2&quot;]
+<pre><code class="language-yaml">ipam.spidernet.io/defaultv6ippool: '[&quot;ns-v6-ippool1&quot;,&quot;ns-v6-ippool2&quot;]'
 </code></pre>
-<p>If multiple ippools are listed, it will try to assign IP from the later ippool when the former one is not allocatable.</p>
+<p>Similar to above.</p>
 
               
             </article>

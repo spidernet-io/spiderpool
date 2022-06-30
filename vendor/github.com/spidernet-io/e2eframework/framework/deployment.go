@@ -4,6 +4,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -223,4 +224,54 @@ func (f *Framework) DeleteDeploymentUntilFinish(deployName, namespace string, ti
 		return nil
 	}
 	return e
+}
+
+func (f *Framework) WaitDeploymentReadyAndCheckIP(depName string, nsName string, timeout time.Duration) (*corev1.PodList, error) {
+	// waiting for Deployment replicas to complete
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	dep, e := f.WaitDeploymentReady(depName, nsName, ctx)
+	if e != nil {
+		return nil, e
+	}
+
+	// check pods created by Deployment，its assign ipv4 and ipv6 addresses success
+	podlist, err := f.GetDeploymentPodList(dep)
+	if err != nil {
+		return nil, err
+	}
+
+	// check IP address allocation succeeded
+	errip := f.CheckPodListIpReady(podlist)
+	if errip != nil {
+		return nil, errip
+	}
+	return podlist, errip
+}
+
+func (f *Framework) RestartDeploymentPodUntilReady(deployName, namespace string, timeOut time.Duration, opts ...client.DeleteOption) error {
+	if deployName == "" || namespace == "" {
+		return ErrWrongInput
+	}
+
+	deployment, err := f.GetDeployment(deployName, namespace)
+	if deployment == nil {
+		return errors.New("failed to get deployment")
+	}
+	if err != nil {
+		return err
+	}
+	podList, err := f.GetDeploymentPodList(deployment)
+
+	if len(podList.Items) == 0 {
+		return errors.New("failed to get podList")
+	}
+	if err != nil {
+		return err
+	}
+	_, err = f.DeletePodListUntilReady(podList, timeOut, opts...)
+	if err != nil {
+		return err
+	}
+	return nil
 }

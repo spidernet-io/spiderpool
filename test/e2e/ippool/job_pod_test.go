@@ -65,23 +65,13 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 		Expect(e3).NotTo(HaveOccurred())
 		Expect(podlist).NotTo(BeNil())
 
-		for i := 0; i < len(podlist.Items); i++ {
-			GinkgoWriter.Printf("pod %v/%v ips: %+v \n", nsName, podlist.Items[i].Name, podlist.Items[i].Status.PodIPs)
-			err := frame.CheckPodListIpReady(podlist)
-			Expect(err).NotTo(HaveOccurred(), "failed to checkout ipv4、ipv6")
-			if frame.Info.IpV4Enabled == true {
-				Expect(tools.CheckPodIpv4IPReady(&podlist.Items[i])).To(BeTrue(), "pod %v failed to get ipv4 ip", podlist.Items[i].Name)
-				By("succeeded to check pod ipv4 ip ")
-			}
-			if frame.Info.IpV6Enabled == true {
-				Expect(tools.CheckPodIpv6IPReady(&podlist.Items[i])).To(BeTrue(), "pod %v failed to get ipv6 ip", podlist.Items[i].Name)
-				By("succeeded to check pod ipv6 ip \n")
-			}
-		}
+		err := frame.CheckPodListIpReady(podlist)
+		Expect(err).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6")
+		GinkgoWriter.Printf("succeeded to assign ipv4、ipv6 ip for pod %v/%v \n", nsName, jdName)
 
 		// delete job
 		GinkgoWriter.Printf("delete job: %v \n", jdName)
-		err := frame.DeleteJob(jdName, nsName)
+		err = frame.DeleteJob(jdName, nsName)
 		Expect(err).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)
 	})
 
@@ -124,12 +114,9 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)
 
 		},
-
 		Entry("check ip release when job is failed", Label("E00005"), common.JobTypeFail),
 		Entry("check ip release when job is succeeded", Label("E00005"), common.JobTypeFinish),
 
 		// TODO(yangwei) check to release
-
 	)
-
 })

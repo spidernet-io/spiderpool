@@ -4,6 +4,7 @@ package framework
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,19 +21,28 @@ func (f *Framework) GetNode(nodeName string) (*corev1.Node, error) {
 	return node, nil
 }
 
-func (f *Framework) IsClusterNodeReady() (bool, error) {
-
-	for _, nodeName := range f.Info.KindNodeList {
-		nodelist, err2 := f.GetNode(nodeName)
-		if err2 != nil {
-			break
-		}
-		isnodeready := f.CheckNodeStatus(nodelist, true)
-		if !isnodeready {
-			return false, nil
+func (f *Framework) WaitClusterNodeReady(ctx context.Context) (bool, error) {
+	for {
+		select {
+		default:
+			nodeReadyNum := 0
+			nodes, e := f.GetNodeList()
+			if e != nil {
+				return false, e
+			}
+			for _, node := range nodes.Items {
+				if f.CheckNodeStatus(&node, true) {
+					nodeReadyNum++
+				}
+			}
+			if nodeReadyNum == len(nodes.Items) {
+				return true, nil
+			}
+			time.Sleep(time.Second)
+		case <-ctx.Done():
+			return false, ErrTimeOut
 		}
 	}
-	return true, nil
 }
 
 func (f *Framework) GetNodeList(opts ...client.ListOption) (*corev1.NodeList, error) {

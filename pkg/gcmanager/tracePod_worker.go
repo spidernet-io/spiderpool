@@ -7,10 +7,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 type gcIPPoolIPIdentify struct {
@@ -76,7 +76,8 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 			}
 
 			if nil != err {
-				loggerReleaseIP.Sugar().Errorf("failed to list all historical IPs: %v", err)
+				loggerReleaseIP.Sugar().Errorf("failed to list wep '%s/%s' all historical IPs: %v",
+					gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, err)
 				continue
 			}
 
@@ -84,9 +85,15 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 			for poolName, ips := range podUsedIPs {
 				loggerReleaseIP.Sugar().Debugf("pod '%s/%s used IPs '%+v' from pool '%s', begin to release",
 					gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, ips, poolName)
-				err := s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
+				err = s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
+				if apierrors.IsNotFound(err) {
+					// If we can not find the IP object, which means cmdDel already released the IP
+					continue
+				}
+
 				if nil != err {
-					logger.Sugar().Errorf("failed to release pool '%s' IPs '%+v'", poolName, ips)
+					logger.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in wep '%s/%s', error: %w",
+						poolName, ips, gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, err)
 					continue
 				}
 				// TODO (Icarus9913): metric

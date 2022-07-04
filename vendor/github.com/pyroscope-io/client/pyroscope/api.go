@@ -6,6 +6,8 @@ import (
 	"os"
 	"runtime/pprof"
 	"time"
+
+	"github.com/pyroscope-io/client/upstream/remote"
 )
 
 type Config struct {
@@ -20,8 +22,8 @@ type Config struct {
 }
 
 type Profiler struct {
-	session  *session
-	uploader *remote
+	session  *Session
+	uploader *remote.Remote
 }
 
 // Start starts continuously profiling go code
@@ -42,39 +44,41 @@ func Start(cfg Config) (*Profiler, error) {
 		cfg.ServerAddress = address
 	}
 
-	rc := remoteConfig{
-		authToken: cfg.AuthToken,
-		address:   cfg.ServerAddress,
-		threads:   4,
-		timeout:   30 * time.Second,
+	rc := remote.Config{
+		AuthToken: cfg.AuthToken,
+		Address:   cfg.ServerAddress,
+		Threads:   4,
+		Timeout:   30 * time.Second,
+		Logger:    cfg.Logger,
 	}
-	uploader, err := newRemote(rc, cfg.Logger)
+	uploader, err := remote.NewRemote(rc)
 	if err != nil {
 		return nil, err
 	}
 
-	sc := sessionConfig{
-		upstream:       uploader,
-		logger:         cfg.Logger,
-		appName:        cfg.ApplicationName,
-		tags:           cfg.Tags,
-		profilingTypes: cfg.ProfileTypes,
-		disableGCRuns:  cfg.DisableGCRuns,
-		sampleRate:     cfg.SampleRate,
-		uploadRate:     10 * time.Second,
+	sc := SessionConfig{
+		Upstream:       uploader,
+		Logger:         cfg.Logger,
+		AppName:        cfg.ApplicationName,
+		Tags:           cfg.Tags,
+		ProfilingTypes: cfg.ProfileTypes,
+		DisableGCRuns:  cfg.DisableGCRuns,
+		SampleRate:     cfg.SampleRate,
+		UploadRate:     10 * time.Second,
 	}
 
 	cfg.Logger.Infof("starting profiling session:")
-	cfg.Logger.Infof("  AppName:        %+v", sc.appName)
-	cfg.Logger.Infof("  Tags:           %+v", sc.tags)
-	cfg.Logger.Infof("  ProfilingTypes: %+v", sc.profilingTypes)
-	cfg.Logger.Infof("  DisableGCRuns:  %+v", sc.disableGCRuns)
-	cfg.Logger.Infof("  SampleRate:     %+v", sc.sampleRate)
-	cfg.Logger.Infof("  UploadRate:     %+v", sc.uploadRate)
-	s, err := newSession(sc)
+	cfg.Logger.Infof("  AppName:        %+v", sc.AppName)
+	cfg.Logger.Infof("  Tags:           %+v", sc.Tags)
+	cfg.Logger.Infof("  ProfilingTypes: %+v", sc.ProfilingTypes)
+	cfg.Logger.Infof("  DisableGCRuns:  %+v", sc.DisableGCRuns)
+	cfg.Logger.Infof("  SampleRate:     %+v", sc.SampleRate)
+	cfg.Logger.Infof("  UploadRate:     %+v", sc.UploadRate)
+	s, err := NewSession(sc)
 	if err != nil {
 		return nil, fmt.Errorf("new session: %w", err)
 	}
+	uploader.Start()
 	if err = s.Start(); err != nil {
 		return nil, fmt.Errorf("start session: %w", err)
 	}
@@ -84,7 +88,7 @@ func Start(cfg Config) (*Profiler, error) {
 
 // Stop stops continious profiling session and uploads the remaining profiling data
 func (p *Profiler) Stop() error {
-	p.session.stop()
+	p.session.Stop()
 	p.uploader.Stop()
 	return nil
 }

@@ -352,14 +352,11 @@ OUTER:
 				continue OUTER
 			}
 			for _, oldPod := range podList.Items {
-				if newPod.Name == oldPod.Name {
+				if newPod.ObjectMeta.UID == oldPod.ObjectMeta.UID {
 					continue OUTER
 				}
 			}
 		}
-
 		return l, nil
-
 	}
-
 }

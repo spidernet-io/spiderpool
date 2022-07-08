@@ -38,19 +38,21 @@ type envConf struct {
 	required         bool
 	associateStrKey  *string
 	associateBoolKey *bool
+	associateIntKey  *int
 }
 
 // EnvInfo collects the env and relevant agentContext properties.
 var envInfo = []envConf{
-	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil},
-	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric},
-	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil},
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, &agentContext.Cfg.UpdateCRMaxRetrys, nil},
-	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords, nil},
-	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, &agentContext.Cfg.IPPoolMaxAllocatedIPs, nil},
-	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil},
-	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil},
+	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil, nil},
+	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric, nil},
+	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil, nil},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, nil, nil, &agentContext.Cfg.UpdateCRMaxRetrys},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "500", false, nil, nil, &agentContext.Cfg.UpdateCRRetryUnitTime},
+	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords},
+	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &agentContext.Cfg.IPPoolMaxAllocatedIPs},
+	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
+	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
 }
 
 type Config struct {
@@ -66,9 +68,10 @@ type Config struct {
 	GopsListenPort   string
 	PyroscopeAddress string
 
-	UpdateCRMaxRetrys                 string
-	WorkloadEndpointMaxHistoryRecords string
-	IPPoolMaxAllocatedIPs             string
+	UpdateCRMaxRetrys                 int
+	UpdateCRRetryUnitTime             int
+	WorkloadEndpointMaxHistoryRecords int
+	IPPoolMaxAllocatedIPs             int
 
 	// configmap
 	IpamUnixSocketPath       string   `yaml:"ipamUnixSocketPath"`
@@ -107,12 +110,11 @@ func (ac *AgentContext) BindAgentDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&ac.Cfg.ConfigPath, "config-path", "/tmp/spiderpool/config-map/conf.yml", "spiderpool-agent configmap file")
 }
 
-// RegisterEnv set the env to AgentConfiguration
-func (ac *AgentContext) RegisterEnv() error {
+// ParseConfiguration set the env to AgentConfiguration
+func ParseConfiguration() error {
 	var result string
 
 	for i := range envInfo {
-
 		env, ok := os.LookupEnv(envInfo[i].envName)
 		if ok {
 			result = strings.TrimSpace(env)
@@ -129,14 +131,22 @@ func (ac *AgentContext) RegisterEnv() error {
 			}
 		}
 
-		if nil != envInfo[i].associateStrKey {
+		if envInfo[i].associateStrKey != nil {
 			*(envInfo[i].associateStrKey) = result
-		} else {
+		} else if envInfo[i].associateBoolKey != nil {
 			b, err := strconv.ParseBool(result)
 			if nil != err {
-				return fmt.Errorf("Error: %s require a bool value, but get %s", envInfo[i].envName, result)
+				return fmt.Errorf("error: %s require a bool value, but get %s", envInfo[i].envName, result)
 			}
 			*(envInfo[i].associateBoolKey) = b
+		} else if envInfo[i].associateIntKey != nil {
+			intVal, err := strconv.Atoi(result)
+			if nil != err {
+				return fmt.Errorf("error: %s require a int value, but get %s", envInfo[i].envName, result)
+			}
+			*(envInfo[i].associateIntKey) = intVal
+		} else {
+			return fmt.Errorf("error: %s doesn't match any controller context", envInfo[i].envName)
 		}
 	}
 

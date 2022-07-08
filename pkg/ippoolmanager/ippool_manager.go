@@ -37,16 +37,17 @@ type IPPoolManager interface {
 }
 
 type ipPoolManager struct {
-	client            client.Client
-	rIPManager        reservedipmanager.ReservedIPManager
-	nodeManager       nodemanager.NodeManager
-	nsManager         namespacemanager.NamespaceManager
-	podManager        podmanager.PodManager
-	maxConflictRetrys int
-	maxAllocatedIPs   int
+	client                client.Client
+	rIPManager            reservedipmanager.ReservedIPManager
+	nodeManager           nodemanager.NodeManager
+	nsManager             namespacemanager.NamespaceManager
+	podManager            podmanager.PodManager
+	maxAllocatedIPs       int
+	maxConflictRetrys     int
+	conflictRetryUnitTime time.Duration
 }
 
-func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, maxConflictRetrys, maxAllocatedIPs int) (IPPoolManager, error) {
+func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, maxAllocatedIPs, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (IPPoolManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
@@ -64,13 +65,14 @@ func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPMa
 	}
 
 	return &ipPoolManager{
-		client:            c,
-		rIPManager:        rIPManager,
-		nodeManager:       nodeManager,
-		nsManager:         nsManager,
-		podManager:        podManager,
-		maxConflictRetrys: maxConflictRetrys,
-		maxAllocatedIPs:   maxAllocatedIPs,
+		client:                c,
+		rIPManager:            rIPManager,
+		nodeManager:           nodeManager,
+		nsManager:             nsManager,
+		podManager:            podManager,
+		maxAllocatedIPs:       maxAllocatedIPs,
+		maxConflictRetrys:     maxConflictRetrys,
+		conflictRetryUnitTime: conflictRetryUnitTime,
 	}, nil
 }
 
@@ -132,7 +134,7 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, n
 					return nil, fmt.Errorf("insufficient retries(<=%d) to allocate IP from IP pool %s", r.maxConflictRetrys, poolName)
 				}
 
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * r.conflictRetryUnitTime)
 				continue
 			}
 			return nil, err
@@ -209,19 +211,13 @@ func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCID
 			ipPool.Status.AllocatedIPCount = new(int32)
 		}
 
-		needRelease := false
 		for _, e := range ipAndCIDs {
 			if a, ok := ipPool.Status.AllocatedIPs[e.IP]; ok {
 				if a.ContainerID == e.ContainerID {
 					delete(ipPool.Status.AllocatedIPs, e.IP)
 					*ipPool.Status.AllocatedIPCount--
-					needRelease = true
 				}
 			}
-		}
-
-		if !needRelease {
-			return nil
 		}
 
 		if err := r.client.Status().Update(ctx, &ipPool); err != nil {
@@ -230,7 +226,7 @@ func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCID
 					return fmt.Errorf("insufficient retries(<=%d) to release IP %+v from IP pool %s", r.maxConflictRetrys, ipAndCIDs, poolName)
 				}
 
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * r.conflictRetryUnitTime)
 				continue
 			}
 			return err

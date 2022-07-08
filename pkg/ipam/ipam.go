@@ -133,9 +133,11 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	var resIPs []*models.IPConfig
 	defer func() {
 		if err != nil {
-			if err := i.release(ctx, *addArgs.ContainerID, convertToIPDetails(resIPs)); err != nil {
-				logger.Sugar().Warnf("Failed to roll back allocated IP: %v", err)
-				return
+			if len(resIPs) != 0 {
+				if err := i.release(ctx, *addArgs.ContainerID, convertToIPDetails(resIPs)); err != nil {
+					logger.Sugar().Warnf("Failed to roll back allocated IP: %v", err)
+					return
+				}
 			}
 
 			if err := i.weManager.ClearCurrentIPAllocation(ctx, *addArgs.PodNamespace, *addArgs.PodName, *addArgs.ContainerID); err != nil {
@@ -156,6 +158,14 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 }
 
 func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated, containerID string, pod *corev1.Pod) ([]*models.IPConfig, error) {
+	if err := i.weManager.UpdateIPAllocation(ctx, pod.Namespace, pod.Name, &spiderpoolv1.PodIPAllocation{
+		ContainerID:  containerID,
+		Node:         &pod.Spec.NodeName,
+		CreationTime: &metav1.Time{Time: time.Now()},
+	}); err != nil {
+		return nil, errors.New("failed to mark an IP allocation process in advance")
+	}
+
 	var ips []*models.IPConfig
 	for _, t := range tt {
 		if len(t.V4PoolCandidates) != 0 {
@@ -212,14 +222,12 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, poolCandidates 
 		return ip, fmt.Errorf("failed to allocate any %s IP to %s from IP pools %v: %v", version, nic, poolCandidates, utilerrors.NewAggregate(errs).Error())
 	}
 
-	detail := convertToIPDetails([]*models.IPConfig{ip})
+	patch := convertToIPDetails([]*models.IPConfig{ip})
 	if err := i.weManager.UpdateIPAllocation(ctx, pod.Namespace, pod.Name, &spiderpoolv1.PodIPAllocation{
-		ContainerID:  containerID,
-		Node:         pod.Spec.NodeName,
-		IPs:          detail,
-		CreationTime: metav1.Time{Time: time.Now()},
+		ContainerID: containerID,
+		IPs:         patch,
 	}); err != nil {
-		return ip, fmt.Errorf("failed to update IP allocation detail %+v of workload endpoint: %v", detail, err)
+		return ip, fmt.Errorf("failed to update IP allocation detail %+v of workload endpoint: %v", patch, err)
 	}
 
 	return ip, nil

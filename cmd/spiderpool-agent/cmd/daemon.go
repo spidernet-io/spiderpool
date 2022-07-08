@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -111,10 +110,7 @@ func DaemonMain() {
 	agentContext.CRDManager = mgr
 
 	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
-	historySize, err := strconv.Atoi(agentContext.Cfg.WorkloadEndpointMaxHistoryRecords)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
+	historySize := agentContext.Cfg.WorkloadEndpointMaxHistoryRecords
 	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(mgr.GetClient(), mgr, historySize)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -143,22 +139,17 @@ func DaemonMain() {
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	retrys, err := strconv.Atoi(agentContext.Cfg.UpdateCRMaxRetrys)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	podManager, err := podmanager.NewPodManager(mgr.GetClient(), mgr, retrys)
+	retrys := agentContext.Cfg.UpdateCRMaxRetrys
+	unitTime := time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
+	podManager, err := podmanager.NewPodManager(mgr.GetClient(), mgr, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.PodManager = podManager
 
 	logger.Debug("Begin to initialize IPPool Manager")
-	poolSize, err := strconv.Atoi(agentContext.Cfg.IPPoolMaxAllocatedIPs)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(mgr.GetClient(), agentContext.RIPManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, retrys, poolSize)
+	poolSize := agentContext.Cfg.IPPoolMaxAllocatedIPs
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(mgr.GetClient(), agentContext.RIPManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, poolSize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

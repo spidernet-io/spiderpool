@@ -84,7 +84,7 @@ setup_kind:
 	$(QUIET) kind create cluster \
 		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
-	- kubectl taint nodes --all node-role.kubernetes.io/master-
+	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master-
 
 
 .PHONY: setup_spiderpool

@@ -28,7 +28,7 @@ func (s *SpiderGC) tracePodWorker() {
 			s.handlePodEntryForTracingTimeOut(&podEntry)
 		}
 
-		time.Sleep(s.gcConfig.TracePodGapDuration)
+		time.Sleep(time.Duration(s.gcConfig.TracePodGapDuration) * time.Second)
 	}
 }
 
@@ -52,7 +52,7 @@ func (s *SpiderGC) handlePodEntryForTracingTimeOut(podEntry *PodEntry) {
 		logger.Sugar().Debugf("sending signal to gc pod '%s/%s' IP", podEntry.Namespace, podEntry.PodName)
 		s.PodDB.DeletePodEntry(podEntry.PodName, podEntry.Namespace)
 
-	case <-time.After(s.gcConfig.GCSignalTimeoutDuration):
+	case <-time.After(time.Duration(s.gcConfig.GCSignalTimeoutDuration) * time.Second):
 		logger.Sugar().Errorf("failed to gc IP, gcSignal:len=%d, event:'%+v' will be dropped", len(s.gcSignal),
 			gcIPPoolIPIdentify{PodName: podEntry.PodName, PodNamespace: podEntry.Namespace})
 	}

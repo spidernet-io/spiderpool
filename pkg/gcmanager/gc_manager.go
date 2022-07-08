@@ -12,6 +12,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -20,19 +21,26 @@ import (
 )
 
 type GarbageCollectionConfig struct {
-	ControllerPodName         string
-	ControllerPodNamespace    string
-	LogLevel                  string
+	ControllerPodName      string
+	ControllerPodNamespace string
+
 	EnableGCIP                bool
 	EnableGCForTerminatingPod bool
-	ReleaseIPWorkerNum        int
-	GCIPChannelBuffer         int
-	MaxPodEntryDatabaseCap    int
-	DefaultGCIntervalDuration time.Duration
-	TracePodGapDuration       time.Duration
-	GCSignalTimeoutDuration   time.Duration
-	GCSignalGapDuration       time.Duration
-	AdditionalGraceDelay      time.Duration
+
+	ReleaseIPWorkerNum     int
+	GCIPChannelBuffer      int
+	MaxPodEntryDatabaseCap int
+
+	DefaultGCIntervalDuration int
+	TracePodGapDuration       int
+	GCSignalTimeoutDuration   int
+	GCSignalGapDuration       int
+	AdditionalGraceDelay      int
+
+	LeaseDuration      int
+	LeaseRenewDeadline int
+	LeaseRetryPeriod   int
+	LeaseRetryGap      int
 }
 
 var logger *zap.Logger
@@ -68,7 +76,7 @@ type SpiderGC struct {
 	leader election.SpiderLeaseElector
 }
 
-func NewGCManager(client client.Client, config *GarbageCollectionConfig,
+func NewGCManager(ctx context.Context, client client.Client, config *GarbageCollectionConfig,
 	crdMgr ctrl.Manager,
 	wepManager workloadendpointmanager.WorkloadEndpointManager,
 	ippoolManager ippoolmanager.IPPoolManager,
@@ -97,7 +105,12 @@ func NewGCManager(client client.Client, config *GarbageCollectionConfig,
 		return nil, fmt.Errorf("pod manager must be specified")
 	}
 
-	leaderElector, err := election.NewLeaseElector(election.LeaseLockOptions{})
+	leaseDuration := time.Duration(config.LeaseDuration) * time.Second
+	renewDeadline := time.Duration(config.LeaseRenewDeadline) * time.Second
+	leaseRetryPeriod := time.Duration(config.LeaseRetryPeriod) * time.Second
+	leaderRetryElectGap := time.Duration(config.LeaseRetryGap) * time.Second
+	leaderElector, err := election.NewLeaseElector(ctx, config.ControllerPodNamespace, constant.SpiderIPGarbageCollectElectorLockName, config.ControllerPodName,
+		&leaseDuration, &renewDeadline, &leaseRetryPeriod, &leaderRetryElectGap)
 	if nil != err {
 		return nil, fmt.Errorf("failed to new leader elector, error: %w", err)
 	}
@@ -145,8 +158,6 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 		go s.releaseIPPoolIPExecutor(ctx, i)
 	}
 
-	go s.leader.TryToElect(ctx)
-
 	logger.Info("running IP garbage collection")
 	return nil
 }
@@ -160,7 +171,7 @@ func (s *SpiderGC) TriggerGCAll() {
 	logger.Info("trigger gc!")
 	select {
 	case s.gcSignal <- struct{}{}:
-	case <-time.After(s.gcConfig.GCSignalTimeoutDuration):
+	case <-time.After(time.Duration(s.gcConfig.GCSignalTimeoutDuration) * time.Second):
 		logger.Sugar().Errorf("failed to trigger GCAll, gcSignal:len=%d", len(s.gcSignal))
 	}
 }

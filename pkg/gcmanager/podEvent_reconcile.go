@@ -109,7 +109,7 @@ func (s *SpiderGC) buildDeletedPodEntry(podNS, podName string) *PodEntry {
 	}
 
 	// graceful time
-	podEntry.TracingGracefulTime = s.gcConfig.AdditionalGraceDelay
+	podEntry.TracingGracefulTime = time.Duration(s.gcConfig.AdditionalGraceDelay) * time.Second
 
 	// stop time
 	podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
@@ -141,7 +141,7 @@ func (s *SpiderGC) buildPodEntryWithPodYaml(ctx context.Context, podYaml *corev1
 		if podYaml.DeletionGracePeriodSeconds == nil {
 			return nil, fmt.Errorf("pod '%s/%s' status is '%v' but doesn't have 'DeletionGracePeriodSeconds' property", podYaml.Namespace, podYaml.Name, podStatus)
 		}
-		podEntry.TracingGracefulTime = time.Duration(*podYaml.DeletionGracePeriodSeconds)*time.Second + s.gcConfig.AdditionalGraceDelay
+		podEntry.TracingGracefulTime = (time.Duration(*podYaml.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
 	} else if podStatus == constant.PodSucceeded || podStatus == constant.PodFailed {
 		startTime, _, gracefulTime, err := s.computeSucceededOrFailedPodTerminatingTime(podYaml)
 		if nil != err {
@@ -202,7 +202,7 @@ func (s *SpiderGC) computeSucceededOrFailedPodTerminatingTime(podYaml *corev1.Po
 			err = fmt.Errorf("pod '%s/%s' doesn't have 'TerminationGracePeriodSeconds' property", podYaml.Namespace, podYaml.Name)
 			return
 		}
-		gracefulTime = time.Duration(*podYaml.Spec.TerminationGracePeriodSeconds)*time.Second + s.gcConfig.AdditionalGraceDelay
+		gracefulTime = (time.Duration(*podYaml.Spec.TerminationGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
 
 		// stop time
 		terminatingStopTime = terminatingStartTime.Add(gracefulTime)

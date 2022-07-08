@@ -3,7 +3,11 @@
 
 package constant
 
-import "github.com/spidernet-io/spiderpool/pkg/types"
+import (
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+
+	"github.com/spidernet-io/spiderpool/pkg/types"
+)
 
 // Network configurations
 const (
@@ -55,3 +59,8 @@ const (
 )
 
 const SpiderWorkloadEndpointFinalizer = "spiderpool.spidernet.io"
+
+const QualifiedNameFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
+
+const SpiderIPGarbageCollect = "ip-gc"
+const SpiderIPGarbageCollectElectorLockName = SpiderIPGarbageCollect + "-" + resourcelock.LeasesResourceLock

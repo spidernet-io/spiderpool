@@ -70,7 +70,7 @@ func (r *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, names
 		}
 	}
 
-	if includeHistory {
+	if includeHistory && len(we.Status.History) != 0 {
 		for _, a := range we.Status.History[1:] {
 			if a.ContainerID == containerID {
 				for _, d := range a.IPs {
@@ -121,6 +121,10 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 			return err
 		}
 	} else {
+		if len(allocation.IPs) == 0 {
+			return nil
+		}
+
 		if we.Status.Current != nil && we.Status.Current.ContainerID == allocation.ContainerID {
 			var merged bool
 			for i, d := range we.Status.Current.IPs {

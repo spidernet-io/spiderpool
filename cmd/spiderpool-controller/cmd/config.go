@@ -48,6 +48,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetrys},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "500", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &controllerContext.Cfg.EnableGCIP, nil},
 	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &controllerContext.Cfg.EnableGCForTerminatingPod, nil},
 	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &controllerContext.Cfg.ReleaseIPWorkerNum},
@@ -79,6 +80,7 @@ type Config struct {
 	PyroscopeAddress string
 
 	UpdateCRMaxRetrys                 int
+	UpdateCRRetryUnitTime             int
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
 

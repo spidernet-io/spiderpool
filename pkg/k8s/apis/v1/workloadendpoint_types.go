@@ -29,19 +29,18 @@ type PodIPAllocation struct {
 
 	// TODO
 
-	// +kubebuilder:validation:Required
-	Node string `json:"node"`
+	// +kubebuilder:validation:Optional
+	Node *string `json:"node,omitempty"`
 
 	// TODO
 
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Required
-	IPs []IPAllocationDetail `json:"ips"`
+	// +kubebuilder:validation:Optional
+	IPs []IPAllocationDetail `json:"ips,omitempty"`
 
 	// TODO
 
-	// +kubebuilder:validation:Required
-	CreationTime metav1.Time `json:"creationTime"`
+	// +kubebuilder:validation:Optional
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 }
 
 // TODO

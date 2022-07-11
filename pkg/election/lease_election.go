@@ -73,7 +73,7 @@ func NewLeaseElector(ctx context.Context, leaseLockNS, leaseLockName, leaseLockI
 		return nil, fmt.Errorf("failed to new lease elector: Leader Retry Gap must be specified")
 	}
 
-	re := regexp.MustCompile(constant.QualifiedNameFmt)
+	re := regexp.MustCompile(constant.QualifiedK8sObjNameFmt)
 	if !re.MatchString(leaseLockName) {
 		return nil, fmt.Errorf("the given leaseLockName is invalid, regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')")
 	}
@@ -167,8 +167,8 @@ func (sl *SpiderLeader) tryToElect(ctx context.Context) {
 		// If there's a leader and another node will try to acquire the lease lock persistently until the leader renew failed.
 		sl.leaderElector.Run(ctx)
 
-		logger.Sugar().Warnf("'%s/%s/%s' is continue to elect",
-			sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
+		logger.Sugar().Warnf("'%s/%s/%s' election request disconnected, and it will continue to elect after '%d' seconds",
+			sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity, sl.leaderRetryElectGap)
 
 		time.Sleep(sl.leaderRetryElectGap)
 	}

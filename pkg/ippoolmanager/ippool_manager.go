@@ -11,6 +11,12 @@ import (
 	"net"
 	"time"
 
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apitypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
@@ -19,35 +25,29 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
-	"github.com/spidernet-io/spiderpool/pkg/types"
-
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apitypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type IPPoolManager interface {
-	AllocateIP(ctx context.Context, ownerType types.OwnerType, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error)
+	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndCID) error
 	ListAllIPPool(ctx context.Context) (*spiderpoolv1.IPPoolList, error)
-	SelectByPod(ctx context.Context, version string, poolName string, pod *corev1.Pod) (bool, error)
+	SelectByPod(ctx context.Context, version spiderpoolv1.IPVersion, poolName string, pod *corev1.Pod) (bool, error)
 	CheckVlanSame(ctx context.Context, poolList []string) (map[spiderpoolv1.Vlan][]string, bool, error)
 	CheckPoolCIDROverlap(ctx context.Context, poolList1 []string, poolList2 []string) (bool, error)
 }
 
 type ipPoolManager struct {
-	client            client.Client
-	rIPManager        reservedipmanager.ReservedIPManager
-	nodeManager       nodemanager.NodeManager
-	nsManager         namespacemanager.NamespaceManager
-	podManager        podmanager.PodManager
-	maxConflictRetrys int
-	maxAllocatedIPs   int
+	client                client.Client
+	rIPManager            reservedipmanager.ReservedIPManager
+	nodeManager           nodemanager.NodeManager
+	nsManager             namespacemanager.NamespaceManager
+	podManager            podmanager.PodManager
+	maxAllocatedIPs       int
+	maxConflictRetrys     int
+	conflictRetryUnitTime time.Duration
 }
 
-func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, maxConflictRetrys, maxAllocatedIPs int) (IPPoolManager, error) {
+func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, maxAllocatedIPs, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (IPPoolManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
@@ -65,20 +65,23 @@ func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPMa
 	}
 
 	return &ipPoolManager{
-		client:            c,
-		rIPManager:        rIPManager,
-		nodeManager:       nodeManager,
-		nsManager:         nsManager,
-		podManager:        podManager,
-		maxConflictRetrys: maxConflictRetrys,
-		maxAllocatedIPs:   maxAllocatedIPs,
+		client:                c,
+		rIPManager:            rIPManager,
+		nodeManager:           nodeManager,
+		nsManager:             nsManager,
+		podManager:            podManager,
+		maxAllocatedIPs:       maxAllocatedIPs,
+		maxConflictRetrys:     maxConflictRetrys,
+		conflictRetryUnitTime: conflictRetryUnitTime,
 	}, nil
 }
 
-func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerType, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
-	var ipConfig *models.IPConfig
+func (r *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
 
 	// TODO(iiiceoo): STS static ip, check "EnableStatuflsetIP"
+	// ownerType := r.podManager.GetOwnerType(ctx, pod)
+
+	var ipConfig *models.IPConfig
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= r.maxConflictRetrys; i++ {
 		var ipPool spiderpoolv1.IPPool
@@ -88,7 +91,7 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 
 		// TODO(iiiceoo): Check TotalIPCount - AllocatedIPCount
 
-		reserved, err := r.rIPManager.GetReservedIPRanges(ctx, string(*ipPool.Spec.IPVersion))
+		reserved, err := r.rIPManager.GetReservedIPRanges(ctx, *ipPool.Spec.IPVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +134,7 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, ownerType types.OwnerTyp
 					return nil, fmt.Errorf("insufficient retries(<=%d) to allocate IP from IP pool %s", r.maxConflictRetrys, poolName)
 				}
 
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * r.conflictRetryUnitTime)
 				continue
 			}
 			return nil, err
@@ -208,19 +211,13 @@ func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCID
 			ipPool.Status.AllocatedIPCount = new(int32)
 		}
 
-		needRelease := false
 		for _, e := range ipAndCIDs {
 			if a, ok := ipPool.Status.AllocatedIPs[e.IP]; ok {
 				if a.ContainerID == e.ContainerID {
 					delete(ipPool.Status.AllocatedIPs, e.IP)
 					*ipPool.Status.AllocatedIPCount--
-					needRelease = true
 				}
 			}
-		}
-
-		if !needRelease {
-			return nil
 		}
 
 		if err := r.client.Status().Update(ctx, &ipPool); err != nil {
@@ -229,7 +226,7 @@ func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCID
 					return fmt.Errorf("insufficient retries(<=%d) to release IP %+v from IP pool %s", r.maxConflictRetrys, ipAndCIDs, poolName)
 				}
 
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * r.conflictRetryUnitTime)
 				continue
 			}
 			return err
@@ -250,8 +247,8 @@ func (r *ipPoolManager) ListAllIPPool(ctx context.Context) (*spiderpoolv1.IPPool
 	return ippoolList, nil
 }
 
-func (r *ipPoolManager) SelectByPod(ctx context.Context, version string, poolName string, pod *corev1.Pod) (bool, error) {
-	logger := logutils.FromContext(ctx).Named("IPPoolManager")
+func (r *ipPoolManager) SelectByPod(ctx context.Context, version spiderpoolv1.IPVersion, poolName string, pod *corev1.Pod) (bool, error) {
+	logger := logutils.FromContext(ctx)
 
 	var ipPool spiderpoolv1.IPPool
 	if err := r.client.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
@@ -269,7 +266,7 @@ func (r *ipPoolManager) SelectByPod(ctx context.Context, version string, poolNam
 		return false, nil
 	}
 
-	if string(*ipPool.Spec.IPVersion) != version {
+	if *ipPool.Spec.IPVersion != version {
 		logger.Sugar().Warnf("IP pool %s has different version with specified via input", poolName)
 		return false, nil
 	}

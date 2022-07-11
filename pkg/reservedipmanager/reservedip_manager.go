@@ -14,7 +14,7 @@ import (
 )
 
 type ReservedIPManager interface {
-	GetReservedIPRanges(ctx context.Context, version string) ([]string, error)
+	GetReservedIPRanges(ctx context.Context, version spiderpoolv1.IPVersion) ([]string, error)
 }
 
 type reservedIPManager struct {
@@ -43,9 +43,9 @@ func NewReservedIPManager(c client.Client, mgr ctrl.Manager) (ReservedIPManager,
 	}, nil
 }
 
-func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version string) ([]string, error) {
+func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version spiderpoolv1.IPVersion) ([]string, error) {
 	var reservedIPs spiderpoolv1.ReservedIPList
-	if err := r.client.List(ctx, &reservedIPs, client.MatchingFields{"spec.ipVersion": version}); err != nil {
+	if err := r.client.List(ctx, &reservedIPs, client.MatchingFields{"spec.ipVersion": string(version)}); err != nil {
 		return nil, err
 	}
 

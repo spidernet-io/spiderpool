@@ -12,12 +12,17 @@ type Logger interface {
 }
 
 const (
-	ProfileCPU          ProfileType = "cpu"
-	ProfileInuseObjects ProfileType = "inuse_objects"
-	ProfileAllocObjects ProfileType = "alloc_objects"
-	ProfileInuseSpace   ProfileType = "inuse_space"
-	ProfileAllocSpace   ProfileType = "alloc_space"
-	DefaultSampleRate               = 100
+	ProfileCPU           ProfileType = "cpu"
+	ProfileInuseObjects  ProfileType = "inuse_objects"
+	ProfileAllocObjects  ProfileType = "alloc_objects"
+	ProfileInuseSpace    ProfileType = "inuse_space"
+	ProfileAllocSpace    ProfileType = "alloc_space"
+	ProfileGoroutines    ProfileType = "goroutines"
+	ProfileMutexCount    ProfileType = "mutex_count"
+	ProfileMutexDuration ProfileType = "mutex_duration"
+	ProfileBlockCount    ProfileType = "block_count"
+	ProfileBlockDuration ProfileType = "block_duration"
+	DefaultSampleRate                = 100
 )
 
 var DefaultProfileTypes = []ProfileType{

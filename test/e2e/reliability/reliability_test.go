@@ -44,7 +44,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 			// delete component pod
 			GinkgoWriter.Printf("restart %v %v pod  \n", expectPodNum, componentName)
-			podList, e = frame.DeletePodListUntilReady(podList, time.Duration(time.Second*60))
+			podList, e = frame.DeletePodListUntilReady(podList, startupTimeRequired)
 			Expect(e).NotTo(HaveOccurred())
 			Expect(podList).NotTo(BeNil())
 
@@ -59,7 +59,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 				defer GinkgoRecover()
 				// delete component pod
 				GinkgoWriter.Printf("restart %v %v pod  \n", expectPodNum, componentName)
-				podList, e1 := frame.DeletePodListUntilReady(podList, time.Duration(time.Second*60))
+				podList, e1 := frame.DeletePodListUntilReady(podList, startupTimeRequired)
 				Expect(e1).NotTo(HaveOccurred())
 				Expect(podList).NotTo(BeNil())
 
@@ -67,10 +67,10 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			}()
 
 			// wait test pod ready
-			ctx4, cancel4 := context.WithTimeout(context.Background(), time.Minute*2)
-			defer cancel4()
-			_, e6 := frame.WaitPodStarted(podName, namespace, ctx4)
-			Expect(e6).NotTo(HaveOccurred())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel()
+			_, e = frame.WaitPodStarted(podName, namespace, ctx)
+			Expect(e).NotTo(HaveOccurred())
 
 			wg.Wait()
 

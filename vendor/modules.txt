@@ -177,7 +177,7 @@ github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.1.0
 ## explicit; go 1.12
 github.com/google/gofuzz
-# github.com/google/gops v0.3.24
+# github.com/google/gops v0.3.25
 ## explicit; go 1.13
 github.com/google/gops/agent
 github.com/google/gops/internal
@@ -329,11 +329,13 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/pyroscope-io/client v0.2.3
+# github.com/pyroscope-io/client v0.3.0
 ## explicit; go 1.17
 github.com/pyroscope-io/client/internal/flameql
 github.com/pyroscope-io/client/internal/sortedmap
 github.com/pyroscope-io/client/pyroscope
+github.com/pyroscope-io/client/upstream
+github.com/pyroscope-io/client/upstream/remote
 # github.com/rogpeppe/go-internal v1.8.1
 ## explicit; go 1.16
 github.com/rogpeppe/go-internal/fmtsort
@@ -368,7 +370,7 @@ github.com/spf13/viper/internal/encoding/hcl
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/spidernet-io/e2eframework v0.0.0-20220630092820-ed4ee513dd2f
+# github.com/spidernet-io/e2eframework v0.0.0-20220705081904-a8d957907f2a
 ## explicit; go 1.17
 github.com/spidernet-io/e2eframework/framework
 github.com/spidernet-io/e2eframework/tools

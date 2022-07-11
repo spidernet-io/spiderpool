@@ -172,7 +172,7 @@ spec:
           value: {{ .Values.spiderpoolController.cliPort | quote }}
         - name: SPIDERPOOL_HEALTH_PORT
           value: {{ .Values.spiderpoolController.healthPort | quote }}
-        - name: SPIDERPOOL_GC_IPPOOL_ENABLED
+        - name: SPIDERPOOL_GC_IP_ENABLED
           value: {{ .Values.spiderpoolController.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
           value: {{ .Values.spiderpoolController.gc.gcTerminatingPodIPEnabled | quote }}

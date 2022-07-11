@@ -8,11 +8,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,12 +15,17 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 type WorkloadEndpointManager interface {
 	RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error)
 	UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
-	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID, nic string) error
+	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error
 	Get(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
@@ -70,7 +70,7 @@ func (r *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, names
 		}
 	}
 
-	if includeHistory {
+	if includeHistory && len(we.Status.History) != 0 {
 		for _, a := range we.Status.History[1:] {
 			if a.ContainerID == containerID {
 				for _, d := range a.IPs {
@@ -121,9 +121,25 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 			return err
 		}
 	} else {
+		if len(allocation.IPs) == 0 {
+			return nil
+		}
+
 		if we.Status.Current != nil && we.Status.Current.ContainerID == allocation.ContainerID {
-			we.Status.Current.IPs = append(we.Status.Current.IPs, allocation.IPs...)
-			we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
+			var merged bool
+			for i, d := range we.Status.Current.IPs {
+				if d.NIC == allocation.IPs[0].NIC {
+					mergeIPDetails(&we.Status.Current.IPs[i], &allocation.IPs[0])
+					mergeIPDetails(&we.Status.History[0].IPs[i], &allocation.IPs[0])
+					merged = true
+					break
+				}
+			}
+
+			if !merged {
+				we.Status.Current.IPs = append(we.Status.Current.IPs, allocation.IPs...)
+				we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
+			}
 		} else {
 			we.Status.Current = allocation
 			we.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, we.Status.History...)
@@ -141,7 +157,34 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 	return nil
 }
 
-func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID, nic string) error {
+// TODO(iiiceoo): refactor
+func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
+	if target.IPv4 == nil {
+		target.IPv4 = delta.IPv4
+	}
+
+	if target.IPv4Pool == nil {
+		target.IPv4Pool = delta.IPv4Pool
+	}
+
+	if target.IPv4Gateway == nil {
+		target.IPv4Gateway = delta.IPv4Gateway
+	}
+
+	if target.IPv6 == nil {
+		target.IPv6 = delta.IPv6
+	}
+
+	if target.IPv6Pool == nil {
+		target.IPv6Pool = delta.IPv6Pool
+	}
+
+	if target.IPv6Gateway == nil {
+		target.IPv6Gateway = delta.IPv6Gateway
+	}
+}
+
+func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error {
 	var we spiderpoolv1.WorkloadEndpoint
 	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
 		if apierrors.IsNotFound(err) {

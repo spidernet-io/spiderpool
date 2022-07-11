@@ -19,17 +19,18 @@ import (
 )
 
 type GarbageCollectionConfig struct {
-	LogLevel                  string
 	EnableGCIP                bool
 	EnableGCForTerminatingPod bool
-	ReleaseIPWorkerNum        int
-	GCIPChannelBuffer         int
-	MaxPodEntryDatabaseCap    int
-	DefaultGCIntervalDuration time.Duration
-	TracePodGapDuration       time.Duration
-	GCSignalTimeoutDuration   time.Duration
-	GCSignalGapDuration       time.Duration
-	AdditionalGraceDelay      time.Duration
+
+	ReleaseIPWorkerNum     int
+	GCIPChannelBuffer      int
+	MaxPodEntryDatabaseCap int
+
+	DefaultGCIntervalDuration int
+	TracePodGapDuration       int
+	GCSignalTimeoutDuration   int
+	GCSignalGapDuration       int
+	AdditionalGraceDelay      int
 }
 
 var logger *zap.Logger
@@ -146,7 +147,7 @@ func (s *SpiderGC) TriggerGCAll() {
 	logger.Info("trigger gc!")
 	select {
 	case s.gcSignal <- struct{}{}:
-	case <-time.After(s.gcConfig.GCSignalTimeoutDuration):
+	case <-time.After(time.Duration(s.gcConfig.GCSignalTimeoutDuration) * time.Second):
 		logger.Sugar().Errorf("failed to trigger GCAll, gcSignal:len=%d", len(s.gcSignal))
 	}
 }

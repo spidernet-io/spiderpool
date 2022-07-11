@@ -102,15 +102,11 @@ spec:
                       required:
                       - interface
                       type: object
-                    minItems: 1
                     type: array
                   node:
                     type: string
                 required:
                 - containerID
-                - creationTime
-                - ips
-                - node
                 type: object
               history:
                 items:
@@ -147,15 +143,11 @@ spec:
                         required:
                         - interface
                         type: object
-                      minItems: 1
                       type: array
                     node:
                       type: string
                   required:
                   - containerID
-                  - creationTime
-                  - ips
-                  - node
                   type: object
                 type: array
             type: object

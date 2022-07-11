@@ -30,12 +30,13 @@ type PodManager interface {
 }
 
 type podManager struct {
-	client            client.Client
-	runtimeMgr        ctrl.Manager
-	maxConflictRetrys int
+	client                client.Client
+	runtimeMgr            ctrl.Manager
+	maxConflictRetrys     int
+	conflictRetryUnitTime time.Duration
 }
 
-func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int) (PodManager, error) {
+func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (PodManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
@@ -51,9 +52,10 @@ func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int) (Po
 	}
 
 	return &podManager{
-		client:            c,
-		runtimeMgr:        mgr,
-		maxConflictRetrys: maxConflictRetrys,
+		client:                c,
+		runtimeMgr:            mgr,
+		maxConflictRetrys:     maxConflictRetrys,
+		conflictRetryUnitTime: conflictRetryUnitTime,
 	}, nil
 }
 
@@ -133,7 +135,7 @@ func (r *podManager) MergeAnnotations(ctx context.Context, pod *corev1.Pod, anno
 					return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", r.maxConflictRetrys)
 				}
 
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * time.Second)
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * r.conflictRetryUnitTime)
 				continue
 			}
 			return err

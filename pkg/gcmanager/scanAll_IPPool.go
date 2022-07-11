@@ -21,7 +21,7 @@ import (
 func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 	logger.Debug("start to monitor gc signal for CLI or default GC interval")
 
-	timer := time.NewTimer(s.gcConfig.DefaultGCIntervalDuration)
+	timer := time.NewTimer(time.Duration(s.gcConfig.DefaultGCIntervalDuration) * time.Second)
 	defer timer.Stop()
 
 	logger.Debug("initial scan all for cluster firstly")
@@ -48,7 +48,7 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 		case <-s.gcSignal:
 			logger.Info("receive CLI GC request, execute scan all right now!")
 			s.executeScanAll(ctx)
-			time.Sleep(s.gcConfig.GCSignalGapDuration)
+			time.Sleep(time.Duration(s.gcConfig.GCSignalGapDuration) * time.Second)
 
 			// discard the concurrent signal
 			select {
@@ -61,7 +61,7 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 			return
 		}
 
-		timer.Reset(s.gcConfig.DefaultGCIntervalDuration)
+		timer.Reset(time.Duration(s.gcConfig.DefaultGCIntervalDuration) * time.Second)
 	}
 }
 
@@ -112,7 +112,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				}
 
 				scanAllCtx := logutils.IntoContext(ctx, scanAllLogger.With(zap.String("gc-reason", "pod is terminating")))
-				stopTime := (*podYaml.DeletionTimestamp).Time.Add(time.Duration(*podYaml.DeletionGracePeriodSeconds)*time.Second + s.gcConfig.AdditionalGraceDelay)
+				stopTime := (*podYaml.DeletionTimestamp).Time.Add((time.Duration(*podYaml.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second)
 
 				if err := s.handleTerminatingPod(scanAllCtx, podYaml, stopTime, pool.Name, poolIP, poolIPAllocation); nil != err {
 					scanAllLogger.With(zap.String("gc-reason", "pod is terminating")).Error(err.Error())

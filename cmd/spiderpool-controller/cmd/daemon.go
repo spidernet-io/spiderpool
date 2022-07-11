@@ -154,7 +154,6 @@ func WatchSignal(sigCh chan os.Signal) {
 func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
 	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
-
 	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, historySize)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -184,8 +183,8 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize Pod Manager")
 	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
-
-	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, retrys)
+	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
+	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -193,8 +192,7 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize IPPool Manager")
 	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs
-
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager.GetClient(), controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, retrys, poolSize)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager.GetClient(), controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -202,20 +200,7 @@ func initControllerServiceManagers(ctx context.Context) {
 }
 
 func initGCManager(ctx context.Context) {
-	gcConfig := &gcmanager.GarbageCollectionConfig{
-		EnableGCIP:                controllerContext.Cfg.EnableGCIP,
-		EnableGCForTerminatingPod: controllerContext.Cfg.EnableGCForTerminatingPod,
-		ReleaseIPWorkerNum:        controllerContext.Cfg.ReleaseIPWorkerNum,
-		GCIPChannelBuffer:         controllerContext.Cfg.GCIPChannelBuffer,
-		MaxPodEntryDatabaseCap:    controllerContext.Cfg.MaxPodEntryDatabaseCap,
-		DefaultGCIntervalDuration: time.Duration(controllerContext.Cfg.DefaultGCIntervalDuration) * time.Second,
-		TracePodGapDuration:       time.Duration(controllerContext.Cfg.TracePodGapDuration) * time.Second,
-		GCSignalTimeoutDuration:   time.Duration(controllerContext.Cfg.GCSignalTimeoutDuration) * time.Second,
-		GCSignalGapDuration:       time.Duration(controllerContext.Cfg.GCSignalGapDuration) * time.Second,
-		AdditionalGraceDelay:      time.Duration(controllerContext.Cfg.AdditionalGraceDelay) * time.Second,
-	}
-
-	gcManager, err := gcmanager.NewGCManager(controllerContext.CRDManager.GetClient(), gcConfig, controllerContext.CRDManager,
+	gcManager, err := gcmanager.NewGCManager(controllerContext.CRDManager.GetClient(), gcIPConfig, controllerContext.CRDManager,
 		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager)
 	if nil != err {
 		logger.Fatal(err.Error())

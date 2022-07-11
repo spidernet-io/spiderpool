@@ -26,6 +26,8 @@ import (
 
 var controllerContext = new(ControllerContext)
 
+var gcIPConfig = new(gcmanager.GarbageCollectionConfig)
+
 type envConf struct {
 	envName          string
 	defaultValue     string
@@ -48,16 +50,17 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetrys},
-	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &controllerContext.Cfg.EnableGCIP, nil},
-	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &controllerContext.Cfg.EnableGCForTerminatingPod, nil},
-	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &controllerContext.Cfg.ReleaseIPWorkerNum},
-	{"SPIDERPOOL_GC_CHANNEL_BUFFER", "5000", true, nil, nil, &controllerContext.Cfg.GCIPChannelBuffer},
-	{"SPIDERPOOL_GC_MAX_PODENTRY_DB_CAP", "100000", true, nil, nil, &controllerContext.Cfg.MaxPodEntryDatabaseCap},
-	{"SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION", "600", true, nil, nil, &controllerContext.Cfg.DefaultGCIntervalDuration},
-	{"SPIDERPOOL_GC_TRACE_POD_GAP_DURATION", "5", true, nil, nil, &controllerContext.Cfg.TracePodGapDuration},
-	{"SPIDERPOOL_GC_SIGNAL_TIMEOUT_DURATION", "3", true, nil, nil, &controllerContext.Cfg.GCSignalTimeoutDuration},
-	{"SPIDERPOOL_GC_HTTP_REQUEST_TIME_GAP", "1", true, nil, nil, &controllerContext.Cfg.GCSignalGapDuration},
-	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "5", true, nil, nil, &controllerContext.Cfg.AdditionalGraceDelay},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "500", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
+	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
+	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCForTerminatingPod, nil},
+	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &gcIPConfig.ReleaseIPWorkerNum},
+	{"SPIDERPOOL_GC_CHANNEL_BUFFER", "5000", true, nil, nil, &gcIPConfig.GCIPChannelBuffer},
+	{"SPIDERPOOL_GC_MAX_PODENTRY_DB_CAP", "100000", true, nil, nil, &gcIPConfig.MaxPodEntryDatabaseCap},
+	{"SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION", "600", true, nil, nil, &gcIPConfig.DefaultGCIntervalDuration},
+	{"SPIDERPOOL_GC_TRACE_POD_GAP_DURATION", "5", true, nil, nil, &gcIPConfig.TracePodGapDuration},
+	{"SPIDERPOOL_GC_SIGNAL_TIMEOUT_DURATION", "3", true, nil, nil, &gcIPConfig.GCSignalTimeoutDuration},
+	{"SPIDERPOOL_GC_HTTP_REQUEST_TIME_GAP", "1", true, nil, nil, &gcIPConfig.GCSignalGapDuration},
+	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "5", true, nil, nil, &gcIPConfig.AdditionalGraceDelay},
 }
 
 type Config struct {
@@ -79,20 +82,9 @@ type Config struct {
 	PyroscopeAddress string
 
 	UpdateCRMaxRetrys                 int
+	UpdateCRRetryUnitTime             int
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
-
-	// env for spiderpool IP GC
-	EnableGCIP                bool
-	EnableGCForTerminatingPod bool
-	ReleaseIPWorkerNum        int
-	GCIPChannelBuffer         int
-	MaxPodEntryDatabaseCap    int
-	DefaultGCIntervalDuration int
-	TracePodGapDuration       int
-	GCSignalTimeoutDuration   int
-	GCSignalGapDuration       int
-	AdditionalGraceDelay      int
 }
 
 type ControllerContext struct {
@@ -124,8 +116,8 @@ func (cc *ControllerContext) BindControllerDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&cc.Cfg.TlsServerKeyPath, "tls-server-key", "", "file path of server key")
 }
 
-// RegisterEnv set the env to AgentConfiguration
-func (cc *ControllerContext) RegisterEnv() error {
+// ParseConfiguration set the env to AgentConfiguration
+func ParseConfiguration() error {
 	var result string
 
 	for i := range envInfo {

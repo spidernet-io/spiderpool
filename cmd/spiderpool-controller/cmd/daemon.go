@@ -200,20 +200,7 @@ func initControllerServiceManagers(ctx context.Context) {
 }
 
 func initGCManager(ctx context.Context) {
-	gcConfig := &gcmanager.GarbageCollectionConfig{
-		EnableGCIP:                controllerContext.Cfg.EnableGCIP,
-		EnableGCForTerminatingPod: controllerContext.Cfg.EnableGCForTerminatingPod,
-		ReleaseIPWorkerNum:        controllerContext.Cfg.ReleaseIPWorkerNum,
-		GCIPChannelBuffer:         controllerContext.Cfg.GCIPChannelBuffer,
-		MaxPodEntryDatabaseCap:    controllerContext.Cfg.MaxPodEntryDatabaseCap,
-		DefaultGCIntervalDuration: time.Duration(controllerContext.Cfg.DefaultGCIntervalDuration) * time.Second,
-		TracePodGapDuration:       time.Duration(controllerContext.Cfg.TracePodGapDuration) * time.Second,
-		GCSignalTimeoutDuration:   time.Duration(controllerContext.Cfg.GCSignalTimeoutDuration) * time.Second,
-		GCSignalGapDuration:       time.Duration(controllerContext.Cfg.GCSignalGapDuration) * time.Second,
-		AdditionalGraceDelay:      time.Duration(controllerContext.Cfg.AdditionalGraceDelay) * time.Second,
-	}
-
-	gcManager, err := gcmanager.NewGCManager(controllerContext.CRDManager.GetClient(), gcConfig, controllerContext.CRDManager,
+	gcManager, err := gcmanager.NewGCManager(controllerContext.CRDManager.GetClient(), gcIPConfig, controllerContext.CRDManager,
 		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager)
 	if nil != err {
 		logger.Fatal(err.Error())

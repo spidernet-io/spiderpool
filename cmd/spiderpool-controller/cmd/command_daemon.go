@@ -27,7 +27,7 @@ var daemonCmd = &cobra.Command{
 
 func init() {
 	controllerContext.BindControllerDaemonFlags(daemonCmd.PersistentFlags())
-	if err := controllerContext.RegisterEnv(); nil != err {
+	if err := ParseConfiguration(); nil != err {
 		logger.Fatal("Spiderpool-controller register ENV failed: " + err.Error())
 	}
 	controllerContext.Verify()

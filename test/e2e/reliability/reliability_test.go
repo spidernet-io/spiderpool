@@ -94,4 +94,58 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		Entry("finally succeed to run a pod during the spiderpool-controller is restarting",
 			Label("R00004"), "spiderpool-controller", map[string]string{"app.kubernetes.io/component": "spiderpoolcontroller"}, time.Second*90),
 	)
+
+	DescribeTable("check ip assign after reboot node",
+		func(replicas int32) {
+			// create Deployment
+			GinkgoWriter.Printf("create Deployment %v/%v \n", namespace, podName)
+			dep := common.GenerateExampleDeploymentYaml(podName, namespace, replicas)
+			err := frame.CreateDeployment(dep)
+			Expect(err).NotTo(HaveOccurred(), "failed to create Deployment")
+
+			// wait deployment ready and check ip assign ok
+			podlist, errip := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
+			Expect(errip).ShouldNot(HaveOccurred())
+
+			// before reboot node check ip exists in ipppool
+			defaultv4, defaultv6, err := common.GetClusterDefaultIppool(frame)
+			Expect(err).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("default ip4 ippool name is %v\n default ip6 ippool name is %v\n,", defaultv4, defaultv6)
+			allipRecord, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlist)
+			Eventually(allipRecord).Should(BeTrue())
+			Expect(errpool).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord)
+
+			// get nodename list
+			nodeMap := make(map[string]bool)
+			for _, item := range podlist.Items {
+				GinkgoWriter.Printf("item.Status.NodeName:%v\n", item.Spec.NodeName)
+				nodeMap[item.Spec.NodeName] = true
+			}
+			GinkgoWriter.Printf("get nodeMap is：%v\n", nodeMap)
+
+			// send cmd to reboot node and check node until ready
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+			defer cancel()
+			readyok, err := common.RestartNodeUntilReady(frame, nodeMap, time.Second*30, ctx)
+			Eventually(readyok).Should(BeTrue())
+			Expect(err).ShouldNot(HaveOccurred())
+
+			// check pod ready and ip assign ok
+			podlistready, errip2 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
+			Expect(errip2).ShouldNot(HaveOccurred())
+
+			// after reboot node check ip exists in ipppool
+			allipRecord2, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlistready)
+			Eventually(allipRecord2).Should(BeTrue())
+			Expect(errpool).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord2)
+
+			//delete Deployment
+			errdel := frame.DeleteDeployment(podName, namespace)
+			Expect(errdel).NotTo(HaveOccurred(), "failed to delete Deployment %v/%v \n", podName, namespace)
+
+		},
+		Entry("pod Replicas is 2", Label("R00006"), int32(2)),
+	)
 })

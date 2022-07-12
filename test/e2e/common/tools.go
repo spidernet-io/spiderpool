@@ -55,13 +55,13 @@ func ExecCommandOnKindNode(nodeNameList []string, command string, timeOut time.D
 	for _, node := range nodeNameList {
 		arg := fmt.Sprintf("docker exec -i %s %s", node, command)
 		cmd := exec.Command("/bin/bash", "-c", arg)
-		out, exitCode := execCommand(cmd, timeOut)
+		out, exitCode := ExecCommand(cmd, timeOut)
 		GinkgoWriter.Printf("on node: %v, run cmd: %v, stdout: %v, exitCode: %v\n", node, cmd, out, exitCode)
 		Expect(exitCode).To(Equal(0))
 	}
 }
 
-func execCommand(cmd *exec.Cmd, timeOut time.Duration) (stdout string, exitCode int) {
+func ExecCommand(cmd *exec.Cmd, timeOut time.Duration) (stdout string, exitCode int) {
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	session.Wait(timeOut)

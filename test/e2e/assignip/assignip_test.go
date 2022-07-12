@@ -212,7 +212,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		})
 
 		It(" fail to run a pod when IP resource of an ippool is exhausted and an IP who is set in excludeIPs field of ippool, should not be assigned to a pod",
-			Label("E00015", "S00002"), func() {
+			Label("E00008", "S00002"), func() {
 				// generate deployment yaml
 				GinkgoWriter.Println("generate deploy yaml")
 				deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, int32(2))

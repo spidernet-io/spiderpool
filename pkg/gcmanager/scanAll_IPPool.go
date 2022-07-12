@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -38,7 +38,7 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 			default:
 				// The Elected controller will scan All with default GC interval
 				// TODO (Icarus9913): metric
-				if s.isGCMasterElected() {
+				if s.leader.IsElected() {
 					logger.Info("trigger default GC interval, execute scan all right now!")
 					s.executeScanAll(ctx)
 				}
@@ -141,7 +141,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				}
 
 				if !isIPBelongWEPCurrent {
-					// release Ip but no need to remove wep finalizer
+					// release IP but no need to remove wep finalizer
 					if err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []ippoolmanager.IPAndCID{{
 						IP:          poolIP,
 						ContainerID: poolIPAllocation.ContainerID},
@@ -193,7 +193,7 @@ func (s *SpiderGC) handleTerminatingPod(ctx context.Context, podYaml *corev1.Pod
 		log.Sugar().Infof("release ip '%s' and wep '%s/%s' successfully!", ippoolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 	} else {
 		// otherwise, flush the pod yaml to PodEntry database and let tracePodWorker to solve it if the current controller is elected master.
-		if s.isGCMasterElected() {
+		if s.leader.IsElected() {
 			newPodEntry, err := s.buildPodEntryWithPodYaml(ctx, podYaml)
 			if nil != err {
 				return err

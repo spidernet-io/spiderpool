@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 // registerPodReconcile registers watch pod
@@ -42,7 +42,7 @@ func (s *SpiderGC) registerPodReconcile() error {
 // Reconcile notice: if reconcile received an error, then the correspond request will requeue.
 func (s *SpiderGC) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	// backup controller could be elected as master
-	if !s.isGCMasterElected() {
+	if !s.leader.IsElected() {
 		return reconcile.Result{}, nil
 	}
 

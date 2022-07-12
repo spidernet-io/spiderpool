@@ -200,7 +200,7 @@ func initControllerServiceManagers(ctx context.Context) {
 }
 
 func initGCManager(ctx context.Context) {
-	gcManager, err := gcmanager.NewGCManager(controllerContext.CRDManager.GetClient(), gcIPConfig, controllerContext.CRDManager,
+	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.CRDManager.GetClient(), gcIPConfig, controllerContext.CRDManager,
 		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager)
 	if nil != err {
 		logger.Fatal(err.Error())

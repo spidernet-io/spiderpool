@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"time"
 
+	ktypes "k8s.io/apimachinery/pkg/types"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-
-	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
 type PodDBer interface {

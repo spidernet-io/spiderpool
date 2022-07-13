@@ -52,17 +52,19 @@ if [ "$TYPE"x == "gops"x ] ; then
 elif [ "$TYPE"x == "detail"x ] ; then
 
     echo "=============== pods status ============== "
+    echo "-------- kubectl get pod -A -o wide"
     kubectl get pod -A -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== event ============== "
+    echo "------- kubectl get events -n kube-system"
     kubectl get events -n kube-system --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== spiderpool-controller describe ============== "
     for POD in $CONTROLLER_POD_LIST ; do
       echo ""
-      echo "---------${POD}--------"
+      echo "--------- kubectl describe pod ${POD} -n kube-system"
       kubectl describe pod ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
     done
 
@@ -70,7 +72,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo "=============== spiderpool-agent describe ============== "
     for POD in $AGENT_POD_LIST ; do
       echo ""
-      echo "---------${POD}--------"
+      echo "---------kubectl describe pod ${POD} -n kube-system "
       kubectl describe pod ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
     done
 
@@ -78,7 +80,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo "=============== spiderpool-controller logs ============== "
     for POD in $CONTROLLER_POD_LIST ; do
       echo ""
-      echo "---------${POD}--------"
+      echo "---------kubectl logs ${POD} -n kube-system"
       kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
     done
 
@@ -86,9 +88,36 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo "=============== spiderpool-agent logs ============== "
     for POD in $AGENT_POD_LIST ; do
       echo ""
-      echo "---------${POD}--------"
+      echo "--------- kubectl logs ${POD} -n kube-system "
       kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
     done
+
+    echo ""
+    echo "=============== spiderpool crd ippool ============== "
+    echo "--------- kubectl get ippool -o wide"
+    kubectl get ippool -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get ippool -o json"
+    kubectl get ippool -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "=============== spiderpool crd workloadendpoint ============== "
+    echo "-------- kubectl get workloadendpoint -o wide "
+    kubectl get workloadendpoint -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "-------- kubectl get workloadendpoint -o json "
+    kubectl get workloadendpoint -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "=============== spiderpool crd reservedips ============== "
+    echo "-------- kubectl get reservedips -o wide "
+    kubectl get reservedips -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "-------- kubectl get reservedips -o json "
+    kubectl get reservedips -o json --kubeconfig ${E2E_KUBECONFIG}
 
 elif [ "$TYPE"x == "datarace"x ] ; then
     LOG_MARK="WARNING: DATA RACE"

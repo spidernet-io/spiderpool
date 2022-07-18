@@ -438,3 +438,10 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 		}
 	}
 }
+
+func UpdateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.UpdateOption) error {
+	if ippool == nil || f == nil {
+		return errors.New("wrong input")
+	}
+	return f.UpdateResource(ippool, opts...)
+}

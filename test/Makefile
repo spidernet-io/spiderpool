@@ -85,6 +85,22 @@ setup_kind:
 		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
 	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master-
+	@ NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' | tr '\n' ' ' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		echo "find cluster node: $${NODE_LIST}" ; \
+		for NODE in  $${NODE_LIST} ; do \
+		  echo "create macvlan interface for node $$NODE " ; \
+		  docker cp scripts/makeNodeMacvlan.sh $${NODE}:/home/makeNodeMacvlan.sh ; \
+		  docker exec $${NODE} chmod +x /home/makeNodeMacvlan.sh ; \
+		  docker exec $${NODE}  /home/makeNodeMacvlan.sh ; \
+        done ; \
+        for ((N=0;N<=30;N++)); do \
+        	sleep 1 ; \
+        	kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null && break ; \
+        	echo "wait for node ready" ; \
+        done ; \
+        kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
+
 
 
 .PHONY: setup_spiderpool

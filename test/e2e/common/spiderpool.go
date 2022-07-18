@@ -478,7 +478,11 @@ OUTER_FOR:
 			iPPoolName, iPPoolObj = GenerateExampleIpv6poolObject(ipNum)
 		}
 
-		ips := ip.ParseIPRanges(iPPoolObj.Spec.IPs)
+		ips, err := ip.ParseIPRanges(iPPoolObj.Spec.IPs)
+		if err != nil {
+			return nil, err
+		}
+
 		for _, v := range ips {
 			if d, ok := ipMap[string(v)]; ok {
 				GinkgoWriter.Printf("ippool objects %v and %v have conflicted ip: %v \n", d, iPPoolName, v)
@@ -487,7 +491,7 @@ OUTER_FOR:
 			}
 			ipMap[string(v)] = iPPoolName
 		}
-		err := CreateIppool(f, iPPoolObj)
+		err = CreateIppool(f, iPPoolObj)
 		if err != nil {
 			return nil, err
 		}

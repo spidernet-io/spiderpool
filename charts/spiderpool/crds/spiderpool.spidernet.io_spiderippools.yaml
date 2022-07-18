@@ -70,7 +70,6 @@ spec:
               gateway:
                 type: string
               ipVersion:
-                default: IPv4
                 enum:
                 - IPv4
                 - IPv6

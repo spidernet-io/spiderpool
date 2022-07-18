@@ -12,6 +12,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
@@ -61,15 +62,18 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_SIGNAL_TIMEOUT_DURATION", "3", true, nil, nil, &gcIPConfig.GCSignalTimeoutDuration},
 	{"SPIDERPOOL_GC_HTTP_REQUEST_TIME_GAP", "1", true, nil, nil, &gcIPConfig.GCSignalGapDuration},
 	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "5", true, nil, nil, &gcIPConfig.AdditionalGraceDelay},
-	{"SPIDERPOOL_POD_NAMESPACE", "", true, &gcIPConfig.ControllerPodNamespace, nil, nil},
-	{"SPIDERPOOL_POD_NAME", "", true, &gcIPConfig.ControllerPodName, nil, nil},
-	{"SPIDERPOOL_GC_LEADER_DURATION", "15", true, nil, nil, &gcIPConfig.LeaseDuration},
-	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &gcIPConfig.LeaseRenewDeadline},
-	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &gcIPConfig.LeaseRetryPeriod},
-	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &gcIPConfig.LeaseRetryGap},
+	{"SPIDERPOOL_POD_NAMESPACE", "", true, &controllerContext.Cfg.ControllerPodNamespace, nil, nil},
+	{"SPIDERPOOL_POD_NAME", "", true, &controllerContext.Cfg.ControllerPodName, nil, nil},
+	{"SPIDERPOOL_GC_LEADER_DURATION", "15", true, nil, nil, &controllerContext.Cfg.LeaseDuration},
+	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
+	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
+	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
 }
 
 type Config struct {
+	ControllerPodName      string
+	ControllerPodNamespace string
+
 	// flags
 	ConfigPath        string
 	TlsServerCertPath string
@@ -91,6 +95,11 @@ type Config struct {
 	UpdateCRRetryUnitTime             int
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
+
+	LeaseDuration      int
+	LeaseRenewDeadline int
+	LeaseRetryPeriod   int
+	LeaseRetryGap      int
 }
 
 type ControllerContext struct {
@@ -110,6 +119,7 @@ type ControllerContext struct {
 	IPPoolManager ippoolmanager.IPPoolManager
 	PodManager    podmanager.PodManager
 	GCManager     gcmanager.GCManager
+	Leader        election.SpiderLeaseElector
 
 	// handler
 	HttpServer *server.Server

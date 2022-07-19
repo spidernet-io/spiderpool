@@ -25,7 +25,7 @@ type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
 	GetOwnerType(ctx context.Context, pod *corev1.Pod) types.OwnerType
 	CheckPodStatus(ctx context.Context, pod *corev1.Pod) (types.PodStatus, bool)
-	MergeAnnotations(ctx context.Context, pod *corev1.Pod, annotations map[string]string) error
+	MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error
 	MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
 
@@ -115,21 +115,22 @@ func (r *podManager) CheckPodStatus(ctx context.Context, pod *corev1.Pod) (podSt
 	return constant.PodRunning, true
 }
 
-func (r *podManager) MergeAnnotations(ctx context.Context, pod *corev1.Pod, annotations map[string]string) error {
-	merge := map[string]string{}
-	for k, v := range pod.Annotations {
-		merge[k] = v
-	}
-
-	for k, v := range annotations {
-		merge[k] = v
-	}
-
-	pod.Annotations = merge
-
+func (r *podManager) MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error {
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= r.maxConflictRetrys; i++ {
-		if err := r.client.Update(ctx, pod); err != nil {
+		var pod corev1.Pod
+		if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+			return err
+		}
+
+		if pod.Annotations == nil {
+			pod.Annotations = map[string]string{}
+		}
+
+		for k, v := range annotations {
+			pod.Annotations[k] = v
+		}
+		if err := r.client.Update(ctx, &pod); err != nil {
 			if apierrors.IsConflict(err) {
 				if i == r.maxConflictRetrys {
 					return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", r.maxConflictRetrys)

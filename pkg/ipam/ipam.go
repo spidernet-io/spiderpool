@@ -12,13 +12,13 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -29,6 +29,7 @@ import (
 type IPAM interface {
 	Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*models.IpamAddResponse, error)
 	Release(ctx context.Context, delArgs *models.IpamDelArgs) error
+	Start(ctx context.Context) error
 }
 
 type IPAMConfig struct {
@@ -37,10 +38,13 @@ type IPAMConfig struct {
 	EnableIPv6               bool
 	ClusterDefaultIPv4IPPool []string
 	ClusterDefaultIPv6IPPool []string
+	LimiterMaxQueueSize      int
+	LimiterMaxWaitTime       time.Duration
 }
 
 type ipam struct {
 	ipamConfig    *IPAMConfig
+	ipamLimiter   limiter.Limiter
 	ipPoolManager ippoolmanager.IPPoolManager
 	weManager     workloadendpointmanager.WorkloadEndpointManager
 	nsManager     namespacemanager.NamespaceManager
@@ -64,8 +68,10 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager
 		return nil, errors.New("pod manager must be specified")
 	}
 
+	ipamLimiter := limiter.NewLimiter(c.LimiterMaxQueueSize, c.LimiterMaxWaitTime)
 	return &ipam{
 		ipamConfig:    c,
+		ipamLimiter:   ipamLimiter,
 		ipPoolManager: ipPoolManager,
 		weManager:     weManager,
 		nsManager:     nsManager,
@@ -130,24 +136,21 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	logger.Info("All IP pool candidates valid")
 
-	var resIPs []*models.IPConfig
-	defer func() {
-		if err != nil {
-			if len(resIPs) != 0 {
-				if err := i.release(ctx, *addArgs.ContainerID, convertToIPDetails(resIPs)); err != nil {
-					logger.Sugar().Warnf("Failed to roll back allocated IP: %v", err)
-					return
-				}
-			}
-
-			if err := i.weManager.ClearCurrentIPAllocation(ctx, *addArgs.PodNamespace, *addArgs.PodName, *addArgs.ContainerID); err != nil {
-				logger.Sugar().Warnf("Failed to clear current IP allocation: %v", err)
+	resIPs, err := i.allocateForAllInterfaces(ctx, toBeAllocatedSet, *addArgs.ContainerID, pod)
+	if err != nil {
+		// If there are any other errors that might have been thrown at Allocate
+		// after the allocateForAllInterfaces is called, use defer.
+		if len(resIPs) != 0 {
+			if err := i.release(ctx, *addArgs.ContainerID, convertToIPDetails(resIPs)); err != nil {
+				logger.Sugar().Warnf("Failed to roll back allocated IP: %v", err)
+				return nil, err
 			}
 		}
-	}()
 
-	resIPs, err = i.allocateForAllInterfaces(ctx, toBeAllocatedSet, *addArgs.ContainerID, pod)
-	if err != nil {
+		if err := i.weManager.ClearCurrentIPAllocation(ctx, *addArgs.PodNamespace, *addArgs.PodName, *addArgs.ContainerID); err != nil {
+			logger.Sugar().Warnf("Failed to clear current IP allocation: %v", err)
+		}
+
 		return nil, err
 	}
 
@@ -158,12 +161,9 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 }
 
 func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated, containerID string, pod *corev1.Pod) ([]*models.IPConfig, error) {
-	if err := i.weManager.UpdateIPAllocation(ctx, pod.Namespace, pod.Name, &spiderpoolv1.PodIPAllocation{
-		ContainerID:  containerID,
-		Node:         &pod.Spec.NodeName,
-		CreationTime: &metav1.Time{Time: time.Now()},
-	}); err != nil {
-		return nil, errors.New("failed to mark an IP allocation process in advance")
+	// TODO(iiiceoo): Comment why containerID should be written first.
+	if err := i.weManager.MarkIPAllocation(ctx, pod.Spec.NodeName, pod.Namespace, pod.Name, containerID); err != nil {
+		return nil, fmt.Errorf("failed to mark IP allocation: %v", err)
 	}
 
 	var ips []*models.IPConfig
@@ -194,7 +194,7 @@ func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated,
 		return ips, err
 	}
 
-	if err := i.podManager.MergeAnnotations(ctx, pod, anno); err != nil {
+	if err := i.podManager.MergeAnnotations(ctx, pod.Namespace, pod.Name, anno); err != nil {
 		return ips, fmt.Errorf("failed to merge IP assignment annotation of pod: %v", err)
 	}
 
@@ -203,6 +203,14 @@ func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated,
 
 func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, poolCandidates []string, version spiderpoolv1.IPVersion, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
 	logger := logutils.FromContext(ctx)
+
+	// TODO(iiiceoo): Comment why queue up before allocating IP.
+	_, err := i.ipamLimiter.AcquireTicket(ctx, poolCandidates...)
+	if err != nil {
+		logger.Sugar().Errorf("Failed to queue correctly: %v", err)
+	} else {
+		defer i.ipamLimiter.ReleaseTicket(ctx, poolCandidates...)
+	}
 
 	var errs []error
 	var ip *models.IPConfig
@@ -223,7 +231,7 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, poolCandidates 
 	}
 
 	patch := convertToIPDetails([]*models.IPConfig{ip})
-	if err := i.weManager.UpdateIPAllocation(ctx, pod.Namespace, pod.Name, &spiderpoolv1.PodIPAllocation{
+	if err := i.weManager.PatchIPAllocation(ctx, pod.Namespace, pod.Name, &spiderpoolv1.PodIPAllocation{
 		ContainerID: containerID,
 		IPs:         patch,
 	}); err != nil {
@@ -387,13 +395,35 @@ func (i *ipam) checkIPVersionEnable(ctx context.Context, tt []ToBeAllocated) err
 		logger.Sugar().Infof("Dual stack network")
 	}
 
+	var errs []error
 	for _, t := range tt {
-		if !i.ipamConfig.EnableIPv4 && len(t.V4PoolCandidates) != 0 {
-			return fmt.Errorf("specify default IPv4 pool when IPv4 is disabled: %w", constant.ErrWrongInput)
+		if err := i.checkPoolMisspecified(ctx, t); err != nil {
+			errs = append(errs, err)
 		}
-		if !i.ipamConfig.EnableIPv6 && len(t.V6PoolCandidates) != 0 {
-			return fmt.Errorf("specify default IPv6 pool when IPv6 is disabled: %w", constant.ErrWrongInput)
-		}
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("%w", utilerrors.NewAggregate(errs))
+	}
+
+	return nil
+}
+
+func (i *ipam) checkPoolMisspecified(ctx context.Context, t ToBeAllocated) error {
+	v4PoolCount := len(t.V4PoolCandidates)
+	v6PoolCount := len(t.V6PoolCandidates)
+
+	if i.ipamConfig.EnableIPv4 && v4PoolCount == 0 {
+		return fmt.Errorf("%w in interface %s, IPv4 pool is not specified when IPv4 is enabled", constant.ErrWrongInput, t.NIC)
+	}
+	if i.ipamConfig.EnableIPv6 && v6PoolCount == 0 {
+		return fmt.Errorf("%w in interface %s, IPv6 pool is not specified when IPv6 is enabled", constant.ErrWrongInput, t.NIC)
+	}
+	if !i.ipamConfig.EnableIPv4 && v4PoolCount != 0 {
+		return fmt.Errorf("%w in interface %s, IPv4 pool is specified when IPv4 is disabled", constant.ErrWrongInput, t.NIC)
+	}
+	if !i.ipamConfig.EnableIPv6 && v6PoolCount != 0 {
+		return fmt.Errorf("%w in interface %s, IPv6 pool is specified when IPv6 is disabled", constant.ErrWrongInput, t.NIC)
 	}
 
 	return nil
@@ -502,6 +532,14 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 	for pool, ipAndCIDs := range poolToIPAndCIDs {
 		go func(pool string, ipAndCIDs []ippoolmanager.IPAndCID) {
 			defer wg.Done()
+
+			_, err := i.ipamLimiter.AcquireTicket(ctx, pool)
+			if err != nil {
+				logger.Sugar().Errorf("Failed to queue correctly: %v", err)
+			} else {
+				defer i.ipamLimiter.ReleaseTicket(ctx, pool)
+			}
+
 			if err := i.ipPoolManager.ReleaseIP(ctx, pool, ipAndCIDs); err != nil {
 				errCh <- err
 				return
@@ -518,8 +556,12 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 	}
 
 	if len(errs) != 0 {
-		return fmt.Errorf("failed to release all allocated IP %+v: %v", poolToIPAndCIDs, utilerrors.NewAggregate(errs).Error())
+		return fmt.Errorf("failed to release all allocated IP %+v: %w", poolToIPAndCIDs, utilerrors.NewAggregate(errs))
 	}
 
 	return nil
+}
+
+func (i *ipam) Start(ctx context.Context) error {
+	return i.ipamLimiter.Start(ctx)
 }

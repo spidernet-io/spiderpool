@@ -169,12 +169,11 @@ func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, p
 
 	var version int64
 	if *poolSpec.IPVersion == spiderpoolv1.IPv4 {
-		version = 4
+		version = constant.IPv4
 	} else {
-		version = 6
+		version = constant.IPv6
 	}
 
-	// TODO(iiiceoo): Remove when Defaulter webhook work
 	var gateway string
 	if poolSpec.Gateway != nil {
 		gateway = *poolSpec.Gateway
@@ -211,13 +210,19 @@ func (r *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCID
 			ipPool.Status.AllocatedIPCount = new(int32)
 		}
 
+		needRelease := false
 		for _, e := range ipAndCIDs {
 			if a, ok := ipPool.Status.AllocatedIPs[e.IP]; ok {
 				if a.ContainerID == e.ContainerID {
 					delete(ipPool.Status.AllocatedIPs, e.IP)
 					*ipPool.Status.AllocatedIPCount--
+					needRelease = true
 				}
 			}
+		}
+
+		if !needRelease {
+			return nil
 		}
 
 		if err := r.client.Status().Update(ctx, &ipPool); err != nil {

@@ -60,7 +60,7 @@ const (
 
 const SpiderWorkloadEndpointFinalizer = "spiderpool.spidernet.io"
 
-const QualifiedK8sObjNameFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
+const QualifiedK8sObjNameFmt = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 
 const SpiderIPGarbageCollect = "ip-gc"
 const SpiderIPGarbageCollectElectorLockName = AnnotationPre + "-" + SpiderIPGarbageCollect + "-" + resourcelock.LeasesResourceLock

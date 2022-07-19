@@ -200,13 +200,13 @@ func (q *queue) checkin() (shuttingDown bool) {
 
 	addOrFinish := make(chan empty)
 	if len(q.elements) != 0 {
-		go func() {
+		go func(e *e) {
 			select {
-			case <-time.After(time.Until(q.elements[0].finalCheckinTime)):
+			case <-time.After(time.Until(e.finalCheckinTime)):
 				q.cond.Broadcast()
 			case <-addOrFinish:
 			}
-		}()
+		}(q.elements[0])
 	}
 
 	// Waiting here avoids too frequent polling by conductor when there are

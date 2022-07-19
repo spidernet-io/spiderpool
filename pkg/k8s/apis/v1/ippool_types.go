@@ -150,7 +150,7 @@ type PoolIPAllocation struct {
 	Pod string `json:"pod"`
 }
 
-// +kubebuilder:resource:categories={spiderpool},path="ippools",scope="Cluster",shortName={spl},singular="ippool"
+// +kubebuilder:resource:categories={spiderpool},path="spiderippools",scope="Cluster",shortName={sp},singular="spiderippool"
 // +kubebuilder:printcolumn:JSONPath=".spec.ipVersion",description="ipVersion",name="VERSION",type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.subnet",description="subnet",name="SUBNET",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.allocatedIPCount",description="allocatedIPCount",name="ALLOCATED-IP-COUNT",type=integer

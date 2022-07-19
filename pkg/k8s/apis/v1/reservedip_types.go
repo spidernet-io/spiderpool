@@ -24,7 +24,7 @@ type ReservedIPSpec struct {
 	IPs []string `json:"ips"`
 }
 
-// +kubebuilder:resource:categories={spiderpool},path="reservedips",scope="Cluster",shortName={sri},singular="reservedip"
+// +kubebuilder:resource:categories={spiderpool},path="spiderreservedips",scope="Cluster",shortName={sr},singular="spiderreservedip"
 // +kubebuilder:printcolumn:JSONPath=".spec.ipVersion",description="ipVersion",name="VERSION",type=string
 // +kubebuilder:object:root=true
 

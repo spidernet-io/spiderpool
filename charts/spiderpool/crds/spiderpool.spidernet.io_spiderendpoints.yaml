@@ -5,7 +5,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: ""
   creationTimestamp: null
-  name: workloadendpoints.spiderpool.spidernet.io
+  name: spiderendpoints.spiderpool.spidernet.io
 spec:
   group: spiderpool.spidernet.io
   names:
@@ -13,10 +13,10 @@ spec:
     - spiderpool
     kind: WorkloadEndpoint
     listKind: WorkloadEndpointList
-    plural: workloadendpoints
+    plural: spiderendpoints
     shortNames:
-    - swe
-    singular: workloadendpoint
+    - se
+    singular: spiderendpoint
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

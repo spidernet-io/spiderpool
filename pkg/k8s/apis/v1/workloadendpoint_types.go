@@ -86,7 +86,7 @@ type IPAllocationDetail struct {
 	IPv6Gateway *string `json:"ipv6Gateway,omitempty"`
 }
 
-// +kubebuilder:resource:categories={spiderpool},path="workloadendpoints",scope="Namespaced",shortName={swe},singular="workloadendpoint"
+// +kubebuilder:resource:categories={spiderpool},path="spiderendpoints",scope="Namespaced",shortName={se},singular="spiderendpoint"
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].interface",description="interface",name="INTERFACE",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv4Pool",description="ipv4Pool",name="IPV4POOL",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv4",description="ipv4",name="IPV4",type=string

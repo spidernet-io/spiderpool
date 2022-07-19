@@ -38,7 +38,7 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - ippools
+  - spiderendpoints
   verbs:
   - create
   - delete
@@ -50,7 +50,7 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - ippools/status
+  - spiderendpoints/status
   verbs:
   - get
   - patch
@@ -58,7 +58,7 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - reservedips
+  - spiderippools
   verbs:
   - create
   - delete
@@ -70,7 +70,15 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - workloadendpoints
+  - spiderippools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spiderreservedips
   verbs:
   - create
   - delete
@@ -79,11 +87,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - workloadendpoints/status
-  verbs:
-  - get
-  - patch
-  - update

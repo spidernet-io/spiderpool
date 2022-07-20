@@ -12,6 +12,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
@@ -58,6 +59,51 @@ func CreateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.
 		}
 	}
 	return f.CreateResource(ippool, opts...)
+}
+
+func BatchCreateIppoolWithSpecifiedIPNumber(frame *frame.Framework, ippoolNumber, ipNum int, isV4orv6Pool bool) (ipPoolNameList []string, err error) {
+	ipMap := make(map[string]string)
+	var ipPoolName string
+	var ipPoolObj *spiderpool.IPPool
+	var iPPoolNameList []string
+	if frame == nil || ippoolNumber < 0 || ipNum < 0 {
+		return nil, errors.New("wrong input")
+	}
+OUTER_FOR:
+	for i := 1; i <= ippoolNumber; i++ {
+		if isV4orv6Pool {
+			ipPoolName, ipPoolObj = GenerateExampleIpv4poolObject(ipNum)
+		} else {
+			ipPoolName, ipPoolObj = GenerateExampleIpv6poolObject(ipNum)
+		}
+		Expect(ipPoolObj.Spec.IPs).NotTo(BeNil())
+		GinkgoWriter.Printf("ipPoolObj.Spec.IPs : %v\n", ipPoolObj.Spec.IPs)
+		ipslice := ip.ParseIPRanges(ipPoolObj.Spec.IPs)
+		GinkgoWriter.Printf("ip segment is : %v\n", ipslice)
+		tempIPs := []string{}
+		for _, ips := range ipslice {
+			GinkgoWriter.Printf("ips is : %v\n", ips)
+			if d, isPresent := ipMap[string(ips)]; isPresent {
+				GinkgoWriter.Printf("ippool objects %v and %v have conflicted ip: %v \n", d, ipPoolName, ips)
+				i--
+				// If there is duplication in the middle, delete the dirty data
+				for _, ip := range tempIPs {
+					delete(ipMap, ip)
+				}
+				continue OUTER_FOR
+			}
+			tempIPs = append(tempIPs, string(ips))
+			ipMap[string(ips)] = ipPoolName
+		}
+		err := CreateIppool(frame, ipPoolObj)
+		if err != nil {
+			return nil, err
+		}
+		GinkgoWriter.Printf("%v-th ippool %v successfully created \n", i, ipPoolName)
+		iPPoolNameList = append(iPPoolNameList, ipPoolName)
+	}
+	GinkgoWriter.Printf("iPPool List name is: %v \n", iPPoolNameList)
+	return iPPoolNameList, nil
 }
 
 func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.DeleteOption) error {
@@ -445,45 +491,6 @@ func UpdateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.
 		return errors.New("wrong input")
 	}
 	return f.UpdateResource(ippool, opts...)
-}
-
-func BatchCreateIppoolWithSpecifiedIPNumber(f *frame.Framework, iPPoolNum, ipNum int, isV4pool bool) ([]string, error) {
-
-	if f == nil || iPPoolNum < 0 || ipNum < 0 {
-		return nil, frame.ErrWrongInput
-	}
-
-	var ipMap = make(map[string]string)
-	var iPPoolName string
-	var iPPoolObj *spiderpool.IPPool
-	var iPPoolNameList []string
-OUTER_FOR:
-	for i := 1; i <= iPPoolNum; i++ {
-		if isV4pool {
-			iPPoolName, iPPoolObj = GenerateExampleIpv4poolObject(ipNum)
-		} else {
-			iPPoolName, iPPoolObj = GenerateExampleIpv6poolObject(ipNum)
-		}
-
-		ips := ip.ParseIPRanges(iPPoolObj.Spec.IPs)
-		for _, v := range ips {
-			if d, ok := ipMap[string(v)]; ok {
-				GinkgoWriter.Printf("ippool objects %v and %v have conflicted ip: %v \n", d, iPPoolName, v)
-				i--
-				continue OUTER_FOR
-			}
-			ipMap[string(v)] = iPPoolName
-		}
-		err := CreateIppool(f, iPPoolObj)
-		if err != nil {
-			return nil, err
-		}
-
-		GinkgoWriter.Printf("%v-th ippool %v successfully created \n", i, iPPoolName)
-		iPPoolNameList = append(iPPoolNameList, iPPoolName)
-	}
-	GinkgoWriter.Printf("%v ippools were successfully created, which are: %v \n", iPPoolNum, iPPoolNameList)
-	return iPPoolNameList, nil
 }
 
 func BatchDeletePoolUntilFinish(f *frame.Framework, iPPoolNameList []string, ctx context.Context) error {

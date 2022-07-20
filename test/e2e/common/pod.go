@@ -23,6 +23,9 @@ func GenerateExamplePodYaml(podName, namespace string) *corev1.Pod {
 			Namespace:   namespace,
 			Name:        podName,
 			Annotations: map[string]string{},
+			Labels: map[string]string{
+				podName: podName,
+			},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{

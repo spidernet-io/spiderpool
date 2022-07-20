@@ -82,6 +82,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
       echo ""
       echo "---------kubectl logs ${POD} -n kube-system"
       kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n kube-system --previous"
+      kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG} --previous
     done
 
     echo ""
@@ -90,6 +92,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
       echo ""
       echo "--------- kubectl logs ${POD} -n kube-system "
       kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n kube-system --previous"
+      kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG} --previous
     done
 
     echo ""

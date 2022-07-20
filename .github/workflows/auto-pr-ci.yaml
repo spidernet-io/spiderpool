@@ -4,6 +4,7 @@ env:
   CLUSTER_NAME: spider
   E2E_TIME_OUT: 60m
   PERFORMANCESCRIPT: "./tools/scripts/e2eperformance.sh"
+  PERFORMANCESCRIPTMULTI: "./tools/scripts/e2eperformancemulti.sh"
 
 permissions: write-all
 
@@ -342,6 +343,29 @@ jobs:
           filename: spiderpoolperformance.json
           label: performance
           message: ${{ steps.get_performance.outputs.result }}
+          color: lightgrey
+
+      - name: Get the E2E Performance Result For Dual-stack(Multi-ippool)
+        # run all e2e cases
+        id: get_multi_ippool_performance
+        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        shell: bash
+        run: |
+          # sudo apt-get install -y jq
+          TOOL_PATH=${{ env.PERFORMANCESCRIPTMULTI }}
+          TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
+          # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
+          echo ::set-output name=result::${TODO_STATUS}
+
+      - name: Update Badge For Dual-stack(Multi-ippool)
+        if: ${{ steps.get_multi_ippool_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        uses: schneegans/dynamic-badges-action@v1.4.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: 38d00a872e830eedb46870c886549561
+          filename: spiderpoolperformance.json
+          label: Multi-IPPool performance
+          message: ${{ steps.get_multi_ippool_performance.outputs.result }}
           color: lightgrey
 
       # ------------------ ipv4-only

@@ -16,6 +16,7 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"gopkg.in/yaml.v3"
@@ -444,4 +445,56 @@ func UpdateIppool(f *frame.Framework, ippool *spiderpool.IPPool, opts ...client.
 		return errors.New("wrong input")
 	}
 	return f.UpdateResource(ippool, opts...)
+}
+
+func BatchCreateIppoolWithSpecifiedIPNumber(f *frame.Framework, iPPoolNum, ipNum int, isV4pool bool) ([]string, error) {
+
+	if f == nil || iPPoolNum < 0 || ipNum < 0 {
+		return nil, frame.ErrWrongInput
+	}
+
+	var ipMap = make(map[string]string)
+	var iPPoolName string
+	var iPPoolObj *spiderpool.IPPool
+	var iPPoolNameList []string
+OUTER_FOR:
+	for i := 1; i <= iPPoolNum; i++ {
+		if isV4pool {
+			iPPoolName, iPPoolObj = GenerateExampleIpv4poolObject(ipNum)
+		} else {
+			iPPoolName, iPPoolObj = GenerateExampleIpv6poolObject(ipNum)
+		}
+
+		ips := ip.ParseIPRanges(iPPoolObj.Spec.IPs)
+		for _, v := range ips {
+			if d, ok := ipMap[string(v)]; ok {
+				f.Log("ippool objects %v and %v have conflicted ip: %v \n", d, iPPoolName, v)
+				i--
+				continue OUTER_FOR
+			}
+			ipMap[string(v)] = iPPoolName
+		}
+		err := CreateIppool(f, iPPoolObj)
+		if err != nil {
+			return nil, err
+		}
+
+		f.Log("%v-th ippool %v successfully created \n", i, iPPoolName)
+		iPPoolNameList = append(iPPoolNameList, iPPoolName)
+	}
+	f.Log("%v ippools were successfully created, which are: %v \n", iPPoolNum, iPPoolNameList)
+	return iPPoolNameList, nil
+}
+
+func BatchDeletePoolUntilFinish(f *frame.Framework, iPPoolNameList []string, ctx context.Context) error {
+	if f == nil || iPPoolNameList == nil {
+		return frame.ErrWrongInput
+	}
+	for _, iPPool := range iPPoolNameList {
+		err := DeleteIPPoolUntilFinish(f, iPPool, ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -5,7 +5,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: ""
   creationTimestamp: null
-  name: ippools.spiderpool.spidernet.io
+  name: spiderippools.spiderpool.spidernet.io
 spec:
   group: spiderpool.spidernet.io
   names:
@@ -13,10 +13,10 @@ spec:
     - spiderpool
     kind: IPPool
     listKind: IPPoolList
-    plural: ippools
+    plural: spiderippools
     shortNames:
-    - spl
-    singular: ippool
+    - sp
+    singular: spiderippool
   scope: Cluster
   versions:
   - additionalPrinterColumns:

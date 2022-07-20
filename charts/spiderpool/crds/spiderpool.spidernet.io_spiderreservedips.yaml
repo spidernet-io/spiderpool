@@ -5,7 +5,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: ""
   creationTimestamp: null
-  name: reservedips.spiderpool.spidernet.io
+  name: spiderreservedips.spiderpool.spidernet.io
 spec:
   group: spiderpool.spidernet.io
   names:
@@ -13,10 +13,10 @@ spec:
     - spiderpool
     kind: ReservedIP
     listKind: ReservedIPList
-    plural: reservedips
+    plural: spiderreservedips
     shortNames:
-    - sri
-    singular: reservedip
+    - sr
+    singular: spiderreservedip
   scope: Cluster
   versions:
   - additionalPrinterColumns:

@@ -42,8 +42,8 @@ ipamPlugin:
 clusterDefaultPool:
   installIPv4IPPool: false
   installIPv6IPPool: false
-  ipv4IPPoolName: ""
-  ipv6IPPoolName: ""
+  ipv4IPPoolName: "default-v4-ippool"
+  ipv6IPPoolName: "default-v6-ippool"
   ipv4Subnet: ""
   ipv6Subnet: ""
   ipv4IPRanges: []

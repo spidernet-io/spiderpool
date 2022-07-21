@@ -235,6 +235,12 @@ func (f *Framework) UpdateResource(obj client.Object, opts ...client.UpdateOptio
 	return f.KClient.Update(ctx5, obj, opts...)
 }
 
+func (f *Framework) UpdateResourceStatus(obj client.Object, opts ...client.UpdateOption) error {
+	ctx, cancel := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel()
+	return f.KClient.Status().Update(ctx, obj, opts...)
+}
+
 func initClusterInfo() error {
 
 	for _, v := range envConfigList {

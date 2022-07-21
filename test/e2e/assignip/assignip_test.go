@@ -49,7 +49,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		// create pod
 		GinkgoWriter.Printf("create pod %v/%v with annotationLength= %v \n", namespace, testName, annotationLength)
 		podYaml := common.GenerateExamplePodYaml(testName, namespace)
-		podYaml.Annotations = map[string]string{annotationKeyName: common.GenerateString(annotationLength)}
+		podYaml.Annotations = map[string]string{annotationKeyName: common.GenerateString(annotationLength, false)}
 		Expect(podYaml).NotTo(BeNil())
 
 		pod, _, _ := common.CreatePodUntilReady(frame, podYaml, testName, namespace, time.Second*30)

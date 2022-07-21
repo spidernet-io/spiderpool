@@ -88,12 +88,11 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 
 			// wait job finished
 			GinkgoWriter.Printf("wait job finished \n")
-			ctx1, cancel1 := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel1()
 			jb, ok1, e3 := frame.WaitJobFinished(jdName, nsName, ctx1)
-			GinkgoWriter.Printf("job finished status:%v \n", ok1)
-			GinkgoWriter.Printf("jb is:%+v\n", *jb)
-			GinkgoWriter.Printf("err is: %v\n", e3)
+			Expect(e3).NotTo(HaveOccurred(), "failed to wait job finished: %v\n", e3)
+			Expect(jb).NotTo(BeNil())
 
 			switch behavior {
 			case common.JobTypeFail:
@@ -104,8 +103,6 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 				Fail("input error")
 			}
 
-			Expect(e3).NotTo(HaveOccurred())
-			Expect(jb).NotTo(BeNil())
 			GinkgoWriter.Printf("job %v is finished \n job conditions:\n %v \n", jb, jb.Status.Conditions)
 
 			// TODO(weiyang) check ip release

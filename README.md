@@ -99,19 +99,13 @@ Refer to [architecture](docs/concepts/arch.md) for components.
 
 Refer to [installation](./docs/usage/install.md).
 
-## Usage
+## Quick Start
 
-For quick start, refer to [demo](./docs/usage/demo.md).
-
-For complex case, refer to [ippool usage](./docs/usage/allocation.md).
+Refer to [demo](./docs/usage/demo.md).
 
 ## Development
 
 [Development guide](docs/develop/pullrequest.md) is a reference point for development helper commands.
-
-## Roadmap
-
-Refer to [roadmap](docs/concepts/roadmap.md).
 
 ## License
 

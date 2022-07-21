@@ -162,3 +162,5 @@ backend
 SPIDERPOOL_GOPS_LISTEN_PORT
 gops
 flamegraph
+kube-apiserver
+tls

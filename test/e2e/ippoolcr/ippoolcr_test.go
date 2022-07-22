@@ -89,7 +89,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					GinkgoWriter.Printf("failed to create v6 ippool %v with the same ip with another ippool %v\n", v6PoolName1, v6PoolName)
 				}
 			})
-		It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00005"), func() {
+		It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00005", "D00004"), Pending, func() {
 			// pod annotations
 			nic = "eth0"
 			deployName = "deploy" + tools.RandomName()
@@ -124,6 +124,20 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ok).To(BeTrue())
+
+			// delete ippool (D00004)
+			if frame.Info.IpV4Enabled {
+				Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(Succeed())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(Succeed())
+			}
+
+			// check pod ip record in ippool again (D00004)
+			GinkgoWriter.Println("check podIP record in ippool again")
+			ok2, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ok2).To(BeTrue())
 
 			// set iPv4/iPv6 PoolObj.Spec.Disable to true
 			if frame.Info.IpV4Enabled {

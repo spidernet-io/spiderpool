@@ -164,6 +164,46 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			GinkgoWriter.Println("Pod IP is successfully released")
 		})
 	})
+	Context("create and delete batch of ippool", func() {
+		const ippoolNumber = 10
+		const ipNum = 2
+		It("create and delete batch of ippool and check time cost",
+			Label("D00006"), func() {
+				if frame.Info.IpV4Enabled {
+					// batch create ipv4 ippool
+					startT1 := time.Now()
+					ipv4PoolNameList, err := common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, true)
+					Expect(err).NotTo(HaveOccurred())
+					endT1 := time.Since(startT1)
+					GinkgoWriter.Printf("time cost for create  %v ipv4 ippool %v \n", ippoolNumber, endT1)
+					// batch delete ipv4 ippool
+					ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
+					defer cancel1()
+					startT2 := time.Now()
+					errdel := common.BatchDeletePoolUntilFinish(frame, ipv4PoolNameList, ctx1)
+					Expect(errdel).NotTo(HaveOccurred())
+					endT2 := time.Since(startT2)
+					GinkgoWriter.Printf("time cost for delete  %v ipv4 ippool %v \n", ippoolNumber, endT2)
+				}
+
+				if frame.Info.IpV6Enabled {
+					// batch create ipv6 ippool
+					startT3 := time.Now()
+					ipv6PoolNameList, err := common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, false)
+					Expect(err).NotTo(HaveOccurred())
+					endT3 := time.Since(startT3)
+					GinkgoWriter.Printf("time cost for create  %v ipv6 ippool %v \n", ippoolNumber, endT3)
+					// batch delete ipv6 ippool
+					ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*30)
+					defer cancel2()
+					startT4 := time.Now()
+					errdel := common.BatchDeletePoolUntilFinish(frame, ipv6PoolNameList, ctx2)
+					Expect(errdel).NotTo(HaveOccurred())
+					endT4 := time.Since(startT4)
+					GinkgoWriter.Printf("time cost for delete  %v ipv6 ippool %v \n", ippoolNumber, endT4)
+				}
+			})
+	})
 })
 
 func deleteIPPoolUntilFinish(poolName string) {

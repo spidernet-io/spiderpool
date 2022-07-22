@@ -11,6 +11,8 @@ this way is simple, there is no any dependency. The project provides a script to
 the following is a ipv4-only example
 
 ```shell
+heml repo add spiderpool https://spidernet-io.github.io/spiderpool
+
 # generate the certificates
 tools/cert/generateCert.sh "/tmp/tls"
 CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
@@ -37,6 +39,8 @@ helm install spiderpool spidernet/spiderpool --namespace kube-system \
 the following is a dual-stack example
 
 ```shell
+heml repo add spiderpool https://spidernet-io.github.io/spiderpool
+
 # generate the certificates
 tools/cert/generateCert.sh "/tmp/tls"
 CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
@@ -77,6 +81,8 @@ Therefore, the way may implement on following situation:
 - on cluster with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), the cert-manager pods is deployed by other CNI, then spiderpool could be deployed by cert-manager
 
 ```shell
+heml repo add spiderpool https://spidernet-io.github.io/spiderpool
+
 # for default ipv4 ippool
 # CIDR
 ipv4_subnet="172.20.0.0/16"

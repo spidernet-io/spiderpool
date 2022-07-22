@@ -254,25 +254,38 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 		return nil, nil, errors.New("wrong input")
 	}
 
-	t, e := f.GetConfigmap(SpiderPoolConfigmapName, SpiderPoolConfigmapNameSpace)
+	configMap, e := f.GetConfigmap(SpiderPoolConfigmapName, SpiderPoolConfigmapNameSpace)
 	if e != nil {
 		return nil, nil, e
 	}
-	GinkgoWriter.Printf("configmap: %+v \n", t.Data)
+	GinkgoWriter.Printf("configmap: %+v \n", configMap.Data)
 
-	data, ok := t.Data["conf.yml"]
+	data, ok := configMap.Data["conf.yml"]
 	if !ok || len(data) == 0 {
 		return nil, nil, errors.New("failed to find cluster default ippool")
 	}
 
-	d := cmd.Config{}
-	if err := yaml.Unmarshal([]byte(data), &d); nil != err {
+	conf := cmd.Config{}
+	if err := yaml.Unmarshal([]byte(data), &conf); nil != err {
 		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
 		return nil, nil, errors.New("failed to find cluster default ippool")
 	}
-	GinkgoWriter.Printf("yaml config: %v \n", d)
+	GinkgoWriter.Printf("yaml config: %v \n", conf)
 
-	return d.ClusterDefaultIPv4IPPool, d.ClusterDefaultIPv6IPPool, nil
+	if conf.EnableIPv4 && len(conf.ClusterDefaultIPv4IPPool) == 0 {
+		return nil, nil, fmt.Errorf("IPv4 pool is not specified when IPv4 is enabled: %w", constant.ErrWrongInput)
+	}
+	if !conf.EnableIPv4 && len(conf.ClusterDefaultIPv4IPPool) != 0 {
+		return nil, nil, fmt.Errorf("IPv4 pool is specified when IPv4 is disabled: %w", constant.ErrWrongInput)
+	}
+	if conf.EnableIPv6 && len(conf.ClusterDefaultIPv6IPPool) == 0 {
+		return nil, nil, fmt.Errorf("IPv6 pool is not specified when IPv6 is enabled: %w", constant.ErrWrongInput)
+	}
+	if !conf.EnableIPv6 && len(conf.ClusterDefaultIPv6IPPool) != 0 {
+		return nil, nil, fmt.Errorf("IPv6 pool is specified when IPv6 is disabled: %w", constant.ErrWrongInput)
+	}
+
+	return conf.ClusterDefaultIPv4IPPool, conf.ClusterDefaultIPv6IPPool, nil
 }
 
 func GetNamespaceDefaultIppool(f *frame.Framework, namespace string) (v4IppoolList, v6IppoolList []string, e error) {

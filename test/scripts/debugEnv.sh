@@ -130,7 +130,7 @@ elif [ "$TYPE"x == "datarace"x ] ; then
       echo ""
       echo "---------${POD}--------"
       if kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG} | grep "${LOG_MARK}" &>/dev/null ; then
-          echo "error, long lock in ${POD} !!!!!!!"
+          echo "error, data race in ${POD} !!!!!!!"
           kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
           RESUTL_CODE=1
       else

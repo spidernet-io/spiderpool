@@ -18,5 +18,13 @@ data:
     networkMode: {{ .Values.configmap.config.networkMode }}
     enableIPv4: {{ .Values.ipFamily.enableIPv4 }}
     enableIPv6: {{ .Values.ipFamily.enableIPv6 }}
+    {{- if ( and .Values.ipFamily.enableIPv4 .Values.clusterDefaultPool.installIPv4IPPool ) }}
     clusterDefaultIPv4IPPool: [{{ .Values.clusterDefaultPool.ipv4IPPoolName }}]
+    {{- else}}
+    clusterDefaultIPv4IPPool: []
+    {{- end }}
+    {{- if ( and .Values.ipFamily.enableIPv6 .Values.clusterDefaultPool.installIPv6IPPool ) }}
     clusterDefaultIPv6IPPool: [{{ .Values.clusterDefaultPool.ipv6IPPoolName }}]
+    {{- else}}
+    clusterDefaultIPv6IPPool: []
+    {{- end }}

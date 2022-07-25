@@ -4,55 +4,56 @@
 package ip
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+)
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
+var (
+	ErrInvalidIPRangeFormat = errors.New("invalid IP range format")
+	ErrInvalidIPFormat      = errors.New("invalid IP format")
+	ErrInvalidCIDRFormat    = errors.New("invalid CIDR format")
 )
 
 func ParseIPRanges(ipRanges []string) ([]net.IP, error) {
 	var sum []net.IP
 	for _, r := range ipRanges {
-		_, err := ValidateIPRange(r)
-		if nil != err {
+		ips, err := parseIPRange(r)
+		if err != nil {
 			return nil, err
 		}
-
-		ips := parseIPRange(r)
 		sum = append(sum, ips...)
 	}
 
 	return sum, nil
 }
 
-func parseIPRange(ipRange string) []net.IP {
-	var ips []net.IP
+func parseIPRange(ipRange string) ([]net.IP, error) {
+	if !IsIPRange(ipRange) {
+		return nil, fmt.Errorf("%w '%s'", ErrInvalidIPRangeFormat, ipRange)
+	}
+
 	arr := strings.Split(ipRange, "-")
 	n := len(arr)
-
+	var ips []net.IP
 	if n == 1 {
-		if ip := net.ParseIP(arr[0]); ip != nil {
-			ips = append(ips, ip)
-		}
+		ips = append(ips, net.ParseIP(arr[0]))
 	}
 
 	if n == 2 {
 		cur := net.ParseIP(arr[0])
 		end := net.ParseIP(arr[1])
-		if cur == nil || end == nil {
-			return nil
-		}
 		for Cmp(cur, end) <= 0 {
 			ips = append(ips, cur)
 			cur = NextIP(cur)
 		}
 	}
 
-	return ips
+	return ips, nil
 }
 
 func IPsDiffSet(a, b []net.IP) []net.IP {
@@ -77,20 +78,131 @@ func IPsDiffSet(a, b []net.IP) []net.IP {
 	return ips
 }
 
-func ParseIP(s string) *net.IPNet {
-	if strings.ContainsAny(s, "/") {
-		ip, ipNet, err := net.ParseCIDR(s)
-		if err != nil {
-			return nil
-		}
-		return &net.IPNet{IP: ip, Mask: ipNet.Mask}
-	} else {
-		ip := net.ParseIP(s)
-		if ip == nil {
-			return nil
-		}
-		return &net.IPNet{IP: ip}
+func ParseIP(s string) (*net.IPNet, error) {
+	if govalidator.IsCIDR(s) {
+		ip, ipNet, _ := net.ParseCIDR(s)
+		return &net.IPNet{IP: ip, Mask: ipNet.Mask}, nil
 	}
+
+	if govalidator.IsIP(s) {
+		return &net.IPNet{IP: net.ParseIP(s)}, nil
+	}
+
+	return nil, fmt.Errorf("%w '%s'", ErrInvalidIPFormat, s)
+}
+
+// IsIPRange check the format for the given ip range.
+// it can be a single one just like '192.168.1.0',
+// and it also could be an IP range just like '192.168.1.0-192.168.1.10'.
+// Notice: the following formats are invalid
+// 1. '192.168.1.0 - 192.168.1.10', there can not be space between two IP.
+// 2. '192.168.1.1-2001:db8:a0b:12f0::1', the combination with one IPv4 and IPv6 is invalid.
+// 3. '192.168.1.10-192.168.1.1', the IP range must be ordered.
+func IsIPRange(ipRange string) bool {
+	return IsIPv4IPRange(ipRange) || IsIPv6IPRange(ipRange)
+}
+
+func IsIPv4IPRange(ipRange string) bool {
+	ips := strings.Split(ipRange, "-")
+	n := len(ips)
+	if n > 2 {
+		return false
+	}
+
+	if n == 1 {
+		return govalidator.IsIPv4(ips[0])
+	}
+
+	if n == 2 {
+		if !govalidator.IsIPv4(ips[0]) || !govalidator.IsIPv4(ips[1]) {
+			return false
+		}
+		if Cmp(net.ParseIP(ips[0]), net.ParseIP(ips[1])) == 1 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func IsIPv6IPRange(ipRange string) bool {
+	ips := strings.Split(ipRange, "-")
+	n := len(ips)
+	if n > 2 {
+		return false
+	}
+
+	if n == 1 {
+		return govalidator.IsIPv6(ips[0])
+	}
+
+	if n == 2 {
+		if !govalidator.IsIPv6(ips[0]) || !govalidator.IsIPv6(ips[1]) {
+			return false
+		}
+		if Cmp(net.ParseIP(ips[0]), net.ParseIP(ips[1])) == 1 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CheckIPv4CIDROverlap(a, b string) (bool, error) {
+	if !IsIPv4CIDR(a) {
+		return false, fmt.Errorf("%w in IPv4 '%s'", ErrInvalidCIDRFormat, a)
+	}
+	if !IsIPv4CIDR(b) {
+		return false, fmt.Errorf("%w in IPv4 '%s'", ErrInvalidCIDRFormat, b)
+	}
+	_, ipNet1, _ := net.ParseCIDR(a)
+	_, ipNet2, _ := net.ParseCIDR(b)
+
+	return isCIDROverlap(ipNet1, ipNet2), nil
+}
+
+func CheckIPv6CIDROverlap(a, b string) (bool, error) {
+	if !IsIPv6CIDR(a) {
+		return false, fmt.Errorf("%w in IPv6 '%s'", ErrInvalidCIDRFormat, a)
+	}
+	if !IsIPv6CIDR(b) {
+		return false, fmt.Errorf("%w in IPv6 '%s'", ErrInvalidCIDRFormat, b)
+	}
+	_, ipNet1, _ := net.ParseCIDR(a)
+	_, ipNet2, _ := net.ParseCIDR(b)
+
+	return isCIDROverlap(ipNet1, ipNet2), nil
+}
+
+func isCIDROverlap(a, b *net.IPNet) bool {
+	ones1, _ := a.Mask.Size()
+	ones2, _ := b.Mask.Size()
+	if ones1 < ones2 && a.Contains(b.IP) {
+		return true
+	}
+	if ones1 > ones2 && a.Contains(b.IP) {
+		return true
+	}
+
+	return false
+}
+
+func IsIPv4CIDR(subnet string) bool {
+	ip, _, err := net.ParseCIDR(subnet)
+	if err != nil {
+		return false
+	}
+
+	return ip.To4() != nil
+}
+
+func IsIPv6CIDR(subnet string) bool {
+	ip, _, err := net.ParseCIDR(subnet)
+	if err != nil {
+		return false
+	}
+
+	return ip.To4() == nil
 }
 
 func NextIP(ip net.IP) net.IP {
@@ -122,55 +234,4 @@ func ipToInt(ip net.IP) *big.Int {
 
 func intToIP(i *big.Int) net.IP {
 	return net.IP(i.Bytes())
-}
-
-// ValidateIPRange check the format for the given ip range.
-// it can be a single one just like '192.168.1.0',
-// and it also could be an IP range just like '192.168.1.0-192.168.1.10'.
-// Notice: the following formats are invalid
-// 1. '192.168.1.0 - 192.168.1.10', there can not be space between two IP.
-// 2. '192.168.1.1-2001:db8:a0b:12f0::1', the combination with one IPv4 and IPv6 is invalid.
-// 3. '192.168.1.10-192.168.1.1', the IP range must be ordered.
-func ValidateIPRange(ipRange string) (ipVersion int, err error) {
-	split := strings.Split(ipRange, "-")
-	length := len(split)
-
-	// single IP
-	if length == 1 {
-		if govalidator.IsIPv4(split[0]) {
-			return int(constant.IPv4), nil
-		}
-
-		if govalidator.IsIPv6(split[0]) {
-			return int(constant.IPv6), nil
-		}
-
-		return 0, fmt.Errorf("failed to parse IP range '%s' , it's not a regular IP address", split)
-	} else if length == 2 {
-		// IP range
-		if govalidator.IsIPv4(split[0]) && govalidator.IsIPv4(split[1]) {
-			// the previous IP can't greater than the latter one
-			if Cmp(net.ParseIP(split[0]), net.ParseIP(split[1])) == 1 {
-				return 0, fmt.Errorf("IP range '%s' is not regular", ipRange)
-			}
-
-			return int(constant.IPv4), nil
-		}
-
-		if govalidator.IsIPv6(split[0]) && govalidator.IsIPv6(split[1]) {
-			// the previous IP can't greater than the latter one
-			if Cmp(net.ParseIP(split[0]), net.ParseIP(split[1])) == 1 {
-				return 0, fmt.Errorf("IP range '%s' is not regular", ipRange)
-			}
-
-			return int(constant.IPv6), nil
-		}
-
-		err = fmt.Errorf("IP range '%s' is not regular", ipRange)
-	} else {
-		// not a regular IP format
-		err = fmt.Errorf("IP range '%s' is not regular", ipRange)
-	}
-
-	return
 }

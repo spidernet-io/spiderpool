@@ -154,7 +154,10 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, n
 			return nil, err
 		}
 
-		ipConfig = genResIPConfig(allocateIP, &ipPool.Spec, nic, poolName)
+		ipConfig, err = genResIPConfig(allocateIP, &ipPool.Spec, nic, poolName)
+		if err != nil {
+			return nil, err
+		}
 		break
 	}
 
@@ -162,27 +165,22 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, n
 }
 
 func randomIP(all []string, used []string, exclude []string, reserved []string) (net.IP, error) {
-	// TODO(iiiceoo): Check nil
 	reservedIPs, err := ip.ParseIPRanges(reserved)
-	if nil != err {
+	if err != nil {
 		return nil, err
 	}
-
 	usedIPs, err := ip.ParseIPRanges(used)
-	if nil != err {
+	if err != nil {
 		return nil, err
 	}
-
 	expectIPs, err := ip.ParseIPRanges(all)
-	if nil != err {
+	if err != nil {
 		return nil, err
 	}
-
 	excludeIPs, err := ip.ParseIPRanges(exclude)
-	if nil != err {
+	if err != nil {
 		return nil, err
 	}
-
 	availableIPs := ip.IPsDiffSet(expectIPs, append(reservedIPs, append(usedIPs, excludeIPs...)...))
 
 	if len(availableIPs) == 0 {
@@ -192,8 +190,11 @@ func randomIP(all []string, used []string, exclude []string, reserved []string) 
 	return availableIPs[rand.Int()%len(availableIPs)], nil
 }
 
-func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, poolName string) *models.IPConfig {
-	ipNet := ip.ParseIP(poolSpec.Subnet)
+func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, poolName string) (*models.IPConfig, error) {
+	ipNet, err := ip.ParseIP(poolSpec.Subnet)
+	if err != nil {
+		return nil, err
+	}
 	ipNet.IP = allocateIP
 	address := ipNet.String()
 
@@ -216,7 +217,7 @@ func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, p
 		Nic:     &nic,
 		Version: &version,
 		Vlan:    int64(*poolSpec.Vlan),
-	}
+	}, nil
 }
 
 type IPAndCID struct {

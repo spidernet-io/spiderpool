@@ -58,9 +58,9 @@ const (
 	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )
 
-const SpiderWorkloadEndpointFinalizer = "spiderpool.spidernet.io"
-
 const QualifiedK8sObjNameFmt = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 
-const SpiderIPGarbageCollect = "ip-gc"
-const SpiderIPGarbageCollectElectorLockName = AnnotationPre + "-" + SpiderIPGarbageCollect + "-" + resourcelock.LeasesResourceLock
+const SpiderFinalizer = "spiderpool.spidernet.io"
+const SpiderpoolAgent = "spiderpool-agent"
+const SpiderpoolController = "spiderpool-controller"
+const SpiderControllerElectorLockName = SpiderpoolController + "-" + resourcelock.LeasesResourceLock

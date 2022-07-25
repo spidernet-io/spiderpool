@@ -107,8 +107,8 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 					gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, err)
 			}
 
-			loggerReleaseIP.Sugar().Debugf("remove '%v/%v' finalizer '%s' successfully",
-				gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, constant.SpiderWorkloadEndpointFinalizer)
+			loggerReleaseIP.Sugar().Debugf("remove wep '%v/%v' finalizer '%s' successfully",
+				gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, constant.SpiderFinalizer)
 
 		case <-ctx.Done():
 			loggerReleaseIP.Info("receive ctx done, stop running releaseIPPoolIPExecutor")

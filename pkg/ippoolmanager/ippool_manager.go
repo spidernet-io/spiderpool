@@ -11,21 +11,28 @@ import (
 	"net"
 	"time"
 
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/strings/slices"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
+
+var logger = logutils.Logger.Named("IPPool_Manager")
 
 type IPPoolManager interface {
 	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error)
@@ -34,6 +41,11 @@ type IPPoolManager interface {
 	SelectByPod(ctx context.Context, version spiderpoolv1.IPVersion, poolName string, pod *corev1.Pod) (bool, error)
 	CheckVlanSame(ctx context.Context, poolList []string) (map[spiderpoolv1.Vlan][]string, bool, error)
 	CheckPoolCIDROverlap(ctx context.Context, poolList1 []string, poolList2 []string) (bool, error)
+	GetIPPoolByName(ctx context.Context, podName string) (*spiderpoolv1.IPPool, error)
+	RemoveFinalizer(ctx context.Context, poolName string) error
+	AssembleTotalIP(ctx context.Context, poolName string) ([]net.IP, error)
+	SetupReconcile(mgr ctrl.Manager, leader election.SpiderLeaseElector) error
+	SetupWebhook(mgr ctrl.Manager) error
 }
 
 type ipPoolManager struct {
@@ -45,6 +57,8 @@ type ipPoolManager struct {
 	maxAllocatedIPs       int
 	maxConflictRetrys     int
 	conflictRetryUnitTime time.Duration
+
+	leader election.SpiderLeaseElector
 }
 
 func NewIPPoolManager(c client.Client, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, maxAllocatedIPs, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (IPPoolManager, error) {
@@ -149,10 +163,26 @@ func (r *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, n
 
 func randomIP(all []string, used []string, exclude []string, reserved []string) (net.IP, error) {
 	// TODO(iiiceoo): Check nil
-	reservedIPs := ip.ParseIPRanges(reserved)
-	usedIPs := ip.ParseIPRanges(used)
-	expectIPs := ip.ParseIPRanges(all)
-	excludeIPs := ip.ParseIPRanges(exclude)
+	reservedIPs, err := ip.ParseIPRanges(reserved)
+	if nil != err {
+		return nil, err
+	}
+
+	usedIPs, err := ip.ParseIPRanges(used)
+	if nil != err {
+		return nil, err
+	}
+
+	expectIPs, err := ip.ParseIPRanges(all)
+	if nil != err {
+		return nil, err
+	}
+
+	excludeIPs, err := ip.ParseIPRanges(exclude)
+	if nil != err {
+		return nil, err
+	}
+
 	availableIPs := ip.IPsDiffSet(expectIPs, append(reservedIPs, append(usedIPs, excludeIPs...)...))
 
 	if len(availableIPs) == 0 {
@@ -332,4 +362,61 @@ func (r *ipPoolManager) CheckVlanSame(ctx context.Context, poolList []string) (m
 
 func (r *ipPoolManager) CheckPoolCIDROverlap(ctx context.Context, poolList1 []string, poolList2 []string) (bool, error) {
 	return false, nil
+}
+
+func (r *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.IPPool, error) {
+	var ipPool spiderpoolv1.IPPool
+	err := r.client.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool)
+	if nil != err {
+		return nil, err
+	}
+
+	return &ipPool, nil
+}
+
+func (r *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) error {
+	ipPool, err := r.GetIPPoolByName(ctx, poolName)
+	if nil != err {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Debugf("IPPool '%s' not found", poolName)
+			return nil
+		}
+
+		return err
+	}
+
+	if slices.Contains(ipPool.Finalizers, constant.SpiderFinalizer) {
+		controllerutil.RemoveFinalizer(ipPool, constant.SpiderFinalizer)
+
+		err = r.client.Update(ctx, ipPool)
+		if nil != err {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// AssembleTotalIP will calculate an IPPool CR object usable IPs number, it summaries the IPPool IPs then subtracts ExcludeIPs
+// notice: this method would not filter ReservedIP CR object data!
+func (r *ipPoolManager) AssembleTotalIP(ctx context.Context, poolName string) ([]net.IP, error) {
+	ipPool, err := r.GetIPPoolByName(ctx, poolName)
+	if nil != err {
+		return nil, err
+	}
+
+	// TODO (Icarus9913): ips could be nil, should we return error?
+	ips, err := spiderpoolip.ParseIPRanges(ipPool.Spec.IPs)
+	if nil != err {
+		return nil, err
+	}
+
+	excludeIPs, err := spiderpoolip.ParseIPRanges(ipPool.Spec.ExcludeIPs)
+	if nil != err {
+		return nil, err
+	}
+
+	usableIPs := spiderpoolip.IPsDiffSet(ips, excludeIPs)
+
+	return usableIPs, nil
 }

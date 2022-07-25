@@ -4,28 +4,33 @@
 package ip
 
 import (
+	"fmt"
 	"math/big"
 	"net"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
-type IPs []net.IP
-
-func ParseIPRanges(ipRanges []string) IPs {
-	var sum IPs
+func ParseIPRanges(ipRanges []string) ([]net.IP, error) {
+	var sum []net.IP
 	for _, r := range ipRanges {
-		ips := parseIPRange(r)
-		if ips == nil {
-			return nil
+		_, err := ValidateIPRange(r)
+		if nil != err {
+			return nil, err
 		}
+
+		ips := parseIPRange(r)
 		sum = append(sum, ips...)
 	}
 
-	return sum
+	return sum, nil
 }
 
-func parseIPRange(ipRange string) IPs {
-	var ips IPs
+func parseIPRange(ipRange string) []net.IP {
+	var ips []net.IP
 	arr := strings.Split(ipRange, "-")
 	n := len(arr)
 
@@ -50,8 +55,8 @@ func parseIPRange(ipRange string) IPs {
 	return ips
 }
 
-func IPsDiffSet(a, b IPs) IPs {
-	var ips IPs
+func IPsDiffSet(a, b []net.IP) []net.IP {
+	var ips []net.IP
 	marks := make(map[string]bool)
 	for _, ip := range a {
 		if ip != nil {
@@ -98,6 +103,10 @@ func PrevIP(ip net.IP) net.IP {
 	return intToIP(i.Sub(i, big.NewInt(1)))
 }
 
+// Cmp compares two IPs, returning the usual ordering:
+// a < b : -1
+// a == b : 0
+// a > b : 1
 func Cmp(a, b net.IP) int {
 	aa := ipToInt(a)
 	bb := ipToInt(b)
@@ -113,4 +122,55 @@ func ipToInt(ip net.IP) *big.Int {
 
 func intToIP(i *big.Int) net.IP {
 	return net.IP(i.Bytes())
+}
+
+// ValidateIPRange check the format for the given ip range.
+// it can be a single one just like '192.168.1.0',
+// and it also could be an IP range just like '192.168.1.0-192.168.1.10'.
+// Notice: the following formats are invalid
+// 1. '192.168.1.0 - 192.168.1.10', there can not be space between two IP.
+// 2. '192.168.1.1-2001:db8:a0b:12f0::1', the combination with one IPv4 and IPv6 is invalid.
+// 3. '192.168.1.10-192.168.1.1', the IP range must be ordered.
+func ValidateIPRange(ipRange string) (ipVersion int, err error) {
+	split := strings.Split(ipRange, "-")
+	length := len(split)
+
+	// single IP
+	if length == 1 {
+		if govalidator.IsIPv4(split[0]) {
+			return int(constant.IPv4), nil
+		}
+
+		if govalidator.IsIPv6(split[0]) {
+			return int(constant.IPv6), nil
+		}
+
+		return 0, fmt.Errorf("failed to parse IP range '%s' , it's not a regular IP address", split)
+	} else if length == 2 {
+		// IP range
+		if govalidator.IsIPv4(split[0]) && govalidator.IsIPv4(split[1]) {
+			// the previous IP can't greater than the latter one
+			if Cmp(net.ParseIP(split[0]), net.ParseIP(split[1])) == 1 {
+				return 0, fmt.Errorf("IP range '%s' is not regular", ipRange)
+			}
+
+			return int(constant.IPv4), nil
+		}
+
+		if govalidator.IsIPv6(split[0]) && govalidator.IsIPv6(split[1]) {
+			// the previous IP can't greater than the latter one
+			if Cmp(net.ParseIP(split[0]), net.ParseIP(split[1])) == 1 {
+				return 0, fmt.Errorf("IP range '%s' is not regular", ipRange)
+			}
+
+			return int(constant.IPv6), nil
+		}
+
+		err = fmt.Errorf("IP range '%s' is not regular", ipRange)
+	} else {
+		// not a regular IP format
+		err = fmt.Errorf("IP range '%s' is not regular", ipRange)
+	}
+
+	return
 }

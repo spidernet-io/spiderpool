@@ -12,7 +12,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -21,9 +20,6 @@ import (
 )
 
 type GarbageCollectionConfig struct {
-	ControllerPodName      string
-	ControllerPodNamespace string
-
 	EnableGCIP                bool
 	EnableGCForTerminatingPod bool
 
@@ -36,11 +32,6 @@ type GarbageCollectionConfig struct {
 	GCSignalTimeoutDuration   int
 	GCSignalGapDuration       int
 	AdditionalGraceDelay      int
-
-	LeaseDuration      int
-	LeaseRenewDeadline int
-	LeaseRetryPeriod   int
-	LeaseRetryGap      int
 }
 
 var logger *zap.Logger
@@ -80,7 +71,8 @@ func NewGCManager(ctx context.Context, client client.Client, config *GarbageColl
 	crdMgr ctrl.Manager,
 	wepManager workloadendpointmanager.WorkloadEndpointManager,
 	ippoolManager ippoolmanager.IPPoolManager,
-	podManager podmanager.PodManager) (GCManager, error) {
+	podManager podmanager.PodManager,
+	spiderControllerLeader election.SpiderLeaseElector) (GCManager, error) {
 	if config == nil {
 		return nil, fmt.Errorf("gc configuration must be specified")
 	}
@@ -105,14 +97,8 @@ func NewGCManager(ctx context.Context, client client.Client, config *GarbageColl
 		return nil, fmt.Errorf("pod manager must be specified")
 	}
 
-	leaseDuration := time.Duration(config.LeaseDuration) * time.Second
-	renewDeadline := time.Duration(config.LeaseRenewDeadline) * time.Second
-	leaseRetryPeriod := time.Duration(config.LeaseRetryPeriod) * time.Second
-	leaderRetryElectGap := time.Duration(config.LeaseRetryGap) * time.Second
-	leaderElector, err := election.NewLeaseElector(ctx, config.ControllerPodNamespace, constant.SpiderIPGarbageCollectElectorLockName, config.ControllerPodName,
-		&leaseDuration, &renewDeadline, &leaseRetryPeriod, &leaderRetryElectGap)
-	if nil != err {
-		return nil, fmt.Errorf("failed to new leader elector, error: %w", err)
+	if spiderControllerLeader == nil {
+		return nil, fmt.Errorf("spiderpool controller leader must be specified")
 	}
 
 	logger = logutils.Logger.Named("IP-GarbageCollection")
@@ -130,7 +116,7 @@ func NewGCManager(ctx context.Context, client client.Client, config *GarbageColl
 		ippoolMgr:     ippoolManager,
 		podMgr:        podManager,
 
-		leader: leaderElector,
+		leader: spiderControllerLeader,
 	}
 
 	return spiderGC, nil

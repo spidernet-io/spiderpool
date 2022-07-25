@@ -14,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -120,7 +121,7 @@ func (r *workloadEndpointManager) MarkIPAllocation(ctx context.Context, node, na
 			},
 		}
 
-		controllerutil.AddFinalizer(newWE, constant.SpiderWorkloadEndpointFinalizer)
+		controllerutil.AddFinalizer(newWE, constant.SpiderFinalizer)
 		if err := controllerutil.SetOwnerReference(&pod, newWE, r.runtimeMgr.GetScheme()); err != nil {
 			return err
 		}
@@ -271,11 +272,13 @@ func (r *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace
 	}
 
 	// remove wep finalizer
-	controllerutil.RemoveFinalizer(wep, constant.SpiderWorkloadEndpointFinalizer)
+	if slices.Contains(wep.Finalizers, constant.SpiderFinalizer) {
+		controllerutil.RemoveFinalizer(wep, constant.SpiderFinalizer)
 
-	err = r.client.Update(ctx, wep)
-	if nil != err {
-		return err
+		err = r.client.Update(ctx, wep)
+		if nil != err {
+			return err
+		}
 	}
 
 	return nil

@@ -6,12 +6,18 @@ package cmd
 import (
 	"context"
 	"fmt"
+
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/google/gops/agent"
+	"github.com/pyroscope-io/client/pyroscope"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -20,9 +26,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
-
-	"github.com/google/gops/agent"
-	"github.com/pyroscope-io/client/pyroscope"
 )
 
 // DaemonMain runs controllerContext handlers.
@@ -152,6 +155,10 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initControllerServiceManagers(ctx context.Context) {
+	// init spiderpool controller leader election
+	logger.Debug("Begin to initialize spiderpool controller leader election")
+	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
+
 	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
 	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
 	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
@@ -197,11 +204,25 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.IPPoolManager = ipPoolManager
+
+	// set up spiderpool controller IPPool reconcile
+	logger.Debug("Begin to set up IPPool reconcile")
+	err = controllerContext.IPPoolManager.SetupReconcile(controllerContext.CRDManager, controllerContext.Leader)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	// set up spiderpool controller IPPool webhook
+	logger.Debug("Begin to set up IPPool webhook")
+	err = controllerContext.IPPoolManager.SetupWebhook(controllerContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 }
 
 func initGCManager(ctx context.Context) {
 	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.CRDManager.GetClient(), gcIPConfig, controllerContext.CRDManager,
-		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager)
+		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.Leader)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -212,4 +233,18 @@ func initGCManager(ctx context.Context) {
 	if nil != err {
 		logger.Fatal(fmt.Sprintf("start gc manager failed, err: '%v'", err))
 	}
+}
+
+func initSpiderControllerLeaderElect(ctx context.Context) {
+	leaseDuration := time.Duration(controllerContext.Cfg.LeaseDuration) * time.Second
+	renewDeadline := time.Duration(controllerContext.Cfg.LeaseRenewDeadline) * time.Second
+	leaseRetryPeriod := time.Duration(controllerContext.Cfg.LeaseRetryPeriod) * time.Second
+	leaderRetryElectGap := time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
+	leaderElector, err := election.NewLeaseElector(ctx, controllerContext.Cfg.ControllerPodNamespace, constant.SpiderControllerElectorLockName,
+		controllerContext.Cfg.ControllerPodName, &leaseDuration, &renewDeadline, &leaseRetryPeriod, &leaderRetryElectGap)
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+
+	controllerContext.Leader = leaderElector
 }

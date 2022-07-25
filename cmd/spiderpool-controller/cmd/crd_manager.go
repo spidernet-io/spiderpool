@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/webhook"
 )
 
 var scheme = runtime.NewScheme()
@@ -53,13 +52,6 @@ func newCRDManager() (ctrl.Manager, error) {
 			&spiderpoolv1.ReservedIP{}},
 	})
 	if nil != err {
-		return nil, err
-	}
-
-	if err = (&webhook.IPPoolWebhook{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWebhookWithManager(mgr); err != nil {
 		return nil, err
 	}
 

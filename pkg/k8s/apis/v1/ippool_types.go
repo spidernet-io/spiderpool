@@ -15,7 +15,6 @@ type IPPoolSpec struct {
 	// - "IPv4":
 	// - "IPv6":
 
-	// +kubebuilder:default=IPv4
 	// +kubebuilder:validation:Optional
 	IPVersion *IPVersion `json:"ipVersion,omitempty"`
 

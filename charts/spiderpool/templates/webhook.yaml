@@ -31,7 +31,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - ippools
+    - spiderippools
   sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
@@ -67,5 +67,5 @@ webhooks:
     - UPDATE
     - DELETE
     resources:
-    - ippools
+    - spiderippools
   sideEffects: None

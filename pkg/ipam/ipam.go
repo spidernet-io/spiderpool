@@ -169,7 +169,7 @@ func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated,
 	var ips []*models.IPConfig
 	for _, t := range tt {
 		if len(t.V4PoolCandidates) != 0 {
-			ipv4, err := i.allocateIPFromPoolCandidates(ctx, t.V4PoolCandidates, spiderpoolv1.IPv4, containerID, t.NIC, pod)
+			ipv4, err := i.allocateIPFromPoolCandidates(ctx, t.V4PoolCandidates, constant.IPv4, containerID, t.NIC, pod)
 			if ipv4 != nil {
 				ips = append(ips, ipv4)
 			}
@@ -179,7 +179,7 @@ func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated,
 		}
 
 		if len(t.V6PoolCandidates) != 0 {
-			ipv6, err := i.allocateIPFromPoolCandidates(ctx, t.V6PoolCandidates, spiderpoolv1.IPv6, containerID, t.NIC, pod)
+			ipv6, err := i.allocateIPFromPoolCandidates(ctx, t.V6PoolCandidates, constant.IPv6, containerID, t.NIC, pod)
 			if ipv6 != nil {
 				ips = append(ips, ipv6)
 			}
@@ -201,7 +201,7 @@ func (i *ipam) allocateForAllInterfaces(ctx context.Context, tt []ToBeAllocated,
 	return ips, nil
 }
 
-func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, poolCandidates []string, version spiderpoolv1.IPVersion, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
+func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, poolCandidates []string, version types.IPVersion, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
 	logger := logutils.FromContext(ctx)
 
 	// TODO(iiiceoo): Comment why queue up before allocating IP.
@@ -219,15 +219,15 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, poolCandidates 
 		ip, err = i.ipPoolManager.AllocateIP(ctx, pool, containerID, nic, pod)
 		if err != nil {
 			errs = append(errs, err)
-			logger.Sugar().Warnf("Failed to allocate %s IP to %s from IP pool %s: %v", version, nic, pool, err)
+			logger.Sugar().Warnf("Failed to allocate IPv%d IP to %s from IP pool %s: %v", version, nic, pool, err)
 			continue
 		}
-		logger.Sugar().Infof("Allocate %s IP %s to %s from IP pool %s", version, *ip.Address, nic, pool)
+		logger.Sugar().Infof("Allocate IPv%d IP %s to %s from IP pool %s", version, *ip.Address, nic, pool)
 		break
 	}
 
 	if ip == nil {
-		return ip, fmt.Errorf("failed to allocate any %s IP to %s from IP pools %v: %v", version, nic, poolCandidates, utilerrors.NewAggregate(errs).Error())
+		return ip, fmt.Errorf("failed to allocate any IPv%d IP to %s from IP pools %v: %v", version, nic, poolCandidates, utilerrors.NewAggregate(errs).Error())
 	}
 
 	patch := convertToIPDetails([]*models.IPConfig{ip})
@@ -434,7 +434,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []ToBeAllocated, pod
 	for _, t := range tt {
 		var selectedV4Pools []string
 		for _, pool := range t.V4PoolCandidates {
-			eligible, err := i.ipPoolManager.SelectByPod(ctx, spiderpoolv1.IPv4, pool, pod)
+			eligible, err := i.ipPoolManager.SelectByPod(ctx, constant.IPv4, pool, pod)
 			if err != nil {
 				return nil, err
 			}
@@ -448,7 +448,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []ToBeAllocated, pod
 
 		var selectedV6Pools []string
 		for _, pool := range t.V6PoolCandidates {
-			eligible, err := i.ipPoolManager.SelectByPod(ctx, spiderpoolv1.IPv6, pool, pod)
+			eligible, err := i.ipPoolManager.SelectByPod(ctx, constant.IPv6, pool, pod)
 			if err != nil {
 				return nil, err
 			}

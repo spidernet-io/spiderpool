@@ -132,8 +132,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	Context("different VLAN for ipv4 and ipv6 ippool", func() {
 		var v4PoolName, v6PoolName, nic, podAnnoStr string
 		var iPv4PoolObj, iPv6PoolObj *spiderpool.IPPool
-		var ipv4vlan = new(spiderpool.Vlan)
-		var ipv6vlan = new(spiderpool.Vlan)
+		var ipv4vlan = new(types.Vlan)
+		var ipv6vlan = new(types.Vlan)
 
 		BeforeEach(func() {
 			nic = "eth0"

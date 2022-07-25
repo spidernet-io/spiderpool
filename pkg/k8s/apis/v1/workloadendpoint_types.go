@@ -72,8 +72,11 @@ type IPAllocationDetail struct {
 
 	// TODO
 
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Maximum=4095
+	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	Vlan *Vlan `json:"vlan,omitempty"`
+	Vlan *int64 `json:"vlan,omitempty"`
 
 	// TODO
 

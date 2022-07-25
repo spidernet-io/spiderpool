@@ -24,7 +24,7 @@ func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPC
 				Address: d.IPv4,
 				Nic:     &nic,
 				Version: &version,
-				Vlan:    int64(*d.Vlan),
+				Vlan:    *d.Vlan,
 				Gateway: *d.IPv4Gateway,
 			})
 		}
@@ -35,7 +35,7 @@ func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPC
 				Address: d.IPv6,
 				Nic:     &nic,
 				Version: &version,
-				Vlan:    int64(*d.Vlan),
+				Vlan:    *d.Vlan,
 				Gateway: *d.IPv6Gateway,
 			})
 		}
@@ -60,13 +60,12 @@ func convertToIPDetails(ipConfigs []*models.IPConfig) []spiderpoolv1.IPAllocatio
 			continue
 		}
 
-		vlan := spiderpoolv1.Vlan(c.Vlan)
 		if *c.Version == constant.IPv4 {
 			nicToDetail[*c.Nic] = &spiderpoolv1.IPAllocationDetail{
 				NIC:         *c.Nic,
 				IPv4:        c.Address,
 				IPv4Pool:    &c.IPPool,
-				Vlan:        &vlan,
+				Vlan:        &c.Vlan,
 				IPv4Gateway: &c.Gateway,
 			}
 		} else {
@@ -74,7 +73,7 @@ func convertToIPDetails(ipConfigs []*models.IPConfig) []spiderpoolv1.IPAllocatio
 				NIC:         *c.Nic,
 				IPv6:        c.Address,
 				IPv6Pool:    &c.IPPool,
-				Vlan:        &vlan,
+				Vlan:        &c.Vlan,
 				IPv6Gateway: &c.Gateway,
 			}
 		}

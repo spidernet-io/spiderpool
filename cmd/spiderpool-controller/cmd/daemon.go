@@ -163,35 +163,35 @@ func initControllerServiceManagers(ctx context.Context) {
 	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
 	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, historySize, retrys, unitTime)
+	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager, historySize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.WEPManager = wepManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.RIPManager = rIPManager
 
 	logger.Debug("Begin to initialize Node Manager")
-	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager)
+	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace Manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager)
+	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, retrys, unitTime)
+	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -199,7 +199,7 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize IPPool Manager")
 	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager.GetClient(), controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager, controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -207,14 +207,14 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	// set up spiderpool controller IPPool reconcile
 	logger.Debug("Begin to set up IPPool reconcile")
-	err = controllerContext.IPPoolManager.SetupReconcile(controllerContext.CRDManager, controllerContext.Leader)
+	err = controllerContext.IPPoolManager.SetupReconcile(controllerContext.Leader)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
 	// set up spiderpool controller IPPool webhook
 	logger.Debug("Begin to set up IPPool webhook")
-	err = controllerContext.IPPoolManager.SetupWebhook(controllerContext.CRDManager)
+	err = controllerContext.IPPoolManager.SetupWebhook()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

@@ -9,14 +9,9 @@ import (
 
 // IPPoolSpec defines the desired state of IPPool
 type IPPoolSpec struct {
-
-	// Specifies the IP version used by the IP pool
-	// Valid values are:
-	// - "IPv4":
-	// - "IPv6":
-
+	// +kubebuilder:validation:Enum=4;6
 	// +kubebuilder:validation:Optional
-	IPVersion *IPVersion `json:"ipVersion,omitempty"`
+	IPVersion *int64 `json:"ipVersion,omitempty"`
 
 	// TODO
 
@@ -52,8 +47,10 @@ type IPPoolSpec struct {
 	// TODO
 
 	// +kubebuilder:default=0
+	// +kubebuilder:validation:Maximum=4095
+	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	Vlan *Vlan `json:"vlan,omitempty"`
+	Vlan *int64 `json:"vlan,omitempty"`
 
 	// TODO
 
@@ -70,21 +67,6 @@ type IPPoolSpec struct {
 	// +kubebuilder:validation:Optional
 	NodeSelector *metav1.LabelSelector `json:"nodeSelector,omitempty"`
 }
-
-// +kubebuilder:validation:Enum=IPv4;IPv6
-type IPVersion string
-
-const (
-	// TODO
-	IPv4 IPVersion = "IPv4"
-
-	// TODO
-	IPv6 IPVersion = "IPv6"
-)
-
-// +kubebuilder:validation:Maximum=4095
-// +kubebuilder:validation:Minimum=0
-type Vlan int32
 
 type Route struct {
 	// TODO
@@ -109,13 +91,13 @@ type IPPoolStatus struct {
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	TotalIPCount *int32 `json:"totalIPCount,omitempty"`
+	TotalIPCount *int64 `json:"totalIPCount,omitempty"`
 
 	// TODO
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	AllocatedIPCount *int32 `json:"allocatedIPCount,omitempty"`
+	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
 }
 
 // PoolIPAllocations is a map of allocated IPs indexed by IP

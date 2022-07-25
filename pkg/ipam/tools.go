@@ -19,7 +19,7 @@ func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPC
 	for _, d := range details {
 		var version int64
 		if d.IPv4 != nil {
-			version = 4
+			version = constant.IPv4
 			ipConfigs = append(ipConfigs, &models.IPConfig{
 				Address: d.IPv4,
 				Nic:     &d.NIC,
@@ -30,7 +30,7 @@ func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPC
 		}
 
 		if d.IPv6 != nil {
-			version = 6
+			version = constant.IPv6
 			ipConfigs = append(ipConfigs, &models.IPConfig{
 				Address: d.IPv6,
 				Nic:     &d.NIC,
@@ -48,7 +48,7 @@ func convertToIPDetails(ipConfigs []*models.IPConfig) []spiderpoolv1.IPAllocatio
 	nicToDetail := map[string]*spiderpoolv1.IPAllocationDetail{}
 	for _, c := range ipConfigs {
 		if d, ok := nicToDetail[*c.Nic]; ok {
-			if *c.Version == 4 {
+			if *c.Version == constant.IPv4 {
 				d.IPv4 = c.Address
 				d.IPv4Pool = &c.IPPool
 				d.IPv4Gateway = &c.Gateway
@@ -61,7 +61,7 @@ func convertToIPDetails(ipConfigs []*models.IPConfig) []spiderpoolv1.IPAllocatio
 		}
 
 		vlan := spiderpoolv1.Vlan(c.Vlan)
-		if *c.Version == 4 {
+		if *c.Version == constant.IPv4 {
 			nicToDetail[*c.Nic] = &spiderpoolv1.IPAllocationDetail{
 				NIC:         *c.Nic,
 				IPv4:        c.Address,
@@ -109,10 +109,10 @@ func groupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetai
 }
 
 func genIPAssignmentAnnotation(ipConfigs []*models.IPConfig) (map[string]string, error) {
-	nicToValue := map[string]types.AnnoPodAssignedEthxValue{}
+	nicToValue := map[string]*types.AnnoPodAssignedEthxValue{}
 	for _, c := range ipConfigs {
 		if v, ok := nicToValue[*c.Nic]; ok {
-			if *c.Version == 4 {
+			if *c.Version == constant.IPv4 {
 				v.IPv4 = *c.Address
 				v.IPv4Pool = c.IPPool
 				v.Vlan = int(c.Vlan)
@@ -124,8 +124,20 @@ func genIPAssignmentAnnotation(ipConfigs []*models.IPConfig) (map[string]string,
 			continue
 		}
 
-		nicToValue[*c.Nic] = types.AnnoPodAssignedEthxValue{
-			NIC: *c.Nic,
+		if *c.Version == constant.IPv4 {
+			nicToValue[*c.Nic] = &types.AnnoPodAssignedEthxValue{
+				NIC:      *c.Nic,
+				IPv4:     *c.Address,
+				IPv4Pool: c.IPPool,
+				Vlan:     int(c.Vlan),
+			}
+		} else {
+			nicToValue[*c.Nic] = &types.AnnoPodAssignedEthxValue{
+				NIC:      *c.Nic,
+				IPv6:     *c.Address,
+				IPv6Pool: c.IPPool,
+				Vlan:     int(c.Vlan),
+			}
 		}
 	}
 

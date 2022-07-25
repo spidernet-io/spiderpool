@@ -153,15 +153,17 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
+	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
+	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, historySize)
+	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, historySize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.WEPManager = wepManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager)
+	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -182,8 +184,6 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
-	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())

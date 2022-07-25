@@ -13,6 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 
@@ -180,7 +181,7 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 			netInterfaces = append(netInterfaces, nic)
 
 			// record ips
-			if *ipconfig.Version == 4 {
+			if *ipconfig.Version == constant.IPv4 {
 				var v4ip current.IPConfig
 				nicIndex := tmpIndex
 

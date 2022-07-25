@@ -6,7 +6,9 @@ package workloadendpointmanager
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,7 +26,8 @@ import (
 
 type WorkloadEndpointManager interface {
 	RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error)
-	UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
+	MarkIPAllocation(ctx context.Context, node, namespace, podName, containerID string) error
+	PatchIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
 	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error
 	Get(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
@@ -33,12 +36,14 @@ type WorkloadEndpointManager interface {
 }
 
 type workloadEndpointManager struct {
-	client            client.Client
-	runtimeMgr        ctrl.Manager
-	maxHistoryRecords int
+	client                client.Client
+	runtimeMgr            ctrl.Manager
+	maxHistoryRecords     int
+	maxConflictRetrys     int
+	conflictRetryUnitTime time.Duration
 }
 
-func NewWorkloadEndpointManager(c client.Client, mgr ctrl.Manager, maxHistoryRecords int) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(c client.Client, mgr ctrl.Manager, maxHistoryRecords, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (WorkloadEndpointManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
@@ -47,9 +52,11 @@ func NewWorkloadEndpointManager(c client.Client, mgr ctrl.Manager, maxHistoryRec
 	}
 
 	return &workloadEndpointManager{
-		client:            c,
-		runtimeMgr:        mgr,
-		maxHistoryRecords: maxHistoryRecords,
+		client:                c,
+		runtimeMgr:            mgr,
+		maxHistoryRecords:     maxHistoryRecords,
+		maxConflictRetrys:     maxConflictRetrys,
+		conflictRetryUnitTime: conflictRetryUnitTime,
 	}, nil
 }
 
@@ -85,8 +92,14 @@ func (r *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, names
 	return nil, false, nil
 }
 
-func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error {
+func (r *workloadEndpointManager) MarkIPAllocation(ctx context.Context, node, namespace, podName, containerID string) error {
 	logger := logutils.FromContext(ctx)
+
+	allocation := &spiderpoolv1.PodIPAllocation{
+		ContainerID:  containerID,
+		Node:         &node,
+		CreationTime: &metav1.Time{Time: time.Now()},
+	}
 
 	var we spiderpoolv1.WorkloadEndpoint
 	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
@@ -108,9 +121,8 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 
 		controllerutil.AddFinalizer(newWE, constant.SpiderWorkloadEndpointFinalizer)
 		if err := controllerutil.SetOwnerReference(&pod, newWE, r.runtimeMgr.GetScheme()); err != nil {
-			return nil
+			return err
 		}
-
 		if err := r.client.Create(ctx, newWE); err != nil {
 			return err
 		}
@@ -120,38 +132,58 @@ func (r *workloadEndpointManager) UpdateIPAllocation(ctx context.Context, namesp
 		if err := r.client.Status().Update(ctx, newWE); err != nil {
 			return err
 		}
-	} else {
-		if len(allocation.IPs) == 0 {
-			return nil
-		}
+		return nil
+	}
 
-		if we.Status.Current != nil && we.Status.Current.ContainerID == allocation.ContainerID {
-			var merged bool
-			for i, d := range we.Status.Current.IPs {
-				if d.NIC == allocation.IPs[0].NIC {
-					mergeIPDetails(&we.Status.Current.IPs[i], &allocation.IPs[0])
-					mergeIPDetails(&we.Status.History[0].IPs[i], &allocation.IPs[0])
-					merged = true
-					break
-				}
-			}
+	if we.Status.Current != nil && we.Status.Current.ContainerID == containerID {
+		return nil
+	}
 
-			if !merged {
-				we.Status.Current.IPs = append(we.Status.Current.IPs, allocation.IPs...)
-				we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
-			}
-		} else {
-			we.Status.Current = allocation
-			we.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, we.Status.History...)
-			if len(we.Status.History) > r.maxHistoryRecords {
-				logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", r.maxHistoryRecords)
-				we.Status.History = we.Status.History[:r.maxHistoryRecords]
-			}
-		}
+	we.Status.Current = allocation
+	we.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, we.Status.History...)
+	if len(we.Status.History) > r.maxHistoryRecords {
+		logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", r.maxHistoryRecords)
+		we.Status.History = we.Status.History[:r.maxHistoryRecords]
+	}
 
-		if err := r.client.Status().Update(ctx, &we); err != nil {
-			return err
+	if err := r.client.Status().Update(ctx, &we); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *workloadEndpointManager) PatchIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error {
+	var we spiderpoolv1.WorkloadEndpoint
+	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
+		return err
+	}
+
+	if we.Status.Current == nil {
+		return errors.New("patch a unmarked worklod endpoint")
+	}
+
+	if we.Status.Current.ContainerID != allocation.ContainerID {
+		return fmt.Errorf("patch a mismarked worklod endpoint with IP allocation: %v", *we.Status.Current)
+	}
+
+	var merged bool
+	for i, d := range we.Status.Current.IPs {
+		if d.NIC == allocation.IPs[0].NIC {
+			mergeIPDetails(&we.Status.Current.IPs[i], &allocation.IPs[0])
+			mergeIPDetails(&we.Status.History[0].IPs[i], &allocation.IPs[0])
+			merged = true
+			break
 		}
+	}
+
+	if !merged {
+		we.Status.Current.IPs = append(we.Status.Current.IPs, allocation.IPs...)
+		we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
+	}
+
+	if err := r.client.Status().Update(ctx, &we); err != nil {
+		return err
 	}
 
 	return nil

@@ -218,11 +218,11 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				// multi nic, ip responses
 				*ipamAddResp.Ips[0].Address = "10.1.0.5/24"
 				*ipamAddResp.Ips[0].Nic = "eth1"
-				*ipamAddResp.Ips[0].Version = 4
+				*ipamAddResp.Ips[0].Version = constant.IPv4
 
 				*ipamAddResp.Ips[1].Address = "1.2.3.30/24"
 				*ipamAddResp.Ips[1].Nic = "eth0"
-				*ipamAddResp.Ips[1].Version = 4
+				*ipamAddResp.Ips[1].Version = constant.IPv4
 
 				return ipamAddResp
 			}, func() *current.Result {
@@ -273,7 +273,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 
 				*ipamAddResp.Ips[0].Address = "10.1.0.6/24"
 				*ipamAddResp.Ips[0].Nic = ifname
-				*ipamAddResp.Ips[0].Version = 4
+				*ipamAddResp.Ips[0].Version = constant.IPv4
 
 				return ipamAddResp
 			}, func() *current.Result {
@@ -316,7 +316,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 
 				*ipamAddResp.Ips[0].Address = "10.1.0.7/24"
 				*ipamAddResp.Ips[0].Nic = ifname
-				*ipamAddResp.Ips[0].Version = 4
+				*ipamAddResp.Ips[0].Version = constant.IPv4
 
 				return ipamAddResp
 			}, func() *current.Result {

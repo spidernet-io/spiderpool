@@ -133,26 +133,27 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				}
 
 			} else {
-				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the poolIP is not belong to WEP current IPs
-				isIPBelongWEPCurrent, err := s.wepMgr.IsIPBelongWEPCurrent(ctx, podYaml.Namespace, podYaml.Name, poolIP)
+				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IP corresponding allocation containerID is different with wep current containerID
+				isCurrentContainerID, err := s.wepMgr.CheckCurrentContainerID(ctx, podYaml.Namespace, podYaml.Name, poolIPAllocation.ContainerID)
 				if nil != err {
-					scanAllLogger.Sugar().Errorf("failed to check IP '%s' belong to wep '%s/%s' current data, error: %v", poolIP, podYaml.Namespace, podYaml.Name, err)
+					scanAllLogger.Sugar().Errorf("failed to check IP '%s' allocation '%+v' containerID whether is same with wep '%s/%s' current containerID or not, error: %v",
+						poolIP, poolIPAllocation, podYaml.Namespace, podYaml.Name, err)
 					continue
 				}
 
-				if !isIPBelongWEPCurrent {
+				if !isCurrentContainerID {
 					// release IP but no need to remove wep finalizer
 					if err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []ippoolmanager.IPAndCID{{
 						IP:          poolIP,
 						ContainerID: poolIPAllocation.ContainerID},
 					}); nil != err {
-						scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation ip is different with wep current ip")).
+						scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation containerID is different with wep current containerID")).
 							Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
 
 						continue
 					}
 
-					scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation ip is different with wep current ip")).
+					scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation containerID is different with wep current containerID")).
 						Sugar().Infof("release ip '%s' successfully!", poolIP)
 				}
 			}
@@ -178,19 +179,19 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 }
 
 // handleTerminatingPod serves for executeScanAll to gc single IP once the given pod is out of time
-func (s *SpiderGC) handleTerminatingPod(ctx context.Context, podYaml *corev1.Pod, stopTime time.Time, poolName, ippoolIP string, poolIPAllocation v1.PoolIPAllocation) error {
+func (s *SpiderGC) handleTerminatingPod(ctx context.Context, podYaml *corev1.Pod, stopTime time.Time, poolName, poolIP string, poolIPAllocation v1.PoolIPAllocation) error {
 	log := logutils.FromContext(ctx)
 
 	// once it's out of time, just go to gc the IP and remove wep finalizer
 	if time.Now().UTC().After(stopTime) {
-		log.Sugar().Infof("begin to release ip '%s' and wep '%s/%s'.", ippoolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+		log.Sugar().Infof("begin to release ip '%s' and wep '%s/%s'", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 
-		err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, poolName, ippoolIP, poolIPAllocation)
+		err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, poolName, poolIP, poolIPAllocation)
 		if nil != err {
 			return err
 		}
 
-		log.Sugar().Infof("release ip '%s' and wep '%s/%s' successfully!", ippoolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+		log.Sugar().Infof("release ip '%s' and wep '%s/%s' successfully!", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 	} else {
 		// otherwise, flush the pod yaml to PodEntry database and let tracePodWorker to solve it if the current controller is elected master.
 		if s.leader.IsElected() {

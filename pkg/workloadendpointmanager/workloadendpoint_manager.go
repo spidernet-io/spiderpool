@@ -33,6 +33,7 @@ type WorkloadEndpointManager interface {
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
+	CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error)
 }
 
 type workloadEndpointManager struct {
@@ -290,7 +291,7 @@ func (r *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, name
 	recordHistoryIPs := func(historyIPs map[string][]ippoolmanager.IPAndCID, poolName, ipAndCIDR *string, podName, podNS, containerID string) {
 		if poolName != nil {
 			if ipAndCIDR == nil {
-				logutils.Logger.Sugar().Errorf("WEP data broken, pod '%s/%s' containerID '%s' used ippool '%s' with no ip")
+				logutils.Logger.Sugar().Errorf("WEP data broken, pod '%s/%s' containerID '%s' used ippool '%s' with no ip", podNS, podName, containerID, *poolName)
 				return
 			}
 
@@ -355,4 +356,23 @@ func (r *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, name
 	}
 
 	return isBelongWEPCurrent, nil
+}
+
+// CheckCurrentContainerID will check whether the current containerID of WorkloadEndpoint is same with the given args or not
+func (r *workloadEndpointManager) CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error) {
+	wep, err := r.Get(ctx, namespace, podName)
+	if nil != err {
+		return false, err
+	}
+
+	// data broken
+	if len(wep.Status.History) == 0 {
+		return false, fmt.Errorf("WEP '%s/%s' data broken, no current data, details: '%+v'", namespace, podName, wep)
+	}
+
+	if wep.Status.Current != nil && wep.Status.Current.ContainerID == containerID {
+		return true, nil
+	}
+
+	return false, nil
 }

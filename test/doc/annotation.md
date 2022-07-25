@@ -9,3 +9,4 @@
 | A00005  | the "ippools" annotation has the higher priority over the "ippool" annotation                                                                     | p1       |       | done   |       |
 | A00006  | the namespace annotation has precedence over global default IPPool                                                                                | p1       | true  | done   |       |
 | A00007  | Spiderpool will successively try to allocate IP in the order of the elements in the IPPool array until the first allocation succeeds or all fail  | p1       | true  | NA     |       |
+| A00008  | Successfully run an annotated multi-container pod                                                                                                 | p2       |       | NA     |       |

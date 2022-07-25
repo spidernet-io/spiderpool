@@ -121,10 +121,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: chart_package_artifact
-          path: charts/
+          path: docs/charts/
 
       - name: Update Chart Yaml
         run: |
+          cd docs
           helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
           mv ./charts/index.yaml ./index.yaml
 

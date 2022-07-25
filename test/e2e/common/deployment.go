@@ -93,3 +93,28 @@ func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deplo
 		time.Sleep(time.Second)
 	}
 }
+
+func CreateDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deployment, ctx context.Context) (pods *corev1.PodList, err error) {
+
+	if frame == nil || deploy == nil {
+		return nil, e2e.ErrWrongInput
+	}
+
+	err = frame.CreateDeployment(deploy)
+	Expect(err).NotTo(HaveOccurred())
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("time out to wait expected replicas: %v ", *deploy.Spec.Replicas)
+		default:
+			podList, err := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+			Expect(err).NotTo(HaveOccurred())
+			if int32(len(podList.Items)) != *deploy.Spec.Replicas {
+				break
+			}
+			return podList, nil
+		}
+		time.Sleep(time.Second)
+	}
+}

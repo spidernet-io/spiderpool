@@ -17,9 +17,8 @@ import (
 func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPConfig {
 	var ipConfigs []*models.IPConfig
 	for _, d := range details {
-		var version int64
 		if d.IPv4 != nil {
-			version = constant.IPv4
+			version := constant.IPv4
 			ipConfigs = append(ipConfigs, &models.IPConfig{
 				Address: d.IPv4,
 				Nic:     &d.NIC,
@@ -30,7 +29,7 @@ func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPC
 		}
 
 		if d.IPv6 != nil {
-			version = constant.IPv6
+			version := constant.IPv6
 			ipConfigs = append(ipConfigs, &models.IPConfig{
 				Address: d.IPv6,
 				Nic:     &d.NIC,

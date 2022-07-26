@@ -125,7 +125,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			GinkgoWriter.Printf("get nodeMap is：%v\n", nodeMap)
 
 			// send cmd to reboot node and check node until ready
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
 			readyok, err := common.RestartNodeUntilReady(frame, nodeMap, time.Second*30, ctx)
 			Eventually(readyok).Should(BeTrue())
@@ -146,6 +146,6 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(errdel).NotTo(HaveOccurred(), "failed to delete Deployment %v/%v \n", podName, namespace)
 
 		},
-		Entry("pod Replicas is 2", Label("R00006"), int32(2)),
+		Entry("pod Replicas is 2", Serial, Label("R00006"), int32(2)),
 	)
 })

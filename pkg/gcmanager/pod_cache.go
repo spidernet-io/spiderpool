@@ -80,7 +80,7 @@ func (p *PodDatabase) ListAllPodEntries() []PodEntry {
 	p.RLock()
 	defer p.RUnlock()
 
-	var podEntryList []PodEntry
+	podEntryList := make([]PodEntry, 0, len(p.pods))
 	for podID := range p.pods {
 		podEntryList = append(podEntryList, p.pods[podID])
 	}

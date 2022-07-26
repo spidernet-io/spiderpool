@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) ([]*ToBeAllocated, error) {

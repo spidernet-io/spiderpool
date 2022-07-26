@@ -12,6 +12,7 @@ ignore: |
   vendor/
   charts/
   test/yamls
+  .licenserc.yaml
 
 rules:
   line-length: disable

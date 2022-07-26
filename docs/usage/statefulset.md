@@ -31,13 +31,19 @@ when the replica number of statefulset is not scaled up or down, all pods could 
 
 ### Enable StatefulSet support
 
-firstly, please ensure you have installed the spiderpool and configure the CNI file, refer [install](./install.md) for detail
+Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer [install](./install.md) for details
 
-Change Spiderpool-agent and Spiderpool-controller with environment `SPIDERPOOL_ENABLED_STATEFULSET=true`
+Check configmap `spiderpool-conf` property `enableStatefulSet` whether is already set to `true` or not.
+
+```shell
+kubectl -n kube-system get configmap spiderpool-conf -o yaml
+```
+
+If you want to set it `true`, just execute `helm upgrade --set configmap.config.enableStatefulSet=true`
 
 ### Create a StatefulSet
 
-install an statefulset example
+install a StatefulSet example
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset-demo.md

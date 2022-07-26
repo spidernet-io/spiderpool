@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
@@ -38,9 +39,11 @@ type ipam struct {
 	weManager     workloadendpointmanager.WorkloadEndpointManager
 	nsManager     namespacemanager.NamespaceManager
 	podManager    podmanager.PodManager
+	stsManager    statefulsetmanager.StatefulSetManager
 }
 
-func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager) (IPAM, error) {
+func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager,
+	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager) (IPAM, error) {
 	if c == nil {
 		return nil, errors.New("IPAM config must be specified")
 	}
@@ -65,6 +68,7 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager
 		weManager:     weManager,
 		nsManager:     nsManager,
 		podManager:    podManager,
+		stsManager:    stsManager,
 	}, nil
 }
 
@@ -81,15 +85,29 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		return nil, fmt.Errorf("%w: %s Pod", constant.ErrNotAllocatablePod, podStatus)
 	}
 
-	we, err := i.weManager.GetEndpointByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
+	sep, err := i.weManager.GetEndpointByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
 		return nil, err
 	}
-	allocation, currently, err := i.weManager.RetriveIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, false, we)
+
+	// StatefulSet
+	if i.ipamConfig.EnabledStatefulSet && podmanager.GetControllerOwnerType(pod) == constant.OwnerStatefulSet {
+		ipamAddResp, err := i.retrieveStsAllocatedIPs(ctx, *addArgs.ContainerID, pod, sep)
+		if nil != err {
+			return nil, fmt.Errorf("failed to retrieve StatefulSet allocated IPs, error: %v", err)
+		}
+
+		if ipamAddResp != nil {
+			return ipamAddResp, nil
+		}
+	}
+
+	addResp := &models.IpamAddResponse{}
+	allocation, currently, err := i.weManager.RetrieveIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, false, sep)
 	if err != nil {
 		return nil, err
 	}
-	addResp := &models.IpamAddResponse{}
+
 	if allocation != nil && currently {
 		logger.Sugar().Infof("Retrieve an existing IP allocation: %+v", allocation.IPs)
 		addResp.Ips, addResp.Routes = convertIPDetailsToIPConfigsAndAllRoutes(allocation.IPs)
@@ -105,7 +123,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	if err != nil {
 		return nil, err
 	}
-	results, we, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, we, pod)
+	results, we, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, sep, pod)
 	resIPs, resRoutes := convertResultsToIPConfigsAndAllRoutes(results)
 	if err != nil {
 		// If there are any other errors that might have been thrown at Allocate
@@ -390,11 +408,29 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to release IP")
 
+	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
+	if nil != err {
+		return err
+	}
+
+	// StatefulSet
+	if i.ipamConfig.EnabledStatefulSet && podmanager.GetControllerOwnerType(pod) == constant.OwnerStatefulSet {
+		isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, podmanager.GetControllerOwnerType(pod))
+		if nil != err {
+			return fmt.Errorf("failed to check whether clean up StatefulSet pod, error: %v", err)
+		}
+
+		if isValidStsPod {
+			logger.Sugar().Infof("no need to release for StatefulSet pod '%s/%s'", pod.Namespace, pod.Name)
+			return nil
+		}
+	}
+
 	we, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	allocation, currently, err := i.weManager.RetriveIPAllocation(ctx, *delArgs.ContainerID, *delArgs.IfName, true, we)
+	allocation, currently, err := i.weManager.RetrieveIPAllocation(ctx, *delArgs.ContainerID, *delArgs.IfName, true, we)
 	if err != nil {
 		return err
 	}
@@ -424,7 +460,7 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 		return nil
 	}
 
-	poolToIPAndCIDs := groupIPDetails(containerID, details)
+	poolToIPAndCIDs := GroupIPDetails(containerID, details)
 	errCh := make(chan error, len(poolToIPAndCIDs))
 	wg := sync.WaitGroup{}
 	wg.Add(len(poolToIPAndCIDs))

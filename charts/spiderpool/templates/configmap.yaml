@@ -18,6 +18,7 @@ data:
     networkMode: {{ .Values.configmap.config.networkMode }}
     enableIPv4: {{ .Values.ipFamily.enableIPv4 }}
     enableIPv6: {{ .Values.ipFamily.enableIPv6 }}
+    enableStatefulSet: {{ .Values.configmap.config.enableStatefulSet }}
     {{- if ( and .Values.ipFamily.enableIPv4 .Values.clusterDefaultPool.installIPv4IPPool ) }}
     clusterDefaultIPv4IPPool: [{{ .Values.clusterDefaultPool.ipv4IPPoolName }}]
     {{- else}}

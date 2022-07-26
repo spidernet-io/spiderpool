@@ -15,12 +15,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 type GarbageCollectionConfig struct {
 	EnableGCIP                bool
 	EnableGCForTerminatingPod bool
+	EnableStatefulSet         bool
 
 	ReleaseIPWorkerNum     int
 	GCIPChannelBuffer      int
@@ -56,11 +58,12 @@ type SpiderGC struct {
 
 	// signal
 	gcSignal         chan struct{}
-	gcIPPoolIPSignal chan gcIPPoolIPIdentify
+	gcIPPoolIPSignal chan *PodEntry
 
 	wepMgr    workloadendpointmanager.WorkloadEndpointManager
 	ippoolMgr ippoolmanager.IPPoolManager
 	podMgr    podmanager.PodManager
+	stsMgr    statefulsetmanager.StatefulSetManager
 
 	leader election.SpiderLeaseElector
 }
@@ -69,6 +72,7 @@ func NewGCManager(ctx context.Context, clientSet *kubernetes.Clientset, config *
 	wepManager workloadendpointmanager.WorkloadEndpointManager,
 	ippoolManager ippoolmanager.IPPoolManager,
 	podManager podmanager.PodManager,
+	stsManager statefulsetmanager.StatefulSetManager,
 	spiderControllerLeader election.SpiderLeaseElector) (GCManager, error) {
 	if clientSet == nil {
 		return nil, fmt.Errorf("k8s ClientSet must be specified")
@@ -102,11 +106,12 @@ func NewGCManager(ctx context.Context, clientSet *kubernetes.Clientset, config *
 		gcConfig:    config,
 
 		gcSignal:         make(chan struct{}, 1),
-		gcIPPoolIPSignal: make(chan gcIPPoolIPIdentify, config.GCIPChannelBuffer),
+		gcIPPoolIPSignal: make(chan *PodEntry, config.GCIPChannelBuffer),
 
 		wepMgr:    wepManager,
 		ippoolMgr: ippoolManager,
 		podMgr:    podManager,
+		stsMgr:    stsManager,
 
 		leader: spiderControllerLeader,
 	}
@@ -132,6 +137,11 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 	for i := 0; i < s.gcConfig.ReleaseIPWorkerNum; i++ {
 		go s.releaseIPPoolIPExecutor(ctx, i)
 	}
+
+	//err = s.registerStatefulSetInformer()
+	//if nil != err {
+	//	return fmt.Errorf("register StatefulSet informer failed '%v'", err)
+	//}
 
 	logger.Info("running IP garbage collection")
 	return nil

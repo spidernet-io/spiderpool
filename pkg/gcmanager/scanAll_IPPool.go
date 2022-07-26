@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 )
@@ -86,6 +87,22 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 			podYaml, err := s.podMgr.GetPodByName(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 			// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
 			if apierrors.IsNotFound(err) {
+				// check StatefulSet pod whether need to clean up its IP and Endpoint or not
+				if s.gcConfig.EnableStatefulSet && poolIPAllocation.OwnerControllerType == constant.OwnerStatefulSet {
+					isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod, poolIPAllocation.OwnerControllerType)
+					if nil != err {
+						scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod '%s/%s' IP '%s' should be cleaned or not, error: %v",
+							poolIPAllocation.Namespace, poolIPAllocation.Pod, poolIP, err)
+						continue
+					}
+
+					if isValidStsPod {
+						scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod '%s/%s'",
+							poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+						continue
+					}
+				}
+
 				err = s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
 				if nil != err {
 					scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation")).Error(err.Error())

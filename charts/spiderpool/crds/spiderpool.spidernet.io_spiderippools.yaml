@@ -264,6 +264,8 @@ spec:
                       type: string
                     node:
                       type: string
+                    ownerControllerType:
+                      type: string
                     pod:
                       type: string
                   required:
@@ -271,6 +273,7 @@ spec:
                   - interface
                   - namespace
                   - node
+                  - ownerControllerType
                   - pod
                   type: object
                 description: PoolIPAllocations is a map of allocated IPs indexed by

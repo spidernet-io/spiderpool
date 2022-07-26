@@ -1,4 +1,4 @@
-name: Auto Licnese Lint
+name: Auto License Lint
 
 on:
   pull_request:

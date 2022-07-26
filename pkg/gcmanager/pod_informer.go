@@ -124,6 +124,6 @@ func (s *SpiderGC) onPodDel(obj interface{}) {
 			logger.Sugar().Errorf("onPodDel: failed to apply Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)
 		}
 	} else {
-		logger.Sugar().Debugf("onPodDel: discard to apply status '%v' PodEntry '%s%s'", pod.Status.Phase, pod.Namespace, pod.Name)
+		logger.Sugar().Debugf("onPodDel: discard to apply status '%v' PodEntry '%s/%s'", pod.Status.Phase, pod.Namespace, pod.Name)
 	}
 }

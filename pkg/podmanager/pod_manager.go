@@ -23,7 +23,6 @@ import (
 type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
 	ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error)
-	GetOwnerType(pod *corev1.Pod) types.OwnerType
 	CheckPodStatus(pod *corev1.Pod) (types.PodStatus, bool)
 	MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error
 	MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error)
@@ -65,28 +64,8 @@ func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (
 	return &podList, nil
 }
 
-func (pm *podManager) GetOwnerType(pod *corev1.Pod) types.OwnerType {
-	owner := metav1.GetControllerOf(pod)
-	if owner == nil {
-		return constant.OwnerNone
-	}
-
-	var ownerType types.OwnerType
-	switch types.OwnerType(owner.Kind) {
-	case constant.OwnerDeployment:
-		ownerType = constant.OwnerDeployment
-	case constant.OwnerStatefuleSet:
-		ownerType = constant.OwnerStatefuleSet
-	case constant.OwnerDaemonSet:
-		ownerType = constant.OwnerDaemonSet
-	default:
-		ownerType = constant.OwnerCRD
-	}
-
-	return ownerType
-}
-
 func (pm *podManager) CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable bool) {
+	// TODO (Icarus9913): no pending phase?
 	if pod.DeletionTimestamp != nil && pod.DeletionGracePeriodSeconds != nil {
 		now := time.Now()
 		deletionTime := pod.DeletionTimestamp.Time

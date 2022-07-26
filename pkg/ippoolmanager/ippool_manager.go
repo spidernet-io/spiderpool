@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -44,6 +45,7 @@ type IPPoolManager interface {
 	AssembleTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error)
 	SetupReconcile(leader election.SpiderLeaseElector) error
 	SetupWebhook() error
+	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
 }
 
 type ipPoolManager struct {
@@ -108,9 +110,7 @@ func (im *ipPoolManager) ListIPPools(ctx context.Context, opts ...client.ListOpt
 }
 
 func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error) {
-
 	// TODO(iiiceoo): STS static ip, check "EnableStatuflsetIP"
-	// ownerType := r.podManager.GetOwnerType(ctx, pod)
 
 	var ipConfig *models.IPConfig
 	var usedIPPool *spiderpoolv1.SpiderIPPool
@@ -130,12 +130,14 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 		if ipPool.Status.AllocatedIPs == nil {
 			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
 		}
+
 		ipPool.Status.AllocatedIPs[allocatedIP.String()] = spiderpoolv1.PoolIPAllocation{
-			ContainerID: containerID,
-			NIC:         nic,
-			Node:        pod.Spec.NodeName,
-			Namespace:   pod.Namespace,
-			Pod:         pod.Name,
+			ContainerID:         containerID,
+			NIC:                 nic,
+			Node:                pod.Spec.NodeName,
+			Namespace:           pod.Namespace,
+			Pod:                 pod.Name,
+			OwnerControllerType: podmanager.GetControllerOwnerType(pod),
 		}
 
 		// TODO(iiiceoo): Remove when Defaulter webhook work
@@ -383,4 +385,43 @@ func (im *ipPoolManager) AssembleTotalIPs(ctx context.Context, ipPool *spiderpoo
 	usableIPs := spiderpoolip.IPsDiffSet(ips, excludeIPs)
 
 	return usableIPs, nil
+}
+
+// UpdateAllocatedIPs serves for StatefulSet pod re-create
+func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error {
+	for i := 0; i <= im.maxConflictRetrys; i++ {
+		pool, err := im.GetIPPoolByName(ctx, oldIPConfig.IPPool)
+		if nil != err {
+			return err
+		}
+
+		// switch CIDR to IP
+		ipAndCIDR := *oldIPConfig.Address
+		singleIP, _, _ := strings.Cut(ipAndCIDR, "/")
+
+		// basically, we just need to update ContainerID and Node.
+		pool.Status.AllocatedIPs[singleIP] = spiderpoolv1.PoolIPAllocation{
+			ContainerID:         containerID,
+			NIC:                 *oldIPConfig.Nic,
+			Node:                pod.Spec.NodeName,
+			Namespace:           pod.Namespace,
+			Pod:                 pod.Name,
+			OwnerControllerType: constant.OwnerStatefulSet,
+		}
+
+		err = im.client.Status().Update(ctx, pool)
+		if nil != err {
+			if !apierrors.IsConflict(err) {
+				return err
+			}
+
+			if i == im.maxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet pod '%s/%s' SpiderIPPool IP '%s'", im.maxConflictRetrys, pod.Namespace, pod.Name, singleIP)
+			}
+
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.conflictRetryUnitTime)
+			continue
+		}
+	}
+	return nil
 }

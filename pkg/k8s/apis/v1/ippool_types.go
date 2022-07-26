@@ -90,6 +90,11 @@ type PoolIPAllocation struct {
 
 	// +kubebuilder:validation:Required
 	Pod string `json:"pod"`
+
+	// TODO
+
+	// +kubebuilder:validation:Required
+	OwnerControllerType string `json:"ownerControllerType"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderippools",scope="Cluster",shortName={sp},singular="spiderippool"

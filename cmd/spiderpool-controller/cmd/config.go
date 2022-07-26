@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.uber.org/atomic"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -102,6 +104,9 @@ type Config struct {
 	LeaseRenewDeadline int
 	LeaseRetryPeriod   int
 	LeaseRetryGap      int
+
+	// configmap
+	EnableStatefulSet bool `yaml:"enableStatefulSet"`
 }
 
 type ControllerContext struct {
@@ -124,6 +129,7 @@ type ControllerContext struct {
 	IPPoolManager ippoolmanager.IPPoolManager
 	PodManager    podmanager.PodManager
 	GCManager     gcmanager.GCManager
+	StsManager    statefulsetmanager.StatefulSetManager
 	Leader        election.SpiderLeaseElector
 
 	// handler
@@ -187,4 +193,19 @@ func ParseConfiguration() error {
 func (cc *ControllerContext) Verify() {
 	// TODO(Icarus9913)
 	// verify existence and availability for TlsServerCertPath , TlsServerKeyPath , TlsCaPath
+}
+
+// LoadConfigmap reads configmap data from cli flag config-path
+func (cc *ControllerContext) LoadConfigmap() error {
+	configmapBytes, err := os.ReadFile(cc.Cfg.ConfigPath)
+	if nil != err {
+		return fmt.Errorf("failed to read configmap file, error: %v", err)
+	}
+
+	err = yaml.Unmarshal(configmapBytes, &cc.Cfg)
+	if nil != err {
+		return fmt.Errorf("failed to parse configmap, error: %v", err)
+	}
+
+	return nil
 }

@@ -284,7 +284,7 @@ jobs:
         with:
           name: dualstack-debuglog.txt
           path: test/e2edebugLog.txt
-          retention-days: 1
+          retention-days: 30
 
       - name: Upload e2e report For Dual-stack
         if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
@@ -292,7 +292,7 @@ jobs:
         with:
           name: dualstack-e2ereport.json
           path: e2ereport.json
-          retention-days: 1
+          retention-days: 14
 
       - name: Show e2e Result For Dual-stack
         if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
@@ -376,7 +376,7 @@ jobs:
         with:
           name: ipv4Only-debuglog.txt
           path: test/e2edebugLog.txt
-          retention-days: 1
+          retention-days: 30
 
       - name: Upload e2e report For ipv4-only
         if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
@@ -384,7 +384,7 @@ jobs:
         with:
           name: ipv4Only-e2ereport.json
           path: e2ereport.json
-          retention-days: 1
+          retention-days: 14
 
       - name: Show e2e Result For ipv4-only
         if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
@@ -445,7 +445,7 @@ jobs:
         with:
           name: ipv6Only-debuglog.txt
           path: test/e2edebugLog.txt
-          retention-days: 1
+          retention-days: 30
 
       - name: Upload e2e report For ipv6-only
         if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
@@ -453,7 +453,7 @@ jobs:
         with:
           name: ipv6Only-e2ereport.json
           path: e2ereport.json
-          retention-days: 1
+          retention-days: 14
 
       - name: Show e2e Result For ipv6-only
         if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}

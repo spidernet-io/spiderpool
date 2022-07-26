@@ -302,7 +302,7 @@ jobs:
         with:
           name: dualstack-debuglog.txt
           path: test/e2edebugLog.txt
-          retention-days: 1
+          retention-days: 7
 
       - name: Upload e2e report For Dual-stack
         if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
@@ -394,7 +394,7 @@ jobs:
         with:
           name: ipv4Only-debuglog.txt
           path: test/e2edebugLog.txt
-          retention-days: 1
+          retention-days: 7
 
       - name: Upload e2e report For ipv4-only
         if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
@@ -463,7 +463,7 @@ jobs:
         with:
           name: ipv6Only-debuglog.txt
           path: test/e2edebugLog.txt
-          retention-days: 1
+          retention-days: 7
 
       - name: Upload e2e report For ipv6-only
         if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}

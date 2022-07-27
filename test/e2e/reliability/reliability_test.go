@@ -113,7 +113,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			GinkgoWriter.Printf("default ip4 ippool name is %v\n default ip6 ippool name is %v\n,", defaultv4, defaultv6)
 			allipRecord, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlist)
-			Eventually(allipRecord).Should(BeTrue())
+			Expect(allipRecord).Should(BeTrue())
 			Expect(errpool).ShouldNot(HaveOccurred())
 			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord)
 
@@ -129,7 +129,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
 			readyok, err := common.RestartNodeUntilReady(frame, nodeMap, time.Minute, ctx)
-			Eventually(readyok).Should(BeTrue(), "timeout to wait node ready\n")
+			Expect(readyok).Should(BeTrue(), "timeout to wait node ready\n")
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// check pod ready and ip assign ok
@@ -138,7 +138,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 			// after reboot node check ip exists in ipppool
 			allipRecord2, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlistready)
-			Eventually(allipRecord2).Should(BeTrue())
+			Expect(allipRecord2).Should(BeTrue())
 			Expect(errpool).ShouldNot(HaveOccurred())
 			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord2)
 

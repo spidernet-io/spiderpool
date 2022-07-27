@@ -91,8 +91,9 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Second*90),
 		Entry("finally succeed to run a pod during the spiderpool-agent is restarting",
 			Label("R00001"), "spiderpool-agent", map[string]string{"app.kubernetes.io/component": "spiderpoolagent"}, time.Second*90),
+		// Pending for issue https://github.com/spidernet-io/spiderpool/issues/482
 		Entry("finally succeed to run a pod during the spiderpool-controller is restarting",
-			Label("R00004"), "spiderpool-controller", map[string]string{"app.kubernetes.io/component": "spiderpoolcontroller"}, time.Second*90),
+			Label("R00004"), Pending, "spiderpool-controller", map[string]string{"app.kubernetes.io/component": "spiderpoolcontroller"}, time.Second*90),
 	)
 
 	DescribeTable("check ip assign after reboot node",
@@ -141,7 +142,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(errpool).ShouldNot(HaveOccurred())
 			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord2)
 
-			//delete Deployment
+			// delete Deployment
 			errdel := frame.DeleteDeployment(podName, namespace)
 			Expect(errdel).NotTo(HaveOccurred(), "failed to delete Deployment %v/%v \n", podName, namespace)
 

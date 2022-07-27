@@ -1,5 +1,6 @@
-# validate any chart changes under charts directory
 name: Auto Chart Lint
+
+# validate any chart changes under charts directory
 
 env:
   HELM_VERSION: v3.8.1

@@ -1,9 +1,9 @@
+name: Call Release Charts
+
 # must set branch 'github_pages' as github page
 # this workflow will create the tgz from "/charts/*" of branch main,
 # and deploy to "/charts" of branch "github_pages"
 # and on branch "github_pages", update '/index.yaml' for '/charts/*.tgz'
-
-name: Call Release Charts
 
 env:
   HELM_VERSION: v3.8.1

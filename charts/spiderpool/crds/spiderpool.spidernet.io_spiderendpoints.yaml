@@ -95,7 +95,8 @@ spec:
                         ipv6Pool:
                           type: string
                         vlan:
-                          format: int32
+                          default: 0
+                          format: int64
                           maximum: 4095
                           minimum: 0
                           type: integer
@@ -136,7 +137,8 @@ spec:
                           ipv6Pool:
                             type: string
                           vlan:
-                            format: int32
+                            default: 0
+                            format: int64
                             maximum: 4095
                             minimum: 0
                             type: integer

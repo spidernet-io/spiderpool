@@ -221,35 +221,35 @@ func initAgentServiceManagers(ctx context.Context) {
 	retrys := agentContext.Cfg.UpdateCRMaxRetrys
 	unitTime := time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	historySize := agentContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(agentContext.CRDManager.GetClient(), agentContext.CRDManager, historySize, retrys, unitTime)
+	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(agentContext.CRDManager, historySize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.WEManager = weManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.RIPManager = rIPManager
 
 	logger.Debug("Begin to initialize Node Manager")
-	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager.GetClient(), agentContext.CRDManager)
+	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace Manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(agentContext.CRDManager.GetClient(), agentContext.CRDManager)
+	nsManager, err := namespacemanager.NewNamespaceManager(agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(agentContext.CRDManager.GetClient(), agentContext.CRDManager, retrys, unitTime)
+	podManager, err := podmanager.NewPodManager(agentContext.CRDManager, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -257,7 +257,7 @@ func initAgentServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize IPPool Manager")
 	poolSize := agentContext.Cfg.IPPoolMaxAllocatedIPs
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(agentContext.CRDManager.GetClient(), agentContext.RIPManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, poolSize, retrys, unitTime)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(agentContext.CRDManager, agentContext.RIPManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, poolSize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

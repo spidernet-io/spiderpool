@@ -36,10 +36,7 @@ type podManager struct {
 	conflictRetryUnitTime time.Duration
 }
 
-func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (PodManager, error) {
-	if c == nil {
-		return nil, errors.New("k8s client must be specified")
-	}
+func NewPodManager(mgr ctrl.Manager, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (PodManager, error) {
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}
@@ -52,7 +49,7 @@ func NewPodManager(c client.Client, mgr ctrl.Manager, maxConflictRetrys int, con
 	}
 
 	return &podManager{
-		client:                c,
+		client:                mgr.GetClient(),
 		runtimeMgr:            mgr,
 		maxConflictRetrys:     maxConflictRetrys,
 		conflictRetryUnitTime: conflictRetryUnitTime,

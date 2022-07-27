@@ -9,19 +9,19 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
-	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ip"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/go-openapi/strfmt"
 	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 var (
@@ -125,7 +125,11 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	// assemble result with ipam response.
-	result := assembleResult(conf.CNIVersion, args.IfName, ipamResponse)
+	result, err := assembleResult(conf.CNIVersion, args.IfName, ipamResponse)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
 
 	logger.Sugar().Infof("IPAM assigned successfully: %s", result.IPs)
 
@@ -133,7 +137,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 }
 
 // assembleResult combines the cni result with spiderpool agent response.
-func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamIPOK) *current.Result {
+func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamIPOK) (*current.Result, error) {
 	// IPAM Plugin Result
 	result := &current.Result{
 		CNIVersion: cniVersion,
@@ -177,6 +181,11 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 	for _, ipconfig := range ipamResponse.Payload.Ips {
 		// filter IPAM multi-Interfaces
 		if *ipconfig.Nic == IfName {
+			address, err := spiderpoolip.ParseIP(*ipconfig.Version, *ipconfig.Address)
+			if err != nil {
+				return nil, err
+			}
+			gateway := net.ParseIP(ipconfig.Gateway)
 			nic := &current.Interface{Name: *ipconfig.Nic}
 			netInterfaces = append(netInterfaces, nic)
 
@@ -184,19 +193,17 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 			if *ipconfig.Version == constant.IPv4 {
 				var v4ip current.IPConfig
 				nicIndex := tmpIndex
-
 				v4ip.Interface = &nicIndex
-				v4ip.Address = *ip.ParseIP(*ipconfig.Address)
-				v4ip.Gateway = net.ParseIP(ipconfig.Gateway)
+				v4ip.Address = *address
+				v4ip.Gateway = gateway
 
 				result.IPs = append(result.IPs, &v4ip)
 			} else {
 				var v6ip current.IPConfig
 				nicIndex := tmpIndex
-
 				v6ip.Interface = &nicIndex
-				v6ip.Address = *ip.ParseIP(*ipconfig.Address)
-				v6ip.Gateway = net.ParseIP(ipconfig.Gateway)
+				v6ip.Address = *address
+				v6ip.Gateway = gateway
 
 				result.IPs = append(result.IPs, &v6ip)
 			}
@@ -205,5 +212,5 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 	}
 	result.Interfaces = netInterfaces
 
-	return result
+	return result, nil
 }

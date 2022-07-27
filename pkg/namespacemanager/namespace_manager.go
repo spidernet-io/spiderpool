@@ -28,10 +28,7 @@ type namespaceManager struct {
 	runtimeMgr ctrl.Manager
 }
 
-func NewNamespaceManager(c client.Client, mgr ctrl.Manager) (NamespaceManager, error) {
-	if c == nil {
-		return nil, errors.New("k8s client must be specified")
-	}
+func NewNamespaceManager(mgr ctrl.Manager) (NamespaceManager, error) {
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}
@@ -44,7 +41,7 @@ func NewNamespaceManager(c client.Client, mgr ctrl.Manager) (NamespaceManager, e
 	}
 
 	return &namespaceManager{
-		client:     c,
+		client:     mgr.GetClient(),
 		runtimeMgr: mgr,
 	}, nil
 }

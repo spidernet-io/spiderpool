@@ -5,7 +5,7 @@ kind: IPPool
 metadata:
   name: {{ .Values.clusterDefaultPool.ipv4IPPoolName | trunc 63 | trimSuffix "-" }}
 spec:
-  ipVersion: IPv4
+  ipVersion: 4
   subnet: {{ .Values.clusterDefaultPool.ipv4Subnet }}
   disable: false
   ips:
@@ -22,7 +22,7 @@ kind: IPPool
 metadata:
   name: {{ .Values.clusterDefaultPool.ipv6IPPoolName | trunc 63 | trimSuffix "-" }}
 spec:
-  ipVersion: IPv6
+  ipVersion: 6
   subnet: {{ .Values.clusterDefaultPool.ipv6Subnet }}
   disable: false
   ips:

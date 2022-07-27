@@ -1,4 +1,4 @@
-name: Auto Release Version
+name: Auto Version Release
 
 # it is trigger by tag event:
 # 1 build the release image, push images to ghcr.io, and build image like: ghcr.io/weizhoublue/github-action-test/controllerimage:v1.0.0

@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.8">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.0rc1">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.1d29e8d0.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.476df7d4.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -36,7 +36,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -696,6 +696,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../metrics/" class="md-nav__link">
         Metric
       </a>
@@ -829,18 +843,13 @@
 
 <h1 id="quick-start">Quick Start</h1>
 <h2 id="install-spiderpool">install spiderpool</h2>
-<pre><code class="language-shell">tools/cert/generateCert.sh &quot;/tmp/tls&quot;
-CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
-SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
-SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
-helm install spiderpool spidernet/spiderpool --namespace kube-system \
-  --set spiderpoolController.tls.server.cert=&quot;${SERVER_CERT}&quot; \
-  --set spiderpoolController.tls.server.key=&quot;${SERVER_KEY}&quot; \
-  --set spiderpoolController.tls.server.ca=&quot;${CA}&quot; 
-</code></pre>
+<p>Refer to <a href="../install/">installation</a></p>
 <h2 id="create-ippool">create ippool</h2>
 <h2 id="create-application">create application</h2>
 <h2 id="get-metrics">get metrics</h2>
+
+
+
 
               
             </article>
@@ -877,13 +886,13 @@ helm install spiderpool spidernet/spiderpool --namespace kube-system \
       
       
         
-        <a href="../metrics/" class="md-footer__link md-footer__link--next" aria-label="Next: Metric" rel="next">
+        <a href="../install/" class="md-footer__link md-footer__link--next" aria-label="Next: Install" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Metric
+              Install
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -913,10 +922,11 @@ helm install spiderpool spidernet/spiderpool --namespace kube-system \
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
+    
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.b97dbffb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.0238f547.min.js"></script>
+      <script src="../../assets/javascripts/bundle.0bc13b87.min.js"></script>
       
     
   </body>

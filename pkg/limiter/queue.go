@@ -198,27 +198,28 @@ func (q *queue) checkin() (shuttingDown bool) {
 		i--
 	}
 
-	addOrFinish := make(chan empty)
 	if len(q.elements) != 0 {
-		go func(e *e) {
+		finish := make(chan empty)
+		waitForFirstQueuer := func(e *e) {
 			select {
 			case <-time.After(time.Until(e.finalCheckinTime)):
 				q.cond.Broadcast()
-			case <-addOrFinish:
+			case <-finish:
 			}
-		}(q.elements[0])
-	}
+		}
+		go waitForFirstQueuer(q.elements[0])
 
-	// Waiting here avoids too frequent polling by conductor when there are
-	// queuers in queue continuously. Here may be awakened by the following
-	// cases:
-	// 1. A new queuer added.
-	// 2. An ongoing work has just been completed.
-	// 3. When the queuer that will timeout 'earliestly' timeout. If 1 or 2
-	// occurs earlier than 3, then 3 does nothing.
-	// 4. Queue shutdown.
-	q.cond.Wait()
-	close(addOrFinish)
+		// Waiting here for avoiding next unnecessary round of polling q.elements .
+		// following cases could make it move on:
+		// 1. A new queuer call queueUp()
+		// 2. ReleaseTicket() when ticket revert
+		// 3. waitForFirstQueuer() found the earliest queuer who does not want waiting anymore
+		// 4. shutdown() informs to close the queue
+		q.cond.Wait()
+
+		// inform waitForFirstQueuer to exist if it is still running
+		close(finish)
+	}
 
 	return false
 }

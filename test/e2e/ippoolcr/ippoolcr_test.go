@@ -26,6 +26,9 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		err := frame.CreateNamespace(nsName)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
+		GinkgoWriter.Printf("check service account %v/default ready\n", nsName)
+		Expect(frame.CheckServiceAccountReady("default", nsName, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", nsName)
+
 		// clean test env
 		DeferCleanup(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", nsName)

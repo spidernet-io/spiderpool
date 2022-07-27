@@ -26,6 +26,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		GinkgoWriter.Printf("create namespace %v \n", nsName)
 		err := frame.CreateNamespace(nsName)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
+		GinkgoWriter.Printf("check service account %v/default ready\n", nsName)
+		Expect(frame.CheckServiceAccountReady("default", nsName, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", nsName)
 		// init test name
 		podName = "pod" + tools.RandomName()
 		// clean test env

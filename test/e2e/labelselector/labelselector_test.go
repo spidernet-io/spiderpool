@@ -41,6 +41,9 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				GinkgoWriter.Printf("create namespace %v \n", namespace)
 				err := frame.CreateNamespace(namespace)
 				Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
+
+				GinkgoWriter.Printf("check service account %v/default ready\n", namespace)
+				Expect(frame.CheckServiceAccountReady("default", namespace, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", namespace)
 			}
 
 			// init test pod name

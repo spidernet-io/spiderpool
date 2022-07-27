@@ -30,6 +30,10 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 		GinkgoWriter.Printf("Try to create namespace %v \n", nsName)
 		err := frame.CreateNamespace(nsName)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace %v", nsName)
+
+		GinkgoWriter.Printf("check service account %v/default ready\n", nsName)
+		Expect(frame.CheckServiceAccountReady("default", nsName, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", nsName)
+
 		// Init test Deployment/Pod name
 		DeployName = "sr-pod" + tools.RandomName()
 

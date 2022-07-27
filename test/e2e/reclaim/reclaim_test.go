@@ -29,6 +29,9 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		err = frame.CreateNamespace(namespace)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 
+		GinkgoWriter.Printf("check service account %v/default ready\n", namespace)
+		Expect(frame.CheckServiceAccountReady("default", namespace, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", namespace)
+
 		// pod name
 		podName = "pod" + tools.RandomName()
 
@@ -92,6 +95,9 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			GinkgoWriter.Printf("create namespace1 %v \n", namespace1)
 			err = frame.CreateNamespace(namespace1)
 			Expect(err).NotTo(HaveOccurred(), "failed to create namespace1 %v", namespace1)
+
+			GinkgoWriter.Printf("check service account %v/default ready\n", namespace)
+			Expect(frame.CheckServiceAccountReady("default", namespace, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", namespace)
 
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("delete namespace1 %v \n", namespace1)

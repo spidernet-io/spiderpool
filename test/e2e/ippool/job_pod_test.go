@@ -25,6 +25,9 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 		err := frame.CreateNamespace(nsName)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
+		GinkgoWriter.Printf("check service account %v/default ready\n", nsName)
+		Expect(frame.CheckServiceAccountReady("default", nsName, time.Minute)).To(Succeed(), "timeout to wait service account %v/default ready\n", nsName)
+
 		// init Job name
 		jdName = "jd" + tools.RandomName()
 

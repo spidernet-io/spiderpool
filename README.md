@@ -63,9 +63,9 @@ The Spiderpool provides a large number of different features as follows.
 
 * An application could specify multiple backup ippool resources, in case that IP addresses in an ippool are out of use. Therefore, you neither need to scale up the IP resources in a fixed ippool, nor need to modify the application yaml to change a ippool.
 
-* Support for assigning fixed IP for applications. No need to hard code the IP list in a pod yaml, which is not easy to modify. With Spiderpool, you only need to set the selector field of ippool and scale up or down the ippool.
+* Support to bind range of IP address only to an applications. No need to hard code an IP list in deployment yaml, which is not easy to modify. With Spiderpool, you only need to set the selector field of ippool and scale up or down the IP resource of an ippool dynamically.
 
-* Support for assigning IP addresses in sequence for statefulset pods.
+* Support Statefulset pod who will be always assigned same IP addresses.
 
 * Different pods in a single controller could get IP addresses from
   different subnets for an application deployed in different subnets or zones.
@@ -74,7 +74,7 @@ The Spiderpool provides a large number of different features as follows.
 
 * Collect resources in real time, especially for solving IP leakage or slow collection, which may make new pod fail to assign IP addresses.
 
-* Support ranges of CNI plugin and support third-party IPAM plugins. Especially, the Spiderpool could help much for CNI like [spiderflat](https://github.com/spidernet-io/spiderflat),
+* Support ranges of CNI plugin who supports third-party IPAM plugins. Especially, the Spiderpool could help much for CNI like [spiderflat](https://github.com/spidernet-io/spiderflat),
   [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
@@ -85,9 +85,11 @@ The Spiderpool provides a large number of different features as follows.
 
 * Have a good performance for assigning and collecting IP.
 
-* Support to reserve IP globally and in an ippool range even if the IP addresses are not assigned and included in an ippool.
+* Support to reserve IP who will not be assigned to any pod.
 
-* Included metrics for look into IP usage and issues.
+* Included metrics for looking into IP usage and issues.
+
+* By CidrManager, it could automatically scale up and down the IP address of the ippool, to distribute IP resource more reasonable between ippool.
 
 * Support for both ARM64 and ARM64.
 

@@ -4,150 +4,110 @@
 package ipam
 
 import (
+	"context"
 	"encoding/json"
-	"strings"
+	"fmt"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func convertToIPConfigs(details []spiderpoolv1.IPAllocationDetail) []*models.IPConfig {
-	var ipConfigs []*models.IPConfig
-	for _, d := range details {
-		nic := d.NIC
-		if d.IPv4 != nil {
-			version := constant.IPv4
-			ipConfigs = append(ipConfigs, &models.IPConfig{
-				Address: d.IPv4,
-				Nic:     &nic,
-				Version: &version,
-				Vlan:    *d.Vlan,
-				Gateway: *d.IPv4Gateway,
-			})
-		}
+func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) ([]*ToBeAllocated, error) {
+	// TODO(iiiceoo): Check Pod annotations
+	logger := logutils.FromContext(ctx)
+	logger.Sugar().Infof("Use IP pools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
-		if d.IPv6 != nil {
-			version := constant.IPv6
-			ipConfigs = append(ipConfigs, &models.IPConfig{
-				Address: d.IPv6,
-				Nic:     &nic,
-				Version: &version,
-				Vlan:    *d.Vlan,
-				Gateway: *d.IPv6Gateway,
-			})
+	var annoPodIPPools types.AnnoPodIPPoolsValue
+	err := json.Unmarshal([]byte(anno), &annoPodIPPools)
+	if err != nil {
+		return nil, err
+	}
+
+	var validIface bool
+	for _, v := range annoPodIPPools {
+		if v.NIC == nic {
+			validIface = true
+			break
 		}
 	}
 
-	return ipConfigs
-}
+	if !validIface {
+		return nil, fmt.Errorf("the interface of the pod annotation does not contain that requested by runtime: %w", constant.ErrWrongInput)
+	}
 
-func convertToIPDetails(ipConfigs []*models.IPConfig) []spiderpoolv1.IPAllocationDetail {
-	nicToDetail := map[string]*spiderpoolv1.IPAllocationDetail{}
-	for _, c := range ipConfigs {
-		if d, ok := nicToDetail[*c.Nic]; ok {
-			if *c.Version == constant.IPv4 {
-				d.IPv4 = c.Address
-				d.IPv4Pool = &c.IPPool
-				d.IPv4Gateway = &c.Gateway
-			} else {
-				d.IPv6 = c.Address
-				d.IPv6Pool = &c.IPPool
-				d.IPv6Gateway = &c.Gateway
-			}
-			continue
-		}
-
-		if *c.Version == constant.IPv4 {
-			nicToDetail[*c.Nic] = &spiderpoolv1.IPAllocationDetail{
-				NIC:         *c.Nic,
-				IPv4:        c.Address,
-				IPv4Pool:    &c.IPPool,
-				Vlan:        &c.Vlan,
-				IPv4Gateway: &c.Gateway,
-			}
+	var tt []*ToBeAllocated
+	for _, v := range annoPodIPPools {
+		var routeType types.DefaultRouteType
+		if v.DefaultRoute {
+			routeType = constant.MultiNICDefaultRoute
 		} else {
-			nicToDetail[*c.Nic] = &spiderpoolv1.IPAllocationDetail{
-				NIC:         *c.Nic,
-				IPv6:        c.Address,
-				IPv6Pool:    &c.IPPool,
-				Vlan:        &c.Vlan,
-				IPv6Gateway: &c.Gateway,
-			}
+			routeType = constant.MultiNICNotDefaultRoute
 		}
+
+		tt = append(tt, &ToBeAllocated{
+			NIC:              v.NIC,
+			DefaultRouteType: routeType,
+			V4PoolCandidates: v.IPv4Pools,
+			V6PoolCandidates: v.IPv6Pools,
+		})
 	}
 
-	details := []spiderpoolv1.IPAllocationDetail{}
-	for _, d := range nicToDetail {
-		details = append(details, *d)
-	}
-
-	return details
+	return tt, nil
 }
 
-func groupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetail) map[string][]ippoolmanager.IPAndCID {
-	poolToIPAndCIDs := map[string][]ippoolmanager.IPAndCID{}
-	for _, d := range details {
-		if d.IPv4 != nil {
-			poolToIPAndCIDs[*d.IPv4Pool] = append(poolToIPAndCIDs[*d.IPv4Pool], ippoolmanager.IPAndCID{
-				IP:          strings.Split(*d.IPv4, "/")[0],
-				ContainerID: containerID,
-			})
-		}
-		if d.IPv6 != nil {
-			poolToIPAndCIDs[*d.IPv6Pool] = append(poolToIPAndCIDs[*d.IPv6Pool], ippoolmanager.IPAndCID{
-				IP:          strings.Split(*d.IPv6, "/")[0],
-				ContainerID: containerID,
-			})
-		}
+func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string) (*ToBeAllocated, error) {
+	// TODO(iiiceoo): Check Pod annotations
+	logger := logutils.FromContext(ctx)
+	logger.Sugar().Infof("Use IP pools from Pod annotation '%s'", constant.AnnoPodIPPool)
+
+	var annoPodIPPool types.AnnoPodIPPoolValue
+	if err := json.Unmarshal([]byte(anno), &annoPodIPPool); err != nil {
+		return nil, err
 	}
 
-	return poolToIPAndCIDs
+	if annoPodIPPool.NIC != nil && *annoPodIPPool.NIC != nic {
+		return nil, fmt.Errorf("the interface of pod annotation is different from that requested by runtime: %w", constant.ErrWrongInput)
+	}
+
+	return &ToBeAllocated{
+		NIC:              nic,
+		DefaultRouteType: constant.SingleNICDefaultRoute,
+		V4PoolCandidates: annoPodIPPool.IPv4Pools,
+		V6PoolCandidates: annoPodIPPool.IPv6Pools,
+	}, nil
 }
 
-func genIPAssignmentAnnotation(ipConfigs []*models.IPConfig) (map[string]string, error) {
-	nicToValue := map[string]*types.AnnoPodAssignedEthxValue{}
-	for _, c := range ipConfigs {
-		if v, ok := nicToValue[*c.Nic]; ok {
-			if *c.Version == constant.IPv4 {
-				v.IPv4 = *c.Address
-				v.IPv4Pool = c.IPPool
-				v.Vlan = int(c.Vlan)
-			} else {
-				v.IPv6 = *c.Address
-				v.IPv6Pool = c.IPPool
-				v.Vlan = int(c.Vlan)
-			}
-			continue
-		}
+func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string) *ToBeAllocated {
+	logger := logutils.FromContext(ctx)
 
-		if *c.Version == constant.IPv4 {
-			nicToValue[*c.Nic] = &types.AnnoPodAssignedEthxValue{
-				NIC:      *c.Nic,
-				IPv4:     *c.Address,
-				IPv4Pool: c.IPPool,
-				Vlan:     int(c.Vlan),
-			}
-		} else {
-			nicToValue[*c.Nic] = &types.AnnoPodAssignedEthxValue{
-				NIC:      *c.Nic,
-				IPv6:     *c.Address,
-				IPv6Pool: c.IPPool,
-				Vlan:     int(c.Vlan),
-			}
+	var t *ToBeAllocated
+	if len(netConfV4Pool) != 0 || len(netConfV6Pool) != 0 {
+		logger.Info("Use IP pools from CNI network configuration")
+		t = &ToBeAllocated{
+			NIC:              nic,
+			DefaultRouteType: constant.SingleNICDefaultRoute,
+			V4PoolCandidates: netConfV4Pool,
+			V6PoolCandidates: netConfV6Pool,
 		}
 	}
 
-	podAnnotations := map[string]string{}
-	for nic, anno := range nicToValue {
-		b, err := json.Marshal(anno)
-		if err != nil {
-			return nil, err
-		}
-		podAnnotations[constant.AnnotationPre+"/assigned-"+nic] = string(b)
+	return t
+}
+
+func getCustomRoutes(ctx context.Context, pod *corev1.Pod) ([]*models.Route, error) {
+	anno, ok := pod.Annotations[constant.AnnoPodRoutes]
+	if !ok {
+		return nil, nil
 	}
 
-	return podAnnotations, nil
+	var annoPodRoutes types.AnnoPodRoutesValue
+	err := json.Unmarshal([]byte(anno), &annoPodRoutes)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertAnnoPodRoutesToOAIRoutes(annoPodRoutes), nil
 }

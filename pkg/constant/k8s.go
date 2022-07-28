@@ -59,14 +59,20 @@ const (
 )
 
 const (
+	SingleNICDefaultRoute types.DefaultRouteType = iota
+	MultiNICDefaultRoute
+	MultiNICNotDefaultRoute
+)
+
+const (
 	SpiderpoolAgent        = "spiderpool-agent"
 	SpiderpoolController   = "spiderpool-controller"
 	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"
 	SpiderFinalizer        = SpiderpoolAPIGroup
 	SpiderpoolAPIVersionV1 = "v1"
-	SpiderIPPoolKind       = "SpiderIPPool"
-	SpiderEndpointKind     = "SpiderEndpoint"
-	SpiderReservedIPKind   = "SpiderReservedIP"
+	SpiderIPPoolKind       = "IPPool"
+	SpiderEndpointKind     = "WorkloadEndpoint"
+	SpiderReservedIPKind   = "ReservedIP"
 )
 
 const (

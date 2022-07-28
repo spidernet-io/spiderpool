@@ -14,8 +14,6 @@ type ReservedIPSpec struct {
 	// +kubebuilder:validation:Optional
 	IPVersion *int64 `json:"ipVersion,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Required
 	IPs []string `json:"ips"`
 }

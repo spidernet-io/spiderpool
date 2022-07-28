@@ -209,12 +209,13 @@ func (q *queue) checkin() (shuttingDown bool) {
 		}
 		go waitForFirstQueuer(q.elements[0])
 
-		// Waiting here for avoiding next unnecessary round of polling q.elements .
+		// Waiting here for avoiding next unnecessary round of polling q.elements
 		// following cases could make it move on:
-		// 1. A new queuer call queueUp()
-		// 2. ReleaseTicket() when ticket revert
-		// 3. waitForFirstQueuer() found the earliest queuer who does not want waiting anymore
-		// 4. shutdown() informs to close the queue
+		// 1. A new queuer call queueUp().
+		// 2. ReleaseTicket() when ticket revert.
+		// 3. waitForFirstQueuer() found the earliest queuer who does not want
+		// waiting anymore.
+		// 4. shutdown() informs to close the queue.
 		q.cond.Wait()
 
 		// inform waitForFirstQueuer to exist if it is still running

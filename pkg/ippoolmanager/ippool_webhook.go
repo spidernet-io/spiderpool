@@ -104,8 +104,8 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", newObj.GetObjectKind().GroupVersionKind())
 	}
 	logger := webhookLogger.Named("Validating").With(
-		zap.String("IPPoolNamespace", oldIPPool.Namespace),
-		zap.String("IPPoolName", oldIPPool.Name),
+		zap.String("IPPoolNamespace", newIPPool.Namespace),
+		zap.String("IPPoolName", newIPPool.Name),
 		zap.String("Operation", "UPDATE"),
 	)
 	logger.Sugar().Debugf("Request old IPPool: %+v", *oldIPPool)

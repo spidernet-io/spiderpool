@@ -13,38 +13,21 @@ type IPPoolSpec struct {
 	// +kubebuilder:validation:Optional
 	IPVersion *int64 `json:"ipVersion,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Required
 	Subnet string `json:"subnet"`
 
-	// TODO
-
 	// +kubebuilder:validation:Required
 	IPs []string `json:"ips"`
-
-	// TODO
 
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
 	Disable *bool `json:"disable,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	ExcludeIPs []string `json:"excludeIPs,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	Gateway *string `json:"gateway,omitempty"`
-
-	// TODO
-
-	// +kubebuilder:validation:Optional
-	Routes []Route `json:"routes,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:default=0
 	// +kubebuilder:validation:Maximum=4095
@@ -52,29 +35,22 @@ type IPPoolSpec struct {
 	// +kubebuilder:validation:Optional
 	Vlan *int64 `json:"vlan,omitempty"`
 
-	// TODO
+	// +kubebuilder:validation:Optional
+	Routes []Route `json:"routes,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	PodSelector *metav1.LabelSelector `json:"podSelector,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	NamesapceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:validation:Optional
 	NodeSelector *metav1.LabelSelector `json:"nodeSelector,omitempty"`
 }
 
 type Route struct {
-	// TODO
-
 	// +kubebuilder:validation:Required
 	Dst string `json:"dst"`
-
-	// TODO
 
 	// +kubebuilder:validation:Required
 	Gw string `json:"gw"`
@@ -82,18 +58,12 @@ type Route struct {
 
 // IPPoolStatus defines the observed state of IPPool
 type IPPoolStatus struct {
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	AllocatedIPs PoolIPAllocations `json:"allocatedIPs,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	TotalIPCount *int64 `json:"totalIPCount,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
@@ -105,27 +75,17 @@ type PoolIPAllocations map[string]PoolIPAllocation
 
 // PoolIPAllocation is an IP already has been allocated
 type PoolIPAllocation struct {
-	// TODO
-
 	// +kubebuilder:validation:Required
 	ContainerID string `json:"containerID"`
-
-	// TODO
 
 	// +kubebuilder:validation:Required
 	NIC string `json:"interface"`
 
-	// TODO
-
 	// +kubebuilder:validation:Required
 	Node string `json:"node"`
 
-	// TODO
-
 	// +kubebuilder:validation:Required
 	Namespace string `json:"namespace"`
-
-	// TODO
 
 	// +kubebuilder:validation:Required
 	Pod string `json:"pod"`

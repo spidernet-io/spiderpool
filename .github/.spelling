@@ -9,6 +9,7 @@ ippool
 ippools
 workloadendpoint
 reservedip
+reservedips
 github
 changelog
 changelogs
@@ -170,3 +171,5 @@ ContainerID
 NodeName
 spiderippool
 containerID
+pre
+redis

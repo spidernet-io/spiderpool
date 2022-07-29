@@ -131,7 +131,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	logger.Sugar().Infof("IPAM assigned successfully: %s", result.IPs)
+	logger.Sugar().Infof("IPAM assigned successfully: %s", *result)
 
 	return types.PrintResult(result, conf.CNIVersion)
 }
@@ -156,21 +156,15 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 	// Result Routes
 	var routes []*types.Route
 	for _, singleRoute := range ipamResponse.Payload.Routes {
-		var route types.Route
-
-		routeDstAddr := net.ParseIP(*singleRoute.Dst)
-		routeDst := net.IPNet{IP: routeDstAddr}
-		if routeDstAddr.To4() == nil {
-			// ipv6 address
-			routeDst.Mask = net.CIDRMask(128, 128)
-		} else {
-			// ipv4 address
-			routeDst.Mask = net.CIDRMask(32, 32)
+		// TODO(iiiceoo): Use pkg ip ParseRoute()
+		_, routeDst, err := net.ParseCIDR(*singleRoute.Dst)
+		if err != nil {
+			return nil, err
 		}
-		route.Dst = routeDst
-		route.GW = net.ParseIP(*singleRoute.Gw)
-
-		routes = append(routes, &route)
+		routes = append(routes, &types.Route{
+			Dst: *routeDst,
+			GW:  net.ParseIP(*singleRoute.Gw),
+		})
 	}
 	result.Routes = routes
 

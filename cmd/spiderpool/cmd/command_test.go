@@ -212,8 +212,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					Routes: []*models.Route{{Dst: new(string), Gw: new(string)}},
 				}
 				// Routes
-				*ipamAddResp.Routes[0].Dst = "15.5.6.8"
-				*ipamAddResp.Routes[0].Gw = "15.5.6.1"
+				*ipamAddResp.Routes[0].Dst = "15.5.6.0/24"
+				*ipamAddResp.Routes[0].Gw = "10.1.0.2"
 
 				// multi nic, ip responses
 				*ipamAddResp.Ips[0].Address = "10.1.0.5/24"
@@ -242,7 +242,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.IPs[0].Gateway = net.ParseIP("1.2.3.1")
 				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("1.2.3.30"), Mask: net.CIDRMask(24, 32)}
 				// Routes
-				expectResult.Routes = []*types.Route{{Dst: net.IPNet{IP: net.ParseIP("15.5.6.8"), Mask: net.CIDRMask(32, 32)}, GW: net.ParseIP("15.5.6.1")}}
+				_, ipNet, _ := net.ParseCIDR("15.5.6.0/24")
+				expectResult.Routes = []*types.Route{{Dst: *ipNet, GW: net.ParseIP("10.1.0.2")}}
 				//Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}}
 				return expectResult

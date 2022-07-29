@@ -213,6 +213,8 @@ func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
 	if target.IPv6Gateway == nil {
 		target.IPv6Gateway = delta.IPv6Gateway
 	}
+
+	target.Routes = append(target.Routes, delta.Routes...)
 }
 
 func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error {

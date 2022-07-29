@@ -9,12 +9,8 @@ import (
 
 // WorkloadEndpointStatus defines the observed state of WorkloadEndpoint
 type WorkloadEndpointStatus struct {
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	Current *PodIPAllocation `json:"current,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:validation:Optional
 	History []PodIPAllocation `json:"history,omitempty"`
@@ -22,22 +18,14 @@ type WorkloadEndpointStatus struct {
 
 // TODO
 type PodIPAllocation struct {
-	// TODO
-
 	// +kubebuilder:validation:Required
 	ContainerID string `json:"containerID"`
-
-	// TODO
 
 	// +kubebuilder:validation:Optional
 	Node *string `json:"node,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	IPs []IPAllocationDetail `json:"ips,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:validation:Optional
 	CreationTime *metav1.Time `json:"creationTime,omitempty"`
@@ -45,32 +33,20 @@ type PodIPAllocation struct {
 
 // TODO
 type IPAllocationDetail struct {
-	// TODO
-
 	// +kubebuilder:validation:Required
 	NIC string `json:"interface"`
-
-	// TODO
 
 	// +kubebuilder:validation:Optional
 	IPv4 *string `json:"ipv4,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	IPv6 *string `json:"ipv6,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:validation:Optional
 	IPv4Pool *string `json:"ipv4Pool,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	IPv6Pool *string `json:"ipv6Pool,omitempty"`
-
-	// TODO
 
 	// +kubebuilder:default=0
 	// +kubebuilder:validation:Maximum=4095
@@ -78,15 +54,14 @@ type IPAllocationDetail struct {
 	// +kubebuilder:validation:Optional
 	Vlan *int64 `json:"vlan,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	IPv4Gateway *string `json:"ipv4Gateway,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	IPv6Gateway *string `json:"ipv6Gateway,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Routes []Route `json:"routes,omitempty"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderendpoints",scope="Namespaced",shortName={se},singular="spiderendpoint"

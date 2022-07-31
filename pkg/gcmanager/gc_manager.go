@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
@@ -49,8 +48,8 @@ type GCManager interface {
 var _ GCManager = &SpiderGC{}
 
 type SpiderGC struct {
-	KClient client.Client
-	PodDB   PodDBer
+	k8ClientSet *kubernetes.Clientset
+	PodDB       PodDBer
 
 	// env configuration
 	gcConfig *GarbageCollectionConfig
@@ -59,30 +58,24 @@ type SpiderGC struct {
 	gcSignal         chan struct{}
 	gcIPPoolIPSignal chan gcIPPoolIPIdentify
 
-	controllerMgr ctrl.Manager
-	wepMgr        workloadendpointmanager.WorkloadEndpointManager
-	ippoolMgr     ippoolmanager.IPPoolManager
-	podMgr        podmanager.PodManager
+	wepMgr    workloadendpointmanager.WorkloadEndpointManager
+	ippoolMgr ippoolmanager.IPPoolManager
+	podMgr    podmanager.PodManager
 
 	leader election.SpiderLeaseElector
 }
 
-func NewGCManager(ctx context.Context, client client.Client, config *GarbageCollectionConfig,
-	crdMgr ctrl.Manager,
+func NewGCManager(ctx context.Context, clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
 	wepManager workloadendpointmanager.WorkloadEndpointManager,
 	ippoolManager ippoolmanager.IPPoolManager,
 	podManager podmanager.PodManager,
 	spiderControllerLeader election.SpiderLeaseElector) (GCManager, error) {
+	if clientSet == nil {
+		return nil, fmt.Errorf("k8s ClientSet must be specified")
+	}
+
 	if config == nil {
 		return nil, fmt.Errorf("gc configuration must be specified")
-	}
-
-	if client == nil {
-		return nil, fmt.Errorf("k8s client must be specified")
-	}
-
-	if crdMgr == nil {
-		return nil, fmt.Errorf("crd manager must be specified")
 	}
 
 	if wepManager == nil {
@@ -104,17 +97,16 @@ func NewGCManager(ctx context.Context, client client.Client, config *GarbageColl
 	logger = logutils.Logger.Named("IP-GarbageCollection")
 
 	spiderGC := &SpiderGC{
-		KClient:  client,
-		PodDB:    NewPodDBer(config.MaxPodEntryDatabaseCap),
-		gcConfig: config,
+		k8ClientSet: clientSet,
+		PodDB:       NewPodDBer(config.MaxPodEntryDatabaseCap),
+		gcConfig:    config,
 
 		gcSignal:         make(chan struct{}, 1),
 		gcIPPoolIPSignal: make(chan gcIPPoolIPIdentify, config.GCIPChannelBuffer),
 
-		controllerMgr: crdMgr,
-		wepMgr:        wepManager,
-		ippoolMgr:     ippoolManager,
-		podMgr:        podManager,
+		wepMgr:    wepManager,
+		ippoolMgr: ippoolManager,
+		podMgr:    podManager,
 
 		leader: spiderControllerLeader,
 	}
@@ -128,11 +120,8 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 		return nil
 	}
 
-	// 1. register pod reconcile and start to watch
-	err := s.registerPodReconcile()
-	if nil != err {
-		return fmt.Errorf("register pod reconcile failed '%v'", err)
-	}
+	// start pod informer
+	go s.startPodInformer()
 
 	// trace pod worker
 	go s.tracePodWorker()

@@ -50,7 +50,7 @@ func (s *SpiderGC) handlePodEntryForTracingTimeOut(podEntry *PodEntry) {
 	select {
 	case s.gcIPPoolIPSignal <- gcIPPoolIPIdentify{PodName: podEntry.PodName, PodNamespace: podEntry.Namespace}:
 		logger.Sugar().Debugf("sending signal to gc pod '%s/%s' IP", podEntry.Namespace, podEntry.PodName)
-		s.PodDB.DeletePodEntry(podEntry.PodName, podEntry.Namespace)
+		s.PodDB.DeletePodEntry(podEntry.Namespace, podEntry.PodName)
 
 	case <-time.After(time.Duration(s.gcConfig.GCSignalTimeoutDuration) * time.Second):
 		logger.Sugar().Errorf("failed to gc IP, gcSignal:len=%d, event:'%+v' will be dropped", len(s.gcSignal),
@@ -85,6 +85,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 			for poolName, ips := range podUsedIPs {
 				loggerReleaseIP.Sugar().Debugf("pod '%s/%s used IPs '%+v' from pool '%s', begin to release",
 					gcIPPoolIPDetail.PodNamespace, gcIPPoolIPDetail.PodName, ips, poolName)
+
 				err = s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
 				if apierrors.IsNotFound(err) {
 					// If we can not find the IP object, which means cmdDel already released the IP

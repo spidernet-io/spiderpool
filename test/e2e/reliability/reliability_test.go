@@ -28,6 +28,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err := frame.DeleteNamespace(namespace)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
+
 		})
 	})
 
@@ -99,7 +100,6 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 			// killed service need recovery, espeically spiderpool-controller, or else make other IT failed
 			time.Sleep(time.Duration(5 * time.Second))
-
 		},
 		Entry("finally succeed to run a pod during the ETCD is restarting",
 			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
@@ -142,18 +142,18 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			}
 			GinkgoWriter.Printf("get nodeMap is：%v\n", nodeMap)
 
-			// send cmd to reboot node and check node until ready
+			// send cmd to reboot node and check cluster until ready
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
-			readyok, err := common.RestartNodeUntilReady(frame, nodeMap, time.Minute, ctx)
-			Expect(readyok).Should(BeTrue(), "timeout to wait node ready\n")
+			readyok, err := common.RestartNodeUntilClusterReady(frame, nodeMap, time.Minute, ctx)
+			Expect(readyok).Should(BeTrue(), "timeout to wait cluster ready\n")
 			Expect(err).ShouldNot(HaveOccurred())
 
-			// check pod ready and ip assign ok
+			// after reboot node to wait deployment ready and ip assign ok
 			podlistready, errip2 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
 			Expect(errip2).ShouldNot(HaveOccurred())
 
-			// after reboot node check ip exists in ipppool
+			// after reboot node to check ip exists in ipppool
 			allipRecord2, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlistready)
 			Expect(allipRecord2).Should(BeTrue())
 			Expect(errpool).ShouldNot(HaveOccurred())

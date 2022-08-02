@@ -92,6 +92,8 @@ var _ = Describe("test ip with Job case", Label("Job"), func() {
 			defer cancel1()
 			jb, ok1, e3 := frame.WaitJobFinished(jdName, nsName, ctx1)
 			GinkgoWriter.Printf("job finished status:%v \n", ok1)
+			GinkgoWriter.Printf("jb is:%+v\n", *jb)
+			GinkgoWriter.Printf("err is: %v\n", e3)
 
 			switch behavior {
 			case common.JobTypeFail:

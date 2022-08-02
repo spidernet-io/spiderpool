@@ -89,7 +89,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					GinkgoWriter.Printf("failed to create v6 ippool %v with the same ip with another ippool %v\n", v6PoolName1, v6PoolName)
 				}
 			})
-		It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00005"), func() {
+		It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00004", "D00005"), Pending, func() {
 			// pod annotations
 			nic = "eth0"
 			deployName = "deploy" + tools.RandomName()
@@ -124,6 +124,20 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ok).To(BeTrue())
+
+			// delete ippool (D00004)
+			if frame.Info.IpV4Enabled {
+				Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(Succeed())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(Succeed())
+			}
+
+			// check pod ip record in ippool again (D00004)
+			GinkgoWriter.Println("check podIP record in ippool again")
+			ok2, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ok2).To(BeTrue())
 
 			// set iPv4/iPv6 PoolObj.Spec.Disable to true
 			if frame.Info.IpV4Enabled {
@@ -163,6 +177,48 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podList, time.Minute)).To(Succeed())
 			GinkgoWriter.Println("Pod IP is successfully released")
 		})
+	})
+
+	Context("create and delete batch of ippool", func() {
+		const ippoolNumber = 10
+		const ipNum = 2
+		It("create and delete batch of ippool and check time cost",
+			Label("D00006"), func() {
+				if frame.Info.IpV4Enabled {
+					// batch create ipv4 ippool
+					startT1 := time.Now()
+					ipv4PoolNameList, err := common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, true)
+					Expect(err).NotTo(HaveOccurred())
+					endT1 := time.Since(startT1)
+					GinkgoWriter.Printf("time cost for create  %v ipv4 ippool %v \n", ippoolNumber, endT1)
+					// batch delete ipv4 ippool
+					startT2 := time.Now()
+
+					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+					defer cancel()
+					errdel := common.BatchDeletePoolUntilFinish(frame, ipv4PoolNameList, ctx)
+					Expect(errdel).NotTo(HaveOccurred())
+					endT2 := time.Since(startT2)
+					GinkgoWriter.Printf("time cost for delete  %v ipv4 ippool %v \n", ippoolNumber, endT2)
+				}
+
+				if frame.Info.IpV6Enabled {
+					// batch create ipv6 ippool
+					startT3 := time.Now()
+					ipv6PoolNameList, err := common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, false)
+					Expect(err).NotTo(HaveOccurred())
+					endT3 := time.Since(startT3)
+					GinkgoWriter.Printf("time cost for create  %v ipv6 ippool %v \n", ippoolNumber, endT3)
+					// batch delete ipv6 ippool
+					startT4 := time.Now()
+					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+					defer cancel()
+					errdel := common.BatchDeletePoolUntilFinish(frame, ipv6PoolNameList, ctx)
+					Expect(errdel).NotTo(HaveOccurred())
+					endT4 := time.Since(startT4)
+					GinkgoWriter.Printf("time cost for delete  %v ipv6 ippool %v \n", ippoolNumber, endT4)
+				}
+			})
 	})
 })
 

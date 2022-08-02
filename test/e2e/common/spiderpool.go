@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
 	"time"
 
@@ -358,8 +357,8 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *spiderpool.IPPool) {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
 	}
-	var v4Ipversion = new(types.IPVersion)
-	*v4Ipversion = constant.IPv4
+	var v4Ipversion = new(spiderpool.IPVersion)
+	*v4Ipversion = spiderpool.IPv4
 
 	var iPv4PoolObj *spiderpool.IPPool
 	// Generate ipv4pool name
@@ -400,8 +399,8 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *spiderpool.IPPool) {
 		Fail("the IP range should be between 1 and 65533")
 	}
 
-	var v6Ipversion = new(types.IPVersion)
-	*v6Ipversion = constant.IPv6
+	var v6Ipversion = new(spiderpool.IPVersion)
+	*v6Ipversion = spiderpool.IPv6
 
 	// Generate ipv6pool name
 	var v6PoolName string = "v6pool-" + tools.RandomName()
@@ -473,20 +472,15 @@ func BatchCreateIppoolWithSpecifiedIPNumber(f *frame.Framework, iPPoolNum, ipNum
 	var iPPoolNameList []string
 OUTER_FOR:
 	for i := 1; i <= iPPoolNum; i++ {
-		var ips []net.IP
-		var err error
 		if isV4pool {
 			iPPoolName, iPPoolObj = GenerateExampleIpv4poolObject(ipNum)
-			ips, err = ip.ParseIPRanges(constant.IPv4, iPPoolObj.Spec.IPs)
-			if err != nil {
-				return nil, err
-			}
 		} else {
 			iPPoolName, iPPoolObj = GenerateExampleIpv6poolObject(ipNum)
-			ips, err = ip.ParseIPRanges(constant.IPv6, iPPoolObj.Spec.IPs)
-			if err != nil {
-				return nil, err
-			}
+		}
+
+		ips, err := ip.ParseIPRanges(iPPoolObj.Spec.IPs)
+		if err != nil {
+			return nil, err
 		}
 
 		for _, v := range ips {

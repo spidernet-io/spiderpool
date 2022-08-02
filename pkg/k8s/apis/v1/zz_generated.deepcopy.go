@@ -38,7 +38,7 @@ func (in *IPAllocationDetail) DeepCopyInto(out *IPAllocationDetail) {
 	}
 	if in.Vlan != nil {
 		in, out := &in.Vlan, &out.Vlan
-		*out = new(int64)
+		*out = new(Vlan)
 		**out = **in
 	}
 	if in.IPv4Gateway != nil {
@@ -50,11 +50,6 @@ func (in *IPAllocationDetail) DeepCopyInto(out *IPAllocationDetail) {
 		in, out := &in.IPv6Gateway, &out.IPv6Gateway
 		*out = new(string)
 		**out = **in
-	}
-	if in.Routes != nil {
-		in, out := &in.Routes, &out.Routes
-		*out = make([]Route, len(*in))
-		copy(*out, *in)
 	}
 }
 
@@ -132,7 +127,7 @@ func (in *IPPoolSpec) DeepCopyInto(out *IPPoolSpec) {
 	*out = *in
 	if in.IPVersion != nil {
 		in, out := &in.IPVersion, &out.IPVersion
-		*out = new(int64)
+		*out = new(IPVersion)
 		**out = **in
 	}
 	if in.IPs != nil {
@@ -155,15 +150,15 @@ func (in *IPPoolSpec) DeepCopyInto(out *IPPoolSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Vlan != nil {
-		in, out := &in.Vlan, &out.Vlan
-		*out = new(int64)
-		**out = **in
-	}
 	if in.Routes != nil {
 		in, out := &in.Routes, &out.Routes
 		*out = make([]Route, len(*in))
 		copy(*out, *in)
+	}
+	if in.Vlan != nil {
+		in, out := &in.Vlan, &out.Vlan
+		*out = new(Vlan)
+		**out = **in
 	}
 	if in.PodSelector != nil {
 		in, out := &in.PodSelector, &out.PodSelector
@@ -204,12 +199,12 @@ func (in *IPPoolStatus) DeepCopyInto(out *IPPoolStatus) {
 	}
 	if in.TotalIPCount != nil {
 		in, out := &in.TotalIPCount, &out.TotalIPCount
-		*out = new(int64)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.AllocatedIPCount != nil {
 		in, out := &in.AllocatedIPCount, &out.AllocatedIPCount
-		*out = new(int64)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -354,7 +349,7 @@ func (in *ReservedIPSpec) DeepCopyInto(out *ReservedIPSpec) {
 	*out = *in
 	if in.IPVersion != nil {
 		in, out := &in.IPVersion, &out.IPVersion
-		*out = new(int64)
+		*out = new(IPVersion)
 		**out = **in
 	}
 	if in.IPs != nil {

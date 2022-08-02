@@ -30,7 +30,7 @@ type WorkloadEndpointManager interface {
 	MarkIPAllocation(ctx context.Context, node, namespace, podName, containerID string) error
 	PatchIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
 	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error
-	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
+	Get(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
@@ -45,13 +45,16 @@ type workloadEndpointManager struct {
 	conflictRetryUnitTime time.Duration
 }
 
-func NewWorkloadEndpointManager(mgr ctrl.Manager, maxHistoryRecords, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(c client.Client, mgr ctrl.Manager, maxHistoryRecords, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (WorkloadEndpointManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
+	}
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}
 
 	return &workloadEndpointManager{
-		client:                mgr.GetClient(),
+		client:                c,
 		runtimeMgr:            mgr,
 		maxHistoryRecords:     maxHistoryRecords,
 		maxConflictRetrys:     maxConflictRetrys,
@@ -213,8 +216,6 @@ func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
 	if target.IPv6Gateway == nil {
 		target.IPv6Gateway = delta.IPv6Gateway
 	}
-
-	target.Routes = append(target.Routes, delta.Routes...)
 }
 
 func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error {
@@ -245,7 +246,7 @@ func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, 
 	return nil
 }
 
-func (r *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error) {
+func (r *workloadEndpointManager) Get(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error) {
 	wep := &spiderpoolv1.WorkloadEndpoint{}
 	err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, wep)
 	if nil != err {
@@ -285,7 +286,7 @@ func (r *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace
 
 // ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.
 func (r *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error) {
-	wep, err := r.GetEndpointByName(ctx, namespace, podName)
+	wep, err := r.Get(ctx, namespace, podName)
 	if nil != err {
 		return nil, err
 	}
@@ -328,7 +329,7 @@ func (r *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, name
 
 // IsIPBelongWEPCurrent will check the given IP whether belong to the wep current IPs.
 func (r *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error) {
-	wep, err := r.GetEndpointByName(ctx, namespace, podName)
+	wep, err := r.Get(ctx, namespace, podName)
 	if nil != err {
 		return false, err
 	}
@@ -362,7 +363,7 @@ func (r *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, name
 
 // CheckCurrentContainerID will check whether the current containerID of WorkloadEndpoint is same with the given args or not
 func (r *workloadEndpointManager) CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error) {
-	wep, err := r.GetEndpointByName(ctx, namespace, podName)
+	wep, err := r.Get(ctx, namespace, podName)
 	if nil != err {
 		return false, err
 	}

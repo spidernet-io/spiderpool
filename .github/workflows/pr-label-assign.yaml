@@ -1,6 +1,5 @@
-name: PR Assign Label
-
 # auto label pr who is approved by 2 guys.
+name: PR Assign Label
 
 env:
   LABEL: pr/approved,pr/need-release-label

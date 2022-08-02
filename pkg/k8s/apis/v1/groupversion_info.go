@@ -10,13 +10,11 @@ package v1
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: constant.SpiderpoolAPIGroup, Version: constant.SpiderpoolAPIVersionV1}
+	GroupVersion = schema.GroupVersion{Group: "spiderpool.spidernet.io", Version: "v1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

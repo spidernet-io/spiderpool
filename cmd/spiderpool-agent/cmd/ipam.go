@@ -27,14 +27,12 @@ type _unixPostAgentIpamIp struct{}
 
 // Handle handles POST requests for /ipam/ip .
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
-	logger := ipamLogger.With(
-		zap.String("CNICommand", "ADD"),
+	logger := ipamLogger.With(zap.String("CNICommand", "ADD"),
 		zap.String("ContainerID", *params.IpamAddArgs.ContainerID),
 		zap.String("IfName", *params.IpamAddArgs.IfName),
 		zap.String("NetNamespace", *params.IpamAddArgs.NetNamespace),
 		zap.String("PodNamespace", *params.IpamAddArgs.PodNamespace),
-		zap.String("PodName", *params.IpamAddArgs.PodName),
-	)
+		zap.String("PodName", *params.IpamAddArgs.PodName))
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
 	resp, err := agentContext.IPAM.Allocate(ctx, params.IpamAddArgs)
@@ -62,14 +60,12 @@ type _unixDeleteAgentIpamIp struct{}
 
 // Handle handles DELETE requests for /ipam/ip .
 func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
-	logger := ipamLogger.With(
-		zap.String("CNICommand", "DEL"),
+	logger := ipamLogger.With(zap.String("CNICommand", "DEL"),
 		zap.String("ContainerID", *params.IpamDelArgs.ContainerID),
 		zap.String("IfName", *params.IpamDelArgs.IfName),
 		zap.String("NetNamespace", params.IpamDelArgs.NetNamespace),
 		zap.String("PodNamespace", *params.IpamDelArgs.PodNamespace),
-		zap.String("PodName", *params.IpamDelArgs.PodName),
-	)
+		zap.String("PodName", *params.IpamDelArgs.PodName))
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
 	if err := agentContext.IPAM.Release(ctx, params.IpamDelArgs); err != nil {

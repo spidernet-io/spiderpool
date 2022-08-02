@@ -6,13 +6,6 @@ on:
       ref:
         required: true
         type: string
-      submit:
-        required: true
-        type: string
-    outputs:
-      artifact:
-        description: "name of artifact"
-        value: website_package_artifact
   # --- call by manual
   workflow_dispatch:
     inputs:
@@ -36,7 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.get_ref.outputs.ref }}
-      submit: ${{ steps.get_ref.outputs.submit }}
     steps:
       - name: Get Ref
         id: get_ref
@@ -46,11 +38,9 @@ jobs:
           if ${{ inputs.ref != '' }}; then
               echo "call by workflow_call"
               echo ::set-output name=ref::${{ inputs.ref }}
-              echo ::set-output name=submit::${{ inputs.submit }}
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "call by workflow_dispatch"
               echo ::set-output name=ref::${{ github.event.inputs.ref }}
-              echo ::set-output name=submit::true
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
@@ -68,7 +58,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: website_package_artifact
+          name: site_artifact
           path: docs/site.tar.gz
           retention-days: 0
           if-no-files-found: error
@@ -76,7 +66,6 @@ jobs:
   create_pr:
     name: Create PR
     needs: prepare_doc
-    if: ${{ needs.prepare_doc.outputs.submit == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -84,12 +73,8 @@ jobs:
         with:
           ref: ${{ env.MERGE_BRANCH }}
 
-      - name: backup charts
+      - name: Prepare
         run: |
-          rm -rf ./_backupCharts
-          mkdir ./_backupCharts
-          cp -f ${{ env.DEST_DIRECTORY }}/index.yaml ./_backupCharts
-          cp -rf ${{ env.DEST_DIRECTORY }}/charts ./_backupCharts/charts
           rm -rf ${{ env.DEST_DIRECTORY }}
           mkdir ${{ env.DEST_DIRECTORY }}
 
@@ -99,21 +84,19 @@ jobs:
           name: site_artifact
           path: ${{ env.DEST_DIRECTORY }}
 
-      - name: Untar Artifact And Restore Charts
+      - name: Untar Doc
         run: |
           cd ${{ env.DEST_DIRECTORY }}
           tar -xzvf site.tar.gz
           rm -f site.tar.gz
-          cp -rf ../_backupCharts/* ./
-          rm -rf ../_backupCharts
 
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
         uses: peter-evans/create-pull-request@v4.0.4
         with:
-          title: "robot update website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
-          commit-message: "robot update website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          title: "robot update doc from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          commit-message: "robot update chart from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
           delete-branch: true

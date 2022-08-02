@@ -1,6 +1,5 @@
-name: Clean Image CI By PR
-
 # cleaner for ghcr image , when PR is closed
+name: Clean Image CI By PR
 
 env:
   ONLINE_REGISTER: ghcr.io

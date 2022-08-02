@@ -45,12 +45,11 @@ spec:
             description: ReservedIPSpec defines the desired state of ReservedIP
             properties:
               ipVersion:
-                default: 4
+                default: IPv4
                 enum:
-                - 4
-                - 6
-                format: int64
-                type: integer
+                - IPv4
+                - IPv6
+                type: string
               ips:
                 items:
                   type: string

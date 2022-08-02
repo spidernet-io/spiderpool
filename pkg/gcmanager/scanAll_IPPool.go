@@ -13,7 +13,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -67,7 +67,7 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 
 // executeScanAll scans the whole pod and whole IPPoolList
 func (s *SpiderGC) executeScanAll(ctx context.Context) {
-	poolList, err := s.ippoolMgr.ListAllIPPools(ctx)
+	poolList, err := s.ippoolMgr.ListAllIPPool(ctx)
 	if apierrors.IsNotFound(err) {
 		logger.Sugar().Warnf("scan all failed, ippoolList not found!")
 		return
@@ -163,7 +163,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 }
 
 // releaseSingleIPAndRemoveWEPFinalizer serves for handleTerminatingPod to gc singleIP and remove wep finalizer
-func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poolName, poolIP string, poolIPAllocation spiderpoolv1.PoolIPAllocation) error {
+func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poolName, poolIP string, poolIPAllocation v1.PoolIPAllocation) error {
 	singleIP := []ippoolmanager.IPAndCID{{IP: poolIP, ContainerID: poolIPAllocation.ContainerID}}
 	err := s.ippoolMgr.ReleaseIP(ctx, poolName, singleIP)
 	if nil != err {
@@ -179,7 +179,7 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 }
 
 // handleTerminatingPod serves for executeScanAll to gc single IP once the given pod is out of time
-func (s *SpiderGC) handleTerminatingPod(ctx context.Context, podYaml *corev1.Pod, stopTime time.Time, poolName, poolIP string, poolIPAllocation spiderpoolv1.PoolIPAllocation) error {
+func (s *SpiderGC) handleTerminatingPod(ctx context.Context, podYaml *corev1.Pod, stopTime time.Time, poolName, poolIP string, poolIPAllocation v1.PoolIPAllocation) error {
 	log := logutils.FromContext(ctx)
 
 	// once it's out of time, just go to gc the IP and remove wep finalizer

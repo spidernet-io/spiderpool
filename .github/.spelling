@@ -9,7 +9,6 @@ ippool
 ippools
 workloadendpoint
 reservedip
-reservedips
 github
 changelog
 changelogs
@@ -165,11 +164,3 @@ gops
 flamegraph
 kube-apiserver
 tls
-CidrManager
-spiderendpoint
-ContainerID
-NodeName
-spiderippool
-containerID
-pre
-redis

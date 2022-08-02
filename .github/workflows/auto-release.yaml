@@ -1,11 +1,11 @@
-name: Auto Version Release
-
 # it is trigger by tag event:
 # 1 build the release image, push images to ghcr.io, and build image like: ghcr.io/weizhoublue/github-action-test/controllerimage:v1.0.0
 # 2 package the chart package, update index.yaml and commit to '/charts' of branch 'github_pages' ( PR with label pr/release/robot_update_githubpage )
 # 3 create changelog file, commit to '/changelogs' of branch 'github_pages' for githubPage ( PR with label pr/release/robot_update_githubpage )
 # 4 commit '/docs' to '/docs' of branch 'github_pages'
 # 5 create a release , attached with the chart and changelog
+
+name: Auto Release Version
 
 on:
   push:
@@ -68,25 +68,7 @@ jobs:
     uses: ./.github/workflows/call-release-chart.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
-      # will submit on step update-github-pages
-      submit: false
-    secrets: inherit
-
-  release-doc:
-    needs: [build-release-image, get-tag]
-    uses: ./.github/workflows/call-release-doc.yaml
-    with:
-      ref: ${{ needs.get-tag.outputs.tag }}
-      # will submit on step update-github-pages
-      submit: false
-    secrets: inherit
-
-  update-github-pages:
-    needs: [release-doc, release-chart]
-    uses: ./.github/workflows/call-update-githubpages.yaml
-    with:
-      site_artifact_name: ${{ needs.release-doc.outputs.artifact }}
-      chart_artifact_name: ${{ needs.release-chart.outputs.artifact }}
+      submit: true
     secrets: inherit
 
   release-changelog:
@@ -94,6 +76,13 @@ jobs:
     uses: ./.github/workflows/call-release-changelog.yaml
     with:
       dest_tag: ${{ needs.get-tag.outputs.tag }}
+    secrets: inherit
+
+  release-doc:
+    needs: [build-release-image, get-tag]
+    uses: ./.github/workflows/call-release-doc.yaml
+    with:
+      ref: ${{ needs.get-tag.outputs.tag }}
     secrets: inherit
 
   create-release:

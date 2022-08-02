@@ -1,6 +1,5 @@
-name: Auto Chart Lint
-
 # validate any chart changes under charts directory
+name: Auto Chart Lint
 
 env:
   HELM_VERSION: v3.8.1
@@ -55,7 +54,7 @@ jobs:
       # The cached helm binary path is prepended to the PATH environment variable as well as stored in the helm-path output variable
       # https://github.com/Azure/setup-helm
       - name: Set up Helm
-        uses: azure/setup-helm@v3.3
+        uses: azure/setup-helm@v3.1
         with:
           version: ${{ env.HELM_VERSION }}
 

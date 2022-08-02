@@ -17,14 +17,18 @@ import (
 )
 
 // SetupReconcile registers IPPool CR object informer
-func (im *ipPoolManager) SetupReconcile(leader election.SpiderLeaseElector) error {
+func (im *ipPoolManager) SetupReconcile(mgr ctrl.Manager, leader election.SpiderLeaseElector) error {
+	if mgr == nil {
+		return fmt.Errorf("failed to set up IPPool reconcile, mgr must be specified")
+	}
+
 	if leader == nil {
 		return fmt.Errorf("failed to set up IPPool reconcile, leader must be specified")
 	}
 
 	im.leader = leader
 
-	return ctrl.NewControllerManagedBy(im.runtimeMgr).
+	return ctrl.NewControllerManagedBy(mgr).
 		For(&spiderpoolv1.IPPool{}).
 		Complete(im)
 }
@@ -52,14 +56,14 @@ func (im *ipPoolManager) Reconcile(ctx context.Context, request reconcile.Reques
 	// TODO (Icarus9913): maybe we could abstract here to an API in the future?
 	if ipPool.DeletionTimestamp == nil {
 		// get IPPool usable IPs number
-		totalIPs, err := im.AssembleTotalIPs(ctx, ipPool)
+		totalIPs, err := im.AssembleTotalIP(ctx, request.Name)
 		if nil != err {
 			//TODO (Icarus9913): we will meet error here, should we return it and requeue ?
 			logger.Sugar().Errorf("failed to calculate IPPool '%s/%s' total IP count, error: %v", request.Namespace, request.Name, err)
 			return reconcile.Result{}, nil
 		}
 
-		totalIPCount := int64(len(totalIPs))
+		totalIPCount := int32(len(totalIPs))
 
 		// check the IPPool CR object subresource status TotalIPCount should be changed or not
 		isChange := false

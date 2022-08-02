@@ -10,9 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	frame "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/e2eframework/tools"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
@@ -101,11 +99,11 @@ func DeleteResverdIPUntilFinish(ctx context.Context, f *frame.Framework, reserve
 }
 
 func GenerateExampleV4ReservedIpObject(ips []string) (string, *spiderpool.ReservedIP) {
-	var v4Ipversion = new(types.IPVersion)
+	var v4Ipversion = new(spiderpool.IPVersion)
 	var iPv4ReservedIpObj *spiderpool.ReservedIP
 	var v4ReservedIpName string
 
-	*v4Ipversion = constant.IPv4
+	*v4Ipversion = spiderpool.IPv4
 	v4ReservedIpName = "v4-sr-" + tools.RandomName()
 
 	iPv4ReservedIpObj = &spiderpool.ReservedIP{
@@ -121,11 +119,11 @@ func GenerateExampleV4ReservedIpObject(ips []string) (string, *spiderpool.Reserv
 }
 
 func GenerateExampleV6ReservedIpObject(ips []string) (string, *spiderpool.ReservedIP) {
-	var v6Ipversion = new(types.IPVersion)
+	var v6Ipversion = new(spiderpool.IPVersion)
 	var iPv6ReservedIpObj *spiderpool.ReservedIP
 	var v6ReservedIpName string
 
-	*v6Ipversion = constant.IPv6
+	*v6Ipversion = spiderpool.IPv6
 	v6ReservedIpName = "v6-sr-" + tools.RandomName()
 
 	iPv6ReservedIpObj = &spiderpool.ReservedIP{

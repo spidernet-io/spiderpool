@@ -4,7 +4,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge)](https://www.codefactor.io/repository/github/spidernet-io/spiderpool)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=spidernet-io_spiderpool&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spidernet-io_spiderpool)
 [![codecov](https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G)](https://codecov.io/gh/spidernet-io/spiderpool)
-[![Auto Version Release](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml)
+[![Auto Release Version](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-release.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-release.yaml)
 [![Auto Nightly CI](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6009/badge)](https://bestpractices.coreinfrastructure.org/projects/6009)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/7e54bfe38fec206e7710c74ad55a5139/raw/spiderpoolcodeline.json)
@@ -63,9 +63,9 @@ The Spiderpool provides a large number of different features as follows.
 
 * An application could specify multiple backup ippool resources, in case that IP addresses in an ippool are out of use. Therefore, you neither need to scale up the IP resources in a fixed ippool, nor need to modify the application yaml to change a ippool.
 
-* Support to bind range of IP address only to an applications. No need to hard code an IP list in deployment yaml, which is not easy to modify. With Spiderpool, you only need to set the selector field of ippool and scale up or down the IP resource of an ippool dynamically.
+* Support for assigning fixed IP for applications. No need to hard code the IP list in a pod yaml, which is not easy to modify. With Spiderpool, you only need to set the selector field of ippool and scale up or down the ippool.
 
-* Support Statefulset pod who will be always assigned same IP addresses.
+* Support for assigning IP addresses in sequence for statefulset pods.
 
 * Different pods in a single controller could get IP addresses from
   different subnets for an application deployed in different subnets or zones.
@@ -74,7 +74,7 @@ The Spiderpool provides a large number of different features as follows.
 
 * Collect resources in real time, especially for solving IP leakage or slow collection, which may make new pod fail to assign IP addresses.
 
-* Support ranges of CNI plugin who supports third-party IPAM plugins. Especially, the Spiderpool could help much for CNI like [spiderflat](https://github.com/spidernet-io/spiderflat),
+* Support ranges of CNI plugin and support third-party IPAM plugins. Especially, the Spiderpool could help much for CNI like [spiderflat](https://github.com/spidernet-io/spiderflat),
   [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
@@ -85,11 +85,9 @@ The Spiderpool provides a large number of different features as follows.
 
 * Have a good performance for assigning and collecting IP.
 
-* Support to reserve IP who will not be assigned to any pod.
+* Support to reserve IP globally and in an ippool range even if the IP addresses are not assigned and included in an ippool.
 
-* Included metrics for looking into IP usage and issues.
-
-* By CidrManager, it could automatically scale up and down the IP address of the ippool, to distribute IP resource more reasonable between ippool.
+* Included metrics for look into IP usage and issues.
 
 * Support for both ARM64 and ARM64.
 

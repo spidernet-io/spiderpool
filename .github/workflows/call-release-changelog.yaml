@@ -1,8 +1,8 @@
-name: Call Release Changelog
-
 # auto generating changelog to directory /changelogs/*** of branch github_pages
 # auto generate changelog by the related-label history PR between tags,
 # commit changelog: changelogs/CHANGELOG-{begin_tag}-to-{end_tag}.md
+
+name: Call Release Changelog
 
 on:
   workflow_call:

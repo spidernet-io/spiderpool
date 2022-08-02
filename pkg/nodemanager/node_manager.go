@@ -22,7 +22,10 @@ type nodeManager struct {
 	runtimeMgr ctrl.Manager
 }
 
-func NewNodeManager(mgr ctrl.Manager) (NodeManager, error) {
+func NewNodeManager(c client.Client, mgr ctrl.Manager) (NodeManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
+	}
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}
@@ -35,7 +38,7 @@ func NewNodeManager(mgr ctrl.Manager) (NodeManager, error) {
 	}
 
 	return &nodeManager{
-		client:     mgr.GetClient(),
+		client:     c,
 		runtimeMgr: mgr,
 	}, nil
 }

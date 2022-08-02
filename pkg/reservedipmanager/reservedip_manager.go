@@ -7,34 +7,30 @@ import (
 	"context"
 	"errors"
 
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ReservedIPManager interface {
-	GetReservedIPRanges(ctx context.Context, version types.IPVersion) ([]string, error)
+	GetReservedIPRanges(ctx context.Context, version spiderpoolv1.IPVersion) ([]string, error)
 }
 
 type reservedIPManager struct {
-	client     client.Client
-	runtimeMgr ctrl.Manager
+	client client.Client
 }
 
-func NewReservedIPManager(mgr ctrl.Manager) (ReservedIPManager, error) {
-	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+func NewReservedIPManager(c client.Client) (ReservedIPManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
 	}
 
 	return &reservedIPManager{
-		client:     mgr.GetClient(),
-		runtimeMgr: mgr,
+		client: c,
 	}, nil
 }
 
-func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version types.IPVersion) ([]string, error) {
+func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version spiderpoolv1.IPVersion) ([]string, error) {
 	var reservedIPs spiderpoolv1.ReservedIPList
 	if err := r.client.List(ctx, &reservedIPs); err != nil {
 		return nil, err

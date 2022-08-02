@@ -9,10 +9,16 @@ import (
 
 // ReservedIPSpec defines the desired state of ReservedIP
 type ReservedIPSpec struct {
-	// +kubebuilder:default=4
-	// +kubebuilder:validation:Enum=4;6
+	// Specifies the IP version used by the IP pool
+	// Valid values are:
+	// - "IPv4":
+	// - "IPv6":
+
+	// +kubebuilder:default=IPv4
 	// +kubebuilder:validation:Optional
-	IPVersion *int64 `json:"ipVersion,omitempty"`
+	IPVersion *IPVersion `json:"ipVersion,omitempty"`
+
+	// TODO
 
 	// +kubebuilder:validation:Required
 	IPs []string `json:"ips"`

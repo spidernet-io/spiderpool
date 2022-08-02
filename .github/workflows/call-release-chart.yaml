@@ -1,9 +1,9 @@
-name: Call Release Charts
-
 # must set branch 'github_pages' as github page
 # this workflow will create the tgz from "/charts/*" of branch main,
 # and deploy to "/charts" of branch "github_pages"
 # and on branch "github_pages", update '/index.yaml' for '/charts/*.tgz'
+
+name: Call Release Charts
 
 env:
   HELM_VERSION: v3.8.1
@@ -70,7 +70,7 @@ jobs:
           ref: ${{ needs.get_ref.outputs.ref }}
 
       - name: Install Helm
-        uses: azure/setup-helm@v3.3
+        uses: azure/setup-helm@v3.1
         with:
           version: ${{ env.HELM_VERSION }}
 
@@ -121,11 +121,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: chart_package_artifact
-          path: docs/charts/
+          path: charts/
 
       - name: Update Chart Yaml
         run: |
-          cd docs
           helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
           mv ./charts/index.yaml ./index.yaml
 

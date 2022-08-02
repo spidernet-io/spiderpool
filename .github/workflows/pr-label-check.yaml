@@ -1,6 +1,5 @@
-name: PR Label Check
-
 # make sure the pr is labeled as wanted, case: we could generate changelog by the pr label
+name: PR Label Check
 
 # Trigger the workflow on pull requests only
 on:

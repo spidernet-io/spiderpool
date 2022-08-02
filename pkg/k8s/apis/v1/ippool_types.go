@@ -9,48 +9,90 @@ import (
 
 // IPPoolSpec defines the desired state of IPPool
 type IPPoolSpec struct {
-	// +kubebuilder:validation:Enum=4;6
+
+	// Specifies the IP version used by the IP pool
+	// Valid values are:
+	// - "IPv4":
+	// - "IPv6":
+
 	// +kubebuilder:validation:Optional
-	IPVersion *int64 `json:"ipVersion,omitempty"`
+	IPVersion *IPVersion `json:"ipVersion,omitempty"`
+
+	// TODO
 
 	// +kubebuilder:validation:Required
 	Subnet string `json:"subnet"`
 
+	// TODO
+
 	// +kubebuilder:validation:Required
 	IPs []string `json:"ips"`
+
+	// TODO
 
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
 	Disable *bool `json:"disable,omitempty"`
 
+	// TODO
+
 	// +kubebuilder:validation:Optional
 	ExcludeIPs []string `json:"excludeIPs,omitempty"`
+
+	// TODO
 
 	// +kubebuilder:validation:Optional
 	Gateway *string `json:"gateway,omitempty"`
 
-	// +kubebuilder:default=0
-	// +kubebuilder:validation:Maximum=4095
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	Vlan *int64 `json:"vlan,omitempty"`
+	// TODO
 
 	// +kubebuilder:validation:Optional
 	Routes []Route `json:"routes,omitempty"`
 
+	// TODO
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	Vlan *Vlan `json:"vlan,omitempty"`
+
+	// TODO
+
 	// +kubebuilder:validation:Optional
 	PodSelector *metav1.LabelSelector `json:"podSelector,omitempty"`
 
+	// TODO
+
 	// +kubebuilder:validation:Optional
 	NamesapceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+
+	// TODO
 
 	// +kubebuilder:validation:Optional
 	NodeSelector *metav1.LabelSelector `json:"nodeSelector,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=IPv4;IPv6
+type IPVersion string
+
+const (
+	// TODO
+	IPv4 IPVersion = "IPv4"
+
+	// TODO
+	IPv6 IPVersion = "IPv6"
+)
+
+// +kubebuilder:validation:Maximum=4095
+// +kubebuilder:validation:Minimum=0
+type Vlan int32
+
 type Route struct {
+	// TODO
+
 	// +kubebuilder:validation:Required
 	Dst string `json:"dst"`
+
+	// TODO
 
 	// +kubebuilder:validation:Required
 	Gw string `json:"gw"`
@@ -58,16 +100,22 @@ type Route struct {
 
 // IPPoolStatus defines the observed state of IPPool
 type IPPoolStatus struct {
+	// TODO
+
 	// +kubebuilder:validation:Optional
 	AllocatedIPs PoolIPAllocations `json:"allocatedIPs,omitempty"`
 
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	TotalIPCount *int64 `json:"totalIPCount,omitempty"`
+	// TODO
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+	TotalIPCount *int32 `json:"totalIPCount,omitempty"`
+
+	// TODO
+
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	AllocatedIPCount *int32 `json:"allocatedIPCount,omitempty"`
 }
 
 // PoolIPAllocations is a map of allocated IPs indexed by IP
@@ -75,17 +123,27 @@ type PoolIPAllocations map[string]PoolIPAllocation
 
 // PoolIPAllocation is an IP already has been allocated
 type PoolIPAllocation struct {
+	// TODO
+
 	// +kubebuilder:validation:Required
 	ContainerID string `json:"containerID"`
+
+	// TODO
 
 	// +kubebuilder:validation:Required
 	NIC string `json:"interface"`
 
+	// TODO
+
 	// +kubebuilder:validation:Required
 	Node string `json:"node"`
 
+	// TODO
+
 	// +kubebuilder:validation:Required
 	Namespace string `json:"namespace"`
+
+	// TODO
 
 	// +kubebuilder:validation:Required
 	Pod string `json:"pod"`

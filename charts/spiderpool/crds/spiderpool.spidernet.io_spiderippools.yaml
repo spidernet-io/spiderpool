@@ -71,10 +71,9 @@ spec:
                 type: string
               ipVersion:
                 enum:
-                - 4
-                - 6
-                format: int64
-                type: integer
+                - IPv4
+                - IPv6
+                type: string
               ips:
                 items:
                   type: string
@@ -236,7 +235,7 @@ spec:
                 type: string
               vlan:
                 default: 0
-                format: int64
+                format: int32
                 maximum: 4095
                 minimum: 0
                 type: integer
@@ -248,7 +247,7 @@ spec:
             description: IPPoolStatus defines the observed state of IPPool
             properties:
               allocatedIPCount:
-                format: int64
+                format: int32
                 minimum: 0
                 type: integer
               allocatedIPs:
@@ -276,7 +275,7 @@ spec:
                   IP
                 type: object
               totalIPCount:
-                format: int64
+                format: int32
                 minimum: 0
                 type: integer
             type: object

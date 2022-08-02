@@ -58,24 +58,9 @@ const (
 	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
 )
 
-const (
-	SingleNICDefaultRoute types.DefaultRouteType = iota
-	MultiNICDefaultRoute
-	MultiNICNotDefaultRoute
-)
+const QualifiedK8sObjNameFmt = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 
-const (
-	SpiderpoolAgent        = "spiderpool-agent"
-	SpiderpoolController   = "spiderpool-controller"
-	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"
-	SpiderFinalizer        = SpiderpoolAPIGroup
-	SpiderpoolAPIVersionV1 = "v1"
-	SpiderIPPoolKind       = "IPPool"
-	SpiderEndpointKind     = "WorkloadEndpoint"
-	SpiderReservedIPKind   = "ReservedIP"
-)
-
-const (
-	SpiderControllerElectorLockName = SpiderpoolController + "-" + resourcelock.LeasesResourceLock
-	QualifiedK8sObjNameFmt          = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
-)
+const SpiderFinalizer = "spiderpool.spidernet.io"
+const SpiderpoolAgent = "spiderpool-agent"
+const SpiderpoolController = "spiderpool-controller"
+const SpiderControllerElectorLockName = SpiderpoolController + "-" + resourcelock.LeasesResourceLock

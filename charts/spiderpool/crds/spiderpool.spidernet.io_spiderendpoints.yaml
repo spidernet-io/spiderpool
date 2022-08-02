@@ -94,21 +94,8 @@ spec:
                           type: string
                         ipv6Pool:
                           type: string
-                        routes:
-                          items:
-                            properties:
-                              dst:
-                                type: string
-                              gw:
-                                type: string
-                            required:
-                            - dst
-                            - gw
-                            type: object
-                          type: array
                         vlan:
-                          default: 0
-                          format: int64
+                          format: int32
                           maximum: 4095
                           minimum: 0
                           type: integer
@@ -148,21 +135,8 @@ spec:
                             type: string
                           ipv6Pool:
                             type: string
-                          routes:
-                            items:
-                              properties:
-                                dst:
-                                  type: string
-                                gw:
-                                  type: string
-                              required:
-                              - dst
-                              - gw
-                              type: object
-                            type: array
                           vlan:
-                            default: 0
-                            format: int64
+                            format: int32
                             maximum: 4095
                             minimum: 0
                             type: integer

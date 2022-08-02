@@ -41,13 +41,6 @@ func NewPodManager(mgr ctrl.Manager, maxConflictRetrys int, conflictRetryUnitTim
 		return nil, errors.New("runtime manager must be specified")
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, metav1.ObjectNameField, func(raw client.Object) []string {
-		pod := raw.(*corev1.Pod)
-		return []string{pod.Name}
-	}); err != nil {
-		return nil, err
-	}
-
 	return &podManager{
 		client:                mgr.GetClient(),
 		runtimeMgr:            mgr,

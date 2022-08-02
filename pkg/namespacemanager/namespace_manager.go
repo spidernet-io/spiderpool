@@ -33,13 +33,6 @@ func NewNamespaceManager(mgr ctrl.Manager) (NamespaceManager, error) {
 		return nil, errors.New("runtime manager must be specified")
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Namespace{}, metav1.ObjectNameField, func(raw client.Object) []string {
-		namespace := raw.(*corev1.Namespace)
-		return []string{namespace.Name}
-	}); err != nil {
-		return nil, err
-	}
-
 	return &namespaceManager{
 		client:     mgr.GetClient(),
 		runtimeMgr: mgr,

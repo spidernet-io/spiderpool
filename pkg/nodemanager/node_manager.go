@@ -26,26 +26,19 @@ func NewNodeManager(mgr ctrl.Manager) (NodeManager, error) {
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}
-
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Node{}, metav1.ObjectNameField, func(raw client.Object) []string {
-		node := raw.(*corev1.Node)
-		return []string{node.Name}
-	}); err != nil {
-		return nil, err
-	}
-
 	return &nodeManager{
 		client:     mgr.GetClient(),
 		runtimeMgr: mgr,
 	}, nil
 }
 
+// MatchLabelSelector will check whether the node matches the labelSelector or not
 func (r *nodeManager) MatchLabelSelector(ctx context.Context, nodeName string, labelSelector *metav1.LabelSelector) (bool, error) {
 	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
 		return false, err
 	}
-
+	// Get the matches' node from client
 	var nodes corev1.NodeList
 	err = r.client.List(
 		ctx,

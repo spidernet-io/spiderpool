@@ -1,8 +1,8 @@
 # Install
 
-the spiderpool need install webhook of kube-apiserver, so it needs tls certificates.
+the spiderpool needs install webhook of kube-apiserver, so it needs tls certificates.
 
-there are two ways to install it, the one is with cert-manager, the other one is generating self-signed certificate
+there are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificate.
 
 ## By Self-signed Certificates
 
@@ -11,7 +11,7 @@ this way is simple, there is no any dependency. The project provides a script to
 the following is a ipv4-only example
 
 ```shell
-heml repo add spiderpool https://spidernet-io.github.io/spiderpool
+helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 git clone https://github.com/spidernet-io/spiderpool.git
 cd spiderpool
@@ -42,7 +42,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
 the following is a dual-stack example
 
 ```shell
-heml repo add spiderpool https://spidernet-io.github.io/spiderpool
+helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 # generate the certificates
 tools/cert/generateCert.sh "/tmp/tls"
@@ -84,7 +84,7 @@ Therefore, the way may implement on following situation:
 - on cluster with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), the cert-manager pods is deployed by other CNI, then spiderpool could be deployed by cert-manager
 
 ```shell
-heml repo add spiderpool https://spidernet-io.github.io/spiderpool
+helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 # for default ipv4 ippool
 # CIDR

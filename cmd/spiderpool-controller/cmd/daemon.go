@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +14,8 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
@@ -92,6 +93,13 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.CRDManager = mgr
+
+	logger.Info("Begin to initialize k8s Clientset")
+	clientSet, err := initK8sClientSet()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.ClientSet = clientSet
 
 	// init managers...
 	initControllerServiceManagers(controllerContext.InnerCtx)
@@ -221,8 +229,8 @@ func initControllerServiceManagers(ctx context.Context) {
 }
 
 func initGCManager(ctx context.Context) {
-	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.CRDManager.GetClient(), gcIPConfig, controllerContext.CRDManager,
-		controllerContext.WEPManager, controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.Leader)
+	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.ClientSet, gcIPConfig, controllerContext.WEPManager,
+		controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.Leader)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -247,4 +255,18 @@ func initSpiderControllerLeaderElect(ctx context.Context) {
 	}
 
 	controllerContext.Leader = leaderElector
+}
+
+// initK8sClientSet will new kubernetes Clientset
+func initK8sClientSet() (*kubernetes.Clientset, error) {
+	k8sConfig, err := rest.InClusterConfig()
+	if nil != err {
+		return nil, fmt.Errorf("failed to get k8s cluster config")
+	}
+	clientSet, err := kubernetes.NewForConfig(k8sConfig)
+	if nil != err {
+		return nil, fmt.Errorf("failed to new k8s ClientSet")
+	}
+
+	return clientSet, nil
 }

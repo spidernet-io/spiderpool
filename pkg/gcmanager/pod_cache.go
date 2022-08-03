@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -15,8 +17,7 @@ import (
 )
 
 type PodDBer interface {
-	GetPodEntry(podName, namespace string) PodEntry
-	DeletePodEntry(podName, namespace string)
+	DeletePodEntry(namespace, podName string)
 	ApplyPodEntry(podEntry *PodEntry) error
 	ListAllPodEntries() []PodEntry
 }
@@ -50,18 +51,7 @@ func NewPodDBer(maxDatabaseCap int) PodDBer {
 	}
 }
 
-func (p *PodDatabase) GetPodEntry(podName, namespace string) PodEntry {
-	p.RLock()
-	defer p.RUnlock()
-
-	podEntry, ok := p.pods[ktypes.NamespacedName{Namespace: namespace, Name: podName}]
-	if !ok {
-		return PodEntry{}
-	}
-	return podEntry
-}
-
-func (p *PodDatabase) DeletePodEntry(podName, namespace string) {
+func (p *PodDatabase) DeletePodEntry(namespace, podName string) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -135,4 +125,155 @@ func diffPodEntries(oldOne, newOne *PodEntry) bool {
 	}
 
 	return isDifferent
+}
+
+// buildPodEntry will build PodEntry with the given args, it serves for Pod Informer event hooks
+func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (*PodEntry, error) {
+	if currentPod == nil {
+		return nil, fmt.Errorf("currentPod must be specified")
+	}
+
+	// deleted pod
+	if deleted {
+		podEntry := &PodEntry{
+			PodName:             currentPod.Name,
+			Namespace:           currentPod.Namespace,
+			NodeName:            currentPod.Spec.NodeName,
+			EntryUpdateTime:     metav1.Now().UTC(),
+			TracingStartTime:    metav1.Now().UTC(),
+			TracingGracefulTime: time.Duration(s.gcConfig.AdditionalGraceDelay) * time.Second,
+			PodTracingReason:    constant.PodDeleted,
+		}
+
+		// stop time
+		podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
+		return podEntry, nil
+	} else {
+		podStatus, _ := s.podMgr.CheckPodStatus(currentPod)
+
+		var isBuildTerminatingPodEntry, isBuildSucceededOrFailedPodEntry bool
+		switch {
+		case currentPod.DeletionTimestamp != nil && oldPod == nil:
+			// case: current pod is 'Terminating', no old pod
+			isBuildTerminatingPodEntry = true
+
+		case currentPod.DeletionTimestamp != nil && oldPod != nil && oldPod.DeletionTimestamp == nil:
+			// case: current pod is 'Terminating', old pod wasn't 'Terminating' phase
+			isBuildTerminatingPodEntry = true
+
+		case currentPod.DeletionTimestamp != nil && oldPod.DeletionTimestamp != nil && *currentPod.Spec.TerminationGracePeriodSeconds != *oldPod.Spec.TerminationGracePeriodSeconds:
+			// case: both of current pod and old pod are 'Terminating', but 'TerminationGracePeriodSeconds' changed
+			isBuildTerminatingPodEntry = true
+
+		case (currentPod.Status.Phase == corev1.PodSucceeded || currentPod.Status.Phase == corev1.PodFailed) && oldPod == nil:
+			// case: current pod is 'Succeeded|Failed', no old pod
+			isBuildSucceededOrFailedPodEntry = true
+
+		case (currentPod.Status.Phase == corev1.PodSucceeded || currentPod.Status.Phase == corev1.PodFailed) && (oldPod != nil && currentPod.Status.Phase != oldPod.Status.Phase):
+			// case: current pod is 'Succeeded|Failed', old pod wasn't 'Succeeded|Failed' phase
+			isBuildSucceededOrFailedPodEntry = true
+
+		case (currentPod.Status.Phase == corev1.PodSucceeded || currentPod.Status.Phase == corev1.PodFailed) &&
+			(oldPod != nil && currentPod.Status.Phase == oldPod.Status.Phase && *currentPod.Spec.TerminationGracePeriodSeconds != *oldPod.Spec.TerminationGracePeriodSeconds):
+			// case: both of current pod and old pod are 'Terminating', but 'TerminationGracePeriodSeconds' changed
+			isBuildSucceededOrFailedPodEntry = true
+
+		default:
+			// Running | Unknown
+			return nil, nil
+		}
+
+		if isBuildTerminatingPodEntry {
+			// disable for gc terminating pod
+			if !s.gcConfig.EnableGCForTerminatingPod {
+				logger.Sugar().Debugf("IP gc already turn off 'EnableGCForTerminatingPod' configuration, disacrd pod '%s/%s'", currentPod.Namespace, currentPod.Name)
+				return nil, nil
+			}
+
+			podEntry := &PodEntry{
+				PodName:          currentPod.Name,
+				Namespace:        currentPod.Namespace,
+				NodeName:         currentPod.Spec.NodeName,
+				EntryUpdateTime:  metav1.Now().UTC(),
+				TracingStartTime: currentPod.DeletionTimestamp.Time,
+				PodTracingReason: podStatus,
+			}
+
+			// grace period
+			if currentPod.DeletionGracePeriodSeconds == nil {
+				return nil, fmt.Errorf("pod '%s/%s' status is '%v' but doesn't have 'DeletionGracePeriodSeconds' property", currentPod.Namespace, currentPod.Name, podStatus)
+			}
+			podEntry.TracingGracefulTime = (time.Duration(*currentPod.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
+
+			// stop time
+			podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
+
+			return podEntry, nil
+		} else if isBuildSucceededOrFailedPodEntry {
+			podEntry := &PodEntry{
+				PodName:          currentPod.Name,
+				Namespace:        currentPod.Namespace,
+				NodeName:         currentPod.Spec.NodeName,
+				EntryUpdateTime:  metav1.Now().UTC(),
+				PodTracingReason: podStatus,
+			}
+
+			startTime, _, gracefulTime, err := s.computeSucceededOrFailedPodTerminatingTime(currentPod)
+			if nil != err {
+				return nil, err
+			}
+			// start time
+			podEntry.TracingStartTime = startTime
+			// grace period
+			podEntry.TracingGracefulTime = gracefulTime
+
+			// stop time
+			podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
+
+			return podEntry, nil
+		} else {
+			return nil, nil
+		}
+	}
+}
+
+// computeSucceededOrFailedPodTerminatingTime will compute terminating start time, stop time and graceful period for 'Succeeded | Failed' phase pod
+func (s *SpiderGC) computeSucceededOrFailedPodTerminatingTime(podYaml *corev1.Pod) (terminatingStartTime, terminatingStopTime time.Time, gracefulTime time.Duration, err error) {
+	// check container numbers
+	containerNum := len(podYaml.Status.ContainerStatuses)
+	if containerNum == 0 {
+		err = fmt.Errorf("pod '%s/%s' doesn't have any containers", podYaml.Namespace, podYaml.Name)
+		return
+	}
+
+	// compute Succeeded | Failed pod start time
+	var tmpStartTime time.Time
+	for _, containerStatus := range podYaml.Status.ContainerStatuses {
+		if containerStatus.State.Terminated == nil {
+			continue
+		}
+
+		if tmpStartTime.Before(containerStatus.State.Terminated.FinishedAt.UTC()) {
+			tmpStartTime = containerStatus.State.Terminated.FinishedAt.UTC()
+		}
+	}
+
+	if tmpStartTime.IsZero() {
+		err = fmt.Errorf("pod '%s/%s' status is '%v' but doesn't have terminated finishedTime",
+			podYaml.Namespace, podYaml.Name, podYaml.Status.Phase)
+		return
+	}
+
+	terminatingStartTime = tmpStartTime
+
+	// graceful period
+	if podYaml.Spec.TerminationGracePeriodSeconds == nil {
+		err = fmt.Errorf("pod '%s/%s' doesn't have 'TerminationGracePeriodSeconds' property", podYaml.Namespace, podYaml.Name)
+		return
+	}
+	gracefulTime = (time.Duration(*podYaml.Spec.TerminationGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
+
+	// stop time
+	terminatingStopTime = terminatingStartTime.Add(gracefulTime)
+	return
 }

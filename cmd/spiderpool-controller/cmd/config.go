@@ -10,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/spf13/pflag"
+	"k8s.io/client-go/kubernetes"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
@@ -20,9 +24,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
-
-	"github.com/spf13/pflag"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var controllerContext = new(ControllerContext)
@@ -109,6 +110,9 @@ type ControllerContext struct {
 	// It will be cancelled after receiving an interrupt or termination signal.
 	InnerCtx    context.Context
 	InnerCancel context.CancelFunc
+
+	// kubernetes Clientset
+	ClientSet *kubernetes.Clientset
 
 	// manager
 	CRDManager    ctrl.Manager

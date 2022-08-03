@@ -9,12 +9,10 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -86,52 +84,57 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				zap.String("containerID", poolIPAllocation.ContainerID), zap.String("NIC", poolIPAllocation.NIC))
 
 			podYaml, err := s.podMgr.GetPodByName(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+			// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
+			if apierrors.IsNotFound(err) {
+				err = s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
+				if nil != err {
+					scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation")).Error(err.Error())
+					continue
+				}
+
+				scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation")).
+					Sugar().Infof("release ip '%s' and remove wep '%s/%s' finalizer successfully!", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+
+				continue
+			}
+
+			if err != nil {
+				scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in ippool allocation")).
+					Sugar().Errorf("check pod from kubernetes failed with error '%v'", err)
+				continue
+			}
+
+			// check pod status phase with its yaml
+			podEntry, err := s.buildPodEntry(nil, podYaml, false)
 			if nil != err {
-				// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
-				if apierrors.IsNotFound(err) {
-					err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
+				scanAllLogger.Sugar().Errorf("failed to build podEntry '%s/%s' in scanAll, error: %v", poolIPAllocation.Namespace, poolIPAllocation.Pod, err)
+				continue
+			}
+
+			// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the pod is in 'Terminating|Succeeded|Failed' status phase
+			if podEntry != nil {
+				if time.Now().UTC().After(podEntry.TracingStopTime) {
+					err = s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
 					if nil != err {
-						scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation")).Error(err.Error())
+						scanAllLogger.With(zap.String("gc-reason", "pod is out of time")).Error(err.Error())
 						continue
 					}
 
-					scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation")).
-						Sugar().Infof("release ip '%s' and remove wep '%s/%s' finalizer successfully!", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+					scanAllLogger.With(zap.String("gc-reason", "pod is out of time")).
+						Sugar().Infof("release ip '%s' and wep '%s/%s' successfully", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+				} else {
+					// otherwise, flush the PodEntry database and let tracePodWorker to solve it if the current controller is elected master.
+					if s.leader.IsElected() {
+						err = s.PodDB.ApplyPodEntry(podEntry)
+						if nil != err {
+							scanAllLogger.Error(err.Error())
+							continue
+						}
 
-					continue
+						scanAllLogger.With(zap.String("tracing-reason", string(podEntry.PodTracingReason))).
+							Sugar().Infof("update podEntry '%s/%s' successfully", poolIPAllocation.Namespace, poolIPAllocation.Pod)
+					}
 				}
-
-				scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in ippool allocation")).
-					Sugar().Errorf("check pod from kubernetes failed with error '%v'", err)
-			} else if podYaml.DeletionTimestamp != nil {
-				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s but with phase terminating
-				if podYaml.DeletionGracePeriodSeconds == nil {
-					scanAllLogger.With(zap.String("gc-reason", "pod is terminating")).
-						Sugar().Errorf("get pod data unexpectedly, pod 'DeletionGracePeriodSeconds' is nil!")
-					continue
-				}
-
-				scanAllCtx := logutils.IntoContext(ctx, scanAllLogger.With(zap.String("gc-reason", "pod is terminating")))
-				stopTime := (*podYaml.DeletionTimestamp).Time.Add((time.Duration(*podYaml.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second)
-
-				if err := s.handleTerminatingPod(scanAllCtx, podYaml, stopTime, pool.Name, poolIP, poolIPAllocation); nil != err {
-					scanAllLogger.With(zap.String("gc-reason", "pod is terminating")).Error(err.Error())
-				}
-
-			} else if podYaml.Status.Phase == corev1.PodSucceeded || podYaml.Status.Phase == corev1.PodFailed {
-				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s but with phase 'Succeeded' or 'Failed'
-				_, stopTime, _, err := s.computeSucceededOrFailedPodTerminatingTime(podYaml)
-				if nil != err {
-					scanAllLogger.With(zap.Any("gc-reason", podYaml.Status.Phase)).Error(err.Error())
-					continue
-				}
-
-				scanAllCtx := logutils.IntoContext(ctx, scanAllLogger.With(zap.Any("gc-reason", podYaml.Status.Phase)))
-
-				if err = s.handleTerminatingPod(scanAllCtx, podYaml, stopTime, pool.Name, poolIP, poolIPAllocation); nil != err {
-					scanAllLogger.With(zap.String("gc-reason", "pod is terminating")).Error(err.Error())
-				}
-
 			} else {
 				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IP corresponding allocation containerID is different with wep current containerID
 				isCurrentContainerID, err := s.wepMgr.CheckCurrentContainerID(ctx, podYaml.Namespace, podYaml.Name, poolIPAllocation.ContainerID)
@@ -173,38 +176,6 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 	err = s.wepMgr.RemoveFinalizer(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 	if nil != err {
 		return fmt.Errorf("remove wep '%s/%s' finalizer failed with err '%v'", poolIPAllocation.Namespace, poolIPAllocation.Pod, err)
-	}
-
-	return nil
-}
-
-// handleTerminatingPod serves for executeScanAll to gc single IP once the given pod is out of time
-func (s *SpiderGC) handleTerminatingPod(ctx context.Context, podYaml *corev1.Pod, stopTime time.Time, poolName, poolIP string, poolIPAllocation spiderpoolv1.PoolIPAllocation) error {
-	log := logutils.FromContext(ctx)
-
-	// once it's out of time, just go to gc the IP and remove wep finalizer
-	if time.Now().UTC().After(stopTime) {
-		log.Sugar().Infof("begin to release ip '%s' and wep '%s/%s'", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
-
-		err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, poolName, poolIP, poolIPAllocation)
-		if nil != err {
-			return err
-		}
-
-		log.Sugar().Infof("release ip '%s' and wep '%s/%s' successfully!", poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
-	} else {
-		// otherwise, flush the pod yaml to PodEntry database and let tracePodWorker to solve it if the current controller is elected master.
-		if s.leader.IsElected() {
-			newPodEntry, err := s.buildPodEntryWithPodYaml(ctx, podYaml)
-			if nil != err {
-				return err
-			}
-
-			err = s.PodDB.ApplyPodEntry(newPodEntry)
-			if nil != err {
-				return err
-			}
-		}
 	}
 
 	return nil

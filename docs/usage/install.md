@@ -13,6 +13,9 @@ the following is a ipv4-only example
 ```shell
 heml repo add spiderpool https://spidernet-io.github.io/spiderpool
 
+git clone https://github.com/spidernet-io/spiderpool.git
+cd spiderpool
+
 # generate the certificates
 tools/cert/generateCert.sh "/tmp/tls"
 CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
@@ -26,7 +29,7 @@ Ipv4Subnet="172.20.0.0/16"
 Ipv4Range="172.20.0.10-172.20.0.200"
 
 # deploy the spiderpool
-helm install spiderpool spidernet/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.server.cert="${SERVER_CERT}" \
   --set spiderpoolController.tls.server.key="${SERVER_KEY}" \
@@ -59,7 +62,7 @@ Ipv6Subnet="fd00::/112"
 Ipv6Range="fd00::10-fd00::200"
 
 # deploy the spiderpool
-helm install spiderpool spidernet/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.server.cert="${SERVER_CERT}" \
   --set spiderpoolController.tls.server.key="${SERVER_KEY}" \
@@ -89,7 +92,7 @@ ipv4_subnet="172.20.0.0/16"
 # available IP resource
 ipv4_range="172.20.0.10-172.20.0.200"
 
-helm install spiderpool spidernet/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=certmanager \
   --set spiderpoolController.tls.certmanager.issuerName=${CERT_MANAGER_ISSUER_NAME} \
   --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=false \

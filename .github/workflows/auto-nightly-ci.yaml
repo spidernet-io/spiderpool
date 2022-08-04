@@ -257,6 +257,7 @@ jobs:
         run: |
           echo ${{ github.event.inputs.labels }}
           RESULT=0
+          sudo mkdir -p /var/log/spidernet # fix the permission defined issue
           make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
@@ -349,6 +350,7 @@ jobs:
         run: |
           echo ${{ github.event.inputs.labels }}
           RESULT=0
+          sudo mkdir -p /var/log/spidernet # fix the permission defined issue
           make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
@@ -418,6 +420,7 @@ jobs:
         run: |
           echo ${{ github.event.inputs.labels }}
           RESULT=0
+          sudo mkdir -p /var/log/spidernet # fix the permission defined issue
           make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \

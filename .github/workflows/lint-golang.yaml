@@ -203,6 +203,7 @@ jobs:
         id: unitest
         continue-on-error: true
         run: |
+          sudo mkdir -p /var/log/spidernet # fix the permission defined issue
           make unitest-tests
 
       - name: Upload Coverage Artifact

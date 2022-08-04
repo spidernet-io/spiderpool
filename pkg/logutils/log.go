@@ -9,11 +9,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"strings"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"strings"
 )
 
 // Pre-define log instance with default info level.
@@ -40,7 +41,7 @@ type FileOutputOption struct {
 }
 
 const (
-	DefaultLogFilePath = "/tmp/cni.log"
+	DefaultLogFilePath = "/var/log/spidernet/spiderpool.log"
 	// MaxSize    = 100 // MB
 	DefaultLogFileMaxSize int = 100
 	// MaxAge     = 30 // days (no limit)
@@ -145,7 +146,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 
 		err := os.MkdirAll(filepath.Dir(fileOutputOption.Filename), 0755)
 		if nil != err {
-			return nil, fmt.Errorf("Failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
+			return nil, fmt.Errorf("Failed to create path %v for CNI log file: %v", filepath.Dir(fileOutputOption.Filename), err)
 		}
 	}
 

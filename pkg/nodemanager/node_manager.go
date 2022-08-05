@@ -26,6 +26,7 @@ func NewNodeManager(mgr ctrl.Manager) (NodeManager, error) {
 	if mgr == nil {
 		return nil, errors.New("runtime manager must be specified")
 	}
+
 	return &nodeManager{
 		client:     mgr.GetClient(),
 		runtimeMgr: mgr,

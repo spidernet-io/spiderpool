@@ -27,6 +27,7 @@ func NewNodeManager(c client.Client) (NodeManager, error) {
 	if c == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
+
 	return &nodeManager{
 		client: c,
 	}, nil

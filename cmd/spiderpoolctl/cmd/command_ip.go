@@ -28,7 +28,7 @@ var ipShowCmd = &cobra.Command{
 var ipReleaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "try to release ip",
-	Long:  `try to release ip and other releted data`,
+	Long:  `try to release ip and other related data`,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Info("This is spiderpool ctl ip release...")
 	},

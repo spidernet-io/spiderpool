@@ -13,6 +13,7 @@ header:
       - '**/*.sh'
     paths-ignore:
       - 'vendor'
+      - 'pkg/nodemanager/mocks/mock_manager_interface.go'
     comment: on-failure
   - license:
       content: |
@@ -23,4 +24,16 @@ header:
       - '**/*.sh'
     paths-ignore:
       - 'vendor'
+      - 'pkg/nodemanager/mocks/mock_manager_interface.go'
     comment: on-failure
+  - license:
+      content: |
+        Copyright 2014 The vektra Authors
+        SPDX-License-Identifier: BSD-3-Clause
+    paths:
+      - '**/*.go'
+      - '**/*.sh'
+    paths-ignore:
+      - 'vendor'
+    comment: on-failure
+

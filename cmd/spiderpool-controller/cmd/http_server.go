@@ -29,9 +29,9 @@ func newControllerOpenAPIServer() (*controllerOpenAPIServer.Server, error) {
 	}
 
 	// runtime API
-	api.RuntimeGetRuntimeReadinessHandler = &getControllerReadiness{}
-	api.RuntimeGetRuntimeStartupHandler = &getControllerStartup{}
-	api.RuntimeGetRuntimeLivenessHandler = &getControllerLiveness{}
+	api.RuntimeGetRuntimeStartupHandler = httpGetControllerStartup
+	api.RuntimeGetRuntimeReadinessHandler = httpGetControllerReadiness
+	api.RuntimeGetRuntimeLivenessHandler = httpGetControllerLiveness
 
 	// new controller OpenAPI server with api
 	srv := controllerOpenAPIServer.NewServer(api)

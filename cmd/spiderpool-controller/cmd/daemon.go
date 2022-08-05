@@ -42,11 +42,6 @@ func DaemonMain() {
 	}
 	logger = logutils.Logger.Named(BinNameController)
 
-	// start notifying signals
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
-	go WatchSignal(sigCh)
-
 	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
 
 	if controllerContext.Cfg.GopsListenPort != "" {
@@ -133,8 +128,13 @@ func DaemonMain() {
 	logger.Debug("Begin to initialize IP GC Manager")
 	initGCManager(controllerContext.InnerCtx)
 
-	// ...
-	time.Sleep(100 * time.Hour)
+	// TODO (Icarus9913): improve k8s StartupProbe
+	controllerContext.IsStartupProbe.Store(true)
+
+	// start notifying signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+	WatchSignal(sigCh)
 }
 
 // WatchSignal notifies the signal to shut down controllerContext handlers.

@@ -27,13 +27,6 @@ func NewNodeManager(mgr ctrl.Manager) (NodeManager, error) {
 		return nil, errors.New("runtime manager must be specified")
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Node{}, metav1.ObjectNameField, func(raw client.Object) []string {
-		node := raw.(*corev1.Node)
-		return []string{node.Name}
-	}); err != nil {
-		return nil, err
-	}
-
 	return &nodeManager{
 		client:     mgr.GetClient(),
 		runtimeMgr: mgr,

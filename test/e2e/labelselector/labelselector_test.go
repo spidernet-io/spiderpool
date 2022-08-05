@@ -197,13 +197,160 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			Entry("failed to run pod who is bound to an ippool set with no-matched podSelector", Label("L00006"), true, true, false),
 		)
 	})
+
+	Context("cross-zone daemonSet", func() {
+		var namespace, daemonSetName string
+		var err error
+
+		nodeV4PoolMap := make(map[string][]string)
+		nodeV6PoolMap := make(map[string][]string)
+		allV4PoolNameList := make([]string, 0)
+		allV6PoolNameList := make([]string, 0)
+
+		BeforeEach(func() {
+			// create namespace
+			namespace = "ns" + tools.RandomName()
+			GinkgoWriter.Printf("create namespace %v \n", namespace)
+			err = frame.CreateNamespace(namespace)
+			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
+			GinkgoWriter.Printf("succeed to create namespace %v \n", namespace)
+
+			// daemonSetName name
+			daemonSetName = "daemonset" + tools.RandomName()
+
+			// get node list
+			GinkgoWriter.Println("get node list")
+			nodeList, err := frame.GetNodeList()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(nodeList).NotTo(BeNil())
+
+			if len(nodeList.Items) < 2 {
+				Skip("skip: this case need 2 nodes at least")
+			}
+
+			for _, node := range nodeList.Items {
+				// create ippool
+				if frame.Info.IpV4Enabled {
+					v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(1)
+					GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
+					v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
+					v4Pool.Spec.NodeAffinity.MatchLabels = node.Labels
+					createIPPool(v4Pool)
+
+					allV4PoolNameList = append(allV4PoolNameList, v4PoolName)
+					nodeV4PoolMap[node.Name] = []string{v4PoolName}
+
+					GinkgoWriter.Printf("node: %v, v4PoolNameList: %+v \n", node.Name, nodeV4PoolMap[node.Name])
+				}
+				if frame.Info.IpV6Enabled {
+					// create v6 ippool
+					v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(1)
+					GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
+					v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
+					v6Pool.Spec.NodeAffinity.MatchLabels = node.Labels
+					createIPPool(v6Pool)
+
+					allV6PoolNameList = append(allV6PoolNameList, v6PoolName)
+					nodeV6PoolMap[node.Name] = []string{v6PoolName}
+
+					GinkgoWriter.Printf("node: %v, v6PoolNameList: %+v \n", node.Name, nodeV6PoolMap[node.Name])
+				}
+			}
+
+			DeferCleanup(func() {
+				// delete namespace
+				GinkgoWriter.Printf("delete namespace %v \n", namespace)
+				err := frame.DeleteNamespace(namespace)
+				Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
+				GinkgoWriter.Printf("succeed to delete namespace %v \n", namespace)
+
+				// delete ippool
+				if frame.Info.IpV4Enabled {
+					for _, poolName := range allV4PoolNameList {
+						deleteIPPoolUntilFinish(poolName)
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					for _, poolName := range allV6PoolNameList {
+						deleteIPPoolUntilFinish(poolName)
+					}
+				}
+			})
+		})
+		It("Succeed to run daemonSet/pod who is cross-zone daemonSet with matched nodeSelector", Label("L00007"), func() {
+			// generate  daemonSet yaml
+			GinkgoWriter.Println("generate example daemonSet yaml")
+			daemonSetYaml := common.GenerateExampleDaemonSetYaml(daemonSetName, namespace)
+			Expect(daemonSetYaml).NotTo(BeNil(), "failed to generate daemonSet %v/%v yaml\n", namespace, daemonSetName)
+
+			// set annotation to add ippool
+			GinkgoWriter.Println("add annotations to daemonSet yaml")
+			anno := types.AnnoPodIPPoolValue{}
+			if frame.Info.IpV4Enabled {
+				anno.IPv4Pools = allV4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				anno.IPv6Pools = allV6PoolNameList
+			}
+			annoB, err := json.Marshal(anno)
+			Expect(err).NotTo(HaveOccurred(), "failed to marshal pod annotations %+v\n", anno)
+			annoStr := string(annoB)
+
+			daemonSetYaml.Spec.Template.Annotations = map[string]string{
+				constant.AnnoPodIPPool: annoStr,
+			}
+			GinkgoWriter.Printf("the daemonSet yaml is :%+v\n", daemonSetYaml)
+
+			// create daemonSet
+			GinkgoWriter.Printf("create daemonSet %v/%v \n", namespace, daemonSetName)
+			Expect(frame.CreateDaemonSet(daemonSetYaml)).To(Succeed(), "failed to create daemonSet: %v/%v\n", namespace, daemonSetName)
+
+			// wait daemonSet ready
+			GinkgoWriter.Printf("wait daemonset %v/%v ready\n", namespace, daemonSetName)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			daemonSet, err := frame.WaitDaemonSetReady(daemonSetName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
+			Expect(daemonSet).NotTo(BeNil())
+
+			// get podList
+			GinkgoWriter.Printf("get pod list by label: %+v \n", daemonSet.Spec.Template.Labels)
+			podList, err := frame.GetPodListByLabel(daemonSet.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList,error: %v \n", err)
+			Expect(podList).NotTo(BeNil())
+
+			// check pod ip in different node-ippool
+			GinkgoWriter.Println("check pod ip if in different node-ippool")
+			for _, pod := range podList.Items {
+				ok, _, _, err := common.CheckPodIpRecordInIppool(frame, nodeV4PoolMap[pod.Spec.NodeName], nodeV6PoolMap[pod.Spec.NodeName], &corev1.PodList{Items: []corev1.Pod{pod}})
+				Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
+				Expect(ok).To(BeTrue())
+			}
+
+			// delete daemonSet
+			GinkgoWriter.Printf("delete daemonSet %v/%v\n", namespace, daemonSetName)
+			Expect(frame.DeleteDaemonSet(daemonSetName, namespace)).To(Succeed(), "failed to delete daemonSet %v/%v\n", namespace, daemonSetName)
+			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel2()
+			Expect(frame.WaitPodListDeleted(namespace, daemonSet.Spec.Template.Labels, ctx2)).To(Succeed(), "time out to wait podList deleted\n")
+
+			// check pod ip if reclaimed in different node-ippool
+			GinkgoWriter.Println("check pod ip if reclaimed in different node-ippool")
+			for _, pod := range podList.Items {
+				_, ok, _, err := common.CheckPodIpRecordInIppool(frame, nodeV4PoolMap[pod.Spec.NodeName], nodeV6PoolMap[pod.Spec.NodeName], &corev1.PodList{Items: []corev1.Pod{pod}})
+				Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
+				Expect(ok).To(BeTrue())
+			}
+		})
+	})
 })
 
 func deleteIPPoolUntilFinish(poolName string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	GinkgoWriter.Printf("delete ippool %v\n", poolName)
-	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed())
+	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed(), "failed to delete ippool %v\n", poolName)
+	GinkgoWriter.Printf("succeed to delete ippool %v\n", poolName)
 }
 
 func createIPPool(IPPoolObj *spiderpoolv1.SpiderIPPool) {

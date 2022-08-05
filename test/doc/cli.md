@@ -1,4 +1,4 @@
-# e2e case for CLI
+# E2E Cases for CLI
 
-| case id | title                                   |  priority | smoke | status | other |
+| Case ID | Title                                   |  Priority | Smoke | Status | Other |
 |---------|-----------------------------------------|-----------|-------|--------|-------|

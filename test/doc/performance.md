@@ -1,5 +1,5 @@
-# e2e case for performance
+# E2E Cases for Performance
 
-| case id | title                                                                                                                   | priority | smoke | status |                            other                     |
-|---------|-------------------------------------------------------------------------------------------------------------------------|----------|-------|--------|------------------------------------------------------|
-| P00002  | time cost for creating, rebooting, deleting deployment pod in batches                                                   | p3       |       | done   | add check point: metric && Spiderpool inspection log |
+| Case ID | Title                                                        | Priority | Smoke | Status | Other                                                |
+| ------- | ------------------------------------------------------------ | -------- | ----- | ------ | ---------------------------------------------------- |
+| P00002  | Time cost when creating, rebooting, deleting deployment pods in batch for multiple NICs | p3       |       | done   | add check point: metric && Spiderpool inspection log |

@@ -1,4 +1,4 @@
-# e2e case for edit metric
+# E2E Cases for Edit Metric
 
-| case id    | title                                   |  priority   |   smoke   | status | other |
+| Case ID    | Title                                   |  Priority   |   Smoke   | Status | Other |
 |------------|-----------------------------------------|-------------|-----------|--------|-------|

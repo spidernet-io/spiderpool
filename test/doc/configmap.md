@@ -1,5 +1,5 @@
-# e2e case for configmap
+# E2E Cases for ConfigMap
 
-| case id  | title                                                                                                                                    | priority | smoke | status | other |
-|----------|------------------------------------------------------------------------------------------------------------------------------------------|----------|-------|--------|-------|
-| C00001   | failed to run a pod whose requested IP is not coordinated with the 'enableIPv4' and 'enableIPv6' field of configmap 'spiderpool-conf'    | p2       |       | NA     |       |
+| Case ID | Title                                                        | Priority | Smoke | Status | Other |
+| ------- | ------------------------------------------------------------ | -------- | ----- | ------ | ----- |
+| C00001  | Failed to run a pod whose requested IP is not coordinated with the 'enableIPv4' and 'enableIPv6' field of configmap 'spiderpool-conf' | p2       |       | NA     |       |

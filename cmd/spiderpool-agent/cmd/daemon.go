@@ -55,11 +55,6 @@ func DaemonMain() {
 
 	// TODO (Icarus9913): flush ipam plugin config (deprecated)
 
-	// start notifying signals
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
-	go WatchSignal(sigCh)
-
 	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
 
 	if agentContext.Cfg.GopsListenPort != "" {
@@ -179,9 +174,13 @@ func DaemonMain() {
 		}
 	}()
 
-	// ...
+	// TODO (Icarus9913): improve k8s StartupProbe
+	agentContext.IsStartupProbe.Store(true)
 
-	time.Sleep(100 * time.Hour)
+	// start notifying signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+	WatchSignal(sigCh)
 }
 
 // WatchSignal notifies the signal to shut down agentContext handlers.

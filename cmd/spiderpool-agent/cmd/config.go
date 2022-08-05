@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"go.uber.org/atomic"
 	"gopkg.in/yaml.v3"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -108,6 +109,9 @@ type AgentContext struct {
 	CRDManager ctrl.Manager
 	HttpServer *server.Server
 	UnixServer *server.Server
+
+	// probe
+	IsStartupProbe atomic.Bool
 }
 
 // BindAgentDaemonFlags bind agent cli daemon flags

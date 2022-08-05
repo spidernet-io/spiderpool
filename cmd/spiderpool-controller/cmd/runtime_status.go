@@ -8,28 +8,40 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server/restapi/runtime"
 )
 
-type getControllerStartup struct{}
+// Singleton
+var (
+	httpGetControllerStartup   = &_httpGetControllerStartup{controllerContext}
+	httpGetControllerReadiness = &_httpGetControllerReadiness{}
+	httpGetControllerLiveness  = &_httpGetControllerLiveness{}
+)
 
-// Handle handles GET requests for /runtime/startup .
-func (g *getControllerStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
-	// TODO (Icarus9913): return the http status code with logic.
-
-	return runtime.NewGetRuntimeStartupOK()
+type _httpGetControllerStartup struct {
+	*ControllerContext
 }
 
-type getControllerReadiness struct{}
+// Handle handles GET requests for k8s startup probe.
+func (g *_httpGetControllerStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
+	// TODO (Icarus9913): return the http status code with logic.
+	if g.IsStartupProbe.Load() {
+		return runtime.NewGetRuntimeStartupOK()
+	}
 
-// Handle handles GET requests for /runtime/readiness .
-func (g *getControllerReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
+	return runtime.NewGetRuntimeStartupInternalServerError()
+}
+
+type _httpGetControllerReadiness struct{}
+
+// Handle handles GET requests for k8s readiness probe.
+func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeReadinessOK()
 }
 
-type getControllerLiveness struct{}
+type _httpGetControllerLiveness struct{}
 
-// Handle handles GET requests for /runtime/liveness .
-func (g *getControllerLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
+// Handle handles GET requests for k8s liveness probe.
+func (g *_httpGetControllerLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 
 	return runtime.NewGetRuntimeLivenessOK()

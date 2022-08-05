@@ -10,23 +10,29 @@ import (
 
 // Singleton
 var (
-	httpGetAgentStartup   = &_httpGetAgentStartup{}
+	httpGetAgentStartup   = &_httpGetAgentStartup{agentContext}
 	httpGetAgentReadiness = &_httpGetAgentReadiness{}
 	httpGetAgentLiveness  = &_httpGetAgentLiveness{}
 )
 
-type _httpGetAgentStartup struct{}
+type _httpGetAgentStartup struct {
+	*AgentContext
+}
 
-// Handle handles GET requests for /runtime/startup .
+// Handle handles GET requests for k8s startup probe.
 func (g *_httpGetAgentStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 
-	return runtime.NewGetRuntimeStartupOK()
+	if g.IsStartupProbe.Load() {
+		return runtime.NewGetRuntimeStartupOK()
+	}
+
+	return runtime.NewGetRuntimeStartupInternalServerError()
 }
 
 type _httpGetAgentReadiness struct{}
 
-// Handle handles GET requests for /runtime/readiness .
+// Handle handles GET requests for k8s readiness probe.
 func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 
@@ -35,7 +41,7 @@ func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams
 
 type _httpGetAgentLiveness struct{}
 
-// Handle handles GET requests for /runtime/liveness .
+// Handle handles GET requests for k8s liveness probe.
 func (g *_httpGetAgentLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 

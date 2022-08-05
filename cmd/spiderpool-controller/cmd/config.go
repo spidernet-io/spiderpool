@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"go.uber.org/atomic"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -127,6 +128,9 @@ type ControllerContext struct {
 
 	// handler
 	HttpServer *server.Server
+
+	// probe
+	IsStartupProbe atomic.Bool
 }
 
 // BindControllerDaemonFlags bind controller cli daemon flags

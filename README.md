@@ -89,7 +89,7 @@ The Spiderpool provides a large number of different features as follows.
 
 * Included metrics for looking into IP usage and issues.
 
-* By CidrManager, it could automatically creat new ippool for application who needs fixed IP address, and retrieve the ippool when application is deleted. That could reduce the administrator workload.
+* By CidrManager, it could automatically create new ippool for application who needs fixed IP address, and retrieve the ippool when application is deleted. That could reduce the administrator workload.
 
 * Support for both ARM64 and ARM64.
 

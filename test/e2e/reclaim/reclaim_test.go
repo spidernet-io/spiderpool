@@ -138,56 +138,100 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			})
 	})
 
-	It("the IP should be reclaimed after its pod is deleted , even when CNI binary is gone on the host", Serial,
-		Label("smoke", "G00003"), func() {
-			// create pod
-			GinkgoWriter.Printf("create pod %v/%v \n", namespace, podName)
-			pod, _, _ := createPod(podName, namespace, time.Second*30)
+	DescribeTable("the IP can be reclaimed after its deployment, statefulSet, daemonSet, replicaSet, or job is deleted, even when CNI binary is gone on the host", func(resourceName string) {
+		resourceNM := resourceName + tools.RandomName()
+		podList := &corev1.PodList{}
 
-			v := &corev1.PodList{
+		// create resource
+		GinkgoWriter.Printf("create %v/%v \n", namespace, resourceNM)
+
+		switch resourceName {
+		case "pod":
+			pod, _, _ := createPod(podName, namespace, time.Second*30)
+			podList = &corev1.PodList{
 				Items: []corev1.Pod{*pod},
 			}
+		case "deployment":
+			// generate example resource yaml
+			GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, resourceNM)
+			resourceObj := common.GenerateExampleDeploymentYaml(resourceNM, namespace, int32(1))
+			Expect(resourceObj).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, resourceNM)
 
-			// check the pod ip information in ippool is correct
-			GinkgoWriter.Printf("check the pod %v/%v ip information in ippool is correct\n", namespace, podName)
-			ok1, _, _, err1 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, v)
-			Expect(ok1).To(BeTrue())
-			Expect(err1).NotTo(HaveOccurred())
+			// create resource
+			GinkgoWriter.Printf("create %v/%v \n", namespace, resourceNM)
+			Expect(frame.CreateDeployment(resourceObj)).To(Succeed(), "failed to create %v/%v \n", namespace, resourceNM)
 
-			// remove cni bin
-			GinkgoWriter.Println("remove cni bin")
-			command := "mv /opt/cni/bin/multus /opt/cni/bin/multus.backup"
-			common.ExecCommandOnKindNode(frame.Info.KindNodeList, command, time.Second*10)
-			GinkgoWriter.Println("remove cni bin successfully")
+			// get podList
+			podList, err = getPodList(namespace, resourceNM)
+		case "statefulSet":
+			// generate example resource yaml
+			GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, resourceNM)
+			resourceObj := common.GenerateExampleStatefulSetYaml(resourceNM, namespace, int32(1))
+			Expect(resourceObj).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, resourceNM)
 
-			// delete pod
-			GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-			defer cancel()
-			opt := &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64Ptr(0),
-			}
-			Expect(frame.DeletePodUntilFinish(podName, namespace, ctx, opt)).To(Succeed())
+			// create resource
+			GinkgoWriter.Printf("create %v/%v \n", namespace, resourceNM)
+			Expect(frame.CreateStatefulSet(resourceObj)).To(Succeed(), "failed to create %v/%v \n", namespace, resourceNM)
+
+			// get podList
+			podList, err = getPodList(namespace, resourceNM)
+		default:
+			Fail("err: wrong parameters\n")
+		}
+
+		// check the resource ip information in ippool is correct
+		GinkgoWriter.Printf("check the resource %v/%v ip information in ippool is correct\n", namespace, resourceNM)
+		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList)
+		Expect(err).NotTo(HaveOccurred(), "failed to check ip recorded in ippool, err: %v\n", err)
+		Expect(ok).To(BeTrue())
+
+		// remove cni bin
+		GinkgoWriter.Println("remove cni bin")
+		command := "mv /opt/cni/bin/multus /opt/cni/bin/multus.backup"
+		common.ExecCommandOnKindNode(frame.Info.KindNodeList, command, time.Second*10)
+		GinkgoWriter.Println("remove cni bin successfully")
+
+		// delete resource
+		GinkgoWriter.Printf("delete resource %v/%v\n", namespace, resourceNM)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		opt := &client.DeleteOptions{
+			GracePeriodSeconds: pointer.Int64Ptr(0),
+		}
+
+		switch resourceName {
+		case "pod":
+			Expect(frame.DeletePodUntilFinish(resourceNM, namespace, ctx, opt)).To(Succeed())
 			GinkgoWriter.Printf("delete pod %v/%v successfully\n", namespace, podName)
+		case "deployment":
+			Expect(frame.DeleteDeploymentUntilFinish(resourceNM, namespace, time.Minute, opt)).To(Succeed())
+		default:
+			Fail("err: wrong parameters\n")
+		}
 
-			// check if the pod ip in ippool reclaimed normally
-			GinkgoWriter.Println("check podIP reclaimed")
-			Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, v, time.Minute)).To(Succeed())
+		// check if the ip in ippool reclaimed normally
+		GinkgoWriter.Println("check IP reclaimed")
+		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, time.Minute)).To(Succeed())
 
-			// restore cni bin
-			GinkgoWriter.Println("restore cni bin")
-			command = "mv /opt/cni/bin/multus.backup /opt/cni/bin/multus"
-			common.ExecCommandOnKindNode(frame.Info.KindNodeList, command, time.Second*10)
-			GinkgoWriter.Println("restore cni bin successfully")
+		// restore cni bin
+		GinkgoWriter.Println("restore cni bin")
+		command = "mv /opt/cni/bin/multus.backup /opt/cni/bin/multus"
+		common.ExecCommandOnKindNode(frame.Info.KindNodeList, command, time.Second*10)
+		GinkgoWriter.Println("restore cni bin successfully")
 
-			// wait nodes ready
-			GinkgoWriter.Println("wait cluster node ready")
-			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel1()
-			ok3, err3 := frame.WaitClusterNodeReady(ctx1)
-			Expect(ok3).To(BeTrue())
-			Expect(err3).NotTo(HaveOccurred())
-		})
+		// wait nodes ready
+		GinkgoWriter.Println("wait cluster node ready")
+		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel1()
+		ok3, err3 := frame.WaitClusterNodeReady(ctx1)
+		Expect(ok3).To(BeTrue())
+		Expect(err3).NotTo(HaveOccurred())
+
+	},
+		Entry("the IP should be reclaimed after its pod is deleted , even when CNI binary is gone on the host", Serial, Label("G00003"), "pod"),
+		Entry("the IP should be reclaimed after its deployment is deleted , even when CNI binary is gone on the host", Serial, Label("G00003"), "deployment"),
+	)
 })
 
 func createPod(podName, namespace string, duration time.Duration) (pod *corev1.Pod, podIPv4, podIPv6 string) {
@@ -201,5 +245,13 @@ func createPod(podName, namespace string, duration time.Duration) (pod *corev1.P
 	Expect(pod).NotTo(BeNil(), "create pod failed")
 	GinkgoWriter.Printf("podIPv4: %v\n", podIPv4)
 	GinkgoWriter.Printf("podIPv6: %v\n", podIPv6)
+	return
+}
+
+func getPodList(namespace, resourceName string) (podList *corev1.PodList, err error) {
+	GinkgoWriter.Printf("get %v/%v podList\n", namespace, resourceName)
+	podList, err = frame.GetPodListByLabel(map[string]string{"app": resourceName})
+	Expect(err).NotTo(HaveOccurred(), "failed to get podList, err: %v\n", err)
+	Expect(podList).NotTo(BeNil())
 	return
 }

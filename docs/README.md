@@ -19,7 +19,7 @@ More CNIs will be tested for integration with Spiderpool.
 Most overlay CNIs, like
 [Cilium](https://github.com/cilium/cilium)
 and [Calico](https://github.com/projectcalico/calico),
-have a good implementation of IPAM, so the Spiderpool is not intentionally designed for these cases, but maybe integrated with them.
+have a good implementation of IPAM, so the Spiderpool is not intentionally designed for these cases, but may be integrated with them.
 
 The Spiderpool is specifically designed to use with underlay network, where administrators can accurately manage each IP.
 

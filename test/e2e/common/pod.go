@@ -58,14 +58,15 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 
 	GinkgoWriter.Printf("pod: %v/%v, ips: %+v \n", namespace, podName, pod.Status.PodIPs)
 
+	var ok bool
 	if frame.Info.IpV4Enabled {
-		podIPv4, ok := tools.CheckPodIpv4IPReady(pod)
+		podIPv4, ok = tools.CheckPodIpv4IPReady(pod)
 		Expect(ok).NotTo(BeFalse(), "failed to get ipv4 ip")
 		Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
 		GinkgoWriter.Println("succeeded to check pod ipv4 ip")
 	}
 	if frame.Info.IpV6Enabled {
-		podIPv6, ok := tools.CheckPodIpv6IPReady(pod)
+		podIPv6, ok = tools.CheckPodIpv6IPReady(pod)
 		Expect(ok).NotTo(BeFalse(), "failed to get ipv6 ip")
 		Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
 		GinkgoWriter.Println("succeeded to check pod ipv6 ip")

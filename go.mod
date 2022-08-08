@@ -24,7 +24,7 @@ require (
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spidernet-io/e2eframework v0.0.0-20220705081904-a8d957907f2a
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 	golang.org/x/tools v0.1.12

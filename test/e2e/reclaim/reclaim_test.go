@@ -138,7 +138,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			})
 	})
 
-	DescribeTable("the IP can be reclaimed after its deployment, statefulSet, daemonSet, replicaSet, or job is deleted, even when CNI binary is gone on the host", func(resourceName string) {
+	DescribeTable("the IP can be reclaimed after its deployment, statefulSet, daemonSet, replicaSet, or job is deleted, even when CNI binary is gone on the host", Serial, func(resourceName string) {
 		resourceNM := resourceName + tools.RandomName()
 		podList := &corev1.PodList{}
 
@@ -147,7 +147,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		switch resourceName {
 		case "pod":
-			pod, _, _ := createPod(podName, namespace, time.Second*30)
+			pod, _, _ := createPod(resourceNM, namespace, time.Minute)
 			podList = &corev1.PodList{
 				Items: []corev1.Pod{*pod},
 			}
@@ -194,18 +194,18 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		// delete resource
 		GinkgoWriter.Printf("delete resource %v/%v\n", namespace, resourceNM)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		defer cancel()
 		opt := &client.DeleteOptions{
 			GracePeriodSeconds: pointer.Int64Ptr(0),
 		}
 
 		switch resourceName {
 		case "pod":
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			defer cancel()
 			Expect(frame.DeletePodUntilFinish(resourceNM, namespace, ctx, opt)).To(Succeed())
 			GinkgoWriter.Printf("delete pod %v/%v successfully\n", namespace, podName)
 		case "deployment":
-			Expect(frame.DeleteDeploymentUntilFinish(resourceNM, namespace, time.Minute, opt)).To(Succeed())
+			Expect(frame.DeleteDeploymentUntilFinish(resourceNM, namespace, time.Minute*2, opt)).To(Succeed())
 		default:
 			Fail("err: wrong parameters\n")
 		}

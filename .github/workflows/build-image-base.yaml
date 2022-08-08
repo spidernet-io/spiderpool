@@ -106,7 +106,7 @@ jobs:
 
       - name: Release build ${{ env.IMAGE_NAME }}
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
-        uses: docker/build-push-action@v3.1.0
+        uses: docker/build-push-action@v3.1.1
         continue-on-error: false
         id: docker_build_release
         with:

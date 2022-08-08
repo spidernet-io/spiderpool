@@ -1,4 +1,4 @@
-# architect
+# Architect
 
 ## architecture
 

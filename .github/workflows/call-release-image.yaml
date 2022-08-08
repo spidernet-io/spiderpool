@@ -78,7 +78,7 @@ jobs:
           echo ::set-output name=committime::${GIT_COMMIT_TIME}
 
       - name: Build Image ${{ matrix.name }}
-        uses: docker/build-push-action@v3.1.0
+        uses: docker/build-push-action@v3.1.1
         id: docker_build_release
         with:
           context: ${{ matrix.context }}

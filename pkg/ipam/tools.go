@@ -18,7 +18,7 @@ import (
 func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) ([]*ToBeAllocated, error) {
 	// TODO(iiiceoo): Check Pod annotations
 	logger := logutils.FromContext(ctx)
-	logger.Sugar().Infof("Use IP pools from Pod annotation '%s'", constant.AnnoPodIPPools)
+	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
 	var annoPodIPPools types.AnnoPodIPPoolsValue
 	err := json.Unmarshal([]byte(anno), &annoPodIPPools)
@@ -35,7 +35,7 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) ([]*ToBeAllo
 	}
 
 	if !validIface {
-		return nil, fmt.Errorf("the interface of the pod annotation does not contain that requested by runtime: %w", constant.ErrWrongInput)
+		return nil, fmt.Errorf("the interface of the Pod annotation does not contain that requested by runtime: %w", constant.ErrWrongInput)
 	}
 
 	var tt []*ToBeAllocated
@@ -61,7 +61,7 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) ([]*ToBeAllo
 func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string) (*ToBeAllocated, error) {
 	// TODO(iiiceoo): Check Pod annotations
 	logger := logutils.FromContext(ctx)
-	logger.Sugar().Infof("Use IP pools from Pod annotation '%s'", constant.AnnoPodIPPool)
+	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPool)
 
 	var annoPodIPPool types.AnnoPodIPPoolValue
 	if err := json.Unmarshal([]byte(anno), &annoPodIPPool); err != nil {
@@ -69,7 +69,7 @@ func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string) (*ToBeAllocat
 	}
 
 	if annoPodIPPool.NIC != nil && *annoPodIPPool.NIC != nic {
-		return nil, fmt.Errorf("the interface of pod annotation is different from that requested by runtime: %w", constant.ErrWrongInput)
+		return nil, fmt.Errorf("the interface of Pod annotation is different from that requested by runtime: %w", constant.ErrWrongInput)
 	}
 
 	return &ToBeAllocated{
@@ -85,7 +85,7 @@ func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV
 
 	var t *ToBeAllocated
 	if len(netConfV4Pool) != 0 || len(netConfV6Pool) != 0 {
-		logger.Info("Use IP pools from CNI network configuration")
+		logger.Info("Use IPPools from CNI network configuration")
 		t = &ToBeAllocated{
 			NIC:              nic,
 			DefaultRouteType: constant.SingleNICDefaultRoute,

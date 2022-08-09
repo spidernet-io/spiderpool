@@ -6,46 +6,67 @@ package reservedipmanager
 import (
 	"context"
 	"errors"
+	"net"
 
-	ctrl "sigs.k8s.io/controller-runtime"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ReservedIPManager interface {
-	GetReservedIPRanges(ctx context.Context, version types.IPVersion) ([]string, error)
+	GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.ReservedIP, error)
+	ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.ReservedIPList, error)
+	GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.ReservedIPList) ([]net.IP, error)
 }
 
 type reservedIPManager struct {
-	client     client.Client
-	runtimeMgr ctrl.Manager
+	client client.Client
 }
 
-func NewReservedIPManager(mgr ctrl.Manager) (ReservedIPManager, error) {
-	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+func NewReservedIPManager(c client.Client) (ReservedIPManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
 	}
 
 	return &reservedIPManager{
-		client:     mgr.GetClient(),
-		runtimeMgr: mgr,
+		client: c,
 	}, nil
 }
 
-func (r *reservedIPManager) GetReservedIPRanges(ctx context.Context, version types.IPVersion) ([]string, error) {
-	var reservedIPs spiderpoolv1.ReservedIPList
-	if err := r.client.List(ctx, &reservedIPs); err != nil {
+func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.ReservedIP, error) {
+	var rIP spiderpoolv1.ReservedIP
+	if err := rm.client.Get(ctx, apitypes.NamespacedName{Name: rIPName}, &rIP); err != nil {
 		return nil, err
 	}
 
-	var reservedIPRanges []string
-	for _, r := range reservedIPs.Items {
-		if *r.Spec.IPVersion == version {
-			reservedIPRanges = append(reservedIPRanges, r.Spec.IPs...)
-		}
+	return &rIP, nil
+}
+
+func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.ReservedIPList, error) {
+	var rIPList spiderpoolv1.ReservedIPList
+	if err := rm.client.List(ctx, &rIPList, opts...); err != nil {
+		return nil, err
 	}
 
-	return reservedIPRanges, nil
+	return &rIPList, nil
+}
+
+func (rm *reservedIPManager) GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.ReservedIPList) ([]net.IP, error) {
+	var ips []net.IP
+	for _, r := range rIPList.Items {
+		if *r.Spec.IPVersion != version {
+			continue
+		}
+
+		rIPs, err := spiderpoolip.ParseIPRanges(version, r.Spec.IPs)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, rIPs...)
+	}
+
+	return ips, nil
 }

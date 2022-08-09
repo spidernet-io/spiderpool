@@ -6,7 +6,7 @@ package constant
 import "github.com/spidernet-io/spiderpool/pkg/types"
 
 const (
-	Dual types.IPVersion = 0
+	Dual types.IPVersion = 64
 	IPv4 types.IPVersion = 4
 	IPv6 types.IPVersion = 6
 )

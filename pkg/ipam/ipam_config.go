@@ -28,9 +28,9 @@ func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string) (*To
 	logger := logutils.FromContext(ctx)
 
 	if len(c.ClusterDefaultIPv4IPPool) == 0 && len(c.ClusterDefaultIPv6IPPool) == 0 {
-		return nil, fmt.Errorf("%w, no IP pool selection rules of any kind are specified", constant.ErrNoAvailablePool)
+		return nil, fmt.Errorf("%w, no IPPool selection rules of any kind are specified", constant.ErrNoAvailablePool)
 	}
-	logger.Info("Use IP pools from cluster default pools")
+	logger.Info("Use IPPools from cluster default pools")
 
 	return &ToBeAllocated{
 		NIC:              nic,
@@ -77,16 +77,16 @@ func (c *IPAMConfig) checkPoolMisspecified(ctx context.Context, t *ToBeAllocated
 	v6PoolCount := len(t.V6PoolCandidates)
 
 	if c.EnableIPv4 && v4PoolCount == 0 {
-		return fmt.Errorf("%w in interface %s, IPv4 pool is not specified when IPv4 is enabled", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w in interface %s, IPv4 IPPool is not specified when IPv4 is enabled", constant.ErrWrongInput, t.NIC)
 	}
 	if c.EnableIPv6 && v6PoolCount == 0 {
-		return fmt.Errorf("%w in interface %s, IPv6 pool is not specified when IPv6 is enabled", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w in interface %s, IPv6 IPPool is not specified when IPv6 is enabled", constant.ErrWrongInput, t.NIC)
 	}
 	if !c.EnableIPv4 && v4PoolCount != 0 {
-		return fmt.Errorf("%w in interface %s, IPv4 pool is specified when IPv4 is disabled", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w in interface %s, IPv4 IPPool is specified when IPv4 is disabled", constant.ErrWrongInput, t.NIC)
 	}
 	if !c.EnableIPv6 && v6PoolCount != 0 {
-		return fmt.Errorf("%w in interface %s, IPv6 pool is specified when IPv6 is disabled", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w in interface %s, IPv6 IPPool is specified when IPv6 is disabled", constant.ErrWrongInput, t.NIC)
 	}
 
 	return nil

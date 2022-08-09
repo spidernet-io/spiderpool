@@ -102,7 +102,7 @@ func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, n
 		if allocation, ok := newIPPool.Status.AllocatedIPs[ip.String()]; ok {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("reduces an IP %s that is being used by Pod %s/%s, total IPs of an IP pool are jointly determined by 'ips' and 'excludeIPs'", ip.String(), allocation.Namespace, allocation.Pod),
+				fmt.Sprintf("reduces an IP %s that is being used by Pod %s/%s, total IPs of an IPPool are jointly determined by 'ips' and 'excludeIPs'", ip.String(), allocation.Namespace, allocation.Pod),
 			)
 		}
 	}
@@ -125,7 +125,7 @@ func (im *ipPoolManager) validateIPPoolIPVersion(ctx context.Context, version ty
 }
 
 func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types.IPVersion, poolName, subnet string) *field.Error {
-	ipPools, err := im.ListAllIPPools(ctx)
+	ipPools, err := im.ListIPPools(ctx)
 	if err != nil {
 		return field.InternalError(subnetField, err)
 	}
@@ -148,7 +148,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 			return field.Invalid(
 				subnetField,
 				subnet,
-				fmt.Sprintf("overlapped with IP pool %s which subnet is %s", pool.Name, pool.Spec.Subnet),
+				fmt.Sprintf("overlapped with IPPool %s which subnet is %s", pool.Name, pool.Spec.Subnet),
 			)
 		}
 	}
@@ -164,7 +164,7 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 		return err
 	}
 
-	ipPools, err := im.ListAllIPPools(ctx)
+	ipPools, err := im.ListIPPools(ctx)
 	if err != nil {
 		return field.InternalError(ipsField, err)
 	}
@@ -183,7 +183,7 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("overlapped with IP pool %s, total IPs of an IP pool are jointly determined by 'ips' and 'excludeIPs'", pool.Name),
+				fmt.Sprintf("overlapped with IPPool %s, total IPs of an IPPool are jointly determined by 'ips' and 'excludeIPs'", pool.Name),
 			)
 		}
 	}
@@ -251,7 +251,7 @@ func validateContainsIPRange(ctx context.Context, fieldPath *field.Path, version
 		return field.Invalid(
 			fieldPath,
 			ipRange,
-			fmt.Sprintf("not pertains to the subnet %s of IP pool", subnet),
+			fmt.Sprintf("not pertains to the subnet %s of IPPool", subnet),
 		)
 	}
 
@@ -272,7 +272,7 @@ func validateContainsIP(ctx context.Context, fieldPath *field.Path, version type
 		return field.Invalid(
 			fieldPath,
 			ip,
-			fmt.Sprintf("not pertains to the subnet %s of IP pool", subnet),
+			fmt.Sprintf("not pertains to the subnet %s of IPPool", subnet),
 		)
 	}
 

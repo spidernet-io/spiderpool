@@ -14,7 +14,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -23,6 +22,7 @@ import (
 
 type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
+	ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error)
 	GetOwnerType(pod *corev1.Pod) types.OwnerType
 	CheckPodStatus(pod *corev1.Pod) (types.PodStatus, bool)
 	MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error
@@ -31,34 +31,41 @@ type PodManager interface {
 
 type podManager struct {
 	client                client.Client
-	runtimeMgr            ctrl.Manager
 	maxConflictRetrys     int
 	conflictRetryUnitTime time.Duration
 }
 
-func NewPodManager(mgr ctrl.Manager, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (PodManager, error) {
-	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+func NewPodManager(c client.Client, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (PodManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
 	}
 
 	return &podManager{
-		client:                mgr.GetClient(),
-		runtimeMgr:            mgr,
+		client:                c,
 		maxConflictRetrys:     maxConflictRetrys,
 		conflictRetryUnitTime: conflictRetryUnitTime,
 	}, nil
 }
 
-func (r *podManager) GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error) {
+func (pm *podManager) GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error) {
 	var pod corev1.Pod
-	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+	if err := pm.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
 		return nil, err
 	}
 
 	return &pod, nil
 }
 
-func (r *podManager) GetOwnerType(pod *corev1.Pod) types.OwnerType {
+func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error) {
+	var podList corev1.PodList
+	if err := pm.client.List(ctx, &podList, opts...); err != nil {
+		return nil, err
+	}
+
+	return &podList, nil
+}
+
+func (pm *podManager) GetOwnerType(pod *corev1.Pod) types.OwnerType {
 	owner := metav1.GetControllerOf(pod)
 	if owner == nil {
 		return constant.OwnerNone
@@ -79,7 +86,7 @@ func (r *podManager) GetOwnerType(pod *corev1.Pod) types.OwnerType {
 	return ownerType
 }
 
-func (r *podManager) CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable bool) {
+func (pm *podManager) CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable bool) {
 	if pod.DeletionTimestamp != nil && pod.DeletionGracePeriodSeconds != nil {
 		now := time.Now()
 		deletionTime := pod.DeletionTimestamp.Time
@@ -105,11 +112,11 @@ func (r *podManager) CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus,
 	return constant.PodRunning, true
 }
 
-func (r *podManager) MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error {
+func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= r.maxConflictRetrys; i++ {
-		var pod corev1.Pod
-		if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+	for i := 0; i <= pm.maxConflictRetrys; i++ {
+		pod, err := pm.GetPodByName(ctx, namespace, podName)
+		if err != nil {
 			return err
 		}
 
@@ -120,16 +127,15 @@ func (r *podManager) MergeAnnotations(ctx context.Context, namespace, podName st
 		for k, v := range annotations {
 			pod.Annotations[k] = v
 		}
-		if err := r.client.Update(ctx, &pod); err != nil {
-			if apierrors.IsConflict(err) {
-				if i == r.maxConflictRetrys {
-					return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", r.maxConflictRetrys)
-				}
-
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * r.conflictRetryUnitTime)
-				continue
+		if err := pm.client.Update(ctx, pod); err != nil {
+			if !apierrors.IsConflict(err) {
+				return err
 			}
-			return err
+			if i == pm.maxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", pm.maxConflictRetrys)
+			}
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * pm.conflictRetryUnitTime)
+			continue
 		}
 		break
 	}
@@ -137,16 +143,14 @@ func (r *podManager) MergeAnnotations(ctx context.Context, namespace, podName st
 	return nil
 }
 
-func (r *podManager) MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error) {
+func (pm *podManager) MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error) {
 	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
 		return false, err
 	}
 
-	var pods corev1.PodList
-	err = r.client.List(
+	podList, err := pm.ListPods(
 		ctx,
-		&pods,
 		client.InNamespace(namespace),
 		client.MatchingLabelsSelector{Selector: selector},
 		client.MatchingFields{metav1.ObjectNameField: podName},
@@ -155,7 +159,7 @@ func (r *podManager) MatchLabelSelector(ctx context.Context, namespace, podName 
 		return false, err
 	}
 
-	if len(pods.Items) == 0 {
+	if len(podList.Items) == 0 {
 		return false, nil
 	}
 

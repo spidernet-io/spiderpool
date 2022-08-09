@@ -9,40 +9,55 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type NodeManager interface {
+	GetNodeByName(ctx context.Context, nodeName string) (*corev1.Node, error)
+	ListNodes(ctx context.Context, opts ...client.ListOption) (*corev1.NodeList, error)
 	MatchLabelSelector(ctx context.Context, nodeName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
 
 type nodeManager struct {
-	client     client.Client
-	runtimeMgr ctrl.Manager
+	client client.Client
 }
 
-func NewNodeManager(mgr ctrl.Manager) (NodeManager, error) {
-	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+func NewNodeManager(c client.Client) (NodeManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
 	}
 	return &nodeManager{
-		client:     mgr.GetClient(),
-		runtimeMgr: mgr,
+		client: c,
 	}, nil
 }
 
-// MatchLabelSelector will check whether the node matches the labelSelector or not
-func (r *nodeManager) MatchLabelSelector(ctx context.Context, nodeName string, labelSelector *metav1.LabelSelector) (bool, error) {
+func (nm *nodeManager) GetNodeByName(ctx context.Context, nodeName string) (*corev1.Node, error) {
+	var node corev1.Node
+	if err := nm.client.Get(ctx, apitypes.NamespacedName{Name: nodeName}, &node); err != nil {
+		return nil, err
+	}
+
+	return &node, nil
+}
+
+func (nm *nodeManager) ListNodes(ctx context.Context, opts ...client.ListOption) (*corev1.NodeList, error) {
+	var nodeList corev1.NodeList
+	if err := nm.client.List(ctx, &nodeList, opts...); err != nil {
+		return nil, err
+	}
+
+	return &nodeList, nil
+}
+
+func (nm *nodeManager) MatchLabelSelector(ctx context.Context, nodeName string, labelSelector *metav1.LabelSelector) (bool, error) {
 	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
 		return false, err
 	}
-	// Get the matches' node from client
-	var nodes corev1.NodeList
-	err = r.client.List(
+
+	nodeList, err := nm.ListNodes(
 		ctx,
-		&nodes,
 		client.MatchingLabelsSelector{Selector: selector},
 		client.MatchingFields{metav1.ObjectNameField: nodeName},
 	)
@@ -50,7 +65,7 @@ func (r *nodeManager) MatchLabelSelector(ctx context.Context, nodeName string, l
 		return false, err
 	}
 
-	if len(nodes.Items) == 0 {
+	if len(nodeList.Items) == 0 {
 		return false, nil
 	}
 

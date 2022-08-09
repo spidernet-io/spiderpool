@@ -5,7 +5,10 @@ package ippoolmanager
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
+	"time"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -121,5 +124,22 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
 func (im *ipPoolManager) ValidateDelete(ctx context.Context, obj runtime.Object) error {
+	return nil
+}
+
+// WebhookHealthyCheck servers for spiderpool controller readiness and liveness probe
+func WebhookHealthyCheck(webhookPort string) error {
+	// TODO (Icarus9913): Do we still need custom timeout seconds?
+	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	conn, err := tls.DialWithDialer(dialer, "tcp", net.JoinHostPort("", webhookPort), &tls.Config{InsecureSkipVerify: true})
+	if err != nil {
+		return fmt.Errorf("webhook server is not reachable: %w", err)
+	}
+
+	// close connection
+	if err := conn.Close(); err != nil {
+		return fmt.Errorf("webhook server is not reachable: closing connection: %w", err)
+	}
+
 	return nil
 }

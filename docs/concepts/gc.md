@@ -4,8 +4,8 @@
 
 ### context
 
-When a pod is normally deleted , the CNI plugin will be called to clean IP on Pod interface and make IP free on IPAM database.
-This make sure all IP is managed correctly and no leaked IP issue.
+When a pod is normally deleted, the CNI plugin will be called to clean IP on a pod interface and make IP free on IPAM database.
+This can make sure all IPs are managed correctly and no IP leakage issue occurs.
 
 But on cases, it may go wrong and IP of IPAM database is still recorded to be used by a non-existed pod.
 

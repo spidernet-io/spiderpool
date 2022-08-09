@@ -1,12 +1,10 @@
 # spiderpool-controller
 
-CLI
+This page describes CLI options and ENV of spiderpool-controller.
 
 ## spiderpool-controller daemon
 
-### Synopsis
-
-run spiderpool controller daemon
+Run the spiderpool controller daemon.
 
 ### Options
 
@@ -30,13 +28,11 @@ run spiderpool controller daemon
 
 ## spiderpool-controller shutdown
 
-### Synopsis
-
-notify to stop spiderpool-controller daemon
+Notify of stopping spiderpool-controller daemon.
 
 ## spiderpool-controller metric
 
-get local metric
+Get local metrics.
 
 ### Options
 
@@ -46,9 +42,10 @@ get local metric
 
 ## spiderpool-controller status
 
-show status:
-(1) whether local is controller leader
-(2)...
+Show status:
+
+1. Whether local is controller leader
+2. ...
 
 ### Options
 

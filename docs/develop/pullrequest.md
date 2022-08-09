@@ -1,65 +1,71 @@
-# Submit Pull request
+# Submit Pull Request
 
-A pull request will be checked by following workflow, which is the required condition for merging
+A pull request will be checked by following workflow, which is required for merging.
 
-## action: PR should be signed off
+## Action: your PR should be signed off
 
-## action: check yaml files
+When you commit your modification, add `-s` in your commit command:
 
-If this check fails, it could refer to the [yaml rule](https://yamllint.readthedocs.io/en/stable/rules.html)
+```
+git commit -s
+```
 
-Once the issue is fixed , it could be verified on local host by command ` make lint-yaml `
+## Action: check yaml files
 
-notice: for ignoring yaml rule, it could be add to .github/yamllint-conf.yml
+If this check fails, see the [yaml rule](https://yamllint.readthedocs.io/en/stable/rules.html).
 
-## action: check golang source code
+Once the issue is fixed, it could be verified on your local host by command `make lint-yaml`.
 
-It checks the following against any updated golang file
+Note: To ignore a yaml rule, you can add it into `.github/yamllint-conf.yml`.
 
-* mod dependency updated, golangci-lint, gofmt updated, go vet, use internal lock pkg
+## Action: check golang source code
 
-* comment `// TODO` should follow format: `// TODO (AuthorName) ...`, which easy to trace the owner of the remaining job
+It checks the following items against any updated golang file.
 
-* unitest and upload coverage to codecov
+* Mod dependency updated, golangci-lint, gofmt updated, go vet, use internal lock pkg
 
-* each golang test file should mark ginkgo label
+* Comment `// TODO` should follow the format: `// TODO (AuthorName) ...`, which easy to trace the owner of the remaining job
 
-## action: check license
+* Unitest and upload coverage to codecov
+
+* Each golang test file should mark ginkgo label
+
+## Action: check licenses
 
 Any golang or shell file should be licensed correctly.
 
-## action: check markdown file
+## Action: check markdown file
 
-* check markdown format, if fails, it could refer to the [Markdown Rule](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)
+* Check markdown format, if fails, See the [Markdown Rule](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)
 
-    It could be tested on local machine with command `make lint-markdown-format`
+  You can test it on your local machine with the command `make lint-markdown-format`.
 
-    It could try to fix it on local machine with command `make fix-markdown-format`
+  You can fix it on your local machine with the command `make fix-markdown-format`.
 
-    For ignoring case, it could be added to .github/markdownlint.yaml
+  If you believe it can be ignored, you can add it to `.github/markdownlint.yaml`.
 
-* check markdown spell error.
+* Check markdown spell error.
   
-    It could be tested on local machine with command `make lint-markdown-spell-colour`.
+  You can test it with the command `make lint-markdown-spell-colour`.
 
-    For ignoring case, it could be added it to .github/.spelling
+  If you believe it can be ignored, you can add it to `.github/.spelling`.
 
-## action: lint yaml file
+## Action: lint yaml file
 
-if it fails, the reason could refer to <https://yamllint.readthedocs.io/en/stable/rules.html>
+If it fails, see <https://yamllint.readthedocs.io/en/stable/rules.html> for reasons.
 
-It could be tested on local machine with command `make lint-yaml`
+You can test it on your local machine with the command `make lint-yaml`.
 
-## action: lint chart
+## Action: lint chart
 
-## action: lint openapi.yaml
+## Action: lint openapi.yaml
 
-## action: check code spell
+## Action: check code spell
 
 Any code spell error of golang files will be checked.
 
-It could be checked on local machine with command `make lint-code-spell`.
+You can check it on your local machine with the command `make lint-code-spell`.
 
-It could be auto fixed on local machine with command `make fix-code-spell`.
+It could be automatically fixed on your local machine with the command `make fix-code-spell`.
 
-For ignored error case, please edit .github/codespell-ignorewords and make sure all letters should be lower-case
+If you believe it can be ignored, edit `.github/codespell-ignorewords` and make sure all letters are lower-case.

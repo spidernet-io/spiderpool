@@ -114,7 +114,7 @@ sample-backup   eth0        backup-v4-ippool   172.18.40.40/16                  
 
 ## Selectors
 
-Ippool can also use `nodeSelector`, `namesapceSelector` and `podSelector` to filter its users. It should be regarded as a **filtering mechanism** rather than a ippool selection rule (refer to chapter [Priority](#Priority) for ippool selection rules).
+Ippool can also use `nodeSelector`, `namesapceSelector`, and `podSelector` to filter its users. It should be regarded as a **filtering mechanism** rather than an ippool selection rule (refer to chapter [Priority](#priority) for ippool selection rules).
 
 All selectors follow the syntax of [Kubernetes label selector](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/), just like:
 

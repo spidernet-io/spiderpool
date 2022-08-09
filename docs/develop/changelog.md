@@ -1,19 +1,19 @@
-# changelog
+# Changelog
 
-how automatically generate the changelog
+How to automatically generate changelogs:
 
-1. all PR should be labeled with "pr/release/***" and could be merged
+1. All PRs should be labeled with "pr/release/***" and can be merged.
 
-2. when pushing a tag, automatically create the changelog
+2. When you add the label, the changelog will be created automatically.
 
-    the changelog content include:
+    The changelog contents include:
 
-    * New Features: it includes all PR labeled with "pr/release/feature-new"
+    * New Features: it includes all PRs labeled with "pr/release/feature-new"
 
-    * Changed Features: it include all PR labeled with "pr/release/feature-changed"
+    * Changed Features: it includes all PRs labeled with "pr/release/feature-changed"
 
-    * Fixes: it include all PR labeled with "pr/release/bug"
+    * Fixes: it includes all PRs labeled with "pr/release/bug"
 
-    * all historical commit within this version
+    * All historical commits within this version
 
-3. the changelog will be attached to github RELEASE and submit to /changelogs of branch 'github_pages'
+3. The changelog will be attached to Github RELEASE and submitted to /changelogs of branch 'github_pages'.

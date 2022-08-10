@@ -45,7 +45,8 @@ func NewGetRuntimeStartupOK() *GetRuntimeStartupOK {
 	return &GetRuntimeStartupOK{}
 }
 
-/* GetRuntimeStartupOK describes a response with status code 200, with default header values.
+/*
+GetRuntimeStartupOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewGetRuntimeStartupInternalServerError() *GetRuntimeStartupInternalServerE
 	return &GetRuntimeStartupInternalServerError{}
 }
 
-/* GetRuntimeStartupInternalServerError describes a response with status code 500, with default header values.
+/*
+GetRuntimeStartupInternalServerError describes a response with status code 500, with default header values.
 
 Failed
 */

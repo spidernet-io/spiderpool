@@ -45,7 +45,8 @@ func NewPutIpamIPOK() *PutIpamIPOK {
 	return &PutIpamIPOK{}
 }
 
-/* PutIpamIPOK describes a response with status code 200, with default header values.
+/*
+PutIpamIPOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewPutIpamIPInternalServerError() *PutIpamIPInternalServerError {
 	return &PutIpamIPInternalServerError{}
 }
 
-/* PutIpamIPInternalServerError describes a response with status code 500, with default header values.
+/*
+PutIpamIPInternalServerError describes a response with status code 500, with default header values.
 
 Force set ip failure
 */

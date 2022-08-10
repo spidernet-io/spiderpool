@@ -17,7 +17,8 @@ import (
 // GetRuntimeReadinessOKCode is the HTTP code returned for type GetRuntimeReadinessOK
 const GetRuntimeReadinessOKCode int = 200
 
-/*GetRuntimeReadinessOK Success
+/*
+GetRuntimeReadinessOK Success
 
 swagger:response getRuntimeReadinessOK
 */
@@ -41,7 +42,8 @@ func (o *GetRuntimeReadinessOK) WriteResponse(rw http.ResponseWriter, producer r
 // GetRuntimeReadinessInternalServerErrorCode is the HTTP code returned for type GetRuntimeReadinessInternalServerError
 const GetRuntimeReadinessInternalServerErrorCode int = 500
 
-/*GetRuntimeReadinessInternalServerError Failed
+/*
+GetRuntimeReadinessInternalServerError Failed
 
 swagger:response getRuntimeReadinessInternalServerError
 */

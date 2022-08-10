@@ -17,7 +17,8 @@ import (
 // PostIpamIpsOKCode is the HTTP code returned for type PostIpamIpsOK
 const PostIpamIpsOKCode int = 200
 
-/*PostIpamIpsOK Success
+/*
+PostIpamIpsOK Success
 
 swagger:response postIpamIpsOK
 */
@@ -41,7 +42,8 @@ func (o *PostIpamIpsOK) WriteResponse(rw http.ResponseWriter, producer runtime.P
 // PostIpamIpsInternalServerErrorCode is the HTTP code returned for type PostIpamIpsInternalServerError
 const PostIpamIpsInternalServerErrorCode int = 500
 
-/*PostIpamIpsInternalServerError Allocation failure
+/*
+PostIpamIpsInternalServerError Allocation failure
 
 swagger:response postIpamIpsInternalServerError
 */

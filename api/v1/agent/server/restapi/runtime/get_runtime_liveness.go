@@ -32,12 +32,12 @@ func NewGetRuntimeLiveness(ctx *middleware.Context, handler GetRuntimeLivenessHa
 	return &GetRuntimeLiveness{Context: ctx, Handler: handler}
 }
 
-/* GetRuntimeLiveness swagger:route GET /runtime/liveness runtime getRuntimeLiveness
+/*
+	GetRuntimeLiveness swagger:route GET /runtime/liveness runtime getRuntimeLiveness
 
-Liveness probe
+# Liveness probe
 
 Check pod liveness probe
-
 */
 type GetRuntimeLiveness struct {
 	Context *middleware.Context

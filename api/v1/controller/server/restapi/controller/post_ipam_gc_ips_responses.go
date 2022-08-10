@@ -17,7 +17,8 @@ import (
 // PostIpamGcIpsOKCode is the HTTP code returned for type PostIpamGcIpsOK
 const PostIpamGcIpsOKCode int = 200
 
-/*PostIpamGcIpsOK Success
+/*
+PostIpamGcIpsOK Success
 
 swagger:response postIpamGcIpsOK
 */
@@ -41,7 +42,8 @@ func (o *PostIpamGcIpsOK) WriteResponse(rw http.ResponseWriter, producer runtime
 // PostIpamGcIpsInternalServerErrorCode is the HTTP code returned for type PostIpamGcIpsInternalServerError
 const PostIpamGcIpsInternalServerErrorCode int = 500
 
-/*PostIpamGcIpsInternalServerError Global gc failure
+/*
+PostIpamGcIpsInternalServerError Global gc failure
 
 swagger:response postIpamGcIpsInternalServerError
 */

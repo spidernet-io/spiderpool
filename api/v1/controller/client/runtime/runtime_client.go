@@ -43,9 +43,9 @@ type ClientService interface {
 }
 
 /*
-  GetRuntimeLiveness livenesses probe
+GetRuntimeLiveness livenesses probe
 
-  Check pod liveness probe
+Check pod liveness probe
 */
 func (a *Client) GetRuntimeLiveness(params *GetRuntimeLivenessParams, opts ...ClientOption) (*GetRuntimeLivenessOK, error) {
 	// TODO: Validate the params before sending
@@ -83,9 +83,9 @@ func (a *Client) GetRuntimeLiveness(params *GetRuntimeLivenessParams, opts ...Cl
 }
 
 /*
-  GetRuntimeReadiness readinesses probe
+GetRuntimeReadiness readinesses probe
 
-  Check pod readiness probe
+Check pod readiness probe
 */
 func (a *Client) GetRuntimeReadiness(params *GetRuntimeReadinessParams, opts ...ClientOption) (*GetRuntimeReadinessOK, error) {
 	// TODO: Validate the params before sending
@@ -123,9 +123,9 @@ func (a *Client) GetRuntimeReadiness(params *GetRuntimeReadinessParams, opts ...
 }
 
 /*
-  GetRuntimeStartup startups probe
+GetRuntimeStartup startups probe
 
-  Check pod startup probe
+Check pod startup probe
 */
 func (a *Client) GetRuntimeStartup(params *GetRuntimeStartupParams, opts ...ClientOption) (*GetRuntimeStartupOK, error) {
 	// TODO: Validate the params before sending

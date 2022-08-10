@@ -39,11 +39,11 @@ type ClientService interface {
 }
 
 /*
-  GetIpamHealthy gets health of spiderpool daemon
+	GetIpamHealthy gets health of spiderpool daemon
 
-  Check spiderpool daemonset health to make sure whether it's ready
+	Check spiderpool daemonset health to make sure whether it's ready
+
 for CNI plugin usage
-
 */
 func (a *Client) GetIpamHealthy(params *GetIpamHealthyParams, opts ...ClientOption) (*GetIpamHealthyOK, error) {
 	// TODO: Validate the params before sending

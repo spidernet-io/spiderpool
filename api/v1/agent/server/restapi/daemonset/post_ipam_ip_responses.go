@@ -19,7 +19,8 @@ import (
 // PostIpamIPOKCode is the HTTP code returned for type PostIpamIPOK
 const PostIpamIPOKCode int = 200
 
-/*PostIpamIPOK Success
+/*
+PostIpamIPOK Success
 
 swagger:response postIpamIpOK
 */
@@ -63,7 +64,8 @@ func (o *PostIpamIPOK) WriteResponse(rw http.ResponseWriter, producer runtime.Pr
 // PostIpamIPInternalServerErrorCode is the HTTP code returned for type PostIpamIPInternalServerError
 const PostIpamIPInternalServerErrorCode int = 500
 
-/*PostIpamIPInternalServerError Internal server error
+/*
+PostIpamIPInternalServerError Internal server error
 
 swagger:response postIpamIpInternalServerError
 */
@@ -87,7 +89,8 @@ func (o *PostIpamIPInternalServerError) WriteResponse(rw http.ResponseWriter, pr
 // PostIpamIPStatus512Code is the HTTP code returned for type PostIpamIPStatus512
 const PostIpamIPStatus512Code int = 512
 
-/*PostIpamIPStatus512 Wrong input information
+/*
+PostIpamIPStatus512 Wrong input information
 
 swagger:response postIpamIpStatus512
 */
@@ -111,7 +114,8 @@ func (o *PostIpamIPStatus512) WriteResponse(rw http.ResponseWriter, producer run
 // PostIpamIPStatus513Code is the HTTP code returned for type PostIpamIPStatus513
 const PostIpamIPStatus513Code int = 513
 
-/*PostIpamIPStatus513 Not allocatable pod
+/*
+PostIpamIPStatus513 Not allocatable pod
 
 swagger:response postIpamIpStatus513
 */
@@ -135,7 +139,8 @@ func (o *PostIpamIPStatus513) WriteResponse(rw http.ResponseWriter, producer run
 // PostIpamIPStatus514Code is the HTTP code returned for type PostIpamIPStatus514
 const PostIpamIPStatus514Code int = 514
 
-/*PostIpamIPStatus514 No available IP pool
+/*
+PostIpamIPStatus514 No available IP pool
 
 swagger:response postIpamIpStatus514
 */
@@ -159,7 +164,8 @@ func (o *PostIpamIPStatus514) WriteResponse(rw http.ResponseWriter, producer run
 // PostIpamIPStatus515Code is the HTTP code returned for type PostIpamIPStatus515
 const PostIpamIPStatus515Code int = 515
 
-/*PostIpamIPStatus515 All IP used out
+/*
+PostIpamIPStatus515 All IP used out
 
 swagger:response postIpamIpStatus515
 */

@@ -32,13 +32,12 @@ func NewDeleteIpamIP(ctx *middleware.Context, handler DeleteIpamIPHandler) *Dele
 	return &DeleteIpamIP{Context: ctx, Handler: handler}
 }
 
-/* DeleteIpamIP swagger:route DELETE /ipam/ip daemonset deleteIpamIp
+/*
+	DeleteIpamIP swagger:route DELETE /ipam/ip daemonset deleteIpamIp
 
-Delete ip from spiderpool daemon
+# Delete ip from spiderpool daemon
 
 Send a request to daemonset to ask for an ip deleting
-
-
 */
 type DeleteIpamIP struct {
 	Context *middleware.Context

@@ -17,7 +17,8 @@ import (
 // GetIpamHealthyOKCode is the HTTP code returned for type GetIpamHealthyOK
 const GetIpamHealthyOKCode int = 200
 
-/*GetIpamHealthyOK Success
+/*
+GetIpamHealthyOK Success
 
 swagger:response getIpamHealthyOK
 */
@@ -41,7 +42,8 @@ func (o *GetIpamHealthyOK) WriteResponse(rw http.ResponseWriter, producer runtim
 // GetIpamHealthyInternalServerErrorCode is the HTTP code returned for type GetIpamHealthyInternalServerError
 const GetIpamHealthyInternalServerErrorCode int = 500
 
-/*GetIpamHealthyInternalServerError Failed
+/*
+GetIpamHealthyInternalServerError Failed
 
 swagger:response getIpamHealthyInternalServerError
 */

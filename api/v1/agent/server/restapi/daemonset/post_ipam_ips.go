@@ -32,13 +32,12 @@ func NewPostIpamIps(ctx *middleware.Context, handler PostIpamIpsHandler) *PostIp
 	return &PostIpamIps{Context: ctx, Handler: handler}
 }
 
-/* PostIpamIps swagger:route POST /ipam/ips daemonset postIpamIps
+/*
+	PostIpamIps swagger:route POST /ipam/ips daemonset postIpamIps
 
-Assign multiple ip as a batch
+# Assign multiple ip as a batch
 
 Assign multiple ip for a pod, case for spiderflat compent
-
-
 */
 type PostIpamIps struct {
 	Context *middleware.Context

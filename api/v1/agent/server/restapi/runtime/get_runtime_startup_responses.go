@@ -17,7 +17,8 @@ import (
 // GetRuntimeStartupOKCode is the HTTP code returned for type GetRuntimeStartupOK
 const GetRuntimeStartupOKCode int = 200
 
-/*GetRuntimeStartupOK Success
+/*
+GetRuntimeStartupOK Success
 
 swagger:response getRuntimeStartupOK
 */
@@ -41,7 +42,8 @@ func (o *GetRuntimeStartupOK) WriteResponse(rw http.ResponseWriter, producer run
 // GetRuntimeStartupInternalServerErrorCode is the HTTP code returned for type GetRuntimeStartupInternalServerError
 const GetRuntimeStartupInternalServerErrorCode int = 500
 
-/*GetRuntimeStartupInternalServerError Failed
+/*
+GetRuntimeStartupInternalServerError Failed
 
 swagger:response getRuntimeStartupInternalServerError
 */

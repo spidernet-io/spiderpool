@@ -55,10 +55,12 @@ func NewGetRuntimeReadinessParamsWithHTTPClient(client *http.Client) *GetRuntime
 	}
 }
 
-/* GetRuntimeReadinessParams contains all the parameters to send to the API endpoint
-   for the get runtime readiness operation.
+/*
+GetRuntimeReadinessParams contains all the parameters to send to the API endpoint
 
-   Typically these are written to a http.Request.
+	for the get runtime readiness operation.
+
+	Typically these are written to a http.Request.
 */
 type GetRuntimeReadinessParams struct {
 	timeout    time.Duration

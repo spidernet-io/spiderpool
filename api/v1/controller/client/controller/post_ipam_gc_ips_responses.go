@@ -45,7 +45,8 @@ func NewPostIpamGcIpsOK() *PostIpamGcIpsOK {
 	return &PostIpamGcIpsOK{}
 }
 
-/* PostIpamGcIpsOK describes a response with status code 200, with default header values.
+/*
+PostIpamGcIpsOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewPostIpamGcIpsInternalServerError() *PostIpamGcIpsInternalServerError {
 	return &PostIpamGcIpsInternalServerError{}
 }
 
-/* PostIpamGcIpsInternalServerError describes a response with status code 500, with default header values.
+/*
+PostIpamGcIpsInternalServerError describes a response with status code 500, with default header values.
 
 Global gc failure
 */

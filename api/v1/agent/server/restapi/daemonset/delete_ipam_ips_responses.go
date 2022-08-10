@@ -17,7 +17,8 @@ import (
 // DeleteIpamIpsOKCode is the HTTP code returned for type DeleteIpamIpsOK
 const DeleteIpamIpsOKCode int = 200
 
-/*DeleteIpamIpsOK Success
+/*
+DeleteIpamIpsOK Success
 
 swagger:response deleteIpamIpsOK
 */
@@ -41,7 +42,8 @@ func (o *DeleteIpamIpsOK) WriteResponse(rw http.ResponseWriter, producer runtime
 // DeleteIpamIpsInternalServerErrorCode is the HTTP code returned for type DeleteIpamIpsInternalServerError
 const DeleteIpamIpsInternalServerErrorCode int = 500
 
-/*DeleteIpamIpsInternalServerError Failed
+/*
+DeleteIpamIpsInternalServerError Failed
 
 swagger:response deleteIpamIpsInternalServerError
 */

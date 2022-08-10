@@ -45,7 +45,8 @@ func NewGetIpamHealthyOK() *GetIpamHealthyOK {
 	return &GetIpamHealthyOK{}
 }
 
-/* GetIpamHealthyOK describes a response with status code 200, with default header values.
+/*
+GetIpamHealthyOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewGetIpamHealthyInternalServerError() *GetIpamHealthyInternalServerError {
 	return &GetIpamHealthyInternalServerError{}
 }
 
-/* GetIpamHealthyInternalServerError describes a response with status code 500, with default header values.
+/*
+GetIpamHealthyInternalServerError describes a response with status code 500, with default header values.
 
 Failed
 */

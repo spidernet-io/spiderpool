@@ -47,10 +47,9 @@ type ClientService interface {
 }
 
 /*
-  DeleteIpamIP deletes ip from spiderpool daemon
+DeleteIpamIP deletes ip from spiderpool daemon
 
-  Send a request to daemonset to ask for an ip deleting
-
+Send a request to daemonset to ask for an ip deleting
 */
 func (a *Client) DeleteIpamIP(params *DeleteIpamIPParams, opts ...ClientOption) (*DeleteIpamIPOK, error) {
 	// TODO: Validate the params before sending
@@ -88,10 +87,9 @@ func (a *Client) DeleteIpamIP(params *DeleteIpamIPParams, opts ...ClientOption) 
 }
 
 /*
-  DeleteIpamIps deletes multiple ip as a batch
+DeleteIpamIps deletes multiple ip as a batch
 
-  Delete multiple ip for a pod, case for spiderflat compent
-
+Delete multiple ip for a pod, case for spiderflat compent
 */
 func (a *Client) DeleteIpamIps(params *DeleteIpamIpsParams, opts ...ClientOption) (*DeleteIpamIpsOK, error) {
 	// TODO: Validate the params before sending
@@ -129,10 +127,9 @@ func (a *Client) DeleteIpamIps(params *DeleteIpamIpsParams, opts ...ClientOption
 }
 
 /*
-  GetWorkloadendpoint gets workloadendpoint status
+GetWorkloadendpoint gets workloadendpoint status
 
-  Get workloadendpoint details for spiderflat use
-
+Get workloadendpoint details for spiderflat use
 */
 func (a *Client) GetWorkloadendpoint(params *GetWorkloadendpointParams, opts ...ClientOption) (*GetWorkloadendpointOK, error) {
 	// TODO: Validate the params before sending
@@ -170,10 +167,9 @@ func (a *Client) GetWorkloadendpoint(params *GetWorkloadendpointParams, opts ...
 }
 
 /*
-  PostIpamIP gets ip from spiderpool daemon
+PostIpamIP gets ip from spiderpool daemon
 
-  Send a request to daemonset to ask for an ip assignment
-
+Send a request to daemonset to ask for an ip assignment
 */
 func (a *Client) PostIpamIP(params *PostIpamIPParams, opts ...ClientOption) (*PostIpamIPOK, error) {
 	// TODO: Validate the params before sending
@@ -211,10 +207,9 @@ func (a *Client) PostIpamIP(params *PostIpamIPParams, opts ...ClientOption) (*Po
 }
 
 /*
-  PostIpamIps assigns multiple ip as a batch
+PostIpamIps assigns multiple ip as a batch
 
-  Assign multiple ip for a pod, case for spiderflat compent
-
+Assign multiple ip for a pod, case for spiderflat compent
 */
 func (a *Client) PostIpamIps(params *PostIpamIpsParams, opts ...ClientOption) (*PostIpamIpsOK, error) {
 	// TODO: Validate the params before sending

@@ -55,10 +55,12 @@ func NewGetRuntimeStartupParamsWithHTTPClient(client *http.Client) *GetRuntimeSt
 	}
 }
 
-/* GetRuntimeStartupParams contains all the parameters to send to the API endpoint
-   for the get runtime startup operation.
+/*
+GetRuntimeStartupParams contains all the parameters to send to the API endpoint
 
-   Typically these are written to a http.Request.
+	for the get runtime startup operation.
+
+	Typically these are written to a http.Request.
 */
 type GetRuntimeStartupParams struct {
 	timeout    time.Duration

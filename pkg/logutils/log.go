@@ -1,5 +1,5 @@
+// Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-// Copyright Authors of Cilium
 
 package logutils
 
@@ -9,11 +9,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"strings"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"strings"
 )
 
 // Pre-define log instance with default info level.

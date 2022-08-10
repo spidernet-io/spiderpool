@@ -1,7 +1,7 @@
 {{- if .Values.clusterDefaultPool.installIPv4IPPool }}
 {{- if .Values.ipFamily.enableIPv4 }}
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
   name: {{ .Values.clusterDefaultPool.ipv4IPPoolName | trunc 63 | trimSuffix "-" }}
 spec:
@@ -18,7 +18,7 @@ spec:
 {{- if .Values.clusterDefaultPool.installIPv6IPPool }}
 {{- if .Values.ipFamily.enableIPv6 }}
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
   name: {{ .Values.clusterDefaultPool.ipv6IPPoolName | trunc 63 | trimSuffix "-" }}
 spec:

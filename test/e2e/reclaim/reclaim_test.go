@@ -197,7 +197,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 	Context("test the reclaim of dirty IP record in the IPPool", func() {
 		var v4poolName, v6poolName string
 		var v4poolNameList, v6poolNameList []string
-		var v4poolObj, v6poolObj *spiderpool.IPPool
+		var v4poolObj, v6poolObj *spiderpool.SpiderIPPool
 		var (
 			podIPv4Record, podIPv6Record     = new(spiderpool.PoolIPAllocation), new(spiderpool.PoolIPAllocation)
 			dirtyIPv4Record, dirtyIPv6Record = new(spiderpool.PoolIPAllocation), new(spiderpool.PoolIPAllocation)

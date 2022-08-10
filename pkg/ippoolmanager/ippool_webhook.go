@@ -27,7 +27,7 @@ var webhookLogger = logutils.Logger.Named("IPPool-Webhook")
 
 func (im *ipPoolManager) SetupWebhook() error {
 	return ctrl.NewWebhookManagedBy(im.runtimeMgr).
-		For(&spiderpoolv1.IPPool{}).
+		For(&spiderpoolv1.SpiderIPPool{}).
 		WithDefaulter(im).
 		WithValidator(im).
 		Complete()
@@ -37,7 +37,7 @@ var _ webhook.CustomDefaulter = (*ipPoolManager)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type
 func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error {
-	ipPool, ok := obj.(*spiderpoolv1.IPPool)
+	ipPool, ok := obj.(*spiderpoolv1.SpiderIPPool)
 	if !ok {
 		return fmt.Errorf("mutating webhook of IPPool got an object with mismatched type: %+v", obj.GetObjectKind().GroupVersionKind())
 	}
@@ -64,7 +64,7 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		}
 
 		*ipPool.Spec.IPVersion = version
-		logger.Sugar().Infof("Set ipVersion '%s'", version)
+		logger.Sugar().Infof("Set ipVersion '%d'", version)
 	}
 
 	// add finalizer for IPPool CR
@@ -80,7 +80,7 @@ var _ webhook.CustomValidator = (*ipPoolManager)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
 func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-	ipPool, ok := obj.(*spiderpoolv1.IPPool)
+	ipPool, ok := obj.(*spiderpoolv1.SpiderIPPool)
 	if !ok {
 		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", obj.GetObjectKind().GroupVersionKind())
 	}
@@ -101,8 +101,8 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
 func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
-	oldIPPool, _ := oldObj.(*spiderpoolv1.IPPool)
-	newIPPool, ok := newObj.(*spiderpoolv1.IPPool)
+	oldIPPool, _ := oldObj.(*spiderpoolv1.SpiderIPPool)
+	newIPPool, ok := newObj.(*spiderpoolv1.SpiderIPPool)
 	if !ok {
 		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", newObj.GetObjectKind().GroupVersionKind())
 	}

@@ -27,7 +27,7 @@ var (
 	routesField     *field.Path = field.NewPath("spec").Child("routes")
 )
 
-func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.IPPool) error {
+func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
 	var errs field.ErrorList
 	if err := im.validateIPPoolSpec(ctx, ipPool); err != nil {
 		errs = append(errs, err)
@@ -44,7 +44,7 @@ func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spide
 	)
 }
 
-func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.IPPool) error {
+func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) error {
 	if err := im.validateCreateIPPool(ctx, newIPPool); err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	)
 }
 
-func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.IPPool) *field.Error {
+func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if err := im.validateIPPoolIPVersion(ctx, *ipPool.Spec.IPVersion); err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.IPPool) *field.Error {
+func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	// TODO(iiiceoo): do not validate field 'ips' and field 'excludeIPs'?
 	if err := im.validateIPPoolIPs(ctx, *newIPPool.Spec.IPVersion, newIPPool.Spec.Subnet, newIPPool.Spec.IPs); err != nil {
 		return err
@@ -156,7 +156,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *spiderpoolv1.IPPool) *field.Error {
+func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if err := im.validateIPPoolIPs(ctx, *ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
 		return err
 	}

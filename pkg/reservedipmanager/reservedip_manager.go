@@ -17,9 +17,9 @@ import (
 )
 
 type ReservedIPManager interface {
-	GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.ReservedIP, error)
-	ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.ReservedIPList, error)
-	GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.ReservedIPList) ([]net.IP, error)
+	GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.SpiderReservedIP, error)
+	ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error)
+	GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error)
 }
 
 type reservedIPManager struct {
@@ -36,8 +36,8 @@ func NewReservedIPManager(c client.Client) (ReservedIPManager, error) {
 	}, nil
 }
 
-func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.ReservedIP, error) {
-	var rIP spiderpoolv1.ReservedIP
+func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.SpiderReservedIP, error) {
+	var rIP spiderpoolv1.SpiderReservedIP
 	if err := rm.client.Get(ctx, apitypes.NamespacedName{Name: rIPName}, &rIP); err != nil {
 		return nil, err
 	}
@@ -45,8 +45,8 @@ func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName st
 	return &rIP, nil
 }
 
-func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.ReservedIPList, error) {
-	var rIPList spiderpoolv1.ReservedIPList
+func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error) {
+	var rIPList spiderpoolv1.SpiderReservedIPList
 	if err := rm.client.List(ctx, &rIPList, opts...); err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, opts ...client
 	return &rIPList, nil
 }
 
-func (rm *reservedIPManager) GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.ReservedIPList) ([]net.IP, error) {
+func (rm *reservedIPManager) GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error) {
 	var ips []net.IP
 	for _, r := range rIPList.Items {
 		if *r.Spec.IPVersion != version {

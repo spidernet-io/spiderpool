@@ -70,9 +70,9 @@ const (
 	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"
 	SpiderFinalizer        = SpiderpoolAPIGroup
 	SpiderpoolAPIVersionV1 = "v1"
-	SpiderIPPoolKind       = "IPPool"
-	SpiderEndpointKind     = "WorkloadEndpoint"
-	SpiderReservedIPKind   = "ReservedIP"
+	SpiderIPPoolKind       = "SpiderIPPool"
+	SpiderEndpointKind     = "SpiderEndpoint"
+	SpiderReservedIPKind   = "SpiderReservedIP"
 )
 
 const (

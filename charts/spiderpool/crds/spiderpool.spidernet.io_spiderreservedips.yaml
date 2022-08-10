@@ -11,8 +11,8 @@ spec:
   names:
     categories:
     - spiderpool
-    kind: ReservedIP
-    listKind: ReservedIPList
+    kind: SpiderReservedIP
+    listKind: SpiderReservedIPList
     plural: spiderreservedips
     shortNames:
     - sr
@@ -27,7 +27,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: ReservedIP is the Schema for the reservedips API
+        description: SpiderReservedIP is the Schema for the spiderreservedips API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -42,7 +42,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ReservedIPSpec defines the desired state of ReservedIP
+            description: ReservedIPSpec defines the desired state of SpiderReservedIP
             properties:
               ipVersion:
                 default: 4

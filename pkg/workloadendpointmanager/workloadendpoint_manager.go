@@ -26,12 +26,12 @@ import (
 )
 
 type WorkloadEndpointManager interface {
-	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
-	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.WorkloadEndpointList, error)
-	RetriveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error)
-	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) (*spiderpoolv1.WorkloadEndpoint, error)
-	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.WorkloadEndpoint, error)
-	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint) error
+	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.SpiderEndpoint, error)
+	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
+	RetriveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error)
+	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error)
+	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.SpiderEndpoint, error)
+	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
@@ -63,8 +63,8 @@ func NewWorkloadEndpointManager(c client.Client, scheme *runtime.Scheme, maxHist
 	}, nil
 }
 
-func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error) {
-	var we spiderpoolv1.WorkloadEndpoint
+func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.SpiderEndpoint, error) {
+	var we spiderpoolv1.SpiderEndpoint
 	if err := em.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); nil != err {
 		return nil, err
 	}
@@ -72,8 +72,8 @@ func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namesp
 	return &we, nil
 }
 
-func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.WorkloadEndpointList, error) {
-	var weList spiderpoolv1.WorkloadEndpointList
+func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error) {
+	var weList spiderpoolv1.SpiderEndpointList
 	if err := em.client.List(ctx, &weList, opts...); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...cl
 	return &weList, nil
 }
 
-func (em *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error) {
+func (em *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error) {
 	if we == nil || we.Status.Current == nil {
 		return nil, false, nil
 	}
@@ -115,7 +115,7 @@ func (em *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, cont
 	return nil, false, nil
 }
 
-func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) (*spiderpoolv1.WorkloadEndpoint, error) {
+func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error) {
 	logger := logutils.FromContext(ctx)
 
 	allocation := &spiderpoolv1.PodIPAllocation{
@@ -125,7 +125,7 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 	}
 
 	if we == nil {
-		newWE := &spiderpoolv1.WorkloadEndpoint{
+		newWE := &spiderpoolv1.SpiderEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
@@ -166,7 +166,7 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 	return we, nil
 }
 
-func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.WorkloadEndpoint, error) {
+func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.SpiderEndpoint, error) {
 	if we == nil || we.Status.Current == nil {
 		return nil, errors.New("patch a unmarked Endpoint")
 	}
@@ -226,7 +226,7 @@ func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
 	target.Routes = append(target.Routes, delta.Routes...)
 }
 
-func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint) error {
+func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error {
 	if we == nil || we.Status.Current == nil {
 		return nil
 	}
@@ -352,7 +352,7 @@ func (em *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, nam
 	return isBelongWEPCurrent, nil
 }
 
-// CheckCurrentContainerID will check whether the current containerID of WorkloadEndpoint is same with the given args or not
+// CheckCurrentContainerID will check whether the current containerID of SpiderEndpoint is same with the given args or not
 func (em *workloadEndpointManager) CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error) {
 	wep, err := em.GetEndpointByName(ctx, namespace, podName)
 	if err != nil {

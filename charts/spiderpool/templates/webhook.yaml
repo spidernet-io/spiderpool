@@ -4,10 +4,11 @@ kind: MutatingWebhookConfiguration
 metadata:
   creationTimestamp: null
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-  {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
   annotations:
+    "helm.sh/hook": post-install
+    {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
-  {{- end }}
+    {{- end }}
 webhooks:
 - admissionReviewVersions:
   - v1
@@ -15,7 +16,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /mutate-spiderpool-spidernet-io-v1-ippool
+      path: /mutate-spiderpool-spidernet-io-v1-spiderippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
@@ -39,10 +40,11 @@ kind: ValidatingWebhookConfiguration
 metadata:
   creationTimestamp: null
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-  {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
   annotations:
+    "helm.sh/hook": post-install
+    {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
-  {{- end }}
+    {{- end }}
 webhooks:
 - admissionReviewVersions:
   - v1
@@ -50,7 +52,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /validate-spiderpool-spidernet-io-v1-ippool
+      path: /validate-spiderpool-spidernet-io-v1-spiderippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
@@ -65,7 +67,6 @@ webhooks:
     operations:
     - CREATE
     - UPDATE
-    - DELETE
     resources:
     - spiderippools
   sideEffects: None

@@ -25,7 +25,7 @@ func (im *ipPoolManager) SetupReconcile(leader election.SpiderLeaseElector) erro
 	im.leader = leader
 
 	return ctrl.NewControllerManagedBy(im.runtimeMgr).
-		For(&spiderpoolv1.IPPool{}).
+		For(&spiderpoolv1.SpiderIPPool{}).
 		Complete(im)
 }
 

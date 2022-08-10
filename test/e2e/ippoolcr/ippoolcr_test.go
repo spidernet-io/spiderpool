@@ -36,7 +36,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 	Context("test ippool CR", func() {
 		var v4PoolName, v4PoolName1, v6PoolName, v6PoolName1, nic, podAnnoStr, deployName string
-		var v4PoolObj, v4PoolObj1, v6PoolObj, v6PoolObj1 *spiderpoolv1.IPPool
+		var v4PoolObj, v4PoolObj1, v6PoolObj, v6PoolObj1 *spiderpoolv1.SpiderIPPool
 		var v4PoolNameList, v6PoolNameList []string
 		var disable = new(bool)
 
@@ -229,7 +229,7 @@ func deleteIPPoolUntilFinish(poolName string) {
 	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed())
 }
 
-func createIPPool(IPPoolObj *spiderpoolv1.IPPool) {
+func createIPPool(IPPoolObj *spiderpoolv1.SpiderIPPool) {
 	GinkgoWriter.Printf("Create ippool %v\n", IPPoolObj.Name)
 	Expect(common.CreateIppool(frame, IPPoolObj)).To(Succeed())
 	GinkgoWriter.Printf("Succeeded to create ippool %v \n", IPPoolObj.Name)

@@ -19,24 +19,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateReservedIP(f *frame.Framework, ReservedIP *spiderpool.ReservedIP, opts ...client.CreateOption) error {
+func CreateReservedIP(f *frame.Framework, ReservedIP *spiderpool.SpiderReservedIP, opts ...client.CreateOption) error {
 	if f == nil || ReservedIP == nil {
 		return frame.ErrWrongInput
 	}
 	// Try to wait for finish last deleting
-	fake := &spiderpool.ReservedIP{
+	fake := &spiderpool.SpiderReservedIP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ReservedIP.ObjectMeta.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
-	existing := &spiderpool.ReservedIP{}
+	existing := &spiderpool.SpiderReservedIP{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
 		return errors.New("failed to create , a same reservedip exists")
 	} else {
 		t := func() bool {
-			existing := &spiderpool.ReservedIP{}
+			existing := &spiderpool.SpiderReservedIP{}
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
@@ -56,7 +56,7 @@ func DeleteReservedIPByName(f *frame.Framework, reservedIPName string, opts ...c
 	if reservedIPName == "" || f == nil {
 		return frame.ErrWrongInput
 	}
-	reservedIP := &spiderpool.ReservedIP{
+	reservedIP := &spiderpool.SpiderReservedIP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: reservedIPName,
 		},
@@ -64,13 +64,13 @@ func DeleteReservedIPByName(f *frame.Framework, reservedIPName string, opts ...c
 	return f.DeleteResource(reservedIP, opts...)
 }
 
-func GetReservedIPByName(f *frame.Framework, reservedIPName string) *spiderpool.ReservedIP {
+func GetReservedIPByName(f *frame.Framework, reservedIPName string) *spiderpool.SpiderReservedIP {
 	if reservedIPName == "" || f == nil {
 		return nil
 	}
 
 	v := apitypes.NamespacedName{Name: reservedIPName}
-	existing := &spiderpool.ReservedIP{}
+	existing := &spiderpool.SpiderReservedIP{}
 	e := f.GetResource(v, existing)
 	if e != nil {
 		return nil
@@ -100,15 +100,15 @@ func DeleteResverdIPUntilFinish(ctx context.Context, f *frame.Framework, reserve
 	}
 }
 
-func GenerateExampleV4ReservedIpObject(ips []string) (string, *spiderpool.ReservedIP) {
+func GenerateExampleV4ReservedIpObject(ips []string) (string, *spiderpool.SpiderReservedIP) {
 	var v4Ipversion = new(types.IPVersion)
-	var iPv4ReservedIpObj *spiderpool.ReservedIP
+	var iPv4ReservedIpObj *spiderpool.SpiderReservedIP
 	var v4ReservedIpName string
 
 	*v4Ipversion = constant.IPv4
 	v4ReservedIpName = "v4-sr-" + tools.RandomName()
 
-	iPv4ReservedIpObj = &spiderpool.ReservedIP{
+	iPv4ReservedIpObj = &spiderpool.SpiderReservedIP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v4ReservedIpName,
 		},
@@ -120,15 +120,15 @@ func GenerateExampleV4ReservedIpObject(ips []string) (string, *spiderpool.Reserv
 	return v4ReservedIpName, iPv4ReservedIpObj
 }
 
-func GenerateExampleV6ReservedIpObject(ips []string) (string, *spiderpool.ReservedIP) {
+func GenerateExampleV6ReservedIpObject(ips []string) (string, *spiderpool.SpiderReservedIP) {
 	var v6Ipversion = new(types.IPVersion)
-	var iPv6ReservedIpObj *spiderpool.ReservedIP
+	var iPv6ReservedIpObj *spiderpool.SpiderReservedIP
 	var v6ReservedIpName string
 
 	*v6Ipversion = constant.IPv6
 	v6ReservedIpName = "v6-sr-" + tools.RandomName()
 
-	iPv6ReservedIpObj = &spiderpool.ReservedIP{
+	iPv6ReservedIpObj = &spiderpool.SpiderReservedIP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v6ReservedIpName,
 		},

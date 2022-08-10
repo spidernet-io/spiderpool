@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -19,41 +18,54 @@ import (
 )
 
 type NamespaceManager interface {
-	GetNSDefaultPools(ctx context.Context, nsName string) ([]string, []string, error)
+	GetNamespaceByName(ctx context.Context, nsName string) (*corev1.Namespace, error)
+	ListNamespaces(ctx context.Context, opts ...client.ListOption) (*corev1.NamespaceList, error)
+	GetNSDefaultPools(ctx context.Context, ns *corev1.Namespace) ([]string, []string, error)
 	MatchLabelSelector(ctx context.Context, nsName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
 
 type namespaceManager struct {
-	client     client.Client
-	runtimeMgr ctrl.Manager
+	client client.Client
 }
 
-func NewNamespaceManager(mgr ctrl.Manager) (NamespaceManager, error) {
-	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+func NewNamespaceManager(c client.Client) (NamespaceManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
 	}
 
 	return &namespaceManager{
-		client:     mgr.GetClient(),
-		runtimeMgr: mgr,
+		client: c,
 	}, nil
 }
 
-func (r *namespaceManager) GetNSDefaultPools(ctx context.Context, nsName string) ([]string, []string, error) {
-	var namespace corev1.Namespace
-	if err := r.client.Get(ctx, apitypes.NamespacedName{Name: nsName}, &namespace); err != nil {
-		return nil, nil, err
+func (nm *namespaceManager) GetNamespaceByName(ctx context.Context, nsName string) (*corev1.Namespace, error) {
+	var ns corev1.Namespace
+	if err := nm.client.Get(ctx, apitypes.NamespacedName{Name: nsName}, &ns); err != nil {
+		return nil, err
 	}
 
+	return &ns, nil
+}
+
+func (nm *namespaceManager) ListNamespaces(ctx context.Context, opts ...client.ListOption) (*corev1.NamespaceList, error) {
+	var nsList corev1.NamespaceList
+	if err := nm.client.List(ctx, &nsList, opts...); err != nil {
+		return nil, err
+	}
+
+	return &nsList, nil
+}
+
+func (nm *namespaceManager) GetNSDefaultPools(ctx context.Context, ns *corev1.Namespace) ([]string, []string, error) {
 	var nsDefaultV4Pool types.AnnoNSDefautlV4PoolValue
 	var nsDefaultV6Pool types.AnnoNSDefautlV6PoolValue
-	if v, ok := namespace.Annotations[constant.AnnoNSDefautlV4Pool]; ok {
+	if v, ok := ns.Annotations[constant.AnnoNSDefautlV4Pool]; ok {
 		if err := json.Unmarshal([]byte(v), &nsDefaultV4Pool); err != nil {
 			return nil, nil, err
 		}
 	}
 
-	if v, ok := namespace.Annotations[constant.AnnoNSDefautlV6Pool]; ok {
+	if v, ok := ns.Annotations[constant.AnnoNSDefautlV6Pool]; ok {
 		if err := json.Unmarshal([]byte(v), &nsDefaultV6Pool); err != nil {
 			return nil, nil, err
 		}
@@ -62,16 +74,14 @@ func (r *namespaceManager) GetNSDefaultPools(ctx context.Context, nsName string)
 	return nsDefaultV4Pool, nsDefaultV6Pool, nil
 }
 
-func (r *namespaceManager) MatchLabelSelector(ctx context.Context, nsName string, labelSelector *metav1.LabelSelector) (bool, error) {
+func (nm *namespaceManager) MatchLabelSelector(ctx context.Context, nsName string, labelSelector *metav1.LabelSelector) (bool, error) {
 	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
 		return false, err
 	}
 
-	var namespaces corev1.NamespaceList
-	err = r.client.List(
+	nsList, err := nm.ListNamespaces(
 		ctx,
-		&namespaces,
 		client.MatchingLabelsSelector{Selector: selector},
 		client.MatchingFields{metav1.ObjectNameField: nsName},
 	)
@@ -79,7 +89,7 @@ func (r *namespaceManager) MatchLabelSelector(ctx context.Context, nsName string
 		return false, err
 	}
 
-	if len(namespaces.Items) == 0 {
+	if len(nsList.Items) == 0 {
 		return false, nil
 	}
 

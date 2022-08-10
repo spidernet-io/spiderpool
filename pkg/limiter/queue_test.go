@@ -16,7 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 )
 
-var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
+var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var maxQueueSize int
@@ -30,7 +30,6 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 		queue = limiter.NewLimiter(maxQueueSize, maxWaitTime)
 		go func() {
 			defer GinkgoRecover()
-
 			err := queue.Start(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
@@ -48,13 +47,15 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 		})
 
 		It("acquire ticket", func() {
-			reason, err := queue.AcquireTicket(context.TODO())
+			ctx := context.TODO()
+			reason, err := queue.AcquireTicket(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(reason).To(Equal(limiter.Checkin))
-			queue.ReleaseTicket(context.TODO())
+			queue.ReleaseTicket(ctx)
 		})
 
 		It("acquire ticket timeout", func() {
+			ctx := context.TODO()
 			reasonCh := make(chan limiter.Reason, queuers)
 			wg := sync.WaitGroup{}
 			wg.Add(queuers)
@@ -63,12 +64,12 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 					defer GinkgoRecover()
 					defer wg.Done()
 
-					reason, err := queue.AcquireTicket(context.TODO())
+					reason, err := queue.AcquireTicket(ctx)
 					Expect(err).NotTo(HaveOccurred())
 					reasonCh <- reason
 
 					time.Sleep(workHours)
-					queue.ReleaseTicket(context.TODO())
+					queue.ReleaseTicket(ctx)
 				}()
 			}
 			wg.Wait()
@@ -77,6 +78,7 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 		})
 
 		It("acquire ticket but queue is full", func() {
+			ctx := context.TODO()
 			wg := sync.WaitGroup{}
 			wg.Add(queuers + 2)
 			for i := 0; i < queuers+2; i++ {
@@ -84,14 +86,14 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 					defer GinkgoRecover()
 					defer wg.Done()
 
-					_, err := queue.AcquireTicket(context.TODO())
+					_, err := queue.AcquireTicket(ctx)
 					if err != nil {
 						Expect(err).To(MatchError(limiter.ErrFullQueue))
 						return
 					}
 
 					time.Sleep(workHours)
-					queue.ReleaseTicket(context.TODO())
+					queue.ReleaseTicket(ctx)
 				}()
 			}
 			wg.Wait()
@@ -125,6 +127,7 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 		})
 
 		It("conflict rate when consumption is too slow", func() {
+			ctx := context.TODO()
 			reasonCh := make(chan limiter.Reason, queuers)
 			wg := sync.WaitGroup{}
 			wg.Add(queuers)
@@ -134,12 +137,12 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 					defer wg.Done()
 
 					tickets := randomTicket(ticketSize)
-					reason, err := queue.AcquireTicket(context.TODO(), tickets...)
+					reason, err := queue.AcquireTicket(ctx, tickets...)
 					Expect(err).NotTo(HaveOccurred())
 					reasonCh <- reason
 
 					time.Sleep(workHours)
-					queue.ReleaseTicket(context.TODO(), tickets...)
+					queue.ReleaseTicket(ctx, tickets...)
 				}()
 			}
 			wg.Wait()
@@ -176,6 +179,7 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 		})
 
 		It("working queue", func() {
+			ctx := context.TODO()
 			wg := sync.WaitGroup{}
 			wg.Add(queuers)
 			for i := 0; i < queuers; i++ {
@@ -183,11 +187,11 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 					defer GinkgoRecover()
 					defer wg.Done()
 
-					_, err := queue.AcquireTicket(context.TODO())
+					_, err := queue.AcquireTicket(ctx)
 					Expect(err).NotTo(HaveOccurred())
 
 					time.Sleep(workHours)
-					queue.ReleaseTicket(context.TODO())
+					queue.ReleaseTicket(ctx)
 				}()
 			}
 			time.Sleep(1 * time.Second)
@@ -196,10 +200,11 @@ var _ = Describe("limiter", Label("unitest", "limiter_test"), func() {
 		})
 
 		It("acquire ticket but queue shutdown", func() {
+			ctx := context.TODO()
 			cancel()
 			time.Sleep(1 * time.Second)
 
-			_, err := queue.AcquireTicket(context.TODO())
+			_, err := queue.AcquireTicket(ctx)
 			Expect(err).To(MatchError(limiter.ErrShutdownQueue))
 		})
 	})

@@ -65,7 +65,7 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 
 // executeScanAll scans the whole pod and whole IPPoolList
 func (s *SpiderGC) executeScanAll(ctx context.Context) {
-	poolList, err := s.ippoolMgr.ListAllIPPools(ctx)
+	poolList, err := s.ippoolMgr.ListIPPools(ctx)
 	if apierrors.IsNotFound(err) {
 		logger.Sugar().Warnf("scan all failed, ippoolList not found!")
 		return

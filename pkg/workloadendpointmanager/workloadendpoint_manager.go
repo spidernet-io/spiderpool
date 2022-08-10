@@ -7,15 +7,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/strings/slices"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -26,11 +26,12 @@ import (
 )
 
 type WorkloadEndpointManager interface {
-	RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error)
-	MarkIPAllocation(ctx context.Context, node, namespace, podName, containerID string) error
-	PatchIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error
-	ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error
 	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error)
+	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.WorkloadEndpointList, error)
+	RetriveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error)
+	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) (*spiderpoolv1.WorkloadEndpoint, error)
+	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.WorkloadEndpoint, error)
+	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
@@ -39,131 +40,139 @@ type WorkloadEndpointManager interface {
 
 type workloadEndpointManager struct {
 	client                client.Client
-	runtimeMgr            ctrl.Manager
+	scheme                *runtime.Scheme
 	maxHistoryRecords     int
 	maxConflictRetrys     int
 	conflictRetryUnitTime time.Duration
 }
 
-func NewWorkloadEndpointManager(mgr ctrl.Manager, maxHistoryRecords, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (WorkloadEndpointManager, error) {
-	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+func NewWorkloadEndpointManager(c client.Client, scheme *runtime.Scheme, maxHistoryRecords, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (WorkloadEndpointManager, error) {
+	if c == nil {
+		return nil, errors.New("k8s client must be specified")
+	}
+	if scheme == nil {
+		return nil, errors.New("object scheme must be specified")
 	}
 
 	return &workloadEndpointManager{
-		client:                mgr.GetClient(),
-		runtimeMgr:            mgr,
+		client:                c,
+		scheme:                scheme,
 		maxHistoryRecords:     maxHistoryRecords,
 		maxConflictRetrys:     maxConflictRetrys,
 		conflictRetryUnitTime: conflictRetryUnitTime,
 	}, nil
 }
 
-func (r *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, namespace, podName, containerID, nic string, includeHistory bool) (*spiderpoolv1.PodIPAllocation, bool, error) {
+func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error) {
 	var we spiderpoolv1.WorkloadEndpoint
-	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, false, nil
-		}
-		return nil, false, err
+	if err := em.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); nil != err {
+		return nil, err
 	}
 
-	if we.Status.Current != nil && we.Status.Current.ContainerID == containerID {
-		for _, d := range we.Status.Current.IPs {
+	return &we, nil
+}
+
+func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.WorkloadEndpointList, error) {
+	var weList spiderpoolv1.WorkloadEndpointList
+	if err := em.client.List(ctx, &weList, opts...); err != nil {
+		return nil, err
+	}
+
+	return &weList, nil
+}
+
+func (em *workloadEndpointManager) RetriveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error) {
+	if we == nil || we.Status.Current == nil {
+		return nil, false, nil
+	}
+	if we.Status.Current.ContainerID != containerID {
+		return nil, false, nil
+	}
+	for _, d := range we.Status.Current.IPs {
+		if d.NIC == nic {
+			return we.Status.Current, true, nil
+		}
+	}
+
+	if !includeHistory {
+		return nil, false, nil
+	}
+	if len(we.Status.History) == 0 {
+		return nil, false, nil
+	}
+	for _, a := range we.Status.History[1:] {
+		if a.ContainerID != containerID {
+			continue
+		}
+		for _, d := range a.IPs {
 			if d.NIC == nic {
-				return we.Status.Current, true, nil
+				return &a, false, nil
 			}
 		}
-	}
-
-	if includeHistory && len(we.Status.History) != 0 {
-		for _, a := range we.Status.History[1:] {
-			if a.ContainerID == containerID {
-				for _, d := range a.IPs {
-					if d.NIC == nic {
-						return &a, false, nil
-					}
-				}
-			}
-		}
+		break
 	}
 
 	return nil, false, nil
 }
 
-func (r *workloadEndpointManager) MarkIPAllocation(ctx context.Context, node, namespace, podName, containerID string) error {
+func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) (*spiderpoolv1.WorkloadEndpoint, error) {
 	logger := logutils.FromContext(ctx)
 
 	allocation := &spiderpoolv1.PodIPAllocation{
 		ContainerID:  containerID,
-		Node:         &node,
+		Node:         &pod.Spec.NodeName,
 		CreationTime: &metav1.Time{Time: time.Now()},
 	}
 
-	var we spiderpoolv1.WorkloadEndpoint
-	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-
-		var pod corev1.Pod
-		if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
-			return err
-		}
-
+	if we == nil {
 		newWE := &spiderpoolv1.WorkloadEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: namespace,
+				Name:      pod.Name,
+				Namespace: pod.Namespace,
 			},
 		}
 
 		controllerutil.AddFinalizer(newWE, constant.SpiderFinalizer)
-		if err := controllerutil.SetOwnerReference(&pod, newWE, r.runtimeMgr.GetScheme()); err != nil {
-			return err
+		if err := controllerutil.SetOwnerReference(pod, newWE, em.scheme); err != nil {
+			return nil, err
 		}
-		if err := r.client.Create(ctx, newWE); err != nil {
-			return err
+		if err := em.client.Create(ctx, newWE); err != nil {
+			return nil, err
 		}
 
 		newWE.Status.Current = allocation
 		newWE.Status.History = []spiderpoolv1.PodIPAllocation{*allocation}
-		if err := r.client.Status().Update(ctx, newWE); err != nil {
-			return err
+		if err := em.client.Status().Update(ctx, newWE); err != nil {
+			return nil, err
 		}
-		return nil
+		return newWE, nil
 	}
 
 	if we.Status.Current != nil && we.Status.Current.ContainerID == containerID {
-		return nil
+		return we, nil
 	}
 
 	we.Status.Current = allocation
 	we.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, we.Status.History...)
-	if len(we.Status.History) > r.maxHistoryRecords {
-		logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", r.maxHistoryRecords)
-		we.Status.History = we.Status.History[:r.maxHistoryRecords]
+	if len(we.Status.History) > em.maxHistoryRecords {
+		logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", em.maxHistoryRecords)
+		we.Status.History = we.Status.History[:em.maxHistoryRecords]
 	}
 
-	if err := r.client.Status().Update(ctx, &we); err != nil {
-		return err
+	if err := em.client.Status().Update(ctx, we); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return we, nil
 }
 
-func (r *workloadEndpointManager) PatchIPAllocation(ctx context.Context, namespace, podName string, allocation *spiderpoolv1.PodIPAllocation) error {
-	var we spiderpoolv1.WorkloadEndpoint
-	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
-		return err
-	}
-
-	if we.Status.Current == nil {
-		return errors.New("patch a unmarked worklod endpoint")
+func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.WorkloadEndpoint) (*spiderpoolv1.WorkloadEndpoint, error) {
+	if we == nil || we.Status.Current == nil {
+		return nil, errors.New("patch a unmarked Endpoint")
 	}
 
 	if we.Status.Current.ContainerID != allocation.ContainerID {
-		return fmt.Errorf("patch a mismarked worklod endpoint with IP allocation: %v", *we.Status.Current)
+		return nil, fmt.Errorf("patch a mismarked Endpoint with IP allocation: %v", *we.Status.Current)
 	}
 
 	var merged bool
@@ -181,11 +190,11 @@ func (r *workloadEndpointManager) PatchIPAllocation(ctx context.Context, namespa
 		we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
 	}
 
-	if err := r.client.Status().Update(ctx, &we); err != nil {
-		return err
+	if err := em.client.Status().Update(ctx, we); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return we, nil
 }
 
 // TODO(iiiceoo): refactor
@@ -217,16 +226,8 @@ func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
 	target.Routes = append(target.Routes, delta.Routes...)
 }
 
-func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, namespace, podName, containerID string) error {
-	var we spiderpoolv1.WorkloadEndpoint
-	if err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &we); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	if we.Status.Current == nil {
+func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.WorkloadEndpoint) error {
+	if we == nil || we.Status.Current == nil {
 		return nil
 	}
 
@@ -235,7 +236,7 @@ func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, 
 	}
 
 	we.Status.Current = nil
-	if err := r.client.Status().Update(ctx, &we); err != nil {
+	if err := em.client.Status().Update(ctx, we); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
@@ -245,48 +246,39 @@ func (r *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, 
 	return nil
 }
 
-func (r *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.WorkloadEndpoint, error) {
-	wep := &spiderpoolv1.WorkloadEndpoint{}
-	err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, wep)
-	if nil != err {
-		return nil, err
-	}
-
-	return wep, nil
-}
-
 // RemoveFinalizer removes a specific finalizer field in finalizers string array.
-func (r *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
-	logger := logutils.FromContext(ctx)
+func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
+	for i := 0; i <= em.maxConflictRetrys; i++ {
+		we, err := em.GetEndpointByName(ctx, namespace, podName)
+		if err != nil {
+			return err
+		}
 
-	wep := &spiderpoolv1.WorkloadEndpoint{}
-	err := r.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, wep)
-	if nil != err {
-		if apierrors.IsNotFound(err) {
-			logger.Sugar().Debugf("wep '%s/%s' not found", namespace, podName)
+		if !controllerutil.ContainsFinalizer(we, constant.SpiderFinalizer) {
 			return nil
 		}
 
-		return err
-	}
-
-	// remove wep finalizer
-	if slices.Contains(wep.Finalizers, constant.SpiderFinalizer) {
-		controllerutil.RemoveFinalizer(wep, constant.SpiderFinalizer)
-
-		err = r.client.Update(ctx, wep)
-		if nil != err {
-			return err
+		controllerutil.RemoveFinalizer(we, constant.SpiderFinalizer)
+		if err := em.client.Update(ctx, we); err != nil {
+			if !apierrors.IsConflict(err) {
+				return err
+			}
+			if i == em.maxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from Endpoint %s", em.maxConflictRetrys, constant.SpiderFinalizer, podName)
+			}
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.conflictRetryUnitTime)
+			continue
 		}
+		break
 	}
 
 	return nil
 }
 
 // ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.
-func (r *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error) {
-	wep, err := r.GetEndpointByName(ctx, namespace, podName)
-	if nil != err {
+func (em *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error) {
+	wep, err := em.GetEndpointByName(ctx, namespace, podName)
+	if err != nil {
 		return nil, err
 	}
 
@@ -327,9 +319,9 @@ func (r *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, name
 }
 
 // IsIPBelongWEPCurrent will check the given IP whether belong to the wep current IPs.
-func (r *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error) {
-	wep, err := r.GetEndpointByName(ctx, namespace, podName)
-	if nil != err {
+func (em *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error) {
+	wep, err := em.GetEndpointByName(ctx, namespace, podName)
+	if err != nil {
 		return false, err
 	}
 
@@ -361,9 +353,9 @@ func (r *workloadEndpointManager) IsIPBelongWEPCurrent(ctx context.Context, name
 }
 
 // CheckCurrentContainerID will check whether the current containerID of WorkloadEndpoint is same with the given args or not
-func (r *workloadEndpointManager) CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error) {
-	wep, err := r.GetEndpointByName(ctx, namespace, podName)
-	if nil != err {
+func (em *workloadEndpointManager) CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error) {
+	wep, err := em.GetEndpointByName(ctx, namespace, podName)
+	if err != nil {
 		return false, err
 	}
 

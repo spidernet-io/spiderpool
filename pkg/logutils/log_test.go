@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ = Describe("logutils", Label("unitest", "logutils_test"), func() {
+var _ = Describe("Log", Label("unitest", "log_test"), func() {
 	Context("When on a nice day", func() {
 		It("log with stdout", func() {
 			err := logutils.InitStdoutLogger(logutils.InfoLevel)

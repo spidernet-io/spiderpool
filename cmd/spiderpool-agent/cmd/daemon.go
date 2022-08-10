@@ -220,35 +220,35 @@ func initAgentServiceManagers(ctx context.Context) {
 	retrys := agentContext.Cfg.UpdateCRMaxRetrys
 	unitTime := time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	historySize := agentContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(agentContext.CRDManager, historySize, retrys, unitTime)
+	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(agentContext.CRDManager.GetClient(), agentContext.CRDManager.GetScheme(), historySize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.WEManager = weManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager)
+	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.RIPManager = rIPManager
 
 	logger.Debug("Begin to initialize Node Manager")
-	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager)
+	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace Manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(agentContext.CRDManager)
+	nsManager, err := namespacemanager.NewNamespaceManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(agentContext.CRDManager, retrys, unitTime)
+	podManager, err := podmanager.NewPodManager(agentContext.CRDManager.GetClient(), retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

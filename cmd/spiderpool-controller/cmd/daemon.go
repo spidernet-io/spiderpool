@@ -171,35 +171,35 @@ func initControllerServiceManagers(ctx context.Context) {
 	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
 	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager, historySize, retrys, unitTime)
+	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager.GetScheme(), historySize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.WEPManager = wepManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager)
+	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.RIPManager = rIPManager
 
 	logger.Debug("Begin to initialize Node Manager")
-	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager)
+	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace Manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager)
+	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager, retrys, unitTime)
+	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

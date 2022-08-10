@@ -282,6 +282,58 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// The "ippools" annotation has a higher priority than the "ippool" annotation.
 			checkAnnotationPriority(podYaml, podName, nsName, v4PoolNameList, v6PoolNameList)
 		})
+		It(`Successfully run an annotated multi-container pod`, Label("A00008"), func() {
+			var containerName = "cn" + tools.RandomName()
+			// ippool annotation
+			podIppoolAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolAnno.IPv4Pools = v4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolAnno.IPv6Pools = v6PoolNameList
+			}
+			b, err := json.Marshal(podIppoolAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podIppoolAnnoStr = string(b)
+
+			// Generate multi-container pod yaml with ippool annotations
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			containerObject := podYaml.Spec.Containers[0]
+			containerObject.Name = containerName
+			podYaml.Spec.Containers = append(podYaml.Spec.Containers, containerObject)
+			podYaml.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPool: podIppoolAnnoStr,
+			}
+			Expect(podYaml).NotTo(BeNil())
+
+			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, time.Second*30)
+			GinkgoWriter.Printf("pod %v/%v: podIPv4: %v, podIPv6: %v \n", nsName, podName, podIPv4, podIPv6)
+
+			// Check multi-container Pod
+			Expect((len(pod.Status.ContainerStatuses))).Should(Equal(2))
+
+			// Check Pod IP recorded in IPPool
+			podlist := &corev1.PodList{
+				Items: []corev1.Pod{*pod},
+			}
+			ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+			Expect(e).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// Try to delete Pod
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			err = frame.DeletePodUntilFinish(podName, nsName, ctx)
+			Expect(err).NotTo(HaveOccurred(), "Failed to delete pod %v/%v \n", nsName, podName)
+			GinkgoWriter.Printf("Successful deletion of pods %v/%v \n", nsName, podName)
+
+			// check if the pod ip in ippool reclaimed normally
+			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, time.Minute)).To(Succeed())
+			GinkgoWriter.Println("Pod IP successfully released")
+
+		})
 
 		Context("Because the following cases are annotated about namespaces, the namespaces are annotated first", func() {
 			var v4NamespaceIppoolAnnoStr, v6NamespaceIppoolAnnoStr string

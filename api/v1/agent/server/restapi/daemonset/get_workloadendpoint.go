@@ -32,13 +32,12 @@ func NewGetWorkloadendpoint(ctx *middleware.Context, handler GetWorkloadendpoint
 	return &GetWorkloadendpoint{Context: ctx, Handler: handler}
 }
 
-/* GetWorkloadendpoint swagger:route GET /workloadendpoint daemonset getWorkloadendpoint
+/*
+	GetWorkloadendpoint swagger:route GET /workloadendpoint daemonset getWorkloadendpoint
 
-Get workloadendpoint status
+# Get workloadendpoint status
 
 Get workloadendpoint details for spiderflat use
-
-
 */
 type GetWorkloadendpoint struct {
 	Context *middleware.Context

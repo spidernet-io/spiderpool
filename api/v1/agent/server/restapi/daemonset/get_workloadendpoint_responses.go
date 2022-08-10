@@ -17,7 +17,8 @@ import (
 // GetWorkloadendpointOKCode is the HTTP code returned for type GetWorkloadendpointOK
 const GetWorkloadendpointOKCode int = 200
 
-/*GetWorkloadendpointOK Success
+/*
+GetWorkloadendpointOK Success
 
 swagger:response getWorkloadendpointOK
 */
@@ -41,7 +42,8 @@ func (o *GetWorkloadendpointOK) WriteResponse(rw http.ResponseWriter, producer r
 // GetWorkloadendpointInternalServerErrorCode is the HTTP code returned for type GetWorkloadendpointInternalServerError
 const GetWorkloadendpointInternalServerErrorCode int = 500
 
-/*GetWorkloadendpointInternalServerError Get workloadendpoint failure
+/*
+GetWorkloadendpointInternalServerError Get workloadendpoint failure
 
 swagger:response getWorkloadendpointInternalServerError
 */

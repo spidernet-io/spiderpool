@@ -55,10 +55,12 @@ func NewGetIpamHealthyParamsWithHTTPClient(client *http.Client) *GetIpamHealthyP
 	}
 }
 
-/* GetIpamHealthyParams contains all the parameters to send to the API endpoint
-   for the get ipam healthy operation.
+/*
+GetIpamHealthyParams contains all the parameters to send to the API endpoint
 
-   Typically these are written to a http.Request.
+	for the get ipam healthy operation.
+
+	Typically these are written to a http.Request.
 */
 type GetIpamHealthyParams struct {
 	timeout    time.Duration

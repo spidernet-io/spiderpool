@@ -32,13 +32,12 @@ func NewGetIpamStatus(ctx *middleware.Context, handler GetIpamStatusHandler) *Ge
 	return &GetIpamStatus{Context: ctx, Handler: handler}
 }
 
-/* GetIpamStatus swagger:route GET /ipam/status controller getIpamStatus
+/*
+	GetIpamStatus swagger:route GET /ipam/status controller getIpamStatus
 
-Get status
+# Get status
 
 Get ipam status for spiderpool controller cli debug usage
-
-
 */
 type GetIpamStatus struct {
 	Context *middleware.Context

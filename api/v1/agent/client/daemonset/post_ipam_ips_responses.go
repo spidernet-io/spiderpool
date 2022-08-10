@@ -45,7 +45,8 @@ func NewPostIpamIpsOK() *PostIpamIpsOK {
 	return &PostIpamIpsOK{}
 }
 
-/* PostIpamIpsOK describes a response with status code 200, with default header values.
+/*
+PostIpamIpsOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewPostIpamIpsInternalServerError() *PostIpamIpsInternalServerError {
 	return &PostIpamIpsInternalServerError{}
 }
 
-/* PostIpamIpsInternalServerError describes a response with status code 500, with default header values.
+/*
+PostIpamIpsInternalServerError describes a response with status code 500, with default header values.
 
 Allocation failure
 */

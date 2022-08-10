@@ -32,13 +32,12 @@ func NewDeleteIpamIps(ctx *middleware.Context, handler DeleteIpamIpsHandler) *De
 	return &DeleteIpamIps{Context: ctx, Handler: handler}
 }
 
-/* DeleteIpamIps swagger:route DELETE /ipam/ips daemonset deleteIpamIps
+/*
+	DeleteIpamIps swagger:route DELETE /ipam/ips daemonset deleteIpamIps
 
-Delete multiple ip as a batch
+# Delete multiple ip as a batch
 
 Delete multiple ip for a pod, case for spiderflat compent
-
-
 */
 type DeleteIpamIps struct {
 	Context *middleware.Context

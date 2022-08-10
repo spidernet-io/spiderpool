@@ -4,18 +4,18 @@
 
 // Package server Spiderpool-Controller API
 //
-//  Spiderpool Controller
-//  Schemes:
-//    unix
-//  Host: localhost
-//  BasePath: /v1
-//  Version: v1
+//	Spiderpool Controller
+//	Schemes:
+//	  unix
+//	Host: localhost
+//	BasePath: /v1
+//	Version: v1
 //
-//  Consumes:
-//    - application/json
+//	Consumes:
+//	  - application/json
 //
-//  Produces:
-//    - application/json
+//	Produces:
+//	  - application/json
 //
 // swagger:meta
 package server

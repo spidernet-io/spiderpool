@@ -43,10 +43,9 @@ type ClientService interface {
 }
 
 /*
-  GetIpamStatus gets status
+GetIpamStatus gets status
 
-  Get ipam status for spiderpool controller cli debug usage
-
+Get ipam status for spiderpool controller cli debug usage
 */
 func (a *Client) GetIpamStatus(params *GetIpamStatusParams, opts ...ClientOption) (*GetIpamStatusOK, error) {
 	// TODO: Validate the params before sending
@@ -84,10 +83,9 @@ func (a *Client) GetIpamStatus(params *GetIpamStatusParams, opts ...ClientOption
 }
 
 /*
-  PostIpamGcIps triggers gc
+PostIpamGcIps triggers gc
 
-  Trigger global gc or specific ip gc with the param
-
+Trigger global gc or specific ip gc with the param
 */
 func (a *Client) PostIpamGcIps(params *PostIpamGcIpsParams, opts ...ClientOption) (*PostIpamGcIpsOK, error) {
 	// TODO: Validate the params before sending
@@ -125,10 +123,9 @@ func (a *Client) PostIpamGcIps(params *PostIpamGcIpsParams, opts ...ClientOption
 }
 
 /*
-  PutIpamIP forces set ip
+PutIpamIP forces set ip
 
-  Force set ip for spiderpool controller cli debug usage
-
+Force set ip for spiderpool controller cli debug usage
 */
 func (a *Client) PutIpamIP(params *PutIpamIPParams, opts ...ClientOption) (*PutIpamIPOK, error) {
 	// TODO: Validate the params before sending

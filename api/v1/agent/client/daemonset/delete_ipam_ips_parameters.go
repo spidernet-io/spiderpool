@@ -55,10 +55,12 @@ func NewDeleteIpamIpsParamsWithHTTPClient(client *http.Client) *DeleteIpamIpsPar
 	}
 }
 
-/* DeleteIpamIpsParams contains all the parameters to send to the API endpoint
-   for the delete ipam ips operation.
+/*
+DeleteIpamIpsParams contains all the parameters to send to the API endpoint
 
-   Typically these are written to a http.Request.
+	for the delete ipam ips operation.
+
+	Typically these are written to a http.Request.
 */
 type DeleteIpamIpsParams struct {
 	timeout    time.Duration

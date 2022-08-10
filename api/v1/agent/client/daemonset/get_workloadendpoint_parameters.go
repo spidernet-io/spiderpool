@@ -55,10 +55,12 @@ func NewGetWorkloadendpointParamsWithHTTPClient(client *http.Client) *GetWorkloa
 	}
 }
 
-/* GetWorkloadendpointParams contains all the parameters to send to the API endpoint
-   for the get workloadendpoint operation.
+/*
+GetWorkloadendpointParams contains all the parameters to send to the API endpoint
 
-   Typically these are written to a http.Request.
+	for the get workloadendpoint operation.
+
+	Typically these are written to a http.Request.
 */
 type GetWorkloadendpointParams struct {
 	timeout    time.Duration

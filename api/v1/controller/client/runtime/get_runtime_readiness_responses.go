@@ -45,7 +45,8 @@ func NewGetRuntimeReadinessOK() *GetRuntimeReadinessOK {
 	return &GetRuntimeReadinessOK{}
 }
 
-/* GetRuntimeReadinessOK describes a response with status code 200, with default header values.
+/*
+GetRuntimeReadinessOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewGetRuntimeReadinessInternalServerError() *GetRuntimeReadinessInternalSer
 	return &GetRuntimeReadinessInternalServerError{}
 }
 
-/* GetRuntimeReadinessInternalServerError describes a response with status code 500, with default header values.
+/*
+GetRuntimeReadinessInternalServerError describes a response with status code 500, with default header values.
 
 Failed
 */

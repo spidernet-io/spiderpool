@@ -17,7 +17,8 @@ import (
 // GetRuntimeLivenessOKCode is the HTTP code returned for type GetRuntimeLivenessOK
 const GetRuntimeLivenessOKCode int = 200
 
-/*GetRuntimeLivenessOK Success
+/*
+GetRuntimeLivenessOK Success
 
 swagger:response getRuntimeLivenessOK
 */
@@ -41,7 +42,8 @@ func (o *GetRuntimeLivenessOK) WriteResponse(rw http.ResponseWriter, producer ru
 // GetRuntimeLivenessInternalServerErrorCode is the HTTP code returned for type GetRuntimeLivenessInternalServerError
 const GetRuntimeLivenessInternalServerErrorCode int = 500
 
-/*GetRuntimeLivenessInternalServerError Failed
+/*
+GetRuntimeLivenessInternalServerError Failed
 
 swagger:response getRuntimeLivenessInternalServerError
 */

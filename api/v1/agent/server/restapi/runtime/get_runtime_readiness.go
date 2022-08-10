@@ -32,12 +32,12 @@ func NewGetRuntimeReadiness(ctx *middleware.Context, handler GetRuntimeReadiness
 	return &GetRuntimeReadiness{Context: ctx, Handler: handler}
 }
 
-/* GetRuntimeReadiness swagger:route GET /runtime/readiness runtime getRuntimeReadiness
+/*
+	GetRuntimeReadiness swagger:route GET /runtime/readiness runtime getRuntimeReadiness
 
-Readiness probe
+# Readiness probe
 
 Check pod readiness probe
-
 */
 type GetRuntimeReadiness struct {
 	Context *middleware.Context

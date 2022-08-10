@@ -45,7 +45,8 @@ func NewGetRuntimeLivenessOK() *GetRuntimeLivenessOK {
 	return &GetRuntimeLivenessOK{}
 }
 
-/* GetRuntimeLivenessOK describes a response with status code 200, with default header values.
+/*
+GetRuntimeLivenessOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewGetRuntimeLivenessInternalServerError() *GetRuntimeLivenessInternalServe
 	return &GetRuntimeLivenessInternalServerError{}
 }
 
-/* GetRuntimeLivenessInternalServerError describes a response with status code 500, with default header values.
+/*
+GetRuntimeLivenessInternalServerError describes a response with status code 500, with default header values.
 
 Failed
 */

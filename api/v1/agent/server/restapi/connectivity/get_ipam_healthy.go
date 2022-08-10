@@ -32,14 +32,13 @@ func NewGetIpamHealthy(ctx *middleware.Context, handler GetIpamHealthyHandler) *
 	return &GetIpamHealthy{Context: ctx, Handler: handler}
 }
 
-/* GetIpamHealthy swagger:route GET /ipam/healthy connectivity getIpamHealthy
+/*
+	GetIpamHealthy swagger:route GET /ipam/healthy connectivity getIpamHealthy
 
-Get health of spiderpool daemon
+# Get health of spiderpool daemon
 
 Check spiderpool daemonset health to make sure whether it's ready
 for CNI plugin usage
-
-
 */
 type GetIpamHealthy struct {
 	Context *middleware.Context

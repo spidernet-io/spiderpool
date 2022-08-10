@@ -45,7 +45,8 @@ func NewGetWorkloadendpointOK() *GetWorkloadendpointOK {
 	return &GetWorkloadendpointOK{}
 }
 
-/* GetWorkloadendpointOK describes a response with status code 200, with default header values.
+/*
+GetWorkloadendpointOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewGetWorkloadendpointInternalServerError() *GetWorkloadendpointInternalSer
 	return &GetWorkloadendpointInternalServerError{}
 }
 
-/* GetWorkloadendpointInternalServerError describes a response with status code 500, with default header values.
+/*
+GetWorkloadendpointInternalServerError describes a response with status code 500, with default header values.
 
 Get workloadendpoint failure
 */

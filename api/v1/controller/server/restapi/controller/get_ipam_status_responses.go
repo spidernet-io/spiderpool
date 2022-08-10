@@ -17,7 +17,8 @@ import (
 // GetIpamStatusOKCode is the HTTP code returned for type GetIpamStatusOK
 const GetIpamStatusOKCode int = 200
 
-/*GetIpamStatusOK Success
+/*
+GetIpamStatusOK Success
 
 swagger:response getIpamStatusOK
 */
@@ -41,7 +42,8 @@ func (o *GetIpamStatusOK) WriteResponse(rw http.ResponseWriter, producer runtime
 // GetIpamStatusInternalServerErrorCode is the HTTP code returned for type GetIpamStatusInternalServerError
 const GetIpamStatusInternalServerErrorCode int = 500
 
-/*GetIpamStatusInternalServerError Get ipam status failure
+/*
+GetIpamStatusInternalServerError Get ipam status failure
 
 swagger:response getIpamStatusInternalServerError
 */

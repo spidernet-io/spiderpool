@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -164,7 +163,7 @@ func ParseConfiguration() error {
 
 // LoadConfigmap reads configmap data from cli flag config-path
 func (ac *AgentContext) LoadConfigmap() error {
-	configmapBytes, err := ioutil.ReadFile(ac.Cfg.ConfigPath)
+	configmapBytes, err := os.ReadFile(ac.Cfg.ConfigPath)
 	if nil != err {
 		return fmt.Errorf("Read configmap file failed: %v", err)
 	}

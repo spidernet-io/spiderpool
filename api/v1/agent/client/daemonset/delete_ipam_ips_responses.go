@@ -45,7 +45,8 @@ func NewDeleteIpamIpsOK() *DeleteIpamIpsOK {
 	return &DeleteIpamIpsOK{}
 }
 
-/* DeleteIpamIpsOK describes a response with status code 200, with default header values.
+/*
+DeleteIpamIpsOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -66,7 +67,8 @@ func NewDeleteIpamIpsInternalServerError() *DeleteIpamIpsInternalServerError {
 	return &DeleteIpamIpsInternalServerError{}
 }
 
-/* DeleteIpamIpsInternalServerError describes a response with status code 500, with default header values.
+/*
+DeleteIpamIpsInternalServerError describes a response with status code 500, with default header values.
 
 Failed
 */

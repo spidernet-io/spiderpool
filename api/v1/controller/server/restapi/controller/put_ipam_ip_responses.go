@@ -17,7 +17,8 @@ import (
 // PutIpamIPOKCode is the HTTP code returned for type PutIpamIPOK
 const PutIpamIPOKCode int = 200
 
-/*PutIpamIPOK Success
+/*
+PutIpamIPOK Success
 
 swagger:response putIpamIpOK
 */
@@ -41,7 +42,8 @@ func (o *PutIpamIPOK) WriteResponse(rw http.ResponseWriter, producer runtime.Pro
 // PutIpamIPInternalServerErrorCode is the HTTP code returned for type PutIpamIPInternalServerError
 const PutIpamIPInternalServerErrorCode int = 500
 
-/*PutIpamIPInternalServerError Force set ip failure
+/*
+PutIpamIPInternalServerError Force set ip failure
 
 swagger:response putIpamIpInternalServerError
 */

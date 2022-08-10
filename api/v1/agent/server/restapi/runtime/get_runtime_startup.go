@@ -32,12 +32,12 @@ func NewGetRuntimeStartup(ctx *middleware.Context, handler GetRuntimeStartupHand
 	return &GetRuntimeStartup{Context: ctx, Handler: handler}
 }
 
-/* GetRuntimeStartup swagger:route GET /runtime/startup runtime getRuntimeStartup
+/*
+	GetRuntimeStartup swagger:route GET /runtime/startup runtime getRuntimeStartup
 
-Startup probe
+# Startup probe
 
 Check pod startup probe
-
 */
 type GetRuntimeStartup struct {
 	Context *middleware.Context

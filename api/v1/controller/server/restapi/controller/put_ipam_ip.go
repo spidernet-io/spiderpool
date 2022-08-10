@@ -32,13 +32,12 @@ func NewPutIpamIP(ctx *middleware.Context, handler PutIpamIPHandler) *PutIpamIP 
 	return &PutIpamIP{Context: ctx, Handler: handler}
 }
 
-/* PutIpamIP swagger:route PUT /ipam/ip controller putIpamIp
+/*
+	PutIpamIP swagger:route PUT /ipam/ip controller putIpamIp
 
-Force set ip
+# Force set ip
 
 Force set ip for spiderpool controller cli debug usage
-
-
 */
 type PutIpamIP struct {
 	Context *middleware.Context

@@ -32,13 +32,12 @@ func NewPostIpamGcIps(ctx *middleware.Context, handler PostIpamGcIpsHandler) *Po
 	return &PostIpamGcIps{Context: ctx, Handler: handler}
 }
 
-/* PostIpamGcIps swagger:route POST /ipam/gc_ips controller postIpamGcIps
+/*
+	PostIpamGcIps swagger:route POST /ipam/gc_ips controller postIpamGcIps
 
-Trigger gc
+# Trigger gc
 
 Trigger global gc or specific ip gc with the param
-
-
 */
 type PostIpamGcIps struct {
 	Context *middleware.Context

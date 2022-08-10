@@ -72,7 +72,8 @@ func NewPostIpamIPOK() *PostIpamIPOK {
 	return &PostIpamIPOK{}
 }
 
-/* PostIpamIPOK describes a response with status code 200, with default header values.
+/*
+PostIpamIPOK describes a response with status code 200, with default header values.
 
 Success
 */
@@ -104,7 +105,8 @@ func NewPostIpamIPInternalServerError() *PostIpamIPInternalServerError {
 	return &PostIpamIPInternalServerError{}
 }
 
-/* PostIpamIPInternalServerError describes a response with status code 500, with default header values.
+/*
+PostIpamIPInternalServerError describes a response with status code 500, with default header values.
 
 Internal server error
 */
@@ -125,7 +127,8 @@ func NewPostIpamIPStatus512() *PostIpamIPStatus512 {
 	return &PostIpamIPStatus512{}
 }
 
-/* PostIpamIPStatus512 describes a response with status code 512, with default header values.
+/*
+PostIpamIPStatus512 describes a response with status code 512, with default header values.
 
 Wrong input information
 */
@@ -146,7 +149,8 @@ func NewPostIpamIPStatus513() *PostIpamIPStatus513 {
 	return &PostIpamIPStatus513{}
 }
 
-/* PostIpamIPStatus513 describes a response with status code 513, with default header values.
+/*
+PostIpamIPStatus513 describes a response with status code 513, with default header values.
 
 Not allocatable pod
 */
@@ -167,7 +171,8 @@ func NewPostIpamIPStatus514() *PostIpamIPStatus514 {
 	return &PostIpamIPStatus514{}
 }
 
-/* PostIpamIPStatus514 describes a response with status code 514, with default header values.
+/*
+PostIpamIPStatus514 describes a response with status code 514, with default header values.
 
 No available IP pool
 */
@@ -188,7 +193,8 @@ func NewPostIpamIPStatus515() *PostIpamIPStatus515 {
 	return &PostIpamIPStatus515{}
 }
 
-/* PostIpamIPStatus515 describes a response with status code 515, with default header values.
+/*
+PostIpamIPStatus515 describes a response with status code 515, with default header values.
 
 All IP used out
 */

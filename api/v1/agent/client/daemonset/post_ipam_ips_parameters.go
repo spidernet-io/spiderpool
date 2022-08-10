@@ -55,10 +55,12 @@ func NewPostIpamIpsParamsWithHTTPClient(client *http.Client) *PostIpamIpsParams 
 	}
 }
 
-/* PostIpamIpsParams contains all the parameters to send to the API endpoint
-   for the post ipam ips operation.
+/*
+PostIpamIpsParams contains all the parameters to send to the API endpoint
 
-   Typically these are written to a http.Request.
+	for the post ipam ips operation.
+
+	Typically these are written to a http.Request.
 */
 type PostIpamIpsParams struct {
 	timeout    time.Duration

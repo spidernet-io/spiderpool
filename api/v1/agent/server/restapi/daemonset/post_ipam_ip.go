@@ -32,13 +32,12 @@ func NewPostIpamIP(ctx *middleware.Context, handler PostIpamIPHandler) *PostIpam
 	return &PostIpamIP{Context: ctx, Handler: handler}
 }
 
-/* PostIpamIP swagger:route POST /ipam/ip daemonset postIpamIp
+/*
+	PostIpamIP swagger:route POST /ipam/ip daemonset postIpamIp
 
-Get ip from spiderpool daemon
+# Get ip from spiderpool daemon
 
 Send a request to daemonset to ask for an ip assignment
-
-
 */
 type PostIpamIP struct {
 	Context *middleware.Context

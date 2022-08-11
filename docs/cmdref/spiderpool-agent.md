@@ -1,12 +1,10 @@
 # spiderpool-agent
 
-CLI
+This page describes CLI options and ENV of spiderpool-agent.
 
 ## spiderpool-agent daemon
 
-### Synopsis
-
-run spiderpool agent daemon
+Run the spiderpool agent daemon.
 
 ### Options
 
@@ -26,13 +24,11 @@ run spiderpool agent daemon
 
 ## spiderpool-agent shutdown
 
-### Synopsis
-
-notify to stop spiderpool-agent daemon
+Notify of stopping the spiderpool-agent daemon.
 
 ## spiderpool-agent metric
 
-get local metric
+Get local metrics.
 
 ### Options
 

@@ -1,29 +1,27 @@
-# Architect
+# Architecture
 
-## architecture
+![Architecture](./images/arch.jpg )
 
-![ architecture ](./images/arch.jpg )
+Spiderpool consists of following components:
 
-the spiderpool consists of following components:
+* Spiderpool IPAM plugin, a binary installed on each host. It is called by a CNI plugin to assign and release IP for a pod
 
-* spiderpool IPAM plugin, a binary installed on each host. It is called by CNI plugin to assign and release IP for a pod
+* spiderpool-agent, deployed as a daemonset. It receives IPAM requests from the IPAM plugin, assigns and releases IP from the ippool resource
 
-* spiderpool agent, deployed as a daemonset. It receives IPAM request from IPAM plugin, assign and release IP from ippool resource
+* spiderpool-controller, deployed as a deployment.
 
-* spiderpool controller, deployed as a deployment.
+  * It takes charge of reclaiming IP resource in ippool, to prevent IP from leaking after the pod does not take it. Refer to [Resource Reclaim](./gc.md) for details.
 
-  * It takes charge of reclaiming IP resource in ippool, to prevent IP from leaking after the pod does not take it. It refers to [Resource Reclaim](./gc.md) for details.
+  * It uses a webhook to watch the ippool resource, help the administrator to validate creation, modification, and deletion.
 
-  * It uses webhook to watch ippool resource, help the administrator validate the creation, modification, deletion.
+* spiderpoolctl, a CLI tool for debugging
 
-* spiderpoolctl, CLI tool for debugging
+## CRDs
 
-## CRD
+Spiderpool supports for the following CRDs:
 
-the spiderpool designs following CRD:
+* ippool CRD. It is used to store the IP resource for a subnet. Refer to [ippool](./ippool.md) for detail.
 
-* ippool CRD. It is used to store the IP resource for a subnet. It refers to [ippool](./ippool.md) for detail.
+* workloadendpoint CRD. It is used to store the IP assigned to a pod. Refer to [workloadendpoint](./workloadendpoint.md) for detail.
 
-* workloadendpoint CRD. It is used to store the IP assigned to a pod. It refers to [workloadendpoint](./workloadendpoint.md) for detail.
-
-* reservedip CRD. Is ti used to set reserved IP, who will not assign to pod, even set in the ippool. It refers to [reservedip](./reservedip.md) for detail.
+* reservedip CRD. It is used to set the reserved IP, which will not be assigned to a pod even if you have set it in the ippool. Refer to [reservedip](./reservedip.md) for detail.

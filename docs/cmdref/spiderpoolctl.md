@@ -1,10 +1,10 @@
 # spiderpoolctl
 
-CLI for debug
+This page describes CLI usage of spiderpoolctl for debug.
 
 ## spiderpoolctl gc
 
-trigger GC request to spiderpool-controller
+Trigger the GC request to spiderpool-controller.
 
 ```
     --address string         [optional] address for spider-controller (default to service address)
@@ -12,7 +12,7 @@ trigger GC request to spiderpool-controller
 
 ## spiderpoolctl ip show
 
-show pod who is taking this ip
+Show a pod that is taking this IP.
 
 ### Options
 
@@ -22,7 +22,7 @@ show pod who is taking this ip
 
 ## spiderpoolctl ip release
 
-try to release ip
+Try to release an IP.
 
 ### Options
 
@@ -33,7 +33,7 @@ try to release ip
 
 ## spiderpoolctl ip set
 
-set ip to be taken by a pod , this will update ippool and workloadendpoint resource
+Set IP to be taken by a pod. This will update ippool and workload endpoint resource.
 
 ### Options
 

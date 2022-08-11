@@ -1,10 +1,10 @@
-# annotation
+# Annotations
 
->Spiderpool provides annotations for configuring custom ippools and routes.
+Spiderpool provides annotations for configuring custom ippools and routes.
 
-## Pod Annotation
+## Pod annotations
 
-Pod could specify Spiderpool annotations for special request.
+For a pod, you can specify Spiderpool annotations for a special request.
 
 ### ipam.spidernet.io/ippool
 
@@ -19,9 +19,9 @@ ipam.spidernet.io/ippool: |-
   }
 ```
 
-- `interface` (string, optional): When integrate with [multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), it could specify which ippool is used to the interface. The interface information in the CNI request will be used as the default value when this field is not specified.
-- `ipv4pools` (array, optional): Specify which ippool is used to allocate IPv4 IP. When `enableIPv4` in Configmap `spiderpool-conf` is set to true,  this filed must be specified.
-- `ipv6pools` (array, optional): Specify which ippool is used to allocate IPv6 IP. When `enableIPv6` in Configmap `spiderpool-conf` is set to true, this filed must be specified.
+- `interface` (string, optional): When integrated with [multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), it could specify which ippool is used to the interface. The interface information in the CNI request will be used as the default value when this field is not specified.
+- `ipv4pools` (array, optional): Specify which ippool is used to allocate the IPv4 IP. When `enableIPv4` in the `spiderpool-conf` ConfigMap is set to true,  this field is required.
+- `ipv6pools` (array, optional): Specify which ippool is used to allocate the IPv6 IP. When `enableIPv6` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
 
 ### ipam.spidernet.io/ippools
 
@@ -42,16 +42,16 @@ ipam.spidernet.io/ippools: |-
   }]
 ```
 
-- `interface` (string, required): Since CNI request only carries the information of one interface, in the case of multiple interfaces, the interface field must be specified to distinguish.
-- `ipv4pools` (array, optional): Specify which ippool is used to allocate IPv4 IP. When `enableIPv4` in Configmap `spiderpool-conf` is set to true, this filed must be specified.
-- `ipv6pools` (array, optional): Specify which ippool is used to allocate IPv6 IP. When `enableIPv6` in Configmap `spiderpool-conf` is set to true, this filed must be specified.
-- `defaultRoute` (bool, optional): If set to be true, the IPAM plugin will return the default gateway route recorded in the ippool.
+- `interface` (string, required): Since the CNI request only carries the information of one interface, in the case of multiple interfaces, the interface field must be specified to distinguish.
+- `ipv4pools` (array, optional): Specify which ippool is used to allocate IPv4 IP. When `enableIPv4` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
+- `ipv6pools` (array, optional): Specify which ippool is used to allocate IPv6 IP. When `enableIPv6` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
+- `defaultRoute` (bool, optional): If set to true, the IPAM plugin will return the default gateway route recorded in the ippool.
 
 For different interfaces, it is not recommended to use ippools of the same subnet.
 
 ### ipam.spidernet.io/routes
 
-Users could use this to take effect additional routes.
+You can use the following code to enable additional routes take effect.
 
 ```yaml
 ipam.spidernet.io/routes: |-
@@ -82,7 +82,7 @@ ipam.spidernet.io/assigned-eth0: |-
   }
 ```
 
-## Namespace Annotation
+## Namespace annotations
 
 Namespace could set following annotations to specify default ippools. They are valid for all Pods under the Namespace.
 
@@ -100,4 +100,4 @@ If multiple ippools are listed, it will try to allocate IP from the later ippool
 ipam.spidernet.io/defaultv6ippool: '["ns-v6-ippool1","ns-v6-ippool2"]'
 ```
 
-Similar to above.
+For other procedure, similar to [Pod Annotations](#pod-annotations) described above.

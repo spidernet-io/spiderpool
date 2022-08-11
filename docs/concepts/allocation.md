@@ -1,32 +1,32 @@
 # IP Allocation
 
-when a pod is creating, it observes following steps to assign ip:
+When a pod is creating, it will follow steps below to get an IP.
 
-1. get all ippool candidates
+1. Get all ippool candidates.
 
-    For which ippool is used by pod, the following rule is listed from high to low priority
+    For which ippool is used by a pod, the following rules are listed from high to low priority.
 
-    * Honor pod annotation. "ipam.spidernet.io/ippool" and "ipam.spidernet.io/ippools" could be used for specify ippool. It could refer to [pod annotation](./annotation.md) for detail.
+    * Honor pod annotation. "ipam.spidernet.io/ippool" and "ipam.spidernet.io/ippools" could be used to specify an ippool. See [Pod Annotation](../usage/annotation.md) for detail.
 
-    * Namespace annotation. "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool" could be used for specify ippool. It could refer to [namespace annotation](./annotation.md) for detail.
+    * Namespace annotation. "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool" could be used to specify an ippool. See [namespace annotation](../usage/annotation.md) for detail.
 
     * Cluster default ippool.
-    Cluster default ippool could be set to "clusterDefaultIPv4IPPool" and "clusterDefaultIPv6IPPool" in configmap "spiderpool-conf". It could refer to [configuration](./config.md) for detail.
+      It can be set to "clusterDefaultIPv4IPPool" and "clusterDefaultIPv6IPPool" in the "spiderpool-conf" ConfigMap. See [configuration](../usage/config.md) for detail.
 
-2. filter valid ippool candidate
+2. Filter valid ippool candidates.
 
-    after getting ipv4 ippool and ipv6 ippool candidates, it looks into each ippool and figure out whether it meets following rules, and get which candidate ippool is available
+    After getting IPv4 and IPv6 ippool candidates, it looks into each ippool and figures out whether it meets following rules, and learns which candidate ippool is available.
 
-    * the "disable" filed of the ippool is "false"
-    * the "ipversion" filed of the ippool must meet the claim
-    * the "namespaceSelector" filed of the ippool must meet the namespace of the pod
-    * the "podSelector" filed of the ippool must meet the pod
-    * the "nodeSelector" filed of the ippool must meet the scheduled node of the pod
-    * the available IP resource of the ippool is not exhausted
+    * The "disable" field of the ippool is "false"
+    * The "ipversion" field of the ippool must meet the claim
+    * The "namespaceSelector" field of the ippool must meet the namespace of the pod
+    * The "podSelector" field of the ippool must meet the pod
+    * The "nodeSelector" field of the ippool must meet the scheduled node of the pod
+    * The available IP resource of the ippool is not exhausted
 
-3. assign ip from valid ippool candidate
+3. Assign IP from valid ippool candidates.
 
-    when trying to assign IP from the candidate ippool, it follows below rules
+    When trying to assign IP from the ippool candidates, it follows rules as below.
 
-    * the IP is not reserved by the "exclude_ips" filed of the ippool and all ReservedIP instance
-    * when the controller of the pod is statefulset, it allocates IP by order
+    * The IP is not reserved by the "exclude_ips" field of the ippool and all ReservedIP instances
+    * When the pod controller is a StatefulSet, the pod will get an IP in sequence

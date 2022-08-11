@@ -142,7 +142,7 @@ spec:
             httpHeaders:
               - name: "checkType"
                 value: "readinessProbe"
-          initialDelaySeconds: 5
+          initialDelaySeconds: 3
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.readinessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.spiderpoolController.healthChecking.readinessProbe.failureThreshold }}

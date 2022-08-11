@@ -349,10 +349,9 @@ spiderpoolController:
   healthChecking:
     startupProbe:
       # -- failure threshold of startup probe.
-      # 105 x 2s translates to the old behaviour of the readiness probe (120s delay + 30 x 3s)
-      failureThreshold: 30
+      failureThreshold: 5
       # -- interval between checks of the startup probe
-      periodSeconds: 2
+      periodSeconds: 3
 
     livenessProbe:
       # -- failure threshold of liveness probe
@@ -364,7 +363,7 @@ spiderpoolController:
       # -- failure threshold of readiness probe
       failureThreshold: 3
       # -- interval between checks of the readiness probe
-      periodSeconds: 10
+      periodSeconds: 3
 
   # -- http Port to listen to for health checking
   healthPort: 5720

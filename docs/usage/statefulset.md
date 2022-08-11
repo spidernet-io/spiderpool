@@ -1,14 +1,10 @@
 # StatefulSet
 
-Spiderpool supports StatefulSet IP assignment.
+## Description
 
-## Enable StatefulSet support
+The spiderpool supports IP assignment for StatefulSet.
 
-Change Spiderpool-agent and Spiderpool-controller with environment `SPIDERPOOL_ENABLED_STATEFULSET=true`
-
-## Feature
-
-Spiderpool will keep the IP stable with following situations:
+when the replica number of statefulset is not scaled up or down, all pods could hold same IP address even pod restarting or rebuilding happens.
 
 * Pod restarts
 
@@ -23,48 +19,31 @@ Spiderpool will keep the IP stable with following situations:
 
     In this case, Spiderpool will also keep the previous IP and update the ContainerID.
 
-> If the pod was scheduled to another node, spiderpool will update IPPool and spiderendpoint CR object property NodeName.
+### Notice
 
-## Create a StatefulSet
+* Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its pods are running.
 
-The example below demonstrates the components of a StatefulSet.
+* When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the IP of scaled-down pod event they have the same name
 
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: demo-sts-svc
-  labels:
-    app: demo-sts
-spec:
-  clusterIP: None
-  selector:
-    app: demo-sts
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: demo-sts
-  namespace: default
-spec:
-  serviceName: "demo-sts-svc"
-  replicas: 1
-  selector:
-    matchLabels:
-      app: demo-sts
-  template:
-    metadata:
-      labels:
-        app: demo-sts
-    spec:
-      containers:
-      - image: alpine
-        imagePullPolicy: IfNotPresent
-        name: demo-sts
-        command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+* The [RIPOGT feature](./ippool-gc.md) ( reclaim IP for the pod of graceful-period timeout ) does work for statefulset pod.
+
+## Get Started
+
+### Enable StatefulSet support
+
+firstly, please ensure you have installed the spiderpool and configure the CNI file, refer [install](./install.md) for detail
+
+Change Spiderpool-agent and Spiderpool-controller with environment `SPIDERPOOL_ENABLED_STATEFULSET=true`
+
+### Create a StatefulSet
+
+install an statefulset example
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset-demo.md
 ```
 
-## Validate the Spiderpool related CR data
+### Validate the Spiderpool related CR data
 
 1. Here's the created Pod, spiderippool, spiderendpoint CR information:
 
@@ -107,7 +86,7 @@ spec:
    ...
    ```
 
-2. Try to delete pod `demo-sts-0` and check whether the re-create pod keeps the previous IP or not.
+2. Try to delete pod `demo-sts-0` and check whether the rebuilding pod keeps the previous IP or not.
 
    ```text
    $ kubectl delete po demo-sts-0
@@ -181,7 +160,9 @@ spec:
 
    And you can see, the re-create Pod still hold the previous IP, and spiderippool, spiderendpoint updated containerID property.
 
-3. Try to delete StatefulSet object `demo-sts`.
+### clean up
+
+delete StatefulSet object `demo-sts`.
 
    ```text
    $ kubectl delete sts demo-sts
@@ -198,9 +179,3 @@ spec:
    ```
 
    The related data was cleaned up.
-
-## Notice
-
-* Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its pods are running.
-
-* Once StatefulSet decreases its replicas or is deleted, Spiderpool will clean up the legacy IPPool and spiderendpoint CR related data and wouldn't keep the previous IP.

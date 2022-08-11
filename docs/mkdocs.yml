@@ -32,25 +32,31 @@ markdown_extensions:
 
 nav:
   - Usage:
-      - usage/demo.md
       - usage/install.md
-      - usage/config.md
-      - usage/cli.md
+      - usage/basic.md
+      - usage/ippool-multi.md
+      - usage/ippool-namespace.md
+      - usage/ippool-affinity-namespace.md
+      - usage/ippool-affinity-node.md
+      - usage/ippool-affinity-pod.md
+      - usage/ipv6.md
+      - usage/multi-interfaces-annotation.md
+      - usage/multi-interfaces-cni.md
       - usage/statefulset.md
       - usage/reserved-ip.md
-      - usage/select-ippool.md
-      - usage/metrics.md
-      - usage/annotation.md
-      - usage/advance.md
-      - usage/qa.md
+      - usage/cidrManager.md
+      - usage/debug.md
+      - usage/cli.md
   - Concepts:
       - concepts/arch.md
       - concepts/allocation.md
       - concepts/gc.md
+      - concepts/annotation.md
+      - concepts/config.md
+      - concepts/metrics.md
       - concepts/ippool.md
       - concepts/reservedip.md
       - concepts/workloadendpoint.md
-      - concepts/roadmap.md
   - Reference:
       - cmdref/spiderpoolctl.md
       - cmdref/spiderpool-controller.md

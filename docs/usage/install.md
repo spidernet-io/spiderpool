@@ -4,7 +4,9 @@ the spiderpool needs install webhook of kube-apiserver, so it needs tls certific
 
 there are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificate.
 
-## By Self-signed Certificates
+## install spiderpool
+
+### install By Self-signed Certificates
 
 this way is simple, there is no any dependency. The project provides a script to generate tls certificate
 
@@ -73,7 +75,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
 ```
 
-## By Cert-manager
+### install By Cert-manager
 
 the way is not a common situation, because cert-manager needs CNI to create its pod,
 but as IPAM, spiderpool is still not installed to provide IP resource. It means cert-manager and spiderpool need each other to finish installation.
@@ -100,3 +102,24 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${ipv4_ip_range}}
 ```
+
+## configure CNI  
+
+after installation of the spiderpool, please edit CNI configuration file under /etc/cni/net.d/ .
+
+The following is an example for macvlan CNI
+
+```
+{
+  "cniVersion": "0.3.1",
+  "type": "macvlan",
+  "mode": "bridge",
+  "master": "eth0",
+  "name": "macvlan-cni-default",
+  "ipam": {
+    "type": "spiderpool"
+  }
+}
+```
+
+you cloud refer [config](../concepts/config.md) for the detail of the IPAM configuration

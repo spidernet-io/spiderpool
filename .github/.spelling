@@ -175,4 +175,7 @@ pre
 redis
 VLANs
 NICs
-NICs
+RIPOGT
+config
+net.d
+cni

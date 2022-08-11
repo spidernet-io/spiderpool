@@ -1,7 +1,7 @@
 [codespell]
 check-hidden =
 quiet-level = 2
-skip = vendor,go.sum,go.mod,codespell-ignorewords,.git,.idea,ca.crt
+skip = vendor,go.sum,go.mod,codespell-ignorewords,.git,.idea,ca.crt,*.md
 uri-ignore-words-list = *
 context = 1
 ignore-words = .github/codespell-ignorewords

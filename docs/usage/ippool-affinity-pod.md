@@ -1,4 +1,4 @@
-# Select ippool
+# pod affinity of ippool
 
 >Spiderpool supports multiple ways to select ippool. Pod will select a specific ippool to allocate IP according to the corresponding rules that with different priorities. Meanwhile, ippool can use selector to filter its user.
 

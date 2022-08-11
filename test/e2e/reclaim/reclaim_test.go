@@ -266,7 +266,10 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		// remove cni bin
 		GinkgoWriter.Println("remove cni bin")
 		command := "mv /opt/cni/bin/multus /opt/cni/bin/multus.backup"
-		common.ExecCommandOnKindNode(frame.Info.KindNodeList, command, time.Second*30)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+		defer cancel()
+		err = common.ExecCommandOnKindNode(ctx, frame.Info.KindNodeList, command)
+		Expect(err).NotTo(HaveOccurred())
 		GinkgoWriter.Println("remove cni bin successfully")
 
 		// delete resource
@@ -311,14 +314,17 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		// restore cni bin
 		GinkgoWriter.Println("restore cni bin")
 		command = "mv /opt/cni/bin/multus.backup /opt/cni/bin/multus"
-		common.ExecCommandOnKindNode(frame.Info.KindNodeList, command, time.Second*10)
+		ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*20)
+		defer cancel2()
+		err = common.ExecCommandOnKindNode(ctx2, frame.Info.KindNodeList, command)
+		Expect(err).NotTo(HaveOccurred())
 		GinkgoWriter.Println("restore cni bin successfully")
 
 		// wait nodes ready
 		GinkgoWriter.Println("wait cluster node ready")
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-		ok, err = frame.WaitClusterNodeReady(ctx)
+		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel3()
+		ok, err = frame.WaitClusterNodeReady(ctx3)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ok).To(BeTrue())
 	})
@@ -525,6 +531,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart\n")
+			Expect(spiderpoolControllerPodList.Items).NotTo(HaveLen(0), "failed to get spiderpool controller podList\n")
 			GinkgoWriter.Println("succeed to restart spiderpool controller pods")
 
 			// check the real pod ip should be recorded in spiderpool, the dirty ip record should be reclaimed from spiderpool

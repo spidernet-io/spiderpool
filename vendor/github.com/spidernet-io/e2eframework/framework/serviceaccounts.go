@@ -26,11 +26,12 @@ func (f *Framework) GetServiceAccount(saName, namespace string) (*corev1.Service
 	return existing, e
 }
 
-func (f *Framework) CheckServiceAccountReady(saName, namespace string, timeOut time.Duration) error {
+func (f *Framework) WaitServiceAccountReady(saName, namespace string, timeout time.Duration) error {
 	if saName == "" || namespace == "" {
 		return ErrWrongInput
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	for {
 		select {

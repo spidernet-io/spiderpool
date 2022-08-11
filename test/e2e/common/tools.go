@@ -3,6 +3,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	frame "github.com/spidernet-io/e2eframework/framework"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -55,21 +57,37 @@ func GetAdditionalPods(previous, latter *corev1.PodList) (pods []corev1.Pod) {
 	return pods
 }
 
-func ExecCommandOnKindNode(nodeNameList []string, command string, timeOut time.Duration) {
+func ExecCommandOnKindNode(ctx context.Context, nodeNameList []string, command string) error {
 	for _, node := range nodeNameList {
 		arg := fmt.Sprintf("docker exec -i %s %s", node, command)
 		cmd := exec.Command("/bin/bash", "-c", arg)
-		out, exitCode := ExecCommand(cmd, timeOut)
-		GinkgoWriter.Printf("on node: %v, run cmd: %v, stdout: %v, exitCode: %v\n", node, cmd, out, exitCode)
-		Expect(exitCode).To(Equal(0))
+		out, err := ExecCommand(ctx, cmd)
+		GinkgoWriter.Printf("on node: %v, run cmd: %v, stdout: %v \n", node, cmd, out)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func ExecCommand(cmd *exec.Cmd, timeOut time.Duration) (stdout string, exitCode int) {
+func ExecCommand(ctx context.Context, cmd *exec.Cmd) (string, error) {
+	var stdout string
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	GinkgoWriter.Printf("run cmd: %v\n", cmd)
 	Expect(err).NotTo(HaveOccurred())
-	session.Wait(timeOut)
-	stdout = string(session.Out.Contents())
-	exitCode = session.ExitCode()
-	return
+
+	for {
+		select {
+		case <-ctx.Done():
+			return stdout, frame.ErrTimeOut
+		default:
+			stdout = string(session.Out.Contents())
+			exitCode := session.ExitCode()
+			if exitCode == 0 {
+				GinkgoWriter.Printf("exitCode: %v, stdout: %v\n", exitCode, stdout)
+				return stdout, nil
+			}
+		}
+		time.Sleep(time.Second)
+	}
 }

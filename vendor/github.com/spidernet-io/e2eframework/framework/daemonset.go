@@ -149,3 +149,38 @@ func (f *Framework) WaitDaemonSetReady(name, namespace string, ctx context.Conte
 		}
 	}
 }
+
+// Create Daemonset and wait for ready and check that the IP of the Pod is assigned correctly
+func (f *Framework) CreateDaemonsetUntilReady(ctx context.Context, dsObj *appsv1.DaemonSet, opts ...client.CreateOption) (*corev1.PodList, error) {
+	if dsObj == nil {
+		return nil, ErrWrongInput
+	}
+
+	err := f.CreateDaemonSet(dsObj, opts...)
+	if err != nil {
+		return nil, err
+	}
+	ds, err := f.WaitDaemonSetReady(dsObj.Name, dsObj.Namespace, ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Assignment of IPv4 or IPv6 address successful
+OUTER:
+	for {
+		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			return nil, ErrTimeOut
+		default:
+			podList, err := f.GetPodListByLabel(ds.Spec.Selector.MatchLabels)
+			if err != nil {
+				return nil, err
+			}
+			err = f.CheckPodListIpReady(podList)
+			if err != nil {
+				continue OUTER
+			}
+			return podList, nil
+		}
+	}
+}

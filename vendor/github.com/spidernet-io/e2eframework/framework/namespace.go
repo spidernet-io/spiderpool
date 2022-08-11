@@ -48,6 +48,23 @@ func (f *Framework) CreateNamespace(nsName string, opts ...client.CreateOption) 
 	return f.CreateResource(ns, opts...)
 }
 
+func (f *Framework) CreateNamespaceUntilDefaultServiceAccountReady(nsName string, timeoutForSA time.Duration, opts ...client.CreateOption) error {
+	if nsName == "" {
+		return ErrWrongInput
+	}
+	err := f.CreateNamespace(nsName, opts...)
+	if err != nil {
+		return err
+	}
+	if timeoutForSA != 0 {
+		err = f.WaitServiceAccountReady("default", nsName, timeoutForSA)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (f *Framework) GetNamespace(nsName string) (*corev1.Namespace, error) {
 	if nsName == "" {
 		return nil, ErrWrongInput

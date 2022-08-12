@@ -9,11 +9,11 @@ import (
 
 // ReservedIPSpec defines the desired state of SpiderReservedIP
 type ReservedIPSpec struct {
-	// +kubebuilder:default=4
 	// +kubebuilder:validation:Enum=4;6
 	// +kubebuilder:validation:Optional
 	IPVersion *int64 `json:"ipVersion,omitempty"`
 
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:Required
 	IPs []string `json:"ips"`
 }

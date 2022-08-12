@@ -66,7 +66,7 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 }
 
 func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if err := im.validateIPPoolIPVersion(ctx, *ipPool.Spec.IPVersion); err != nil {
+	if err := im.validateIPPoolIPVersion(ctx, ipPool.Spec.IPVersion); err != nil {
 		return err
 	}
 	if err := im.validateIPPoolSubnet(ctx, *ipPool.Spec.IPVersion, ipPool.Name, ipPool.Spec.Subnet); err != nil {
@@ -86,7 +86,6 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 }
 
 func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	// TODO(iiiceoo): do not validate field 'ips' and field 'excludeIPs'?
 	if err := im.validateIPPoolIPs(ctx, *newIPPool.Spec.IPVersion, newIPPool.Spec.Subnet, newIPPool.Spec.IPs); err != nil {
 		return err
 	}
@@ -110,8 +109,16 @@ func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, n
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolIPVersion(ctx context.Context, version types.IPVersion) *field.Error {
-	if version != constant.IPv4 && version != constant.IPv6 {
+func (im *ipPoolManager) validateIPPoolIPVersion(ctx context.Context, version *types.IPVersion) *field.Error {
+	if version == nil {
+		return field.Invalid(
+			ipVersionField,
+			version,
+			"is not generated correctly, 'subnet' may be invalid",
+		)
+	}
+
+	if *version != constant.IPv4 && *version != constant.IPv6 {
 		return field.NotSupported(
 			ipVersionField,
 			version,
@@ -148,7 +155,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 			return field.Invalid(
 				subnetField,
 				subnet,
-				fmt.Sprintf("overlapped with IPPool %s which subnet is %s", pool.Name, pool.Spec.Subnet),
+				fmt.Sprintf("overlaps with IPPool %s which subnet is %s", pool.Name, pool.Spec.Subnet),
 			)
 		}
 	}
@@ -176,14 +183,13 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 		}
 
 		existIPs, err := im.AssembleTotalIPs(ctx, &pool)
-		// TODO(iiiceoo): Invalid?
 		if err != nil {
 			return field.InternalError(ipsField, err)
 		}
 		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("overlapped with IPPool %s, total IPs of an IPPool are jointly determined by 'ips' and 'excludeIPs'", pool.Name),
+				fmt.Sprintf("overlaps with IPPool %s, total IPs of an IPPool are jointly determined by 'ips' and 'excludeIPs'", pool.Name),
 			)
 		}
 	}
@@ -192,9 +198,34 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 }
 
 func (im *ipPoolManager) validateIPPoolIPs(ctx context.Context, version types.IPVersion, subnet string, ips []string) *field.Error {
+	n := len(ips)
+	if n == 0 {
+		return field.Required(
+			ipsField,
+			"requires at least one item",
+		)
+	}
+
 	for i, r := range ips {
 		if err := validateContainsIPRange(ctx, ipsField.Index(i), version, subnet, r); err != nil {
 			return err
+		}
+	}
+
+	if n == 1 {
+		return nil
+	}
+
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			overlap, _ := spiderpoolip.IsIPRangeOverlap(version, ips[i], ips[j])
+			if !overlap {
+				continue
+			}
+			return field.Forbidden(
+				ipsField,
+				fmt.Sprintf("%s overlaps with %s", ips[i], ips[j]),
+			)
 		}
 	}
 
@@ -205,6 +236,24 @@ func (im *ipPoolManager) validateIPPoolExcludeIPs(ctx context.Context, version t
 	for i, r := range excludeIPs {
 		if err := validateContainsIPRange(ctx, excludeIPsField.Index(i), version, subnet, r); err != nil {
 			return err
+		}
+	}
+
+	n := len(excludeIPs)
+	if n <= 1 {
+		return nil
+	}
+
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			overlap, _ := spiderpoolip.IsIPRangeOverlap(version, excludeIPs[i], excludeIPs[j])
+			if !overlap {
+				continue
+			}
+			return field.Forbidden(
+				excludeIPsField,
+				fmt.Sprintf("%s overlaps with %s", excludeIPs[i], excludeIPs[j]),
+			)
 		}
 	}
 

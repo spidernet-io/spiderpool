@@ -16,6 +16,7 @@ type IPPoolSpec struct {
 	// +kubebuilder:validation:Required
 	Subnet string `json:"subnet"`
 
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:Required
 	IPs []string `json:"ips"`
 

@@ -22,7 +22,7 @@ webhooks:
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
     {{- end }}
   failurePolicy: Fail
-  name: spiderpool.spidernet.io
+  name: spiderippool.spiderpool.spidernet.io
   rules:
   - apiGroups:
     - spiderpool.spidernet.io
@@ -33,6 +33,30 @@ webhooks:
     - UPDATE
     resources:
     - spiderippools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate-spiderpool-spidernet-io-v1-spiderreservedip
+      port: {{ .Values.spiderpoolController.webhookPort }}
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
+    {{- end }}
+  failurePolicy: Fail
+  name: spiderreservedip.spiderpool.spidernet.io
+  rules:
+  - apiGroups:
+    - spiderpool.spidernet.io
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - spiderreservedips
   sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
@@ -58,7 +82,7 @@ webhooks:
     caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
     {{- end }}
   failurePolicy: Fail
-  name: spiderpool.spidernet.io
+  name: spiderippool.spiderpool.spidernet.io
   rules:
   - apiGroups:
     - spiderpool.spidernet.io
@@ -69,4 +93,28 @@ webhooks:
     - UPDATE
     resources:
     - spiderippools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-spiderpool-spidernet-io-v1-spiderreservedip
+      port: {{ .Values.spiderpoolController.webhookPort }}
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.server.ca | required "missing spiderpoolController.tls.server.ca" }}
+    {{- end }}
+  failurePolicy: Fail
+  name: spiderreservedip.spiderpool.spidernet.io
+  rules:
+  - apiGroups:
+    - spiderpool.spidernet.io
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - spiderreservedips
   sideEffects: None

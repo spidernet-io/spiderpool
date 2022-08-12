@@ -19,8 +19,8 @@ import (
 var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 	var nsName, DeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName, nic, podAnnoStr string
 	var v4PoolNameList, v6PoolNameList []string
-	var iPv4PoolObj, iPv6PoolObj *spiderpool.IPPool
-	var v4ReservedIpObj, v6ReservedIpObj *spiderpool.ReservedIP
+	var iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
+	var v4ReservedIpObj, v6ReservedIpObj *spiderpool.SpiderReservedIP
 	var err error
 
 	BeforeEach(func() {

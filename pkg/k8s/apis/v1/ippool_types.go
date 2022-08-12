@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// IPPoolSpec defines the desired state of IPPool
+// IPPoolSpec defines the desired state of SpiderIPPool
 type IPPoolSpec struct {
 	// +kubebuilder:validation:Enum=4;6
 	// +kubebuilder:validation:Optional
@@ -39,13 +39,13 @@ type IPPoolSpec struct {
 	Routes []Route `json:"routes,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	PodSelector *metav1.LabelSelector `json:"podSelector,omitempty"`
+	PodAffinity *metav1.LabelSelector `json:"podAffinity,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	NamesapceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+	NamesapceAffinity *metav1.LabelSelector `json:"namespaceAffinity,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	NodeSelector *metav1.LabelSelector `json:"nodeSelector,omitempty"`
+	NodeAffinity *metav1.LabelSelector `json:"nodeAffinity,omitempty"`
 }
 
 type Route struct {
@@ -56,7 +56,7 @@ type Route struct {
 	Gw string `json:"gw"`
 }
 
-// IPPoolStatus defines the observed state of IPPool
+// IPPoolStatus defines the observed state of SpiderIPPool
 type IPPoolStatus struct {
 	// +kubebuilder:validation:Optional
 	AllocatedIPs PoolIPAllocations `json:"allocatedIPs,omitempty"`
@@ -100,8 +100,8 @@ type PoolIPAllocation struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// IPPool is the Schema for the ippools API
-type IPPool struct {
+// SpiderIPPool is the Schema for the spiderippools API
+type SpiderIPPool struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -111,14 +111,14 @@ type IPPool struct {
 
 // +kubebuilder:object:root=true
 
-// IPPoolList contains a list of IPPool
-type IPPoolList struct {
+// SpiderIPPoolList contains a list of SpiderIPPool
+type SpiderIPPoolList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 
-	Items []IPPool `json:"items"`
+	Items []SpiderIPPool `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&IPPool{}, &IPPoolList{})
+	SchemeBuilder.Register(&SpiderIPPool{}, &SpiderIPPoolList{})
 }

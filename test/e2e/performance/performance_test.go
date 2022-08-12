@@ -43,7 +43,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 	})
 	Context("time cost for creating, rebuilding, deleting deployment pod in batches", func() {
 		var v4PoolName, v6PoolName, nic, podIppoolAnnoStr string
-		var iPv4PoolObj, iPv6PoolObj *spiderpoolv1.IPPool
+		var iPv4PoolObj, iPv6PoolObj *spiderpoolv1.SpiderIPPool
 		var v4PoolNameList, v6PoolNameList []string
 		BeforeEach(func() {
 			nic = "eth0"

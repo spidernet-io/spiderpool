@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReservedIPSpec defines the desired state of ReservedIP
+// ReservedIPSpec defines the desired state of SpiderReservedIP
 type ReservedIPSpec struct {
 	// +kubebuilder:default=4
 	// +kubebuilder:validation:Enum=4;6
@@ -22,8 +22,8 @@ type ReservedIPSpec struct {
 // +kubebuilder:printcolumn:JSONPath=".spec.ipVersion",description="ipVersion",name="VERSION",type=string
 // +kubebuilder:object:root=true
 
-// ReservedIP is the Schema for the reservedips API
-type ReservedIP struct {
+// SpiderReservedIP is the Schema for the spiderreservedips API
+type SpiderReservedIP struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -32,14 +32,14 @@ type ReservedIP struct {
 
 // +kubebuilder:object:root=true
 
-// ReservedIPList contains a list of ReservedIP
-type ReservedIPList struct {
+// SpiderReservedIPList contains a list of SpiderReservedIP
+type SpiderReservedIPList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 
-	Items []ReservedIP `json:"items"`
+	Items []SpiderReservedIP `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ReservedIP{}, &ReservedIPList{})
+	SchemeBuilder.Register(&SpiderReservedIP{}, &SpiderReservedIPList{})
 }

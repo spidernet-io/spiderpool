@@ -6,9 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 	"strings"
 	"time"
+
+	"github.com/spidernet-io/spiderpool/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -161,7 +162,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 	Context("fail to run a pod when IP resource of an ippool is exhausted or its IP been set excludeIPs", func() {
 		var deployName, v4PoolName, v6PoolName, nic, podAnnoStr string
 		var v4PoolNameList, v6PoolNameList []string
-		var v4PoolObj, v6PoolObj *spiderpoolv1.IPPool
+		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 
 		BeforeEach(func() {
 			nic = "eth0"
@@ -291,7 +292,7 @@ func deleteIPPoolUntilFinish(poolName string) {
 	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed())
 }
 
-func createIPPool(IPPoolObj *spiderpoolv1.IPPool) {
+func createIPPool(IPPoolObj *spiderpoolv1.SpiderIPPool) {
 	GinkgoWriter.Printf("create ippool %v\n", IPPoolObj.Name)
 	Expect(common.CreateIppool(frame, IPPoolObj)).To(Succeed())
 	GinkgoWriter.Printf("create ippool %v succceed\n", IPPoolObj.Name)

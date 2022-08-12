@@ -5,8 +5,9 @@ package labelselector_test
 import (
 	"context"
 	"encoding/json"
-	corev1 "k8s.io/api/core/v1"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,8 +29,8 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 		var (
 			v4PoolName string
 			v6PoolName string
-			v4Pool     *spiderpoolv1.IPPool
-			v6Pool     *spiderpoolv1.IPPool
+			v4Pool     *spiderpoolv1.SpiderIPPool
+			v6Pool     *spiderpoolv1.SpiderIPPool
 		)
 
 		BeforeEach(func() {
@@ -84,24 +85,24 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				// create v4 ippool
 				v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
 				GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
-				v4Pool.Spec.NodeSelector = new(v1.LabelSelector)
-				v4Pool.Spec.NamesapceSelector = new(v1.LabelSelector)
-				v4Pool.Spec.PodSelector = new(v1.LabelSelector)
-				v4Pool.Spec.NodeSelector.MatchLabels = workerNodeLabel
-				v4Pool.Spec.NamesapceSelector.MatchLabels = ns.Labels
-				v4Pool.Spec.PodSelector.MatchLabels = map[string]string{matchedPodName: matchedPodName}
+				v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
+				v4Pool.Spec.NamesapceAffinity = new(v1.LabelSelector)
+				v4Pool.Spec.PodAffinity = new(v1.LabelSelector)
+				v4Pool.Spec.NodeAffinity.MatchLabels = workerNodeLabel
+				v4Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
+				v4Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				createIPPool(v4Pool)
 			}
 			if frame.Info.IpV6Enabled {
 				// create v6 ippool
 				v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
 				GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
-				v6Pool.Spec.NodeSelector = new(v1.LabelSelector)
-				v6Pool.Spec.NamesapceSelector = new(v1.LabelSelector)
-				v6Pool.Spec.PodSelector = new(v1.LabelSelector)
-				v6Pool.Spec.NodeSelector.MatchLabels = workerNodeLabel
-				v6Pool.Spec.NamesapceSelector.MatchLabels = ns.Labels
-				v6Pool.Spec.PodSelector.MatchLabels = map[string]string{matchedPodName: matchedPodName}
+				v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
+				v6Pool.Spec.NamesapceAffinity = new(v1.LabelSelector)
+				v6Pool.Spec.PodAffinity = new(v1.LabelSelector)
+				v6Pool.Spec.NodeAffinity.MatchLabels = workerNodeLabel
+				v6Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
+				v6Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				createIPPool(v6Pool)
 			}
 
@@ -205,7 +206,7 @@ func deleteIPPoolUntilFinish(poolName string) {
 	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed())
 }
 
-func createIPPool(IPPoolObj *spiderpoolv1.IPPool) {
+func createIPPool(IPPoolObj *spiderpoolv1.SpiderIPPool) {
 	GinkgoWriter.Printf("create ippool %v\n", IPPoolObj.Name)
 	Expect(common.CreateIppool(frame, IPPoolObj)).To(Succeed())
 	GinkgoWriter.Printf("succeeded to create ippool %v\n", IPPoolObj.Name)

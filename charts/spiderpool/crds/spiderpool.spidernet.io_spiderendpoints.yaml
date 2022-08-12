@@ -11,8 +11,8 @@ spec:
   names:
     categories:
     - spiderpool
-    kind: WorkloadEndpoint
-    listKind: WorkloadEndpointList
+    kind: SpiderEndpoint
+    listKind: SpiderEndpointList
     plural: spiderendpoints
     shortNames:
     - se
@@ -51,7 +51,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: WorkloadEndpoint is the Schema for the workloadendpoints API
+        description: Spiderndpoint is the Schema for the spiderendpoints API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -66,7 +66,7 @@ spec:
           metadata:
             type: object
           status:
-            description: WorkloadEndpointStatus defines the observed state of WorkloadEndpoint
+            description: WorkloadEndpointStatus defines the observed state of SpiderEndpoint
             properties:
               current:
                 description: TODO

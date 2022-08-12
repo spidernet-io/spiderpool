@@ -45,16 +45,16 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager
 		return nil, errors.New("IPAM config must be specified")
 	}
 	if ipPoolManager == nil {
-		return nil, errors.New("IPPool manager must be specified")
+		return nil, errors.New("IPPoolManager must be specified")
 	}
 	if weManager == nil {
-		return nil, errors.New("Endpoint manager must be specified")
+		return nil, errors.New("EndpointManager must be specified")
 	}
 	if nsManager == nil {
-		return nil, errors.New("Namespace manager must be specified")
+		return nil, errors.New("NamespaceManager must be specified")
 	}
 	if podManager == nil {
-		return nil, errors.New("Pod manager must be specified")
+		return nil, errors.New("PodManager must be specified")
 	}
 
 	ipamLimiter := limiter.NewLimiter(c.LimiterMaxQueueSize, c.LimiterMaxWaitTime)
@@ -78,7 +78,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	podStatus, allocatable := i.podManager.CheckPodStatus(pod)
 	if !allocatable {
-		return nil, fmt.Errorf("Pod is %s: %w", podStatus, constant.ErrNotAllocatablePod)
+		return nil, fmt.Errorf("%w: %s Pod", constant.ErrNotAllocatablePod, podStatus)
 	}
 
 	we, err := i.weManager.GetEndpointByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
@@ -158,7 +158,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, nic string, defaultIPV4I
 	return toBeAllocatedSet, nil
 }
 
-func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.WorkloadEndpoint, error) {
+func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
 	// TODO(iiiceoo): Comment why containerID should be written first.
 	we, err := i.weManager.MarkIPAllocation(ctx, containerID, we, pod)
 	if err != nil {
@@ -189,7 +189,7 @@ func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, cont
 	return allResults, we, nil
 }
 
-func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.WorkloadEndpoint, error) {
+func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
 	var results []*AllocationResult
 	if t.IPVersion == constant.IPv4 || t.IPVersion == constant.Dual {
 		result, we, err := i.allocateIPFromPoolCandidates(ctx, constant.IPv4, t, containerID, we, pod)
@@ -214,7 +214,7 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 	return results, we, nil
 }
 
-func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, version types.IPVersion, t *ToBeAllocated, containerID string, we *spiderpoolv1.WorkloadEndpoint, pod *corev1.Pod) (*AllocationResult, *spiderpoolv1.WorkloadEndpoint, error) {
+func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, version types.IPVersion, t *ToBeAllocated, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
 	logger := logutils.FromContext(ctx)
 
 	// TODO(iiiceoo): Refactor
@@ -237,7 +237,7 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, version types.I
 	result := &AllocationResult{}
 	for _, pool := range poolCandidates {
 		var err error
-		var ipPool *spiderpoolv1.IPPool
+		var ipPool *spiderpoolv1.SpiderIPPool
 		result.IP, ipPool, err = i.ipPoolManager.AllocateIP(ctx, pool, containerID, t.NIC, pod)
 		if err != nil {
 			errs = append(errs, err)

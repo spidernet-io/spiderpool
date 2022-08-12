@@ -37,9 +37,9 @@ func newCRDManager() (ctrl.Manager, error) {
 			&corev1.Pod{},
 			&appsv1.Deployment{},
 			&appsv1.StatefulSet{},
-			&spiderpoolv1.IPPool{},
-			&spiderpoolv1.WorkloadEndpoint{},
-			&spiderpoolv1.ReservedIP{}},
+			&spiderpoolv1.SpiderIPPool{},
+			&spiderpoolv1.SpiderEndpoint{},
+			&spiderpoolv1.SpiderReservedIP{}},
 	})
 
 	if err != nil {

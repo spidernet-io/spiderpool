@@ -60,6 +60,12 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		})
 		DescribeTable("time cost for creating, rebuilding, deleting deployment pod in batches",
 			func(controllerType string, replicas int32, overtimeCheck time.Duration) {
+
+				// Improved e2e execution efficiency, performance tests run on Dual-stacks only
+				if !frame.Info.IpV6Enabled || !frame.Info.IpV4Enabled {
+					Skip("Test conditions（Dual-stack） are not met")
+				}
+
 				// pod annotation
 				podAnno := types.AnnoPodIPPoolValue{
 					NIC: &nic,

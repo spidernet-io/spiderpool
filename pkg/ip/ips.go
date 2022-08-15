@@ -86,6 +86,26 @@ func ContainsIPRange(version types.IPVersion, subnet string, ipRange string) (bo
 	return ipNet.Contains(ips[0]) && ipNet.Contains(ips[n-1]), nil
 }
 
+func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool, error) {
+	if err := IsIPVersion(version); err != nil {
+		return false, err
+	}
+	if err := IsIPRange(version, ipRange1); err != nil {
+		return false, err
+	}
+	if err := IsIPRange(version, ipRange2); err != nil {
+		return false, err
+	}
+
+	ips1, _ := ParseIPRange(version, ipRange1)
+	ips2, _ := ParseIPRange(version, ipRange2)
+	if len(ips1) > len(IPsDiffSet(ips1, ips2)) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // IsIPRange check the format for the given ip range.
 // it can be a single one just like '192.168.1.0',
 // and it also could be an IP range just like '192.168.1.0-192.168.1.10'.

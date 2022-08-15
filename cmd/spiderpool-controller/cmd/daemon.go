@@ -178,11 +178,17 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.WEPManager = wepManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.RIPManager = rIPManager
+
+	logger.Debug("Begin to set up ReservedIP webhook")
+	err = controllerContext.RIPManager.SetupWebhook()
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 
 	logger.Debug("Begin to initialize Node Manager")
 	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())

@@ -227,7 +227,7 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.WEManager = weManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

@@ -45,7 +45,6 @@ spec:
             description: ReservedIPSpec defines the desired state of SpiderReservedIP
             properties:
               ipVersion:
-                default: 4
                 enum:
                 - 4
                 - 6
@@ -54,6 +53,7 @@ spec:
               ips:
                 items:
                   type: string
+                minItems: 1
                 type: array
             required:
             - ips

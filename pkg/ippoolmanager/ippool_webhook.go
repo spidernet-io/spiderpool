@@ -23,9 +23,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-var webhookLogger = logutils.Logger.Named("IPPool-Webhook")
+var webhookLogger *zap.Logger
 
 func (im *ipPoolManager) SetupWebhook() error {
+	if webhookLogger == nil {
+		webhookLogger = logutils.Logger.Named("IPPool-Webhook")
+	}
+
 	return ctrl.NewWebhookManagedBy(im.runtimeMgr).
 		For(&spiderpoolv1.SpiderIPPool{}).
 		WithDefaulter(im).
@@ -41,6 +45,7 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 	if !ok {
 		return fmt.Errorf("mutating webhook of IPPool got an object with mismatched type: %+v", obj.GetObjectKind().GroupVersionKind())
 	}
+
 	logger := webhookLogger.Named("Mutating").With(
 		zap.String("IPPoolNamespace", ipPool.Namespace),
 		zap.String("IPPoolName", ipPool.Name),
@@ -54,8 +59,6 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 	}
 
 	if ipPool.Spec.IPVersion == nil {
-		ipPool.Spec.IPVersion = new(types.IPVersion)
-
 		var version types.IPVersion
 		if spiderpoolip.IsIPv4CIDR(ipPool.Spec.Subnet) {
 			version = constant.IPv4
@@ -63,8 +66,11 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 			version = constant.IPv6
 		}
 
-		*ipPool.Spec.IPVersion = version
-		logger.Sugar().Infof("Set ipVersion '%d'", version)
+		if version == constant.IPv4 || version == constant.IPv6 {
+			ipPool.Spec.IPVersion = new(types.IPVersion)
+			*ipPool.Spec.IPVersion = version
+			logger.Sugar().Infof("Set ipVersion '%s'", version)
+		}
 	}
 
 	// add finalizer for IPPool CR
@@ -84,10 +90,11 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	if !ok {
 		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", obj.GetObjectKind().GroupVersionKind())
 	}
+
 	logger := webhookLogger.Named("Validating").With(
-		zap.String("Operation", "CREATE"),
 		zap.String("IPPoolNamespace", ipPool.Namespace),
 		zap.String("IPPoolName", ipPool.Name),
+		zap.String("Operation", "CREATE"),
 	)
 	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
 
@@ -106,6 +113,7 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	if !ok {
 		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", newObj.GetObjectKind().GroupVersionKind())
 	}
+
 	logger := webhookLogger.Named("Validating").With(
 		zap.String("IPPoolNamespace", newIPPool.Namespace),
 		zap.String("IPPoolName", newIPPool.Name),

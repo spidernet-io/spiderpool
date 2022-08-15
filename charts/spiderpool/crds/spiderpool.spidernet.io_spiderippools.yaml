@@ -78,6 +78,7 @@ spec:
               ips:
                 items:
                   type: string
+                minItems: 1
                 type: array
               namespaceAffinity:
                 description: A label selector is a label query over a set of resources.

@@ -435,6 +435,6 @@ spiderpoolController:
     server:
       # used by method provided
       # encoded
-      cert: ""
-      key: ""
-      ca: ""
+      tlsCert: ""
+      tlsKey: ""
+      tlsCa: ""

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"strconv"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -28,24 +28,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateIppool(f *frame.Framework, ippool *spiderpool.SpiderIPPool, opts ...client.CreateOption) error {
+func CreateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.CreateOption) error {
 	if f == nil || ippool == nil {
 		return errors.New("wrong input")
 	}
 	// try to wait for finish last deleting
-	fake := &spiderpool.SpiderIPPool{
+	fake := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ippool.ObjectMeta.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
-	existing := &spiderpool.SpiderIPPool{}
+	existing := &v1.SpiderIPPool{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
 		return errors.New("failed to create , a same Ippool exists")
 	} else {
 		t := func() bool {
-			existing := &spiderpool.SpiderIPPool{}
+			existing := &v1.SpiderIPPool{}
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
@@ -64,7 +64,7 @@ func CreateIppool(f *frame.Framework, ippool *spiderpool.SpiderIPPool, opts ...c
 func BatchCreateIppoolWithSpecifiedIPNumber(frame *frame.Framework, ippoolNumber, ipNum int, isV4orv6Pool bool) (ipPoolNameList []string, err error) {
 	ipMap := make(map[string]string)
 	var ipPoolName string
-	var ipPoolObj *spiderpool.SpiderIPPool
+	var ipPoolObj *v1.SpiderIPPool
 	var iPPoolNameList []string
 	if frame == nil || ippoolNumber < 0 || ipNum < 0 {
 		return nil, errors.New("wrong input")
@@ -117,7 +117,7 @@ func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.Dele
 	if poolName == "" || f == nil {
 		return errors.New("wrong input")
 	}
-	pool := &spiderpool.SpiderIPPool{
+	pool := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: poolName,
 		},
@@ -125,13 +125,13 @@ func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.Dele
 	return f.DeleteResource(pool, opts...)
 }
 
-func GetIppoolByName(f *frame.Framework, poolName string) *spiderpool.SpiderIPPool {
+func GetIppoolByName(f *frame.Framework, poolName string) *v1.SpiderIPPool {
 	if poolName == "" || f == nil {
 		return nil
 	}
 
 	v := apitypes.NamespacedName{Name: poolName}
-	existing := &spiderpool.SpiderIPPool{}
+	existing := &v1.SpiderIPPool{}
 	e := f.GetResource(v, existing)
 	if e != nil {
 		return nil
@@ -139,12 +139,12 @@ func GetIppoolByName(f *frame.Framework, poolName string) *spiderpool.SpiderIPPo
 	return existing
 }
 
-func GetAllIppool(f *frame.Framework, opts ...client.ListOption) *spiderpool.SpiderIPPoolList {
+func GetAllIppool(f *frame.Framework, opts ...client.ListOption) *v1.SpiderIPPoolList {
 	if f == nil {
 		return nil
 	}
 
-	v := &spiderpool.SpiderIPPoolList{}
+	v := &v1.SpiderIPPoolList{}
 	e := f.ListResource(v, opts...)
 	if e != nil {
 		return nil
@@ -152,7 +152,7 @@ func GetAllIppool(f *frame.Framework, opts ...client.ListOption) *spiderpool.Spi
 	return v
 }
 
-func CheckIppoolForUsedIP(f *frame.Framework, ippool *spiderpool.SpiderIPPool, PodName, PodNamespace string, ipAddrress *corev1.PodIP) (bool, error) {
+func CheckIppoolForUsedIP(f *frame.Framework, ippool *v1.SpiderIPPool, PodName, PodNamespace string, ipAddrress *corev1.PodIP) (bool, error) {
 	if f == nil || ippool == nil || PodName == "" || PodNamespace == "" || ipAddrress.String() == "" {
 		return false, errors.New("wrong input")
 	}
@@ -189,7 +189,7 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 		return false, false, false, errors.New("wrong input")
 	}
 
-	var v4ippoolList, v6ippoolList []*spiderpool.SpiderIPPool
+	var v4ippoolList, v6ippoolList []*v1.SpiderIPPool
 	if len(v4IppoolNameList) != 0 {
 		for _, v := range v4IppoolNameList {
 			v4ippool := GetIppoolByName(f, v)
@@ -371,13 +371,13 @@ func GetNamespaceDefaultIppool(f *frame.Framework, namespace string) (v4IppoolLi
 	return v4IppoolList, v6IppoolList, nil
 }
 
-func GetWorkloadByName(f *frame.Framework, namespace, name string) *spiderpool.SpiderEndpoint {
+func GetWorkloadByName(f *frame.Framework, namespace, name string) *v1.SpiderEndpoint {
 	if name == "" || namespace == "" {
 		return nil
 	}
 
 	v := apitypes.NamespacedName{Name: name, Namespace: namespace}
-	existing := &spiderpool.SpiderEndpoint{}
+	existing := &v1.SpiderEndpoint{}
 	e := f.GetResource(v, existing)
 	if e != nil {
 		return nil
@@ -405,7 +405,7 @@ func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameLis
 	}
 }
 
-func GenerateExampleIpv4poolObject(ipNum int) (string, *spiderpool.SpiderIPPool) {
+func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	if ipNum < 1 || ipNum > 65533 {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
@@ -413,18 +413,18 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *spiderpool.SpiderIPPool)
 	var v4Ipversion = new(types.IPVersion)
 	*v4Ipversion = constant.IPv4
 
-	var iPv4PoolObj *spiderpool.SpiderIPPool
+	var iPv4PoolObj *v1.SpiderIPPool
 	// Generate ipv4pool name
 	var v4PoolName string = "v4pool-" + tools.RandomName()
 	// Generate random number
 	var randomNumber1 string = GenerateRandomNumber(255)
 	var randomNumber2 string = GenerateRandomNumber(255)
 
-	iPv4PoolObj = &spiderpool.SpiderIPPool{
+	iPv4PoolObj = &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v4PoolName,
 		},
-		Spec: spiderpool.IPPoolSpec{
+		Spec: v1.IPPoolSpec{
 			IPVersion: v4Ipversion,
 		},
 	}
@@ -446,7 +446,7 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *spiderpool.SpiderIPPool)
 	return v4PoolName, iPv4PoolObj
 }
 
-func GenerateExampleIpv6poolObject(ipNum int) (string, *spiderpool.SpiderIPPool) {
+func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	if ipNum < 1 || ipNum > 65533 {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
@@ -460,11 +460,11 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *spiderpool.SpiderIPPool)
 	// Generate random number
 	var randomNumber string = GenerateRandomNumber(9999)
 
-	iPv6PoolObj := &spiderpool.SpiderIPPool{
+	iPv6PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v6PoolName,
 		},
-		Spec: spiderpool.IPPoolSpec{
+		Spec: v1.IPPoolSpec{
 			IPVersion: v6Ipversion,
 		},
 	}
@@ -506,7 +506,7 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 	}
 }
 
-func UpdateIppool(f *frame.Framework, ippool *spiderpool.SpiderIPPool, opts ...client.UpdateOption) error {
+func UpdateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.UpdateOption) error {
 	if ippool == nil || f == nil {
 		return errors.New("wrong input")
 	}

@@ -176,6 +176,7 @@ func DaemonMain() {
 	}()
 
 	// TODO (Icarus9913): improve k8s StartupProbe
+	logger.Info("Set spiderpool-agent Startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
 
 	// start notifying signals

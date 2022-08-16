@@ -15,7 +15,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -23,9 +23,7 @@ import (
 var webhookLogger *zap.Logger
 
 func (im *ipPoolManager) SetupWebhook() error {
-	if webhookLogger == nil {
-		webhookLogger = logutils.Logger.Named("IPPool-Webhook")
-	}
+	webhookLogger = logutils.Logger.Named("IPPool-Webhook")
 
 	return ctrl.NewWebhookManagedBy(im.runtimeMgr).
 		For(&spiderpoolv1.SpiderIPPool{}).
@@ -44,7 +42,6 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 	}
 
 	logger := webhookLogger.Named("Mutating").With(
-		zap.String("IPPoolNamespace", ipPool.Namespace),
 		zap.String("IPPoolName", ipPool.Name),
 		zap.String("Operation", "DEFAULT"),
 	)
@@ -66,7 +63,7 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		if version == constant.IPv4 || version == constant.IPv6 {
 			ipPool.Spec.IPVersion = new(types.IPVersion)
 			*ipPool.Spec.IPVersion = version
-			logger.Sugar().Infof("Set ipVersion '%s'", version)
+			logger.Sugar().Infof("Set ipVersion '%d'", version)
 		}
 	}
 
@@ -89,7 +86,6 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	}
 
 	logger := webhookLogger.Named("Validating").With(
-		zap.String("IPPoolNamespace", ipPool.Namespace),
 		zap.String("IPPoolName", ipPool.Name),
 		zap.String("Operation", "CREATE"),
 	)
@@ -112,7 +108,6 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	}
 
 	logger := webhookLogger.Named("Validating").With(
-		zap.String("IPPoolNamespace", newIPPool.Namespace),
 		zap.String("IPPoolName", newIPPool.Name),
 		zap.String("Operation", "UPDATE"),
 	)

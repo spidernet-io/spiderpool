@@ -16,11 +16,13 @@ import (
 	"github.com/pyroscope-io/client/pyroscope"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -132,10 +134,11 @@ func DaemonMain() {
 	}()
 
 	// init IP GC manager
-	logger.Debug("Begin to initialize IP GC Manager")
+	logger.Info("Begin to initialize IP GC Manager")
 	initGCManager(controllerContext.InnerCtx)
 
 	// TODO (Icarus9913): improve k8s StartupProbe
+	logger.Info("Set spiderpool-controller Startup probe ready")
 	controllerContext.IsStartupProbe.Store(true)
 
 	// start notifying signals
@@ -171,10 +174,10 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	// init spiderpool controller leader election
-	logger.Debug("Begin to initialize spiderpool controller leader election")
+	logger.Info("Begin to initialize spiderpool controller leader election")
 	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
-	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
+	logger.Info("Begin to initialize WorkloadEndpoint Manager")
 	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
 	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
 	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
@@ -184,64 +187,70 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.WEPManager = wepManager
 
-	logger.Debug("Begin to initialize ReservedIP Manager")
+	logger.Info("Begin to initialize ReservedIP Manager")
 	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.RIPManager = rIPManager
 
-	logger.Debug("Begin to set up ReservedIP webhook")
+	logger.Info("Begin to set up ReservedIP webhook")
 	err = controllerContext.RIPManager.SetupWebhook()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Debug("Begin to initialize Node Manager")
+	logger.Info("Begin to initialize Node Manager")
 	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NodeManager = nodeManager
 
-	logger.Debug("Begin to initialize Namespace Manager")
+	logger.Info("Begin to initialize Namespace Manager")
 	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NSManager = nsManager
 
-	logger.Debug("Begin to initialize Pod Manager")
+	logger.Info("Begin to initialize Pod Manager")
 	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.PodManager = podManager
 
-	logger.Debug("Begin to initialize StatefulSet Manager")
+	logger.Info("Begin to initialize StatefulSet Manager")
 	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.StsManager = statefulSetManager
 
-	logger.Debug("Begin to initialize IPPool Manager")
+	logger.Info("Begin to initialize IPPool Manager")
 	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager, controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager, controllerContext.RIPManager, controllerContext.NodeManager,
+		controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.IPPoolManager = ipPoolManager
 
-	// set up spiderpool controller IPPool reconcile
-	logger.Debug("Begin to set up IPPool reconcile")
-	err = controllerContext.IPPoolManager.SetupReconcile(controllerContext.Leader)
+	// start SpiderIPPool informer
+	logger.Info("Begin to set up SpiderIPPool informer")
+	crdClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	leaderRetryElectGap := time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
+	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader, &leaderRetryElectGap)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
 	// set up spiderpool controller IPPool webhook
-	logger.Debug("Begin to set up IPPool webhook")
+	logger.Info("Begin to set up SpiderIPPool webhook")
 	err = controllerContext.IPPoolManager.SetupWebhook()
 	if err != nil {
 		logger.Fatal(err.Error())

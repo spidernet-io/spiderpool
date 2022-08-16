@@ -129,7 +129,7 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 	go s.startPodInformer()
 
 	// trace pod worker
-	go s.tracePodWorker()
+	go s.tracePodWorker(ctx)
 
 	// monitor gc signal from CLI or DefaultGCInterval
 	go s.monitorGCSignal(ctx)
@@ -137,11 +137,6 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 	for i := 0; i < s.gcConfig.ReleaseIPWorkerNum; i++ {
 		go s.releaseIPPoolIPExecutor(ctx, i)
 	}
-
-	//err = s.registerStatefulSetInformer()
-	//if nil != err {
-	//	return fmt.Errorf("register StatefulSet informer failed '%v'", err)
-	//}
 
 	logger.Info("running IP garbage collection")
 	return nil

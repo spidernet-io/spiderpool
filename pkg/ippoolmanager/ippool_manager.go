@@ -23,7 +23,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -31,8 +32,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
-
-var logger = logutils.Logger.Named("IPPool-Manager")
 
 type IPPoolManager interface {
 	GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error)
@@ -43,7 +42,7 @@ type IPPoolManager interface {
 	CheckVlanSame(ctx context.Context, poolNameList []string) (map[types.Vlan][]string, bool, error)
 	RemoveFinalizer(ctx context.Context, poolName string) error
 	AssembleTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error)
-	SetupReconcile(leader election.SpiderLeaseElector) error
+	SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector, leaderRetryElectGap *time.Duration) error
 	SetupWebhook() error
 	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
 }
@@ -58,10 +57,14 @@ type ipPoolManager struct {
 	maxAllocatedIPs       int
 	maxConflictRetrys     int
 	conflictRetryUnitTime time.Duration
-	leader                election.SpiderLeaseElector
+
+	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
+	leader election.SpiderLeaseElector
 }
 
-func NewIPPoolManager(mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager, nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, maxAllocatedIPs, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (IPPoolManager, error) {
+func NewIPPoolManager(mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager,
+	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager,
+	maxAllocatedIPs, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (IPPoolManager, error) {
 	if mgr == nil {
 		return nil, errors.New("k8s manager must be specified")
 	}

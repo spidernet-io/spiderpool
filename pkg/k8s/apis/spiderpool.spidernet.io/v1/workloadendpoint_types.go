@@ -15,13 +15,10 @@ type WorkloadEndpointStatus struct {
 	// +kubebuilder:validation:Optional
 	History []PodIPAllocation `json:"history,omitempty"`
 
-	// TODO
-
 	// +kubebuilder:validation:Optional
 	OwnerControllerType string `json:"ownerControllerType"`
 }
 
-// TODO
 type PodIPAllocation struct {
 	// +kubebuilder:validation:Required
 	ContainerID string `json:"containerID"`
@@ -36,7 +33,6 @@ type PodIPAllocation struct {
 	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 }
 
-// TODO
 type IPAllocationDetail struct {
 	// +kubebuilder:validation:Required
 	NIC string `json:"interface"`

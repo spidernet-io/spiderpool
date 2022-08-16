@@ -69,7 +69,6 @@ spec:
             description: WorkloadEndpointStatus defines the observed state of SpiderEndpoint
             properties:
               current:
-                description: TODO
                 properties:
                   containerID:
                     type: string
@@ -78,7 +77,6 @@ spec:
                     type: string
                   ips:
                     items:
-                      description: TODO
                       properties:
                         cleanGateway:
                           type: boolean
@@ -125,7 +123,6 @@ spec:
                 type: object
               history:
                 items:
-                  description: TODO
                   properties:
                     containerID:
                       type: string
@@ -134,7 +131,6 @@ spec:
                       type: string
                     ips:
                       items:
-                        description: TODO
                         properties:
                           cleanGateway:
                             type: boolean

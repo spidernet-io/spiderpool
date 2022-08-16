@@ -4,7 +4,7 @@ package labelselector_test
 
 import (
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	"k8s.io/apimachinery/pkg/runtime"
 	"testing"

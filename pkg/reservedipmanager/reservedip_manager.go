@@ -6,6 +6,7 @@ package reservedipmanager
 import (
 	"context"
 	"errors"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"net"
 
 	apitypes "k8s.io/apimachinery/pkg/types"
@@ -13,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 

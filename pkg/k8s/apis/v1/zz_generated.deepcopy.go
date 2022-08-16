@@ -51,6 +51,11 @@ func (in *IPAllocationDetail) DeepCopyInto(out *IPAllocationDetail) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.CleanGateway != nil {
+		in, out := &in.CleanGateway, &out.CleanGateway
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Routes != nil {
 		in, out := &in.Routes, &out.Routes
 		*out = make([]Route, len(*in))

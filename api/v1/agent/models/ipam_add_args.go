@@ -22,6 +22,9 @@ import (
 // swagger:model IpamAddArgs
 type IpamAddArgs struct {
 
+	// clean gateway
+	CleanGateway bool `json:"cleanGateway,omitempty"`
+
 	// container ID
 	// Required: true
 	ContainerID *string `json:"containerID"`

@@ -109,6 +109,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		PodNamespace:      (*string)(&k8sArgs.K8S_POD_NAMESPACE),
 		DefaultIPV4IPPool: conf.IPAM.DefaultIPv4IPPool,
 		DefaultIPV6IPPool: conf.IPAM.DefaultIPv6IPPool,
+		CleanGateway:      conf.IPAM.CleanGateway,
 	}
 
 	params := daemonset.NewPostIpamIPParams()
@@ -156,15 +157,17 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 	// Result Routes
 	var routes []*types.Route
 	for _, singleRoute := range ipamResponse.Payload.Routes {
-		// TODO(iiiceoo): Use pkg ip ParseRoute()
-		_, routeDst, err := net.ParseCIDR(*singleRoute.Dst)
-		if err != nil {
-			return nil, err
+		if *singleRoute.IfName == IfName {
+			// TODO(iiiceoo): Use pkg ip ParseRoute()
+			_, routeDst, err := net.ParseCIDR(*singleRoute.Dst)
+			if err != nil {
+				return nil, err
+			}
+			routes = append(routes, &types.Route{
+				Dst: *routeDst,
+				GW:  net.ParseIP(*singleRoute.Gw),
+			})
 		}
-		routes = append(routes, &types.Route{
-			Dst: *routeDst,
-			GW:  net.ParseIP(*singleRoute.Gw),
-		})
 	}
 	result.Routes = routes
 

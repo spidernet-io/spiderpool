@@ -11,18 +11,26 @@ import (
 )
 
 type ToBeAllocated struct {
-	IPVersion        types.IPVersion
-	NIC              string
-	DefaultRouteType types.DefaultRouteType
-	V4PoolCandidates []string
-	V6PoolCandidates []string
+	NIC            string
+	CleanGateway   bool
+	PoolCandidates []*PoolCandidate
+}
+
+type PoolCandidate struct {
+	IPVersion types.IPVersion
+	Pools     []string
 }
 
 func (t *ToBeAllocated) String() string {
 	return fmt.Sprintf("%+v", *t)
 }
 
+func (c *PoolCandidate) String() string {
+	return fmt.Sprintf("%+v", *c)
+}
+
 type AllocationResult struct {
-	IP     *models.IPConfig
-	Routes []*models.Route
+	IP           *models.IPConfig
+	Routes       []*models.Route
+	CleanGateway bool
 }

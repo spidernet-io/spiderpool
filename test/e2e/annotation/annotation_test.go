@@ -211,11 +211,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	Context("annotation priority", func() {
 		var nic, podIppoolAnnoStr, podIppoolsAnnoStr string
 		var v4PoolNameList, v6PoolNameList []string
-		var defaultRouteBool bool
+		var cleanGateway bool
 		var err error
 		BeforeEach(func() {
 			nic = "eth0"
-			defaultRouteBool = false
+			cleanGateway = false
 			if frame.Info.IpV4Enabled {
 				v4PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, 200, true)
 				Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool")
@@ -257,7 +257,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			podIppoolsAnno := types.AnnoPodIPPoolsValue{
 				types.AnnoIPPoolItem{
 					NIC:          nic,
-					DefaultRoute: defaultRouteBool,
+					CleanGateway: cleanGateway,
 				},
 			}
 			if frame.Info.IpV4Enabled {

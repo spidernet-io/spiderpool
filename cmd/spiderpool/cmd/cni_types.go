@@ -52,6 +52,7 @@ type IPAMConfig struct {
 
 	DefaultIPv4IPPool []string `json:"default_ipv4_ippool"`
 	DefaultIPv6IPPool []string `json:"default_ipv6_ippool"`
+	CleanGateway      bool     `json:"clean_gateway"`
 
 	IpamUnixSocketPath string `json:"ipam_unix_socket_path"`
 }

@@ -29,3 +29,41 @@ markdown_extensions:
   - fenced_code
   - tables
   - attr_list
+
+nav:
+  - Usage:
+      - usage/install.md
+      - usage/basic.md
+      - usage/ippool-multi.md
+      - usage/ippool-namespace.md
+      - usage/ippool-affinity-namespace.md
+      - usage/ippool-affinity-node.md
+      - usage/ippool-affinity-pod.md
+      - usage/ipv6.md
+      - usage/multi-interfaces-annotation.md
+      - usage/multi-interfaces-cni.md
+      - usage/statefulset.md
+      - usage/reserved-ip.md
+      - usage/cidrManager.md
+      - usage/debug.md
+      - usage/cli.md
+  - Concepts:
+      - concepts/arch.md
+      - concepts/allocation.md
+      - concepts/gc.md
+      - concepts/annotation.md
+      - concepts/config.md
+      - concepts/metrics.md
+      - concepts/ippool.md
+      - concepts/reservedip.md
+      - concepts/workloadendpoint.md
+  - Reference:
+      - cmdref/spiderpoolctl.md
+      - cmdref/spiderpool-controller.md
+      - cmdref/spiderpool-agent.md
+  - Development:
+      - develop/pullrequest.md
+      - develop/release.md
+      - develop/swagger_openapi.md
+      - develop/test.md
+      - develop/changelog.md

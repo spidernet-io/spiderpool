@@ -26,21 +26,28 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 // DaemonMain runs controllerContext handlers.
 func DaemonMain() {
 	// reinitialize the logger
-	v := logutils.ConvertLogLevel(controllerContext.Cfg.LogLevel)
-	if v == nil {
+	logLevel := logutils.ConvertLogLevel(controllerContext.Cfg.LogLevel)
+	if logLevel == nil {
 		panic(fmt.Sprintf("unknown log level %s \n", controllerContext.Cfg.LogLevel))
 	}
-	err := logutils.InitStdoutLogger(*v)
+	err := logutils.InitStdoutLogger(*logLevel)
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize logger with level %s, reason=%v \n", controllerContext.Cfg.LogLevel, err))
 	}
 	logger = logutils.Logger.Named(BinNameController)
+
+	// load Configmap
+	err = controllerContext.LoadConfigmap()
+	if nil != err {
+		logger.Sugar().Fatalf("failed to load configmap, error: %v", err)
+	}
 
 	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
 
@@ -211,6 +218,13 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
+	logger.Debug("Begin to initialize StatefulSet Manager")
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.StsManager = statefulSetManager
+
 	logger.Debug("Begin to initialize IPPool Manager")
 	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager, controllerContext.RIPManager, controllerContext.NodeManager, controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
@@ -235,8 +249,11 @@ func initControllerServiceManagers(ctx context.Context) {
 }
 
 func initGCManager(ctx context.Context) {
+	// EnableStatefulSet was determined by configmap
+	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
+
 	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.ClientSet, gcIPConfig, controllerContext.WEPManager,
-		controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.Leader)
+		controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.StsManager, controllerContext.Leader)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}

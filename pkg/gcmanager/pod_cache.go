@@ -4,6 +4,7 @@
 package gcmanager
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -135,6 +137,19 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 	// deleted pod
 	if deleted {
+		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
+		if s.gcConfig.EnableStatefulSet && podmanager.GetControllerOwnerType(currentPod) == constant.OwnerStatefulSet {
+			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, podmanager.GetControllerOwnerType(currentPod))
+			if nil != err {
+				return nil, err
+			}
+
+			// StatefulSet pod restarted, no need to trace it.
+			if isValidStsPod {
+				return nil, nil
+			}
+		}
+
 		podEntry := &PodEntry{
 			PodName:             currentPod.Name,
 			Namespace:           currentPod.Namespace,
@@ -149,6 +164,11 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
 		return podEntry, nil
 	} else {
+		// no need to trace Terminating StatefulSet pod.
+		if podmanager.GetControllerOwnerType(currentPod) == constant.OwnerStatefulSet {
+			return nil, nil
+		}
+
 		podStatus, _ := s.podMgr.CheckPodStatus(currentPod)
 
 		var isBuildTerminatingPodEntry, isBuildSucceededOrFailedPodEntry bool

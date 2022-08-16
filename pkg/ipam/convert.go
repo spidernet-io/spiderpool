@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
@@ -20,6 +21,7 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 	var routes []*models.Route
 	for _, d := range details {
 		nic := d.NIC
+
 		if d.IPv4 != nil {
 			version := constant.IPv4
 			var ipv4Gateway string
@@ -29,10 +31,11 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv4,
+				Gateway: ipv4Gateway,
+				IPPool:  *d.IPv4Pool,
 				Nic:     &nic,
 				Version: &version,
 				Vlan:    *d.Vlan,
-				Gateway: ipv4Gateway,
 			})
 		}
 
@@ -45,10 +48,11 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv6,
+				Gateway: ipv6Gateway,
+				IPPool:  *d.IPv6Pool,
 				Nic:     &nic,
 				Version: &version,
 				Vlan:    *d.Vlan,
-				Gateway: ipv6Gateway,
 			})
 		}
 
@@ -187,26 +191,6 @@ func convertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Rout
 	return routes
 }
 
-func groupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetail) map[string][]ippoolmanager.IPAndCID {
-	poolToIPAndCIDs := map[string][]ippoolmanager.IPAndCID{}
-	for _, d := range details {
-		if d.IPv4 != nil {
-			poolToIPAndCIDs[*d.IPv4Pool] = append(poolToIPAndCIDs[*d.IPv4Pool], ippoolmanager.IPAndCID{
-				IP:          strings.Split(*d.IPv4, "/")[0],
-				ContainerID: containerID,
-			})
-		}
-		if d.IPv6 != nil {
-			poolToIPAndCIDs[*d.IPv6Pool] = append(poolToIPAndCIDs[*d.IPv6Pool], ippoolmanager.IPAndCID{
-				IP:          strings.Split(*d.IPv6, "/")[0],
-				ContainerID: containerID,
-			})
-		}
-	}
-
-	return poolToIPAndCIDs
-}
-
 func genIPAssignmentAnnotation(ips []*models.IPConfig) (map[string]string, error) {
 	nicToValue := map[string]*types.AnnoPodAssignedEthxValue{}
 	for _, ip := range ips {
@@ -250,4 +234,24 @@ func genIPAssignmentAnnotation(ips []*models.IPConfig) (map[string]string, error
 	}
 
 	return podAnnotations, nil
+}
+
+func GroupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetail) map[string][]ippoolmanager.IPAndCID {
+	poolToIPAndCIDs := map[string][]ippoolmanager.IPAndCID{}
+	for _, d := range details {
+		if d.IPv4 != nil {
+			poolToIPAndCIDs[*d.IPv4Pool] = append(poolToIPAndCIDs[*d.IPv4Pool], ippoolmanager.IPAndCID{
+				IP:          strings.Split(*d.IPv4, "/")[0],
+				ContainerID: containerID,
+			})
+		}
+		if d.IPv6 != nil {
+			poolToIPAndCIDs[*d.IPv6Pool] = append(poolToIPAndCIDs[*d.IPv6Pool], ippoolmanager.IPAndCID{
+				IP:          strings.Split(*d.IPv6, "/")[0],
+				ContainerID: containerID,
+			})
+		}
+	}
+
+	return poolToIPAndCIDs
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -55,6 +56,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
 	{"SPIDERPOOL_LIMITER_MAX_QUEUE_SIZE", "1000", true, nil, nil, &agentContext.Cfg.LimiterMaxQueueSize},
 	{"SPIDERPOOL_LIMITER_MAX_WAIT_TIME", "15", true, nil, nil, &agentContext.Cfg.LimiterMaxWaitTime},
+	{"SPIDERPOOL_ENABLED_STATEFULSET", "true", true, nil, &agentContext.Cfg.EnableStatefulSet, nil},
 }
 
 type Config struct {
@@ -85,6 +87,7 @@ type Config struct {
 	ClusterDefaultIPv4IPPool []string `yaml:"clusterDefaultIPv4IPPool"`
 	ClusterDefaultIPv6IPPool []string `yaml:"clusterDefaultIPv6IPPool"`
 	NetworkMode              string   `yaml:"networkMode"`
+	EnableStatefulSet        bool     `yaml:"enableStatefulSet"`
 }
 
 type AgentContext struct {
@@ -103,6 +106,7 @@ type AgentContext struct {
 	NodeManager   nodemanager.NodeManager
 	NSManager     namespacemanager.NamespaceManager
 	PodManager    podmanager.PodManager
+	StsManager    statefulsetmanager.StatefulSetManager
 
 	// handler
 	CRDManager ctrl.Manager
@@ -165,12 +169,12 @@ func ParseConfiguration() error {
 func (ac *AgentContext) LoadConfigmap() error {
 	configmapBytes, err := os.ReadFile(ac.Cfg.ConfigPath)
 	if nil != err {
-		return fmt.Errorf("Read configmap file failed: %v", err)
+		return fmt.Errorf("failed to read configmap file, error: %v", err)
 	}
 
 	err = yaml.Unmarshal(configmapBytes, &ac.Cfg)
 	if nil != err {
-		return fmt.Errorf("Parse configmap failed: %v", err)
+		return fmt.Errorf("failed to parse configmap, error: %v", err)
 	}
 
 	if ac.Cfg.IpamUnixSocketPath == "" {
@@ -183,7 +187,7 @@ func (ac *AgentContext) LoadConfigmap() error {
 		if ac.Cfg.NetworkMode != constant.NetworkLegacy &&
 			ac.Cfg.NetworkMode != constant.NetworkStrict &&
 			ac.Cfg.NetworkMode != constant.NetworkSDN {
-			return fmt.Errorf("Error: Unrecognized network mode %s", ac.Cfg.NetworkMode)
+			return fmt.Errorf("unrecognized network mode %s", ac.Cfg.NetworkMode)
 		}
 	}
 

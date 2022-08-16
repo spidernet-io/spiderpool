@@ -3,8 +3,6 @@
 
 package types
 
-type OwnerType string
-
 type PodStatus string
 
 type DefaultRouteType int

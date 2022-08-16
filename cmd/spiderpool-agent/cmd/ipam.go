@@ -7,13 +7,12 @@ import (
 	"errors"
 
 	"github.com/go-openapi/runtime/middleware"
+	"go.uber.org/zap"
+
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"go.uber.org/zap"
 )
-
-var ipamLogger = logutils.Logger.Named("IPAM")
 
 // Singleton
 var (
@@ -27,8 +26,7 @@ type _unixPostAgentIpamIp struct{}
 
 // Handle handles POST requests for /ipam/ip .
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
-	logger := ipamLogger.With(
-		zap.String("CNICommand", "ADD"),
+	logger := logutils.Logger.Named("IPAM").With(zap.String("CNICommand", "ADD"),
 		zap.String("ContainerID", *params.IpamAddArgs.ContainerID),
 		zap.String("IfName", *params.IpamAddArgs.IfName),
 		zap.String("NetNamespace", *params.IpamAddArgs.NetNamespace),
@@ -62,8 +60,7 @@ type _unixDeleteAgentIpamIp struct{}
 
 // Handle handles DELETE requests for /ipam/ip .
 func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
-	logger := ipamLogger.With(
-		zap.String("CNICommand", "DEL"),
+	logger := logutils.Logger.Named("IPAM").With(zap.String("CNICommand", "DEL"),
 		zap.String("ContainerID", *params.IpamDelArgs.ContainerID),
 		zap.String("IfName", *params.IpamDelArgs.IfName),
 		zap.String("NetNamespace", params.IpamDelArgs.NetNamespace),

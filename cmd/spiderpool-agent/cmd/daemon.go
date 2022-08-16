@@ -24,6 +24,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -107,14 +108,14 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize IPAM")
 	ipam, err := ipam.NewIPAM(&ipam.IPAMConfig{
-		StatuflsetIPEnable:       false,
+		EnabledStatefulSet:       agentContext.Cfg.EnableStatefulSet,
 		EnableIPv4:               agentContext.Cfg.EnableIPv4,
 		EnableIPv6:               agentContext.Cfg.EnableIPv6,
 		ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
 		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
 		LimiterMaxQueueSize:      agentContext.Cfg.LimiterMaxQueueSize,
 		LimiterMaxWaitTime:       time.Duration(agentContext.Cfg.LimiterMaxWaitTime) * time.Second,
-	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NSManager, agentContext.PodManager)
+	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager)
 	agentContext.IPAM = ipam
 
 	go func() {
@@ -261,4 +262,11 @@ func initAgentServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	agentContext.IPPoolManager = ipPoolManager
+
+	logger.Debug("Begin to initialize StatefulSet Manager")
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(agentContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	agentContext.StsManager = statefulSetManager
 }

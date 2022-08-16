@@ -30,11 +30,13 @@ const (
 )
 
 const (
-	OwnerNone         types.OwnerType = "None"
-	OwnerDeployment   types.OwnerType = "Deployment"
-	OwnerStatefuleSet types.OwnerType = "StatefulSet"
-	OwnerDaemonSet    types.OwnerType = "DaemonSet"
-	OwnerCRD          types.OwnerType = "Unknown"
+	OwnerNone        string = "None"
+	OwnerDeployment  string = "Deployment"
+	OwnerStatefulSet string = "StatefulSet"
+	OwnerDaemonSet   string = "DaemonSet"
+	OwnerUnknown     string = "Unknown"
+	OwnerReplicaSet  string = "ReplicaSet"
+	OwnerJob         string = "Job"
 )
 
 const (

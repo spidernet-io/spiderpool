@@ -13,7 +13,7 @@
     
     
       
-        <title>spiderpool-agent - spiderpool</title>
+        <title>Configuration - spiderpool</title>
       
     
     
@@ -60,7 +60,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#spiderpool-agent" class="md-skip">
+        <a href="#configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -93,7 +93,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              spiderpool-agent
+              Configuration
             
           </span>
         </div>
@@ -451,12 +451,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
       
       
       
@@ -479,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/arch/" class="md-nav__link">
+      <a href="../arch/" class="md-nav__link">
         Architecture
       </a>
     </li>
@@ -493,7 +495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/allocation/" class="md-nav__link">
+      <a href="../allocation/" class="md-nav__link">
         IP Allocation
       </a>
     </li>
@@ -507,7 +509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/gc/" class="md-nav__link">
+      <a href="../gc/" class="md-nav__link">
         Resource Reclaim
       </a>
     </li>
@@ -521,142 +523,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/annotation/" class="md-nav__link">
+      <a href="../annotation/" class="md-nav__link">
         Annotations
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/config/" class="md-nav__link">
-        Configuration
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/metrics/" class="md-nav__link">
-        Metric
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/ippool/" class="md-nav__link">
-        ippool
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/reservedip/" class="md-nav__link">
-        reservedip
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/workloadendpoint/" class="md-nav__link">
-        workloadendpoint
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-    
-  
-  
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
-      
-      
-      
-      
-        <label class="md-nav__link" for="__nav_3">
-          Reference
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="Reference" data-md-level="1">
-        <label class="md-nav__title" for="__nav_3">
-          <span class="md-nav__icon md-icon"></span>
-          Reference
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../spiderpoolctl/" class="md-nav__link">
-        spiderpoolctl
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../spiderpool-controller/" class="md-nav__link">
-        spiderpool-controller
       </a>
     </li>
   
@@ -679,12 +547,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          spiderpool-agent
+          Configuration
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        spiderpool-agent
+        Configuration
       </a>
       
         
@@ -703,56 +571,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-agent-daemon" class="md-nav__link">
-    spiderpool-agent daemon
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent daemon">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#env" class="md-nav__link">
-    ENV
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent-shutdown" class="md-nav__link">
-    spiderpool-agent shutdown
+  <a href="#ipam-plugin-configuration" class="md-nav__link">
+    IPAM Plugin Configuration
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-agent-metric" class="md-nav__link">
-    spiderpool-agent metric
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent metric">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options_1" class="md-nav__link">
-    Options
+  <a href="#configmap-configuration" class="md-nav__link">
+    Configmap Configuration
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#spiderpool-agent-env" class="md-nav__link">
+    Spiderpool-agent env
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spiderpool-controller-env" class="md-nav__link">
+    Spiderpool-controller env
+  </a>
   
 </li>
       
@@ -760,6 +602,138 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        Metric
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ippool/" class="md-nav__link">
+        ippool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reservedip/" class="md-nav__link">
+        reservedip
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workloadendpoint/" class="md-nav__link">
+        workloadendpoint
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cmdref/spiderpoolctl/" class="md-nav__link">
+        spiderpoolctl
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cmdref/spiderpool-controller/" class="md-nav__link">
+        spiderpool-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cmdref/spiderpool-agent/" class="md-nav__link">
+        spiderpool-agent
+      </a>
     </li>
   
 
@@ -902,56 +876,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-agent-daemon" class="md-nav__link">
-    spiderpool-agent daemon
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent daemon">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#env" class="md-nav__link">
-    ENV
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent-shutdown" class="md-nav__link">
-    spiderpool-agent shutdown
+  <a href="#ipam-plugin-configuration" class="md-nav__link">
+    IPAM Plugin Configuration
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-agent-metric" class="md-nav__link">
-    spiderpool-agent metric
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent metric">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options_1" class="md-nav__link">
-    Options
+  <a href="#configmap-configuration" class="md-nav__link">
+    Configmap Configuration
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#spiderpool-agent-env" class="md-nav__link">
+    Spiderpool-agent env
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spiderpool-controller-env" class="md-nav__link">
+    Spiderpool-controller env
+  </a>
   
 </li>
       
@@ -967,7 +915,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/cmdref/spiderpool-agent.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/concepts/config.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
@@ -976,27 +924,168 @@
 
 
 
-<h1 id="spiderpool-agent">spiderpool-agent</h1>
-<p>This page describes CLI options and ENV of spiderpool-agent.</p>
-<h2 id="spiderpool-agent-daemon">spiderpool-agent daemon</h2>
-<p>Run the spiderpool agent daemon.</p>
-<h3 id="options">Options</h3>
-<pre><code>    --config-dir string         config file path (default /tmp/spiderpool/config-map)
-    --ipam-config-dir string    config file for ipam plugin 
+<h1 id="configuration">Configuration</h1>
+<blockquote>
+<p>Instructions for global configuration and environment args of Spiderpool.</p>
+</blockquote>
+<h2 id="ipam-plugin-configuration">IPAM Plugin Configuration</h2>
+<p>There is an example of IPAM configuration.</p>
+<pre><code class="language-json">{
+    &quot;cniVersion&quot;:&quot;0.3.1&quot;,
+    &quot;name&quot;:&quot;macvlan-pod-network&quot;,
+    &quot;plugins&quot;:[
+        {
+            &quot;name&quot;:&quot;macvlan-pod-network&quot;,
+            &quot;type&quot;:&quot;macvlan&quot;,
+            &quot;master&quot;:&quot;ens256&quot;,
+            &quot;mode&quot;:&quot;bridge&quot;,
+            &quot;mtu&quot;:1500,
+            &quot;ipam&quot;:{
+                &quot;type&quot;:&quot;spiderpool&quot;,
+                &quot;log_file_path&quot;:&quot;/var/run/spidernet/spiderpool.log&quot;,
+                &quot;log_file_max_size&quot;:&quot;100M&quot;,
+                &quot;log_file_max_age&quot;:&quot;30d&quot;,
+                &quot;log_file_max_count&quot;:7,
+                &quot;log_level&quot;:&quot;INFO&quot;
+            }
+        }
+    ]
+}
 </code></pre>
-<h3 id="env">ENV</h3>
-<pre><code>    SPIDERPOOL_LOG_LEVEL                log level (DEBUG|INFO|ERROR)
-    SPIDERPOOL_ENABLED_METRIC           enable metrics (true|false)
-    SPIDERPOOL_METRIC_HTTP_PORT         metric port (default to 5711)
-    SPIDERPOOL_HEALTH_PORT              http port  (default to 5710)
+<ul>
+<li><code>log_file_path</code> (string, optional): Path to log file  of IPAM plugin, default to <code>"/var/run/spidernet/spiderpool.log"</code>.</li>
+<li><code>log_file_max_size</code> (string, optional): Max size of each rotated file, default to <code>"100M"</code>.</li>
+<li><code>log_file_max_age</code> (string, optional): Max age of each rotated file, default to <code>"30d"</code>.</li>
+<li><code>log_file_max_count</code> (string, optional): Max number of rotated file, default to <code>"7"</code>.</li>
+<li><code>log_level</code> (string, optional): Log level, default to <code>"INFO"</code>. It could be <code>"INFO"</code>, <code>"DEBUG"</code>, <code>"WARN"</code>, <code>"ERROR"</code>.</li>
+</ul>
+<h2 id="configmap-configuration">Configmap Configuration</h2>
+<p>Configmap "spiderpool-conf" is the global configuration of Spiderpool.</p>
+<pre><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spiderpool-conf
+  namespace: kube-system
+data:
+  ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
+  networkMode: legacy
+  enableIPv4: true
+  enableIPv6: true
+  clusterDefaultIPv4IPPool: [default-v4-ippool]
+  clusterDefaultIPv6IPPool: [default-v6-ippool]
 </code></pre>
-<h2 id="spiderpool-agent-shutdown">spiderpool-agent shutdown</h2>
-<p>Notify of stopping the spiderpool-agent daemon.</p>
-<h2 id="spiderpool-agent-metric">spiderpool-agent metric</h2>
-<p>Get local metrics.</p>
-<h3 id="options_1">Options</h3>
-<pre><code>    --port string         http server port of local metric (default to 5711)
-</code></pre>
+<ul>
+<li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handle IPAM requests from IPAM plugin.</li>
+<li><code>networkMode</code>:</li>
+<li><code>legacy</code>: Applicable to the traditional physical machine network.</li>
+<li><code>enableIPv4</code> (bool):</li>
+<li><code>true</code>: Enable IPv4 IP allocation capability of Spiderpool.</li>
+<li><code>false</code>: Disable IPv4 IP allocation capability of Spiderpool.</li>
+<li><code>enableIPv6</code> (bool):</li>
+<li><code>true</code>: Enable IPv6 IP allocation capability of Spiderpool.</li>
+<li><code>false</code>: Disable IPv6 IP allocation capability of Spiderpool.</li>
+<li><code>clusterDefaultIPv4IPPool</code> (array): Global default IPv4 ippools. It takes effect throughout the cluster.</li>
+<li><code>clusterDefaultIPv6IPPool</code> (array): Global default IPv6 ippools. It takes effect throughout the cluster.</li>
+</ul>
+<h2 id="spiderpool-agent-env">Spiderpool-agent env</h2>
+<table>
+<thead>
+<tr>
+<th>env</th>
+<th>default</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPIDERPOOL_LOG_LEVEL</td>
+<td>info</td>
+<td>Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic".</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_ENABLED_METRIC</td>
+<td>false</td>
+<td>Whether to enable metrics.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_HEALTH_PORT</td>
+<td>5710</td>
+<td>Metric HTTP server port.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
+<td>5711</td>
+<td>Spiderpool-agent backend HTTP server port.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
+<td>5712</td>
+<td>Port that gops is listen on , set to empty to disable it.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_UPDATE_CR_MAX_RETRYS</td>
+<td>3</td>
+<td>Max retries to update k8s resources.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS</td>
+<td>100</td>
+<td>Max historical IP allocation information allowed for a single Pod recorded in WorkloadEndpoint.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS</td>
+<td>5000</td>
+<td>Max number of IP that a single IP pool can provide.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="spiderpool-controller-env">Spiderpool-controller env</h2>
+<table>
+<thead>
+<tr>
+<th>env</th>
+<th>default</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPIDERPOOL_LOG_LEVEL</td>
+<td>info</td>
+<td>Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic".</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_ENABLED_METRIC</td>
+<td>false</td>
+<td>Whether to enable metrics.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_HEALTH_PORT</td>
+<td>5720</td>
+<td>Spiderpool-controller backend HTTP server port.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
+<td>5721</td>
+<td>Metric HTTP server port.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_WEBHOOK_PORT</td>
+<td>5722</td>
+<td>Webhook HTTP server port.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_CLI_PORT</td>
+<td>5723</td>
+<td>Spiderpool-CLI HTTP server port.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
+<td>5724</td>
+<td>Port that gops is listen on , set to empty to disable it.</td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -1020,7 +1109,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../spiderpool-controller/" class="md-footer__link md-footer__link--prev" aria-label="Previous: spiderpool-controller" rel="prev">
+        <a href="../annotation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Annotations" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1029,20 +1118,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              spiderpool-controller
+              Annotations
             </div>
           </div>
         </a>
       
       
         
-        <a href="../../develop/pullrequest/" class="md-footer__link md-footer__link--next" aria-label="Next: Submit Pull Request" rel="next">
+        <a href="../metrics/" class="md-footer__link md-footer__link--next" aria-label="Next: Metric" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Submit Pull Request
+              Metric
             </div>
           </div>
           <div class="md-footer__button md-icon">

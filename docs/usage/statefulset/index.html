@@ -13,7 +13,7 @@
     
     
       
-        <title>spiderpool-agent - spiderpool</title>
+        <title>StatefulSet - spiderpool</title>
       
     
     
@@ -60,7 +60,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#spiderpool-agent" class="md-skip">
+        <a href="#statefulset" class="md-skip">
           Skip to content
         </a>
       
@@ -93,7 +93,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              spiderpool-agent
+              StatefulSet
             
           </span>
         </div>
@@ -207,12 +207,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" checked>
       
       
       
@@ -235,7 +237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Install
       </a>
     </li>
@@ -249,7 +251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/basic/" class="md-nav__link">
+      <a href="../basic/" class="md-nav__link">
         Basic
       </a>
     </li>
@@ -263,7 +265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-multi/" class="md-nav__link">
+      <a href="../ippool-multi/" class="md-nav__link">
         multiple ippool
       </a>
     </li>
@@ -277,7 +279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-namespace.md" class="md-nav__link">
+      <a href="../ippool-namespace.md" class="md-nav__link">
         None
       </a>
     </li>
@@ -291,7 +293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-affinity-namespace/" class="md-nav__link">
+      <a href="../ippool-affinity-namespace/" class="md-nav__link">
         Ippool affinity namespace
       </a>
     </li>
@@ -305,7 +307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-affinity-node/" class="md-nav__link">
+      <a href="../ippool-affinity-node/" class="md-nav__link">
         Ippool affinity node
       </a>
     </li>
@@ -319,7 +321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-affinity-pod/" class="md-nav__link">
+      <a href="../ippool-affinity-pod/" class="md-nav__link">
         pod affinity of ippool
       </a>
     </li>
@@ -333,7 +335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ipv6/" class="md-nav__link">
+      <a href="../ipv6/" class="md-nav__link">
         Ipv6
       </a>
     </li>
@@ -347,7 +349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/multi-interfaces-annotation/" class="md-nav__link">
+      <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Multi interfaces annotation
       </a>
     </li>
@@ -361,7 +363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/multi-interfaces-cni/" class="md-nav__link">
+      <a href="../multi-interfaces-cni/" class="md-nav__link">
         Multi interfaces cni
       </a>
     </li>
@@ -373,11 +375,106 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../usage/statefulset/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          StatefulSet
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         StatefulSet
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+    <nav class="md-nav" aria-label="Description">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notice" class="md-nav__link">
+    Notice
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get Started
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-statefulset-support" class="md-nav__link">
+    Enable StatefulSet support
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-statefulset" class="md-nav__link">
+    Create a StatefulSet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate-the-spiderpool-related-cr-data" class="md-nav__link">
+    Validate the Spiderpool related CR data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    clean up
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -389,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/reserved-ip/" class="md-nav__link">
+      <a href="../reserved-ip/" class="md-nav__link">
         Reserved IP
       </a>
     </li>
@@ -403,7 +500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/cidrManager/" class="md-nav__link">
+      <a href="../cidrManager/" class="md-nav__link">
         cidrManager
       </a>
     </li>
@@ -417,7 +514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/debug/" class="md-nav__link">
+      <a href="../debug/" class="md-nav__link">
         Q&A
       </a>
     </li>
@@ -431,7 +528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/cli/" class="md-nav__link">
+      <a href="../cli/" class="md-nav__link">
         spiderpoolctl
       </a>
     </li>
@@ -611,14 +708,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
       
       
       
@@ -641,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spiderpoolctl/" class="md-nav__link">
+      <a href="../../cmdref/spiderpoolctl/" class="md-nav__link">
         spiderpoolctl
       </a>
     </li>
@@ -655,7 +750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spiderpool-controller/" class="md-nav__link">
+      <a href="../../cmdref/spiderpool-controller/" class="md-nav__link">
         spiderpool-controller
       </a>
     </li>
@@ -667,99 +762,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          spiderpool-agent
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../cmdref/spiderpool-agent/" class="md-nav__link">
         spiderpool-agent
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent-daemon" class="md-nav__link">
-    spiderpool-agent daemon
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent daemon">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#env" class="md-nav__link">
-    ENV
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent-shutdown" class="md-nav__link">
-    spiderpool-agent shutdown
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent-metric" class="md-nav__link">
-    spiderpool-agent metric
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent metric">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options_1" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -902,23 +909,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-agent-daemon" class="md-nav__link">
-    spiderpool-agent daemon
+  <a href="#description" class="md-nav__link">
+    Description
   </a>
   
-    <nav class="md-nav" aria-label="spiderpool-agent daemon">
+    <nav class="md-nav" aria-label="Description">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#env" class="md-nav__link">
-    ENV
+  <a href="#notice" class="md-nav__link">
+    Notice
   </a>
   
 </li>
@@ -929,23 +929,37 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-agent-shutdown" class="md-nav__link">
-    spiderpool-agent shutdown
+  <a href="#get-started" class="md-nav__link">
+    Get Started
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent-metric" class="md-nav__link">
-    spiderpool-agent metric
-  </a>
-  
-    <nav class="md-nav" aria-label="spiderpool-agent metric">
+    <nav class="md-nav" aria-label="Get Started">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#options_1" class="md-nav__link">
-    Options
+  <a href="#enable-statefulset-support" class="md-nav__link">
+    Enable StatefulSet support
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-statefulset" class="md-nav__link">
+    Create a StatefulSet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate-the-spiderpool-related-cr-data" class="md-nav__link">
+    Validate the Spiderpool related CR data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    clean up
   </a>
   
 </li>
@@ -967,7 +981,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/cmdref/spiderpool-agent.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/statefulset.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
@@ -976,27 +990,163 @@
 
 
 
-<h1 id="spiderpool-agent">spiderpool-agent</h1>
-<p>This page describes CLI options and ENV of spiderpool-agent.</p>
-<h2 id="spiderpool-agent-daemon">spiderpool-agent daemon</h2>
-<p>Run the spiderpool agent daemon.</p>
-<h3 id="options">Options</h3>
-<pre><code>    --config-dir string         config file path (default /tmp/spiderpool/config-map)
-    --ipam-config-dir string    config file for ipam plugin 
+<h1 id="statefulset">StatefulSet</h1>
+<h2 id="description">Description</h2>
+<p>The spiderpool supports IP assignment for StatefulSet.</p>
+<p>when the replica number of statefulset is not scaled up or down, all pods could hold same IP address even pod restarting or rebuilding happens.</p>
+<ul>
+<li>
+<p>Pod restarts</p>
+<p>Once a pod restarts (its pause container restarts), Spiderpool will keep use the previous IP,
+and change the IPPool CR property ContainerID with the new pause container ID.</p>
+<p>In the meanwhile, spiderendpoint will still keep the previous IP but refresh the ContainerID property.</p>
+</li>
+<li>
+<p>Pod deleted and re-creates</p>
+<p>After deleting a StatefulSet pod, kubernetes will re-create a pod with the same name.</p>
+<p>In this case, Spiderpool will also keep the previous IP and update the ContainerID.</p>
+</li>
+</ul>
+<h3 id="notice">Notice</h3>
+<ul>
+<li>
+<p>Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its pods are running.</p>
+</li>
+<li>
+<p>When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the IP of scaled-down pod event they have the same name</p>
+</li>
+<li>
+<p>The <a href="./ippool-gc.md">RIPOGT feature</a> ( reclaim IP for the pod of graceful-period timeout ) does work for statefulset pod.</p>
+</li>
+</ul>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-statefulset-support">Enable StatefulSet support</h3>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer <a href="../install/">install</a> for details</p>
+<p>Check configmap <code>spiderpool-conf</code> property <code>enableStatefulSet</code> whether is already set to <code>true</code> or not.</p>
+<pre><code class="language-shell">kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre>
-<h3 id="env">ENV</h3>
-<pre><code>    SPIDERPOOL_LOG_LEVEL                log level (DEBUG|INFO|ERROR)
-    SPIDERPOOL_ENABLED_METRIC           enable metrics (true|false)
-    SPIDERPOOL_METRIC_HTTP_PORT         metric port (default to 5711)
-    SPIDERPOOL_HEALTH_PORT              http port  (default to 5710)
+<p>If you want to set it <code>true</code>, just execute <code>helm upgrade --set configmap.config.enableStatefulSet=true</code></p>
+<h3 id="create-a-statefulset">Create a StatefulSet</h3>
+<p>install a StatefulSet example</p>
+<pre><code class="language-shell">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset-demo.md
 </code></pre>
-<h2 id="spiderpool-agent-shutdown">spiderpool-agent shutdown</h2>
-<p>Notify of stopping the spiderpool-agent daemon.</p>
-<h2 id="spiderpool-agent-metric">spiderpool-agent metric</h2>
-<p>Get local metrics.</p>
-<h3 id="options_1">Options</h3>
-<pre><code>    --port string         http server port of local metric (default to 5711)
-</code></pre>
+<h3 id="validate-the-spiderpool-related-cr-data">Validate the Spiderpool related CR data</h3>
+<ol>
+<li>Here's the created Pod, spiderippool, spiderendpoint CR information:</li>
+</ol>
+<p>```text
+   $ kubectl get po -o wide
+   NAME                        READY   STATUS    RESTARTS      AGE   IP              NODE            NOMINATED NODE   READINESS GATES
+   demo-sts-0                  1/1     Running   0             82s   172.18.40.47    spider-worker   <none>           <none></p>
+<hr />
+<p>$ kubectl get sp default-v4-ippool -o yaml
+   ...
+   172.18.40.47:
+   containerID: cffbddab79dc8eea447315da9b84db402d515b657d2b6943a87b47cdfa876359
+   interface: eth0
+   namespace: default
+   node: spider-worker
+   ownerControllerType: StatefulSet
+   pod: demo-sts-0
+   ...</p>
+<hr />
+<p>$ kubectl get se demo-sts-0 -o yaml
+   ...
+   status:
+   current:
+   containerID: cffbddab79dc8eea447315da9b84db402d515b657d2b6943a87b47cdfa876359
+   creationTime: "2022-07-29T08:54:12Z"
+   ips:
+   - interface: eth0
+   ipv4: 172.18.40.47/16
+   ipv4Gateway: ""
+   ipv4Pool: default-v4-ippool
+   ipv6: fc00:f853:ccd:e793:f::63/64
+   ipv6Gateway: ""
+   ipv6Pool: default-v6-ippool
+   vlan: 0
+   node: spider-worker
+   ...
+   ```</p>
+<ol>
+<li>Try to delete pod <code>demo-sts-0</code> and check whether the rebuilding pod keeps the previous IP or not.</li>
+</ol>
+<p>```text
+   $ kubectl delete po demo-sts-0
+   pod "demo-sts-0" deleted</p>
+<hr />
+<p>$ kubectl get po -o wide
+   NAME                        READY   STATUS    RESTARTS      AGE   IP              NODE            NOMINATED NODE   READINESS GATES
+   demo-sts-0                  1/1     Running   0             20s   172.18.40.47    spider-worker   <none>           <none></p>
+<hr />
+<p>$ kubectl get sp default-v4-ippool -o yaml
+   ...
+   172.18.40.47:
+   containerID: 5c7a1c9cf494c02090848bd3f8131817d02ee9f3046cd33a5ec4b74b897d6789
+   interface: eth0
+   namespace: default
+   node: spider-worker
+   ownerControllerType: StatefulSet
+   pod: demo-sts-0
+   ...</p>
+<hr />
+<p>$ kubectl get se demo-sts-0 -o yaml
+   ...
+   status:
+   current:
+   containerID: 5c7a1c9cf494c02090848bd3f8131817d02ee9f3046cd33a5ec4b74b897d6789
+   creationTime: "2022-07-29T08:54:12Z"
+   ips:
+   - interface: eth0
+   ipv4: 172.18.40.47/16
+   ipv4Gateway: ""
+   ipv4Pool: default-v4-ippool
+   ipv6: fc00:f853:ccd:e793:f::63/64
+   ipv6Gateway: ""
+   ipv6Pool: default-v6-ippool
+   vlan: 0
+   node: spider-worker
+   history:
+     - containerID: 5c7a1c9cf494c02090848bd3f8131817d02ee9f3046cd33a5ec4b74b897d6789
+       creationTime: "2022-07-29T08:54:12Z"
+       ips:
+       - interface: eth0
+         ipv4: 172.18.40.47/16
+         ipv4Gateway: ""
+         ipv4Pool: default-v4-ippool
+         ipv6: fc00:f853:ccd:e793:f::63/64
+         ipv6Gateway: ""
+         ipv6Pool: default-v6-ippool
+         vlan: 0
+         node: spider-worker
+     - containerID: cffbddab79dc8eea447315da9b84db402d515b657d2b6943a87b47cdfa876359
+       creationTime: "2022-07-29T08:54:12Z"
+       ips:
+       - interface: eth0
+         ipv4: 172.18.40.47/16
+         ipv4Gateway: ""
+         ipv4Pool: default-v4-ippool
+         ipv6: fc00:f853:ccd:e793:f::63/64
+         ipv6Gateway: ""
+         ipv6Pool: default-v6-ippool
+         vlan: 0
+         node: spider-worker
+         ownerControllerType: StatefulSet
+         ...
+        ```</p>
+<p>And you can see, the re-create Pod still hold the previous IP, and spiderippool, spiderendpoint updated containerID property.</p>
+<h3 id="clean-up">clean up</h3>
+<p>delete StatefulSet object <code>demo-sts</code>.</p>
+<p>```text
+   $ kubectl delete sts demo-sts
+   statefulset.apps "demo-sts" deleted</p>
+<hr />
+<p>$ kubectl get sp default-v4-ippool -o yaml | grep demo-sts-0</p>
+<hr />
+<p>$ kubectl get se demo-sts-0 -o yaml
+   Error from server (NotFound): spiderendpoints.spiderpool.spidernet.io "demo-sts-0" not found
+   ```</p>
+<p>The related data was cleaned up.</p>
 
 
 
@@ -1020,7 +1170,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../spiderpool-controller/" class="md-footer__link md-footer__link--prev" aria-label="Previous: spiderpool-controller" rel="prev">
+        <a href="../multi-interfaces-cni/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Multi interfaces cni" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1029,20 +1179,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              spiderpool-controller
+              Multi interfaces cni
             </div>
           </div>
         </a>
       
       
         
-        <a href="../../develop/pullrequest/" class="md-footer__link md-footer__link--next" aria-label="Next: Submit Pull Request" rel="next">
+        <a href="../reserved-ip/" class="md-footer__link md-footer__link--next" aria-label="Next: Reserved IP" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Submit Pull Request
+              Reserved IP
             </div>
           </div>
           <div class="md-footer__button md-icon">

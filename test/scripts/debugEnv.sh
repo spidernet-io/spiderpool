@@ -97,31 +97,31 @@ elif [ "$TYPE"x == "detail"x ] ; then
     done
 
     echo ""
-    echo "=============== spiderpool crd ippool ============== "
-    echo "--------- kubectl get ippool -o wide"
-    kubectl get ippool -o wide --kubeconfig ${E2E_KUBECONFIG}
+    echo "=============== spiderpool crd spiderippool ============== "
+    echo "--------- kubectl get spiderippool -o wide"
+    kubectl get spiderippool -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "--------- kubectl get ippool -o json"
-    kubectl get ippool -o json --kubeconfig ${E2E_KUBECONFIG}
+    echo "--------- kubectl get spiderippool -o json"
+    kubectl get spiderippool -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "=============== spiderpool crd workloadendpoint ============== "
-    echo "-------- kubectl get workloadendpoint -o wide "
-    kubectl get workloadendpoint -o wide --kubeconfig ${E2E_KUBECONFIG}
+    echo "=============== spiderpool crd spiderendpoint ============== "
+    echo "-------- kubectl get spiderendpoint -o wide "
+    kubectl get spiderendpoint -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "-------- kubectl get workloadendpoint -o json "
-    kubectl get workloadendpoint -o json --kubeconfig ${E2E_KUBECONFIG}
+    echo "-------- kubectl get spiderendpoint -o json "
+    kubectl get spiderendpoint -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "=============== spiderpool crd reservedips ============== "
-    echo "-------- kubectl get reservedips -o wide "
-    kubectl get reservedips -o wide --kubeconfig ${E2E_KUBECONFIG}
+    echo "=============== spiderpool crd spiderreservedips ============== "
+    echo "-------- kubectl get spiderreservedips -o wide "
+    kubectl get spiderreservedips -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "-------- kubectl get reservedips -o json "
-    kubectl get reservedips -o json --kubeconfig ${E2E_KUBECONFIG}
+    echo "-------- kubectl get spiderreservedips -o json "
+    kubectl get spiderreservedips -o json --kubeconfig ${E2E_KUBECONFIG}
 
 elif [ "$TYPE"x == "datarace"x ] ; then
     LOG_MARK="WARNING: DATA RACE"

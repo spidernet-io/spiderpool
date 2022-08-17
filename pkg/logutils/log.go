@@ -8,20 +8,19 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
 	"strings"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 // Pre-define log instance with default info level.
 var (
 	Logger       *zap.Logger
 	LoggerStderr *zap.Logger
-	LoggerFile   *zap.Logger
 )
 
 // LogFormat is a type help you choose the log output format, which supports "json" and "console".
@@ -41,7 +40,7 @@ type FileOutputOption struct {
 }
 
 const (
-	DefaultLogFilePath = "/tmp/cni.log"
+	DefaultIPAMPluginLogFilePath = "/var/log/spidernet/spiderpool.log"
 	// MaxSize    = 100 // MB
 	DefaultLogFileMaxSize int = 100
 	// MaxAge     = 30 // days (no limit)
@@ -101,12 +100,6 @@ func init() {
 	if nil != err {
 		panic(err)
 	}
-
-	err = InitFileLogger(InfoLevel, DefaultLogFilePath, DefaultLogFileMaxSize, DefaultLogFileMaxAge, DefaultLogFileMaxBackups)
-	if nil != err {
-		panic(err)
-	}
-
 }
 
 // NewLoggerWithOption provides the ability to custom log with options.
@@ -132,7 +125,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 		fileLoggerConf.MaxBackups = fileOutputOption.MaxBackups
 
 		if fileOutputOption.Filename == "" {
-			fileLoggerConf.Filename = DefaultLogFilePath
+			fileLoggerConf.Filename = DefaultIPAMPluginLogFilePath
 		}
 		if fileOutputOption.MaxSize < 0 {
 			fileLoggerConf.MaxSize = DefaultLogFileMaxSize
@@ -163,7 +156,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 	case OUTPUT_STDERR | OUTPUT_FILE:
 		ws = zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stderr), zapcore.AddSync(&fileLoggerConf))
 	case OUTPUT_STDOUT | OUTPUT_STDERR:
-		return nil, fmt.Errorf("log output mode can't set to stdout with stderr together.")
+		return nil, fmt.Errorf("log output mode can't set to stdout with stderr together")
 	default:
 		ws = zapcore.AddSync(os.Stdout)
 	}
@@ -228,19 +221,19 @@ func InitStderrLogger(logLevel LogLevel) error {
 
 // InitFileLogger sets LoggerFile configuration for 'file output' usage.
 // fileMaxSize unit MB, fileMaxAge unit days, fileMaxBackups unit counts.
-func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge, fileMaxBackups int) error {
+func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge, fileMaxBackups int) (*zap.Logger, error) {
 	fileLoggerConf := FileOutputOption{
 		Filename:   filePath,
 		MaxSize:    fileMaxSize,
 		MaxAge:     fileMaxAge,
 		MaxBackups: fileMaxBackups,
 	}
-	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, logLevel)
+	logFile, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, logLevel)
 	if nil != err {
-		return fmt.Errorf("Failed to init logger for file: %v", err)
+		return nil, fmt.Errorf("Failed to init logger for file: %v", err)
 	}
-	LoggerFile = l
-	return nil
+
+	return logFile, nil
 }
 
 // loggerKey is how we find Loggers in a context.Context.

@@ -30,10 +30,16 @@ kubeadmConfigPatches:
 
 nodes:
   - role: control-plane
+{%- if kind_image_tag != "" %}
     image: kindest/node:{{ kind_image_tag }}
+{%- endif %}
   - role: worker
+{%- if kind_image_tag != "" %}
     image: kindest/node:{{ kind_image_tag }}
+{%- endif %}
   {%- if standard_cluster != "true" %}
   - role: worker
+    {%- if kind_image_tag != "" %}
     image: kindest/node:{{ kind_image_tag }}
+    {%- endif %}
   {%- endif %}

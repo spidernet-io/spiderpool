@@ -154,6 +154,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=true" ; \
 		fi ; \
+		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \

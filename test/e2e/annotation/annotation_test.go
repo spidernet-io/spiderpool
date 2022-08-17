@@ -6,14 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"strings"
 	"time"
+
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
@@ -453,7 +453,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 					// Generate Deployment Yaml and type in annotation
 					deployYaml := common.GenerateExampleDeploymentYaml(deployName, nsName, int32(podOriginialNum))
-					deployYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+					deployYaml.Spec.Template.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podIppoolAnnoStr}
 					Expect(deployYaml).NotTo(BeNil())
 
 					// Create Deployment/Pod until ready

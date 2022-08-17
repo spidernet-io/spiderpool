@@ -52,6 +52,14 @@ jobs:
           fetch-depth: 0
           ref: ${{ steps.get_ref.outputs.ref }}
 
+      - name: check version
+        run: |
+          version=`cat VERSION | tr -d ' ' `
+          [ -z "$version" ] && echo "error, failed to find version" && exit 1
+          echo "check version $version for chart"
+          ! egrep "^version: \"*${version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, version in Chart.yaml is not $version" && exit 1
+          ! egrep "^appVersion: \"*${version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, appVersion in Chart.yaml is not $version" && exit 1
+
       # The cached helm binary path is prepended to the PATH environment variable as well as stored in the helm-path output variable
       # https://github.com/Azure/setup-helm
       - name: Set up Helm

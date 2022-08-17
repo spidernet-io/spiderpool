@@ -25,7 +25,7 @@ func NewLimiter(maxQueueSize int, maxWaitTime time.Duration) Limiter {
 		cond:           sync.NewCond(&lock.Mutex{}),
 		maxQueueSize:   maxQueueSize,
 		maxWaitTime:    maxWaitTime,
-		elements:       []*e{},
+		elements:       make([]*e, 0, maxQueueSize),
 		grantedTickets: map[string]int{},
 	}
 
@@ -128,10 +128,11 @@ func (q *queue) queueUp(tickets ...string) (*e, error) {
 }
 
 func (q *queue) ReleaseTicket(ctx context.Context, tickets ...string) {
-	q.cond.L.Lock()
-	defer q.cond.L.Unlock()
 	logger := logutils.FromContext(ctx)
 	logger.Debug("Work has been completed, try to release tickets")
+
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
 
 	if len(tickets) == 0 {
 		tickets = append(tickets, DefaultTicket)

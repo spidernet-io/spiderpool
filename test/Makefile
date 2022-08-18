@@ -44,7 +44,12 @@ ifeq ($(INSTALL_MULTUS),true)
 		INSTALL_BRIDGE_CNI_FOR_SERVICE=true  \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
-	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage &>/dev/null
+	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null
+	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --timeout=10s --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
+ 		for POD in $${DNS_POD_LIST} ; do \
+ 			echo "restart coredns pod $${POD} " ; \
+ 			kubectl --kubeconfig $(E2E_KUBECONFIG) delete pod $${POD} -n kube-system --force --timeout=10s ; \
+ 		done
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE=$(TEST_IMAGE_NAME) \
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
@@ -73,9 +78,11 @@ setup_kind:
 	@ if [ "$(E2E_IP_FAMILY)" != "ipv4" ] ; then sysctl -w net.ipv6.conf.all.disable_ipv6=0 ; fi
 	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
 	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
+	- sysctl -w fs.inotify.max_user_watches=524288 || true
+	- sysctl -w fs.inotify.max_user_instances=512 || true
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
-			 standard_cluster=$(E2E_STANDARD_CLUSTER) kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
+			 kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
 			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
 			 K8S_IPV4_SERVICE_CIDR=$(K8S_IPV4_SERVICE_CIDR) \
 			 K8S_IPV6_SERVICE_CIDR=$(K8S_IPV6_SERVICE_CIDR) \
@@ -154,30 +161,26 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=true" ; \
 		fi ; \
+		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
+        			docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
+        			docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
+        			ServerAddress=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
+        			echo "setup pyroscope on $${ServerAddress}:$(PYROSCOPE_LOCAL_PORT)" ; \
+        			docker run -d --name $(PYROSCOPE_CONTAINER_NAME) -p $(PYROSCOPE_LOCAL_PORT):4040 $(IMAGE_PYROSCOPE_NAME) server ; \
+        			echo "set env to spiderpool " ; \
+        			HELM_OPTION+=" --set spiderpoolController.extraEnv[0].name=SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS  --set spiderpoolController.extraEnv[0].value=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) " ; \
+        			HELM_OPTION+=" --set spiderpoolAgent.extraEnv[0].name=SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS  --set spiderpoolAgent.extraEnv[0].value=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) " ; \
+        			echo "finish setuping pyroscope " ; \
+          	 	fi ; \
+		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
-		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
+		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
 			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)
-	@ if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
-			docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
-			docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
-			ServerAddress=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
-			echo "setup pyroscope on $${ServerAddress}:$(PYROSCOPE_LOCAL_PORT)" ; \
-			docker run -d --name $(PYROSCOPE_CONTAINER_NAME) -p $(PYROSCOPE_LOCAL_PORT):4040 $(IMAGE_PYROSCOPE_NAME) server ; \
-			echo "set env to spiderpool " ; \
-			kubectl --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  set env deployment spiderpool-controller SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) ; \
-			kubectl --kubeconfig $(E2E_KUBECONFIG) -n $(RELEASE_NAMESPACE)  set env daemonset  spiderpool-agent SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) ; \
-			echo "finish setuping pyroscope " ; \
-  	 	fi
-	@ echo "waiting for deployment/spiderpool-controller ready"
-	kubectl --kubeconfig $(E2E_KUBECONFIG) rollout status -n $(RELEASE_NAMESPACE)  deployment/spiderpool-controller -w --timeout=60s || { echo "deployment/spiderpool-controller failed to start" ; exit 1 ; }
-	@ echo "waiting for daemonset/spiderpool-agent ready"
-	kubectl --kubeconfig $(E2E_KUBECONFIG) rollout status -n $(RELEASE_NAMESPACE)  daemonset/spiderpool-agent -w --timeout=60s || { echo "daemonset/spiderpool-agent failed to start" ; exit 1 ; }
-
 
 .PHONY: clean
 clean:

@@ -97,7 +97,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			e = frame.DeletePod(podName, namespace)
 			Expect(e).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", namespace, podName)
 
-			// killed service need recovery, espeically spiderpool-controller, or else make other IT failed
+			// killed service need recovery, especially spiderpool-controller, or else make other IT failed
 			time.Sleep(time.Duration(5 * time.Second))
 
 		},

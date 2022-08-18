@@ -28,7 +28,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 		//Init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("Try to create namespace %v \n", nsName)
-		err := frame.CreateNamespace(nsName)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace %v", nsName)
 
 		// Init test Deployment/Pod name

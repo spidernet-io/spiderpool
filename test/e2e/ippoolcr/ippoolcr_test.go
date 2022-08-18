@@ -23,7 +23,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		// init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", nsName)
-		err := frame.CreateNamespace(nsName)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
 		// clean test env

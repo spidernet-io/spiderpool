@@ -28,7 +28,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		// init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", nsName)
-		err := frame.CreateNamespace(nsName)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
 		// init performance deployment test name

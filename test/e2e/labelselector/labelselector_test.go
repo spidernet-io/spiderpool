@@ -40,7 +40,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 
 			for _, namespace := range []string{matchedNamespace, unmatchedNamespace} {
 				GinkgoWriter.Printf("create namespace %v \n", namespace)
-				err := frame.CreateNamespace(namespace)
+				err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
 				Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 			}
 
@@ -200,7 +200,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			// create namespace
 			namespace = "ns" + tools.RandomName()
 			GinkgoWriter.Printf("create namespace %v \n", namespace)
-			err = frame.CreateNamespace(namespace)
+			err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
 			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 			GinkgoWriter.Printf("succeed to create namespace %v \n", namespace)
 

@@ -5,7 +5,6 @@ name: Auto Chart Lint
 env:
   HELM_VERSION: v3.8.1
   KIND_VERSION: v0.12.0
-  K8S_VERSION: v1.23.4
   DEFAULT_BRANCH: main
 
 on:
@@ -104,7 +103,6 @@ jobs:
         uses: helm/kind-action@v1.3.0
         with:
           wait: 120s
-          kubectl_version: ${{ env.K8S_VERSION }}
 
       #  It automatically detects charts changed
       - name: Run chart-testing (install)

@@ -107,6 +107,7 @@ setup_kind:
         	echo "wait for node ready" ; \
         done ; \
         kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
+	echo "show kubernetes node image " && docker ps
 
 
 

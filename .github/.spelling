@@ -181,3 +181,5 @@ net.d
 cni
 CRDs
 IPs
+hostnetwork
+podAntiAffinity

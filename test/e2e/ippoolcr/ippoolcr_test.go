@@ -165,7 +165,6 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			defer cancel2()
 			for _, pod := range pods {
 				Expect(frame.WaitExceptEventOccurred(ctx2, common.PodEventKind, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
-				Expect(err).NotTo(HaveOccurred(), "Failed to get event %v/%v = %v\n", nsName, pod.Name, common.CNIFailedToSetUpNetwork)
 				GinkgoWriter.Printf("Pod %v/%v IP allocation failed when iPv4/iPv6 PoolObj.Spec.Disable is true", pod.Namespace, pod.Name)
 			}
 

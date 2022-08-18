@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -406,6 +407,95 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 					// The pod annotations have the highest priority over namespaces and the global default ippool.
 					checkAnnotationPriority(podYaml, podName, nsName, newV4PoolNameList, newV6PoolNameList)
+				})
+
+			It("Spiderpool will successively try to allocate IP in the order of the elements in the IPPool array until the first allocation succeeds or all fail",
+				Label("A00007"), func() {
+					var v4PoolNameList1, v4PoolNameList2, v6PoolNameList1, v6PoolNameList2 []string
+					var deployName = "deploy" + tools.RandomName()
+					var (
+						podOriginialNum int = 2
+						podScaleupNum   int = 4
+						ippoolIpNum     int = 2
+					)
+
+					// Create two ippools to be used as backup ippools
+					if frame.Info.IpV4Enabled {
+						v4PoolNameList1, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, true)
+						Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool %v", v4PoolNameList1)
+						v4PoolNameList2, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, true)
+						Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool %v", v4PoolNameList2)
+						v4PoolNameList = append(append(v4PoolNameList, v4PoolNameList1...), v4PoolNameList2...)
+					}
+					if frame.Info.IpV6Enabled {
+						v6PoolNameList1, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, false)
+						Expect(err).NotTo(HaveOccurred(), "Failed to create v6 pool %v", v6PoolNameList1)
+						v6PoolNameList2, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, false)
+						Expect(err).NotTo(HaveOccurred(), "Failed to create v6 pool %v", v6PoolNameList2)
+						v6PoolNameList = append(append(v6PoolNameList, v6PoolNameList1...), v6PoolNameList2...)
+					}
+
+					// Generate Pod annotations(IPPool)
+					podAnno := types.AnnoPodIPPoolValue{
+						NIC: &nic,
+					}
+					if frame.Info.IpV4Enabled {
+						podAnno.IPv4Pools = append(v4PoolNameList1, v4PoolNameList2...)
+					}
+					if frame.Info.IpV6Enabled {
+						podAnno.IPv6Pools = append(v6PoolNameList1, v6PoolNameList2...)
+					}
+					b, e := json.Marshal(podAnno)
+					Expect(e).NotTo(HaveOccurred())
+					podIppoolAnnoStr = string(b)
+
+					// Generate Deployment Yaml and type in annotation
+					deployYaml := common.GenerateExampleDeploymentYaml(deployName, nsName, int32(podOriginialNum))
+					deployYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+					Expect(deployYaml).NotTo(BeNil())
+
+					// Create Deployment/Pod until ready
+					deploy, err := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Get Pod list
+					podList, err := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Check Pod IP record in IPPool
+					ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList1, v6PoolNameList1, podList)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(ok).To(BeTrue())
+
+					// Wait for new Pod to be created and expect its ip to be in the next pool in the array
+					deploy, err = frame.ScaleDeployment(deploy, int32(podScaleupNum))
+					Expect(err).NotTo(HaveOccurred(), "Failed to scale deployment")
+					ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute)
+					defer cancel2()
+					err = frame.WaitPodListRunning(deploy.Spec.Selector.MatchLabels, podScaleupNum, ctx2)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Get the scaled pod list
+					scalePodList, err := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+					Expect(err).NotTo(HaveOccurred())
+					pods := common.GetAdditionalPods(podList, scalePodList)
+					Expect(len(pods)).To(Equal(podScaleupNum - podOriginialNum))
+					addPodList := &corev1.PodList{
+						Items: pods,
+					}
+
+					// Check the Pod's IP record backup IPPool
+					ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList2, v6PoolNameList2, addPodList)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(ok).To(BeTrue())
+
+					//Try to delete Deployment
+					Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, time.Minute)).To(Succeed())
+					GinkgoWriter.Printf("Succeeded to delete deployment %v/%v \n", nsName, deployName)
+
+					// Check that the Pod IP in the IPPool is reclaimed properly
+					Expect(common.WaitIPReclaimedFinish(frame, append(v4PoolNameList1, v4PoolNameList2...), append(v6PoolNameList1, v6PoolNameList2...), scalePodList, time.Minute)).To(Succeed())
+					GinkgoWriter.Println("Pod IP is successfully released")
 				})
 
 			It(`the namespace annotation has precedence over global default ippool`,

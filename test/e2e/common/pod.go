@@ -4,12 +4,15 @@ package common
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/e2eframework/tools"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -72,4 +75,29 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 		GinkgoWriter.Println("succeeded to check pod ipv6 ip")
 	}
 	return
+}
+
+func CreatePodWithAnnoPodIPPool(frame *e2e.Framework, podName, namespace string, annoPodIPPoolValue types.AnnoPodIPPoolValue) {
+	Expect(podName).NotTo(BeEmpty(), "podName is empty\n")
+	Expect(namespace).NotTo(BeEmpty(), "namespace is empty\n")
+
+	GinkgoWriter.Printf("marshal annoPodIPPoolValue: %+v\n", annoPodIPPoolValue)
+	b, err := json.Marshal(annoPodIPPoolValue)
+	Expect(err).NotTo(HaveOccurred(), "failed to marshal annoPodIPPoolValue\n")
+	annoPodIPPoolValueStr := string(b)
+
+	GinkgoWriter.Printf("generate pod %v/%v yaml \n", namespace, podName)
+	podYaml := GenerateExamplePodYaml(podName, namespace)
+	Expect(podYaml).NotTo(BeNil(), "failed to generate pod yaml")
+	podYaml.Annotations = map[string]string{
+		constant.AnnoPodIPPool: annoPodIPPoolValueStr,
+	}
+
+	GinkgoWriter.Printf("create pod %v/%v\n", namespace, podName)
+	Expect(frame.CreatePod(podYaml)).To(Succeed(), "failed to create pod %v/%v\n", namespace, podName)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	pod, err := frame.WaitPodStarted(podName, namespace, ctx)
+	Expect(err).NotTo(HaveOccurred(), "failed to wait pod %v/%v started\n", namespace, podName)
+	GinkgoWriter.Printf("pod %v/%v anno: %+v\n", namespace, podName, pod.Annotations)
 }

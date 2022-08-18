@@ -1001,6 +1001,12 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
   --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
 </code></pre>
+<blockquote>
+<p>NOTICE</p>
+<p>spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
+it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
+so, if you set the replicas number of spiderpool-controller bigger than 2, make sure there is enough nodes</p>
+</blockquote>
 <h3 id="install-by-cert-manager">install By Cert-manager</h3>
 <p>the way is not a common situation, because cert-manager needs CNI to create its pod,
 but as IPAM, spiderpool is still not installed to provide IP resource. It means cert-manager and spiderpool need each other to finish installation.</p>

@@ -33,7 +33,3 @@ nodes:
     image: kindest/node:{{ kind_image_tag }}
   - role: worker
     image: kindest/node:{{ kind_image_tag }}
-  {%- if standard_cluster != "true" %}
-  - role: worker
-    image: kindest/node:{{ kind_image_tag }}
-  {%- endif %}

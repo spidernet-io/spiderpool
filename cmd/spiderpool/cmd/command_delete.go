@@ -12,7 +12,6 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
 )
 
@@ -45,13 +44,13 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("Load network config failed: %v", err)
 	}
 
-	err = setupFileLogging(conf)
+	logger, err = setupFileLogging(conf)
 	if nil != err {
 		return fmt.Errorf("Unable to setup logging: %w", err)
 	}
 
 	// new cmdDel logger
-	logger = logutils.LoggerFile.Named(BinNamePlugin)
+	logger = logger.Named(BinNamePlugin)
 	logger.Sugar().Debugf("Processing CNI DEL request %#v", args)
 	logger.Sugar().Debugf("CNI DEL NetConf: %#v", conf)
 

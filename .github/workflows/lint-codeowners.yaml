@@ -10,6 +10,7 @@ on:
 permissions: read-all
 
 env:
+  # Hard-code the path instead of using ${{ github.repository }}
   REPOSITY_NAME: github.com/spidernet-io/spiderpool
 
 # for each pr, queue all workflows
@@ -61,7 +62,7 @@ jobs:
           # To check if all files are covered by patterns other than the
           # catch-all '*', we turn the file into a .gitignore and list
           # unmatched files.
-          cd src/${REPOSITY_NAME}
+          cd src/${{ env.REPOSITY_NAME }}
           # Copy all patterns from CODEOWNERS, but skipping the comments
           # ('^[^#]') and the catch-all '*' rule (the only one with a single
           # character, we skip it with '^.[^ ]').
@@ -80,7 +81,7 @@ jobs:
       - name: Check if CODEOWNERS has stale entries
         if: ${{ needs.check_changes.outputs.deleted-files == 'true' }}
         run: |
-          cd src/${REPOSITY_NAME}
+          cd src/${{ env.REPOSITY_NAME }}
           EXIT_STATUS=0
           # We go through the patterns in CODEOWNERS, and for each of them we
           # search for corresponding files in the repo.

@@ -4,14 +4,14 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
-  {{- if .Values.commonAnnotations }}
+  {{- if .Values.global.commonAnnotations }}
   annotations:
-    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
   labels:
     {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
-    {{- if .Values.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
 spec:
   minAvailable: {{ .Values.spiderpoolController.podDisruptionBudget.minAvailable }}

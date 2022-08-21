@@ -386,7 +386,7 @@ spiderpoolController:
       memory: 128Mi
 
   podDisruptionBudget:
-    ## @param spiderpoolController.podDisruptionBudget.enabled enable podDisruptionBudget for spiderpoolController pod, ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+    ## @param spiderpoolController.podDisruptionBudget.enabled enable podDisruptionBudget for spiderpoolController pod
     enabled: false
 
     ## @param spiderpoolController.podDisruptionBudget.minAvailable minimum number/percentage of pods that should remain scheduled.

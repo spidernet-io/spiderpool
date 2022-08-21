@@ -5,6 +5,9 @@
 # Default state for all rules
 default: true
 
+# Multiple consecutive blank lines
+MD012: false
+
 # Line length
 MD013: false
 

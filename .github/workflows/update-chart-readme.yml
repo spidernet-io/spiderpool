@@ -51,10 +51,11 @@ jobs:
           files_changed="$(echo $files_changed_data | jq -r '.[] | .filename')"
           echo "files_changed: $files_changed"
           # Adding || true to avoid "Process exited with code 1" errors
-          charts_changed="$(echo "$files_changed" | grep -E -o "([^/]*)/values.yaml" | xargs dirname | sort | uniq | awk -F'/' '{print $1}' | tr '\n' ' ' || true)"
+          charts_changed="$(echo "$files_changed" | grep -E -o "([^/]*)/values.yaml" | sort | uniq | awk -F'/' '{print $1}' | tr '\n' ' ' || true)"
+          echo "charts_changed: $charts_changed"
           #--------------------
           for ITEM in $charts_changed ; do
-            if [ -f "charts/${ITEM}/values.yaml" ] && grep "charts/${ITEM}/values.yaml" <<< "$files_changed" &>/dev/null ; then
+            if [ -f "thisPorject/charts/${ITEM}/values.yaml" ] && grep "charts/${ITEM}/values.yaml" <<< "$files_changed" &>/dev/null ; then
                 echo "------ Updating README.md for ${ITEM}"
                 readme-generator-for-helm/bin/index.js --values "thisPorject/charts/${ITEM}/values.yaml" --readme "thisPorject/charts/${ITEM}/README.md" --schema "/tmp/schema.json"
                 cat thisPorject/charts/${ITEM}/README.md
@@ -66,6 +67,7 @@ jobs:
           # Push all the changes
           cd thisPorject
           if git status -s | grep README.md; then
+            echo "creat pr"
             git config user.name  "weizhoublue"
             git config user.email "weizhoublue@daocloud.io"
             git add . && git commit -am "Update README.md with readme-generator-for-helm" --signoff && git push

@@ -5,12 +5,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "spiderpool.spiderpoolAgent.labels" . | nindent 4 }}
-    {{- if .Values.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
-  {{- if .Values.commonAnnotations }}
+  {{- if .Values.global.commonAnnotations }}
   annotations:
-    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 spec:
   selector:
@@ -22,10 +22,10 @@ spec:
   {{- end }}
   template:
     metadata:
-      {{- if or .Values.spiderpoolAgent.podAnnotations .Values.commonAnnotations }}
+      {{- if or .Values.spiderpoolAgent.podAnnotations .Values.global.commonAnnotations }}
       annotations:
-        {{- if .Values.commonAnnotations }}
-          {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 8 }}
+        {{- if .Values.global.commonAnnotations }}
+          {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 8 }}
           {{- end }}
           {{- if .Values.spiderpoolAgent.podAnnotations }}
           {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.podAnnotations "context" $ ) | nindent 8 }}
@@ -33,8 +33,8 @@ spec:
           {{- end }}
       labels:
         {{- include "spiderpool.spiderpoolAgent.selectorLabels" . | nindent 8 }}
-          {{- if .Values.commonLabels }}
-          {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+          {{- if .Values.global.commonLabels }}
+          {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 8 }}
           {{- end }}
     spec:
       {{- if .Values.spiderpoolAgent.image.imagePullSecrets }}
@@ -97,9 +97,9 @@ spec:
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
-            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
-            port: {{ .Values.spiderpoolAgent.healthPort }}
+            port: {{ .Values.spiderpoolAgent.healthChecking.port }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -110,9 +110,9 @@ spec:
         {{- end }}
         livenessProbe:
           httpGet:
-            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
-            port: {{ .Values.spiderpoolAgent.healthPort }}
+            port: {{ .Values.spiderpoolAgent.healthChecking.port }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -124,9 +124,9 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
-            port: {{ .Values.spiderpoolAgent.healthPort }}
+            port: {{ .Values.spiderpoolAgent.healthChecking.port }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -158,7 +158,7 @@ spec:
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolAgent.prometheus.port | quote }}
         - name: SPIDERPOOL_HEALTH_PORT
-          value: {{ .Values.spiderpoolAgent.healthPort | quote }}
+          value: {{ .Values.spiderpoolAgent.healthChecking.port | quote }}
         - name: SPIDERPOOL_GOPS_LISTEN_PORT
           value: {{ .Values.spiderpoolAgent.debug.gopsPort | quote }}
         {{- with .Values.spiderpoolAgent.extraEnv }}
@@ -172,12 +172,10 @@ spec:
         - name: config-path
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
-        - name: etc-cni-conf-path
-          mountPath: /host/{{ .Values.ipamPlugin.confPath }}
         - name: cni-bin-path
-          mountPath: /host/{{ .Values.ipamPlugin.binPath }}
+          mountPath: /host/{{ .Values.global.ipamBinHostPath }}
         - name: ipam-unix-socket-dir
-          mountPath: {{ .Values.ipamPlugin.ipamUNIXSocketDir }}
+          mountPath: {{ dir .Values.global.ipamUNIXSocketHostPath }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
@@ -186,21 +184,15 @@ spec:
       - name: config-path
         configMap:
           defaultMode: 0400
-          name: {{ .Values.configmap.configCmName }}
-        # To install cilium cni configuration in the host
-      - name: etc-cni-conf-path
-        hostPath:
-          path: {{ .Values.ipamPlugin.confPath }}
-          type: DirectoryOrCreate
-        # To install cilium cni plugin in the host
+          name: {{ .Values.global.configName }}
       - name: cni-bin-path
         hostPath:
-          path:  {{ .Values.ipamPlugin.binPath }}
+          path:  {{ .Values.global.ipamBinHostPath }}
           type: DirectoryOrCreate
         # To create unix socket dir in the host
       - name: ipam-unix-socket-dir
         hostPath:
-          path: {{ .Values.ipamPlugin.ipamUNIXSocketDir }}
+          path: {{ dir .Values.global.ipamUNIXSocketHostPath }}
           type: DirectoryOrCreate
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

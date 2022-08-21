@@ -9,21 +9,7 @@ Create chart name and version as used by the chart label.
 Expand the name of spiderpool .
 */}}
 {{- define "spiderpool.name" -}}
-{{- default "spiderpool" .Values.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Expand the name of spiderpoolController .
-*/}}
-{{- define "spiderpool.spiderpoolController.name" -}}
-{{- default "spiderpoolcontroller" .Values.spiderpoolController.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Expand the name of spiderpoolAgent .
-*/}}
-{{- define "spiderpool.spiderpoolAgent.name" -}}
-{{- default "spiderpoolagent" .Values.spiderpoolAgent.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- default "spiderpool" .Values.global.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -58,7 +44,7 @@ spiderpoolController Selector labels
 {{- define "spiderpool.spiderpoolController.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "spiderpool.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: {{ include "spiderpool.spiderpoolController.name" . }}
+app.kubernetes.io/component: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -67,7 +53,7 @@ spiderpoolAgent Selector labels
 {{- define "spiderpool.spiderpoolAgent.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "spiderpool.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: {{ include "spiderpool.spiderpoolAgent.name" . }}
+app.kubernetes.io/component: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -130,8 +116,8 @@ return the spiderpoolAgent image
 {{- define "spiderpool.spiderpoolAgent.image" -}}
 {{- $registryName := .Values.spiderpoolAgent.image.registry -}}
 {{- $repositoryName := .Values.spiderpoolAgent.image.repository -}}
-{{- if .Values.global.imageRegistry }}
-    {{- printf "%s/%s" .Values.global.imageRegistry $repositoryName -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
 {{ else if $registryName }}
     {{- printf "%s/%s" $registryName $repositoryName -}}
 {{- else -}}
@@ -151,8 +137,8 @@ return the spiderpoolController image
 {{- define "spiderpool.spiderpoolController.image" -}}
 {{- $registryName := .Values.spiderpoolController.image.registry -}}
 {{- $repositoryName := .Values.spiderpoolController.image.repository -}}
-{{- if .Values.global.imageRegistry }}
-    {{- printf "%s/%s" .Values.global.imageRegistry $repositoryName -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
 {{ else if $registryName }}
     {{- printf "%s/%s" $registryName $repositoryName -}}
 {{- else -}}

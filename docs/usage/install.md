@@ -33,10 +33,10 @@ Ipv4Range="172.20.0.10-172.20.0.200"
 # deploy the spiderpool
 helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
-  --set spiderpoolController.tls.server.tlsCert="${SERVER_CERT}" \
-  --set spiderpoolController.tls.server.tlsKey="${SERVER_KEY}" \
-  --set spiderpoolController.tls.server.tlsCa="${CA}" \
-  --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=false \
+  --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
+  --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
+  --set spiderpoolController.tls.provided.tlsCa="${CA}" \
+  --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}}
 ```
@@ -66,10 +66,10 @@ Ipv6Range="fd00::10-fd00::200"
 # deploy the spiderpool
 helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
-  --set spiderpoolController.tls.server.tlsCert="${SERVER_CERT}" \
-  --set spiderpoolController.tls.server.tlsKey="${SERVER_KEY}" \
-  --set spiderpoolController.tls.server.tlsCa="${CA}" \
-  --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=true \
+  --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
+  --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
+  --set spiderpoolController.tls.provided.tlsCa="${CA}" \
+  --set feature.enableIPv4=true --set feature.enableIPv6=true \
   --set clusterDefaultPool.installIPv4IPPool=true  --set clusterDefaultPool.installIPv6IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
   --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
@@ -103,7 +103,7 @@ ipv4_range="172.20.0.10-172.20.0.200"
 helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=certmanager \
   --set spiderpoolController.tls.certmanager.issuerName=${CERT_MANAGER_ISSUER_NAME} \
-  --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=false \
+  --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${ipv4_ip_range}}

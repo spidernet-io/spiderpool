@@ -14,7 +14,7 @@ spec:
     - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
     - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}
     - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}.svc
-    - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDnsDomain }}
+    - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}.{{ .Release.Namespace }}.svc.{{ .Values.global.clusterDnsDomain }}
   {{- range $dns := .Values.spiderpoolController.tls.certmanager.extraDnsNames }}
   - {{ $dns | quote }}
   {{- end }}
@@ -35,7 +35,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: kubernetes.io/tls
 data:
-  ca.crt:  {{ .Values.spiderpoolController.tls.server.tlsCa | required "missing spiderpoolController.tls.server.tlsCa" }}
-  tls.crt: {{ .Values.spiderpoolController.tls.server.tlsCert | required "missing spiderpoolController.tls.server.tlsCert" }}
-  tls.key: {{ .Values.spiderpoolController.tls.server.tlsKey  | required "missing spiderpoolController.tls.server.tlsKey"  }}
+  ca.crt:  {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
+  tls.crt: {{ .Values.spiderpoolController.tls.provided.tlsCert | required "missing spiderpoolController.tls.provided.tlsCert" }}
+  tls.key: {{ .Values.spiderpoolController.tls.provided.tlsKey  | required "missing spiderpoolController.tls.provided.tlsKey"  }}
 {{- end }}

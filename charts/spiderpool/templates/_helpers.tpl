@@ -124,3 +124,44 @@ Return the appropriate apiVersion for RBAC resources.
 {{- end -}}
 {{- end -}}
 
+{{/*
+return the spiderpoolAgent image
+*/}}
+{{- define "spiderpool.spiderpoolAgent.image" -}}
+{{- $registryName := .Values.spiderpoolAgent.image.registry -}}
+{{- $repositoryName := .Values.spiderpoolAgent.image.repository -}}
+{{- if .Values.global.imageRegistry }}
+    {{- printf "%s/%s" .Values.global.imageRegistry $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.spiderpoolAgent.image.digest }}
+    {{- print "@" .Values.spiderpoolAgent.image.digest -}}
+{{- else -}}
+    {{- $tag := default .Chart.AppVersion .Values.spiderpoolAgent.image.tag -}}
+    {{- printf ":%s" $tag -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the spiderpoolController image
+*/}}
+{{- define "spiderpool.spiderpoolController.image" -}}
+{{- $registryName := .Values.spiderpoolController.image.registry -}}
+{{- $repositoryName := .Values.spiderpoolController.image.repository -}}
+{{- if .Values.global.imageRegistry }}
+    {{- printf "%s/%s" .Values.global.imageRegistry $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.spiderpoolController.image.digest }}
+    {{- print "@" .Values.spiderpoolController.image.digest -}}
+{{- else -}}
+    {{- $tag := default .Chart.AppVersion .Values.spiderpoolController.image.tag -}}
+    {{- printf ":%s" $tag -}}
+{{- end -}}
+{{- end -}}

@@ -78,11 +78,7 @@ spec:
       {{- end }}
       containers:
       - name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
-        {{- if .Values.spiderpoolAgent.image.digest }}
-        image: "{{ .Values.spiderpoolAgent.image.repository }}@{{ .Values.spiderpoolAgent.image.digest }}"
-        {{- else }}
-        image: "{{ .Values.spiderpoolAgent.image.repository }}:{{ default .Chart.AppVersion .Values.spiderpoolAgent.image.tag }}"
-        {{- end }}
+        image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
         imagePullPolicy: {{ .Values.spiderpoolAgent.image.pullPolicy }}
         command:
         - {{ .Values.spiderpoolAgent.binName }}

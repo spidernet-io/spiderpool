@@ -177,8 +177,10 @@ setup_spiderpool:
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
+			--set spiderpoolAgent.image.registry="" \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
 			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \
+			--set spiderpoolController.image.registry="" \
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)

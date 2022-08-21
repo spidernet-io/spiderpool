@@ -45,7 +45,7 @@ ifeq ($(INSTALL_MULTUS),true)
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null
-	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --timeout=10s --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
+	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
  		for POD in $${DNS_POD_LIST} ; do \
  			echo "restart coredns pod $${POD} " ; \
  			kubectl --kubeconfig $(E2E_KUBECONFIG) delete pod $${POD} -n kube-system --force --timeout=10s ; \

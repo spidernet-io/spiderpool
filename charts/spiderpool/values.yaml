@@ -16,7 +16,7 @@ ipFamily:
   enableIPv6: true
 
 rbac:
-  # -- Enable creation of Resource-Based Access Control configuration.
+  # -- Enable creation of  Resource-Based Access Control configuration.
   create: true
 
 # default spiderpool

@@ -31,7 +31,7 @@ Ipv4Subnet="172.20.0.0/16"
 Ipv4Range="172.20.0.10-172.20.0.200"
 
 # deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
   --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
@@ -40,6 +40,16 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}}
 ```
+
+> NOTICE:
+>
+> (1) if default ippool is installed by helm, please add '--wait' parament in the helm command. Because, the spiderpool will install
+> webhook for checking spiderippool CRs, if the spiderpool controller pod is not running, the default ippool will fail to apply and the helm install command fails
+> Or else, you could create default ippool after helm installation.
+>
+> (2) spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
+> it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
+> so, if you set the replicas number of spiderpool-controller to be bigger than 2, make sure there is enough nodes
 
 the following is a dual-stack example
 
@@ -64,7 +74,7 @@ Ipv6Subnet="fd00::/112"
 Ipv6Range="fd00::10-fd00::200"
 
 # deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
   --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
@@ -74,12 +84,6 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
   --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
 ```
-
-> NOTICE
->
-> spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
-> it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
-> so, if you set the replicas number of spiderpool-controller bigger than 2, make sure there is enough nodes
 
 ### install By Cert-manager
 
@@ -100,7 +104,7 @@ ipv4_subnet="172.20.0.0/16"
 # available IP resource
 ipv4_range="172.20.0.10-172.20.0.200"
 
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=certmanager \
   --set spiderpoolController.tls.certmanager.issuerName=${CERT_MANAGER_ISSUER_NAME} \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \

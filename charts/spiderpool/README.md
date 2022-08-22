@@ -141,7 +141,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `feature.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period | `0`      |
 
 
-
 ### clusterDefaultPool parameters
 
 | Name                                   | Description                                  | Value               |

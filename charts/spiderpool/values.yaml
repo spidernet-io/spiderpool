@@ -217,10 +217,10 @@ spiderpoolAgent:
   securityContext: {}
   # runAsUser: 0
 
-  healthChecking:
-    ## @param spiderpoolAgent.healthChecking.port the http Port for spiderpoolAgent health checking
-    port: 5710
+  ## @param spiderpoolAgent.httpPort the http Port for spiderpoolAgent, for health checking
+  httpPort: 5710
 
+  healthChecking:
     startupProbe:
       ## @param spiderpoolAgent.healthChecking.startupProbe.failureThreshold the failure threshold of startup probe for spiderpoolAgent health checking
       failureThreshold: 60
@@ -242,14 +242,48 @@ spiderpoolAgent:
   prometheus:
     ## @param spiderpoolAgent.prometheus.enabled enable spiderpool agent to collect metrics
     enabled: false
+
     ## @param spiderpoolAgent.prometheus.port the metrics port of spiderpool agent
     port: 5711
+
     serviceMonitor:
       ## @param spiderpoolAgent.prometheus.serviceMonitor.install install serviceMonitor for spiderpool agent. This requires the prometheus CRDs to be available
       install: false
+
+      ## @param spiderpoolAgent.prometheus.serviceMonitor.namespace the serviceMonitor namespace. Default to the namespace of helm instance
+      namespace: ""
+
+      ## @param spiderpoolAgent.prometheus.serviceMonitor.annotations the additional annotations of spiderpoolAgent serviceMonitor
+      annotations: {}
+
+      ## @param spiderpoolAgent.prometheus.serviceMonitor.labels the additional label of spiderpoolAgent serviceMonitor
+      labels: {}
+
     prometheusRule:
       ## @param spiderpoolAgent.prometheus.prometheusRule.install install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available
       install: false
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.namespace the prometheusRule namespace. Default to the namespace of helm instance
+      namespace: ""
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.annotations the additional annotations of spiderpoolAgent prometheusRule
+      annotations: {}
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.labels the additional label of spiderpoolAgent prometheusRule
+      labels: {}
+
+    grafanaDashboard:
+      ## @param spiderpoolAgent.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available
+      install: false
+
+      ## @param spiderpoolAgent.prometheus.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
+      namespace: ""
+
+      ## @param spiderpoolAgent.prometheus.grafanaDashboard.annotations the additional annotations of spiderpoolAgent grafanaDashboard
+      annotations: {}
+
+      ## @param spiderpoolAgent.prometheus.grafanaDashboard.labels the additional label of spiderpoolAgent grafanaDashboard
+      labels: {}
 
   debug:
     ## @param spiderpoolAgent.debug.logLevel the log level of spiderpool agent [debug, info, warn, error, fatal, panic]
@@ -392,10 +426,10 @@ spiderpoolController:
     ## @param spiderpoolController.podDisruptionBudget.minAvailable minimum number/percentage of pods that should remain scheduled.
     minAvailable: 1
 
-  healthChecking:
-    ## @param spiderpoolController.healthChecking.port the http Port for spiderpoolController health checking
-    port: 5720
+  ## @param spiderpoolController.httpPort the http Port for spiderpoolController, for health checking and http service
+  httpPort: 5720
 
+  healthChecking:
     startupProbe:
       ## @param spiderpoolController.healthChecking.startupProbe.failureThreshold the failure threshold of startup probe for spiderpoolController health checking
       failureThreshold: 30
@@ -420,9 +454,6 @@ spiderpoolController:
   ## @param spiderpoolController.webhookPort the http port for spiderpoolController webhook
   webhookPort: 5722
 
-  ## @param spiderpoolController.cliPort the http port for spiderpoolController CLI
-  cliPort: 5723
-
   prometheus:
     ## @param spiderpoolController.prometheus.enabled enable spiderpool Controller to collect metrics
     enabled: false
@@ -431,12 +462,43 @@ spiderpoolController:
     port: 5721
 
     serviceMonitor:
-      ## @param spiderpoolController.prometheus.serviceMonitor.install install serviceMonitor for spiderpool Controller. This requires the prometheus CRDs to be available
+      ## @param spiderpoolController.prometheus.serviceMonitor.install install serviceMonitor for spiderpool agent. This requires the prometheus CRDs to be available
       install: false
 
+      ## @param spiderpoolController.prometheus.serviceMonitor.namespace the serviceMonitor namespace. Default to the namespace of helm instance
+      namespace: ""
+
+      ## @param spiderpoolController.prometheus.serviceMonitor.annotations the additional annotations of spiderpoolController serviceMonitor
+      annotations: {}
+
+      ## @param spiderpoolController.prometheus.serviceMonitor.labels the additional label of spiderpoolController serviceMonitor
+      labels: {}
+
     prometheusRule:
-      ## @param spiderpoolController.prometheus.prometheusRule.install install prometheusRule for spiderpool Controller. This requires the prometheus CRDs to be available
+      ## @param spiderpoolController.prometheus.prometheusRule.install install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available
       install: false
+
+      ## @param spiderpoolController.prometheus.prometheusRule.namespace the prometheusRule namespace. Default to the namespace of helm instance
+      namespace: ""
+
+      ## @param spiderpoolController.prometheus.prometheusRule.annotations the additional annotations of spiderpoolController prometheusRule
+      annotations: {}
+
+      ## @param spiderpoolController.prometheus.prometheusRule.labels the additional label of spiderpoolController prometheusRule
+      labels: {}
+
+    grafanaDashboard:
+      ## @param spiderpoolController.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available
+      install: false
+
+      ## @param spiderpoolController.prometheus.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
+      namespace: ""
+
+      ## @param spiderpoolController.prometheus.grafanaDashboard.annotations the additional annotations of spiderpoolController grafanaDashboard
+      annotations: {}
+
+      ## @param spiderpoolController.prometheus.grafanaDashboard.labels the additional label of spiderpoolController grafanaDashboard
+      labels: {}
 
   debug:
     ## @param spiderpoolController.debug.logLevel the log level of spiderpool Controller [debug, info, warn, error, fatal, panic]

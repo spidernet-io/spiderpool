@@ -109,7 +109,17 @@ setup_kind:
         done ; \
         kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
 	echo "show kubernetes node image " && docker ps
-
+	@echo "===================== deploy prometheus CRD ========== "
+	{ timeout 10 kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml ; } \
+		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG)  -f ./yamls/monitoring.coreos.com_servicemonitors.yaml
+	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml ;} \
+		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_podmonitors.yaml
+	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml ;} \
+		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_prometheusrules.yaml
+	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_probes.yaml  ;} \
+		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_probes.yaml
+	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/master/deploy/manifests/latest/crds.yaml  ;} \
+		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/grafanadashboards.yaml
 
 
 .PHONY: setup_spiderpool
@@ -175,7 +185,10 @@ setup_spiderpool:
         			echo "finish setuping pyroscope " ; \
           	 	fi ; \
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
+		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
+		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
+		set -x ; \
 		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
 			--set spiderpoolAgent.image.registry="" \
@@ -185,6 +198,7 @@ setup_spiderpool:
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)
+
 
 .PHONY: clean
 clean:

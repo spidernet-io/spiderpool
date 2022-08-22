@@ -23,7 +23,7 @@ spec:
   ports:
     - name: metrics
       port: {{ .Values.spiderpoolAgent.prometheus.port }}
-      targetPort: prometheus
+      targetPort: metrics
       protocol: TCP
   selector:
     {{- include "spiderpool.spiderpoolAgent.selectorLabels" . | nindent 4 }}
@@ -54,16 +54,16 @@ spec:
     {{- if .Values.spiderpoolController.prometheus.enabled }}
     - name: metrics
       port: {{ .Values.spiderpoolController.prometheus.port }}
-      targetPort: prometheus
+      targetPort: metrics
       protocol: TCP
     {{- end }}
     - name: webhook
       port: {{ .Values.spiderpoolController.webhookPort }}
       targetPort: webhook
       protocol: TCP
-    - name: cli
-      port: {{ .Values.spiderpoolController.cliPort }}
-      targetPort: cli
+    - name: http
+      port: {{ .Values.spiderpoolController.httpPort }}
+      targetPort: http
       protocol: TCP
   selector:
     {{- include "spiderpool.spiderpoolController.selectorLabels" . | nindent 4 }}

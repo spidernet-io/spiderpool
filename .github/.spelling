@@ -183,6 +183,7 @@ CRDs
 IPs
 hostnetwork
 podAntiAffinity
+grafanaDashboard
 --wait
 certmanager
 spiderpoolController

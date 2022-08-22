@@ -49,7 +49,6 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil, nil},
 	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil, nil},
-	{"SPIDERPOOL_CLI_PORT", "5723", true, &controllerContext.Cfg.CliPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5724", false, &controllerContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil, nil},
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
@@ -90,7 +89,6 @@ type Config struct {
 	HttpPort       string
 	MetricHttpPort string
 	WebhookPort    string
-	CliPort        string
 
 	GopsListenPort   string
 	PyroscopeAddress string

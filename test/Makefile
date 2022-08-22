@@ -91,7 +91,7 @@ setup_kind:
 	$(QUIET) kind create cluster \
 		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
-	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master-
+	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/control-plane- node-role.kubernetes.io/master-
 	@ NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' | tr '\n' ' ' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		echo "find cluster node: $${NODE_LIST}" ; \

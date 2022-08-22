@@ -57,12 +57,6 @@ feature:
       ## @param feature.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
 
-    GcEvictedPodPod:
-      ## @param feature.gc.GcEvictedPodPod.enabled enable retrieve IP for the pod who is evicted
-      enabled: true
-
-      ## @param feature.gc.GcEvictedPodPod.delay the gc delay seconds after the pod is evicted
-      delay: 0
 
 ## @section clusterDefaultPool parameters
 ##

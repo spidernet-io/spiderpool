@@ -183,3 +183,4 @@ CRDs
 IPs
 hostnetwork
 podAntiAffinity
+grafanaDashboard

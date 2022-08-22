@@ -27,7 +27,7 @@ spec:
 {{- end }}
 ---
 {{- if .Values.spiderpoolController.prometheus.grafanaDashboard.install -}}
-apiVersion: monitoring.coreos.com/v1
+apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDashboard
 metadata:
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}

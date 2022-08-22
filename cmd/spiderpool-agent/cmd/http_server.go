@@ -36,7 +36,9 @@ func newAgentOpenAPIHttpServer() (*agentOpenAPIServer.Server, error) {
 	// new agent OpenAPI server with api
 	srv := agentOpenAPIServer.NewServer(api)
 
-	// customize server configurations.
+	// spiderpool-agent component owns Unix server and Http server, the Unix server uses for IPAM plugin interaction,
+	// and the Http server uses for K8s or CLI command.
+	// In spider-agent openapi.yaml, we already set x-schemes with value 'unix', so we need set Http server's listener with value 'http'.
 	srv.EnabledListeners = agentOpenAPIClient.DefaultSchemes
 	port, err := strconv.Atoi(agentContext.Cfg.HttpPort)
 	if nil != err {

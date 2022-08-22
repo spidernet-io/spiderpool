@@ -91,7 +91,8 @@ setup_kind:
 	$(QUIET) kind create cluster \
 		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
-	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/control-plane- node-role.kubernetes.io/master-
+	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master- || true
+	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/control-plane- || true
 	@ NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' | tr '\n' ' ' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		echo "find cluster node: $${NODE_LIST}" ; \
@@ -268,7 +269,7 @@ e2e_test:
 			-r e2e/*  || RESULT=1  ; \
 		echo "=========== after test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "gops" "$(E2E_LOG_FILE)" ; \
-		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; \
+		KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "longlock" "$(E2E_LOG_FILE)" || { echo "error, found long lock !!!" ; RESULT=1 ; } ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "datarace" "$(E2E_LOG_FILE)" || { echo "error, found data race !!!" ; RESULT=1 ; } ; \
 		if (($${RESULT} != 0)) ; then \

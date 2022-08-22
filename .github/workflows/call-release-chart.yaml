@@ -130,7 +130,7 @@ jobs:
           mv ./charts/index.yaml ./index.yaml
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4.0.4
+        uses: peter-evans/create-pull-request@v4.1.1
         with:
           title: "robot Update chart from ${{ needs.get_ref.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           commit-message: "robot Update chart from ${{ needs.get_ref.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "

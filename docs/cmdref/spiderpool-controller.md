@@ -21,8 +21,6 @@ Run the spiderpool controller daemon.
     SPIDERPOOL_GC_IPPOOL_ENABLED                enable GC ip in ippool, prior to other GC environment (true|false, default to true)
     SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED    enable GC ip of terminating pod whose graceful-time times out (true|false, default to true)
     SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY      delay to GC ip after graceful-time times out (second, default to 0)
-    SPIDERPOOL_GC_EVICTED_POD_IP_ENABLED        enable GC ip of evicted pod (true|false, default to true)
-    SPIDERPOOL_GC_EVICTED_POD_IP_DELAY          delay to GC ip of evicted pod (second, default to 0)
     SPIDERPOOL_HEALTH_PORT                      http port  (default to 5710)
 ```
 

@@ -69,8 +69,14 @@ jobs:
           # Push all the changes
           cd thisPorject
           if git status -s | grep README.md; then
+            set -x
             echo "create pr"
+            git branch
+            git status
+            git config --list
             git config user.name  "weizhoublue"
             git config user.email "weizhoublue@daocloud.io"
-            git add . && git commit -am "Update README.md with readme-generator-for-helm" --signoff && git push
+            git add .
+            git commit -am "Update README.md with readme-generator-for-helm" --signoff
+            git push
           fi

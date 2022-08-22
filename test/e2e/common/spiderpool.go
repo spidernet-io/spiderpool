@@ -104,7 +104,7 @@ OUTER_FOR:
 		errpool := CreateIppool(frame, ipPoolObj)
 		// if the created ippool is not nil ,then return err
 		if errpool != nil {
-			return nil, err
+			return nil, errpool
 		}
 		GinkgoWriter.Printf("%v-th ippool %v successfully created \n", i, ipPoolName)
 		iPPoolNameList = append(iPPoolNameList, ipPoolName)

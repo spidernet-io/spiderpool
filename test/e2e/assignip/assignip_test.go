@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,6 +30,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 	var sts *appsv1.StatefulSet
 	var ds *appsv1.DaemonSet
 	var rs *appsv1.ReplicaSet
+	var jd *batchv1.Job
 	var podlist *corev1.PodList
 
 	BeforeEach(func() {
@@ -38,6 +41,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 		// init test pod name
 		testName = "pod" + tools.RandomName()
+
 		// clean test env
 		DeferCleanup(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
@@ -80,6 +84,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		func(controllerType string, replicas int32) {
 			// try to create controller
 			GinkgoWriter.Printf("try to create controller %v: %v/%v \n", controllerType, testName, namespace)
+			behavior := common.JobTypeRunningForever
 			switch {
 			case controllerType == common.DeploymentNameString:
 				dpm = common.GenerateExampleDeploymentYaml(testName, namespace, replicas)
@@ -93,6 +98,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			case controllerType == common.ReplicaSetNameString:
 				rs = common.GenerateExampleReplicaSetYaml(testName, namespace, replicas)
 				err = frame.CreateReplicaSet(rs)
+			case controllerType == common.JobSetNameString:
+				jd = common.GenerateExampleJobYaml(behavior, testName, namespace, pointer.Int32(replicas))
+				err = frame.CreateJob(jd)
 			default:
 				Fail("input variable is not valid")
 			}
@@ -115,6 +123,11 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			case controllerType == common.ReplicaSetNameString:
 				rs, err = frame.WaitReplicaSetReady(testName, namespace, ctx1)
 				Expect(rs).NotTo(BeNil())
+			case controllerType == common.JobSetNameString:
+				label := jd.Spec.Template.Labels
+				parallelism := jd.Spec.Parallelism
+				ejob := frame.WaitPodListRunning(label, int(*parallelism), ctx1)
+				Expect(ejob).NotTo(HaveOccurred())
 			}
 			Expect(err).NotTo(HaveOccurred(), "time out to wait controller %v ready", controllerType)
 
@@ -132,6 +145,12 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			case controllerType == common.ReplicaSetNameString:
 				podlist, err = frame.GetReplicaSetPodList(rs)
 				Expect(int32(len(podlist.Items))).Should(Equal(rs.Status.ReadyReplicas))
+			case controllerType == common.JobSetNameString:
+				podlist, err = frame.GetJobPodList(jd)
+				jb, err := frame.GetJob(jd.Name, jd.Namespace)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(jb).NotTo(BeNil())
+				Expect(int32(len(podlist.Items))).Should(Equal(jb.Status.Active))
 			}
 			Expect(err).NotTo(HaveOccurred(), "failed to list controller pod %v", controllerType)
 
@@ -150,6 +169,8 @@ var _ = Describe("test pod", Label("assignip"), func() {
 				err = frame.DeleteDaemonSet(testName, namespace)
 			case controllerType == common.ReplicaSetNameString:
 				err = frame.DeleteReplicaSet(testName, namespace)
+			case controllerType == common.JobSetNameString:
+				err = frame.DeleteJob(testName, namespace)
 			}
 			Expect(err).NotTo(HaveOccurred(), "failed to delete controller %v: %v/%v \n", controllerType, testName, namespace)
 		},
@@ -157,6 +178,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		Entry("assign IP to statefulSet/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00003"), common.StatefulSetNameString, int32(2)),
 		Entry("assign IP to daemonset/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00004"), common.DaemonSetNameString, int32(0)),
 		Entry("assign IP to replicaset/pod for ipv4, ipv6 and dual-stack case", Label("smoke", "E00006"), common.ReplicaSetNameString, int32(2)),
+		Entry("assign IP to job for ipv4, ipv6 and dual-stack case", Label("smoke", "E00005"), common.JobSetNameString, int32(2)),
 	)
 
 	Context("fail to run a pod when IP resource of an ippool is exhausted or its IP been set excludeIPs", func() {

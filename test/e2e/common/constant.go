@@ -6,6 +6,7 @@ var DeploymentNameString = "deployment"
 var StatefulSetNameString = "statefulSet"
 var DaemonSetNameString = "daemonSet"
 var ReplicaSetNameString = "replicaSet"
+var JobSetNameString = "job"
 
 var SpiderPoolConfigmapName = "spiderpool-conf"
 var SpiderPoolConfigmapNameSpace = "kube-system"

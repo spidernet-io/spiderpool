@@ -5,6 +5,7 @@ package reclaim_test
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -23,7 +24,7 @@ import (
 
 var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 	var err error
-	var podName, namespace string
+	var podName, namespace, jdName string
 	var podIPv4, podIPv6 string
 
 	BeforeEach(func() {
@@ -35,6 +36,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// pod name
 		podName = "pod" + tools.RandomName()
+		// init Job name
+		jdName = "jd" + tools.RandomName()
 
 		DeferCleanup(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
@@ -42,6 +45,68 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
 		})
 	})
+
+	DescribeTable("check ip release after job finished", func(behavior common.JobBehave) {
+		var wg sync.WaitGroup
+		// create Job
+		GinkgoWriter.Printf("try to create Job %v/%v \n", namespace, jdName)
+		jd := common.GenerateExampleJobYaml(behavior, jdName, namespace, pointer.Int32Ptr(2))
+		Expect(jd).NotTo(BeNil())
+		GinkgoWriter.Printf("job behavior:\n %v \n", behavior)
+		e1 := frame.CreateJob(jd)
+		Expect(e1).NotTo(HaveOccurred(), "failed to create job \n")
+
+		wg.Add(1)
+		go func() {
+			time.Sleep(time.Millisecond * 100)
+			defer GinkgoRecover()
+			GinkgoWriter.Printf("wg add begin \n")
+			podlist, err := frame.GetJobPodList(jd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(podlist).NotTo(BeNil())
+			GinkgoWriter.Printf("Confirm that the job has been assigned to the IP address\n")
+			errip := common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, time.Minute)
+			Expect(errip).To((HaveOccurred()))
+			wg.Done()
+		}()
+
+		// wait job finished
+		GinkgoWriter.Printf("wait job finished \n")
+		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel1()
+		jb, ok1, e := frame.WaitJobFinished(jdName, namespace, ctx1)
+		Expect(e).NotTo(HaveOccurred(), "failed to wait job finished: %v\n", e)
+		Expect(jb).NotTo(BeNil())
+
+		switch behavior {
+		case common.JobTypeFail:
+			Expect(ok1).To(BeFalse())
+		case common.JobTypeFinish:
+			Expect(ok1).To(BeTrue())
+		default:
+			Fail("input error")
+		}
+		wg.Wait()
+		GinkgoWriter.Printf("job %v is finished \n job conditions:\n %v \n", jb, jb.Status.Conditions)
+
+		// get job pod list
+		GinkgoWriter.Printf("Get job pod list after job Fail or Finish\n")
+		podlist, err := frame.GetJobPodList(jd)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(podlist).NotTo(BeNil())
+		// check ip release
+		GinkgoWriter.Println("check IP reclaimed after job Fail or Finish")
+		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, time.Minute*2)).To(Succeed())
+
+		// delete job
+		GinkgoWriter.Printf("delete job: %v \n", jdName)
+		errjb := frame.DeleteJob(jdName, namespace)
+		Expect(errjb).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)
+
+	},
+		Entry("check ip release when job is failed", Label("G00006"), common.JobTypeFail),
+		Entry("check ip release when job is succeeded", Label("G00006"), common.JobTypeFinish),
+	)
 
 	It("related IP resource recorded in ippool will be reclaimed after the namespace is deleted",
 		Label("smoke", "G00001"), func() {

@@ -1,0 +1,53 @@
+{{- if .Values.spiderpoolAgent.prometheus.prometheusRule.install -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ default .Release.Namespace .Values.spiderpoolAgent.prometheus.prometheusRule.namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolAgent.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.labels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.prometheusRule.labels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.prometheus.prometheusRule.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.annotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.prometheusRule.annotations "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- end }}
+spec:
+  groups: []
+{{- end }}
+---
+{{- if .Values.spiderpoolController.prometheus.prometheusRule.install -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ default .Release.Namespace .Values.spiderpoolController.prometheus.prometheusRule.namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolController.prometheus.prometheusRule.labels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.prometheusRule.labels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.prometheusRule.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolController.prometheus.prometheusRule.annotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.prometheusRule.annotations "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- end }}
+spec:
+  groups: []
+{{- end }}

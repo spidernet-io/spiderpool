@@ -139,8 +139,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                    | `true`   |
 | `feature.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period | `true`   |
 | `feature.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period | `0`      |
-| `feature.gc.GcEvictedPodPod.enabled`      | enable retrieve IP for the pod who is evicted                            | `true`   |
-| `feature.gc.GcEvictedPodPod.delay`        | the gc delay seconds after the pod is evicted                            | `0`      |
 
 
 ### clusterDefaultPool parameters

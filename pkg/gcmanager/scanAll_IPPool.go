@@ -14,8 +14,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -38,7 +38,6 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 				s.executeScanAll(ctx)
 			default:
 				// The Elected controller will scan All with default GC interval
-				// TODO (Icarus9913): metric
 				if s.leader.IsElected() {
 					logger.Info("trigger default GC interval, execute scan all right now!")
 					s.executeScanAll(ctx)
@@ -187,9 +186,11 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 	singleIP := []ippoolmanager.IPAndCID{{IP: poolIP, ContainerID: poolIPAllocation.ContainerID}}
 	err := s.ippoolMgr.ReleaseIP(ctx, poolName, singleIP)
 	if nil != err {
+		metrics.IPGCFailureCounts.Add(ctx, 1)
 		return fmt.Errorf("failed to release IP '%s', error: '%v'", poolIP, err)
 	}
 
+	metrics.IPGCTotalCounts.Add(ctx, 1)
 	log.Sugar().Infof("release ip '%s' successfully", poolIP)
 
 	err = s.wepMgr.RemoveFinalizer(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)

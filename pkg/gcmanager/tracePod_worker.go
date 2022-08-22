@@ -11,6 +11,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 // tracePodWorker will circle traverse PodEntry database
@@ -105,11 +106,14 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				}
 
 				if nil != err {
+					metrics.IPGCFailureCounts.Add(ctx, 1)
 					logger.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in wep '%s/%s', error: %w",
 						poolName, ips, podCache.Namespace, podCache.PodName, err)
 					continue
 				}
-				// TODO (Icarus9913): metric
+
+				// metric
+				metrics.IPGCTotalCounts.Add(ctx, 1)
 			}
 
 			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", podCache)

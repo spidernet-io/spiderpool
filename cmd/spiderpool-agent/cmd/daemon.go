@@ -54,8 +54,6 @@ func DaemonMain() {
 		zap.String("NetworkMode", agentContext.Cfg.NetworkMode)).
 		Info("Load configmap successfully")
 
-	// TODO (Icarus9913): flush ipam plugin config (deprecated)
-
 	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
 
 	if agentContext.Cfg.GopsListenPort != "" {
@@ -174,6 +172,9 @@ func DaemonMain() {
 			logger.Fatal(err.Error())
 		}
 	}()
+
+	logger.Info("Begin to initialize spiderpool-agent metrics http server")
+	initAgentMetricsServer(agentContext.InnerCtx)
 
 	// TODO (Icarus9913): improve k8s StartupProbe
 	logger.Info("Set spiderpool-agent Startup probe ready")

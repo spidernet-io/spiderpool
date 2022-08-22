@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -74,8 +75,8 @@ var envInfo = []envConf{
 }
 
 type Config struct {
-	ControllerPodName      string
 	ControllerPodNamespace string
+	ControllerPodName      string
 
 	// flags
 	ConfigPath        string
@@ -131,7 +132,8 @@ type ControllerContext struct {
 	Leader        election.SpiderLeaseElector
 
 	// handler
-	HttpServer *server.Server
+	HttpServer        *server.Server
+	MetricsHttpServer *http.Server
 
 	// probe
 	IsStartupProbe atomic.Bool

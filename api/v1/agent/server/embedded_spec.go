@@ -292,6 +292,9 @@ func init() {
         "netNamespace"
       ],
       "properties": {
+        "cleanGateway": {
+          "type": "boolean"
+        },
         "containerID": {
           "type": "string"
         },
@@ -377,6 +380,7 @@ func init() {
       "description": "IPAM CNI types Route",
       "type": "object",
       "required": [
+        "ifName",
         "dst",
         "gw"
       ],
@@ -385,6 +389,9 @@ func init() {
           "type": "string"
         },
         "gw": {
+          "type": "string"
+        },
+        "ifName": {
           "type": "string"
         }
       }
@@ -666,6 +673,9 @@ func init() {
         "netNamespace"
       ],
       "properties": {
+        "cleanGateway": {
+          "type": "boolean"
+        },
         "containerID": {
           "type": "string"
         },
@@ -751,6 +761,7 @@ func init() {
       "description": "IPAM CNI types Route",
       "type": "object",
       "required": [
+        "ifName",
         "dst",
         "gw"
       ],
@@ -759,6 +770,9 @@ func init() {
           "type": "string"
         },
         "gw": {
+          "type": "string"
+        },
+        "ifName": {
           "type": "string"
         }
       }

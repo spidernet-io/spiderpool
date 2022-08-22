@@ -160,6 +160,8 @@ definitions:
         type: array
         items:
           type: string
+      cleanGateway:
+        type: boolean
     required:
       - podNamespace
       - podName
@@ -224,11 +226,14 @@ definitions:
     description: IPAM CNI types Route
     type: object
     properties:
+      ifName:
+        type: string
       dst:
         type: string
       gw:
         type: string
     required:
+      - ifName
       - dst
       - gw
   IpConfig:

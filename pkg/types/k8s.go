@@ -5,8 +5,6 @@ package types
 
 type PodStatus string
 
-type DefaultRouteType int
-
 type AnnoPodIPPoolValue struct {
 	NIC       *string  `json:"interface,omitempty"`
 	IPv4Pools []string `json:"ipv4pools,omitempty"`
@@ -19,7 +17,7 @@ type AnnoIPPoolItem struct {
 	NIC          string   `json:"interface"`
 	IPv4Pools    []string `json:"ipv4pools,omitempty"`
 	IPv6Pools    []string `json:"ipv6pools,omitempty"`
-	DefaultRoute bool     `json:"defaultRoute"`
+	CleanGateway bool     `json:"cleanGateway"`
 }
 
 type AnnoPodRoutesValue []AnnoRouteItem

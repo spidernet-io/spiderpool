@@ -66,6 +66,9 @@ type IPAllocationDetail struct {
 	IPv6Gateway *string `json:"ipv6Gateway,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	CleanGateway *bool `json:"cleanGateway,omitempty"`
+
+	// +kubebuilder:validation:Optional
 	Routes []Route `json:"routes,omitempty"`
 }
 

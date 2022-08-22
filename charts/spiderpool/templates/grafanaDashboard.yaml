@@ -22,7 +22,8 @@ metadata:
       {{- end }}
   {{- end }}
 spec:
-  json: {}
+  json: |-
+    {}
 {{- end }}
 ---
 {{- if .Values.spiderpoolController.prometheus.grafanaDashboard.install -}}
@@ -49,5 +50,6 @@ metadata:
       {{- end }}
   {{- end }}
 spec:
-  json: {}
+  json: |-
+    {}
 {{- end }}

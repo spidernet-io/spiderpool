@@ -31,7 +31,7 @@ Ipv4Subnet="172.20.0.0/16"
 Ipv4Range="172.20.0.10-172.20.0.200"
 
 # deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.server.tlsCert="${SERVER_CERT}" \
   --set spiderpoolController.tls.server.tlsKey="${SERVER_KEY}" \
@@ -40,6 +40,10 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}}
 ```
+
+> NOTICE: if default ippool is installed by helm, pelease add '--wait' parament in the helm command. Because, the spiderpool will install 
+> webhook for checking spiderippool CRs, if the spiderpool controller pod is not running, the default ippool will fail to apply and the helm install command fails
+> Or else, you could create default ippool after helm installation.
 
 the following is a dual-stack example
 
@@ -64,7 +68,7 @@ Ipv6Subnet="fd00::/112"
 Ipv6Range="fd00::10-fd00::200"
 
 # deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.server.tlsCert="${SERVER_CERT}" \
   --set spiderpoolController.tls.server.tlsKey="${SERVER_KEY}" \
@@ -100,7 +104,7 @@ ipv4_subnet="172.20.0.0/16"
 # available IP resource
 ipv4_range="172.20.0.10-172.20.0.200"
 
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=certmanager \
   --set spiderpoolController.tls.certmanager.issuerName=${CERT_MANAGER_ISSUER_NAME} \
   --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=false \

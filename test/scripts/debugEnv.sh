@@ -12,7 +12,6 @@ E2E_KUBECONFIG="$1"
 TYPE="$2"
 E2E_FILE_NAME="$3"
 
-
 [ -z "$E2E_KUBECONFIG" ] && echo "error, miss E2E_KUBECONFIG " && exit 1
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
@@ -21,6 +20,7 @@ CONTROLLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONF
 AGENT_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace kube-system --selector app.kubernetes.io/component=spiderpoolagent --output jsonpath={.items[*].metadata.name} )
 [ -z "$CONTROLLER_POD_LIST" ] && echo "error, failed to find any spider controller pod" && exit 1
 [ -z "$AGENT_POD_LIST" ] && echo "error, failed to find any spider agent pod" && exit 1
+
 
 if [ -n "$E2E_FILE_NAME" ] ; then
     echo "output debug information to $E2E_FILE_NAME"
@@ -51,9 +51,13 @@ if [ "$TYPE"x == "gops"x ] ; then
 
 elif [ "$TYPE"x == "detail"x ] ; then
 
+    echo "=============== nodes status ============== "
+    echo "-------- kubectl get node -o wide"
+    kubectl get node -o wide --kubeconfig ${E2E_KUBECONFIG} --show-labels
+
     echo "=============== pods status ============== "
     echo "-------- kubectl get pod -A -o wide"
-    kubectl get pod -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get pod -A -o wide --kubeconfig ${E2E_KUBECONFIG} --show-labels
 
     echo ""
     echo "=============== event ============== "
@@ -122,6 +126,17 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo ""
     echo "-------- kubectl get spiderreservedips -o json "
     kubectl get spiderreservedips -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "=============== IPAM log  ============== "
+    KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
+    KIND_NODES=`kind get  nodes --name ${KIND_CLUSTER_NAME}`
+    [ -z "$KIND_NODES" ] && echo "warning, failed to find nodes of kind cluster $KIND_CLUSTER_NAME " || true
+    for NODE in $KIND_NODES ; do
+        echo "--------- IPAM logs from node ${NODE}"
+        docker exec $NODE cat /var/log/spidernet/spiderpool.log
+    done
+
 
 elif [ "$TYPE"x == "datarace"x ] ; then
     LOG_MARK="WARNING: DATA RACE"

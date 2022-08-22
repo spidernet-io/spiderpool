@@ -518,9 +518,10 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			// restart spiderpool controller to trigger gc
 			GinkgoWriter.Println("restart spiderpool controller")
-			spiderpoolControllerPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": "spiderpoolcontroller"})
+			spiderpoolControllerPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": "spiderpool-controller"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList\n")
+			Expect(spiderpoolControllerPodList.Items).NotTo(BeEmpty(), "failed to get spiderpool controller podList\n")
 			spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart\n")

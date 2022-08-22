@@ -21,10 +21,10 @@ import (
 
 var _ = Describe("test selector", Label("labelselector"), func() {
 	Context("test different selector", func() {
-		var workerNodeLabel, controlNodeLabel map[string]string
 		var (
 			matchedPodName, matchedNamespace     string
 			unmatchedPodName, unmatchedNamespace string
+			matchedNode, unMatchedNode           *corev1.Node
 		)
 		var (
 			v4PoolName string
@@ -50,28 +50,17 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 
 			// get node list
 			GinkgoWriter.Println("get node list")
-			controlNodes := []corev1.Node{}
-			workerNodes := []corev1.Node{}
-
 			nodeList, err := frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(nodeList).NotTo(BeNil())
+			GinkgoWriter.Printf("nodeList: %+v\n", nodeList.Items)
 
-			for _, node := range nodeList.Items {
-				if _, ok := node.GetLabels()["node-role.kubernetes.io/master"]; ok {
-					controlNodes = append(controlNodes, node)
-				} else {
-					workerNodes = append(workerNodes, node)
-				}
+			if len(nodeList.Items) < 2 {
+				Skip("this case needs 2 nodes at least\n")
 			}
 
-			workerNode := workerNodes[0]
-			controlNode := controlNodes[0]
-			GinkgoWriter.Printf("worker node: %v, controller node: %v\n", workerNode.Name, controlNode.Name)
-
-			workerNodeLabel = workerNode.GetLabels()
-			controlNodeLabel = controlNode.GetLabels()
-			GinkgoWriter.Printf("workerNodeLabel:%v, controlNodeLabel:%v\n", workerNodeLabel, controlNodeLabel)
+			matchedNode = &nodeList.Items[0]
+			unMatchedNode = &nodeList.Items[1]
 
 			// set namespace label
 			GinkgoWriter.Printf("label namespace %v\n", matchedNamespace)
@@ -88,7 +77,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 				v4Pool.Spec.NamesapceAffinity = new(v1.LabelSelector)
 				v4Pool.Spec.PodAffinity = new(v1.LabelSelector)
-				v4Pool.Spec.NodeAffinity.MatchLabels = workerNodeLabel
+				v4Pool.Spec.NodeAffinity.MatchLabels = matchedNode.GetLabels()
 				v4Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
 				v4Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				createIPPool(v4Pool)
@@ -100,7 +89,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 				v6Pool.Spec.NamesapceAffinity = new(v1.LabelSelector)
 				v6Pool.Spec.PodAffinity = new(v1.LabelSelector)
-				v6Pool.Spec.NodeAffinity.MatchLabels = workerNodeLabel
+				v6Pool.Spec.NodeAffinity.MatchLabels = matchedNode.GetLabels()
 				v6Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
 				v6Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				createIPPool(v6Pool)
@@ -132,22 +121,22 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				allMatched = true
 				namespaceNM = matchedNamespace
 				podNM = matchedPodName
-				nodeLabel = workerNodeLabel
+				nodeLabel = matchedNode.GetLabels()
 			}
 			if !isNodeMatched {
 				namespaceNM = matchedNamespace
 				podNM = matchedPodName
-				nodeLabel = controlNodeLabel
+				nodeLabel = unMatchedNode.GetLabels()
 			}
 			if !isNamespaceMatched {
 				namespaceNM = unmatchedNamespace
 				podNM = matchedPodName
-				nodeLabel = workerNodeLabel
+				nodeLabel = matchedNode.GetLabels()
 			}
 			if !isPodMatched {
 				namespaceNM = matchedNamespace
 				podNM = unmatchedPodName
-				nodeLabel = workerNodeLabel
+				nodeLabel = matchedNode.GetLabels()
 			}
 
 			// create pod

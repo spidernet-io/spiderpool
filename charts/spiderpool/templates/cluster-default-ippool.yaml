@@ -4,6 +4,8 @@ apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: {{ .Values.clusterDefaultPool.ipv4IPPoolName | trunc 63 | trimSuffix "-" }}
+  annotations:
+    "helm.sh/hook": post-install
 spec:
   ipVersion: 4
   subnet: {{ .Values.clusterDefaultPool.ipv4Subnet }}
@@ -21,6 +23,8 @@ apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: {{ .Values.clusterDefaultPool.ipv6IPPoolName | trunc 63 | trimSuffix "-" }}
+  annotations:
+    "helm.sh/hook": post-install
 spec:
   ipVersion: 6
   subnet: {{ .Values.clusterDefaultPool.ipv6Subnet }}

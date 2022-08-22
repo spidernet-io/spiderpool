@@ -43,7 +43,7 @@ func NewAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 	// new agent OpenAPI server with api
 	srv := agentOpenAPIServer.NewServer(api)
 
-	// customize server configurations.
+	// set spiderpool-agent Unix server with specified unix socket path.
 	srv.SocketPath = flags.Filename(agentContext.Cfg.IpamUnixSocketPath)
 
 	// configure API and handlers with some default values.

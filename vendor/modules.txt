@@ -75,7 +75,7 @@ github.com/fsnotify/fsnotify
 # github.com/go-logr/logr v1.2.0
 ## explicit; go 1.16
 github.com/go-logr/logr
-# github.com/go-openapi/analysis v0.21.2
+# github.com/go-openapi/analysis v0.21.4
 ## explicit; go 1.13
 github.com/go-openapi/analysis
 github.com/go-openapi/analysis/internal/debug
@@ -97,7 +97,7 @@ github.com/go-openapi/jsonpointer
 ## explicit; go 1.13
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
-# github.com/go-openapi/loads v0.21.1
+# github.com/go-openapi/loads v0.21.2
 ## explicit; go 1.13
 github.com/go-openapi/loads
 github.com/go-openapi/loads/fmts
@@ -113,13 +113,13 @@ github.com/go-openapi/runtime/middleware/header
 github.com/go-openapi/runtime/middleware/untyped
 github.com/go-openapi/runtime/security
 github.com/go-openapi/runtime/yamlpc
-# github.com/go-openapi/spec v0.20.6
+# github.com/go-openapi/spec v0.20.7
 ## explicit; go 1.13
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.21.3
 ## explicit; go 1.13
 github.com/go-openapi/strfmt
-# github.com/go-openapi/swag v0.22.0
+# github.com/go-openapi/swag v0.22.3
 ## explicit; go 1.18
 github.com/go-openapi/swag
 # github.com/go-openapi/validate v0.22.0

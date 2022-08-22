@@ -91,7 +91,7 @@ Ipv6Subnet="fd00::/112"
 Ipv6Range="fd00::10-fd00::200"
 
 # deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
   --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
   --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
@@ -101,6 +101,16 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
   --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
 ```
+
+> NOTICE:
+>
+> (1) if default ippool is installed by helm, please add '--wait' parament in the helm command. Because, the spiderpool will install
+> webhook for checking spiderippool CRs, if the spiderpool controller pod is not running, the default ippool will fail to apply and the helm install command fails
+> Or else, you could create default ippool after helm installation.
+>
+> (2) spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
+> it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
+> so, if you set the replicas number of spiderpool-controller to be bigger than 2, make sure there is enough nodes
 
 ## Parameters
 
@@ -176,7 +186,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
 | `spiderpoolAgent.resources.requests.cpu`                         | the cpu requests of spiderpoolAgent pod                                                          | `100m`                                     |
 | `spiderpoolAgent.resources.requests.memory`                      | the memory requests of spiderpoolAgent pod                                                       | `128Mi`                                    |
 | `spiderpoolAgent.securityContext`                                | the security Context of spiderpoolAgent pod                                                      | `{}`                                       |
-| `spiderpoolAgent.healthChecking.port`                            | the http Port for spiderpoolAgent health checking                                                | `5710`                                     |
+| `spiderpoolAgent.httpPort`                                       | the http Port for spiderpoolAgent, for health checking                                           | `5710`                                     |
 | `spiderpoolAgent.healthChecking.startupProbe.failureThreshold`   | the failure threshold of startup probe for spiderpoolAgent health checking                       | `60`                                       |
 | `spiderpoolAgent.healthChecking.startupProbe.periodSeconds`      | the period seconds of startup probe for spiderpoolAgent health checking                          | `2`                                        |
 | `spiderpoolAgent.healthChecking.livenessProbe.failureThreshold`  | the failure threshold of startup probe for spiderpoolAgent health checking                       | `6`                                        |
@@ -186,7 +196,17 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
 | `spiderpoolAgent.prometheus.enabled`                             | enable spiderpool agent to collect metrics                                                       | `false`                                    |
 | `spiderpoolAgent.prometheus.port`                                | the metrics port of spiderpool agent                                                             | `5711`                                     |
 | `spiderpoolAgent.prometheus.serviceMonitor.install`              | install serviceMonitor for spiderpool agent. This requires the prometheus CRDs to be available   | `false`                                    |
+| `spiderpoolAgent.prometheus.serviceMonitor.namespace`            | the serviceMonitor namespace. Default to the namespace of helm instance                          | `""`                                       |
+| `spiderpoolAgent.prometheus.serviceMonitor.annotations`          | the additional annotations of spiderpoolAgent serviceMonitor                                     | `{}`                                       |
+| `spiderpoolAgent.prometheus.serviceMonitor.labels`               | the additional label of spiderpoolAgent serviceMonitor                                           | `{}`                                       |
 | `spiderpoolAgent.prometheus.prometheusRule.install`              | install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available   | `false`                                    |
+| `spiderpoolAgent.prometheus.prometheusRule.namespace`            | the prometheusRule namespace. Default to the namespace of helm instance                          | `""`                                       |
+| `spiderpoolAgent.prometheus.prometheusRule.annotations`          | the additional annotations of spiderpoolAgent prometheusRule                                     | `{}`                                       |
+| `spiderpoolAgent.prometheus.prometheusRule.labels`               | the additional label of spiderpoolAgent prometheusRule                                           | `{}`                                       |
+| `spiderpoolAgent.prometheus.grafanaDashboard.install`            | install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available | `false`                                    |
+| `spiderpoolAgent.prometheus.grafanaDashboard.namespace`          | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`                                       |
+| `spiderpoolAgent.prometheus.grafanaDashboard.annotations`        | the additional annotations of spiderpoolAgent grafanaDashboard                                   | `{}`                                       |
+| `spiderpoolAgent.prometheus.grafanaDashboard.labels`             | the additional label of spiderpoolAgent grafanaDashboard                                         | `{}`                                       |
 | `spiderpoolAgent.debug.logLevel`                                 | the log level of spiderpool agent [debug, info, warn, error, fatal, panic]                       | `info`                                     |
 | `spiderpoolAgent.debug.gopsPort`                                 | the gops port of spiderpool agent                                                                | `5712`                                     |
 
@@ -224,7 +244,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
 | `spiderpoolController.resources.requests.memory`                      | the memory requests of spiderpoolController pod                                                                                   | `128Mi`                                         |
 | `spiderpoolController.podDisruptionBudget.enabled`                    | enable podDisruptionBudget for spiderpoolController pod                                                                           | `false`                                         |
 | `spiderpoolController.podDisruptionBudget.minAvailable`               | minimum number/percentage of pods that should remain scheduled.                                                                   | `1`                                             |
-| `spiderpoolController.healthChecking.port`                            | the http Port for spiderpoolController health checking                                                                            | `5720`                                          |
+| `spiderpoolController.httpPort`                                       | the http Port for spiderpoolController, for health checking and http service                                                      | `5720`                                          |
 | `spiderpoolController.healthChecking.startupProbe.failureThreshold`   | the failure threshold of startup probe for spiderpoolController health checking                                                   | `30`                                            |
 | `spiderpoolController.healthChecking.startupProbe.periodSeconds`      | the period seconds of startup probe for spiderpoolController health checking                                                      | `2`                                             |
 | `spiderpoolController.healthChecking.livenessProbe.failureThreshold`  | the failure threshold of startup probe for spiderpoolController health checking                                                   | `6`                                             |
@@ -232,11 +252,20 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
 | `spiderpoolController.healthChecking.readinessProbe.failureThreshold` | the failure threshold of startup probe for spiderpoolController health checking                                                   | `3`                                             |
 | `spiderpoolController.healthChecking.readinessProbe.periodSeconds`    | the period seconds of startup probe for spiderpoolController health checking                                                      | `10`                                            |
 | `spiderpoolController.webhookPort`                                    | the http port for spiderpoolController webhook                                                                                    | `5722`                                          |
-| `spiderpoolController.cliPort`                                        | the http port for spiderpoolController CLI                                                                                        | `5723`                                          |
 | `spiderpoolController.prometheus.enabled`                             | enable spiderpool Controller to collect metrics                                                                                   | `false`                                         |
 | `spiderpoolController.prometheus.port`                                | the metrics port of spiderpool Controller                                                                                         | `5721`                                          |
-| `spiderpoolController.prometheus.serviceMonitor.install`              | install serviceMonitor for spiderpool Controller. This requires the prometheus CRDs to be available                               | `false`                                         |
-| `spiderpoolController.prometheus.prometheusRule.install`              | install prometheusRule for spiderpool Controller. This requires the prometheus CRDs to be available                               | `false`                                         |
+| `spiderpoolController.prometheus.serviceMonitor.install`              | install serviceMonitor for spiderpool agent. This requires the prometheus CRDs to be available                                    | `false`                                         |
+| `spiderpoolController.prometheus.serviceMonitor.namespace`            | the serviceMonitor namespace. Default to the namespace of helm instance                                                           | `""`                                            |
+| `spiderpoolController.prometheus.serviceMonitor.annotations`          | the additional annotations of spiderpoolController serviceMonitor                                                                 | `{}`                                            |
+| `spiderpoolController.prometheus.serviceMonitor.labels`               | the additional label of spiderpoolController serviceMonitor                                                                       | `{}`                                            |
+| `spiderpoolController.prometheus.prometheusRule.install`              | install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available                                    | `false`                                         |
+| `spiderpoolController.prometheus.prometheusRule.namespace`            | the prometheusRule namespace. Default to the namespace of helm instance                                                           | `""`                                            |
+| `spiderpoolController.prometheus.prometheusRule.annotations`          | the additional annotations of spiderpoolController prometheusRule                                                                 | `{}`                                            |
+| `spiderpoolController.prometheus.prometheusRule.labels`               | the additional label of spiderpoolController prometheusRule                                                                       | `{}`                                            |
+| `spiderpoolController.prometheus.grafanaDashboard.install`            | install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available                                  | `false`                                         |
+| `spiderpoolController.prometheus.grafanaDashboard.namespace`          | the grafanaDashboard namespace. Default to the namespace of helm instance                                                         | `""`                                            |
+| `spiderpoolController.prometheus.grafanaDashboard.annotations`        | the additional annotations of spiderpoolController grafanaDashboard                                                               | `{}`                                            |
+| `spiderpoolController.prometheus.grafanaDashboard.labels`             | the additional label of spiderpoolController grafanaDashboard                                                                     | `{}`                                            |
 | `spiderpoolController.debug.logLevel`                                 | the log level of spiderpool Controller [debug, info, warn, error, fatal, panic]                                                   | `info`                                          |
 | `spiderpoolController.debug.gopsPort`                                 | the gops port of spiderpool Controller                                                                                            | `5724`                                          |
 | `spiderpoolController.tls.method`                                     | the method for generating TLS certificates. [ provided , certmanager ]                                                            | `provided`                                      |

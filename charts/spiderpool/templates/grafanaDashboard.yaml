@@ -1,0 +1,55 @@
+{{- if .Values.spiderpoolAgent.prometheus.grafanaDashboard.install -}}
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDashboard
+metadata:
+  name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ default .Release.Namespace .Values.spiderpoolAgent.prometheus.grafanaDashboard.namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolAgent.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.prometheus.grafanaDashboard.labels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.prometheus.grafanaDashboard.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.prometheus.grafanaDashboard.annotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.grafanaDashboard.annotations "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- end }}
+spec:
+  json: |-
+    {}
+{{- end }}
+---
+{{- if .Values.spiderpoolController.prometheus.grafanaDashboard.install -}}
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDashboard
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ default .Release.Namespace .Values.spiderpoolController.prometheus.grafanaDashboard.namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolController.prometheus.grafanaDashboard.labels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.grafanaDashboard.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolController.prometheus.grafanaDashboard.annotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.grafanaDashboard.annotations "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- end }}
+spec:
+  json: |-
+    {}
+{{- end }}

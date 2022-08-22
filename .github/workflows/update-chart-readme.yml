@@ -7,6 +7,8 @@ on:
     paths:
       - 'charts/*/values.yaml'
 
+permissions: write-all
+
 jobs:
   update-readme-metadata:
     runs-on: ubuntu-latest
@@ -37,7 +39,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
-          ref: ${{github.event.pull_request.head.ref}}
+          ref: ${{ github.event.pull_request.head.sha }}
           path: thisPorject
 
       - name: Execute readme-generator-for-helm
@@ -67,7 +69,7 @@ jobs:
           # Push all the changes
           cd thisPorject
           if git status -s | grep README.md; then
-            echo "creat pr"
+            echo "create pr"
             git config user.name  "weizhoublue"
             git config user.email "weizhoublue@daocloud.io"
             git add . && git commit -am "Update README.md with readme-generator-for-helm" --signoff && git push

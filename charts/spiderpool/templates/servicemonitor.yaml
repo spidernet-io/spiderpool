@@ -1,0 +1,83 @@
+{{- if .Values.spiderpoolAgent.prometheus.serviceMonitor.install -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ default .Release.Namespace .Values.spiderpoolAgent.prometheus.serviceMonitor.namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolAgent.labels" . | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolAgent.prometheus.serviceMonitor.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.serviceMonitor.labels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.prometheus.serviceMonitor.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.prometheus.serviceMonitor.annotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.serviceMonitor.annotations "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- end }}
+spec:
+  endpoints:
+    - interval: 30s
+      path: /metrics
+      port: metrics
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace | quote }}
+  selector:
+    matchLabels:
+      {{- include "spiderpool.spiderpoolAgent.selectorLabels" . | nindent 6 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 6 }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.podLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.podLabels "context" $ ) | nindent 6 }}
+      {{- end }}
+{{- end }}
+---
+  {{- if .Values.spiderpoolController.prometheus.serviceMonitor.install -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ default .Release.Namespace .Values.spiderpoolController.prometheus.serviceMonitor.namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolController.prometheus.serviceMonitor.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.serviceMonitor.labels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.serviceMonitor.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+      {{- end }}
+      {{- if .Values.spiderpoolController.prometheus.serviceMonitor.annotations }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.serviceMonitor.annotations "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- end }}
+spec:
+  endpoints:
+    - interval: 30s
+      path: /metrics
+      port: metrics
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace | quote }}
+  selector:
+    matchLabels:
+      {{- include "spiderpool.spiderpoolController.selectorLabels" . | nindent 6 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 6 }}
+      {{- end }}
+      {{- if .Values.spiderpoolController.podLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.podLabels "context" $ ) | nindent 6 }}
+      {{- end }}
+{{- end }}

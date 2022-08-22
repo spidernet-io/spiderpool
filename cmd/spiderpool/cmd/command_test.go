@@ -192,7 +192,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				ipamAddResp := &models.IpamAddResponse{
 					DNS: &models.DNS{
 						Domain:      "local",
-						Nameservers: []string{"10.1.0.1"},
+						Nameservers: []string{"1.2.3.1"},
 						Options:     []string{"somedomain.com"},
 						Search:      []string{"foo"},
 					},
@@ -210,11 +210,12 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 							Version: new(int64),
 						},
 					},
-					Routes: []*models.Route{{Dst: new(string), Gw: new(string)}},
+					Routes: []*models.Route{{IfName: new(string), Dst: new(string), Gw: new(string)}},
 				}
 				// Routes
+				*ipamAddResp.Routes[0].IfName = "eth0"
 				*ipamAddResp.Routes[0].Dst = "15.5.6.0/24"
-				*ipamAddResp.Routes[0].Gw = "10.1.0.2"
+				*ipamAddResp.Routes[0].Gw = "1.2.3.2"
 
 				// multi nic, ip responses
 				*ipamAddResp.Ips[0].Address = "10.1.0.5/24"
@@ -232,7 +233,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.CNIVersion = cniVersion
 				// DNS
 				expectResult.DNS = types.DNS{
-					Nameservers: []string{"10.1.0.1"},
+					Nameservers: []string{"1.2.3.1"},
 					Domain:      "local",
 					Search:      []string{"foo"},
 					Options:     []string{"somedomain.com"},
@@ -244,7 +245,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("1.2.3.30"), Mask: net.CIDRMask(24, 32)}
 				// Routes
 				_, ipNet, _ := net.ParseCIDR("15.5.6.0/24")
-				expectResult.Routes = []*types.Route{{Dst: *ipNet, GW: net.ParseIP("10.1.0.2")}}
+				expectResult.Routes = []*types.Route{{Dst: *ipNet, GW: net.ParseIP("1.2.3.2")}}
 				//Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}}
 				return expectResult

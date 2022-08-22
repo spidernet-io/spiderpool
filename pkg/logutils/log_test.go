@@ -13,8 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const tmpLogFilePath = "/tmp/cni.log"
+
 var _ = Describe("Log", Label("unitest", "log_test"), func() {
-	Context("When on a nice day", func() {
+	Context("check log with stdout/stderr/file", func() {
 		It("log with stdout", func() {
 			err := logutils.InitStdoutLogger(logutils.InfoLevel)
 			Expect(err).NotTo(HaveOccurred())
@@ -24,9 +26,9 @@ var _ = Describe("Log", Label("unitest", "log_test"), func() {
 		})
 
 		It("log for file output mode", func() {
-			err := logutils.InitFileLogger(logutils.InfoLevel, logutils.DefaultLogFilePath, logutils.DefaultLogFileMaxSize, logutils.DefaultLogFileMaxAge, logutils.DefaultLogFileMaxBackups)
+			loggerFile, err := logutils.InitFileLogger(logutils.InfoLevel, tmpLogFilePath, logutils.DefaultLogFileMaxSize, logutils.DefaultLogFileMaxAge, logutils.DefaultLogFileMaxBackups)
 			Expect(err).NotTo(HaveOccurred())
-			logutils.LoggerFile.Info("This is log test.", zap.Int("log mode", 1))
+			loggerFile.Info("This is log test.", zap.Int("log mode", 1))
 		})
 
 		It("log with stderr", func() {

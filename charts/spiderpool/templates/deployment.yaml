@@ -5,12 +5,12 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
-    {{- if .Values.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
-  {{- if .Values.commonAnnotations }}
+  {{- if .Values.global.commonAnnotations }}
   annotations:
-    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 spec:
   replicas: {{ .Values.spiderpoolController.replicas }}
@@ -19,10 +19,10 @@ spec:
       {{- include "spiderpool.spiderpoolController.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- if or .Values.spiderpoolController.podAnnotations .Values.commonAnnotations }}
+      {{- if or .Values.spiderpoolController.podAnnotations .Values.global.commonAnnotations }}
       annotations:
-        {{- if .Values.commonAnnotations }}
-        {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 8 }}
+        {{- if .Values.global.commonAnnotations }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 8 }}
         {{- end }}
         {{- if .Values.spiderpoolController.podAnnotations }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.podAnnotations "context" $ ) | nindent 8 }}
@@ -30,8 +30,8 @@ spec:
         {{- end }}
       labels:
         {{- include "spiderpool.spiderpoolController.selectorLabels" . | nindent 8 }}
-        {{- if .Values.commonLabels }}
-        {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+        {{- if .Values.global.commonLabels }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 8 }}
         {{- end }}
     spec:
       {{- if .Values.spiderpoolController.image.imagePullSecrets }}
@@ -93,7 +93,7 @@ spec:
           protocol: TCP
         {{- end }}
         - name: health
-          containerPort: {{ .Values.spiderpoolController.healthPort }}
+          containerPort: {{ .Values.spiderpoolController.healthChecking.port }}
           protocol: TCP
         - name: webhook
           containerPort: {{ .Values.spiderpoolController.webhookPort }}
@@ -104,9 +104,9 @@ spec:
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
-            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
-            port: {{ .Values.spiderpoolController.healthPort }}
+            port: {{ .Values.spiderpoolController.healthChecking.port }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -117,9 +117,9 @@ spec:
         {{- end }}
         livenessProbe:
           httpGet:
-            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
-            port: {{ .Values.spiderpoolController.healthPort }}
+            port: {{ .Values.spiderpoolController.healthChecking.port }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -131,9 +131,9 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            host: {{ .Values.ipFamily.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
-            port: {{ .Values.spiderpoolController.healthPort }}
+            port: {{ .Values.spiderpoolController.healthChecking.port }}
             scheme: HTTP
             httpHeaders:
               - name: "checkType"
@@ -167,17 +167,17 @@ spec:
         - name: SPIDERPOOL_CLI_PORT
           value: {{ .Values.spiderpoolController.cliPort | quote }}
         - name: SPIDERPOOL_HEALTH_PORT
-          value: {{ .Values.spiderpoolController.healthPort | quote }}
+          value: {{ .Values.spiderpoolController.healthChecking.port | quote }}
         - name: SPIDERPOOL_GC_IP_ENABLED
-          value: {{ .Values.spiderpoolController.gc.enabled | quote }}
+          value: {{ .Values.feature.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
-          value: {{ .Values.spiderpoolController.gc.gcTerminatingPodIPEnabled | quote }}
+          value: {{ .Values.feature.gc.GcDeletingTimeOutPod.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY
-          value: {{ .Values.spiderpoolController.gc.gcTerminatingPodIPDelay | quote }}
+          value: {{ .Values.feature.gc.GcDeletingTimeOutPod.delay | quote }}
         - name: SPIDERPOOL_GC_EVICTED_POD_IP_ENABLED
-          value: {{ .Values.spiderpoolController.gc.gcEvictedPodIPEnabled | quote }}
+          value: {{ .Values.feature.gc.GcEvictedPodPod.enabled | quote }}
         - name: SPIDERPOOL_GC_EVICTED_POD_IP_DELAY
-          value: {{ .Values.spiderpoolController.gc.gcEvictedPodIPDelay | quote }}
+          value: {{ .Values.feature.gc.GcEvictedPodPod.delay | quote }}
         - name: SPIDERPOOL_POD_NAME
           valueFrom:
             fieldRef:
@@ -207,7 +207,7 @@ spec:
       # To read the configuration from the config map
       - name: config-path
         configMap:
-          name: {{ .Values.configmap.configCmName }}
+          name: {{ .Values.global.configName }}
       - name: tls
         projected:
           defaultMode: 0400

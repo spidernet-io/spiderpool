@@ -5,106 +5,145 @@
 ## @section Global parameters
 ##
 global:
-  ## @param global.imageRegistry Global Docker image registry
-  imageRegistry: ""
+  ## @param global.imageRegistryOverride Global Docker image registry
+  imageRegistryOverride: ""
 
-## @section ipFamily parameters
-ipFamily:
-  ## @param ipFamily.enableIPv4 enable ipv4
+  ## @param global.nameOverride instance name
+  ## default spiderpool
+  nameOverride: ""
+
+  ## @param global.clusterDnsDomain cluster dns domain
+  clusterDnsDomain: "cluster.local"
+
+  ## @param global.commonAnnotations Annotations to add to all deployed objects
+  commonAnnotations: {}
+
+  ## @param global.commonLabels Labels to add to all deployed objects
+  commonLabels: {}
+  #  label1: v1
+  #  labele: v2
+
+  ## @param global.ipamBinHostPath the host path of the IPAM plugin directory.
+  ipamBinHostPath: /opt/cni/bin
+
+  ## @param global.ipamUNIXSocketHostPath the host path of unix domain socket for ipam plugin
+  ipamUNIXSocketHostPath: /var/run/spidernet/spiderpool.sock
+
+  ## @param global.configName the configmap name
+  configName: "spiderpool-conf"
+
+## @section feature parameters
+feature:
+  ## @param feature.enableIPv4 enable ipv4
   enableIPv4: true
-  ## @param ipFamily.enableIPv4 enable ipv6
+
+  ## @param feature.enableIPv6 enable ipv6
   enableIPv6: true
 
-rbac:
-  # -- Enable creation of  Resource-Based Access Control configuration.
-  create: true
+  ## @param feature.networkMode the network mode
+  networkMode: legacy
 
-# default spiderpool
-nameOverride: ""
+  ## @param feature.enableStatefulSet the network mode
+  enableStatefulSet: true
 
-clusterDnsDomain: "cluster.local"
+  gc:
+    ## @param feature.gc.enabled enable retrieve IP in spiderippool CR
+    enabled: true
 
-## @param commonAnnotations Annotations to add to all deployed objects
+    GcDeletingTimeOutPod:
+      ## @param feature.gc.GcDeletingTimeOutPod.enabled enable retrieve IP for the pod who times out of deleting graceful period
+      enabled: true
+
+      ## @param feature.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
+      delay: 0
+
+    GcEvictedPodPod:
+      ## @param feature.gc.GcEvictedPodPod.enabled enable retrieve IP for the pod who is evicted
+      enabled: true
+
+      ## @param feature.gc.GcEvictedPodPod.delay the gc delay seconds after the pod is evicted
+      delay: 0
+
+## @section clusterDefaultPool parameters
 ##
-commonAnnotations: {}
-#  annotation1: v1
-#  annotation2: v2
-
-## @param commonLabels Labels to add to all deployed objects
-##
-commonLabels: {}
-#  label1: v1
-#  labele: v2
-
-ipamPlugin:
-  # -- Configure the path to the configuration directory on the host.
-  confPath: /etc/cni/net.d/spiderpool
-  binPath: /opt/cni/bin
-
-  # -- Configure the path to the binary directory on the host.
-  ipamBinPath: /opt/cni/bin
-
-  # -- Configure the unix socket path to connect with the spiderpool agent.
-  ipamUNIXSocketDir: /var/run/spidernet
-  ipamUNIXSocketPath: /var/run/spidernet/spiderpool.sock
-
 clusterDefaultPool:
+  ## @param clusterDefaultPool.installIPv4IPPool install ipv4 spiderpool instance
   installIPv4IPPool: false
+
+  ## @param clusterDefaultPool.installIPv6IPPool install ipv6 spiderpool instance
   installIPv6IPPool: false
+
+  ## @param clusterDefaultPool.ipv4IPPoolName the name of ipv4 spiderpool instance
   ipv4IPPoolName: "default-v4-ippool"
+
+  ## @param clusterDefaultPool.ipv6IPPoolName the name of ipv6 spiderpool instance
   ipv6IPPoolName: "default-v6-ippool"
+
+  ## @param clusterDefaultPool.ipv4Subnet the subnet of ipv4 spiderpool instance
   ipv4Subnet: ""
+
+  ## @param clusterDefaultPool.ipv6Subnet the subnet of ipv6 spiderpool instance
   ipv6Subnet: ""
+
+  ## @param clusterDefaultPool.ipv4IPRanges the available IP of ipv4 spiderpool instance
   ipv4IPRanges: []
+
+  ## @param clusterDefaultPool.ipv6IPRanges the available IP of ipv6 spiderpool instance
   ipv6IPRanges: []
 
-configmap:
-  configCmName: "spiderpool-conf"
-
-  config:
-    # -- Unix domain socket path to listen for ipam plugin.
-    ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
-    networkMode: legacy
-    enableStatefulSet: true
-
+## @section spiderpoolAgent parameters
+##
 spiderpoolAgent:
+  ## @param spiderpoolAgent.name the spiderpoolAgent name
   name: "spiderpool-agent"
 
+  ## @param spiderpoolAgent.binName the binName name of spiderpoolAgent
   binName: "spiderpool-agent"
 
   image:
+    ## @param spiderpoolAgent.image.registry the image registry of spiderpoolAgent
     registry: ghcr.io
+
+    ## @param spiderpoolAgent.image.repository the image repository of spiderpoolAgent
     repository: spidernet-io/spiderpool/spiderpool-agent
+
+    ## @param spiderpoolAgent.image.pullPolicy the image pullPolicy of spiderpoolAgent
     pullPolicy: IfNotPresent
-    # take preference over tag
+
+    ## @param spiderpoolAgent.image.digest the image digest of spiderpoolAgent, which takes preference over tag
     digest: ""
-    # Overrides the image tag whose default is the chart appVersion.
+
+    ## @param spiderpoolAgent.image.tag the image tag of spiderpoolAgent, overrides the image tag whose default is the chart appVersion.
     tag: ""
+
+    ## @param spiderpoolAgent.image.imagePullSecrets the image imagePullSecrets of spiderpoolAgent
     imagePullSecrets: []
     # - name: "image-pull-secret"
 
+  ## @skip spiderpoolAgent.nodeSelector.kubernetes.io/os
   nodeSelector:
     kubernetes.io/os: linux
 
-  nameOverride: ""
-
   serviceAccount:
+    ## @param spiderpoolAgent.serviceAccount.create create the service account for the spiderpoolAgent
     create: true
+    ## @param spiderpoolAgent.serviceAccount.annotations the annotations of spiderpoolAgent service account
     annotations: {}
 
-  # -- http Port to listen to for health checking
-  healthPort: 5710
-
+  ## @skip spiderpoolAgent.updateStrategy.rollingUpdate.maxUnavailable
+  ## @skip spiderpoolAgent.updateStrategy.type
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 2
     type: RollingUpdate
 
   service:
-    # Optional annotations to add to the Service
+    ## @param spiderpoolAgent.service.annotations the annotations for spiderpoolAgent service
     annotations: {}
+    ## @param spiderpoolAgent.service.type the type for spiderpoolAgent service
     type: ClusterIP
 
+  ## @skip spiderpoolAgent.tolerations
   # --  Node tolerations
   # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
   tolerations:
@@ -138,45 +177,35 @@ spiderpoolAgent:
     - key: CriticalAddonsOnly
       operator: Exists
 
-  priorityClassName: ""
+  ## @param spiderpoolAgent.priorityClassName the priority Class Name for spiderpoolAgent
+  priorityClassName: "system-node-critical"
 
+  ## @param spiderpoolAgent.affinity the affinity of spiderpoolAgent
   affinity: {}
 
-  # -- Additional container arguments.
+  ## @param spiderpoolAgent.extraArgs the additional arguments of spiderpoolAgent container
   extraArgs: []
 
-  # -- Additional container environment variables.
+  ## @param spiderpoolAgent.extraEnv the additional environment variables of spiderpoolAgent container
   extraEnv: []
 
-  # -- Additional agent hostPath mounts.
-  extraHostPathMounts: []
-    # - name: host-mnt-data
-    #   mountPath: /host/mnt/data
-    #   hostPath: /mnt/data
-    #   hostPathType: Directory
-    #   readOnly: true
-    #   mountPropagation: HostToContainer
-
-  # -- Additional agent volumes.
+  ## @param spiderpoolAgent.extraVolumes the additional volumes of spiderpoolAgent container
   extraVolumes: []
 
-  # -- Additional agent volumeMounts.
+  ## @param spiderpoolAgent.extraVolumeMounts the additional hostPath mounts of spiderpoolAgent container
   extraVolumeMounts: []
 
-  # -- Annotations to be added to agent pods
+  ## @param spiderpoolAgent.podAnnotations the additional annotations of spiderpoolAgent pod
   podAnnotations: {}
 
-  # -- Labels to be added to agent pods
+  ## @param spiderpoolAgent.podLabels the additional label of spiderpoolAgent pod
   podLabels: {}
 
-  # -- Configure the path to where to mount the ConfigMap inside the agent pod.
-  confFileMountPath: /tmp/cni-configuration
-
   resources:
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    ## @param spiderpoolAgent.resources.limits.cpu the cpu limit of spiderpoolAgent pod
+    ## @param spiderpoolAgent.resources.limits.memory the memory limit of spiderpoolAgent pod
+    ## @param spiderpoolAgent.resources.requests.cpu the cpu requests of spiderpoolAgent pod
+    ## @param spiderpoolAgent.resources.requests.memory the memory requests of spiderpoolAgent pod
     limits:
       cpu: 1000m
       memory: 1024Mi
@@ -184,92 +213,102 @@ spiderpoolAgent:
       cpu: 100m
       memory: 128Mi
 
-  # -- Security context to be added to agent pods
+  ## @param spiderpoolAgent.securityContext the security Context of spiderpoolAgent pod
   securityContext: {}
   # runAsUser: 0
 
-  # -- Configure the path to where the CNI configuration directory is mounted
-  # inside the agent pod.
-  hostConfDirMountPath: /host/etc/cni/net.d/spiderpool
-
   healthChecking:
+    ## @param spiderpoolAgent.healthChecking.port the http Port for spiderpoolAgent health checking
+    port: 5710
+
     startupProbe:
-      # -- failure threshold of startup probe.
-      # 105 x 2s translates to the old behaviour of the readiness probe (120s delay + 30 x 3s)
+      ## @param spiderpoolAgent.healthChecking.startupProbe.failureThreshold the failure threshold of startup probe for spiderpoolAgent health checking
       failureThreshold: 60
-      # -- interval between checks of the startup probe
+      ## @param spiderpoolAgent.healthChecking.startupProbe.periodSeconds the period seconds of startup probe for spiderpoolAgent health checking
       periodSeconds: 2
 
     livenessProbe:
-      # -- failure threshold of liveness probe
+      ## @param spiderpoolAgent.healthChecking.livenessProbe.failureThreshold the failure threshold of startup probe for spiderpoolAgent health checking
       failureThreshold: 6
-      # -- interval between checks of the liveness probe
+      ## @param spiderpoolAgent.healthChecking.livenessProbe.periodSeconds the period seconds of startup probe for spiderpoolAgent health checking
       periodSeconds: 10
 
     readinessProbe:
-      # -- failure threshold of readiness probe
+      ## @param spiderpoolAgent.healthChecking.readinessProbe.failureThreshold the failure threshold of startup probe for spiderpoolAgent health checking
       failureThreshold: 3
-      # -- interval between checks of the readiness probe
+      ## @param spiderpoolAgent.healthChecking.readinessProbe.periodSeconds the period seconds of startup probe for spiderpoolAgent health checking
       periodSeconds: 10
 
-  # -- Enable prometheus metrics for cilium-operator on the configured port at
-  # /metrics
   prometheus:
-    # -- Enable service monitors.
-    # This requires the prometheus CRDs to be available (see https://github.com/prometheus-operator/prometheus-operator/blob/master/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml)
+    ## @param spiderpoolAgent.prometheus.enabled enable spiderpool agent to collect metrics
     enabled: false
+    ## @param spiderpoolAgent.prometheus.port the metrics port of spiderpool agent
     port: 5711
     serviceMonitor:
-      labels: {}
-      annotations: {}
+      ## @param spiderpoolAgent.prometheus.serviceMonitor.install install serviceMonitor for spiderpool agent. This requires the prometheus CRDs to be available
+      install: false
     prometheusRule:
-      # enable alter rules
-      enabled: false
+      ## @param spiderpoolAgent.prometheus.prometheusRule.install install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available
+      install: false
 
   debug:
-    # debug, info, warn, error, fatal, panic
+    ## @param spiderpoolAgent.debug.logLevel the log level of spiderpool agent [debug, info, warn, error, fatal, panic]
     logLevel: "info"
+    ## @param spiderpoolAgent.debug.gopsPort the gops port of spiderpool agent
     gopsPort: 5712
 
+## @section spiderpoolController parameters
+##
 spiderpoolController:
+  ## @param spiderpoolController.name the spiderpoolController name
   name: "spiderpool-controller"
 
+  ## @param spiderpoolController.replicas the replicas number of spiderpoolController pod
   replicas: 1
 
+  ## @param spiderpoolController.binName the binName name of spiderpoolController
   binName: "spiderpool-controller"
 
-  # ippool is not installed when installation , so have to be hostnetwork
+  ## @param spiderpoolController.hostnetwork enable hostnetwork mode of spiderpoolController pod. Notice, if no CNI available before spiderpool installation, must enable this
   hostnetwork: true
 
-  nameOverride: ""
-
   image:
+    ## @param spiderpoolController.image.registry the image registry of spiderpoolController
     registry: ghcr.io
+
+    ## @param spiderpoolController.image.repository the image repository of spiderpoolController
     repository: spidernet-io/spiderpool/spiderpool-controller
+
+    ## @param spiderpoolController.image.pullPolicy the image pullPolicy of spiderpoolController
     pullPolicy: IfNotPresent
-    # take preference over tag
+
+    ## @param spiderpoolController.image.digest the image digest of spiderpoolController, which takes preference over tag
     digest: ""
-    # digest: "sha256:251ff274acf22fd2067b29a31e9fda94253d2961c061577203621583d7e85bd2"
-    # Overrides the image tag whose default is the chart appVersion.
+
+    ## @param spiderpoolController.image.tag the image tag of spiderpoolController, overrides the image tag whose default is the chart appVersion.
     tag: ""
+
+    ## @param spiderpoolController.image.imagePullSecrets the image imagePullSecrets of spiderpoolController
     imagePullSecrets: []
     # - name: "image-pull-secret"
 
+  ## @skip spiderpoolController.nodeSelector.kubernetes.io/os
   nodeSelector:
     kubernetes.io/os: linux
 
-  affinity: {}
-
   serviceAccount:
+    ## @param spiderpoolController.serviceAccount.create create the service account for the spiderpoolController
     create: true
-    name: ""
+    ## @param spiderpoolController.serviceAccount.annotations the annotations of spiderpoolController service account
     annotations: {}
 
   service:
-    # Optional annotations to add to the Service
+    ## @param spiderpoolController.service.annotations the annotations for spiderpoolController service
     annotations: {}
+    ## @param spiderpoolController.service.type the type for spiderpoolController service
     type: ClusterIP
 
+  ## @skip spiderpoolController.tolerations
   tolerations:
     - effect: NoExecute
       key: node.kubernetes.io/not-ready
@@ -301,49 +340,44 @@ spiderpoolController:
     - key: CriticalAddonsOnly
       operator: Exists
 
-  priorityClassName: ""
+  ## @param spiderpoolController.priorityClassName the priority Class Name for spiderpoolController
+  priorityClassName: "system-node-critical"
 
-  # -- Additional container arguments.
+  ## @param spiderpoolController.affinity the affinity of spiderpoolController
+  affinity: {}
+
+  ## @param spiderpoolController.extraArgs the additional arguments of spiderpoolController container
   extraArgs: []
 
-  # -- Additional container environment variables.
+  ## @param spiderpoolController.extraEnv the additional environment variables of spiderpoolController container
   extraEnv: []
 
-  # -- Additional agent hostPath mounts.
-  extraHostPathMounts: []
-    # - name: host-mnt-data
-    #   mountPath: /host/mnt/data
-    #   hostPath: /mnt/data
-    #   hostPathType: Directory
-    #   readOnly: true
-  #   mountPropagation: HostToContainer
-
-  # -- Additional agent volumes.
+  ## @param spiderpoolController.extraVolumes the additional volumes of spiderpoolController container
   extraVolumes: []
     # - name: test-val
     #   mountPath: /host/tmp
 
-  # -- Additional agent volumeMounts.
+  ## @param spiderpoolController.extraVolumeMounts the additional hostPath mounts of spiderpoolController container
   extraVolumeMounts: []
     # - name: test-val
     #   mountPath: /tmp
 
-  # -- Annotations to be added to agent pods
+  ## @param spiderpoolController.podAnnotations the additional annotations of spiderpoolController pod
   podAnnotations: {}
     # test: 100
 
-  # -- Labels to be added to agent pods
+  ## @param spiderpoolController.podLabels the additional label of spiderpoolController pod
   podLabels: {}
 
-  # -- security context
+  ## @param spiderpoolController.securityContext the security Context of spiderpoolController pod
   securityContext: {}
   # runAsUser: 0
 
   resources:
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    ## @param spiderpoolController.resources.limits.cpu the cpu limit of spiderpoolController pod
+    ## @param spiderpoolController.resources.limits.memory the memory limit of spiderpoolController pod
+    ## @param spiderpoolController.resources.requests.cpu the cpu requests of spiderpoolController pod
+    ## @param spiderpoolController.resources.requests.memory the memory requests of spiderpoolController pod
     limits:
       cpu: 500m
       memory: 1024Mi
@@ -351,106 +385,95 @@ spiderpoolController:
       cpu: 100m
       memory: 128Mi
 
-  # PodDisruptionBudget settings
   podDisruptionBudget:
-    # -- enable PodDisruptionBudget
-    # ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+    ## @param spiderpoolController.podDisruptionBudget.enabled enable podDisruptionBudget for spiderpoolController pod
     enabled: false
-    # -- Minimum number/percentage of pods that should remain scheduled.
-    # When it's set, maxUnavailable must be disabled by `maxUnavailable: null`
+
+    ## @param spiderpoolController.podDisruptionBudget.minAvailable minimum number/percentage of pods that should remain scheduled.
     minAvailable: 1
-    # -- Maximum number/percentage of pods that may be made unavailable
-   # maxUnavailable: 1
 
   healthChecking:
+    ## @param spiderpoolController.healthChecking.port the http Port for spiderpoolController health checking
+    port: 5720
+
     startupProbe:
-      # -- failure threshold of startup probe.
-      # 105 x 2s translates to the old behaviour of the readiness probe (120s delay + 30 x 3s)
+      ## @param spiderpoolController.healthChecking.startupProbe.failureThreshold the failure threshold of startup probe for spiderpoolController health checking
       failureThreshold: 30
-      # -- interval between checks of the startup probe
+
+      ## @param spiderpoolController.healthChecking.startupProbe.periodSeconds the period seconds of startup probe for spiderpoolController health checking
       periodSeconds: 2
 
     livenessProbe:
-      # -- failure threshold of liveness probe
+      ## @param spiderpoolController.healthChecking.livenessProbe.failureThreshold the failure threshold of startup probe for spiderpoolController health checking
       failureThreshold: 6
-      # -- interval between checks of the liveness probe
+
+      ## @param spiderpoolController.healthChecking.livenessProbe.periodSeconds the period seconds of startup probe for spiderpoolController health checking
       periodSeconds: 10
 
     readinessProbe:
-      # -- failure threshold of readiness probe
+      ## @param spiderpoolController.healthChecking.readinessProbe.failureThreshold the failure threshold of startup probe for spiderpoolController health checking
       failureThreshold: 3
-      # -- interval between checks of the readiness probe
+
+      ## @param spiderpoolController.healthChecking.readinessProbe.periodSeconds the period seconds of startup probe for spiderpoolController health checking
       periodSeconds: 10
 
-  # -- http Port to listen to for health checking
-  healthPort: 5720
-
-  # -- https Port to listen to webhook
+  ## @param spiderpoolController.webhookPort the http port for spiderpoolController webhook
   webhookPort: 5722
 
-  # -- https Port to listen to cli command
+  ## @param spiderpoolController.cliPort the http port for spiderpoolController CLI
   cliPort: 5723
 
-  # -- Enable prometheus metrics for cilium-operator on the configured port at
-  # /metrics
   prometheus:
+    ## @param spiderpoolController.prometheus.enabled enable spiderpool Controller to collect metrics
     enabled: false
+
+    ## @param spiderpoolController.prometheus.port the metrics port of spiderpool Controller
     port: 5721
+
     serviceMonitor:
-      # -- Enable service monitors.
-      # This requires the prometheus CRDs to be available (see https://github.com/prometheus-operator/prometheus-operator/blob/master/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml)
-      enabled: false
-      labels: {}
-      annotations: {}
+      ## @param spiderpoolController.prometheus.serviceMonitor.install install serviceMonitor for spiderpool Controller. This requires the prometheus CRDs to be available
+      install: false
+
     prometheusRule:
-      # enable alter rules
-      enabled: false
+      ## @param spiderpoolController.prometheus.prometheusRule.install install prometheusRule for spiderpool Controller. This requires the prometheus CRDs to be available
+      install: false
 
   debug:
-    # debug, info, warn, error, fatal, panic
+    ## @param spiderpoolController.debug.logLevel the log level of spiderpool Controller [debug, info, warn, error, fatal, panic]
     logLevel: "info"
+
+    ## @param spiderpoolController.debug.gopsPort the gops port of spiderpool Controller
     gopsPort: 5724
 
-  gc:
-    # global enable
-    enabled: true
-    # if enabled=false, ignore this
-    gcTerminatingPodIPEnabled: true
-    # delay to gc pod ip after pod graceful time, second
-    gcTerminatingPodIPDelay: 0
-    # if enabled=false, ignore this
-    gcEvictedPodIPEnabled: true
-    # delay to gc pod ip after pod graceful time, second
-    gcEvictedPodIPDelay: 0
-
-  # -- TLS configuration for webhook
+  ## TLS configuration for webhook
   tls:
-    # -- Set the method to auto-generate certificates. Supported values:
-    # - provided:     provide all certificates by helm options
-    # - certmanager:  This method use cert-manager to generate & rotate certificates.
+    ## @param spiderpoolController.tls.method the method for generating TLS certificates. [ provided , certmanager ]
+    ## - provided:     provide all certificates by helm options
+    ## - certmanager:  This method use cert-manager to generate & rotate certificates.
     method: provided
 
-    # the secret with same namespace
+    ## @param spiderpoolController.tls.secretName the secret name for storing TLS certificates
     secretName: "spiderpool-controller-server-certs"
 
-    # for certmanager method
+    ## for certmanager method
     certmanager:
-      # -- Generated certificates validity duration in days.
+      ## @param spiderpoolController.tls.certmanager.certValidityDuration generated certificates validity duration in days for 'certmanager' method
       certValidityDuration: 365
 
-      # If not specified, a CA issuer will be created.
-      # used by method certmanager
+      ## @param spiderpoolController.tls.certmanager.issuerName issuer name of cert manager 'certmanager'. If not specified, a CA issuer will be created.
       issuerName: ""
 
-      # -- Extra DNS names added to certificate when it's auto generated
+      ## @param spiderpoolController.tls.certmanager.extraDnsNames extra DNS names added to certificate when it's auto generated
       extraDnsNames: []
-      # -- Extra IP addresses added to certificate when it's auto generated
+
+      ## @param spiderpoolController.tls.certmanager.extraIPAddresses extra IP addresses added to certificate when it's auto generated
       extraIPAddresses: []
 
-    # -- for provided method
-    server:
-      # used by method provided
-      # encoded
+    ## for provided method
+    provided:
+      ## @param spiderpoolController.tls.provided.tlsCert encoded tls certificate for provided method
+      ## @param spiderpoolController.tls.provided.tlsKey encoded tls key for provided method
+      ## @param spiderpoolController.tls.provided.tlsCa encoded tls CA for provided method
       tlsCert: ""
       tlsKey: ""
       tlsCa: ""

@@ -45,7 +45,7 @@ ifeq ($(INSTALL_MULTUS),true)
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null
-	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --timeout=10s --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
+	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
  		for POD in $${DNS_POD_LIST} ; do \
  			echo "restart coredns pod $${POD} " ; \
  			kubectl --kubeconfig $(E2E_KUBECONFIG) delete pod $${POD} -n kube-system --force --timeout=10s ; \
@@ -127,12 +127,12 @@ setup_spiderpool:
 			CA=`cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/ca.crt  | base64 -w0 | tr -d '\n' ` ; \
 			SERVER_CERT=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.crt | base64 -w0 | tr -d '\n' ` ; \
 			SERVER_KEY=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.key | base64 -w0 | tr -d '\n' ` ; \
-			HELM_OPTION="--set spiderpoolController.tls.server.tlsCert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.server.tlsKey=\"$${SERVER_KEY}\" --set spiderpoolController.tls.server.tlsCa=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
+			HELM_OPTION="--set spiderpoolController.tls.provided.tlsCert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.provided.tlsKey=\"$${SERVER_KEY}\" --set spiderpoolController.tls.provided.tlsCa=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
 		else \
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
 		fi ; \
-		HELM_OPTION+=" --set ipamPlugin.log_level=debug  --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
+		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
@@ -141,7 +141,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
-			HELM_OPTION+=" --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=false" ; \
+			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=false" ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
@@ -149,7 +149,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
-			HELM_OPTION+=" --set ipFamily.enableIPv4=false --set ipFamily.enableIPv6=true" ; \
+			HELM_OPTION+=" --set feature.enableIPv4=false --set feature.enableIPv6=true" ; \
 		else \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
@@ -160,7 +160,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet} --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
-			HELM_OPTION+=" --set ipFamily.enableIPv4=true --set ipFamily.enableIPv6=true" ; \
+			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=true" ; \
 		fi ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
         			docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \

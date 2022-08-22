@@ -19,7 +19,7 @@ webhooks:
       path: /mutate-spiderpool-spidernet-io-v1-spiderippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
-    caBundle: {{ .Values.spiderpoolController.tls.server.tlsCa | required "missing spiderpoolController.tls.server.tlsCa" }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
     {{- end }}
   failurePolicy: Fail
   name: spiderippool.spiderpool.spidernet.io
@@ -43,7 +43,7 @@ webhooks:
       path: /mutate-spiderpool-spidernet-io-v1-spiderreservedip
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
-    caBundle: {{ .Values.spiderpoolController.tls.server.tlsCa | required "missing spiderpoolController.tls.server.tlsCa" }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
     {{- end }}
   failurePolicy: Fail
   name: spiderreservedip.spiderpool.spidernet.io
@@ -79,7 +79,7 @@ webhooks:
       path: /validate-spiderpool-spidernet-io-v1-spiderippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
-    caBundle: {{ .Values.spiderpoolController.tls.server.tlsCa | required "missing spiderpoolController.tls.server.tlsCa" }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
     {{- end }}
   failurePolicy: Fail
   name: spiderippool.spiderpool.spidernet.io
@@ -103,7 +103,7 @@ webhooks:
       path: /validate-spiderpool-spidernet-io-v1-spiderreservedip
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
-    caBundle: {{ .Values.spiderpoolController.tls.server.tlsCa | required "missing spiderpoolController.tls.server.tlsCa" }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
     {{- end }}
   failurePolicy: Fail
   name: spiderreservedip.spiderpool.spidernet.io

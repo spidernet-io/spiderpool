@@ -29,6 +29,10 @@ type Route struct {
 	// gw
 	// Required: true
 	Gw *string `json:"gw"`
+
+	// if name
+	// Required: true
+	IfName *string `json:"ifName"`
 }
 
 // Validate validates this route
@@ -40,6 +44,10 @@ func (m *Route) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateGw(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateIfName(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -61,6 +69,15 @@ func (m *Route) validateDst(formats strfmt.Registry) error {
 func (m *Route) validateGw(formats strfmt.Registry) error {
 
 	if err := validate.Required("gw", "body", m.Gw); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Route) validateIfName(formats strfmt.Registry) error {
+
+	if err := validate.Required("ifName", "body", m.IfName); err != nil {
 		return err
 	}
 

@@ -80,6 +80,8 @@ spec:
                     items:
                       description: TODO
                       properties:
+                        cleanGateway:
+                          type: boolean
                         interface:
                           type: string
                         ipv4:
@@ -134,6 +136,8 @@ spec:
                       items:
                         description: TODO
                         properties:
+                          cleanGateway:
+                            type: boolean
                           interface:
                             type: string
                           ipv4:

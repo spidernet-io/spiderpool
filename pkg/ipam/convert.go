@@ -27,7 +27,7 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 			var ipv4Gateway string
 			if d.IPv4Gateway != nil {
 				ipv4Gateway = *d.IPv4Gateway
-				routes = append(routes, genDefaultRoute(ipv4Gateway))
+				routes = append(routes, genDefaultRoute(nic, ipv4Gateway))
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv4,
@@ -44,7 +44,7 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 			var ipv6Gateway string
 			if d.IPv6Gateway != nil {
 				ipv6Gateway = *d.IPv6Gateway
-				routes = append(routes, genDefaultRoute(ipv6Gateway))
+				routes = append(routes, genDefaultRoute(nic, ipv6Gateway))
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv6,
@@ -56,7 +56,7 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 			})
 		}
 
-		routes = append(routes, convertSpecRoutesToOAIRoutes(d.Routes)...)
+		routes = append(routes, convertSpecRoutesToOAIRoutes(d.NIC, d.Routes)...)
 	}
 
 	return ips, routes
@@ -65,33 +65,46 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 func convertResultsToIPConfigsAndAllRoutes(results []*AllocationResult) ([]*models.IPConfig, []*models.Route) {
 	var ips []*models.IPConfig
 	var routes []*models.Route
+	var ipv4DefaultRoute, ipv6DefaultRoute *models.Route
 	for _, r := range results {
 		ips = append(ips, r.IP)
+		routes = append(routes, r.Routes...)
+
+		if r.CleanGateway {
+			continue
+		}
 
 		if r.IP.Gateway != "" {
-			routes = append(routes, genDefaultRoute(r.IP.Gateway))
+			if ipv4DefaultRoute == nil && *r.IP.Version == constant.IPv4 {
+				ipv4DefaultRoute = genDefaultRoute(*r.IP.Nic, r.IP.Gateway)
+				routes = append(routes, ipv4DefaultRoute)
+			} else if ipv6DefaultRoute == nil && *r.IP.Version == constant.IPv6 {
+				ipv6DefaultRoute = genDefaultRoute(*r.IP.Nic, r.IP.Gateway)
+				routes = append(routes, ipv6DefaultRoute)
+			}
 		}
-		routes = append(routes, r.Routes...)
 	}
 
 	return ips, routes
 }
 
-func genDefaultRoute(gateway string) *models.Route {
+func genDefaultRoute(nic, gateway string) *models.Route {
 	var route *models.Route
 	if govalidator.IsIPv4(gateway) {
 		dst := "0.0.0.0/0"
 		route = &models.Route{
-			Dst: &dst,
-			Gw:  &gateway,
+			IfName: &nic,
+			Dst:    &dst,
+			Gw:     &gateway,
 		}
 	}
 
 	if govalidator.IsIPv6(gateway) {
 		dst := "::/0"
 		route = &models.Route{
-			Dst: &dst,
-			Gw:  &gateway,
+			IfName: &nic,
+			Dst:    &dst,
+			Gw:     &gateway,
 		}
 	}
 
@@ -100,11 +113,16 @@ func genDefaultRoute(gateway string) *models.Route {
 
 func convertResultsToIPDetails(results []*AllocationResult) []spiderpoolv1.IPAllocationDetail {
 	nicToDetail := map[string]*spiderpoolv1.IPAllocationDetail{}
+	var cleanGateway *bool
 	for _, r := range results {
 		var gateway *string
 		if r.IP.Gateway != "" {
 			gateway = new(string)
 			*gateway = r.IP.Gateway
+			if cleanGateway == nil {
+				cleanGateway = new(bool)
+				*cleanGateway = r.CleanGateway
+			}
 		}
 		routes := convertOAIRoutesToSpecRoutes(r.Routes)
 		if d, ok := nicToDetail[*r.IP.Nic]; ok {
@@ -112,11 +130,13 @@ func convertResultsToIPDetails(results []*AllocationResult) []spiderpoolv1.IPAll
 				d.IPv4 = r.IP.Address
 				d.IPv4Pool = &r.IP.IPPool
 				d.IPv4Gateway = gateway
+				d.CleanGateway = cleanGateway
 				d.Routes = append(d.Routes, routes...)
 			} else {
 				d.IPv6 = r.IP.Address
 				d.IPv6Pool = &r.IP.IPPool
 				d.IPv6Gateway = gateway
+				d.CleanGateway = cleanGateway
 				d.Routes = append(d.Routes, routes...)
 			}
 			continue
@@ -124,21 +144,23 @@ func convertResultsToIPDetails(results []*AllocationResult) []spiderpoolv1.IPAll
 
 		if *r.IP.Version == constant.IPv4 {
 			nicToDetail[*r.IP.Nic] = &spiderpoolv1.IPAllocationDetail{
-				NIC:         *r.IP.Nic,
-				IPv4:        r.IP.Address,
-				IPv4Pool:    &r.IP.IPPool,
-				Vlan:        &r.IP.Vlan,
-				IPv4Gateway: gateway,
-				Routes:      routes,
+				NIC:          *r.IP.Nic,
+				IPv4:         r.IP.Address,
+				IPv4Pool:     &r.IP.IPPool,
+				Vlan:         &r.IP.Vlan,
+				IPv4Gateway:  gateway,
+				CleanGateway: cleanGateway,
+				Routes:       routes,
 			}
 		} else {
 			nicToDetail[*r.IP.Nic] = &spiderpoolv1.IPAllocationDetail{
-				NIC:         *r.IP.Nic,
-				IPv6:        r.IP.Address,
-				IPv6Pool:    &r.IP.IPPool,
-				Vlan:        &r.IP.Vlan,
-				IPv6Gateway: gateway,
-				Routes:      routes,
+				NIC:          *r.IP.Nic,
+				IPv6:         r.IP.Address,
+				IPv6Pool:     &r.IP.IPPool,
+				Vlan:         &r.IP.Vlan,
+				IPv6Gateway:  gateway,
+				CleanGateway: cleanGateway,
+				Routes:       routes,
 			}
 		}
 	}
@@ -165,14 +187,15 @@ func convertAnnoPodRoutesToOAIRoutes(annoPodRoutes types.AnnoPodRoutesValue) []*
 	return routes
 }
 
-func convertSpecRoutesToOAIRoutes(specRoutes []spiderpoolv1.Route) []*models.Route {
+func convertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv1.Route) []*models.Route {
 	var routes []*models.Route
 	for _, r := range specRoutes {
 		dst := r.Dst
 		gw := r.Gw
 		routes = append(routes, &models.Route{
-			Dst: &dst,
-			Gw:  &gw,
+			IfName: &nic,
+			Dst:    &dst,
+			Gw:     &gw,
 		})
 	}
 

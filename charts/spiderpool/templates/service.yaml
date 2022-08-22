@@ -4,18 +4,18 @@ kind: Service
 metadata:
   name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace | quote }}
-  {{- if or .Values.commonAnnotations .Values.spiderpoolAgent.service.annotations }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.service.annotations }}
   annotations:
-    {{- if .Values.commonAnnotations }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonAnnotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
     {{- if .Values.spiderpoolAgent.service.annotations }}
     {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.service.annotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
   labels:
-    {{- if .Values.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
     {{- include "spiderpool.spiderpoolAgent.labels" . | nindent 4 }}
 spec:
@@ -34,18 +34,18 @@ kind: Service
 metadata:
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace | quote }}
-  {{- if or .Values.commonAnnotations .Values.spiderpoolController.service.annotations }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.service.annotations }}
   annotations:
-    {{- if .Values.commonAnnotations }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonAnnotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
     {{- if .Values.spiderpoolController.service.annotations }}
     {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.service.annotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
   labels:
-    {{- if .Values.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
     {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
 spec:

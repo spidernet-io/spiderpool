@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("test reliability", Label("reliability"), Serial, func() {
@@ -38,7 +39,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			GinkgoWriter.Printf("get %v pod list \n", componentName)
 			podList, e := frame.GetPodListByLabel(label)
 			Expect(e).NotTo(HaveOccurred())
-			Expect(podList).NotTo(BeNil())
+			Expect(podList.Items).NotTo(HaveLen(0))
 			expectPodNum := len(podList.Items)
 			GinkgoWriter.Printf("the %v pod number is: %v \n", componentName, expectPodNum)
 
@@ -115,55 +116,63 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 	DescribeTable("check ip assign after reboot node",
 		func(replicas int32) {
-			// create Deployment
-			GinkgoWriter.Printf("create Deployment %v/%v \n", namespace, podName)
+			daemonSetName := "ds" + tools.RandomName()
+
+			// Genarte Deployment Yaml
+			GinkgoWriter.Printf("Create Deployment %v/%v \n", namespace, podName)
 			dep := common.GenerateExampleDeploymentYaml(podName, namespace, replicas)
-			err := frame.CreateDeployment(dep)
-			Expect(err).NotTo(HaveOccurred(), "failed to create Deployment")
 
-			// wait deployment ready and check ip assign ok
-			podlist, errip := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
-			Expect(errip).ShouldNot(HaveOccurred())
-
-			// before reboot node check ip exists in ipppool
-			defaultv4, defaultv6, err := common.GetClusterDefaultIppool(frame)
+			// In a `kind` cluster, restarting the master node will cause the cluster to become unavailable.
+			nodeList, err := frame.GetNodeList()
 			Expect(err).ShouldNot(HaveOccurred())
-			GinkgoWriter.Printf("default ip4 ippool name is %v\n default ip6 ippool name is %v\n,", defaultv4, defaultv6)
-			allipRecord, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlist)
-			Expect(allipRecord).Should(BeTrue())
-			Expect(errpool).ShouldNot(HaveOccurred())
-			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord)
-
-			// get nodename list
-			nodeMap := make(map[string]bool)
-			for _, item := range podlist.Items {
-				GinkgoWriter.Printf("item.Status.NodeName:%v\n", item.Spec.NodeName)
-				nodeMap[item.Spec.NodeName] = true
+			for _, node := range nodeList.Items {
+				if _, ok := node.GetLabels()["node-role.kubernetes.io/control-plane"]; !ok {
+					dep.Spec.Template.Spec.NodeSelector = map[string]string{corev1.LabelHostname: node.Name}
+					break
+				}
 			}
-			GinkgoWriter.Printf("get nodeMap is：%v\n", nodeMap)
+			// Create Deployment
+			Expect(frame.CreateDeployment(dep)).NotTo(HaveOccurred(), "Failed to create Deployment")
 
-			// send cmd to reboot node and check node until ready
+			// Wait for the deployment to be ready and check that the IP assignment is correct
+			podList, err1 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
+			Expect(err1).ShouldNot(HaveOccurred())
+
+			// Check if the IP exists in the IPPool before restarting the node
+			ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool, err2 := common.GetClusterDefaultIppool(frame)
+			Expect(err2).ShouldNot(HaveOccurred())
+			isRecord1, _, _, err3 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool, podList)
+			Expect(isRecord1).Should(BeTrue())
+			Expect(err3).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("Pod IP recorded in IPPool %v,%v \n", ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool)
+
+			// Send a cmd to restart the node and check the cluster until it is ready
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
-			readyok, err := common.RestartNodeUntilReady(frame, nodeMap, time.Minute, ctx)
-			Expect(readyok).Should(BeTrue(), "timeout to wait node ready\n")
-			Expect(err).ShouldNot(HaveOccurred())
+			err4 := common.RestartNodeUntilClusterReady(ctx, frame, podList.Items[0].Spec.NodeName)
+			Expect(err4).NotTo(HaveOccurred(), "Execution of cmd fails or node/Pod is not ready, error is: %v \n", err4)
 
-			// check pod ready and ip assign ok
-			podlistready, errip2 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
-			Expect(errip2).ShouldNot(HaveOccurred())
+			// After the nodes reboot,create daemonset for checking spiderpool service ready, in case this rebooting test case influence on later test case
+			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute*5)
+			defer cancel1()
+			dsObj := common.GenerateExampleDaemonSetYaml(daemonSetName, namespace)
+			_, err5 := frame.CreateDaemonsetUntilReady(ctx1, dsObj)
+			Expect(err5).NotTo(HaveOccurred())
 
-			// after reboot node check ip exists in ipppool
-			allipRecord2, _, _, errpool := common.CheckPodIpRecordInIppool(frame, defaultv4, defaultv6, podlistready)
-			Expect(allipRecord2).Should(BeTrue())
-			Expect(errpool).ShouldNot(HaveOccurred())
-			GinkgoWriter.Printf("check pod ip in the ippool：%v\n", allipRecord2)
+			// After the node is ready then wait for the Deployment to be ready and check that the IP is correctly assigned.
+			restartPodList, err6 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Minute)
+			Expect(err6).ShouldNot(HaveOccurred())
 
-			// delete Deployment
-			errdel := frame.DeleteDeployment(podName, namespace)
-			Expect(errdel).NotTo(HaveOccurred(), "failed to delete Deployment %v/%v \n", podName, namespace)
+			// After restarting the node, check that the IP is still recorded in the ippool.
+			isRecord2, _, _, err7 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool, restartPodList)
+			Expect(isRecord2).Should(BeTrue())
+			Expect(err7).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("After restarting the node, the IP recorded in the ippool: %v ,%v", ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool)
 
+			// Try to delete Deployment and Daemonset
+			Expect(frame.DeleteDeployment(podName, namespace)).NotTo(HaveOccurred())
+			Expect(frame.DeleteDaemonSet(daemonSetName, namespace)).NotTo(HaveOccurred())
 		},
-		Entry("pod Replicas is 2", Serial, Label("R00006"), int32(2)),
+		PEntry("Successfully recovery a pod whose original node is power-off", Serial, Label("R00006"), int32(2)),
 	)
 })

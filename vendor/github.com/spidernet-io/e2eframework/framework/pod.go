@@ -213,7 +213,7 @@ func (f *Framework) CheckPodListIpReady(podList *corev1.PodList) error {
 				return fmt.Errorf("pod %v failed to get ipv4 ip", pod.Name)
 			}
 			if d, ok := v4IpList[ip]; ok {
-				return fmt.Errorf("pod %v and %v have conflicted ipv4 ip %v", pod.Name, v4IpList[ip], d)
+				return fmt.Errorf("pod %v and %v have conflicted ipv4 ip %v", pod.Name, d, ip)
 			}
 			v4IpList[ip] = pod.Name
 			f.Log("succeeded to check pod %v ipv4 ip \n", pod.Name)
@@ -224,7 +224,7 @@ func (f *Framework) CheckPodListIpReady(podList *corev1.PodList) error {
 				return fmt.Errorf("pod %v failed to get ipv6 ip", pod.Name)
 			}
 			if d, ok := v6IpList[ip]; ok {
-				return fmt.Errorf("pod %v and %v have conflicted ipv6 ip %v", pod.Name, v6IpList[ip], d)
+				return fmt.Errorf("pod %v and %v have conflicted ipv6 ip %v", pod.Name, d, ip)
 			}
 			v6IpList[ip] = pod.Name
 			f.Log("succeeded to check pod %v ipv6 ip \n", pod.Name)
@@ -358,5 +358,30 @@ OUTER:
 			}
 		}
 		return l, nil
+	}
+}
+
+// Waiting for all pods in all namespaces to run
+func (f *Framework) WaitAllPodUntilRunning(ctx context.Context) error {
+	var AllPodList *corev1.PodList
+	var err error
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ErrTimeOut
+		default:
+
+			// GetPodList（opts ... ListOption） If no value is specified, get all the namespace's pods
+			AllPodList, err = f.GetPodList()
+			if err != nil {
+				return err
+			}
+
+			if f.CheckPodListRunning(AllPodList) {
+				return nil
+			}
+			time.Sleep(time.Second)
+		}
 	}
 }

@@ -160,22 +160,20 @@ func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme) error, 
 
 		scheme := runtime.NewScheme()
 		err = corev1.AddToScheme(scheme)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to add runtime Scheme : %v", err)
 		}
-		err = apiextensions_v1.AddToScheme(scheme)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add apiextensions_v1 Scheme : %v", err)
-		}
+
 		err = appsv1.AddToScheme(scheme)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add appsv1 Scheme : %v", err)
 		}
+
 		err = batchv1.AddToScheme(scheme)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add batchv1 Scheme")
 		}
+
 		err = apiextensions_v1.AddToScheme(scheme)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add apiextensions_v1 Scheme : %v", err)

@@ -47,7 +47,7 @@ func (f *Framework) WaitExceptEventOccurred(ctx context.Context, eventKind, objN
 				if !ok {
 					return ErrGetObj
 				}
-				f.Log("Event occurred message is %v /n", event.Message)
+				f.Log("Event occurred message is %v \n", event.Message)
 				if strings.Contains(event.Message, message) {
 					return nil
 				}

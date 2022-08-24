@@ -179,8 +179,9 @@ func convertAnnoPodRoutesToOAIRoutes(annoPodRoutes types.AnnoPodRoutesValue) []*
 		dst := r.Dst
 		gw := r.Gw
 		routes = append(routes, &models.Route{
-			Dst: &dst,
-			Gw:  &gw,
+			IfName: new(string),
+			Dst:    &dst,
+			Gw:     &gw,
 		})
 	}
 

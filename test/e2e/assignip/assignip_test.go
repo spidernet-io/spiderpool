@@ -34,7 +34,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		// init namespace name and create
 		namespace = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", namespace)
-		err := frame.CreateNamespace(namespace)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 		// init test pod name
 		testName = "pod" + tools.RandomName()

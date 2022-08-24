@@ -181,6 +181,8 @@ CRDs
 IPs
 hostnetwork
 podAntiAffinity
+cmdDel
+SpiderIPPoolList
 grafanaDashboard
 --wait
 certmanager

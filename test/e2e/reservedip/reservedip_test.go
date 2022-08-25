@@ -68,6 +68,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 
 	It("S00001: an IP who is set in ReservedIP CRD, should not be assigned to a pod; S00003: Failed to set same IP in excludeIPs when an IP is assigned to a pod",
 		Label("S00001", "smoke", "S00003"), func() {
+			const deployOriginialNum = int(1)
 
 			if frame.Info.IpV4Enabled {
 				v4ReservedIpName, v4ReservedIpObj = common.GenerateExampleV4ReservedIpObject(iPv4PoolObj.Spec.IPs)
@@ -86,7 +87,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
 
 			// Generate Deployment yaml and annotation
-			deployObject := common.GenerateExampleDeploymentYaml(DeployName, nsName, int32(1))
+			deployObject := common.GenerateExampleDeploymentYaml(DeployName, nsName, int32(deployOriginialNum))
 			deployObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			GinkgoWriter.Printf("Try to create Deployment: %v/%v with annotation %v = %v \n", nsName, DeployName, constant.AnnoPodIPPool, podIppoolAnnoStr)
 

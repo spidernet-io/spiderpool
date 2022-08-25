@@ -370,18 +370,18 @@ func GetNamespaceDefaultIppool(f *frame.Framework, namespace string) (v4IppoolLi
 	return v4IppoolList, v6IppoolList, nil
 }
 
-func GetWorkloadByName(f *frame.Framework, namespace, name string) *v1.SpiderEndpoint {
+func GetWorkloadByName(f *frame.Framework, namespace, name string) (*v1.SpiderEndpoint, error) {
 	if name == "" || namespace == "" {
-		return nil
+		return nil, frame.ErrWrongInput
 	}
 
 	v := apitypes.NamespacedName{Name: name, Namespace: namespace}
 	existing := &v1.SpiderEndpoint{}
 	e := f.GetResource(v, existing)
 	if e != nil {
-		return nil
+		return nil, errors.New("workload not existed")
 	}
-	return existing
+	return existing, nil
 }
 
 func CheckIppoolForPodName(f *frame.Framework, ippool *v1.SpiderIPPool, podName, podNamespace string) (bool, error) {
@@ -590,6 +590,25 @@ func WaitIppoolStatusConditionByAllocatedIPs(ctx context.Context, f *frame.Frame
 			}
 			if !isRecord && !ok {
 				GinkgoWriter.Printf("the IP %v reclaimed from IPPool %v \n", checkIPs, poolName)
+				return nil
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
+
+// When the Pod IP resource is reclaimed, wait for the corresponding workload deletion to complete
+func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, namespace, name string) error {
+	if f == nil || namespace == "" || name == "" {
+		return frame.ErrWrongInput
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("time out to wait Workload delete until finish")
+		default:
+			workload, err := GetWorkloadByName(f, namespace, name)
+			if workload == nil && err != nil {
 				return nil
 			}
 			time.Sleep(time.Second)

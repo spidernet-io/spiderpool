@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 
@@ -14,12 +15,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("test Affinity", Label("affinity"), func() {
+	var namespace string
+
+	BeforeEach(func() {
+		// create namespace
+		namespace = "ns" + tools.RandomName()
+		GinkgoWriter.Printf("create namespace %v \n", namespace)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
+		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
+
+		DeferCleanup(func() {
+			GinkgoWriter.Printf("delete namespace %v \n", namespace)
+			err = frame.DeleteNamespace(namespace)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 	Context("test different IPPool Affinity", func() {
 		var (
 			matchedPodName, matchedNamespace     string
@@ -39,14 +55,12 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			v4PoolNameList = []string{}
 			v6PoolNameList = []string{}
 			// Init matching and non-matching namespaces name and create its
-			matchedNamespace = "matched-ns-" + tools.RandomName()
+			matchedNamespace = namespace
 			unmatchedNamespace = "unmatched-ns-" + tools.RandomName()
 
-			for _, namespace := range []string{matchedNamespace, unmatchedNamespace} {
-				GinkgoWriter.Printf("create namespace %v \n", namespace)
-				err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
-				Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
-			}
+			GinkgoWriter.Printf("create namespace %v \n", unmatchedNamespace)
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(unmatchedNamespace, time.Second*10)
+			Expect(err).NotTo(HaveOccurred())
 
 			// Init matching and non-matching Pod name
 			matchedPodName = "matched-pod-" + tools.RandomName()
@@ -178,8 +192,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 	})
 
 	Context("cross-zone daemonSet", func() {
-		var namespace, daemonSetName string
-		var err error
+		var daemonSetName string
 		var nic string = "eth0"
 		nodeV4PoolMap := make(map[string][]string)
 		nodeV6PoolMap := make(map[string][]string)
@@ -187,13 +200,6 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		allV6PoolNameList := make([]string, 0)
 
 		BeforeEach(func() {
-			// create namespace
-			namespace = "ns" + tools.RandomName()
-			GinkgoWriter.Printf("create namespace %v \n", namespace)
-			err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
-			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
-			GinkgoWriter.Printf("succeed to create namespace %v \n", namespace)
-
 			// daemonSetName name
 			daemonSetName = "daemonset" + tools.RandomName()
 
@@ -233,12 +239,6 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			}
 
 			DeferCleanup(func() {
-				// delete namespace
-				GinkgoWriter.Printf("delete namespace %v \n", namespace)
-				err := frame.DeleteNamespace(namespace)
-				Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
-				GinkgoWriter.Printf("succeed to delete namespace %v \n", namespace)
-
 				// delete ippool
 				if frame.Info.IpV4Enabled {
 					for _, poolName := range allV4PoolNameList {
@@ -308,21 +308,184 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		})
 	})
 
+	Context("Support Statefulset pod who will be always assigned same IP addresses.", func() {
+		var v4PoolName, v6PoolName, statefulSetName, nic string
+		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
+		var newPodList *corev1.PodList
+		const stsOriginialNum = int(1)
+		nic = "eth0"
+		statefulSetName = "sts" + tools.RandomName()
+
+		BeforeEach(func() {
+			// Create IPv4 pools and IPv6 pools
+			if frame.Info.IpV4Enabled {
+				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
+				GinkgoWriter.Printf("try to create v6 ippool %v \n", v4PoolObj.Name)
+				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
+			}
+			if frame.Info.IpV6Enabled {
+				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
+				GinkgoWriter.Printf("try to create v6 ippool %v \n", v6PoolObj.Name)
+				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
+			}
+			DeferCleanup(func() {
+				if frame.Info.IpV4Enabled {
+					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				}
+			})
+		})
+		It("Successfully restarted statefulSet/pod with matching podSelector, ip remains the same", Label("L00008", "A00009"), func() {
+			// A00009:Modify the annotated IPPool for a specified StatefulSet pod
+			// Generate ippool annotation string
+			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList)
+
+			stsObject := common.GenerateExampleStatefulSetYaml(statefulSetName, namespace, int32(stsOriginialNum))
+			stsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+
+			// Try to create a statefulSet and wait for replicas to meet expectations
+			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel1()
+			err := frame.CreateStatefulSet(stsObject)
+			Expect(err).NotTo(HaveOccurred())
+			stsObject, err = frame.WaitStatefulSetReady(statefulSetName, namespace, ctx1)
+			Expect(stsObject).NotTo(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+			podlist, err := frame.GetPodListByLabel(stsObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get pod list, reason= %v", err)
+			Expect(int32(len(podlist.Items))).Should(Equal(stsObject.Status.ReadyReplicas))
+
+			// check pod ip record in ippool
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// Record the Pod IP、containerID、workloadendpoint UID information of the statefulset
+			ipMap := make(map[string]string)
+			containerIdMap := make(map[string]string)
+			uidMap := make(map[string]string)
+			for _, pod := range podlist.Items {
+				if frame.Info.IpV4Enabled {
+					podIPv4, ok := tools.CheckPodIpv4IPReady(&pod)
+					Expect(ok).NotTo(BeFalse(), "failed to get ipv4 ip")
+					Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
+					ipMap[podIPv4] = pod.Name
+				}
+				if frame.Info.IpV6Enabled {
+					podIPv6, ok := tools.CheckPodIpv6IPReady(&pod)
+					Expect(ok).NotTo(BeFalse(), "failed to get ipv6 ip")
+					Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
+					ipMap[podIPv6] = pod.Name
+				}
+				for _, c := range pod.Status.ContainerStatuses {
+					containerIdMap[c.ContainerID] = pod.Name
+				}
+				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(object).NotTo(BeNil())
+				uidMap[string(object.UID)] = pod.Name
+			}
+
+			// A00009：Modify the annotated IPPool for a specified StatefulSet pod
+			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, []string{v4PoolName}, []string{v6PoolName})
+			stsObject, err = frame.GetStatefulSet(statefulSetName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+			stsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+			// Modify the ippool in annotation and update the statefulset
+			Expect(frame.UpdateResource(stsObject)).NotTo(HaveOccurred())
+
+			// Check that the container ID should be different
+			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel2()
+		LOOP:
+			for {
+				select {
+				case <-ctx2.Done():
+					Fail("After statefulset restart, the container id waits for the change to time out \n")
+				default:
+					newPodList, err = frame.GetPodListByLabel(stsObject.Spec.Selector.MatchLabels)
+					Expect(err).NotTo(HaveOccurred())
+					if len(newPodList.Items) == 0 {
+						continue LOOP
+					}
+					for _, pod := range newPodList.Items {
+						// Make sure the modified annotation takes effect in the pod
+						if pod.Annotations[constant.AnnoPodIPPool] == podIppoolAnnoStr {
+							GinkgoWriter.Printf("Pod %v/%v Annotations is %v", pod.Namespace, pod.Name, pod.Annotations[constant.AnnoPodIPPool])
+						} else {
+							continue LOOP
+						}
+						for _, c := range pod.Status.ContainerStatuses {
+							if _, ok := containerIdMap[c.ContainerID]; ok {
+								time.Sleep(time.Second)
+								continue LOOP
+							}
+						}
+						break LOOP
+					}
+				}
+			}
+			ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel3()
+			Expect(frame.WaitPodListRunning(stsObject.Spec.Selector.MatchLabels, stsOriginialNum, ctx3)).NotTo(HaveOccurred())
+			newPodList, err = frame.GetPodListByLabel(stsObject.Spec.Selector.MatchLabels)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(newPodList.Items)).Should(Equal(stsOriginialNum))
+			for _, pod := range newPodList.Items {
+				// IP remains the same
+				if frame.Info.IpV4Enabled {
+					podIPv4, ok := tools.CheckPodIpv4IPReady(&pod)
+					Expect(ok).NotTo(BeFalse(), "Failed to get IPv4 IP")
+					Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
+					d, ok := ipMap[podIPv4]
+					Expect(ok).To(BeTrue(), "Failed to get the same IPv4 address of Pod")
+					GinkgoWriter.Printf("Pod %v IP %v remains the same \n", d, podIPv4)
+				}
+				if frame.Info.IpV6Enabled {
+					podIPv6, ok := tools.CheckPodIpv6IPReady(&pod)
+					Expect(ok).NotTo(BeFalse(), "Failed to get IPv6 IP")
+					Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
+					d, ok := ipMap[podIPv6]
+					Expect(ok).To(BeTrue(), "Failed to get the same IPv6 address of Pod")
+					GinkgoWriter.Printf("Pod %v IP %v remains the same \n", d, podIPv6)
+				}
+				// WorkloadEndpoint UID remains the same
+				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
+				Expect(err).NotTo(HaveOccurred(), "Failed to get the same uid")
+				d, ok := uidMap[string(object.UID)]
+				Expect(ok).To(BeTrue(), "Failed to get the same uid")
+				GinkgoWriter.Printf("Pod %v workloadendpoint UID %v remains the same \n", d, object.UID)
+			}
+
+			// Delete Statefulset and Check if the Pod IP in IPPool reclaimed normally
+			err = frame.DeleteStatefulSet(statefulSetName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, time.Minute)).To(Succeed())
+
+			// Check workloadendpoint records are deleted
+			ctx4, cancel4 := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel4()
+			for _, pod := range newPodList.Items {
+				err := common.WaitWorkloadDeleteUntilFinish(ctx4, frame, pod.Namespace, pod.Name)
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	})
+
 	Context("one IPPool can be used by multiple namespace", func() {
-		var v4PoolName, v6PoolName, nsName1, nsName2 string
+		var v4PoolName, v6PoolName, nsName1 string
 		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 		var v4PoolNameList, v6PoolNameList []string
 		nsName1 = "ns1" + tools.RandomName()
-		nsName2 = "ns2" + tools.RandomName()
-		nsNamesList := []string{nsName1, nsName2}
 
 		BeforeEach(func() {
-			// create 2 namespaces
-			for i, nsName := range nsNamesList {
-				GinkgoWriter.Printf("create namespace %v %v\n", i, nsName)
-				err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
-				Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
-			}
+			// Create another namespace
+			GinkgoWriter.Printf("create another namespace %v \n", nsName1)
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName1, time.Second*10)
+			Expect(err).NotTo(HaveOccurred())
+
 			// create IPPool
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
@@ -340,10 +503,9 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// clean test env
 			DeferCleanup(func() {
 				// delete namespaces
-				for i, nsName := range nsNamesList {
-					GinkgoWriter.Printf("delete namespace %v %v\n", i, nsName)
-					Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred(), "failed to delete namespace %v", nsName)
-				}
+				GinkgoWriter.Printf("delete namespace %v\n", nsName1)
+				Expect(frame.DeleteNamespace(nsName1)).NotTo(HaveOccurred())
+
 				// delete ippool
 				if frame.Info.IpV4Enabled {
 					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).To(Succeed())
@@ -359,6 +521,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			deployName2 := "deploy2" + tools.RandomName()
 			var deployOriginialNum int32 = 1
 			nsLabel := map[string]string{nsName1: nsName1}
+			nsNamesList := []string{nsName1, namespace}
 
 			for i, nsName := range nsNamesList {
 				// get namespace and set namespace regular label
@@ -397,7 +560,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// create 2 deployment in different ns
 			depMap := map[string]string{
 				deployName1: nsName1,
-				deployName2: nsName2,
+				deployName2: namespace,
 			}
 			for d, deps := range depMap {
 				common.CreateDeployUnitlReadyCheckInIppool(frame, deps, depMap[d], deployOriginialNum, v4PoolNameList, v6PoolNameList)

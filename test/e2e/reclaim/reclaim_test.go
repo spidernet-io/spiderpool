@@ -64,7 +64,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			for {
 				select {
 				case <-ctx.Done():
-					Fail("IPs allocated during their validity period are recorded in the ippool.")
+					Fail("IPs allocated during their validity period are not recorded in the ippool.")
 				default:
 					podList, err := frame.GetJobPodList(jd)
 					Expect(err).NotTo(HaveOccurred())

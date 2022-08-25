@@ -90,7 +90,7 @@ func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deplo
 				return nil, removedPod, nil
 			}
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 500)
 	}
 }
 
@@ -115,6 +115,6 @@ func CreateDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Depl
 			}
 			return podList, nil
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 500)
 	}
 }

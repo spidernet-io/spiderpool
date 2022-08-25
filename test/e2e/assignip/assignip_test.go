@@ -255,7 +255,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 						if len(podList1.Items) == 3 {
 							goto WAITOK
 						}
-						time.Sleep(time.Second)
+						time.Sleep(time.Millisecond * 500)
 					}
 				}
 			WAITOK:

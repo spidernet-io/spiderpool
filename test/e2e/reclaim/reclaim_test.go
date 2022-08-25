@@ -248,7 +248,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					}
 					break LOOP
 				}
-				time.Sleep(time.Second)
+				time.Sleep(time.Millisecond * 500)
 			}
 		}
 
@@ -550,7 +550,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 							GinkgoWriter.Printf("succeed to reclaim the dirty ip %v record from ippool %v\n", dirtyIPv4, v4poolName)
 							break LOOPV4
 						}
-						time.Sleep(time.Second)
+						time.Sleep(time.Millisecond * 500)
 					case <-ctx.Done():
 						Fail("timeout to wait reclaim the dirty data from ippool\n")
 					}
@@ -570,7 +570,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 							GinkgoWriter.Printf("succeed to reclaim the dirty ip %v record from ippool %v\n", dirtyIPv6, v6poolName)
 							break LOOPV6
 						}
-						time.Sleep(time.Second)
+						time.Sleep(time.Millisecond * 500)
 					case <-ctx.Done():
 						Fail("timeout to wait reclaim the dirty data from ippool\n")
 					}

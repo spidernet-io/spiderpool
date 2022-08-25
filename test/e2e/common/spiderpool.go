@@ -400,7 +400,7 @@ func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameLis
 			if ok {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 }
@@ -501,7 +501,7 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 			if pool == nil {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 }

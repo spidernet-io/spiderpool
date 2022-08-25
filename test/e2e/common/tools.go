@@ -88,6 +88,6 @@ func ExecCommand(ctx context.Context, cmd *exec.Cmd) (string, error) {
 				return stdout, nil
 			}
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 500)
 	}
 }

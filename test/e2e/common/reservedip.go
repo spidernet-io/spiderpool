@@ -95,7 +95,7 @@ func DeleteResverdIPUntilFinish(ctx context.Context, f *frame.Framework, reserve
 			if pool == nil {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 }

@@ -91,8 +91,6 @@ type PoolIPAllocation struct {
 	// +kubebuilder:validation:Required
 	Pod string `json:"pod"`
 
-	// TODO
-
 	// +kubebuilder:validation:Required
 	OwnerControllerType string `json:"ownerControllerType"`
 }
@@ -105,6 +103,8 @@ type PoolIPAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=".spec.disable",description="disable",name="DISABLE",type=boolean
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +genclient
+// +genclient:nonNamespaced
 
 // SpiderIPPool is the Schema for the spiderippools API
 type SpiderIPPool struct {

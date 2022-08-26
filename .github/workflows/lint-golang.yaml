@@ -163,11 +163,18 @@ jobs:
               echo "error, failed to check openapi sdk "
               flag="bad"
           fi
-          echo "Check K8S SDK and chart"
+          echo "Check Kubebuilder SDK and chart"
           if make manifests-verify ; then
-              echo " pass K8S SDK and yaml"
+              echo " pass Kubebuilder SDK and yaml"
           else
-              echo "error, failed to K8S SDK and yaml"
+              echo "error, failed to check Kubebuilder SDK and yaml"
+              flag="bad"
+          fi
+          echo "Check Code-generator SDK"
+          if make codegen-verify ; then
+              echo " pass Code-generator SDK"
+          else
+              echo "error, failed to check Code-generator SDK"
               flag="bad"
           fi
           [ -n "$flag" ] && exit 1

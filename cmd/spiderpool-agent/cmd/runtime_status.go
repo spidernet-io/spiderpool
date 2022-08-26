@@ -23,11 +23,11 @@ type _httpGetAgentStartup struct {
 
 // Handle handles GET requests for k8s startup probe.
 func (g *_httpGetAgentStartup) Handle(params runtime.GetRuntimeStartupParams) middleware.Responder {
-	if g.IsStartupProbe.Load() {
-		return runtime.NewGetRuntimeStartupOK()
+	if !g.IsStartupProbe.Load() {
+		return runtime.NewGetRuntimeStartupInternalServerError()
 	}
 
-	return runtime.NewGetRuntimeStartupInternalServerError()
+	return runtime.NewGetRuntimeStartupOK()
 }
 
 type _httpGetAgentReadiness struct {

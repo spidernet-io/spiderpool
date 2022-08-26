@@ -18,8 +18,6 @@ func (s *SpiderGC) startPodInformer() {
 		informerFactory := informers.NewSharedInformerFactory(s.k8ClientSet, 0)
 		stopper := make(chan struct{})
 
-		go informerFactory.Start(stopper)
-
 		podInformer := informerFactory.Core().V1().Pods().Informer()
 		podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    s.onPodAdd,
@@ -42,7 +40,7 @@ func (s *SpiderGC) onPodAdd(obj interface{}) {
 
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
-		logger.Sugar().Errorf("onPodAdd: failed to assert oldObj '%+v' to k8s Pod", obj)
+		logger.Sugar().Errorf("onPodAdd: failed to assert object '%+v' to k8s Pod", obj)
 		return
 	}
 
@@ -77,7 +75,7 @@ func (s *SpiderGC) onPodUpdate(oldObj interface{}, newObj interface{}) {
 
 	pod, ok := newObj.(*corev1.Pod)
 	if !ok {
-		logger.Sugar().Errorf("onPodUpdate: failed to assert neObj '%+v' to k8s Pod", newObj)
+		logger.Sugar().Errorf("onPodUpdate: failed to assert newObj '%+v' to k8s Pod", newObj)
 		return
 	}
 
@@ -106,7 +104,7 @@ func (s *SpiderGC) onPodDel(obj interface{}) {
 
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
-		logger.Sugar().Errorf("onPodDel: failed to assert oldObj '%+v' to k8s Pod", obj)
+		logger.Sugar().Errorf("onPodDel: failed to assert object '%+v' to k8s Pod", obj)
 		return
 	}
 

@@ -3,12 +3,12 @@
 package metric_test
 
 import (
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 

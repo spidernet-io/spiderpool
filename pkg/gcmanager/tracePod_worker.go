@@ -14,17 +14,23 @@ import (
 )
 
 // tracePodWorker will circle traverse PodEntry database
-func (s *SpiderGC) tracePodWorker() {
+func (s *SpiderGC) tracePodWorker(ctx context.Context) {
 	logger.Info("starting trace pod worker")
 
 	for {
-		podEntryList := s.PodDB.ListAllPodEntries()
-		for _, podEntry := range podEntryList {
-			podCache := podEntry
-			s.handlePodEntryForTracingTimeOut(&podCache)
-		}
+		select {
+		case <-ctx.Done():
+			logger.Warn("trace pod worker received ctx done, stop tracing")
+			return
+		default:
+			podEntryList := s.PodDB.ListAllPodEntries()
+			for _, podEntry := range podEntryList {
+				podCache := podEntry
+				s.handlePodEntryForTracingTimeOut(&podCache)
+			}
 
-		time.Sleep(time.Duration(s.gcConfig.TracePodGapDuration) * time.Second)
+			time.Sleep(time.Duration(s.gcConfig.TracePodGapDuration) * time.Second)
+		}
 	}
 }
 

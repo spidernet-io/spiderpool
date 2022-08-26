@@ -329,7 +329,7 @@ func (f *Framework) DeletePodListUntilReady(podList *corev1.PodList, timeOut tim
 	defer cancel()
 OUTER:
 	for {
-		time.Sleep(time.Duration(time.Second))
+		time.Sleep(time.Second)
 		select {
 		case <-ctx.Done():
 			return nil, ErrTimeOut
@@ -337,17 +337,17 @@ OUTER:
 		}
 		f.Log("checking restarted pod ")
 
-		l, err := f.GetPodListByLabel(podList.Items[0].Labels)
+		podListWithLabel, err := f.GetPodListByLabel(podList.Items[0].Labels)
 		if err != nil {
 			f.Log("failed to GetPodListByLabel , reason=%v", err)
 			continue
 		}
 
-		if len(l.Items) != len(podList.Items) {
+		if len(podListWithLabel.Items) != len(podList.Items) {
 			continue
 		}
 
-		for _, newPod := range l.Items {
+		for _, newPod := range podListWithLabel.Items {
 			if newPod.Status.Phase != corev1.PodRunning || newPod.DeletionTimestamp != nil {
 				continue OUTER
 			}
@@ -356,8 +356,15 @@ OUTER:
 					continue OUTER
 				}
 			}
+
+			// make sure pod ready
+			for _, newPodContainer := range newPod.Status.ContainerStatuses {
+				if !newPodContainer.Ready {
+					continue OUTER
+				}
+			}
 		}
-		return l, nil
+		return podListWithLabel, nil
 	}
 }
 

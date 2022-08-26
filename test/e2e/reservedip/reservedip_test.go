@@ -5,13 +5,13 @@ package reservedip_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -19,8 +19,8 @@ import (
 var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 	var nsName, DeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName, nic, podAnnoStr string
 	var v4PoolNameList, v6PoolNameList []string
-	var iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
-	var v4ReservedIpObj, v6ReservedIpObj *spiderpool.SpiderReservedIP
+	var iPv4PoolObj, iPv6PoolObj *v1.SpiderIPPool
+	var v4ReservedIpObj, v6ReservedIpObj *v1.SpiderReservedIP
 	var err error
 
 	BeforeEach(func() {

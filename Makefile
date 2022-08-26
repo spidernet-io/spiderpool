@@ -342,3 +342,13 @@ clean: clean_e2e
 	-$(QUIET) for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i clean; done
 	-$(QUIET) rm -rf $(DESTDIR_BIN)
 	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)
+
+.PHONY: codegen
+codegen:
+	@echo "Generate k8s SDK with code-generator."
+	$(QUIET)  ./tools/scripts/update-codegen.sh
+
+.PHONY: codegen-verify
+codegen-verify:
+	@echo "Verify generated k8s SDK."
+	$(QUIET)  ./tools/scripts/verify-codegen.sh

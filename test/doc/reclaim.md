@@ -4,9 +4,9 @@
 | ------- | ------------------------------------------------------------ | -------- | ----- | ------ | ----- |
 | G00001  | Related IP resource recorded in IPPool will be reclaimed after the namespace is deleted | p1       | true  | done   |       |
 | G00002  | The IP of a running pod should not be reclaimed after a same-name pod within a different namespace is deleted | p1       |       | done   |       |
-| G00003  | The IP can be reclaimed after its deployment, statefulset, daemonset, replica, or job is deleted, even when CNI binary is gone on the host | p1       |       | NA     |       |
-| G00004  | The IP should be reclaimed when deleting the pod with 0 second of grace period | p2       |       | NA     |       |
-| G00005  | A dirty IP record (pod name is wrong) in the IPPool should be auto clean by Spiderpool | p2       |       | NA     |       |
-| G00006  | The IP should be reclaimed for the job pod finished with success or failure Status | p2       |       | NA     |       |
-| G00007  | A dirty IP record (pod name is right but container ID is wrong) in the IPPool should be auto clean by Spiderpool | p3       |       | NA     |       |
+| G00003  | The IP can be reclaimed after its deployment, statefulset, daemonset, replica, or job is deleted, even when CNI binary is gone on the host | p1       |       | done   |       |
+| G00004  | The IP should be reclaimed when deleting the pod with 0 second of grace period | p2       |       | done   |       |
+| G00005  | A dirty IP record (pod name is wrong) in the IPPool should be auto clean by Spiderpool | p2       |       | done   |       |
+| G00006  | The IP should be reclaimed for the job pod finished with success or failure Status | p2       |       | done   |       |
+| G00007  | A dirty IP record (pod name is right but container ID is wrong) in the IPPool should be auto clean by Spiderpool | p3       |       | done   |       |
 | G00008  | The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP | p3       |       | NA     |       |

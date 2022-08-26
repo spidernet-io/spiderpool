@@ -5,8 +5,9 @@ package common
 import (
 	"context"
 	"encoding/json"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"time"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -100,4 +101,25 @@ func CreatePodWithAnnoPodIPPool(frame *e2e.Framework, podName, namespace string,
 	pod, err := frame.WaitPodStarted(podName, namespace, ctx)
 	Expect(err).NotTo(HaveOccurred(), "failed to wait pod %v/%v started\n", namespace, podName)
 	GinkgoWriter.Printf("pod %v/%v anno: %+v\n", namespace, podName, pod.Annotations)
+}
+
+func CheckPodIpReadyByLabel(frame *e2e.Framework, label map[string]string, v4PoolNameList, v6PoolNameList []string) *corev1.PodList {
+
+	Expect(label).NotTo(BeNil(), "label is nil \n")
+	Expect(frame).NotTo(BeNil(), "frame is nil \n")
+
+	// Get the rebuild pod list
+	podList, err := frame.GetPodListByLabel(label)
+	Expect(err).NotTo(HaveOccurred(), "Failed to get pod list, %v \n", err)
+	Expect(len(podList.Items)).NotTo(Equal(0))
+
+	// Succeeded to assign ipv4、ipv6 ip for pod
+	Expect(frame.CheckPodListIpReady(podList)).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6 ,reason=%v \n", err)
+
+	// check pod ip recorded in ippool
+	ok, _, _, e := CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+	Expect(e).NotTo(HaveOccurred(), "Failed to check Pod IP Record In IPPool, error is %v \n", err)
+	Expect(ok).To(BeTrue())
+	GinkgoWriter.Printf("Pod IP recorded in IPPool %v , %v \n", v4PoolNameList, v6PoolNameList)
+	return podList
 }

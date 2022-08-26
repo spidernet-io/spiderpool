@@ -5,8 +5,9 @@ package reservedip_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"time"
+
+	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -101,9 +102,10 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			deployObject := common.GenerateExampleDeploymentYaml(DeployName, nsName, int32(1))
 			deployObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
 			GinkgoWriter.Printf("Try to create Deployment: %v/%v with annotation %v = %v \n", nsName, DeployName, constant.AnnoPodIPPool, podAnnoStr)
+
+			// Try to create a Deployment and wait for replicas to meet expectations（because the Pod is not running）
 			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel1()
-			// Try to create a Deployment and wait for replicas to meet expectations（because the Pod is not running）
 			podlist, err := common.CreateDeployUntilExpectedReplicas(frame, deployObject, ctx1)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(int32(len(podlist.Items))).Should(Equal(*deployObject.Spec.Replicas))
@@ -116,7 +118,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				GinkgoWriter.Printf("IP assignment for Deployment/Pod: %v/%v fails when an IP is set in the ReservedIP CRD. \n", pod.Namespace, pod.Name)
 			}
 
-			// Try to delete reservedIP
+			// Try deleting the reservedIP and check if the reserved IP can be assigned to a pod.
 			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel2()
 			if frame.Info.IpV4Enabled {
@@ -132,21 +134,9 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			err = frame.RestartDeploymentPodUntilReady(DeployName, nsName, time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Get the list of Deployments/Pod after reboot
-			podlist, err = frame.GetPodListByLabel(deployObject.Spec.Selector.MatchLabels)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(int32(len(podlist.Items))).Should(Equal(*deployObject.Spec.Replicas))
-
-			// Succeeded to assign IPv4、IPv6 ip for Deployment/Pod
-			err = frame.CheckPodListIpReady(podlist)
-			Expect(err).NotTo(HaveOccurred(), "Failed to check IPv4 or IPv6 ")
-			GinkgoWriter.Printf("Succeeded to assign IPv4、IPv6 ip for Pod %v/%v \n", nsName, DeployName)
-
-			// Check Deployment/Pod IP recorded in IPPool
-			ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
-			Expect(e).NotTo(HaveOccurred(), "Failed to check Pod IP record in IPPool")
-			Expect(ok).To(BeTrue())
-			GinkgoWriter.Printf("Deployment/Pod: %v/%v IP recorded in IPPool %v,%v \n", nsName, DeployName, v4PoolNameList, v6PoolNameList)
+			// Succeeded to assign IPv4、IPv6 ip for Deployment/Pod and Deployment/Pod IP recorded in IPPool
+			podlist = common.CheckPodIpReadyByLabel(frame, deployObject.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
+			GinkgoWriter.Printf("Pod %v/%v IP recorded in IPPool %v %v \n", nsName, DeployName, v4PoolNameList, v6PoolNameList)
 
 			// S00003: Failed to set same IP in excludeIPs when an IP is assigned to a Pod
 			if frame.Info.IpV4Enabled {
@@ -164,11 +154,9 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				GinkgoWriter.Printf("Failed to update v6 IPPool %v when setting the IP %v used by the Pod in the IPPool's excludeIPs \n", v6PoolName, iPv6PoolObj.Spec.IPs)
 			}
 
-			// Try to delete Deployment
+			// Delete the deployment and then check that the Pod IP in the IPPool has been reclaimed correctly.
 			Expect(frame.DeleteDeploymentUntilFinish(DeployName, nsName, time.Minute)).To(Succeed())
 			GinkgoWriter.Printf("Delete Deployment: %v/%v successfully \n", nsName, DeployName)
-
-			// Check if the Pod IP in IPPool reclaimed normally
 			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, time.Minute)).To(Succeed())
 		})
 })

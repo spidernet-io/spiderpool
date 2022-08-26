@@ -1,12 +1,13 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-package labelselector_test
+package affinity_test
 
 import (
 	"context"
 	"encoding/json"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"time"
+
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -19,8 +20,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("test selector", Label("labelselector"), func() {
-	Context("test different selector", func() {
+var _ = Describe("test Affinity", Label("affinity"), func() {
+	Context("test different IPPool Affinity", func() {
 		var (
 			matchedPodName, matchedNamespace     string
 			unmatchedPodName, unmatchedNamespace string
@@ -34,7 +35,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 		)
 
 		BeforeEach(func() {
-			// init namespace name and create
+			// Init matching and non-matching namespaces name and create its
 			matchedNamespace = "matched-ns-" + tools.RandomName()
 			unmatchedNamespace = "unmatched-ns-" + tools.RandomName()
 
@@ -44,11 +45,11 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 			}
 
-			// init test pod name
+			// Init matching and non-matching Pod name
 			matchedPodName = "matched-pod-" + tools.RandomName()
 			unmatchedPodName = "unmatched-pod-" + tools.RandomName()
 
-			// get node list
+			// Get the list of nodes and determine if the test conditions are met, skip the test if they are not met
 			GinkgoWriter.Println("get node list")
 			nodeList, err := frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
@@ -58,11 +59,11 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			if len(nodeList.Items) < 2 {
 				Skip("this case needs 2 nodes at least\n")
 			}
-
+			// Generate matching and non-matching node
 			matchedNode = &nodeList.Items[0]
 			unMatchedNode = &nodeList.Items[1]
 
-			// set namespace label
+			// Set matching namespace label
 			GinkgoWriter.Printf("label namespace %v\n", matchedNamespace)
 			ns, err := frame.GetNamespace(matchedNamespace)
 			Expect(ns).NotTo(BeNil())
@@ -70,8 +71,8 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			ns.Labels = map[string]string{matchedNamespace: matchedNamespace}
 			Expect(frame.UpdateResource(ns)).To(Succeed())
 
+			// Assign different type of affinity to the ippool and create it
 			if frame.Info.IpV4Enabled {
-				// create v4 ippool
 				v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
 				GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
 				v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
@@ -80,10 +81,10 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				v4Pool.Spec.NodeAffinity.MatchLabels = matchedNode.GetLabels()
 				v4Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
 				v4Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
-				createIPPool(v4Pool)
+				Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
+				GinkgoWriter.Printf("succeeded to create ippool %v\n", v4Pool.Name)
 			}
 			if frame.Info.IpV6Enabled {
-				// create v6 ippool
 				v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
 				GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
 				v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
@@ -92,31 +93,29 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				v6Pool.Spec.NodeAffinity.MatchLabels = matchedNode.GetLabels()
 				v6Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
 				v6Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
-				createIPPool(v6Pool)
+				Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+				GinkgoWriter.Printf("succeeded to create ippool %v\n", v6Pool.Name)
 			}
-
+			// Clean test env
 			DeferCleanup(func() {
-				// delete namespace
 				for _, namespace := range []string{matchedNamespace, unmatchedNamespace} {
 					GinkgoWriter.Printf("delete namespace %v \n", namespace)
 					err := frame.DeleteNamespace(namespace)
 					Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
 				}
-
-				// delete ippool
 				if frame.Info.IpV4Enabled {
-					deleteIPPoolUntilFinish(v4PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
-					deleteIPPoolUntilFinish(v6PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
 				}
 			})
 		})
-		DescribeTable("create pod with ippool that matched different selector", func(isNodeMatched, isNamespaceMatched, isPodMatched bool) {
+		DescribeTable("create pod with ippool that matched different affinity", func(isNodeMatched, isNamespaceMatched, isPodMatched bool) {
 			var namespaceNM, podNM string
 			var nodeLabel map[string]string
 			allMatched := false
-
+			// Determine if conditions are met based on `isNodeMatched`, `isNamespaceMatched`, `isPodMatched`
 			if isNodeMatched && isNamespaceMatched && isPodMatched {
 				allMatched = true
 				namespaceNM = matchedNamespace
@@ -139,7 +138,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				nodeLabel = matchedNode.GetLabels()
 			}
 
-			// create pod
+			// create pod and check if affinity is active
 			GinkgoWriter.Printf("create pod %v/%v\n", namespaceNM, podNM)
 			podObj := common.GenerateExamplePodYaml(podNM, namespaceNM)
 			Expect(podObj).NotTo(BeNil())
@@ -163,7 +162,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			GinkgoWriter.Printf("podObj: %v\n", podObj)
 
 			if allMatched {
-				GinkgoWriter.Println("when matched selector")
+				GinkgoWriter.Println("when matched affinity")
 				Expect(frame.CreatePod(podObj)).To(Succeed())
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
@@ -172,7 +171,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				Expect(pod).NotTo(BeNil())
 			}
 			if !allMatched {
-				GinkgoWriter.Println("when unmatched selector")
+				GinkgoWriter.Println("when unmatched affinity")
 				Expect(frame.CreatePod(podObj)).To(Succeed())
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
@@ -180,10 +179,10 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				GinkgoWriter.Printf("succeeded to matched the message %v\n", common.GetIpamAllocationFailed)
 			}
 		},
-			Entry("succeed to run pod who is bound to an ippool set with matched nodeSelector namespaceSelector and podSelector", Label("smoke", "L00001", "L00003", "L00005"), true, true, true),
-			Entry("failed to run pod who is bound to an ippool set with no-matched nodeSelector", Label("L00002"), false, true, true),
-			Entry("failed to run pod who is bound to an ippool set with no-matched namespaceSelector", Label("L00004"), true, false, true),
-			Entry("failed to run pod who is bound to an ippool set with no-matched podSelector", Label("L00006"), true, true, false),
+			Entry("succeed to run pod who is bound to an ippool set with matched NodeAffinity NamespaceAffinity and PodAffinity", Label("smoke", "L00001", "L00003", "L00005"), true, true, true),
+			Entry("failed to run pod who is bound to an ippool set with no-matched NodeAffinity", Label("L00002"), false, true, true),
+			Entry("failed to run pod who is bound to an ippool set with no-matched NamespaceAffinity", Label("L00004"), true, false, true),
+			Entry("failed to run pod who is bound to an ippool set with no-matched PodAffinity", Label("L00006"), true, true, false),
 		)
 	})
 
@@ -207,7 +206,7 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			// daemonSetName name
 			daemonSetName = "daemonset" + tools.RandomName()
 
-			// get node list
+			// Get the list of nodes and determine if the test conditions are met, skip the test if they are not met
 			GinkgoWriter.Println("get node list")
 			nodeList, err := frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
@@ -216,32 +215,30 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			if len(nodeList.Items) < 2 {
 				Skip("skip: this case need 2 nodes at least")
 			}
-
+			// Assign `NodeAffinity` to the ippool and create it
 			for _, node := range nodeList.Items {
-				// create ippool
 				if frame.Info.IpV4Enabled {
 					v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(1)
 					GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
 					v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 					v4Pool.Spec.NodeAffinity.MatchLabels = node.Labels
-					createIPPool(v4Pool)
+					Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
+					GinkgoWriter.Printf("succeeded to create ippool %v\n", v4Pool.Name)
 
 					allV4PoolNameList = append(allV4PoolNameList, v4PoolName)
 					nodeV4PoolMap[node.Name] = []string{v4PoolName}
-
 					GinkgoWriter.Printf("node: %v, v4PoolNameList: %+v \n", node.Name, nodeV4PoolMap[node.Name])
 				}
 				if frame.Info.IpV6Enabled {
-					// create v6 ippool
 					v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(1)
 					GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
 					v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 					v6Pool.Spec.NodeAffinity.MatchLabels = node.Labels
-					createIPPool(v6Pool)
+					Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+					GinkgoWriter.Printf("succeeded to create ippool %v\n", v6Pool.Name)
 
 					allV6PoolNameList = append(allV6PoolNameList, v6PoolName)
 					nodeV6PoolMap[node.Name] = []string{v6PoolName}
-
 					GinkgoWriter.Printf("node: %v, v6PoolNameList: %+v \n", node.Name, nodeV6PoolMap[node.Name])
 				}
 			}
@@ -256,18 +253,18 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 				// delete ippool
 				if frame.Info.IpV4Enabled {
 					for _, poolName := range allV4PoolNameList {
-						deleteIPPoolUntilFinish(poolName)
+						Expect(common.DeleteIPPoolByName(frame, poolName)).NotTo(HaveOccurred())
 					}
 				}
 				if frame.Info.IpV6Enabled {
 					for _, poolName := range allV6PoolNameList {
-						deleteIPPoolUntilFinish(poolName)
+						Expect(common.DeleteIPPoolByName(frame, poolName)).NotTo(HaveOccurred())
 					}
 				}
 			})
 		})
-		It("Succeed to run daemonSet/pod who is cross-zone daemonSet with matched nodeSelector", Label("L00007"), func() {
-			// generate  daemonSet yaml
+		It("Successfully run daemonSet/pod who is cross-zone daemonSet with matched `NodeAffinity`", Label("L00007"), func() {
+			// generate daemonSet yaml
 			GinkgoWriter.Println("generate example daemonSet yaml")
 			daemonSetYaml := common.GenerateExampleDaemonSetYaml(daemonSetName, namespace)
 			Expect(daemonSetYaml).NotTo(BeNil(), "failed to generate daemonSet %v/%v yaml\n", namespace, daemonSetName)
@@ -290,11 +287,9 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 			}
 			GinkgoWriter.Printf("the daemonSet yaml is :%+v\n", daemonSetYaml)
 
-			// create daemonSet
+			// Create daemonSet and wait daemonSet ready
 			GinkgoWriter.Printf("create daemonSet %v/%v \n", namespace, daemonSetName)
 			Expect(frame.CreateDaemonSet(daemonSetYaml)).To(Succeed(), "failed to create daemonSet: %v/%v\n", namespace, daemonSetName)
-
-			// wait daemonSet ready
 			GinkgoWriter.Printf("wait daemonset %v/%v ready\n", namespace, daemonSetName)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
@@ -333,17 +328,3 @@ var _ = Describe("test selector", Label("labelselector"), func() {
 		})
 	})
 })
-
-func deleteIPPoolUntilFinish(poolName string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	GinkgoWriter.Printf("delete ippool %v\n", poolName)
-	Expect(common.DeleteIPPoolUntilFinish(frame, poolName, ctx)).To(Succeed(), "failed to delete ippool %v\n", poolName)
-	GinkgoWriter.Printf("succeed to delete ippool %v\n", poolName)
-}
-
-func createIPPool(IPPoolObj *spiderpoolv1.SpiderIPPool) {
-	GinkgoWriter.Printf("create ippool %v\n", IPPoolObj.Name)
-	Expect(common.CreateIppool(frame, IPPoolObj)).To(Succeed())
-	GinkgoWriter.Printf("succeeded to create ippool %v\n", IPPoolObj.Name)
-}

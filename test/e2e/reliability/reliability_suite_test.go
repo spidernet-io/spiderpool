@@ -3,13 +3,15 @@
 package reliability_test
 
 import (
+	"testing"
+
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"testing"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestReliability(t *testing.T) {
@@ -18,11 +20,20 @@ func TestReliability(t *testing.T) {
 }
 
 var frame *e2e.Framework
+var ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList []string
 
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
 	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
-
 	Expect(e).NotTo(HaveOccurred())
+
+	ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, e = common.GetClusterDefaultIppool(frame)
+	Expect(e).NotTo(HaveOccurred())
+	if frame.Info.IpV4Enabled && len(ClusterDefaultV4IpoolList) == 0 {
+		Fail("failed to find cluster ipv4 ippool")
+	}
+	if frame.Info.IpV6Enabled && len(ClusterDefaultV6IpoolList) == 0 {
+		Fail("failed to find cluster ipv6 ippool")
+	}
 })

@@ -5,4 +5,8 @@
 
 package v1
 
+type SpiderEndpointExpansion interface{}
+
 type SpiderIPPoolExpansion interface{}
+
+type SpiderReservedIPExpansion interface{}

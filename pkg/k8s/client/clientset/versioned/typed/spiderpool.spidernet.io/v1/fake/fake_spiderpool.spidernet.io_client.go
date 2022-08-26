@@ -15,8 +15,16 @@ type FakeSpiderpoolV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeSpiderpoolV1) SpiderEndpoints(namespace string) v1.SpiderEndpointInterface {
+	return &FakeSpiderEndpoints{c, namespace}
+}
+
 func (c *FakeSpiderpoolV1) SpiderIPPools() v1.SpiderIPPoolInterface {
 	return &FakeSpiderIPPools{c}
+}
+
+func (c *FakeSpiderpoolV1) SpiderReservedIPs(namespace string) v1.SpiderReservedIPInterface {
+	return &FakeSpiderReservedIPs{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -21,6 +21,7 @@ type ReservedIPSpec struct {
 // +kubebuilder:resource:categories={spiderpool},path="spiderreservedips",scope="Cluster",shortName={sr},singular="spiderreservedip"
 // +kubebuilder:printcolumn:JSONPath=".spec.ipVersion",description="ipVersion",name="VERSION",type=string
 // +kubebuilder:object:root=true
+// +genclient
 
 // SpiderReservedIP is the Schema for the spiderreservedips API
 type SpiderReservedIP struct {

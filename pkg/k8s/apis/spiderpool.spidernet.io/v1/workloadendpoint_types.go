@@ -78,6 +78,7 @@ type IPAllocationDetail struct {
 // +kubebuilder:printcolumn:JSONPath=".status.current.creationTime",description="creationTime",name="CREATETION TIME",type=date
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +genclient
 
 // Spiderndpoint is the Schema for the spiderendpoints API
 type SpiderEndpoint struct {

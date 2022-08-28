@@ -9,11 +9,11 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.1">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
     
     
       
-        <title>Ipv6 - spiderpool</title>
+        <title>Spiderpool IPv6 support - spiderpool</title>
       
     
     
@@ -59,6 +59,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#spiderpool-ipv6-support" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -88,7 +93,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ipv6
+              Spiderpool IPv6 support
             
           </span>
         </div>
@@ -274,8 +279,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../ippool-namespace.md" class="md-nav__link">
-        None
+      <a href="../ippool-namespace/" class="md-nav__link">
+        Ippool namespace
       </a>
     </li>
   
@@ -336,10 +341,77 @@
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Spiderpool IPv6 support
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Ipv6
+        Spiderpool IPv6 support
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get Started
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-ipv4-only" class="md-nav__link">
+    Enable IPv4 only
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-dual-stack" class="md-nav__link">
+    Enable dual stack
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -807,6 +879,57 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get Started
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-ipv4-only" class="md-nav__link">
+    Enable IPv4 only
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-dual-stack" class="md-nav__link">
+    Enable dual stack
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -827,9 +950,32 @@
 
 
 
-  <h1>Ipv6</h1>
-
-
+<h1 id="spiderpool-ipv6-support">Spiderpool IPv6 support</h1>
+<h2 id="description">Description</h2>
+<p>Configure spiderpool IP address allocation to use dual stack or IPv4 only.</p>
+<h2 id="features">Features</h2>
+<p>spiderpool supports:</p>
+<ul>
+<li><strong>Dual stack</strong> (default)</li>
+</ul>
+<p>Each workload can get IPv4 and IPv6 addresses, and can communicate over IPv4 or IPv6.</p>
+<ul>
+<li><strong>IPv4 only</strong></li>
+</ul>
+<p>Each workload can acquire IPv4 addresses, and can communicate over IPv4.</p>
+<ul>
+<li><strong>IPv6 only</strong></li>
+</ul>
+<p>Each workload can acquire IPv6 addresses, and can communicate over IPv6.</p>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-ipv4-only">Enable IPv4 only</h3>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer <a href="../install/">install</a> for details</p>
+<p>Check configmap <code>spiderpool-conf</code> property <code>enableIPv4</code> whether is already set to <code>true</code> and property <code>enableIPv6</code> whether is set to <code>false</code>.</p>
+<pre><code class="language-shell">kubectl -n kube-system get configmap spiderpool-conf -o yaml
+</code></pre>
+<p>If you want to update it <code>true</code>, just execute <code>helm upgrade --set enableIPv4=true --set enableIPv6=false</code></p>
+<h3 id="enable-dual-stack">Enable dual stack</h3>
+<p>Same with the upper steps, just execute <code>helm upgrade --set enableIPv4=true --set enableIPv6=true</code></p>
 
 
 

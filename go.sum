@@ -620,8 +620,8 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
 github.com/spf13/viper v1.7.0/go.mod h1:8WkrPz2fc9jxqZNCJI/76HCieCp4Q8HaLFoCha5qpdg=
 github.com/spf13/viper v1.10.1 h1:nuJZuYpG7gTj/XqiUwg8bA0cp1+M2mC3J4g5luUYBKk=
 github.com/spf13/viper v1.10.1/go.mod h1:IGlFPqhNAPKRxohIzWpI5QEy4kuI7tcl5WvR+8qy1rU=
-github.com/spidernet-io/e2eframework v0.0.0-20220826063012-eed49c4da208 h1:jxfzJLSlfyHN5AxpC6P1LKy8EwMYOIu1gBFKSk/JHz8=
-github.com/spidernet-io/e2eframework v0.0.0-20220826063012-eed49c4da208/go.mod h1:A+M+Oqf+vMPuztTqlYQojr4twRvjDP5WHPswwU3JATY=
+github.com/spidernet-io/e2eframework v0.0.0-20220829084934-1c46a2d2f5ae h1:lkIAcf5j15GCzTqJao96ZNSsgBnZAlOtwSb8tDecThE=
+github.com/spidernet-io/e2eframework v0.0.0-20220829084934-1c46a2d2f5ae/go.mod h1:A+M+Oqf+vMPuztTqlYQojr4twRvjDP5WHPswwU3JATY=
 github.com/stoewer/go-strcase v1.2.0/go.mod h1:IBiWB2sKIp3wVVQ3Y035++gc+knqhUQag1KpM8ahLw8=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

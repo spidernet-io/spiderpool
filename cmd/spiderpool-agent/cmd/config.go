@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -109,9 +110,10 @@ type AgentContext struct {
 	StsManager    statefulsetmanager.StatefulSetManager
 
 	// handler
-	CRDManager ctrl.Manager
-	HttpServer *server.Server
-	UnixServer *server.Server
+	CRDManager        ctrl.Manager
+	HttpServer        *server.Server
+	UnixServer        *server.Server
+	MetricsHttpServer *http.Server
 
 	// probe
 	IsStartupProbe atomic.Bool

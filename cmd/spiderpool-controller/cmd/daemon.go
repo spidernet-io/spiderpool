@@ -133,6 +133,9 @@ func DaemonMain() {
 		}
 	}()
 
+	logger.Info("Begin to initialize spiderpool-controller metrics http server")
+	initControllerMetricsServer(controllerContext.InnerCtx)
+
 	// init IP GC manager
 	logger.Info("Begin to initialize IP GC Manager")
 	initGCManager(controllerContext.InnerCtx)

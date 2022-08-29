@@ -12,6 +12,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 // Singleton
@@ -35,8 +36,22 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 	)
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
+	// spiderpool agent ipam allocation total counts metric
+	metrics.IpamAllocationTotalCounts.Add(ctx, 1)
+
+	timeRecorder := metrics.NewTimeRecorder()
+	defer func() {
+		// record spiderpool agent allocation duration metrics
+		allocationDuration := timeRecorder.SinceInSeconds()
+		metrics.AllocDurationConstruct.RecordIPAMAllocationDuration(ctx, allocationDuration)
+		logger.Sugar().Infof("IPAM allocation duration: %v", allocationDuration)
+	}()
+
 	resp, err := agentContext.IPAM.Allocate(ctx, params.IpamAddArgs)
 	if err != nil {
+		// spiderpool agent ipam allocation failed counts metric
+		metrics.IpamAllocationFailureCounts.Add(ctx, 1)
+
 		logger.Sugar().Errorf("Failed to allocate: %v", err)
 		if errors.Is(err, constant.ErrWrongInput) {
 			return daemonset.NewPostIpamIPStatus512()
@@ -69,7 +84,20 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 	)
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
+	// spiderpool agent ipam deallocation total counts metric
+	metrics.IpamDeallocationTotalCounts.Add(ctx, 1)
+
+	timeRecorder := metrics.NewTimeRecorder()
+	defer func() {
+		// record spiderpool agent deallocation duration metrics
+		deallocationDuration := timeRecorder.SinceInSeconds()
+		metrics.DeallocDurationConstruct.RecordIPAMDeallocationDuration(ctx, deallocationDuration)
+		logger.Sugar().Infof("IPAM deallocation duration: %v", deallocationDuration)
+	}()
+
 	if err := agentContext.IPAM.Release(ctx, params.IpamDelArgs); err != nil {
+		metrics.IpamDeallocationFailureCounts.Add(ctx, 1)
+
 		logger.Sugar().Errorf("Failed to release: %v", err)
 		return daemonset.NewDeleteIpamIPInternalServerError()
 	}

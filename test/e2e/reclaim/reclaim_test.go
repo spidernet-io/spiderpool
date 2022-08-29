@@ -94,6 +94,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		podlist, err := frame.GetJobPodList(jd)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(podlist).NotTo(BeNil())
+		Expect(len(podlist.Items)).NotTo(Equal(0))
+
 		// check ip release
 		GinkgoWriter.Println("check IP reclaimed after job Fail or Finish")
 		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, time.Minute*2)).To(Succeed())

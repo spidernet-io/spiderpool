@@ -5,7 +5,9 @@ package annotation_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -508,6 +510,112 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					checkAnnotationPriority(podYaml, podName, nsName, v4PoolNameList, v6PoolNameList)
 				})
 		})
+	})
+	It("succeeded to running pod after added valid route field", Label("A00002"), func() {
+		var ipv4Gw, ipv6Gw string
+		v4Dst := "0.0.0.0/0"
+		v6Dst := "::/0"
+		annoPodRouteValue := new(types.AnnoPodRoutesValue)
+		annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
+
+		var v4PoolName, v6PoolName string
+		var v4Pool, v6Pool *spiderpool.SpiderIPPool
+
+		// create ippool
+		if frame.Info.IpV4Enabled {
+			GinkgoWriter.Println("create v4 ippool")
+			v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
+			Expect(v4Pool).NotTo(BeNil())
+			Expect(v4PoolName).NotTo(BeEmpty())
+			Expect(common.CreateIppool(frame, v4Pool)).To(Succeed(), "failed to create v4 ippool %v\n", v4PoolName)
+
+			subnet := v4Pool.Spec.Subnet
+			ipv4Gw = strings.Split(subnet, "0/")[0] + "1"
+			*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
+				Dst: v4Dst,
+				Gw:  ipv4Gw,
+			})
+
+			annoPodIPPoolValue.IPv4Pools = []string{v4PoolName}
+		}
+		if frame.Info.IpV6Enabled {
+			GinkgoWriter.Println("create v6 ippool")
+			v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
+			Expect(v6Pool).NotTo(BeNil())
+			Expect(v6PoolName).NotTo(BeEmpty())
+			Expect(common.CreateIppool(frame, v6Pool)).To(Succeed(), "failed to create v6 ippool %v\n", v6PoolName)
+
+			subnet := v6Pool.Spec.Subnet
+			ipv6Gw = strings.Split(subnet, "/")[0] + "1"
+			*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
+				Dst: v6Dst,
+				Gw:  ipv6Gw,
+			})
+
+			annoPodIPPoolValue.IPv6Pools = []string{v6PoolName}
+		}
+
+		annoPodRouteB, err := json.Marshal(*annoPodRouteValue)
+		Expect(err).NotTo(HaveOccurred(), "failed to marshal annoPodRouteValue, error: %v\n", err)
+		annoPodRoutStr := string(annoPodRouteB)
+
+		annoPodIPPoolB, err := json.Marshal(annoPodIPPoolValue)
+		Expect(err).NotTo(HaveOccurred(), "failed to marshal annoPodIPPoolValue, error: %v\n", err)
+		annoPodIPPoolStr := string(annoPodIPPoolB)
+
+		// generate pod yaml
+		GinkgoWriter.Println("generate pod yaml")
+		podYaml := common.GenerateExamplePodYaml(podName, nsName)
+		podYaml.Annotations = map[string]string{
+			pkgconstant.AnnoPodRoutes: annoPodRoutStr,
+			pkgconstant.AnnoPodIPPool: annoPodIPPoolStr,
+		}
+		Expect(podYaml).NotTo(BeNil(), "failed to generate pod yaml")
+		GinkgoWriter.Printf("succeeded to generate pod yaml: %+v\n", podYaml)
+
+		// create pod
+		GinkgoWriter.Printf("create pod %v/%v\n", nsName, podName)
+		Expect(frame.CreatePod(podYaml)).To(Succeed(), "failed to create pod %v/%v\n", nsName, podName)
+		ctxCreate, cancelCreate := context.WithTimeout(context.Background(), time.Minute)
+		defer cancelCreate()
+		pod, err := frame.WaitPodStarted(podName, nsName, ctxCreate)
+		Expect(err).NotTo(HaveOccurred(), "timeout to wait pod %v/%v started\n", nsName, podName)
+		Expect(pod).NotTo(BeNil())
+
+		// check whether the route is effective
+		GinkgoWriter.Println("check whether the route is effective")
+		if frame.Info.IpV4Enabled {
+			command := fmt.Sprintf("ip r | grep 'default via %s'", ipv4Gw)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
+		}
+		if frame.Info.IpV6Enabled {
+			command := fmt.Sprintf("ip -6 r | grep 'default via %s'", ipv6Gw)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
+		}
+
+		// delete pod
+		GinkgoWriter.Printf("delete pod %v/%v\n", nsName, podName)
+		ctxDel, cancelDel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancelDel()
+		Expect(frame.DeletePodUntilFinish(podName, nsName, ctxDel)).To(Succeed(), "failed to delete pod")
+
+		// delete ippool
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+		defer cancel()
+		if frame.Info.IpV4Enabled {
+			GinkgoWriter.Printf("delete v4 ippool %v\n", v4PoolName)
+			Expect(common.DeleteIPPoolUntilFinish(frame, v4PoolName, ctx)).To(Succeed())
+		}
+		if frame.Info.IpV6Enabled {
+			GinkgoWriter.Printf("delete v6 ippool %v\n", v6PoolName)
+			Expect(common.DeleteIPPoolUntilFinish(frame, v6PoolName, ctx)).To(Succeed())
+		}
 	})
 })
 

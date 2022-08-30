@@ -51,15 +51,15 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 
 	// new cmdDel logger
 	logger = logger.Named(BinNamePlugin)
-	logger.Sugar().Debugf("Processing CNI DEL request %#v", args)
-	logger.Sugar().Debugf("CNI DEL NetConf: %#v", conf)
 
 	k8sArgs := K8sArgs{}
 	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
+		logger.Sugar().Debugf("Processing CNI DEL request %#v", args)
+		logger.Sugar().Debugf("CNI DEL NetConf: %#v", conf)
+
 		logger.Error(err.Error(), zap.String("Action", "Del"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
-	logger.Sugar().Debugf("CNI DEL Args: %#v", k8sArgs)
 
 	// register some args into logger
 	logger = logger.With(zap.String("Action", "Del"),

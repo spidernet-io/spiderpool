@@ -1,18 +1,18 @@
 # Reserved IP
 
->Spiderpool reserve some IP addresses for the whole cluster, which will not be used by any IPAM allocation. Usually, these IP addresses are some external IP addresses.
+*Spiderpool reserve some IP addresses for the whole cluster, which will not be used by any IPAM allocation. Usually, these IP addresses are some external IP addresses.*
 
-## IPPool excludeIPs
+## SpiderIPPool excludeIPs
 
-First of all, you may have observed that there is an `excludeIPs` field in IPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main work is not so. Honestly, `excludeIPs` field is more of a **syntax sugar**, so that users can define their IPPool CRD more flexibly.
+First of all, you may have observed that there is an `excludeIPs` field in SpiderIPPool. To some extent, it is also a mechanism for reserving IP addresses, but its main work is not so. Honestly, `excludeIPs` field is more of a **syntax sugar**, so that users can define their SpiderIPPool more flexibly.
 
-For example, now we want to create an IPPool, which contains two IP ranges: `172.18.40.40-172.18.40.44` and `172.18.40.46-172.18.40.50`. Without using `excludeIPs`, we may need the following IPPool manifest:
+For example, now we want to create an SpiderIPPool, which contains two IP ranges: `172.18.40.40-172.18.40.44` and `172.18.40.46-172.18.40.50`. Without using `excludeIPs`, we should define the `ips` as follows:
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
-  name: not-use-excludeIPs
+  name: not-use-excludeips
 spec:
   ipVersion: 4
   subnet: 172.18.40.0/24
@@ -25,9 +25,9 @@ But in fact, we can more concisely describe this semantics through `excludeIPs`:
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
-  name: use-excludeIPs
+  name: use-excludeips
 spec:
   ipVersion: 4
   subnet: 172.18.40.0/24
@@ -37,107 +37,124 @@ spec:
   - 172.18.40.45
 ```
 
-Of course, `ExcludeIPs` also supports the format of IP range and we can define multiple `excludeIPs` records to segment a subnet in more detail:
+Of course, `excludeIPs` also supports the format of IP range and we can define multiple `excludeIPs` records to segment a subnet in more detail.
 
-```yaml
-apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
-metadata:
-  name: IP-ranges-in-excludeIPs
-spec:
-  ipVersion: 4
-  subnet: 172.18.40.0/24
-  ips:
-  - 172.18.40.40-172.18.40.50
-  excludeIPs:
-  - 172.18.40.45
-  - 172.18.40.47-172.18.40.49
+`excludeIPs` will make sure that any Pod that allocates IP from this SpiderIPPool will not use these excluded IP addresses. However, it should be noted that this mechanism only has an effect on the **SpiderIPPool itself** with `excludeIPs` defined.
+
+## Use SpiderReservedIP
+
+Unlike `excluedIPs` field in SpiderIPPool, SpiderReservedIP is actually used to define the global reserved IP rules of a cluster. It ensures that no Pod in a cluster will use these IP addresses defined by itself, whether or not some SpiderIPPools have inadvertently defined the same IP addresses for Pods use, more details of [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/reservedip.md).
+
+### Setup Spiderpool
+
+If you have not set up Spiderpool yet, follow the guide [Quick Installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to install and simply configure Spiderpool.
+
+### Get Started
+
+To understand how it works, let's do such a test. First, we should create an SpiderReservedIP which reserves 9 IP addresses from `172.18.50.41` to `172.18.50.49`.
+
+```bash
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
 ```
 
-`excludeIPs` will make sure that any Pod that allocates IP from this IPPool will not use these excluded IP addresses. However, it should be noted that this mechanism only has an effect on the **IPPool itself** with `excludeIPs` defined.
+```yaml
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderReservedIP
+metadata:
+  name: test-ipv4-reservedip
+spec:
+  ipVersion: 4
+  ips:
+  - 172.18.50.41-172.18.50.49
+```
 
-## ReservedIP
+At the same time, create an SpiderIPPool with 10 IP addresses from `172.18.50.41` to `172.18.50.50`. Yes, we deliberately make it hold one more IP address than the SpiderReservedIP above.
 
-Unlike `excluedIPs` field in IPPool CRD, ReservedIP CRD is actually used to define the global reserved IP rules of a cluster. ReservedIP ensures that no Pod in a cluster will use these IP addresses defined by it, whether or not some IPPools have inadvertently defined the same IP addresses for Pods use.
-
-For example, we have such an IPPool with 10 IP addresses from `172.18.50.40` to `172.18.50.50`:
+```bash
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/test-ipv4-ippool.yaml
+```
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
-  name: test-IPv4-IP-pool
+  name: test-ipv4-ippool
 spec:
   ipVersion: 4
   subnet: 172.18.50.0/24
   ips:
-  - 172.18.50.40-172.18.50.50
+  - 172.18.50.41-172.18.50.50
 ```
 
-Unfortunately, a ReservedIP has been **pre created** in cluster, which reserves 100 IP addresses from `172.18.50.1` to `172.18.50.100`:
+Then, run a Deployment with 3 replicas and let its Pods allocate IP addresses from the SpiderIPPool above.
 
-```yaml
-apiVersion: spiderpool.spidernet.io/v1
-kind: ReservedIP
-metadata:
-  name: reserved
-spec:
-  ipVersion: 4
-  ips:
-  - 172.18.50.1-172.18.50.100
+```bash
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/example-deploy.yaml
 ```
-
-Now, if we create a Deployment and let its Pods allocate IP addresses from IPPool `test-IPv4-IP-pool`:
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: example
+  name: reservedip-example
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: example
+      app: reservedip-example
   template:
     metadata:
-      annotations:   
+      annotations:
         ipam.spidernet.io/ippool: |-
           {
             "interface": "eth0",
-            "ipv4pools": ["test-IPv4-IP-pool"],
+            "ipv4pools": ["test-ipv4-ippool"]
           }
       labels:
-        app: example
+        app: reservedip-example
     spec:
       containers:
-      - image: alpine
+      - name: reservedip-example
+        image: busybox
         imagePullPolicy: IfNotPresent
-        name: example
         command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
 ```
 
-None of these Pods can run successfully because "all IP addresses are used out". But when we remove this ReservedIP `reserved`, everything will return to normal.
+After a while, only one of these Pods using IP `172.18.40.50` can run successfully because "all IP addresses are used out".
 
 ```bash
-$ kubectl get po -l app=example
-NAMESPACE     NAME                                          READY   STATUS              RESTARTS   AGE
-default       example-6c5cdc6fb6-hvzrp                      0/1     ContainerCreating   0          35s
-default       example-6c5cdc6fb6-zj2zk                      0/1     ContainerCreating   0          35s
-default       example-6c5cdc6fb6-k2fkm                      0/1     ContainerCreating   0          35s
+kubectl get po -l app=reservedip-example -o wide
+NAME                                  READY   STATUS              RESTARTS   AGE   IP             NODE            
+reservedip-example-6cf9858886-cm7bp   0/1     ContainerCreating   0          35s   <none>         spider-worker
+reservedip-example-6cf9858886-lb7cr   0/1     ContainerCreating   0          35s   <none>         spider-worker
+reservedip-example-6cf9858886-pkcfl   1/1     Running             0          35s   172.18.50.50   spider-worker
 ```
 
-Another interesting question is that what happens if an IP address to be reserved has been allocated before ReservedIP is created? Of course, we dare not stop this running Pod and recycle IP, but ReservedIP will still ensure that no Pod can continue to use this IP address when this Pod releases its IP. Therefore, ReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.
+But when we remove this SpiderReservedIP, everything will return to normal.
+
+```bash
+kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
+```
+
+Another interesting question is that what happens if an IP address to be reserved has been allocated before SpiderReservedIP is created? Of course, we dare not stop this running Pod and recycle IP, but SpiderReservedIP will still ensure that no Pod can continue to use this IP address when this Pod releases its IP. Therefore, SpiderReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.
+
+### Clean up
+
+Let's clean the relevant resources so that we can run this tutorial again.
+
+```bash
+kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip --ignore-not-found=true
+```
 
 ## A Trap
 
-So, can we use IPPool's field `excludeIPs` to achieve the same effect as ReservedIP CRD? The answer is **NO**! Look at such a case, now we want to reserve an IP `172.18.60.31` for an external application of the cluster, which may be a Redis node. To achieve this, we created such an IPPool:
+So, can we use SpiderIPPool's field `excludeIPs` to achieve the same effect as SpiderReservedIP? The answer is **NO**! Look at such a case, now we want to reserve an IP `172.18.60.31` for an external application of the cluster, which may be a Redis node. To achieve this, we created such an SpiderIPPool:
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
-  name: IPv4-IP-pool-already-in-use
+  name: already-in-use
 spec:
   ipVersion: 4
   subnet: 172.18.60.0/24
@@ -147,13 +164,13 @@ spec:
   - 172.18.60.31
 ```
 
-I believe that if there is only one IPPool under the subnet `172.18.60.0/24` network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an IPPool (Different IPPools allow to define the same subnet, more details of [validating of IPPool CRD](TODO)):
+I believe that if there is only one SpiderIPPool under the subnet `172.18.60.0/24` network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an SpiderIPPool (Different SpiderIPPools allow to define the same `subnet`, more details of [validation of SpiderIPPool](TODO)):
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
-kind: IPPool
+kind: SpiderIPPool
 metadata:
-  name: IPv4-IP-pool-created-by-someone
+  name: created-by-someone-else
 spec:
   ipVersion: 4
   subnet: 172.18.60.0/24
@@ -161,6 +178,6 @@ spec:
   - 172.18.60.31-172.18.60.50
 ```
 
-After a period of time, a Pod may be allocated IP `172.18.60.31` from IPPool `IPv4-IP-pool-created-by-someone`, and then it holds the same IP address as your Redis node. After that, your Redis may not work as well.
+After a period of time, a Pod may be allocated IP `172.18.60.31` from the SpiderIPPool `created-by-someone-else`, and then it holds the same IP address as your Redis node. After that, your Redis may not work as well.
 
-So, if you really want to reserve an IP address instead of excluding an IP address, ReservedIP CRD makes life better :)
+So, if you really want to reserve an IP address instead of excluding an IP address, SpiderReservedIP makes life better.

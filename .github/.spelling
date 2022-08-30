@@ -201,3 +201,5 @@ dns
 clusterDefaultPool
 pullPolicy
 podDisruptionBudget
+SpiderReservedIP
+ExcludeIPs

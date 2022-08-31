@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coordinationv1client "k8s.io/client-go/kubernetes/typed/coordination/v1"
 	"k8s.io/client-go/tools/leaderelection"
@@ -20,7 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var logger = logutils.Logger.Named("Lease-Lock-Election")
+var logger *zap.Logger
 
 type SpiderLeaseElector interface {
 	// IsElected returns a boolean value to check current Elector whether is a leader
@@ -94,6 +95,8 @@ func NewLeaseElector(ctx context.Context, leaseLockNS, leaseLockName, leaseLockI
 		return nil, err
 	}
 
+	logger = logutils.Logger.Named("Lease-Lock-Election")
+
 	go sl.tryToElect(ctx)
 
 	return sl, nil
@@ -127,16 +130,14 @@ func (sl *SpiderLeader) register() error {
 				sl.Lock()
 				sl.isLeader = true
 				sl.Unlock()
-				logger.Sugar().Infof("leader elected: %s/%s/%s",
-					sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
+				logger.Sugar().Infof("leader elected: %s/%s/%s", sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
 			},
 			OnStoppedLeading: func() {
 				// we can do cleanup here
 				sl.Lock()
 				sl.isLeader = false
 				sl.Unlock()
-				logger.Sugar().Warnf("leader lost: %s/%s/%s",
-					sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
+				logger.Sugar().Warnf("leader lost: %s/%s/%s", sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
 			},
 		},
 		ReleaseOnCancel: true,

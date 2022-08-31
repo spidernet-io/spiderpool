@@ -1,0 +1,9 @@
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderIPPool
+metadata:
+  name: created-by-someone-else
+spec:
+  ipVersion: 4
+  subnet: 172.18.60.0/24
+  ips:
+    - 172.18.60.31-172.18.60.50

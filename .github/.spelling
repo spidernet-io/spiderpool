@@ -8,8 +8,18 @@ ip
 ippool
 ippools
 workloadendpoint
+workloadendpoints
 reservedip
 reservedips
+spiderippool
+spiderippools
+spiderippoollist
+spiderreservedip
+spiderreservedips
+spiderreservediplist
+spiderendpoint
+spiderendpoints
+spiderendpointlist
 github
 changelog
 changelogs
@@ -167,7 +177,6 @@ CidrManager
 spiderendpoint
 ContainerID
 NodeName
-spiderippool
 containerID
 pre
 redis
@@ -182,7 +191,6 @@ IPs
 hostnetwork
 podAntiAffinity
 cmdDel
-SpiderIPPoolList
 grafanaDashboard
 --wait
 certmanager

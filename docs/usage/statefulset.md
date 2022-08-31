@@ -46,7 +46,7 @@ If you want to set it `true`, just execute `helm upgrade --set configmap.config.
 install a StatefulSet example
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset-demo.md
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset-demo.yaml
 ```
 
 ### Validate the Spiderpool related CR data

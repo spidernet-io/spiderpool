@@ -39,7 +39,7 @@ Check configmap `spiderpool-conf` property `enableStatefulSet` whether is alread
 kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
-If you want to set it `true`, just execute `helm upgrade --set configmap.config.enableStatefulSet=true`
+If you want to set it `true`, just execute `helm upgrade --set feature.enableStatefulSet=true`
 
 ### Create a StatefulSet
 

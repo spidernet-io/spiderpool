@@ -143,16 +143,16 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### clusterDefaultPool parameters
 
-| Name                                   | Description                                                               | Value               |
-| -------------------------------------- | ------------------------------------------------------------------------- | ------------------- |
+| Name                                   | Description                                                                     | Value               |
+| -------------------------------------- | ------------------------------------------------------------------------------- | ------------------- |
 | `clusterDefaultPool.installIPv4IPPool` | install ipv4 spiderpool instance. It is required to set feature.enableIPv4=true | `false`             |
 | `clusterDefaultPool.installIPv6IPPool` | install ipv6 spiderpool instance. It is required to set feature.enableIPv6=true | `false`             |
-| `clusterDefaultPool.ipv4IPPoolName`    | the name of ipv4 spiderpool instance                                      | `default-v4-ippool` |
-| `clusterDefaultPool.ipv6IPPoolName`    | the name of ipv6 spiderpool instance                                      | `default-v6-ippool` |
-| `clusterDefaultPool.ipv4Subnet`        | the subnet of ipv4 spiderpool instance                                    | `""`                |
-| `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance                                    | `""`                |
-| `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance                              | `[]`                |
-| `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                              | `[]`                |
+| `clusterDefaultPool.ipv4IPPoolName`    | the name of ipv4 spiderpool instance                                            | `default-v4-ippool` |
+| `clusterDefaultPool.ipv6IPPoolName`    | the name of ipv6 spiderpool instance                                            | `default-v6-ippool` |
+| `clusterDefaultPool.ipv4Subnet`        | the subnet of ipv4 spiderpool instance                                          | `""`                |
+| `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance                                          | `""`                |
+| `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance                                    | `[]`                |
+| `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                                    | `[]`                |
 
 
 ### spiderpoolAgent parameters

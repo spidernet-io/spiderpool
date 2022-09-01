@@ -174,7 +174,6 @@ flamegraph
 kube-apiserver
 tls
 CidrManager
-spiderendpoint
 ContainerID
 NodeName
 containerID
@@ -209,8 +208,8 @@ dns
 clusterDefaultPool
 pullPolicy
 podDisruptionBudget
-SpiderReservedIP
 ExcludeIPs
+e.g.
 spiderpoolInit
 feature.enableIPv4
 feature.enableIPv6

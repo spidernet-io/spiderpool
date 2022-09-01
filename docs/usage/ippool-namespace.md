@@ -20,7 +20,7 @@ Obviously, we expect that all Pods created in Namespace `test-ns1` will be alloc
 ```bash
 kubectl get sp -l case=ns
 NAME                      VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-ns1-default-ipv4-ippool   4         172.18.40.0/24   0                    5                false
+ns1-default-ipv4-ippool   4         172.18.41.0/24   0                    4                false
 ```
 
 Next, use `ipam.spidernet.io/defaultv4ippool` Namespace annotation to specify the pool selection rules and bind Namespace and SpiderIPPool one by one.
@@ -46,9 +46,9 @@ Finally, as we initially expected,  all Pods in a specific Namespace are allocat
 ```bash
 kubectl get se -n test-ns1
 NAME                                         INTERFACE   IPV4POOL                  IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
-ns1-default-ippool-deploy-7cd5449c88-9xncm   eth0        ns1-default-ipv4-ippool   172.18.40.41/24                     spider-worker   57s
-ns1-default-ippool-deploy-7cd5449c88-dpfjs   eth0        ns1-default-ipv4-ippool   172.18.40.44/24                     spider-worker   57s
-ns1-default-ippool-deploy-7cd5449c88-vjtdd   eth0        ns1-default-ipv4-ippool   172.18.40.42/24                     spider-worker   58s
+ns1-default-ippool-deploy-7cd5449c88-9xncm   eth0        ns1-default-ipv4-ippool   172.18.41.41/24                     spider-worker   57s
+ns1-default-ippool-deploy-7cd5449c88-dpfjs   eth0        ns1-default-ipv4-ippool   172.18.41.43/24                     spider-worker   57s
+ns1-default-ippool-deploy-7cd5449c88-vjtdd   eth0        ns1-default-ipv4-ippool   172.18.41.42/24                     spider-worker   58s
 ```
 
 Of course, the `ipam.spidernet.io/defaultv4ippool` Namespace annotation also supports the ability of [alternative IP pools](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-multi.md). We can specify multiple default IP pools for a certain Namespace at the same time. And, a certain SpiderIPPool can also be specified as the default IP pool for multiple Namespaces.

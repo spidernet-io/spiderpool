@@ -4,6 +4,6 @@ metadata:
   name: created-by-someone-else
 spec:
   ipVersion: 4
-  subnet: 172.18.60.0/24
+  subnet: 172.18.43.0/24
   ips:
-    - 172.18.60.31-172.18.60.50
+    - 172.18.43.31-172.18.43.50

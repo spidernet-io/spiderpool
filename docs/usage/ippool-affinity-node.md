@@ -1,6 +1,6 @@
 # SpiderIPPool node affinity
 
-*Spiderpool supports multiple ways to select ippool. Pod will select a specific ippool to allocate IP according to the corresponding rules that with different priorities. Meanwhile, ippool can use selector to filter its user.*
+*Spiderpool supports for configuring the affinity between IP pools and Nodes. It means only Pods running on a specific Node can use the IP pools that have configured the affinity to the Node. Node affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*
 
 ## Setup Spiderpool
 
@@ -8,82 +8,94 @@ If you have not set up Spiderpool yet, follow the guide [Quick Installation](htt
 
 ## Get started
 
-After understanding what selectors' "filtering mechanism" is, let's take a look at how selectors work with ippool selection rules. There are two ippools:
+Since the cluster in this example has only two Nodes (1 master and 1 worker), it is required to remove the relevant taints on the master Node through `kubectl taint`, so that ordinary Pods can also be scheduled to it. If your cluster has two or more worker Nodes, please ignore the step above.
+
+Then, create two SpiderIPPools with three IP addresses, one of which will provide IP addresses for all Pods running on the master Node next.
+
+```bash
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-affinity-node/master-ipv4-ippool.yaml
+```
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
-  name: master-v4-ippool
+  name: master-ipv4-ippool
 spec:
-  ipVersion: IPv4
-  subnet: 172.18.0.0/16
+  ipVersion: 4
+  subnet: 172.18.41.0/24
   ips:
-  - 172.18.50.41-172.18.50.50
-  nodeSelector:
+  - 172.18.41.40-172.18.41.42
+  nodeAffinity:
     matchExpressions:
     - {key: node-role.kubernetes.io/master, operator: Exists}
 ```
 
-Obviously, ippool `master-v4-ippool` only works with the control plane nodes of Kubernetes. The Pod which scheduled to the master nodes can be correctly allocated IP from this ippool.
+The other provides IP addresses for the Pods on the worker Node.
+
+```bash
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-affinity-node/worker-ipv4-ippool.yaml
+```
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
-  name: worker-v4-ippool
+  name: worker-ipv4-ippool
 spec:
-  ipVersion: IPv4
-  subnet: 172.18.0.0/16
+  ipVersion: 4
+  subnet: 172.18.42.0/24
   ips:
-  - 172.18.50.51-172.18.50.60
-  nodeSelector:
+  - 172.18.42.40-172.18.42.42
+  nodeAffinity:
     matchExpressions:
     - {key: node-role.kubernetes.io/master, operator: DoesNotExist}
 ```
 
-And ippool `worker-v4-ippool` is the opposite.
+Here, we use `node-role.kubernetes.io/master` Node annotation to distinguish two different Nodes (actually, they can be different node regions). If there is no `node-role.kubernetes.io/master` annotation on your Nodes, you can change it to another one or add some annotations you want.
 
-Then, we run the following Deployment `example`, which has 5 replicas. We expect that the Pods controlled by `example` can be evenly scheduled to master nodes and worker nodes. Of course, maybe you should remove some related Taints.
+Now, run a Deployment with 3 replicas (lest all Pods be scheduled to the same Node) and let their Pods select the above two SpiderIPPools in the form of [alternative IP pools](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-multi.md).
+
+```bash
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-affinity-node/node-affinity-deploy.yaml
+```
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: example
+  name: node-affinity-deploy
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
-      app: example
+      app: node-affinity-deploy
   template:
     metadata:
       annotations:   
         ipam.spidernet.io/ippool: |-
           {
             "interface": "eth0",
-            "ipv4pools": ["master-v4-ippool", "worker-v4-ippool"]
+            "ipv4pools": ["master-ipv4-ippool", "worker-ipv4-ippool"]
           }
       labels:
-        app: example
+        app: node-affinity-deploy
     spec:
       containers:
-      - image: alpine
+      - name: node-affinity-deploy
+        image: busybox
         imagePullPolicy: IfNotPresent
-        name: example
         command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
 ```
 
-Finally, we will find that Pods at different nodes use different ippools.
+Finally, we will find that Pods on different Nodes will use different SpiderIPPools.
 
 ```bash
-$ kubectl get swe -n default
-NAME                       INTERFACE   IPV4POOL           IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
-example-554cc84db6-kr8j5   eth0        master-v4-ippool   172.18.50.47/16                     control-plane   3s
-example-554cc84db6-lkdbz   eth0        worker-v4-ippool   172.18.50.51/16                     worker          4s
-example-554cc84db6-qbmwv   eth0        worker-v4-ippool   172.18.50.58/16                     worker          3s
-example-554cc84db6-r6qpt   eth0        worker-v4-ippool   172.18.50.55/16                     worker          4s
-example-554cc84db6-rjstk   eth0        master-v4-ippool   172.18.50.43/16                     control-plane   4s
+kubectl get se
+NAME                                    INTERFACE   IPV4POOL             IPV4               IPV6POOL   IPV6   NODE                   CREATETION TIME
+node-affinity-deploy-85f8b6997b-dlnrt   eth0        worker-ipv4-ippool   172.18.42.41/24                      spider-worker          35s
+node-affinity-deploy-85f8b6997b-j6k6f   eth0        worker-ipv4-ippool   172.18.42.42/24                      spider-worker          35s
+node-affinity-deploy-85f8b6997b-pk4jb   eth0        master-ipv4-ippool   172.18.41.41/24                      spider-control-plane   35s
 ```
 
 ## Clean up
@@ -91,6 +103,5 @@ example-554cc84db6-rjstk   eth0        master-v4-ippool   172.18.50.43/16       
 Let's clean the relevant resources so that we can run this tutorial again.
 
 ```bash
-kubectl delete ns test-ns1
 kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-affinity-node --ignore-not-found=true
 ```

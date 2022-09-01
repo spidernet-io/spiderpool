@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: reservedip-example
+  name: reservedip-deploy
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: reservedip-example
+      app: reservedip-deploy
   template:
     metadata:
       annotations:
@@ -16,10 +16,10 @@ spec:
             "ipv4pools": ["test-ipv4-ippool"]
           }
       labels:
-        app: reservedip-example
+        app: reservedip-deploy
     spec:
       containers:
-        - name: reservedip-example
+        - name: reservedip-deploy
           image: busybox
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

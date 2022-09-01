@@ -4,6 +4,6 @@ metadata:
   name: test-ipv4-ippool
 spec:
   ipVersion: 4
-  subnet: 172.18.50.0/24
+  subnet: 172.18.42.0/24
   ips:
-    - 172.18.50.41-172.18.50.50
+    - 172.18.42.41-172.18.42.50

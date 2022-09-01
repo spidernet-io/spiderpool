@@ -24,6 +24,17 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
+{{/*
+Common labels
+*/}}
+{{- define "spiderpool.spiderpoolInit.labels" -}}
+helm.sh/chart: {{ include "spiderpool.chart" . }}
+{{ include "spiderpool.spiderpoolInit.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
 
 {{/*
 spiderpoolAgent Common labels
@@ -56,6 +67,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+spiderpoolInit Selector labels
+*/}}
+{{- define "spiderpool.spiderpoolInit.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "spiderpool.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
 
 
 
@@ -148,6 +167,27 @@ return the spiderpoolController image
     {{- print "@" .Values.spiderpoolController.image.digest -}}
 {{- else -}}
     {{- $tag := default .Chart.AppVersion .Values.spiderpoolController.image.tag -}}
+    {{- printf ":%s" $tag -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the spiderpoolInit image
+*/}}
+{{- define "spiderpool.spiderpoolInit.image" -}}
+{{- $registryName := .Values.spiderpoolInit.image.registry -}}
+{{- $repositoryName := .Values.spiderpoolInit.image.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.spiderpoolInit.image.digest }}
+    {{- print "@" .Values.spiderpoolInit.image.digest -}}
+{{- else -}}
+    {{- $tag := default .Chart.AppVersion .Values.spiderpoolInit.image.tag -}}
     {{- printf ":%s" $tag -}}
 {{- end -}}
 {{- end -}}

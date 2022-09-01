@@ -13,3 +13,12 @@ subjects:
 - kind: ServiceAccount
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
+{{- if or .Values.feature.enableIPv4 .Values.feature.enableIPv6 }}
+{{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool }}
+{{- if .Values.spiderpoolInit.serviceAccount.create }}
+- kind: ServiceAccount
+  name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}
+{{- end }}

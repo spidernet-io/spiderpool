@@ -133,7 +133,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | Name                                      | Description                                                              | Value    |
 | ----------------------------------------- | ------------------------------------------------------------------------ | -------- |
 | `feature.enableIPv4`                      | enable ipv4                                                              | `true`   |
-| `feature.enableIPv6`                      | enable ipv6                                                              | `true`   |
+| `feature.enableIPv6`                      | enable ipv6                                                              | `false`  |
 | `feature.networkMode`                     | the network mode                                                         | `legacy` |
 | `feature.enableStatefulSet`               | the network mode                                                         | `true`   |
 | `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                    | `true`   |
@@ -143,16 +143,16 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### clusterDefaultPool parameters
 
-| Name                                   | Description                                  | Value               |
-| -------------------------------------- | -------------------------------------------- | ------------------- |
-| `clusterDefaultPool.installIPv4IPPool` | install ipv4 spiderpool instance             | `false`             |
-| `clusterDefaultPool.installIPv6IPPool` | install ipv6 spiderpool instance             | `false`             |
-| `clusterDefaultPool.ipv4IPPoolName`    | the name of ipv4 spiderpool instance         | `default-v4-ippool` |
-| `clusterDefaultPool.ipv6IPPoolName`    | the name of ipv6 spiderpool instance         | `default-v6-ippool` |
-| `clusterDefaultPool.ipv4Subnet`        | the subnet of ipv4 spiderpool instance       | `""`                |
-| `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance       | `""`                |
-| `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance | `[]`                |
-| `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance | `[]`                |
+| Name                                   | Description                                                               | Value               |
+| -------------------------------------- | ------------------------------------------------------------------------- | ------------------- |
+| `clusterDefaultPool.installIPv4IPPool` | install ipv4 spiderpool instance. It is required to set feature.enableIPv4=true | `false`             |
+| `clusterDefaultPool.installIPv6IPPool` | install ipv6 spiderpool instance. It is required to set feature.enableIPv6=true | `false`             |
+| `clusterDefaultPool.ipv4IPPoolName`    | the name of ipv4 spiderpool instance                                      | `default-v4-ippool` |
+| `clusterDefaultPool.ipv6IPPoolName`    | the name of ipv6 spiderpool instance                                      | `default-v6-ippool` |
+| `clusterDefaultPool.ipv4Subnet`        | the subnet of ipv4 spiderpool instance                                    | `""`                |
+| `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance                                    | `""`                |
+| `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance                              | `[]`                |
+| `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                              | `[]`                |
 
 
 ### spiderpoolAgent parameters
@@ -275,5 +275,33 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolController.tls.provided.tlsCert`                           | encoded tls certificate for provided method                                                                                       | `""`                                            |
 | `spiderpoolController.tls.provided.tlsKey`                            | encoded tls key for provided method                                                                                               | `""`                                            |
 | `spiderpoolController.tls.provided.tlsCa`                             | encoded tls CA for provided method                                                                                                | `""`                                            |
+
+
+### spiderpoolInit parameters
+
+| Name                                        | Description                                                                                                                 | Value                                           |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `spiderpoolInit.name`                       | the init job for installing default spiderippool                                                                            | `spdierpool-init`                               |
+| `spiderpoolInit.binName`                    | the binName name of spiderpoolInit                                                                                          | `spiderpool-init`                               |
+| `spiderpoolInit.hostnetwork`                | enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                          |
+| `spiderpoolInit.image.registry`             | the image registry of spiderpoolInit                                                                                        | `ghcr.io`                                       |
+| `spiderpoolInit.image.repository`           | the image repository of spiderpoolInit                                                                                      | `spidernet-io/spiderpool/spiderpool-controller` |
+| `spiderpoolInit.image.pullPolicy`           | the image pullPolicy of spiderpoolInit                                                                                      | `IfNotPresent`                                  |
+| `spiderpoolInit.image.digest`               | the image digest of spiderpoolInit, which takes preference over tag                                                         | `""`                                            |
+| `spiderpoolInit.image.tag`                  | the image tag of spiderpoolInit, overrides the image tag whose default is the chart appVersion.                             | `""`                                            |
+| `spiderpoolInit.image.imagePullSecrets`     | the image imagePullSecrets of spiderpoolInit                                                                                | `[]`                                            |
+| `spiderpoolInit.priorityClassName`          | the priority Class Name for spiderpoolInit                                                                                  | `system-node-critical`                          |
+| `spiderpoolInit.affinity`                   | the affinity of spiderpoolInit                                                                                              | `{}`                                            |
+| `spiderpoolInit.extraArgs`                  | the additional arguments of spiderpoolInit container                                                                        | `[]`                                            |
+| `spiderpoolInit.resources.limits.cpu`       | the cpu limit of spiderpoolInit pod                                                                                         | `200m`                                          |
+| `spiderpoolInit.resources.limits.memory`    | the memory limit of spiderpoolInit pod                                                                                      | `256Mi`                                         |
+| `spiderpoolInit.resources.requests.cpu`     | the cpu requests of spiderpoolInit pod                                                                                      | `100m`                                          |
+| `spiderpoolInit.resources.requests.memory`  | the memory requests of spiderpoolInit pod                                                                                   | `128Mi`                                         |
+| `spiderpoolInit.extraEnv`                   | the additional environment variables of spiderpoolInit container                                                            | `[]`                                            |
+| `spiderpoolInit.securityContext`            | the security Context of spiderpoolInit pod                                                                                  | `{}`                                            |
+| `spiderpoolInit.podAnnotations`             | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
+| `spiderpoolInit.podLabels`                  | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
+| `spiderpoolInit.serviceAccount.create`      | create the service account for the spiderpoolInit                                                                           | `true`                                          |
+| `spiderpoolInit.serviceAccount.annotations` | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
 
 

@@ -1,0 +1,91 @@
+{{- if or .Values.feature.enableIPv4 .Values.feature.enableIPv6 -}}
+{{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "spiderpool.spiderpoolInit.selectorLabels" . | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolInit.podLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.podLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolInit.podAnnotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.podAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.spiderpoolInit.image.imagePullSecrets }}
+  imagePullSecrets:
+  {{- with .Values.spiderpoolInit.image.imagePullSecrets }}
+  {{- toYaml . | trim | nindent 2 }}
+  {{- end }}
+  {{- end }}
+  serviceAccountName: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+  priorityClassName: {{ default "system-node-critical" .Values.spiderpoolInit.priorityClassName }}
+  {{- if .Values.spiderpoolInit.hostnetwork }}
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  {{- else }}
+  hostNetwork: false
+  dnsPolicy: ClusterFirst
+  {{- end }}
+  restartPolicy: Never
+  {{- with .Values.spiderpoolInit.tolerations }}
+  tolerations:
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.spiderpoolInit.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.spiderpoolInit.affinity }}
+  affinity:
+  {{- include "tplvalues.render" (dict "value" .Values.spiderpoolInit.affinity "context" $) | nindent 2 }}
+  {{- end }}
+  containers:
+  - name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+    image: {{ include "spiderpool.spiderpoolInit.image" . | quote }}
+    imagePullPolicy: {{ .Values.spiderpoolInit.image.pullPolicy }}
+    command:
+      - {{ .Values.spiderpoolInit.binName }}
+    {{- with .Values.spiderpoolInit.extraArgs }}
+    args:
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.spiderpoolInit.resources }}
+    resources:
+    {{- toYaml . | trim | nindent 6 }}
+    {{- end }}
+    env:
+    {{- with .Values.spiderpoolInit.extraEnv }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.feature.enableIPv4 }}
+    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
+      value: {{ .Values.clusterDefaultPool.ipv4IPPoolName | quote }}
+    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET
+      value: {{ .Values.clusterDefaultPool.ipv4Subnet | quote }}
+    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_IPRANGES
+      value: {{ .Values.clusterDefaultPool.ipv4IPRanges | quote }}
+    {{- end }}
+    {{- if and .Values.clusterDefaultPool.installIPv6IPPool .Values.feature.enableIPv6 }}
+    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME
+      value: {{ .Values.clusterDefaultPool.ipv6IPPoolName | quote }}
+    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET
+      value: {{ .Values.clusterDefaultPool.ipv6Subnet | quote }}
+    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES
+      value: {{ .Values.clusterDefaultPool.ipv6IPRanges | quote }}
+    {{- end }}
+    {{- with .Values.spiderpoolInit.securityContext }}
+    securityContext:
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end -}}
+{{- end -}}

@@ -96,3 +96,15 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spiderippools
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch

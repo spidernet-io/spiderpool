@@ -8,11 +8,12 @@ import (
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
+	"go.uber.org/zap"
+
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"go.uber.org/zap"
 )
 
 var ErrDeleteIPAM = fmt.Errorf("err: get ipam release failed")
@@ -25,34 +26,35 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	// a proper error to the runtime.
 	defer func() {
 		if e := recover(); e != nil {
-			msg := fmt.Sprintf("Spiderpool IPAM CNI panicked during DEL: %s", e)
+			msg := fmt.Sprintf("Spiderpool IPAM CNI panicked during DEL: %v", e)
+
 			if err != nil {
-				// If we're recovering and there was also an error, then we need to
+				// If it is recovering and an error occurs, then we need to
 				// present both.
-				msg = fmt.Sprintf("%s: error=%s", msg, err)
+				msg = fmt.Sprintf("%s: error=%v", msg, err)
 			}
+
 			if nil != logger {
 				logger.Error(msg)
 			}
-
-			err = fmt.Errorf(msg)
 		}
 	}()
 
 	conf, err := LoadNetConf(args.StdinData)
 	if nil != err {
-		return fmt.Errorf("Load network config failed: %v", err)
+		return fmt.Errorf("failed to load network config, error: %v", err)
 	}
 
 	logger, err = setupFileLogging(conf)
 	if nil != err {
-		return fmt.Errorf("Unable to setup logging: %w", err)
+		return fmt.Errorf("failed to set up log: %v", err)
 	}
 
 	// new cmdDel logger
 	logger = logger.Named(BinNamePlugin)
-	logger.Sugar().Debugf("Processing CNI DEL request %+v", args)
-	logger.Sugar().Debugf("CNI DEL NetConf: %+v", conf)
+	logger.Sugar().Debugf("Processing CNI DEL request: ContainerID:%s, Netns:%s, IfName:%s, Path:%s",
+		args.ContainerID, args.Netns, args.IfName, args.Path)
+	logger.Sugar().Debugf("CNI DEL NetConf: %#v", *conf)
 
 	k8sArgs := K8sArgs{}
 	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
@@ -84,7 +86,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error())
 		return ErrAgentHealthCheck
 	}
-	logger.Debug("Health check succeed.")
+	logger.Debug("Spider agent health check successfully.")
 
 	// DELETE /ipam/ip
 	logger.Info("Sending IP release request to spider agent.")

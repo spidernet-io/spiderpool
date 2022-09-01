@@ -81,6 +81,12 @@ elif [ "$TYPE"x == "detail"x ] ; then
     done
 
     echo ""
+    echo "=============== spiderpool-init describe ============== "
+    POD="spdierpool-init"
+    echo "---------kubectl describe pod ${POD} -n kube-system "
+    kubectl describe pod ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
     echo "=============== spiderpool-controller logs ============== "
     for POD in $CONTROLLER_POD_LIST ; do
       echo ""
@@ -99,6 +105,12 @@ elif [ "$TYPE"x == "detail"x ] ; then
       echo "--------- kubectl logs ${POD} -n kube-system --previous"
       kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG} --previous
     done
+
+    echo ""
+    echo "=============== spiderpool-init logs ============== "
+    POD="spdierpool-init"
+    echo "--------- kubectl logs ${POD} -n kube-system "
+    kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== spiderpool crd spiderippool ============== "
@@ -137,6 +149,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
     done
 
+
+spdierpool-init
 
 elif [ "$TYPE"x == "datarace"x ] ; then
     LOG_MARK="WARNING: DATA RACE"

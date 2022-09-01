@@ -34,6 +34,12 @@ RUN  make GOARCH=${TARGETARCH}   \
         DESTDIR_BASH_COMPLETION=/tmp/install/${TARGETOS}/${TARGETARCH}/bash-completion \
         all install install-bash-completion
 
+WORKDIR /src/cmd/spiderpool-init
+RUN  make GOARCH=${TARGETARCH}   \
+        RACE=${RACE} NOSTRIP=${NOSTRIP} NOOPT=${NOOPT} QUIET_MAKE=${QUIET_MAKE} \
+        DESTDIR_BIN=/tmp/install/${TARGETOS}/${TARGETARCH}/bin \
+        DESTDIR_BASH_COMPLETION=/tmp/install/${TARGETOS}/${TARGETARCH}/bash-completion \
+        all install install-bash-completion
 
 #====== release image =======
 

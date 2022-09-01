@@ -197,6 +197,9 @@ setup_spiderpool:
 			--set spiderpoolController.image.registry="" \
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
+			--set spiderpoolInit.image.registry="" \
+			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+			--set spiderpoolInit.image.tag=$(TEST_IMAGE_TAG) \
 			--kubeconfig $(E2E_KUBECONFIG)
 
 

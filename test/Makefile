@@ -151,7 +151,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet}" ; \
-			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={\"$${ipv4_ip_range}\"}" ; \
 			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=false" ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
@@ -159,7 +159,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=false --set clusterDefaultPool.installIPv6IPPool=true" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
-			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={\"$${ipv6_ip_range}\"}" ; \
 			HELM_OPTION+=" --set feature.enableIPv4=false --set feature.enableIPv6=true" ; \
 		else \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
@@ -170,7 +170,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=true" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet} --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
-			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={\"$${ipv4_ip_range}\"} --set clusterDefaultPool.ipv6IPRanges={\"$${ipv6_ip_range}\"}" ; \
 			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=true" ; \
 		fi ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
@@ -183,7 +183,7 @@ setup_spiderpool:
         			HELM_OPTION+=" --set spiderpoolController.extraEnv[0].name=SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS  --set spiderpoolController.extraEnv[0].value=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) " ; \
         			HELM_OPTION+=" --set spiderpoolAgent.extraEnv[0].name=SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS  --set spiderpoolAgent.extraEnv[0].value=http://$${ServerAddress}:$(PYROSCOPE_LOCAL_PORT) " ; \
         			echo "finish setuping pyroscope " ; \
-          	 	fi ; \
+        fi ; \
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \

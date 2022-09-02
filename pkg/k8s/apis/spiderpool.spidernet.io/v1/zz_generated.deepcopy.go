@@ -116,8 +116,8 @@ func (in *IPPoolSpec) DeepCopyInto(out *IPPoolSpec) {
 		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.NamesapceAffinity != nil {
-		in, out := &in.NamesapceAffinity, &out.NamesapceAffinity
+	if in.NamespaceAffinity != nil {
+		in, out := &in.NamespaceAffinity, &out.NamespaceAffinity
 		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}

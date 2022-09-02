@@ -158,7 +158,7 @@ Icarus9913
 iiiceoo
 excludeIPs
 replicaset
-namesapceSelector
+namespaceSelector
 coreDns
 keypair
 amd64

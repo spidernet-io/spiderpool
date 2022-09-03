@@ -37,41 +37,42 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// a proper error to the runtime.
 	defer func() {
 		if e := recover(); e != nil {
-			msg := fmt.Sprintf("Spiderpool IPAM CNI panicked during ADD: %s", e)
+			msg := fmt.Sprintf("Spiderpool IPAM CNI panicked during ADD: %v", e)
+
 			if err != nil {
-				// If we're recovering and there was also an error, then we need to
+				// If it is recovering and an error occurs, then we need to
 				// present both.
-				msg = fmt.Sprintf("%s: error=%s", msg, err)
+				msg = fmt.Sprintf("%s: error=%v", msg, err.Error())
 			}
+
 			if nil != logger {
 				logger.Error(msg)
 			}
-
-			err = fmt.Errorf(msg)
 		}
 	}()
 
 	conf, err := LoadNetConf(args.StdinData)
 	if nil != err {
-		return fmt.Errorf("Load network config failed: %v", err)
+		return fmt.Errorf("failed to load network config, error: %v", err)
 	}
 
 	logger, err = setupFileLogging(conf)
 	if nil != err {
-		return fmt.Errorf("Unable to setup logging: %w", err)
+		return fmt.Errorf("failed to setup log: %v", err)
 	}
 
 	// new cmdAdd logger
 	logger = logger.Named(BinNamePlugin)
-	logger.Sugar().Debugf("Processing CNI ADD request %#v", args)
-	logger.Sugar().Debugf("CNI ADD NetConf: %#v", conf)
+	logger.Sugar().Debugf("Processing CNI ADD request: containerID:'%s', netns:'%s', ifName:'%s', path:'%s'",
+		args.ContainerID, args.Netns, args.IfName, args.Path)
+	logger.Sugar().Debugf("CNI ADD NetConf: %#v", *conf)
 
 	k8sArgs := K8sArgs{}
 	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
 		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
 		return err
 	}
-	logger.Sugar().Info("CNI ADD Args: %#v", k8sArgs)
+	logger.Sugar().Debugf("CNI ADD Args: %#v", k8sArgs)
 
 	// register some args into logger
 	logger = logger.With(zap.String("Action", "Add"),
@@ -80,7 +81,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 		zap.String("IfName", args.IfName))
-	logger.Debug("Generate IPAM configuration")
+	logger.Info("Generate IPAM configuration")
 
 	// new unix client
 	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IpamUnixSocketPath)
@@ -96,7 +97,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error())
 		return ErrAgentHealthCheck
 	}
-	logger.Debug("Health check succeed.")
+	logger.Debug("Spider agent health check successfully.")
 
 	// POST /ipam/ip
 	logger.Debug("Sending IP assignment request to spider agent.")
@@ -131,7 +132,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	logger.Sugar().Infof("IPAM assigned successfully: %s", *result)
+	logger.Sugar().Infof("IPAM assigned successfully: %v", *result)
 
 	return types.PrintResult(result, conf.CNIVersion)
 }

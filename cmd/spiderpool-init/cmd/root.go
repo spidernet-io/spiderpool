@@ -20,47 +20,47 @@ var (
 
 	runtimeClient client.Client
 
-	SpiderControllerEndpointName = "spiderpool-controller"
+	SpiderControllerEndpointName      = "spiderpool-controller"
 	SpiderControllerEndpointNamespace = "kube-system"
 
 	RetryIntervalForApi = time.Second * 2
 )
 
-func WaitForSpiderControllerEndpoint(ctx context.Context){
+func WaitForSpiderControllerEndpoint(ctx context.Context) {
 	for {
-		existed, e:=k8sCheckEndpointAvailable( runtimeClient , SpiderControllerEndpointName , SpiderControllerEndpointNamespace )
-		if e!=nil {
-			logger.Sugar().Warnf("failed to check spider controller endpoint : %v " , e )
-		}else{
+		existed, e := k8sCheckEndpointAvailable(runtimeClient, SpiderControllerEndpointName, SpiderControllerEndpointNamespace)
+		if e != nil {
+			logger.Sugar().Warnf("failed to check spider controller endpoint : %v ", e)
+		} else {
 			if existed {
 				logger.Info("spider controller is ready")
 				return
-			}else{
+			} else {
 				logger.Info("waiting for spider controller")
 			}
 		}
 
 		select {
-			case <-ctx.Done():
-				logger.Fatal("time out , failed  ")
+		case <-ctx.Done():
+			logger.Fatal("time out , failed  ")
 
-			default:
-				time.Sleep(RetryIntervalForApi)
+		default:
+			time.Sleep(RetryIntervalForApi)
 		}
 	}
 }
 
-func CreateIppool(ctx context.Context  , pool *spiderpoolv1.SpiderIPPool) {
+func CreateIppool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) {
 	for {
-		e:=k8sCreateIppool( runtimeClient , pool)
-		if e!=nil {
+		e := k8sCreateIppool(runtimeClient, pool)
+		if e != nil {
 			if apierrors.IsAlreadyExists(e) {
-				logger.Sugar().Errorf(" ippool %v is already existed, ingore creating ", pool.Name )
+				logger.Sugar().Errorf(" ippool %v is already existed, ignore creating ", pool.Name)
 				return
 			}
-			logger.Sugar().Warnf("failed to create ippool %s , reason=%v ", pool.Name , e )
-		}else{
-			logger.Sugar().Infof("succeeded to crate ippool %v ", pool.Name )
+			logger.Sugar().Warnf("failed to create ippool %s , reason=%v ", pool.Name, e)
+		} else {
+			logger.Sugar().Infof("succeeded to create ippool %v ", pool.Name)
 			return
 		}
 
@@ -76,9 +76,9 @@ func CreateIppool(ctx context.Context  , pool *spiderpoolv1.SpiderIPPool) {
 
 func Execute() {
 	// init k8s client
-	runtimeClient=InitK8sClient()
+	runtimeClient = InitK8sClient()
 
-	// global contex
+	// global context
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*20)
 	defer cancel()
 
@@ -86,46 +86,46 @@ func Execute() {
 	WaitForSpiderControllerEndpoint(ctx)
 
 	// create ipv4 ippool
-	if len(Config.PoolV4Name)>0{
+	if len(Config.PoolV4Name) > 0 {
 		logger.Sugar().Infof("Ipv4 ippool will be created ")
 
 		pool := &spiderpoolv1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{Name: Config.PoolV4Name},
 			Spec: spiderpoolv1.IPPoolSpec{
-				Subnet: Config.PoolV4Subnet ,
+				Subnet: Config.PoolV4Subnet,
 				IPs:    Config.PoolV4IPRanges,
 			},
 		}
-		if len(Config.PoolV4Gateway)>0{
-			pool.Spec.Gateway=&Config.PoolV4Gateway
+		if len(Config.PoolV4Gateway) > 0 {
+			pool.Spec.Gateway = &Config.PoolV4Gateway
 		}
 		logger.Sugar().Infof("try to create ippool: %+v ", pool)
 
-		CreateIppool(ctx , pool)
+		CreateIppool(ctx, pool)
 
-	}else{
+	} else {
 		logger.Info("Ipv4 ippool will not be created")
 	}
 
 	// create ipv6 ippool
-	if len(Config.PoolV6Name)>0{
+	if len(Config.PoolV6Name) > 0 {
 		logger.Sugar().Infof("Ipv6 ippool will be created ")
 
 		pool := &spiderpoolv1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{Name: Config.PoolV6Name},
 			Spec: spiderpoolv1.IPPoolSpec{
-				Subnet: Config.PoolV6Subnet ,
+				Subnet: Config.PoolV6Subnet,
 				IPs:    Config.PoolV6IPRanges,
 			},
 		}
-		if len(Config.PoolV6Gateway)>0{
-			pool.Spec.Gateway=&Config.PoolV6Gateway
+		if len(Config.PoolV6Gateway) > 0 {
+			pool.Spec.Gateway = &Config.PoolV6Gateway
 		}
 		logger.Sugar().Infof("try to create ippool: %+v ", pool)
 
-		CreateIppool(ctx , pool)
+		CreateIppool(ctx, pool)
 
-	}else{
+	} else {
 		logger.Info("Ipv6 ippool will not be created")
 	}
 

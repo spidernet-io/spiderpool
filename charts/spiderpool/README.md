@@ -153,6 +153,8 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance                                          | `""`                |
 | `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance                                    | `[]`                |
 | `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                                    | `[]`                |
+| `clusterDefaultPool.ipv4Gateway`       | the gateway of ipv4 subnet                                                      | `""`                |
+| `clusterDefaultPool.ipv6Gateway`       | the gateway of ipv6 subnet                                                      | `""`                |
 
 
 ### spiderpoolAgent parameters

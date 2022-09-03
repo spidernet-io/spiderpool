@@ -130,4 +130,7 @@ func Execute() {
 	}
 
 	logger.Info("finish initialization")
+
+	// wait for helm --wait
+	time.Sleep(time.Second * 300)
 }

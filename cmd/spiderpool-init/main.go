@@ -1,14 +1,12 @@
+// Copyright 2022 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
-	"fmt"
-	"time"
-	"os"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-init/cmd"
 )
 
 func main() {
-	time.Sleep(time.Minute)
-	fmt.Printf(" I am init-config")
-	time.Sleep(time.Minute)
-	fmt.Fprintf(os.Stdout, "bye bye ")
+	cmd.Execute()
 }

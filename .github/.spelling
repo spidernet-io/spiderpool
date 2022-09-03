@@ -211,3 +211,6 @@ pullPolicy
 podDisruptionBudget
 SpiderReservedIP
 ExcludeIPs
+spiderpoolInit
+feature.enableIPv4
+feature.enableIPv6

@@ -85,6 +85,12 @@ clusterDefaultPool:
   ## @param clusterDefaultPool.ipv6IPRanges the available IP of ipv6 spiderpool instance
   ipv6IPRanges: []
 
+  ## @param clusterDefaultPool.ipv4Gateway the gateway of ipv4 subnet
+  ipv4Gateway: ""
+
+  ## @param clusterDefaultPool.ipv6Gateway the gateway of ipv6 subnet
+  ipv6Gateway: ""
+
 ## @section spiderpoolAgent parameters
 ##
 spiderpoolAgent:

@@ -1,0 +1,12 @@
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderIPPool
+metadata:
+  name: worker-ipv4-ippool
+spec:
+  ipVersion: 4
+  subnet: 172.18.42.0/24
+  ips:
+    - 172.18.42.40-172.18.42.42
+  nodeAffinity:
+    matchExpressions:
+      - {key: node-role.kubernetes.io/master, operator: DoesNotExist}

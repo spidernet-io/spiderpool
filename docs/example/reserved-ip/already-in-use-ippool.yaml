@@ -4,8 +4,8 @@ metadata:
   name: already-in-use
 spec:
   ipVersion: 4
-  subnet: 172.18.60.0/24
+  subnet: 172.18.43.0/24
   ips:
-    - 172.18.60.1-172.18.60.31
+    - 172.18.43.1-172.18.43.31
   excludeIPs:
-    - 172.18.60.31
+    - 172.18.43.31

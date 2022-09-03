@@ -6,9 +6,9 @@ metadata:
     case: backup
 spec:
   ipVersion: 4
-  subnet: 172.18.40.0/24
+  subnet: 172.18.41.0/24
   ips:
-    - 172.18.40.40-172.18.40.41
+    - 172.18.41.40-172.18.41.41
 ---
 apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
@@ -18,6 +18,6 @@ metadata:
     case: backup
 spec:
   ipVersion: 4
-  subnet: 172.18.41.0/24
+  subnet: 172.18.42.0/24
   ips:
-    - 172.18.41.40-172.18.41.41
+    - 172.18.42.40-172.18.42.41

@@ -150,7 +150,6 @@ elif [ "$TYPE"x == "detail"x ] ; then
     done
 
 
-spdierpool-init
 
 elif [ "$TYPE"x == "datarace"x ] ; then
     LOG_MARK="WARNING: DATA RACE"

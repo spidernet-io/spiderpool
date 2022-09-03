@@ -8,10 +8,11 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
+  - endpoints
+  - namespaces
+  - nodes
+  - pods
   verbs:
-  - create
-  - delete
   - get
   - list
   - update
@@ -19,10 +20,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
-  - nodes
-  - pods
+  - events
   verbs:
+  - create
+  - delete
   - get
   - list
   - update

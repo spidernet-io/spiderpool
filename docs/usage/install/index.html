@@ -334,7 +334,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-multi/" class="md-nav__link">
-        multiple ippool
+        Multiple IPPool
       </a>
     </li>
   
@@ -348,7 +348,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
-        Ippool namespace
+        Namespace default IPPool
       </a>
     </li>
   
@@ -362,7 +362,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-namespace/" class="md-nav__link">
-        Ippool affinity namespace
+        SpiderIPPool namespace affinity
       </a>
     </li>
   
@@ -376,7 +376,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        Ippool affinity node
+        SpiderIPPool node affinity
       </a>
     </li>
   
@@ -418,7 +418,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
-        Multi interfaces annotation
+        Multi-Interfaces-Annotation
       </a>
     </li>
   
@@ -432,7 +432,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-cni/" class="md-nav__link">
-        Multi interfaces cni
+        Multi-Interfaces-CNI
       </a>
     </li>
   
@@ -633,8 +633,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/ippool/" class="md-nav__link">
-        ippool
+      <a href="../../concepts/spiderippool/" class="md-nav__link">
+        SpiderIPPool
       </a>
     </li>
   
@@ -647,8 +647,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/reservedip/" class="md-nav__link">
-        reservedip
+      <a href="../../concepts/spiderreservedip/" class="md-nav__link">
+        SpiderReservedIP
       </a>
     </li>
   
@@ -661,8 +661,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/workloadendpoint/" class="md-nav__link">
-        workloadendpoint
+      <a href="../../concepts/spiderendpoint/" class="md-nav__link">
+        SpiderEndpoint
       </a>
     </li>
   
@@ -959,6 +959,7 @@ SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
 Ipv4Subnet=&quot;172.20.0.0/16&quot;
 # available IP resource
 Ipv4Range=&quot;172.20.0.10-172.20.0.200&quot;
+Ipv4Gateway=&quot;172.20.0.1&quot;
 
 # deploy the spiderpool
 helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
@@ -968,14 +969,14 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.provided.tlsCa=&quot;${CA}&quot; \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
-  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}}
+  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
+  --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
+  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
+
 </code></pre>
 <blockquote>
 <p>NOTICE:</p>
-<p>(1) if default ippool is installed by helm, please add '--wait' parament in the helm command. Because, the spiderpool will install
-webhook for checking spiderippool CRs, if the spiderpool controller pod is not running, the default ippool will fail to apply and the helm install command fails
-Or else, you could create default ippool after helm installation.</p>
-<p>(2) spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
+<p>spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
 it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
 so, if you set the replicas number of spiderpool-controller to be bigger than 2, make sure there is enough nodes</p>
 </blockquote>
@@ -993,11 +994,14 @@ SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
 Ipv4Subnet=&quot;172.20.0.0/16&quot;
 # available IP resource
 Ipv4Range=&quot;172.20.0.10-172.20.0.200&quot;
+Ipv4Gateway=&quot;172.20.0.1&quot;
+
 # for default ipv6 ippool
 # CIDR
 Ipv6Subnet=&quot;fd00::/112&quot;
 # available IP resource
 Ipv6Range=&quot;fd00::10-fd00::200&quot;
+Ipv6Gateway=&quot;fd00::1&quot;
 
 # deploy the spiderpool
 helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
@@ -1006,9 +1010,14 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.provided.tlsKey=&quot;${SERVER_KEY}&quot; \
   --set spiderpoolController.tls.provided.tlsCa=&quot;${CA}&quot; \
   --set feature.enableIPv4=true --set feature.enableIPv6=true \
-  --set clusterDefaultPool.installIPv4IPPool=true  --set clusterDefaultPool.installIPv6IPPool=true  \
-  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
-  --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
+  --set clusterDefaultPool.installIPv4IPPool=true  \
+  --set clusterDefaultPool.installIPv6IPPool=true  \
+  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
+  --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
+  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway} \
+  --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} \
+  --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}} \
+  --set clusterDefaultPool.ipv6Gateway=${Ipv6Gateway}
 </code></pre>
 <h3 id="install-by-cert-manager">install By Cert-manager</h3>
 <p>the way is not a common situation, because cert-manager needs CNI to create its pod,
@@ -1025,6 +1034,7 @@ but as IPAM, spiderpool is still not installed to provide IP resource. It means 
 ipv4_subnet=&quot;172.20.0.0/16&quot;
 # available IP resource
 ipv4_range=&quot;172.20.0.10-172.20.0.200&quot;
+Ipv4Gateway=&quot;172.20.0.1&quot;
 
 helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set spiderpoolController.tls.method=certmanager \
@@ -1032,7 +1042,9 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${ipv4_ip_range}}
+  --set clusterDefaultPool.ipv4IPRanges={${ipv4_ip_range}} \
+  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
+
 </code></pre>
 <h2 id="configure-cni">configure CNI</h2>
 <p>after installation of the spiderpool, please edit CNI configuration file under /etc/cni/net.d/ .</p>

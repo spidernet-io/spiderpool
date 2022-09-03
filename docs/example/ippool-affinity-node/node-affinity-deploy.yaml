@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-affinity-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: node-affinity-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "interface": "eth0",
+            "ipv4pools": ["master-ipv4-ippool", "worker-ipv4-ippool"]
+          }
+      labels:
+        app: node-affinity-deploy
+    spec:
+      containers:
+        - name: node-affinity-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

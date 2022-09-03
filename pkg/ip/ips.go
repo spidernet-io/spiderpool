@@ -244,7 +244,7 @@ func isCIDROverlap(subnet1, subnet2 string) bool {
 	if ones1 < ones2 && ipNet1.Contains(ipNet2.IP) {
 		return true
 	}
-	if ones1 > ones2 && ipNet1.Contains(ipNet2.IP) {
+	if ones1 > ones2 && ipNet2.Contains(ipNet1.IP) {
 		return true
 	}
 

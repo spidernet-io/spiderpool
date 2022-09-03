@@ -13,7 +13,7 @@
     
     
       
-        <title>Ippool affinity namespace - spiderpool</title>
+        <title>SpiderIPPool namespace affinity - spiderpool</title>
       
     
     
@@ -59,6 +59,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#spiderippool-namespace-affinity" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -88,7 +93,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ippool affinity namespace
+              SpiderIPPool namespace affinity
             
           </span>
         </div>
@@ -261,7 +266,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-multi/" class="md-nav__link">
-        multiple ippool
+        Multiple IPPool
       </a>
     </li>
   
@@ -275,7 +280,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
-        Ippool namespace
+        Namespace default IPPool
       </a>
     </li>
   
@@ -294,10 +299,57 @@
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          SpiderIPPool namespace affinity
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Ippool affinity namespace
+        SpiderIPPool namespace affinity
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup-spiderpool" class="md-nav__link">
+    Setup Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -311,7 +363,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        Ippool affinity node
+        SpiderIPPool node affinity
       </a>
     </li>
   
@@ -353,7 +405,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
-        Multi interfaces annotation
+        Multi-Interfaces-Annotation
       </a>
     </li>
   
@@ -367,7 +419,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-cni/" class="md-nav__link">
-        Multi interfaces cni
+        Multi-Interfaces-CNI
       </a>
     </li>
   
@@ -568,8 +620,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/ippool/" class="md-nav__link">
-        ippool
+      <a href="../../concepts/spiderippool/" class="md-nav__link">
+        SpiderIPPool
       </a>
     </li>
   
@@ -582,8 +634,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/reservedip/" class="md-nav__link">
-        reservedip
+      <a href="../../concepts/spiderreservedip/" class="md-nav__link">
+        SpiderReservedIP
       </a>
     </li>
   
@@ -596,8 +648,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/workloadendpoint/" class="md-nav__link">
-        workloadendpoint
+      <a href="../../concepts/spiderendpoint/" class="md-nav__link">
+        SpiderEndpoint
       </a>
     </li>
   
@@ -807,6 +859,37 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup-spiderpool" class="md-nav__link">
+    Setup Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -827,9 +910,15 @@
 
 
 
-  <h1>Ippool affinity namespace</h1>
-
-
+<h1 id="spiderippool-namespace-affinity">SpiderIPPool namespace affinity</h1>
+<p><em>Spiderpool supports multiple ways to select ippool. Pod will select a specific ippool to allocate IP according to the corresponding rules that with different priorities. Meanwhile, ippool can use selector to filter its user.</em></p>
+<h2 id="setup-spiderpool">Setup Spiderpool</h2>
+<p>If you have not set up Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">Quick Installation</a> for instructions on how to install and simply configure Spiderpool.</p>
+<h2 id="get-started">Get started</h2>
+<h2 id="clean-up">Clean up</h2>
+<p>Let's clean the relevant resources so that we can run this tutorial again.</p>
+<pre><code class="language-bash">kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-affinity-namespace --ignore-not-found=true
+</code></pre>
 
 
 
@@ -853,7 +942,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../ippool-namespace/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Ippool namespace" rel="prev">
+        <a href="../ippool-namespace/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Namespace default IPPool" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -862,20 +951,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Ippool namespace
+              Namespace default IPPool
             </div>
           </div>
         </a>
       
       
         
-        <a href="../ippool-affinity-node/" class="md-footer__link md-footer__link--next" aria-label="Next: Ippool affinity node" rel="next">
+        <a href="../ippool-affinity-node/" class="md-footer__link md-footer__link--next" aria-label="Next: SpiderIPPool node affinity" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Ippool affinity node
+              SpiderIPPool node affinity
             </div>
           </div>
           <div class="md-footer__button md-icon">

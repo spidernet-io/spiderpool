@@ -54,9 +54,9 @@ nav:
       - concepts/annotation.md
       - concepts/config.md
       - concepts/metrics.md
-      - concepts/ippool.md
-      - concepts/reservedip.md
-      - concepts/workloadendpoint.md
+      - concepts/spiderippool.md
+      - concepts/spiderreservedip.md
+      - concepts/spiderendpoint.md
   - Reference:
       - cmdref/spiderpoolctl.md
       - cmdref/spiderpool-controller.md

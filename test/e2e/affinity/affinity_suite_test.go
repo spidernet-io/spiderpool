@@ -1,21 +1,22 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-package labelselector_test
+package affinity_test
 
 import (
+	"testing"
+
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	"k8s.io/apimachinery/pkg/runtime"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-func TestLabelSelector(t *testing.T) {
+func TestAffinity(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "LabelSelector Suite")
+	RunSpecs(t, "Affinity Suite")
 }
 
 var frame *e2e.Framework

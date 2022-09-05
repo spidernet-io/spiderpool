@@ -69,7 +69,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 				wg.Done()
 			}()
 
-			// wait test pod ready
+			// Wait test Pod ready
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
 			pod, e := frame.WaitPodStarted(podName, namespace, ctx)
@@ -77,20 +77,10 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(pod.Status.PodIPs).NotTo(BeEmpty(), "pod failed to assign ip")
 			GinkgoWriter.Printf("pod: %v/%v, ips: %+v \n", namespace, podName, pod.Status.PodIPs)
 
-			// check test pod assign ip ok
-			if frame.Info.IpV4Enabled {
-				podIPv4, ok := tools.CheckPodIpv4IPReady(pod)
-				Expect(ok).NotTo(BeFalse(), "failed to get ipv4 ip")
-				Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
-				GinkgoWriter.Println("succeeded to check pod ipv4 ip")
-			}
-			if frame.Info.IpV6Enabled {
-				podIPv6, ok := tools.CheckPodIpv6IPReady(pod)
-				Expect(ok).NotTo(BeFalse(), "failed to get ipv6 ip")
-				Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
-				GinkgoWriter.Println("succeeded to check pod ipv6 ip")
-			}
-
+			// Check the Pod's IP recorded IPPool
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
 			wg.Wait()
 
 			// try to delete pod
@@ -102,16 +92,16 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			time.Sleep(time.Duration(5 * time.Second))
 
 		},
-		Entry("finally succeed to run a pod during the ETCD is restarting",
+		Entry("Successfully run a pod during the ETCD is restarting",
 			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
-		Entry("finally succeed to run a pod during the API-server is restarting",
+		Entry("Successfully run a pod during the API-server is restarting",
 			Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, time.Second*90),
-		Entry("finally succeed to run a pod during the coreDns is restarting",
+		Entry("Successfully run a pod during the coreDns is restarting",
 			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Second*90),
-		Entry("finally succeed to run a pod during the spiderpool-agent is restarting",
-			Label("R00001"), "spiderpool-agent", map[string]string{"app.kubernetes.io/component": "spiderpool-agent"}, time.Second*90),
-		Entry("finally succeed to run a pod during the spiderpool-controller is restarting",
-			Label("R00004"), "spiderpool-controller", map[string]string{"app.kubernetes.io/component": "spiderpool-controller"}, time.Second*90),
+		Entry("Successfully run a pod during the Spiderpool agent is restarting",
+			Label("R00004"), "spiderpool-agent", map[string]string{"app.kubernetes.io/component": "spiderpool-agent"}, time.Second*90),
+		Entry("Successfully run a pod during the Spiderpool controller is restarting",
+			Label("R00001"), "spiderpool-controller", map[string]string{"app.kubernetes.io/component": "spiderpool-controller"}, time.Second*90),
 	)
 
 	DescribeTable("check ip assign after reboot node",
@@ -131,43 +121,39 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 					break
 				}
 			}
-			// Create Deployment
+			// Create the deployment and wait for it to be ready, check that the IP assignment is correct
 			Expect(frame.CreateDeployment(dep)).NotTo(HaveOccurred(), "Failed to create Deployment")
-
-			// Wait for the deployment to be ready and check that the IP assignment is correct
 			podList, err1 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
 			Expect(err1).ShouldNot(HaveOccurred())
 
 			// Check if the IP exists in the IPPool before restarting the node
-			ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool, err2 := common.GetClusterDefaultIppool(frame)
-			Expect(err2).ShouldNot(HaveOccurred())
-			isRecord1, _, _, err3 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool, podList)
+			isRecord1, _, _, err2 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList)
 			Expect(isRecord1).Should(BeTrue())
-			Expect(err3).ShouldNot(HaveOccurred())
-			GinkgoWriter.Printf("Pod IP recorded in IPPool %v,%v \n", ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool)
+			Expect(err2).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("Pod IP recorded in IPPool %v,%v \n", ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList)
 
 			// Send a cmd to restart the node and check the cluster until it is ready
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
-			err4 := common.RestartNodeUntilClusterReady(ctx, frame, podList.Items[0].Spec.NodeName)
-			Expect(err4).NotTo(HaveOccurred(), "Execution of cmd fails or node/Pod is not ready, error is: %v \n", err4)
+			err3 := common.RestartNodeUntilClusterReady(ctx, frame, podList.Items[0].Spec.NodeName)
+			Expect(err3).NotTo(HaveOccurred(), "Execution of cmd fails or node/Pod is not ready, error is: %v \n", err3)
 
 			// After the nodes reboot,create daemonset for checking spiderpool service ready, in case this rebooting test case influence on later test case
 			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute*5)
 			defer cancel1()
 			dsObj := common.GenerateExampleDaemonSetYaml(daemonSetName, namespace)
-			_, err5 := frame.CreateDaemonsetUntilReady(ctx1, dsObj)
-			Expect(err5).NotTo(HaveOccurred())
+			_, err4 := frame.CreateDaemonsetUntilReady(ctx1, dsObj)
+			Expect(err4).NotTo(HaveOccurred())
 
 			// After the node is ready then wait for the Deployment to be ready and check that the IP is correctly assigned.
-			restartPodList, err6 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Minute)
-			Expect(err6).ShouldNot(HaveOccurred())
+			restartPodList, err5 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Minute)
+			Expect(err5).ShouldNot(HaveOccurred())
 
 			// After restarting the node, check that the IP is still recorded in the ippool.
-			isRecord2, _, _, err7 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool, restartPodList)
+			isRecord2, _, _, err6 := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, restartPodList)
 			Expect(isRecord2).Should(BeTrue())
-			Expect(err7).ShouldNot(HaveOccurred())
-			GinkgoWriter.Printf("After restarting the node, the IP recorded in the ippool: %v ,%v", ClusterDefaultIPv4IPPool, ClusterDefaultIPv6IPPool)
+			Expect(err6).ShouldNot(HaveOccurred())
+			GinkgoWriter.Printf("After restarting the node, the IP recorded in the ippool: %v ,%v", ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList)
 
 			// Try to delete Deployment and Daemonset
 			Expect(frame.DeleteDeployment(podName, namespace)).NotTo(HaveOccurred())

@@ -24,20 +24,15 @@ import (
 
 var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 	var err error
-	var podName, namespace, jdName string
-	var podIPv4, podIPv6 string
+	var podName, namespace string
 
 	BeforeEach(func() {
-		// create namespace
+		// Init test info and create namespace
+		podName = "pod" + tools.RandomName()
 		namespace = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", namespace)
 		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
-
-		// pod name
-		podName = "pod" + tools.RandomName()
-		// init Job name
-		jdName = "jd" + tools.RandomName()
 
 		DeferCleanup(func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
@@ -48,29 +43,31 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 	DescribeTable("check ip release after job finished", func(behavior common.JobBehave) {
 		var wg sync.WaitGroup
-		// create Job
-		GinkgoWriter.Printf("try to create Job %v/%v \n", namespace, jdName)
+		var jdName string = "jd" + tools.RandomName()
+
+		// Generate job yaml with different behaviour and create it
+		GinkgoWriter.Printf("try to create Job %v/%v with job behavior is %v \n", namespace, jdName, behavior)
 		jd := common.GenerateExampleJobYaml(behavior, jdName, namespace, pointer.Int32Ptr(2))
 		Expect(jd).NotTo(BeNil())
-		GinkgoWriter.Printf("job behavior:\n %v \n", behavior)
-		e1 := frame.CreateJob(jd)
-		Expect(e1).NotTo(HaveOccurred(), "failed to create job \n")
+		Expect(frame.CreateJob(jd)).NotTo(HaveOccurred(), "Failed to create job %v/%v \n", namespace, jdName)
 
+		// Confirm that the job has been assigned an IP address
 		wg.Add(1)
 		go func() {
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Second)
 			defer GinkgoRecover()
 			GinkgoWriter.Printf("wg add begin \n")
 			podlist, err := frame.GetJobPodList(jd)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(podlist).NotTo(BeNil())
-			GinkgoWriter.Printf("Confirm that the job has been assigned to the IP address\n")
+			Expect(podlist.Items).NotTo(HaveLen(0))
+			GinkgoWriter.Printf("Confirm that the job has been assigned to the IP address \n")
 			errip := common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, time.Minute)
 			Expect(errip).To((HaveOccurred()))
 			wg.Done()
 		}()
+		wg.Wait()
 
-		// wait job finished
+		// Waiting for different behaviour job to be finished
 		GinkgoWriter.Printf("wait job finished \n")
 		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel1()
@@ -86,313 +83,224 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		default:
 			Fail("input error")
 		}
-		wg.Wait()
-		GinkgoWriter.Printf("job %v is finished \n job conditions:\n %v \n", jb, jb.Status.Conditions)
+		GinkgoWriter.Printf("job %v/%v is finished, job conditions is : %v \n", namespace, jb, jb.Status.Conditions)
 
-		// get job pod list
-		GinkgoWriter.Printf("Get job pod list after job Fail or Finish\n")
+		// The IP should be reclaimed for the job pod finished with success or failure Status
+		GinkgoWriter.Printf("Get job pod list after job Fail or Finish \n")
 		podlist, err := frame.GetJobPodList(jd)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(podlist).NotTo(BeNil())
-		// check ip release
-		GinkgoWriter.Println("check IP reclaimed after job Fail or Finish")
+		Expect(podlist.Items).NotTo(HaveLen(0))
+
+		GinkgoWriter.Println("The IP should be reclaimed for the job pod finished with success or failure Status")
 		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, time.Minute*2)).To(Succeed())
 
-		// delete job
 		GinkgoWriter.Printf("delete job: %v \n", jdName)
-		errjb := frame.DeleteJob(jdName, namespace)
-		Expect(errjb).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)
-
+		Expect(frame.DeleteJob(jdName, namespace)).NotTo(HaveOccurred(), "failed to delete job: %v \n", jdName)
 	},
 		Entry("check ip release when job is failed", Label("G00006"), common.JobTypeFail),
 		Entry("check ip release when job is succeeded", Label("G00006"), common.JobTypeFinish),
 	)
 
-	It("related IP resource recorded in ippool will be reclaimed after the namespace is deleted",
-		Label("smoke", "G00001"), func() {
-			// create pod
-			_, podIPv4, podIPv6 = createPod(podName, namespace, time.Second*30)
+	It(`G00002:the IP of a running pod should not be reclaimed after a same-name pod within a different namespace is deleted;
+		G00001:related IP resource recorded in ippool will be reclaimed after the namespace is deleted`, Label("G00002", "G00001", "smoke"), func() {
+		var podList *corev1.PodList
+		var namespace1 string = "ns1-" + tools.RandomName()
 
-			// ippool allocated ip
-			var allocatedIPv4s, allocatedIPv6s []string
+		// Create a namespace again and name it namespace1
+		GinkgoWriter.Printf("create namespace1 %v \n", namespace1)
+		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace1, time.Second*10)
+		Expect(err).NotTo(HaveOccurred(), "failed to create namespace1 %v", namespace1)
 
-			// get ippool status.allocated_ips
-			// TODO(bingzhesun) getAllocatedIPs() return allocatedIPv4s and allocatedIPv6s
-
-			if podIPv4 != "" {
-				// TODO(bingzhesun) here we assume that we have obtained the allocated ips
-				allocatedIPv4s = append(allocatedIPv4s, podIPv4)
-				GinkgoWriter.Printf("allocatedIPv4s: %v\n", allocatedIPv4s)
-
-				// check if podIP in ippool
-				GinkgoWriter.Println("check if podIPv4 in ippool")
-				Expect(allocatedIPv4s).To(ContainElement(podIPv4), "assign ipv4 failed")
+		namespaces := []string{namespace, namespace1}
+		for _, ns := range namespaces {
+			// Create pods with the same name in different namespaces
+			podYaml := common.GenerateExamplePodYaml(podName, ns)
+			Expect(podYaml).NotTo(BeNil())
+			pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, ns, time.Second*20)
+			Expect(pod).NotTo(BeNil(), "Failed to create Pod")
+			// Construct a podlist for another namespace（namepace1）
+			if ns == namespace1 {
+				podList = &corev1.PodList{
+					Items: []corev1.Pod{*pod},
+				}
 			}
-			if podIPv6 != "" {
-				// TODO(bingzhesun) here we assume that we have obtained the allocated ips
-				allocatedIPv6s = append(allocatedIPv6s, podIPv6)
-				GinkgoWriter.Printf("allocatedIPv6s: %v\n", allocatedIPv6s)
+		}
 
-				// check if podIP in ippool
-				GinkgoWriter.Println("check if podIPv6 in ippool")
-				Expect(allocatedIPv6s).To(ContainElement(podIPv6), "assign ipv6 failed")
-			}
+		// Delete pods from namespace until complete
+		GinkgoWriter.Printf("Delete Pods %v/%v from namespace %v until complete \n", podName, namespace)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		e2 := frame.DeletePodUntilFinish(podName, namespace, ctx)
+		Expect(e2).NotTo(HaveOccurred())
+		GinkgoWriter.Printf("Successful deletion of pods %v/%v \n", namespace, podName)
 
-			// delete namespace
-			GinkgoWriter.Printf("delete namespace %v\n", namespace)
-			err = frame.DeleteNamespace(namespace)
-			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
-			// TODO(bingzhesun) Here we will use the function waitNamespaceDeleted() to judge
+		// Another Pod in namespace1 with the same name has a normal status and IP
+		Expect(frame.CheckPodListIpReady(podList)).NotTo(HaveOccurred())
+		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList)
+		Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
+		Expect(ok).To(BeTrue())
 
-			// get ippool status.allocated_ips after delete namespace
-			// TODO(bingzhesun) getAllocatedIPs() return allocatedIPv4s and allocatedIPv6s
-			// here we assume that we have obtained the allocated ips
+		By("G00001: related IP resource recorded in ippool will be reclaimed after the namespace is deleted")
+		// Try to delete namespace1
+		err = frame.DeleteNamespace(namespace1)
+		Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace1)
+		GinkgoWriter.Printf("Successfully deleted namespace %v \n", namespace1)
 
-			//  TODO(bingzhesun) check if podIP in ippool
-		})
-
-	Context("delete the same-name pod within a different namespace", func() {
-		// declare another namespace namespace1
-		var namespace1 string
-
-		BeforeEach(func() {
-			// create namespace1
-			namespace1 = "ns1-" + tools.RandomName()
-			GinkgoWriter.Printf("create namespace1 %v \n", namespace1)
-			err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace1, time.Second*10)
-			Expect(err).NotTo(HaveOccurred(), "failed to create namespace1 %v", namespace1)
-
-			DeferCleanup(func() {
-				GinkgoWriter.Printf("delete namespace1 %v \n", namespace1)
-				err := frame.DeleteNamespace(namespace1)
-				Expect(err).NotTo(HaveOccurred(), "failed to delete namespace1 %v", namespace1)
-			})
-		})
-
-		It("the IP of a running pod should not be reclaimed after a same-name pod within a different namespace is deleted",
-			Label("G00002"), func() {
-				namespaces := []string{namespace, namespace1}
-				for _, ns := range namespaces {
-					// create pod in namespaces
-					_, podIPv4, podIPv6 = createPod(podName, ns, time.Second*30)
-				}
-
-				// delete pod in namespace1 until finish
-				GinkgoWriter.Printf("delete the pod %v in namespace1 %v\n", podName, namespace1)
-				ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
-				defer cancel1()
-				e2 := frame.DeletePodUntilFinish(podName, namespace1, ctx1)
-				Expect(e2).NotTo(HaveOccurred())
-				GinkgoWriter.Printf("succeed delete pod %v/%v\n", namespace1, podName)
-
-				// check if pod in namespace is running normally
-				GinkgoWriter.Printf("check if pod %v in namespace %v is running normally\n", podName, namespace)
-				pod3, e3 := frame.GetPod(podName, namespace)
-				Expect(pod3).NotTo(BeNil())
-				Expect(e3).NotTo(HaveOccurred())
-				if podIPv4 != "" {
-					GinkgoWriter.Println("check pod ipv4")
-					podIPv4 := common.GetPodIPv4Address(pod3)
-					Expect(podIPv4).NotTo(BeNil())
-					GinkgoWriter.Printf("pod ipv4: %v\n", podIPv4)
-				}
-				if podIPv6 != "" {
-					GinkgoWriter.Println("check pod ipv6")
-					podIPv6 := common.GetPodIPv6Address(pod3)
-					Expect(podIPv6).NotTo(BeNil())
-					GinkgoWriter.Printf("pod ipv6: %v\n", podIPv6)
-				}
-
-				// TODO(bingzhesun) check the same-name pod , its ip in ippool not be reclaimed
-			})
+		// Check that the Pod IPs in the IPPool are reclaimed properly after deleting the namespace（namespace1）
+		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, time.Minute)).To(Succeed())
 	})
 
-	It("the IP can be reclaimed after its deployment, statefulSet, daemonSet, replicaSet, or job is deleted, even when CNI binary is gone on the host", Label("G00003", "G00004"), Serial, func() {
-		var podList *corev1.PodList
+	It("the IP can be reclaimed after its deployment, statefulSet, daemonSet, replicaSet, or job is deleted, even when CNI binary is gone on the host",
+		// E00001: Assign IP to a pod for ipv4, ipv6 and dual-stack case
+		// E00002: Assign IP to deployment/pod for ipv4, ipv6 and dual-stack case
+		// E00003: Assign IP to statefulSet/pod for ipv4, ipv6 and dual-stack case
+		// E00004: Assign IP to daemonSet/pod for ipv4, ipv6 and dual-stack case
+		// E00005: Assign IP to job/pod for ipv4, ipv6 and dual-stack case
+		// E00006: Assign IP to replicaset/pod for ipv4, ipv6 and dual-stack case
+		Label("G00003", "G00004", "E00001", "E00002", "E00003", "E00004", "E00005", "E00006", "smoke"), Serial, func() {
+			var podList *corev1.PodList
+			var (
+				deployName     string = "deploy-" + tools.RandomName()
+				depReplicasNum int32  = 1
+				stsName        string = "sts-" + tools.RandomName()
+				stsReplicasNum int32  = 1
+				dsName         string = "ds-" + tools.RandomName()
+				rsName         string = "rs-" + tools.RandomName()
+				rsReplicasNum  int32  = 1
+				jobName        string = "job-" + tools.RandomName()
+				jobNum         int32  = *pointer.Int32Ptr(1)
+			)
 
-		deployName := "deploy-" + tools.RandomName()
-		stsName := "sts-" + tools.RandomName()
-		dsName := "ds-" + tools.RandomName()
-		rsName := "rs-" + tools.RandomName()
-		jobName := "job-" + tools.RandomName()
+			// Create different controller resources
+			// Generate example podYaml and create Pod
+			podYaml := common.GenerateExamplePodYaml(podName, namespace)
+			Expect(podYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("try to create Pod %v/%v \n", namespace, podName)
+			Expect(frame.CreatePod(podYaml)).NotTo(HaveOccurred(), "failed to create Pod %v/%v \n", namespace, podName)
 
-		// create resources
-		// create pod
-		GinkgoWriter.Printf("try to create %v/%v \n", namespace, podName)
-		createPod(podName, namespace, time.Minute)
+			// Generate example StatefulSet yaml and create StatefulSet
+			GinkgoWriter.Printf("Generate example StatefulSet %v/%v yaml \n", namespace, stsName)
+			stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, stsReplicasNum)
+			Expect(stsYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml \n", namespace, stsName)
+			GinkgoWriter.Printf("Tty to create StatefulSet %v/%v \n", namespace, stsName)
+			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed(), "failed to create StatefulSet %v/%v \n", namespace, stsName)
 
-		// create deployment
-		// generate example deployment yaml
-		GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, deployName)
-		deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, int32(1))
-		Expect(deployYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, deployName)
+			// Generate example daemonSet yaml and create daemonSet
+			GinkgoWriter.Printf("Generate example daemonSet %v/%v yaml\n", namespace, dsName)
+			dsYaml := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+			Expect(dsYaml).NotTo(BeNil(), "failed to generate example daemonSet %v/%v yaml\n", namespace, dsName)
+			GinkgoWriter.Printf("Try to create daemonSet %v/%v \n", namespace, dsName)
+			Expect(frame.CreateDaemonSet(dsYaml)).To(Succeed(), "failed to create daemonSet %v/%v \n", namespace, dsName)
 
-		// create deployment
-		GinkgoWriter.Printf("create deployment %v/%v \n", namespace, deployName)
-		deployObj, err := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(deployObj).NotTo(BeNil())
+			// Generate example replicaSet yaml and create replicaSet
+			GinkgoWriter.Printf("Generate example replicaSet %v/%v yaml \n", namespace, rsName)
+			rsYaml := common.GenerateExampleReplicaSetYaml(rsName, namespace, rsReplicasNum)
+			Expect(rsYaml).NotTo(BeNil(), "failed to generate replicaSet example %v/%v yaml \n", namespace, rsName)
+			GinkgoWriter.Printf("Try to create replicaSet %v/%v \n", namespace, rsName)
+			Expect(frame.CreateReplicaSet(rsYaml)).To(Succeed(), "failed to create replicaSet %v/%v \n", namespace, rsName)
 
-		// create statefulSet
-		// generate example statefulSet yaml
-		GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, stsName)
-		stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, int32(1))
-		Expect(stsYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, stsName)
+			// Generate example Deployment yaml and create Deployment
+			GinkgoWriter.Printf("Generate example deployment %v/%v yaml \n", namespace, deployName)
+			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, depReplicasNum)
+			Expect(deployYaml).NotTo(BeNil(), "failed to generate deployment example %v/%v yaml \n", namespace, deployName)
+			GinkgoWriter.Printf("Try to create deployment %v/%v \n", namespace, deployName)
+			Expect(frame.CreateDeployment(deployYaml)).NotTo(HaveOccurred())
 
-		// create statefulSet
-		GinkgoWriter.Printf("create %v/%v \n", namespace, stsName)
-		Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed(), "failed to create %v/%v \n", namespace, stsName)
-		ctxSts, cancelSts := context.WithTimeout(context.Background(), time.Minute)
-		defer cancelSts()
-		statefulSet, err := frame.WaitStatefulSetReady(stsName, namespace, ctxSts)
-		Expect(err).NotTo(HaveOccurred(), "failed to wait for statefulSet ready")
-		Expect(statefulSet).NotTo(BeNil())
+			// Generate example job yaml and create Job resource
+			GinkgoWriter.Printf("Generate example job %v/%v yaml\n", namespace, jobName)
+			jobYaml := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, &jobNum)
+			Expect(jobYaml).NotTo(BeNil(), "failed to generate job example %v/%v yaml \n", namespace, jobName)
+			GinkgoWriter.Printf("Try to create job %v/%v \n", namespace, jobName)
+			Expect(frame.CreateJob(jobYaml)).To(Succeed(), "failed to create job %v/%v \n", namespace, jobName)
 
-		// create daemonSet
-		// generate example daemonSet yaml
-		GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, dsName)
-		dsYaml := common.GenerateExampleDaemonSetYaml(dsName, namespace)
-		Expect(dsYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, dsName)
-
-		// create daemonSet
-		GinkgoWriter.Printf("create %v/%v \n", namespace, dsName)
-		Expect(frame.CreateDaemonSet(dsYaml)).To(Succeed(), "failed to create %v/%v \n", namespace, dsName)
-		ctxDs, cancelDs := context.WithTimeout(context.Background(), time.Minute)
-		defer cancelDs()
-		daemonSet, err := frame.WaitDaemonSetReady(dsName, namespace, ctxDs)
-		Expect(err).NotTo(HaveOccurred(), "failed to wait for daemonSet ready")
-		Expect(daemonSet).NotTo(BeNil())
-
-		// create replicaSet
-		// generate example replicaSet yaml
-		GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, rsName)
-		rsYaml := common.GenerateExampleReplicaSetYaml(rsName, namespace, int32(1))
-		Expect(rsYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, rsName)
-
-		// create replicaSet
-		GinkgoWriter.Printf("create %v/%v \n", namespace, rsName)
-		Expect(frame.CreateReplicaSet(rsYaml)).To(Succeed(), "failed to create %v/%v \n", namespace, rsName)
-		ctxRs, cancelRs := context.WithTimeout(context.Background(), time.Minute)
-		defer cancelRs()
-		replicaSet, err := frame.WaitReplicaSetReady(rsName, namespace, ctxRs)
-		Expect(err).NotTo(HaveOccurred(), "failed to wait for replicaSet ready")
-		Expect(replicaSet).NotTo(BeNil())
-
-		// create job
-		// generate example job yaml
-		GinkgoWriter.Printf("generate example %v/%v yaml\n", namespace, jobName)
-		jobYaml := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, pointer.Int32Ptr(1))
-		Expect(jobYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml\n", namespace, jobName)
-
-		// create resource
-		GinkgoWriter.Printf("create %v/%v \n", namespace, jobName)
-		Expect(frame.CreateJob(jobYaml)).To(Succeed(), "failed to create %v/%v \n", namespace, jobName)
-
-		// wait all job pod running
-		ctxJob, cancelJob := context.WithTimeout(context.Background(), time.Minute)
-		defer cancelJob()
-	LOOP:
-		for {
-			select {
-			case <-ctxJob.Done():
-				Fail("time out to wait all job pod running\n")
-			default:
-				job, err := frame.GetJob(jobName, namespace)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(job).NotTo(BeNil())
-				if *job.Spec.Parallelism == job.Status.Active {
-					podList, err := frame.GetPodListByLabel(job.Spec.Template.Labels)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(podList).NotTo(BeNil())
-					for _, pod := range podList.Items {
-						for _, c := range pod.Status.Conditions {
-							if c.Type == corev1.PodReady && c.Status != corev1.ConditionTrue {
-								continue LOOP
-							}
-						}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel()
+		LOOP:
+			for {
+				select {
+				case <-ctx.Done():
+					Fail("time out to wait all controller pod running \n")
+				default:
+					// Get all the pods created under namespace and check if the status is running
+					podList, err = frame.GetPodList(client.InNamespace(namespace))
+					Expect(err).NotTo(HaveOccurred(), "failed to get podList, error: %v \n", err)
+					Expect(podList.Items).NotTo(HaveLen(0))
+					// TODO(tao.yang), Inability to accurately sense the cause of failure
+					isOk := frame.CheckPodListRunning(podList)
+					if !isOk {
+						time.Sleep(time.Second)
+						continue LOOP
 					}
 					break LOOP
 				}
-				time.Sleep(time.Second)
 			}
-		}
 
-		// get podList
-		podList, err = frame.GetPodList(client.InNamespace(namespace))
-		Expect(err).NotTo(HaveOccurred(), "failed to get podList,error: %v\n", err)
-		Expect(podList).NotTo(BeNil())
+			// Please note that the following checkpoints for cases are included here
+			// E00001、E00002、E00003、E00004、E00005、E00006
+			// Check the resource ip information in ippool is correct
+			GinkgoWriter.Printf("check the ip information of resources in the nippool is correct \n", namespace)
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList)
+			Expect(err).NotTo(HaveOccurred(), "failed to check ip recorded in ippool, err: %v\n", err)
+			Expect(ok).To(BeTrue())
 
-		// check the resource ip information in ippool is correct
-		GinkgoWriter.Printf("check the ip information of resources in the namespace %v in ippool is correct\n", namespace)
-		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList)
-		Expect(err).NotTo(HaveOccurred(), "failed to check ip recorded in ippool, err: %v\n", err)
-		Expect(ok).To(BeTrue())
+			// remove cni bin
+			GinkgoWriter.Println("remove cni bin")
+			command := "mv /opt/cni/bin/multus /opt/cni/bin/multus.backup"
+			ctx, cancel = context.WithTimeout(context.Background(), time.Second*20)
+			defer cancel()
+			err = common.ExecCommandOnKindNode(ctx, frame.Info.KindNodeList, command)
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Println("remove cni bin successfully")
 
-		// remove cni bin
-		GinkgoWriter.Println("remove cni bin")
-		command := "mv /opt/cni/bin/multus /opt/cni/bin/multus.backup"
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancel()
-		err = common.ExecCommandOnKindNode(ctx, frame.Info.KindNodeList, command)
-		Expect(err).NotTo(HaveOccurred())
-		GinkgoWriter.Println("remove cni bin successfully")
+			By("G00004: The IP should be reclaimed when deleting the pod with 0 second of grace period")
+			opt := &client.DeleteOptions{
+				GracePeriodSeconds: pointer.Int64Ptr(0),
+			}
+			// Delete resources with 0 second of grace period
+			GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)
+			Expect(frame.DeletePod(podName, namespace, opt)).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", namespace, podName)
 
-		// delete resource
-		opt := &client.DeleteOptions{
-			GracePeriodSeconds: pointer.Int64Ptr(0),
-		}
-		// delete pod
-		GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)
-		ctxPod, cancelPod := context.WithTimeout(context.Background(), time.Minute)
-		defer cancelPod()
-		Expect(frame.DeletePodUntilFinish(podName, namespace, ctxPod, opt)).To(Succeed(), "timeout to delete pod %v/%v\n", namespace, podName)
+			GinkgoWriter.Printf("delete deployment %v/%v\n", namespace, deployName)
+			Expect(frame.DeleteDeployment(deployName, namespace, opt)).To(Succeed(), "failed to delete deployment %v/%v\n", namespace, deployName)
 
-		// delete deployment
-		GinkgoWriter.Printf("delete deployment %v/%v\n", namespace, deployName)
-		Expect(frame.DeleteDeployment(deployName, namespace, opt)).To(Succeed(), "failed to delete deployment %v/%v\n", namespace, deployName)
+			GinkgoWriter.Printf("delete statefulSet %v/%v\n", namespace, stsName)
+			Expect(frame.DeleteStatefulSet(stsName, namespace, opt)).To(Succeed(), "failed to delete statefulSet %v/%v\n", namespace, stsName)
 
-		// delete statefulSet
-		GinkgoWriter.Printf("delete statefulSet %v/%v\n", namespace, stsName)
-		Expect(frame.DeleteStatefulSet(stsName, namespace, opt)).To(Succeed(), "failed to delete statefulSet %v/%v\n", namespace, stsName)
+			GinkgoWriter.Printf("delete daemonSet %v/%v\n", namespace, dsName)
+			Expect(frame.DeleteDaemonSet(dsName, namespace, opt)).To(Succeed(), "failed to delete daemonSet %v/%v\n", namespace, dsName)
 
-		// delete daemonSet
-		GinkgoWriter.Printf("delete daemonSet %v/%v\n", namespace, dsName)
-		Expect(frame.DeleteDaemonSet(dsName, namespace, opt)).To(Succeed(), "failed to delete daemonSet %v/%v\n", namespace, dsName)
+			GinkgoWriter.Printf("delete replicaset %v/%v\n", namespace, rsName)
+			Expect(frame.DeleteReplicaSet(rsName, namespace, opt)).To(Succeed(), "failed to delete replicaset %v/%v\n", namespace, rsName)
 
-		// delete replicaset
-		GinkgoWriter.Printf("delete replicaset %v/%v\n", namespace, rsName)
-		Expect(frame.DeleteReplicaSet(rsName, namespace, opt)).To(Succeed(), "failed to delete replicaset %v/%v\n", namespace, rsName)
+			GinkgoWriter.Printf("delete job %v/%v\n", namespace, jobName)
+			Expect(frame.DeleteJob(jobName, namespace, opt)).To(Succeed(), "failed to delete job %v/%v\n", namespace, jobName)
 
-		// delete job
-		GinkgoWriter.Printf("delete job %v/%v\n", namespace, jobName)
-		Expect(frame.DeleteJob(jobName, namespace, opt)).To(Succeed(), "failed to delete job %v/%v\n", namespace, jobName)
+			// avoid that "GracePeriodSeconds" of workload does not take effect
+			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList, error: %v\n", err)
+			Expect(frame.DeletePodList(podList, opt)).To(Succeed(), "failed to delete podList\n")
 
-		// avoid that "GracePeriodSeconds" of workload does not take effect
-		podList, err = frame.GetPodList(client.InNamespace(namespace))
-		Expect(err).NotTo(HaveOccurred(), "failed to get podList, error: %v\n", err)
-		Expect(frame.DeletePodList(podList, opt)).To(Succeed(), "failed to delete podList\n")
+			// Check that the IP in the IPPool has been reclaimed correctly.
+			Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, time.Minute*2)).To(Succeed())
+			GinkgoWriter.Println("Delete resource with 0 second grace period where the IP of the resource is correctly reclaimed")
 
-		// check if the ip in ippool reclaimed normally
-		GinkgoWriter.Println("check IP reclaimed")
-		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, time.Minute*2)).To(Succeed())
+			// restore cni bin
+			GinkgoWriter.Println("restore cni bin")
+			command = "mv /opt/cni/bin/multus.backup /opt/cni/bin/multus"
+			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*20)
+			defer cancel2()
+			err = common.ExecCommandOnKindNode(ctx2, frame.Info.KindNodeList, command)
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Println("restore cni bin successfully")
 
-		// restore cni bin
-		GinkgoWriter.Println("restore cni bin")
-		command = "mv /opt/cni/bin/multus.backup /opt/cni/bin/multus"
-		ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancel2()
-		err = common.ExecCommandOnKindNode(ctx2, frame.Info.KindNodeList, command)
-		Expect(err).NotTo(HaveOccurred())
-		GinkgoWriter.Println("restore cni bin successfully")
-
-		// wait nodes ready
-		GinkgoWriter.Println("wait cluster node ready")
-		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel3()
-		ok, err = frame.WaitClusterNodeReady(ctx3)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(ok).To(BeTrue())
-	})
+			// cni wait for node ready after recovery
+			GinkgoWriter.Println("wait cluster node ready")
+			ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel3()
+			ok, err = frame.WaitClusterNodeReady(ctx3)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+		})
 
 	Context("test the reclaim of dirty IP record in the IPPool", func() {
 		var v4poolName, v6poolName string
@@ -426,7 +334,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			dirtyContainerID = common.GenerateString(64, true)
 			GinkgoWriter.Printf("dirtyContainerID:%v\n", dirtyContainerID)
 
-			// create ippool
+			// Create IPv4Pool and IPV6Pool
 			if frame.Info.IpV4Enabled {
 				GinkgoWriter.Println("create ipv4 pool")
 				v4poolName, v4poolObj = common.GenerateExampleIpv4poolObject(1)
@@ -441,22 +349,15 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(common.CreateIppool(frame, v6poolObj)).To(Succeed())
 				GinkgoWriter.Printf("succeed to create ipv6 pool %v\n", v6poolName)
 			}
-
 			DeferCleanup(func() {
-				// delete ippool
+				GinkgoWriter.Printf("Try to delete IPPool %v \n", v4poolName, v6poolName)
 				if frame.Info.IpV4Enabled {
-					GinkgoWriter.Println("delete ipv4 pool")
-					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-					defer cancel()
-					Expect(common.DeleteIPPoolUntilFinish(frame, v4poolName, ctx)).To(Succeed())
-					GinkgoWriter.Printf("succeed to delete ipv4 pool %v\n", v4poolName)
+					err := common.DeleteIPPoolByName(frame, v4poolName)
+					Expect(err).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
-					GinkgoWriter.Println("delete ipv6 pool")
-					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-					defer cancel()
-					Expect(common.DeleteIPPoolUntilFinish(frame, v6poolName, ctx)).To(Succeed())
-					GinkgoWriter.Printf("succeed to delete ipv6 pool %v\n", v6poolName)
+					err := common.DeleteIPPoolByName(frame, v6poolName)
+					Expect(err).NotTo(HaveOccurred())
 				}
 			})
 		})
@@ -550,8 +451,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				record, ok := v4poolObj.Status.AllocatedIPs[dirtyIPv4]
 				Expect(ok).To(BeTrue())
 				Expect(record).To(Equal(*dirtyIPv4Record))
-
 			}
+
 			if frame.Info.IpV6Enabled {
 				dirtyIPv6Record = podIPv6Record
 
@@ -584,7 +485,6 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				record, ok := v6poolObj.Status.AllocatedIPs[dirtyIPv6]
 				Expect(ok).To(BeTrue())
 				Expect(record).To(Equal(*dirtyIPv6Record))
-
 			}
 
 			// restart spiderpool controller to trigger gc
@@ -649,10 +549,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			GinkgoWriter.Printf("succeed to check pod %v/%v ip in ippool\n", namespace, podName)
 
 			// delete pod
-			GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-			Expect(frame.DeletePodUntilFinish(podName, namespace, ctx)).To(Succeed(), "timeout to delete pod %v/%v\n", namespace, podName)
+			Expect(frame.DeletePod(podName, namespace)).To(Succeed(), "Failed to delete pod %v/%v\n", namespace, podName)
 			GinkgoWriter.Printf("succeed to delete pod %v/%v\n", namespace, podName)
 		},
 			Entry("a dirty IP record (pod name is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005"), "pod"),
@@ -660,17 +557,3 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		)
 	})
 })
-
-func createPod(podName, namespace string, duration time.Duration) (pod *corev1.Pod, podIPv4, podIPv6 string) {
-	// generate podYaml
-	podYaml := common.GenerateExamplePodYaml(podName, namespace)
-	Expect(podYaml).NotTo(BeNil())
-	GinkgoWriter.Printf("podYaml: %v \n", podYaml)
-
-	// create pod
-	pod, podIPv4, podIPv6 = common.CreatePodUntilReady(frame, podYaml, podName, namespace, duration)
-	Expect(pod).NotTo(BeNil(), "create pod failed")
-	GinkgoWriter.Printf("podIPv4: %v\n", podIPv4)
-	GinkgoWriter.Printf("podIPv6: %v\n", podIPv6)
-	return
-}

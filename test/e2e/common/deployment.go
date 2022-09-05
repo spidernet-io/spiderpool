@@ -4,12 +4,15 @@ package common
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,4 +120,22 @@ func CreateDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Depl
 		}
 		time.Sleep(time.Second)
 	}
+}
+
+// Create Deployment with types.AnnoPodIPPoolValue
+func CreateDeployWithPodAnnoation(frame *e2e.Framework, name, namespace string, deployOriginialNum int, annoPodIPPoolValue types.AnnoPodIPPoolValue) (deploy *appsv1.Deployment) {
+	Expect(name).NotTo(BeEmpty(), "name is empty \n")
+	Expect(namespace).NotTo(BeEmpty(), "namespace is empty \n")
+
+	b, e := json.Marshal(annoPodIPPoolValue)
+	Expect(e).NotTo(HaveOccurred())
+	annoPodIPPoolValueStr := string(b)
+
+	deployYaml := GenerateExampleDeploymentYaml(name, namespace, int32(deployOriginialNum))
+	deployYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: annoPodIPPoolValueStr}
+	Expect(deployYaml).NotTo(BeNil())
+
+	deploy, err := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+	Expect(err).NotTo(HaveOccurred())
+	return deploy
 }

@@ -45,7 +45,7 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		zap.String("IPPoolName", ipPool.Name),
 		zap.String("Operation", "DEFAULT"),
 	)
-	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
+	logger.Sugar().Debugf("Request IPPool: %v", ipPool)
 
 	// do not mutate when it's a deleting object
 	if ipPool.DeletionTimestamp != nil {
@@ -89,7 +89,7 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 		zap.String("IPPoolName", ipPool.Name),
 		zap.String("Operation", "CREATE"),
 	)
-	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
+	logger.Sugar().Debugf("Request IPPool: %v", ipPool)
 
 	if err := im.validateCreateIPPool(ctx, ipPool); err != nil {
 		logger.Sugar().Errorf("Failed to validate: %v", err)
@@ -111,8 +111,8 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 		zap.String("IPPoolName", newIPPool.Name),
 		zap.String("Operation", "UPDATE"),
 	)
-	logger.Sugar().Debugf("Request old IPPool: %+v", *oldIPPool)
-	logger.Sugar().Debugf("Request new IPPool: %+v", *newIPPool)
+	logger.Sugar().Debugf("Request old IPPool: %v", oldIPPool)
+	logger.Sugar().Debugf("Request new IPPool: %v", newIPPool)
 
 	if err := im.validateUpdateIPPool(ctx, oldIPPool, newIPPool); err != nil {
 		logger.Sugar().Errorf("Failed to validate: %v", err)

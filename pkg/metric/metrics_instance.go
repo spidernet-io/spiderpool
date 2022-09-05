@@ -6,11 +6,11 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 
 	"github.com/spidernet-io/spiderpool/pkg/lock"

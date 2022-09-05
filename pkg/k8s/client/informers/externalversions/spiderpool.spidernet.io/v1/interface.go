@@ -13,6 +13,8 @@ import (
 type Interface interface {
 	// SpiderIPPools returns a SpiderIPPoolInformer.
 	SpiderIPPools() SpiderIPPoolInformer
+	// SpiderSubnets returns a SpiderSubnetInformer.
+	SpiderSubnets() SpiderSubnetInformer
 }
 
 type version struct {
@@ -29,4 +31,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // SpiderIPPools returns a SpiderIPPoolInformer.
 func (v *version) SpiderIPPools() SpiderIPPoolInformer {
 	return &spiderIPPoolInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// SpiderSubnets returns a SpiderSubnetInformer.
+func (v *version) SpiderSubnets() SpiderSubnetInformer {
+	return &spiderSubnetInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

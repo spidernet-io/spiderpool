@@ -139,3 +139,21 @@ func CreateDeployWithPodAnnoation(frame *e2e.Framework, name, namespace string, 
 	Expect(err).NotTo(HaveOccurred())
 	return deploy
 }
+
+// Create Deployment until the ip assignment is successful
+func CreateDeployUnitlReadyCheckInIppool(frame *e2e.Framework, depName, namespaceName string, podNum int32, v4PoolNameList, v6PoolNameList []string) {
+	deployYaml := GenerateExampleDeploymentYaml(depName, namespaceName, podNum)
+	Expect(deployYaml).NotTo(BeNil())
+	deploy, err := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+	Expect(err).NotTo(HaveOccurred())
+
+	// get pod list
+	podlist, err := frame.GetDeploymentPodList(deploy)
+	Expect(int32(len(podlist.Items))).Should(Equal(deploy.Status.ReadyReplicas))
+	Expect(err).NotTo(HaveOccurred())
+
+	// check pod ip record still in this ippool
+	ok, _, _, err := CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(ok).To(BeTrue())
+}

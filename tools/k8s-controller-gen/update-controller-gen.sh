@@ -71,14 +71,17 @@ manifests_verify() {
   fi
 }
 
+cleanup() {
+  rm -rf ${CONTROLLER_GEN_TMP_DIR}
+}
+
 help() {
-    echo "help"
+  echo "help"
 }
 
 main() {
-  if [ -d ${CONTROLLER_GEN_TMP_DIR} ];then
-    rm -rf ${CONTROLLER_GEN_TMP_DIR}
-  fi
+  trap "cleanup" EXIT SIGINT
+  cleanup
   mkdir -p ${CONTROLLER_GEN_TMP_DIR}
 
   case ${1:-none} in
@@ -95,9 +98,6 @@ main() {
       help
       ;;
   esac
-
-  # Clean up controller-gen tmp dir
-  rm -rf ${CONTROLLER_GEN_TMP_DIR}
 }
 
 main "$*"

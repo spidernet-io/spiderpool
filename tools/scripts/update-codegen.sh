@@ -13,9 +13,15 @@ MODULE_NAME=$(cat ${PROJECT_ROOT}/go.mod | grep -e "module[[:space:]][^[:space:]
 
 SPDX_COPYRIGHT_HEADER="${PROJECT_ROOT}/tools/spdx-copyright-header.txt"
 LICENSE_FILE="${PROJECT_ROOT}/tools/boilerplate.go.txt"
-if [ -f ${LICENSE_FILE} ]; then
+go_path="${PROJECT_ROOT}/_go"
+
+cleanup() {
+  rm -rf ${go_path}
   rm -f ${LICENSE_FILE}
-fi
+}
+trap "cleanup" EXIT SIGINT
+cleanup
+
 touch ${LICENSE_FILE}
 
 while read -r line || [[ -n ${line} ]]
@@ -29,13 +35,6 @@ GROUPS_WITH_VERSIONS="spiderpool.spidernet.io:v1"
 
 echo "change directory: ${PROJECT_ROOT}"
 cd "${PROJECT_ROOT}"
-
-go_path="${PROJECT_ROOT}/_go"
-cleanup() {
-  rm -rf ${go_path}
-}
-trap "cleanup" EXIT SIGINT
-cleanup
 
 go_pkg="${go_path}/src/github.com/spidernet-io/spiderpool"
 go_pkg_dir=$(dirname "${go_pkg}")

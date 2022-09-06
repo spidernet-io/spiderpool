@@ -19,7 +19,9 @@ const (
 	JobTypeFinish         JobBehave = "succeedJob"
 )
 
-func GenerateExampleJobYaml(behavior JobBehave, jdName, namespace string, parallelism *int32) *batchv1.Job {
+var jobHoldDuration = "sleep 5;"
+
+func GenerateExampleJobYaml(behavior JobBehave, jdName, namespace string) *batchv1.Job {
 
 	Expect(jdName).NotTo(BeEmpty())
 	Expect(namespace).NotTo(BeEmpty())
@@ -34,7 +36,6 @@ func GenerateExampleJobYaml(behavior JobBehave, jdName, namespace string, parall
 		},
 		Spec: batchv1.JobSpec{
 			BackoffLimit:   pointer.Int32Ptr(0),
-			Parallelism:    parallelism,
 			ManualSelector: pointer.Bool(true),
 
 			Selector: &metav1.LabelSelector{
@@ -67,9 +68,9 @@ func GenerateExampleJobYaml(behavior JobBehave, jdName, namespace string, parall
 	case JobTypeRunningForever:
 		jobYaml.Spec.Template.Spec.Containers[0].Command = []string{"sleep", "infinity"}
 	case JobTypeFail:
-		jobYaml.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c", "exit 1"}
+		jobYaml.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c", jobHoldDuration + "exit 1"}
 	case JobTypeFinish:
-		jobYaml.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c", "exit 0"}
+		jobYaml.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c", jobHoldDuration + " exit 0"}
 	default:
 		GinkgoWriter.Printf("input error\n")
 		return nil

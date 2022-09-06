@@ -43,7 +43,7 @@ type IPPoolSpec struct {
 	PodAffinity *metav1.LabelSelector `json:"podAffinity,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	NamesapceAffinity *metav1.LabelSelector `json:"namespaceAffinity,omitempty"`
+	NamespaceAffinity *metav1.LabelSelector `json:"namespaceAffinity,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	NodeAffinity *metav1.LabelSelector `json:"nodeAffinity,omitempty"`

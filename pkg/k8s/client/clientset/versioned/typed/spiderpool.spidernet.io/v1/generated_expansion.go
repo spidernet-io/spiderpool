@@ -6,3 +6,5 @@
 package v1
 
 type SpiderIPPoolExpansion interface{}
+
+type SpiderSubnetExpansion interface{}

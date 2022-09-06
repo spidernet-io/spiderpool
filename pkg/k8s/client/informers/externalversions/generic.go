@@ -42,6 +42,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=spiderpool.spidernet.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("spiderippools"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V1().SpiderIPPools().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("spidersubnets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V1().SpiderSubnets().Informer()}, nil
 
 	}
 

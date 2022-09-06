@@ -16,6 +16,7 @@ import (
 type SpiderpoolV1Interface interface {
 	RESTClient() rest.Interface
 	SpiderIPPoolsGetter
+	SpiderSubnetsGetter
 }
 
 // SpiderpoolV1Client is used to interact with features provided by the spiderpool.spidernet.io group.
@@ -25,6 +26,10 @@ type SpiderpoolV1Client struct {
 
 func (c *SpiderpoolV1Client) SpiderIPPools() SpiderIPPoolInterface {
 	return newSpiderIPPools(c)
+}
+
+func (c *SpiderpoolV1Client) SpiderSubnets() SpiderSubnetInterface {
+	return newSpiderSubnets(c)
 }
 
 // NewForConfig creates a new SpiderpoolV1Client for the given config.

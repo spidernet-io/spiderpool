@@ -8,3 +8,7 @@ package v1
 // SpiderIPPoolListerExpansion allows custom methods to be added to
 // SpiderIPPoolLister.
 type SpiderIPPoolListerExpansion interface{}
+
+// SpiderSubnetListerExpansion allows custom methods to be added to
+// SpiderSubnetLister.
+type SpiderSubnetListerExpansion interface{}

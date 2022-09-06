@@ -19,6 +19,10 @@ func (c *FakeSpiderpoolV1) SpiderIPPools() v1.SpiderIPPoolInterface {
 	return &FakeSpiderIPPools{c}
 }
 
+func (c *FakeSpiderpoolV1) SpiderSubnets() v1.SpiderSubnetInterface {
+	return &FakeSpiderSubnets{c}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeSpiderpoolV1) RESTClient() rest.Interface {

@@ -76,10 +76,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
 				GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
 				v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
-				v4Pool.Spec.NamesapceAffinity = new(v1.LabelSelector)
+				v4Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v4Pool.Spec.PodAffinity = new(v1.LabelSelector)
 				v4Pool.Spec.NodeAffinity.MatchLabels = matchedNode.GetLabels()
-				v4Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
+				v4Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 				v4Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
 				GinkgoWriter.Printf("succeeded to create ippool %v\n", v4Pool.Name)
@@ -88,10 +88,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
 				GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
 				v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
-				v6Pool.Spec.NamesapceAffinity = new(v1.LabelSelector)
+				v6Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v6Pool.Spec.PodAffinity = new(v1.LabelSelector)
 				v6Pool.Spec.NodeAffinity.MatchLabels = matchedNode.GetLabels()
-				v6Pool.Spec.NamesapceAffinity.MatchLabels = ns.Labels
+				v6Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 				v6Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
 				GinkgoWriter.Printf("succeeded to create ippool %v\n", v6Pool.Name)

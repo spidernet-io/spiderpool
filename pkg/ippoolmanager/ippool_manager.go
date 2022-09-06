@@ -300,8 +300,8 @@ func (im *ipPoolManager) SelectByPod(ctx context.Context, version types.IPVersio
 		}
 	}
 
-	if ipPool.Spec.NamesapceAffinity != nil {
-		nsMatched, err := im.nsManager.MatchLabelSelector(ctx, pod.Namespace, ipPool.Spec.NamesapceAffinity)
+	if ipPool.Spec.NamespaceAffinity != nil {
+		nsMatched, err := im.nsManager.MatchLabelSelector(ctx, pod.Namespace, ipPool.Spec.NamespaceAffinity)
 		if err != nil {
 			return false, err
 		}

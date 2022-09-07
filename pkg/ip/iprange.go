@@ -16,7 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-// ParseIPRanges parses IP ranges as a IP address slices of the specified
+// ParseIPRanges parses IP ranges as an IP address slices of the specified
 // IP version.
 func ParseIPRanges(version types.IPVersion, ipRanges []string) ([]net.IP, error) {
 	var sum []net.IP
@@ -31,7 +31,7 @@ func ParseIPRanges(version types.IPVersion, ipRanges []string) ([]net.IP, error)
 	return sum, nil
 }
 
-// ParseIPRange parses IP range as a IP address slices of the specified
+// ParseIPRange parses IP range as an IP address slices of the specified
 // IP version.
 func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 	if err := IsIPRange(version, ipRange); err != nil {
@@ -146,7 +146,7 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 }
 
 // IsIPRange reports whether ipRange string is a valid IP range. An IP
-// range can be an single IP address in the style of '192.168.1.0', or
+// range can be a single IP address in the style of '192.168.1.0', or
 // an address range in the form of '192.168.1.0-192.168.1.10'.
 // The following formats are invalid:
 // "192.168.1.0 - 192.168.1.10": there can be no space between two IP
@@ -215,4 +215,19 @@ func IsIPv6IPRange(ipRange string) bool {
 	}
 
 	return true
+}
+
+// SortIPRanges sorts the slice ipRanges, and this will return a newly created []string
+func SortIPRanges(version types.IPVersion, ipRanges []string) ([]string, error) {
+	ips, err := ParseIPRanges(version, ipRanges)
+	if nil != err {
+		return nil, err
+	}
+
+	sortedIPRanges, err := ConvertIPsToIPRanges(version, ips)
+	if nil != err {
+		return nil, err
+	}
+
+	return sortedIPRanges, nil
 }

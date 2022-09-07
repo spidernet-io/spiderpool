@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -346,6 +348,26 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 }
 
 func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool, pod *corev1.Pod) ([]*ToBeAllocated, error) {
+	// subnet manager
+	if i.ipamConfig.EnableSubnetManager {
+		_, enableSubnetMgrV4 := pod.Annotations[subnetmanager.AnnoSubnetManagerV4]
+		_, enableSubnetMgrV6 := pod.Annotations[subnetmanager.AnnoSubnetManagerV6]
+		if enableSubnetMgrV4 || enableSubnetMgrV6 {
+			t, err := i.getPoolFromSubnet(ctx, podmanager.GetControllerOwnerType(pod), pod.Namespace, podmanager.GetControllerOwnerName(pod), nic, cleanGateway)
+			if nil != err {
+				return nil, err
+			}
+
+			if t == nil {
+				return nil, fmt.Errorf("pod '%s/%s' specified to use subnet manager but can not found corresponding IPPool", pod.Namespace, pod.Name)
+			}
+
+			return []*ToBeAllocated{t}, nil
+		}
+
+		return nil, fmt.Errorf("pod '%s/%s' didn't spicify subnet manager when SubnetManager function is enabled", pod.Namespace, pod.Name)
+	}
+
 	// pod annotation: "ipam.spidernet.io/ippools"
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
 		return getPoolFromPodAnnoPools(ctx, anno, nic)
@@ -552,4 +574,54 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 
 func (i *ipam) Start(ctx context.Context) error {
 	return i.ipamLimiter.Start(ctx)
+}
+
+func (i *ipam) getPoolFromSubnet(ctx context.Context, podControllerType, podControllerNS, podControllerName string, nic string, cleanGateway bool) (*ToBeAllocated, error) {
+	logger := logutils.FromContext(ctx)
+
+	poolList, err := i.ipPoolManager.ListIPPools(ctx,
+		client.MatchingLabels{subnetmanager.OwnedApplication: subnetmanager.AppName(podControllerType, podControllerNS, podControllerName)},
+	)
+	if nil != err {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	if len(poolList.Items) == 0 {
+		return nil, nil
+	}
+
+	logger.Info("Use IPPools from subnet manager")
+	t := &ToBeAllocated{
+		NIC:          nic,
+		CleanGateway: cleanGateway,
+	}
+
+	for _, pool := range poolList.Items {
+		if pool.Spec.IPVersion == nil {
+			logger.Sugar().Errorf("IPPool '%v' doesn't specify IP version", pool)
+			continue
+		}
+
+		if *pool.Spec.IPVersion == constant.IPv4 {
+			t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
+				IPVersion: constant.IPv4,
+				Pools:     pool.Spec.IPs,
+			})
+		} else {
+			t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
+				IPVersion: constant.IPv6,
+				Pools:     pool.Spec.IPs,
+			})
+		}
+	}
+
+	if len(t.PoolCandidates) == 0 {
+		return nil, nil
+	}
+
+	return t, nil
 }

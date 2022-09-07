@@ -89,6 +89,7 @@ type Config struct {
 	ClusterDefaultIPv6IPPool []string `yaml:"clusterDefaultIPv6IPPool"`
 	NetworkMode              string   `yaml:"networkMode"`
 	EnableStatefulSet        bool     `yaml:"enableStatefulSet"`
+	EnableSubnetManager      bool     `yaml:"enableSubnetManager"`
 }
 
 type AgentContext struct {

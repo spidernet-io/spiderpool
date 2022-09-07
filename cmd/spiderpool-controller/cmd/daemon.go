@@ -29,6 +29,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -258,6 +259,19 @@ func initControllerServiceManagers(ctx context.Context) {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+
+	logger.Info("Begin to initialize Subnet Manager")
+	subnetManager, err := subnetmanager.NewSubnetManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager.GetScheme(), controllerContext.IPPoolManager,
+		controllerContext.Leader, retrys, unitTime)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.SubnetManager = subnetManager
+	if controllerContext.Cfg.EnableSubnetManager {
+		logger.Info("Starting subnet manager controllers")
+		controllerContext.SubnetManager.InitControllers(ctx, controllerContext.ClientSet)
+	}
+
 }
 
 func initGCManager(ctx context.Context) {

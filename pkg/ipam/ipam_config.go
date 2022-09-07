@@ -14,6 +14,7 @@ import (
 )
 
 type IPAMConfig struct {
+	EnableSubnetManager      bool
 	EnabledStatefulSet       bool
 	EnableIPv4               bool
 	EnableIPv6               bool

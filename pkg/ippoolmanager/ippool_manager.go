@@ -180,7 +180,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 		return nil, err
 	}
 
-	var used []string
+	used := make([]string, len(ipPool.Status.AllocatedIPs))
 	for ip := range ipPool.Status.AllocatedIPs {
 		used = append(used, ip)
 	}

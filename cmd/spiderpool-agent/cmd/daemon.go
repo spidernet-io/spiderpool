@@ -106,6 +106,7 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize IPAM")
 	ipam, err := ipam.NewIPAM(&ipam.IPAMConfig{
+		EnableSubnetManager:      agentContext.Cfg.EnableSubnetManager,
 		EnabledStatefulSet:       agentContext.Cfg.EnableStatefulSet,
 		EnableIPv4:               agentContext.Cfg.EnableIPv4,
 		EnableIPv6:               agentContext.Cfg.EnableIPv6,

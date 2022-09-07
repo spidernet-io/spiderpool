@@ -64,3 +64,12 @@ func CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable b
 
 	return constant.PodRunning, true
 }
+
+func GetControllerOwnerName(pod *corev1.Pod) string {
+	owner := metav1.GetControllerOf(pod)
+	if owner == nil {
+		return constant.OwnerNone
+	}
+
+	return owner.Name
+}

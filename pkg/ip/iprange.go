@@ -16,6 +16,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+// ParseIPRanges parses IP ranges as a IP address slices of the specified
+// IP version.
 func ParseIPRanges(version types.IPVersion, ipRanges []string) ([]net.IP, error) {
 	var sum []net.IP
 	for _, r := range ipRanges {
@@ -29,6 +31,8 @@ func ParseIPRanges(version types.IPVersion, ipRanges []string) ([]net.IP, error)
 	return sum, nil
 }
 
+// ParseIPRange parses IP range as a IP address slices of the specified
+// IP version.
 func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 	if err := IsIPRange(version, ipRange); err != nil {
 		return nil, err
@@ -53,6 +57,8 @@ func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 	return ips, nil
 }
 
+// ConvertIPsToIPRanges converts the IP address slices of the specified
+// IP version into a group of sorted and merged IP ranges.
 func ConvertIPsToIPRanges(version types.IPVersion, ips []net.IP) ([]string, error) {
 	if err := IsIPVersion(version); err != nil {
 		return nil, err
@@ -94,6 +100,9 @@ func ConvertIPsToIPRanges(version types.IPVersion, ips []net.IP) ([]string, erro
 	return ipRanges, nil
 }
 
+// ContainsIPRange reports whether the subnet parsed from the subnet string
+// includes the IP address slices parsed from the IP range. Both must belong
+// to the same IP version.
 func ContainsIPRange(version types.IPVersion, subnet string, ipRange string) (bool, error) {
 	ipNet, err := ParseCIDR(version, subnet)
 	if err != nil {
@@ -112,6 +121,8 @@ func ContainsIPRange(version types.IPVersion, subnet string, ipRange string) (bo
 	return ipNet.Contains(ips[0]) && ipNet.Contains(ips[n-1]), nil
 }
 
+// IsIPRangeOverlap reports whether the IP address slices of specific IP
+// version parsed from two IP ranges overlap.
 func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool, error) {
 	if err := IsIPVersion(version); err != nil {
 		return false, err
@@ -123,6 +134,8 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 		return false, err
 	}
 
+	// Ignore the error returned here. The format of the IP range has been
+	// verified in IsCIDR above.
 	ips1, _ := ParseIPRange(version, ipRange1)
 	ips2, _ := ParseIPRange(version, ipRange2)
 	if len(ips1) > len(IPsDiffSet(ips1, ips2)) {
@@ -132,14 +145,15 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 	return false, nil
 }
 
-// IsIPRange verifies the format of the IP range string. An IP range can
-// be an single IP address in the style of '192.168.1.0', or an address
-// range in the form of '192.168.1.0-192.168.1.10'.
-//
+// IsIPRange reports whether ipRange string is a valid IP range. An IP
+// range can be an single IP address in the style of '192.168.1.0', or
+// an address range in the form of '192.168.1.0-192.168.1.10'.
 // The following formats are invalid:
-// 1. '192.168.1.0 - 192.168.1.10', there can be no space between two IP addresses.
-// 2. '192.168.1.1-2001:db8:a0b:12f0::1', invalid combination of IPv4 and IPv6.
-// 3. '192.168.1.10-192.168.1.1', the IP range must be ordered.
+// "192.168.1.0 - 192.168.1.10": there can be no space between two IP
+// addresses.
+// "192.168.1.1-2001:db8:a0b:12f0::1": invalid combination of IPv4 and
+// IPv6.
+// "192.168.1.10-192.168.1.1": the IP range must be ordered.
 func IsIPRange(version types.IPVersion, ipRange string) error {
 	if err := IsIPVersion(version); err != nil {
 		return err
@@ -153,6 +167,8 @@ func IsIPRange(version types.IPVersion, ipRange string) error {
 	return nil
 }
 
+// IsIPv4IPRange reports whether ipRange string is a valid IPv4 range.
+// See IsIPRange for more description of IP range.
 func IsIPv4IPRange(ipRange string) bool {
 	ips := strings.Split(ipRange, "-")
 	n := len(ips)
@@ -176,6 +192,8 @@ func IsIPv4IPRange(ipRange string) bool {
 	return true
 }
 
+// IsIPv6IPRange reports whether ipRange string is a valid IPv6 range.
+// See IsIPRange for more description of IP range.
 func IsIPv6IPRange(ipRange string) bool {
 	ips := strings.Split(ipRange, "-")
 	n := len(ips)

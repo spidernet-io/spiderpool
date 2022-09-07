@@ -6,7 +6,6 @@ package reservedipmanager
 import (
 	"context"
 	"errors"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"net"
 
 	apitypes "k8s.io/apimachinery/pkg/types"
@@ -14,14 +13,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ReservedIPManager interface {
+	SetupWebhook() error
 	GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.SpiderReservedIP, error)
 	ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error)
 	GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error)
-	SetupWebhook() error
 }
 
 type reservedIPManager struct {

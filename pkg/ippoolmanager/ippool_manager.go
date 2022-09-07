@@ -34,6 +34,8 @@ import (
 )
 
 type IPPoolManager interface {
+	SetupWebhook() error
+	SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector, leaderRetryElectGap *time.Duration) error
 	GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error)
 	ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
 	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error)
@@ -42,8 +44,6 @@ type IPPoolManager interface {
 	CheckVlanSame(ctx context.Context, poolNameList []string) (map[types.Vlan][]string, bool, error)
 	RemoveFinalizer(ctx context.Context, poolName string) error
 	AssembleTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error)
-	SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector, leaderRetryElectGap *time.Duration) error
-	SetupWebhook() error
 	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
 }
 
@@ -113,8 +113,6 @@ func (im *ipPoolManager) ListIPPools(ctx context.Context, opts ...client.ListOpt
 }
 
 func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error) {
-	// TODO(iiiceoo): STS static ip, check "EnableStatuflsetIP"
-
 	var ipConfig *models.IPConfig
 	var usedIPPool *spiderpoolv1.SpiderIPPool
 	rand.Seed(time.Now().UnixNano())
@@ -129,7 +127,6 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			return nil, nil, err
 		}
 
-		// TODO(iiiceoo): Remove when Defaulter webhook work
 		if ipPool.Status.AllocatedIPs == nil {
 			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
 		}
@@ -143,7 +140,6 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			OwnerControllerType: podmanager.GetControllerOwnerType(pod),
 		}
 
-		// TODO(iiiceoo): Remove when Defaulter webhook work
 		if ipPool.Status.AllocatedIPCount == nil {
 			ipPool.Status.AllocatedIPCount = new(int64)
 		}
@@ -194,16 +190,12 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 		return nil, err
 	}
 
-	expectIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.IPs)
+	totalIPs, err := im.AssembleTotalIPs(ctx, ipPool)
 	if err != nil {
 		return nil, err
 	}
-	excludeIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
-	if err != nil {
-		return nil, err
-	}
-	availableIPs := spiderpoolip.IPsDiffSet(expectIPs, append(reservedIPs, append(usedIPs, excludeIPs...)...))
 
+	availableIPs := spiderpoolip.IPsDiffSet(totalIPs, append(reservedIPs, usedIPs...))
 	if len(availableIPs) == 0 {
 		return nil, constant.ErrIPUsedOut
 	}
@@ -224,7 +216,6 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 			return err
 		}
 
-		// TODO(iiiceoo): Remove when Defaulter webhook work
 		if ipPool.Status.AllocatedIPs == nil {
 			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
 		}
@@ -376,7 +367,6 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 // it summaries the IPPool IPs then subtracts ExcludeIPs.
 // notice: this method would not filter ReservedIP CR object data!
 func (im *ipPoolManager) AssembleTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error) {
-	// TODO (Icarus9913): ips could be nil, should we return error?
 	ips, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.IPs)
 	if nil != err {
 		return nil, err

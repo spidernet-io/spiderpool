@@ -15,6 +15,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+// IsIPVersion reports whether version is a valid IP version (4 or 6).
 func IsIPVersion(version types.IPVersion) error {
 	if version != constant.IPv4 && version != constant.IPv6 {
 		return fmt.Errorf("%w '%d'", ErrInvalidIPVersion, version)
@@ -23,6 +24,8 @@ func IsIPVersion(version types.IPVersion) error {
 	return nil
 }
 
+// ParseIP parses IP string as a CIDR notation IP address of the specified
+// IP version.
 func ParseIP(version types.IPVersion, s string) (*net.IPNet, error) {
 	if strings.ContainsAny(s, "/") {
 		if err := IsCIDR(version, s); err != nil {
@@ -38,6 +41,7 @@ func ParseIP(version types.IPVersion, s string) (*net.IPNet, error) {
 	}
 }
 
+// IsIP reports whether IP string is a IP address of the specified IP version.
 func IsIP(version types.IPVersion, s string) error {
 	if err := IsIPVersion(version); err != nil {
 		return err
@@ -51,6 +55,9 @@ func IsIP(version types.IPVersion, s string) error {
 	return nil
 }
 
+// IPsDiffSet calculates the difference set of two IP address slices.
+// For example, the difference set between [172.18.40.1 172.18.40.2] and
+// [172.18.40.2 172.18.40.3] is [172.18.40.1].
 func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
 	var ips []net.IP
 	marks := make(map[string]bool)
@@ -73,26 +80,29 @@ func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
 	return ips
 }
 
+// NextIP returns the next IP address.
 func NextIP(ip net.IP) net.IP {
 	i := ipToInt(ip)
 	return intToIP(i.Add(i, big.NewInt(1)))
 }
 
+// PrevIP returns the previous IP address.
 func PrevIP(ip net.IP) net.IP {
 	i := ipToInt(ip)
 	return intToIP(i.Sub(i, big.NewInt(1)))
 }
 
-// Cmp compares two IPs, returning the usual ordering:
-// ip1 < ip2 : -1
-// ip1 == ip2 : 0
-// ip1 > ip2 : 1
+// Cmp compares two IP addresses, returns according to the following rules:
+// ip1 < ip2: -1
+// ip1 = ip2: 0
+// ip1 > ip2: 1
 func Cmp(ip1, ip2 net.IP) int {
 	int1 := ipToInt(ip1)
 	int2 := ipToInt(ip2)
 	return int1.Cmp(int2)
 }
 
+// ipToInt converts net.IP to big.Int.
 func ipToInt(ip net.IP) *big.Int {
 	if v := ip.To4(); v != nil {
 		return big.NewInt(0).SetBytes(v)
@@ -100,6 +110,7 @@ func ipToInt(ip net.IP) *big.Int {
 	return big.NewInt(0).SetBytes(ip.To16())
 }
 
+// intToIP converts big.Int to net.IP.
 func intToIP(i *big.Int) net.IP {
 	return net.IP(i.Bytes())
 }

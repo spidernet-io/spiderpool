@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"context"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -73,4 +74,21 @@ func k8sCreateIppool(runtimeClient client.Client, pool *spiderpoolv1.SpiderIPPoo
 	defer cancel4()
 	return runtimeClient.Create(ctx4, pool)
 
+}
+
+func k8sCheckIppoolExisted(runtimeClient client.Client, poolName string) (*spiderpoolv1.SpiderIPPool, error) {
+	v := apitypes.NamespacedName{Name: poolName}
+	existing := &spiderpoolv1.SpiderIPPool{}
+
+	ctx4, cancel4 := context.WithTimeout(context.Background(), ConstApiTimeOut)
+	defer cancel4()
+
+	e := runtimeClient.Get(ctx4, v, existing)
+	if e != nil {
+		if apierrors.IsNotFound(e) {
+			return nil, nil
+		}
+		return nil, e
+	}
+	return existing, nil
 }

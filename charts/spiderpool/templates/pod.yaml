@@ -67,6 +67,10 @@ spec:
     {{- with .Values.spiderpoolInit.extraEnv }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+    - name: SPIDERPOOL_NAMESPACE
+      value: {{ .Release.Namespace | quote }}
+    - name: SPIDERPOOL_CONTROLLER_NAME
+      value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
     {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.feature.enableIPv4 }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
       value: {{ .Values.clusterDefaultPool.ipv4IPPoolName | quote }}

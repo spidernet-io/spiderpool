@@ -20,13 +20,14 @@ var (
 
 	runtimeClient client.Client
 
-	SpiderControllerEndpointName      = "spiderpool-controller"
-	SpiderControllerEndpointNamespace = "kube-system"
+	SpiderControllerEndpointName      = ""
+	SpiderControllerEndpointNamespace = ""
 
 	RetryIntervalForApi = time.Second * 2
 )
 
 func WaitForSpiderControllerEndpoint(ctx context.Context) {
+	logger.Sugar().Infof("begin to check endpoint %s/%s ", SpiderControllerEndpointNamespace, SpiderControllerEndpointName)
 	for {
 		existed, e := k8sCheckEndpointAvailable(runtimeClient, SpiderControllerEndpointName, SpiderControllerEndpointNamespace)
 		if e != nil {
@@ -51,7 +52,14 @@ func WaitForSpiderControllerEndpoint(ctx context.Context) {
 }
 
 func CreateIppool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) {
+
 	for {
+
+		if v, e := k8sCheckIppoolExisted(runtimeClient, pool.Name); e == nil && v != nil {
+			logger.Sugar().Errorf(" ippool %v is already existed, ignore creating , detail=%v ", pool.Name, *v)
+			return
+		}
+
 		e := k8sCreateIppool(runtimeClient, pool)
 		if e != nil {
 			if apierrors.IsAlreadyExists(e) {

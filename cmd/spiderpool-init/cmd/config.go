@@ -20,6 +20,9 @@ const (
 	EnvDefaultIPv6PoolSubnet   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET"
 	EnvDefaultIPv6PoolIPRanges = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
 	EnvDefaultIPv6PoolGateway  = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
+
+	EnvNamespace                = "SPIDERPOOL_NAMESPACE"
+	EnvSpiderpoolControllerName = "SPIDERPOOL_CONTROLLER_NAME"
 )
 
 type _Config struct {
@@ -101,6 +104,18 @@ func init() {
 			logger.Sugar().Fatalf("PoolV6IPRanges format is wrong,  PoolV6IPRanges='%v', error: %v", t, err)
 		}
 		Config.PoolV6IPRanges = t
+	}
+
+	SpiderControllerEndpointNamespace = os.Getenv(EnvNamespace)
+	logger.Sugar().Infof("SpiderControllerEndpointNamespace=%s", SpiderControllerEndpointNamespace)
+	if len(SpiderControllerEndpointNamespace) == 0 {
+		logger.Sugar().Fatalf("SpiderControllerEndpointNamespace is empty")
+	}
+
+	SpiderControllerEndpointName = os.Getenv(EnvSpiderpoolControllerName)
+	logger.Sugar().Infof("SpiderControllerEndpointName=%s", SpiderControllerEndpointName)
+	if len(SpiderControllerEndpointName) == 0 {
+		logger.Sugar().Fatalf("SpiderControllerEndpointName is empty")
 	}
 
 	// check

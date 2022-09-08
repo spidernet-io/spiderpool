@@ -79,7 +79,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 	}
 
 	for _, pool := range poolList.Items {
-		logger.Sugar().Debugf("checking IPPool '%s/%s'", pool.Namespace, pool.Name)
+		logger.Sugar().Debugf("checking IPPool '%s'", pool.Name)
 
 		for poolIP, poolIPAllocation := range pool.Status.AllocatedIPs {
 			scanAllLogger := logger.With(zap.String("podNS", poolIPAllocation.Namespace), zap.String("podName", poolIPAllocation.Pod),
@@ -175,7 +175,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				}
 			}
 		}
-		logger.Sugar().Debugf("task checking IPPool '%s/%s' is completed", pool.Namespace, pool.Name)
+		logger.Sugar().Debugf("task checking IPPool '%s' is completed", pool.Name)
 	}
 }
 

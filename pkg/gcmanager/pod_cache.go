@@ -102,7 +102,7 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 		}
 
 		p.pods[ktypes.NamespacedName{Namespace: podEntry.Namespace, Name: podEntry.PodName}] = *podEntry
-		logger.Sugar().Debugf("create pod entry '%+v'", podEntry)
+		logger.Sugar().Debugf("create pod entry '%+v'", *podEntry)
 		return nil
 	}
 

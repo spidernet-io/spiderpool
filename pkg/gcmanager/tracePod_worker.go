@@ -80,7 +80,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 			}
 
 			// when we received one gc signal which contains a pod name and its namespace,
-			// we need to search the pod corresponding workloadenpoint to get the used history IPs.
+			// we need to search the pod corresponding SpiderEndpoint to get the used history IPs.
 			podUsedIPs, err := s.wepMgr.ListAllHistoricalIPs(ctx, podCache.Namespace, podCache.PodName)
 			if apierrors.IsNotFound(err) {
 				loggerReleaseIP.Sugar().Warnf("wep '%s/%s' not found, maybe already cleaned by execScanAll",
@@ -107,7 +107,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 
 				if nil != err {
 					metrics.IPGCFailureCounts.Add(ctx, 1)
-					logger.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in wep '%s/%s', error: %w",
+					logger.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in wep '%s/%s', error: %v",
 						poolName, ips, podCache.Namespace, podCache.PodName, err)
 					continue
 				}
@@ -116,7 +116,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				metrics.IPGCTotalCounts.Add(ctx, 1)
 			}
 
-			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", podCache)
+			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", *podCache)
 
 			// remove wep finalizer
 			err = s.wepMgr.RemoveFinalizer(ctx, podCache.Namespace, podCache.PodName)
@@ -136,7 +136,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				}
 			}
 
-			loggerReleaseIP.Sugar().Debugf("remove wep '%v/%v' finalizer '%s' successfully",
+			loggerReleaseIP.Sugar().Debugf("remove wep '%s/%s' finalizer '%s' successfully",
 				podCache.Namespace, podCache.PodName, constant.SpiderFinalizer)
 
 		case <-ctx.Done():

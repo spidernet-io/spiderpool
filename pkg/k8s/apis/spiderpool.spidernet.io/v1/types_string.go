@@ -49,7 +49,7 @@ func (in *IPPoolSpec) String() string {
 		`Vlan:` + valueToStringGenerated(in.Vlan) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
 		`PodAffinity:` + fmt.Sprintf("%v", in.PodAffinity) + `,`,
-		`NamespaceAffinity:` + fmt.Sprintf("%v", in.NamesapceAffinity) + `,`,
+		`NamespaceAffinity:` + fmt.Sprintf("%v", in.NamespaceAffinity) + `,`,
 		`NodeAffinity:` + fmt.Sprintf("%v", in.NodeAffinity) + `,`,
 		`}`,
 	}, "")

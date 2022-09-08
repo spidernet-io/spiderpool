@@ -1,6 +1,6 @@
 # Resource Reclaim
 
-## IP collection
+## IP garbage collection
 
 ### context
 
@@ -33,11 +33,9 @@ For some CNI, it runs an interval job to find the issue IP and not reclaim them 
 For some CNI, its IP CIDR is big enough, so the leaked IP issue is not urgent.
 For spiderpool, all IP resource is managed by Administrator, and application will be bound to fixed IP, so the IP reclaim must be finished in time.
 
-The spiderpool controller takes charge of this responsibility. There is some environment to set its reclaim behaves.
+The spiderpool controller takes charge of this responsibility. For more details, please refer to [IP GC](https://github.com/spidernet-io/spiderpool/blob/main/pkg/gcmanager/README.md)
 
-// TODO (Icarus9913), describe the environment
-
-## ippool collection
+## SpiderIPPool garbage collection
 
 To prevent IP from leaking when ippool resource is deleted, the spiderpool has some rules:
 
@@ -45,4 +43,14 @@ To prevent IP from leaking when ippool resource is deleted, the spiderpool has s
 
 * For a deleting ippool, the IPAM plugin will stop assigning IP from it, but could release IP from it.
 
-* The ippool is set a finalizer by the spiderpool controller. After the ippool goes to be deleting status, the spiderpool controller will remove the finalizer when all IP in the ippool is free.
+* The ippool is set a finalizer by the spiderpool controller once it was created. After the ippool goes to be deleting status,
+the spiderpool controller will remove the finalizer when all IP in the ippool is free, then the ippool object will be deleted.
+
+## SpiderEndpoint garbage collection
+
+Once a pod was created and got IPs from SpiderIPPool, the Spiderpool will create a corresponding SpiderEndpoint object at the same time,
+and it will take a finalizer (except StatefulSet pod) and will be set `OwnerReference` with the pod.
+
+When a pod was deleted, spiderpool will release its IPs with the corresponding SpiderEndpoint object recorded data,
+then spiderpool controller will remove the SpiderEndpoint object `Current` data and remove its finalizer.
+(For StatefulSet SpiderEndpoint, the spiderpool will delete it directly if its `Current` data was cleaned up)

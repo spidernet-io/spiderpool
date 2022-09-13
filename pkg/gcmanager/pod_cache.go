@@ -169,7 +169,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 			return nil, nil
 		}
 
-		podStatus, _ := s.podMgr.CheckPodStatus(currentPod)
+		podStatus, _ := podmanager.CheckPodStatus(currentPod)
 
 		var isBuildTerminatingPodEntry, isBuildSucceededOrFailedPodEntry bool
 		switch {

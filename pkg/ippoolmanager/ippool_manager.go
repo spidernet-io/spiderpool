@@ -43,7 +43,6 @@ type IPPoolManager interface {
 	SelectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) (bool, error)
 	CheckVlanSame(ctx context.Context, poolNameList []string) (map[types.Vlan][]string, bool, error)
 	RemoveFinalizer(ctx context.Context, poolName string) error
-	AssembleTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error)
 	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
 }
 
@@ -190,7 +189,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 		return nil, err
 	}
 
-	totalIPs, err := im.AssembleTotalIPs(ctx, ipPool)
+	totalIPs, err := assembleTotalIPs(ipPool)
 	if err != nil {
 		return nil, err
 	}
@@ -363,23 +362,6 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 	return nil
 }
 
-// AssembleTotalIP will calculate an IPPool CR object usable IPs number,
-// it summaries the IPPool IPs then subtracts ExcludeIPs.
-// notice: this method would not filter ReservedIP CR object data!
-func (im *ipPoolManager) AssembleTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error) {
-	ips, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.IPs)
-	if nil != err {
-		return nil, err
-	}
-	excludeIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
-	if nil != err {
-		return nil, err
-	}
-	usableIPs := spiderpoolip.IPsDiffSet(ips, excludeIPs)
-
-	return usableIPs, nil
-}
-
 // UpdateAllocatedIPs serves for StatefulSet pod re-create
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error {
 	for i := 0; i <= im.maxConflictRetrys; i++ {
@@ -389,8 +371,12 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID str
 		}
 
 		// switch CIDR to IP
-		ipAndCIDR := *oldIPConfig.Address
-		singleIP, _, _ := strings.Cut(ipAndCIDR, "/")
+		singleIP, _, _ := strings.Cut(*oldIPConfig.Address, "/")
+		if allocation, ok := pool.Status.AllocatedIPs[singleIP]; ok {
+			if allocation.ContainerID == containerID {
+				return nil
+			}
+		}
 
 		// basically, we just need to update ContainerID and Node.
 		pool.Status.AllocatedIPs[singleIP] = spiderpoolv1.PoolIPAllocation{

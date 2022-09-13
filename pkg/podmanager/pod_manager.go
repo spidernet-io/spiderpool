@@ -15,15 +15,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
 	ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error)
-	CheckPodStatus(pod *corev1.Pod) (types.PodStatus, bool)
 	MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error
 	MatchLabelSelector(ctx context.Context, namespace, podName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
@@ -62,33 +58,6 @@ func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (
 	}
 
 	return &podList, nil
-}
-
-func (pm *podManager) CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable bool) {
-	// TODO (Icarus9913): no pending phase?
-	if pod.DeletionTimestamp != nil && pod.DeletionGracePeriodSeconds != nil {
-		now := time.Now()
-		deletionTime := pod.DeletionTimestamp.Time
-		deletionGracePeriod := time.Duration(*pod.DeletionGracePeriodSeconds) * time.Second
-		if now.After(deletionTime.Add(deletionGracePeriod)) {
-			return constant.PodGraceTimeOut, false
-		}
-		return constant.PodTerminating, false
-	}
-
-	if pod.Status.Phase == corev1.PodSucceeded && pod.Spec.RestartPolicy != corev1.RestartPolicyAlways {
-		return constant.PodSucceeded, false
-	}
-
-	if pod.Status.Phase == corev1.PodFailed && pod.Spec.RestartPolicy == corev1.RestartPolicyNever {
-		return constant.PodFailed, false
-	}
-
-	if pod.Status.Phase == corev1.PodFailed && pod.Status.Reason == "Evicted" {
-		return constant.PodEvicted, false
-	}
-
-	return constant.PodRunning, true
 }
 
 func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error {

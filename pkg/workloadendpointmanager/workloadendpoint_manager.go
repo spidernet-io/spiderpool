@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"math/rand"
 	"strings"
 	"time"
@@ -23,13 +21,15 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 )
 
 type WorkloadEndpointManager interface {
 	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.SpiderEndpoint, error)
 	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
-	RetrieveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error)
+	Delete(ctx context.Context, wep *spiderpoolv1.SpiderEndpoint) error
 	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error)
 	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.SpiderEndpoint, error)
 	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error
@@ -37,7 +37,6 @@ type WorkloadEndpointManager interface {
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
 	CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error)
-	Delete(ctx context.Context, wep *spiderpoolv1.SpiderEndpoint) error
 	UpdateCurrentStatus(ctx context.Context, containerID string, pod *corev1.Pod) error
 }
 
@@ -82,40 +81,6 @@ func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...cl
 	}
 
 	return &weList, nil
-}
-
-func (em *workloadEndpointManager) RetrieveIPAllocation(ctx context.Context, containerID, nic string, includeHistory bool, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.PodIPAllocation, bool, error) {
-	if we == nil || we.Status.Current == nil {
-		return nil, false, nil
-	}
-	if we.Status.Current.ContainerID != containerID {
-		return nil, false, nil
-	}
-	for _, d := range we.Status.Current.IPs {
-		if d.NIC == nic {
-			return we.Status.Current, true, nil
-		}
-	}
-
-	if !includeHistory {
-		return nil, false, nil
-	}
-	if len(we.Status.History) == 0 {
-		return nil, false, nil
-	}
-	for _, a := range we.Status.History[1:] {
-		if a.ContainerID != containerID {
-			continue
-		}
-		for _, d := range a.IPs {
-			if d.NIC == nic {
-				return &a, false, nil
-			}
-		}
-		break
-	}
-
-	return nil, false, nil
 }
 
 func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error) {
@@ -208,35 +173,6 @@ func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, alloca
 	}
 
 	return we, nil
-}
-
-// TODO(iiiceoo): refactor
-func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
-	if target.IPv4 == nil {
-		target.IPv4 = delta.IPv4
-	}
-
-	if target.IPv4Pool == nil {
-		target.IPv4Pool = delta.IPv4Pool
-	}
-
-	if target.IPv4Gateway == nil {
-		target.IPv4Gateway = delta.IPv4Gateway
-	}
-
-	if target.IPv6 == nil {
-		target.IPv6 = delta.IPv6
-	}
-
-	if target.IPv6Pool == nil {
-		target.IPv6Pool = delta.IPv6Pool
-	}
-
-	if target.IPv6Gateway == nil {
-		target.IPv6Gateway = delta.IPv6Gateway
-	}
-
-	target.Routes = append(target.Routes, delta.Routes...)
 }
 
 func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error {
@@ -386,11 +322,8 @@ func (em *workloadEndpointManager) CheckCurrentContainerID(ctx context.Context, 
 
 func (r *workloadEndpointManager) Delete(ctx context.Context, sep *spiderpoolv1.SpiderEndpoint) error {
 	err := r.client.Delete(ctx, sep)
-	if nil != err {
-		return err
-	}
 
-	return nil
+	return client.IgnoreNotFound(err)
 }
 
 // UpdateCurrentStatus serves for StatefulSet pod re-create
@@ -405,11 +338,10 @@ func (em *workloadEndpointManager) UpdateCurrentStatus(ctx context.Context, cont
 		var hasChange bool
 		if sep.Status.Current.ContainerID != containerID {
 			sep.Status.Current.ContainerID = containerID
-			hasChange = true
-		}
 
-		if *sep.Status.Current.Node != pod.Spec.NodeName {
-			*sep.Status.Current.Node = pod.Spec.NodeName
+			if *sep.Status.Current.Node != pod.Spec.NodeName {
+				*sep.Status.Current.Node = pod.Spec.NodeName
+			}
 			hasChange = true
 		}
 
@@ -431,6 +363,7 @@ func (em *workloadEndpointManager) UpdateCurrentStatus(ctx context.Context, cont
 				continue
 			}
 		}
+		break
 	}
 
 	return nil

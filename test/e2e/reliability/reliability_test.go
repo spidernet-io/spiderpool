@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -85,12 +86,11 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 			// try to delete pod
 			GinkgoWriter.Printf("delete pod %v/%v \n", namespace, podName)
-			e = frame.DeletePod(podName, namespace)
-			Expect(e).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", namespace, podName)
-
-			// killed service need recovery, especially spiderpool-controller, or else make other IT failed
-			time.Sleep(time.Duration(5 * time.Second))
-
+			Expect(frame.DeletePod(podName, namespace)).NotTo(HaveOccurred())
+			// G00008: The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP
+			if componentName == constant.SpiderpoolAgent || componentName == constant.SpiderpoolController {
+				Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}}, time.Minute)).To(Succeed())
+			}
 		},
 		Entry("Successfully run a pod during the ETCD is restarting",
 			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
@@ -99,9 +99,9 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		Entry("Successfully run a pod during the coreDns is restarting",
 			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Second*90),
 		Entry("Successfully run a pod during the Spiderpool agent is restarting",
-			Label("R00004"), "spiderpool-agent", map[string]string{"app.kubernetes.io/component": "spiderpool-agent"}, time.Second*90),
+			Label("R00004", "G00008"), constant.SpiderpoolAgent, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent}, time.Second*90),
 		Entry("Successfully run a pod during the Spiderpool controller is restarting",
-			Label("R00001"), "spiderpool-controller", map[string]string{"app.kubernetes.io/component": "spiderpool-controller"}, time.Second*90),
+			Label("R00001", "G00008"), constant.SpiderpoolController, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController}, time.Second*90),
 	)
 
 	DescribeTable("check ip assign after reboot node",

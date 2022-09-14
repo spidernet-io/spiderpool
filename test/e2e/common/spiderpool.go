@@ -7,9 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"strconv"
 	"time"
+
+	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
@@ -385,22 +386,53 @@ func GetWorkloadByName(f *frame.Framework, namespace, name string) *v1.SpiderEnd
 	return existing
 }
 
+func CheckIppoolForPodName(f *frame.Framework, poolName, podName, podNamespace string) (bool, error) {
+	if f == nil || poolName == "" || podName == "" || podNamespace == "" {
+		return false, errors.New("wrong input")
+	}
+	pool := GetIppoolByName(f, poolName)
+	if pool == nil {
+		return false, errors.New("pool not existed")
+	}
+	for _, v := range pool.Status.AllocatedIPs {
+		if v.Pod == podName && v.Namespace == podNamespace {
+			return true, nil
+		}
+	}
+	return false, errors.New("pod name is not recorded in ippool")
+}
+
 func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameList []string, podList *corev1.PodList, timeOut time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 	defer cancel()
+OUTER:
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("time out to wait ip reclaimed finish")
+			return errors.New("time out to wait IP reclaimed finish")
 		default:
-			_, ok, _, err := CheckPodIpRecordInIppool(f, v4IppoolNameList, v6IppoolNameList, podList)
-			if err != nil {
-				return err
+			for _, pod := range podList.Items {
+				if f.Info.IpV4Enabled && len(v4IppoolNameList) != 0 {
+					for _, poolName := range v4IppoolNameList {
+						ok, err := CheckIppoolForPodName(f, poolName, pod.Name, pod.Namespace)
+						if ok && err == nil {
+							continue OUTER
+						}
+					}
+					GinkgoWriter.Printf("Pod %v/%v IP successfully reclaimed from IPv4Pool \n", pod.Namespace, pod.Name)
+					return nil
+				}
+				if f.Info.IpV6Enabled && len(v6IppoolNameList) != 0 {
+					for _, poolName := range v6IppoolNameList {
+						ok, err := CheckIppoolForPodName(f, poolName, pod.Name, pod.Namespace)
+						if ok && err == nil {
+							continue OUTER
+						}
+					}
+					GinkgoWriter.Printf("Pod %v/%v IP successfully reclaimed from IPv6Pool \n", pod.Namespace, pod.Name)
+					return nil
+				}
 			}
-			if ok {
-				return nil
-			}
-			time.Sleep(time.Second)
 		}
 	}
 }
@@ -524,4 +556,62 @@ func BatchDeletePoolUntilFinish(f *frame.Framework, iPPoolNameList []string, ctx
 		}
 	}
 	return nil
+}
+
+func GenerateExampleIpv4Gateway() (v4Gateway string) {
+	num1 := GenerateRandomNumber(255)
+	num2 := GenerateRandomNumber(255)
+	num3 := GenerateRandomNumber(255)
+	num4 := GenerateRandomNumber(255)
+	v4Gateway = fmt.Sprintf("%s.%s.%s.%s", num1, num2, num3, num4)
+	return v4Gateway
+}
+
+func GenerateExampleIpv6Gateway() (v6Gateway string) {
+	num1 := GenerateRandomNumber(9999)
+	num2 := GenerateRandomNumber(9999)
+	num3 := GenerateRandomNumber(9999)
+	num4 := GenerateRandomNumber(9999)
+	v6Gateway = fmt.Sprintf("%s:%s:%s::%s", num1, num2, num3, num4)
+	return v6Gateway
+}
+
+func GenerateExampleIpv4Address() (ipv4Address string) {
+	randomNum1 := GenerateRandomNumber(255)
+	randomNum2 := GenerateRandomNumber(255)
+	randomNum3 := GenerateRandomNumber(255)
+	randomNum4 := GenerateRandomNumber(255)
+	ipv4Address = fmt.Sprintf("%s.%s.%s.%s", randomNum1, randomNum2, randomNum3, randomNum4)
+	return ipv4Address
+}
+
+func GenerateExampleIpv6Address() (ipv6Address string) {
+	randomNum1 := GenerateRandomNumber(9999)
+	randomNum2 := GenerateRandomNumber(9999)
+	randomNum3 := GenerateRandomNumber(9999)
+	ipv6Address = fmt.Sprintf("%s:%s::%s", randomNum1, randomNum2, randomNum3)
+	return ipv6Address
+}
+
+// Waiting for Ippool Status Condition By Allocated IPs meets expectations
+// can be used to detect dirty IPs recorded in ippool to be reclaimed automatically
+func WaitIppoolStatusConditionByAllocatedIPs(ctx context.Context, f *frame.Framework, poolName, checkIPs string, isRecord bool) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return frame.ErrTimeOut
+		default:
+			poolObj := GetIppoolByName(f, poolName)
+			_, ok := poolObj.Status.AllocatedIPs[checkIPs]
+			if isRecord && ok {
+				GinkgoWriter.Printf("the IP %v recorded in IPPool %v \n", checkIPs, poolName)
+				return nil
+			}
+			if !isRecord && !ok {
+				GinkgoWriter.Printf("the IP %v reclaimed from IPPool %v \n", checkIPs, poolName)
+				return nil
+			}
+			time.Sleep(time.Second)
+		}
+	}
 }

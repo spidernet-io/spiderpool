@@ -73,7 +73,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			Label("E00008", "S00002"), func() {
 				// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
 				deploy := common.CreateDeployWithPodAnnoation(frame, deployName, namespace, deployOriginialNum, nic, v4PoolNameList, v6PoolNameList)
-				podList := common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
+				common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 
 				// Scale Deployment to exhaust IP resource
 				GinkgoWriter.Println("scale Deployment to exhaust IP resource")
@@ -90,11 +90,36 @@ var _ = Describe("test pod", Label("assignip"), func() {
 					GinkgoWriter.Printf("succeeded to detect the message expected: %v\n", common.GetIpamAllocationFailed)
 				}
 
-				// Delete the deployment and then check that the Pod IP in the IPPool has been reclaimed correctly.
-				Expect(frame.DeleteDeploymentUntilFinish(deployName, namespace, time.Minute)).To(Succeed())
+				// IPs removed from IPPool.Spec.excludeIPs can be assigned to Pods.
+				if frame.Info.IpV4Enabled {
+					v4PoolObject := common.GetIppoolByName(frame, v4PoolName)
+					Expect(v4PoolObject).NotTo(BeNil())
+					// Remove IPs from IPPool.Spec.excludeIPs
+					v4PoolObject.Spec.ExcludeIPs = []string{}
+					Expect(frame.UpdateResource(v4PoolObject)).To(Succeed(), "failed to update v4 ippool: %v ", v4PoolName)
+				}
+				if frame.Info.IpV6Enabled {
+					v6PoolObject := common.GetIppoolByName(frame, v6PoolName)
+					Expect(v6PoolObject).NotTo(BeNil())
+					// Remove IPs from IPPool.Spec.excludeIPs
+					v6PoolObject.Spec.ExcludeIPs = []string{}
+					Expect(frame.UpdateResource(v6PoolObject)).To(Succeed(), "failed to update v6 ippool: %v ", v6PoolName)
+				}
+
+				// After removing an IP from IPPool.Spec.excludeIPs
+				// the IP can be assigned to a pod and a record of that pod IP can be checked in the ippool.
+				podList, err := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
+				Expect(err).NotTo(HaveOccurred())
+				newPodList, err := frame.DeletePodListUntilReady(podList, time.Minute)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(newPodList.Items)).Should(Equal(deployScaleupNum))
+				ok2, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, newPodList)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ok2).To(BeTrue())
+
+				// Delete the deployment
+				Expect(frame.DeleteDeployment(deployName, namespace)).To(Succeed())
 				GinkgoWriter.Printf("Succeeded to delete deployment %v/%v \n", namespace, deployName)
-				Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podList, time.Minute)).To(Succeed())
-				GinkgoWriter.Printf("The Pod %v/%v IP in the IPPool was reclaimed correctly \n", namespace, deployName)
 			})
 	})
 })

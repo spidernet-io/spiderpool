@@ -352,3 +352,21 @@ codegen:
 codegen-verify:
 	@echo "Verify generated k8s SDK."
 	$(QUIET)  ./tools/scripts/verify-codegen.sh
+
+.PHONY: update-version
+update-version:
+	VERSION=`cat VERSION | tr -d '\n' ` ; [ -n "$${VERSION}" ] || { echo "error, wrong version" ; exit 1 ; } ; \
+		echo "update to version $${VERSION}" ; \
+		CHART_VERSION=`echo $${VERSION} | tr -d 'v' ` ; \
+		sed -E -i 's?^version: .*?version: '$${CHART_VERSION}'?g' ./charts/spiderpool/Chart.yaml ; \
+		sed -E -i 's?^appVersion: .*?appVersion: "'$${CHART_VERSION}'"?g' ./charts/spiderpool/Chart.yaml
+
+.PHONY: check-version
+check-version:
+	VERSION=`cat VERSION | tr -d '\n' ` ; [ -n "$${VERSION}" ] || { echo "error, wrong version" ; exit 1 ; } ; \
+		echo "check version $${VERSION}" ; \
+		CHART_VERSION=`echo $${VERSION} | tr -d 'v' ` ; \
+		grep -E "^version: $${CHART_VERSION}" ./charts/spiderpool/Chart.yaml &>/dev/null || { echo "error, wrong version in Chart.yaml" ; exit 1 ; } ; \
+		grep -E "^appVersion: \"$${CHART_VERSION}\"" ./charts/spiderpool/Chart.yaml &>/dev/null || { echo "error, wrong appVersion in Chart.yaml" ; exit 1 ; } ;
+		exit 0
+

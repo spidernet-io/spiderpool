@@ -17,8 +17,9 @@ update-versions:
 	@# Update chart versions to point to the current version.
 	$(QUIET) \
 		spiderpool_version="$(VERSION)";		\
-		sed -i 's/version: "*'$(VERSION_REGEX)'"*/version: '$$spiderpool_version'/g' $(CHART_FILE);		\
-		sed -i 's/appVersion: "*'$(VERSION_REGEX)'"*/appVersion: "'$$spiderpool_version'"/g' $(CHART_FILE);	\
+		chart_version=` echo $(VERSION) | tr -d 'v' ` ; \
+		sed -i 's/version: "*'$(VERSION_REGEX)'"*/version: '$$chart_version'/g' $(CHART_FILE);		\
+		sed -i 's/appVersion: "*'$(VERSION_REGEX)'"*/appVersion: "'$$chart_version'"/g' $(CHART_FILE);	\
 		sed -i 's/tag: .*/tag: '$$spiderpool_version'/g' $(VALUES_FILE);					\
 		sed -i 's/tag: .*/tag: '$$spiderpool_version'/g' $(VALUES_FILE);
 

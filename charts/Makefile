@@ -1,7 +1,7 @@
 # get VERSION
 include  ../Makefile.defs
 
-VERSION_REGEX := '[vV][0-9]\+\.[0-9]\+\.[0-9]\+.*'
+VERSION_REGEX := '[vV]*[0-9]\+\.[0-9]\+\.[0-9]\+.*'
 CHART_FILE := "./spiderpool/Chart.yaml"
 VALUES_FILE := "./spiderpool/values.yaml"
 

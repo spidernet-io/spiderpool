@@ -91,9 +91,15 @@ func (in *WorkloadEndpointStatus) String() string {
 		return "nil"
 	}
 
+	repeatedStringForHistory := "[]History{"
+	for _, f := range in.History {
+		repeatedStringForHistory += strings.Replace(strings.Replace(f.String(), "History", "History", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForHistory += "}"
+
 	s := strings.Join([]string{`&WorkloadEndpointStatus{`,
 		`Current:` + fmt.Sprintf("%v", in.Current) + `,`,
-		`History:` + fmt.Sprintf("%v", in.History) + `,`,
+		`History:` + repeatedStringForHistory + `,`,
 		`OwnerControllerType:` + fmt.Sprintf("%v", in.OwnerControllerType) + `,`,
 		`}`,
 	}, "")
@@ -106,10 +112,16 @@ func (in *PodIPAllocation) String() string {
 		return "nil"
 	}
 
+	repeatedStringForIPs := "[]IPs{"
+	for _, f := range in.IPs {
+		repeatedStringForIPs += strings.Replace(strings.Replace(f.String(), "IPs", "IPs", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForIPs += "}"
+
 	s := strings.Join([]string{`&PodIPAllocation{`,
 		`ContainerID:` + fmt.Sprintf("%+v", in.ContainerID) + `,`,
 		`Node:` + valueToStringGenerated(in.Node) + `,`,
-		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
+		`IPs:` + repeatedStringForIPs + `,`,
 		`CreationTime:` + fmt.Sprintf("%v", in.CreationTime) + `,`,
 		`}`,
 	}, "")

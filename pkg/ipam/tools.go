@@ -113,7 +113,7 @@ func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway 
 func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool) *ToBeAllocated {
 	logger := logutils.FromContext(ctx)
 
-	if len(netConfV4Pool) == 0 && len(netConfV6Pool) == 0 {
+	if len(netConfV4Pool) == 0 || len(netConfV6Pool) == 0 {
 		return nil
 	}
 

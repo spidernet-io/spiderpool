@@ -3,6 +3,7 @@
 package performance_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -47,10 +49,12 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", nsName)
 
 			if frame.Info.IpV4Enabled {
-				Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				err := common.DeleteIPPoolByName(frame, v4PoolName)
+				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				err := common.DeleteIPPoolByName(frame, v6PoolName)
+				Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	})
@@ -59,19 +63,28 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		func(controllerType string, replicas int32, overtimeCheck time.Duration) {
 
 			// Generate Pod.IPPool annotations string and create IPv4Pool and IPV6Pool
+			podAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
 			if frame.Info.IpV4Enabled {
 				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(int(replicas))
-				GinkgoWriter.Printf("try to create IPv4pool: %v \n", v4PoolName)
-				Expect(common.CreateIppool(frame, iPv4PoolObj)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("try to create ipv4pool: %v/%v \n", v4PoolName, iPv4PoolObj)
+				err := common.CreateIppool(frame, iPv4PoolObj)
+				Expect(err).NotTo(HaveOccurred(), "failed to create ipv4pool: %v \n", v4PoolName)
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
+				podAnno.IPv4Pools = v4PoolNameList
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(int(replicas))
-				GinkgoWriter.Printf("try to create IPv6pool: %v \n", v6PoolName)
-				Expect(common.CreateIppool(frame, iPv6PoolObj)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("try to create ipv6pool: %v/%v \n", v6PoolName, iPv6PoolObj)
+				err := common.CreateIppool(frame, iPv6PoolObj)
+				Expect(err).NotTo(HaveOccurred(), "failed to create ipv6pool: %v \n", v6PoolName)
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)
+				podAnno.IPv6Pools = v6PoolNameList
 			}
-			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
+			b, e := json.Marshal(podAnno)
+			Expect(e).NotTo(HaveOccurred())
+			podIppoolAnnoStr = string(b)
 
 			// Generate Deployment yaml with Pod.IPPool annotation
 			switch {

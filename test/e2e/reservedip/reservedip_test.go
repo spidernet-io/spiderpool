@@ -4,6 +4,7 @@ package reservedip_test
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -12,11 +13,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 var _ = Describe("test reservedIP", Label("reservedIP"), func() {
-	var nsName, DeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName, nic string
+	var nsName, DeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName, nic, podAnnoStr string
 	var v4PoolNameList, v6PoolNameList []string
 	var iPv4PoolObj, iPv6PoolObj *v1.SpiderIPPool
 	var v4ReservedIpObj, v6ReservedIpObj *v1.SpiderReservedIP
@@ -82,13 +84,24 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("Successfully created v6 reservedIP : %v \n", v6ReservedIpName)
 			}
-			// Generate IPPool annotation string
-			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
+			// Generate IPPool annotation
+			podAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
+			if frame.Info.IpV4Enabled {
+				podAnno.IPv4Pools = v4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				podAnno.IPv6Pools = v6PoolNameList
+			}
+			b, e := json.Marshal(podAnno)
+			Expect(e).NotTo(HaveOccurred())
+			podAnnoStr = string(b)
 
 			// Generate Deployment yaml and annotation
 			deployObject := common.GenerateExampleDeploymentYaml(DeployName, nsName, int32(1))
-			deployObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
-			GinkgoWriter.Printf("Try to create Deployment: %v/%v with annotation %v = %v \n", nsName, DeployName, constant.AnnoPodIPPool, podIppoolAnnoStr)
+			deployObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
+			GinkgoWriter.Printf("Try to create Deployment: %v/%v with annotation %v = %v \n", nsName, DeployName, constant.AnnoPodIPPool, podAnnoStr)
 
 			// Try to create a Deployment and wait for replicas to meet expectations（because the Pod is not running）
 			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)

@@ -79,7 +79,7 @@ setup_kind:
 	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
 	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	- sysctl -w fs.inotify.max_user_watches=524288 || true
-	- sysctl -w fs.inotify.max_user_instances=8192 || true
+	- sysctl -w fs.inotify.max_user_instances=512 || true
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
 			 kind_image_tag=$(E2E_KIND_IMAGE_TAG) \

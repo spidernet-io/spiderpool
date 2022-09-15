@@ -9,6 +9,8 @@ import (
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
+	"github.com/spidernet-io/spiderpool/pkg/types"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
@@ -71,8 +73,19 @@ var _ = Describe("test pod", Label("assignip"), func() {
 
 		It(" fail to run a pod when IP resource of an ippool is exhausted and an IP who is set in excludeIPs field of ippool, should not be assigned to a pod",
 			Label("E00008", "S00002"), func() {
+				// Generate Pod annotations
+				podAnno := types.AnnoPodIPPoolValue{
+					NIC: &nic,
+				}
+				if frame.Info.IpV4Enabled {
+					podAnno.IPv4Pools = []string{v4PoolName}
+				}
+				if frame.Info.IpV6Enabled {
+					podAnno.IPv6Pools = []string{v6PoolName}
+				}
+
 				// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
-				deploy := common.CreateDeployWithPodAnnoation(frame, deployName, namespace, deployOriginialNum, nic, v4PoolNameList, v6PoolNameList)
+				deploy := common.CreateDeployWithPodAnnoation(frame, deployName, namespace, deployOriginialNum, podAnno)
 				podList := common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 
 				// Scale Deployment to exhaust IP resource

@@ -138,9 +138,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Label("A00001"), func() {
 		var (
-			v4PoolName, v6PoolName   string
-			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
-			ipv4vlan, ipv6vlan       = new(types.Vlan), new(types.Vlan)
+			v4PoolName, v6PoolName, podAnnoStr string
+			iPv4PoolObj, iPv6PoolObj           *spiderpool.SpiderIPPool
+			ipv4vlan, ipv6vlan                 = new(types.Vlan), new(types.Vlan)
 		)
 		// Different VLAN for ipv4 and ipv6 Pool
 		*ipv4vlan = 10
@@ -165,12 +165,19 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to create ipv6pool %v \n", v6PoolName)
 
 		// Generate IPPool annotations string
-		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, []string{v4PoolName}, []string{v6PoolName})
+		podAnno := types.AnnoPodIPPoolValue{
+			NIC:       &nic,
+			IPv4Pools: []string{v4PoolName},
+			IPv6Pools: []string{v6PoolName},
+		}
+		b, e := json.Marshal(podAnno)
+		Expect(e).NotTo(HaveOccurred())
+		podAnnoStr = string(b)
 
 		// Generate Pod yaml and add IPPool annotations to it
-		GinkgoWriter.Printf("try to create pod %v/%v with annotation %v=%v \n", nsName, podName, pkgconstant.AnnoPodIPPool, podIppoolAnnoStr)
+		GinkgoWriter.Printf("try to create pod %v/%v with annotation %v=%v \n", nsName, podName, pkgconstant.AnnoPodIPPool, podAnnoStr)
 		podYaml := common.GenerateExamplePodYaml(podName, nsName)
-		podYaml.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podIppoolAnnoStr}
+		podYaml.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podAnnoStr}
 		Expect(frame.CreatePod(podYaml)).NotTo(HaveOccurred())
 
 		// It fails to run a pod with different VLAN for ipv4 and ipv6 ippool
@@ -226,10 +233,35 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		It(`the "ippools" annotation has the higher priority over the "ippool" annotation`, Label("A00005"), func() {
 			// Generate IPPool annotation string
-			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, ClusterDefaultV4IppoolList, ClusterDefaultV6IppoolList)
+			podIppoolAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolAnno.IPv4Pools = ClusterDefaultV4IppoolList
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolAnno.IPv6Pools = ClusterDefaultV6IppoolList
+			}
+			b, err := json.Marshal(podIppoolAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podIppoolAnnoStr = string(b)
 
 			// Generate IPPools annotation string
-			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, nic, cleanGateway, v4PoolNameList, v6PoolNameList)
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				types.AnnoIPPoolItem{
+					NIC:          nic,
+					CleanGateway: cleanGateway,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = v4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = v6PoolNameList
+			}
+			b, err = json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podIppoolsAnnoStr = string(b)
 
 			// Generate Pod Yaml with IPPool annotations and IPPools annotations
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -251,7 +283,18 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			var containerNum int = 2
 
 			// Generate IPPool annotation string
-			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
+			podIppoolAnno := types.AnnoPodIPPoolValue{
+				NIC: &nic,
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolAnno.IPv4Pools = v4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolAnno.IPv6Pools = v6PoolNameList
+			}
+			b, err := json.Marshal(podIppoolAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podIppoolAnnoStr = string(b)
 
 			// Generate a pod yaml with multiple containers and long annotations
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -287,6 +330,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		})
 
 		Context("About namespace annotations", func() {
+			var v4NamespaceIppoolAnnoStr, v6NamespaceIppoolAnnoStr string
 
 			BeforeEach(func() {
 				// Get namespace object and generate namespace annotation
@@ -295,11 +339,17 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				namespaceObject.Annotations = make(map[string]string)
 				if frame.Info.IpV4Enabled {
 					v4IppoolAnnoValue := types.AnnoNSDefautlV4PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, v4PoolNameList, pkgconstant.AnnoNSDefautlV4Pool)
+					b, err := json.Marshal(append(v4IppoolAnnoValue, v4PoolNameList...))
+					Expect(err).NotTo(HaveOccurred())
+					v4NamespaceIppoolAnnoStr = string(b)
+					namespaceObject.Annotations[pkgconstant.AnnoNSDefautlV4Pool] = v4NamespaceIppoolAnnoStr
 				}
 				if frame.Info.IpV6Enabled {
 					v6IppoolAnnoValue := types.AnnoNSDefautlV6PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, v6PoolNameList, pkgconstant.AnnoNSDefautlV6Pool)
+					b, err := json.Marshal(append(v6IppoolAnnoValue, v6PoolNameList...))
+					Expect(err).NotTo(HaveOccurred())
+					v6NamespaceIppoolAnnoStr = string(b)
+					namespaceObject.Annotations[pkgconstant.AnnoNSDefautlV6Pool] = v6NamespaceIppoolAnnoStr
 				}
 				GinkgoWriter.Printf("Generate namespace objects: %v with namespace annotations \n", namespaceObject)
 
@@ -312,19 +362,25 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				Label("A00004", "smoke"), func() {
 					var newV4PoolNameList, newV6PoolNameList []string
 
+					// Generate Pod.IPPool annotations string
+					podAnno := types.AnnoPodIPPoolValue{
+						NIC: &nic,
+					}
 					if frame.Info.IpV4Enabled {
 						newV4PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, 200, true)
 						Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool")
 						v4PoolNameList = append(v4PoolNameList, newV4PoolNameList...)
+						podAnno.IPv4Pools = newV4PoolNameList
 					}
 					if frame.Info.IpV6Enabled {
 						newV6PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, 200, false)
 						Expect(err).NotTo(HaveOccurred(), "Failed to create v6 pool")
 						v6PoolNameList = append(v6PoolNameList, newV6PoolNameList...)
+						podAnno.IPv6Pools = newV6PoolNameList
 					}
-
-					// Generate Pod.IPPool annotations string
-					podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, newV4PoolNameList, newV6PoolNameList)
+					b, e := json.Marshal(podAnno)
+					Expect(e).NotTo(HaveOccurred())
+					podIppoolAnnoStr = string(b)
 
 					// Generate Pod Yaml
 					podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -365,8 +421,19 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 						v6PoolNameList = append(append(v6PoolNameList, v6PoolNameList1...), v6PoolNameList2...)
 					}
 
+					// Generate IPPool annotations string
+					podAnno := types.AnnoPodIPPoolValue{
+						NIC: &nic,
+					}
+					if frame.Info.IpV4Enabled {
+						podAnno.IPv4Pools = append(v4PoolNameList1, v4PoolNameList2...)
+					}
+					if frame.Info.IpV6Enabled {
+						podAnno.IPv6Pools = append(v6PoolNameList1, v6PoolNameList2...)
+					}
+
 					// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
-					deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, podOriginialNum, nic, append(v4PoolNameList1, v4PoolNameList2...), append(v6PoolNameList1, v6PoolNameList2...))
+					deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, podOriginialNum, podAnno)
 					podList := common.CheckPodIpReadyByLabel(frame, deploy.Spec.Template.Labels, v4PoolNameList, v6PoolNameList)
 
 					// Wait for new Pod to be created and expect its ip to be in the next pool in the array
@@ -409,15 +476,20 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				})
 		})
 	})
-	It("succeeded to running pod after added valid route field", Label("A00002"), func() {
+
+	It("succeeded to running pod after added valid route field on multiple NICs", Label("A00002", "A00010"), func() {
 		var ipv4Gw, ipv6Gw string
 		v4Dst := "0.0.0.0/0"
 		v6Dst := "::/0"
-		annoPodRouteValue := new(types.AnnoPodRoutesValue)
-		annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
-
+		nic1 := "eth0"
+		nic2 := "net2"
+		var err error
 		var v4PoolName, v6PoolName string
+		var v4PoolNameList2, v6PoolNameList2 []string
 		var v4Pool, v6Pool *spiderpool.SpiderIPPool
+		annoPodRouteValue := new(types.AnnoPodRoutesValue)
+		annoPodNetworkValue := "k8s.v1.cni.cncf.io/networks"
+		annoPodNetworkStr := "kube-system/macvlan-cni2"
 
 		// create ippool
 		if frame.Info.IpV4Enabled {
@@ -433,7 +505,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				Dst: v4Dst,
 				Gw:  ipv4Gw,
 			})
-			annoPodIPPoolValue.IPv4Pools = []string{v4PoolName}
 		}
 		if frame.Info.IpV6Enabled {
 			GinkgoWriter.Println("create v6 ippool")
@@ -448,23 +519,52 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				Dst: v6Dst,
 				Gw:  ipv6Gw,
 			})
-			annoPodIPPoolValue.IPv6Pools = []string{v6PoolName}
 		}
 
+		// create another ippool((A00010))
+		if frame.Info.IpV4Enabled {
+			v4PoolNameList2, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, 2, true)
+			Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool")
+		}
+		if frame.Info.IpV6Enabled {
+			v6PoolNameList2, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, 2, false)
+			Expect(err).NotTo(HaveOccurred(), "Failed to create v6 pool")
+		}
+		GinkgoWriter.Printf("Successful creation of v4Pool %v，v6Pool %v", v4PoolNameList2, v6PoolNameList2)
+
+		// set pod annotation for routes (A00002)
 		annoPodRouteB, err := json.Marshal(*annoPodRouteValue)
 		Expect(err).NotTo(HaveOccurred(), "failed to marshal annoPodRouteValue, error: %v\n", err)
 		annoPodRoutStr := string(annoPodRouteB)
 
-		annoPodIPPoolB, err := json.Marshal(annoPodIPPoolValue)
-		Expect(err).NotTo(HaveOccurred(), "failed to marshal annoPodIPPoolValue, error: %v\n", err)
-		annoPodIPPoolStr := string(annoPodIPPoolB)
+		// set pod annotation for nics (A00010)
+		podIppoolsAnno := types.AnnoPodIPPoolsValue{
+			types.AnnoIPPoolItem{
+				NIC: nic1,
+			},
+			{
+				NIC: nic2,
+			},
+		}
+		if frame.Info.IpV4Enabled {
+			podIppoolsAnno[0].IPv4Pools = []string{v4PoolName}
+			podIppoolsAnno[1].IPv4Pools = v4PoolNameList2
+		}
+		if frame.Info.IpV6Enabled {
+			podIppoolsAnno[0].IPv6Pools = []string{v6PoolName}
+			podIppoolsAnno[1].IPv6Pools = v6PoolNameList2
+		}
+		b, err1 := json.Marshal(podIppoolsAnno)
+		Expect(err1).NotTo(HaveOccurred())
+		annoPodIPPoolsStr := string(b)
 
 		// generate pod yaml
 		GinkgoWriter.Println("generate pod yaml")
 		podYaml := common.GenerateExamplePodYaml(podName, nsName)
 		podYaml.Annotations = map[string]string{
-			pkgconstant.AnnoPodRoutes: annoPodRoutStr,
-			pkgconstant.AnnoPodIPPool: annoPodIPPoolStr,
+			pkgconstant.AnnoPodRoutes:  annoPodRoutStr,
+			pkgconstant.AnnoPodIPPools: annoPodIPPoolsStr,
+			annoPodNetworkValue:        annoPodNetworkStr,
 		}
 		Expect(podYaml).NotTo(BeNil(), "failed to generate pod yaml")
 		GinkgoWriter.Printf("succeeded to generate pod yaml: %+v\n", podYaml)
@@ -472,7 +572,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		// create pod
 		GinkgoWriter.Printf("create pod %v/%v\n", nsName, podName)
 		Expect(frame.CreatePod(podYaml)).To(Succeed(), "failed to create pod %v/%v\n", nsName, podName)
-		ctxCreate, cancelCreate := context.WithTimeout(context.Background(), time.Minute)
+		ctxCreate, cancelCreate := context.WithTimeout(context.Background(), time.Minute*2)
 		defer cancelCreate()
 		pod, err := frame.WaitPodStarted(podName, nsName, ctxCreate)
 		Expect(err).NotTo(HaveOccurred(), "timeout to wait pod %v/%v started\n", nsName, podName)

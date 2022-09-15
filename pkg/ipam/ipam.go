@@ -276,12 +276,10 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 }
 
 func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool, pod *corev1.Pod) ([]*ToBeAllocated, error) {
-	// pod annotation: "ipam.spidernet.io/ippools"
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
 		return getPoolFromPodAnnoPools(ctx, anno, nic)
 	}
 
-	// pod annotation: "ipam.spidernet.io/ippool"
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPool]; ok {
 		t, err := getPoolFromPodAnnoPool(ctx, anno, nic, cleanGateway)
 		if err != nil {
@@ -290,7 +288,6 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 		return []*ToBeAllocated{t}, nil
 	}
 
-	// namespace annotation: "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool"
 	t, err := i.getPoolFromNS(ctx, pod.Namespace, nic, cleanGateway)
 	if err != nil {
 		return nil, err
@@ -299,12 +296,10 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 		return []*ToBeAllocated{t}, nil
 	}
 
-	// IPAM configuration file
 	if t := getPoolFromNetConf(ctx, nic, netConfV4Pool, netConfV6Pool, cleanGateway); t != nil {
 		return []*ToBeAllocated{t}, nil
 	}
 
-	// configmap
 	t, err = i.ipamConfig.getClusterDefaultPool(ctx, nic, cleanGateway)
 	if err != nil {
 		return nil, err
@@ -320,12 +315,12 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 	if err != nil {
 		return nil, err
 	}
-	nsDefaultV4Pools, nsDefaultV6Pools, err := i.nsManager.GetNSDefaultPools(ctx, ns)
+	nsDefautlV4Pools, nsDefautlV6Pools, err := i.nsManager.GetNSDefaultPools(ctx, ns)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(nsDefaultV4Pools) == 0 && len(nsDefaultV6Pools) == 0 {
+	if len(nsDefautlV4Pools) == 0 && len(nsDefautlV6Pools) == 0 {
 		return nil, nil
 	}
 
@@ -334,16 +329,16 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 		NIC:          nic,
 		CleanGateway: cleanGateway,
 	}
-	if len(nsDefaultV4Pools) != 0 {
+	if len(nsDefautlV4Pools) != 0 {
 		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
 			IPVersion: constant.IPv4,
-			Pools:     nsDefaultV4Pools,
+			Pools:     nsDefautlV4Pools,
 		})
 	}
-	if len(nsDefaultV6Pools) != 0 {
+	if len(nsDefautlV6Pools) != 0 {
 		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
 			IPVersion: constant.IPv6,
-			Pools:     nsDefaultV6Pools,
+			Pools:     nsDefautlV6Pools,
 		})
 	}
 

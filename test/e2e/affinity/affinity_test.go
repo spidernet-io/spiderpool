@@ -4,17 +4,18 @@ package affinity_test
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
+	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,12 +28,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			matchedNode, unMatchedNode           *corev1.Node
 		)
 		var (
-			v4PoolName                     string
-			v6PoolName                     string
-			v4Pool                         *spiderpoolv1.SpiderIPPool
-			v6Pool                         *spiderpoolv1.SpiderIPPool
-			nic                            string = "eth0"
-			v4PoolNameList, v6PoolNameList []string
+			v4PoolName string
+			v6PoolName string
+			v4Pool     *spiderpoolv1.SpiderIPPool
+			v6Pool     *spiderpoolv1.SpiderIPPool
 		)
 
 		BeforeEach(func() {
@@ -51,10 +50,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			unmatchedPodName = "unmatched-pod-" + tools.RandomName()
 
 			// Get the list of nodes and determine if the test conditions are met, skip the test if they are not met
+			GinkgoWriter.Println("get node list")
 			nodeList, err := frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(nodeList).NotTo(BeNil())
-			GinkgoWriter.Printf("get nodeList: %+v\n", nodeList.Items)
+			GinkgoWriter.Printf("nodeList: %+v\n", nodeList.Items)
 
 			if len(nodeList.Items) < 2 {
 				Skip("this case needs 2 nodes at least\n")
@@ -82,7 +82,6 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				v4Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 				v4Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
-				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				GinkgoWriter.Printf("succeeded to create ippool %v\n", v4Pool.Name)
 			}
 			if frame.Info.IpV6Enabled {
@@ -95,7 +94,6 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				v6Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 				v6Pool.Spec.PodAffinity.MatchLabels = map[string]string{matchedPodName: matchedPodName}
 				Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
-				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 				GinkgoWriter.Printf("succeeded to create ippool %v\n", v6Pool.Name)
 			}
 			// Clean test env
@@ -140,15 +138,28 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				nodeLabel = matchedNode.GetLabels()
 			}
 
-			// Generate IPPool annotation string
-			podAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
-
 			// create pod and check if affinity is active
 			GinkgoWriter.Printf("create pod %v/%v\n", namespaceNM, podNM)
 			podObj := common.GenerateExamplePodYaml(podNM, namespaceNM)
 			Expect(podObj).NotTo(BeNil())
 			podObj.Spec.NodeSelector = nodeLabel
-			podObj.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
+
+			podAnno := types.AnnoPodIPPoolValue{}
+
+			if frame.Info.IpV4Enabled {
+				podAnno.IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podAnno.IPv6Pools = []string{v6PoolName}
+			}
+			b, err := json.Marshal(podAnno)
+			podAnnoStr := string(b)
+			Expect(err).NotTo(HaveOccurred())
+
+			podObj.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPool: podAnnoStr,
+			}
+			GinkgoWriter.Printf("podObj: %v\n", podObj)
 
 			if allMatched {
 				GinkgoWriter.Println("when matched affinity")
@@ -178,7 +189,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 	Context("cross-zone daemonSet", func() {
 		var namespace, daemonSetName string
 		var err error
-		var nic string = "eth0"
+
 		nodeV4PoolMap := make(map[string][]string)
 		nodeV6PoolMap := make(map[string][]string)
 		allV4PoolNameList := make([]string, 0)
@@ -208,10 +219,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			for _, node := range nodeList.Items {
 				if frame.Info.IpV4Enabled {
 					v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(1)
-					GinkgoWriter.Printf("Create v4 ippool %v\n", v4PoolName)
+					GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
 					v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 					v4Pool.Spec.NodeAffinity.MatchLabels = node.Labels
 					Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
+					GinkgoWriter.Printf("succeeded to create ippool %v\n", v4Pool.Name)
 
 					allV4PoolNameList = append(allV4PoolNameList, v4PoolName)
 					nodeV4PoolMap[node.Name] = []string{v4PoolName}
@@ -219,10 +231,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				}
 				if frame.Info.IpV6Enabled {
 					v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(1)
-					GinkgoWriter.Printf("Create v6 ippool %v\n", v6PoolName)
+					GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
 					v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 					v6Pool.Spec.NodeAffinity.MatchLabels = node.Labels
 					Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+					GinkgoWriter.Printf("succeeded to create ippool %v\n", v6Pool.Name)
 
 					allV6PoolNameList = append(allV6PoolNameList, v6PoolName)
 					nodeV6PoolMap[node.Name] = []string{v6PoolName}
@@ -258,10 +271,19 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 
 			// set annotation to add ippool
 			GinkgoWriter.Println("add annotations to daemonSet yaml")
-			podAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, allV4PoolNameList, allV6PoolNameList)
+			anno := types.AnnoPodIPPoolValue{}
+			if frame.Info.IpV4Enabled {
+				anno.IPv4Pools = allV4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				anno.IPv6Pools = allV6PoolNameList
+			}
+			annoB, err := json.Marshal(anno)
+			Expect(err).NotTo(HaveOccurred(), "failed to marshal pod annotations %+v\n", anno)
+			annoStr := string(annoB)
 
 			daemonSetYaml.Spec.Template.Annotations = map[string]string{
-				constant.AnnoPodIPPool: podAnnoStr,
+				pkgconstant.AnnoPodIPPool: annoStr,
 			}
 			GinkgoWriter.Printf("the daemonSet yaml is :%+v\n", daemonSetYaml)
 
@@ -307,30 +329,33 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 	})
 
 	Context("one IPPool can be used by multiple namespace", func() {
-		var v4PoolName, v6PoolName, nsName1, nsName2 string
+		var nsName1, nsName2 string
+		var v4PoolName, v6PoolName string
 		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 		var v4PoolNameList, v6PoolNameList []string
-		nsName1 = "ns1" + tools.RandomName()
-		nsName2 = "ns2" + tools.RandomName()
-		nsNamesList := []string{nsName1, nsName2}
+		nsName1 = "ns" + tools.RandomName()
+		nsName2 = "ns" + tools.RandomName()
+		nsNames := []string{nsName1, nsName2}
 
 		BeforeEach(func() {
 			// create 2 namespaces
-			for i, nsName := range nsNamesList {
+			for i, nsName := range nsNames {
 				GinkgoWriter.Printf("create namespace %v %v\n", i, nsName)
-				err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
+				err := frame.CreateNamespace(nsName)
 				Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 			}
-			// create IPPool
+			// create one ippool
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
 				Expect(v4PoolObj.Spec.IPs).NotTo(BeNil())
+				// create ipv4 pool
 				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
 				Expect(v6PoolObj.Spec.IPs).NotTo(BeNil())
+				// create ipv6 pool
 				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 			}
@@ -338,72 +363,80 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// clean test env
 			DeferCleanup(func() {
 				// delete namespaces
-				for i, nsName := range nsNamesList {
+				for i, nsName := range nsNames {
 					GinkgoWriter.Printf("delete namespace %v %v\n", i, nsName)
-					Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred(), "failed to delete namespace %v", nsName)
+					err := frame.DeleteNamespace(nsName)
+					Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", nsName)
 				}
+
 				// delete ippool
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
 				if frame.Info.IpV4Enabled {
-					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).To(Succeed())
+					Expect(common.DeleteIPPoolUntilFinish(frame, v4PoolName, ctx)).To(Succeed())
 				}
 				if frame.Info.IpV6Enabled {
-					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+					Expect(common.DeleteIPPoolUntilFinish(frame, v6PoolName, ctx)).To(Succeed())
 				}
 			})
 		})
 
 		It("deployment pod can running in this ippool with two namespaces ", Label("L00009"), func() {
-			deployName1 := "deploy1" + tools.RandomName()
+			deployName1 := "deploy" + tools.RandomName()
 			deployName2 := "deploy2" + tools.RandomName()
-			var deployOriginialNum int32 = 1
-			nsLabel := map[string]string{nsName1: nsName1}
 
-			for i, nsName := range nsNamesList {
-				// get namespace and set namespace regular label
-				GinkgoWriter.Printf("set %v-th, %v namespace label \n", i, nsName)
-				nsObject, err := frame.GetNamespace(nsName)
+			// get namespace and set namespace regular label
+			for i, nsName := range nsNames {
+				GinkgoWriter.Printf("set %v %v namespace label\n", i, nsName)
+				ns, err := frame.GetNamespace(nsName)
+				Expect(ns).NotTo(BeNil())
 				Expect(err).NotTo(HaveOccurred())
-				nsObject.Labels = nsLabel
-				Expect(frame.UpdateResource(nsObject)).To(Succeed())
+				ns.Labels = map[string]string{nsName1: nsName1}
+				Expect(frame.UpdateResource(ns)).To(Succeed())
 
 				// set ns1 and ns2 annotation to this ippool
-				nsObject.Annotations = make(map[string]string)
+				ns.Annotations = make(map[string]string)
 				if frame.Info.IpV4Enabled {
 					v4IppoolAnnoValue := types.AnnoNSDefautlV4PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, nsObject, v4PoolNameList, constant.AnnoNSDefautlV4Pool)
+					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, ns, v4PoolNameList, pkgconstant.AnnoNSDefautlV4Pool)
 				}
 				if frame.Info.IpV6Enabled {
 					v6IppoolAnnoValue := types.AnnoNSDefautlV6PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, nsObject, v6PoolNameList, constant.AnnoNSDefautlV6Pool)
+					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, ns, v6PoolNameList, pkgconstant.AnnoNSDefautlV6Pool)
 				}
-				Expect(frame.UpdateResource(nsObject)).To(Succeed())
+				Expect(frame.UpdateResource(ns)).To(Succeed())
 			}
+
 			// set ippool label selector to ns1 and ns2
+			nsLabel := map[string]string{nsName1: nsName1}
 			if frame.Info.IpV4Enabled {
 				v4PoolObject := common.GetIppoolByName(frame, v4PoolName)
 				v4PoolObject.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v4PoolObject.Spec.NamespaceAffinity.MatchLabels = nsLabel
-				Expect(common.UpdateIppool(frame, v4PoolObject)).NotTo(HaveOccurred(), "Failed to update v4PoolObject")
+				errupdate := common.UpdateIppool(frame, v4PoolObject)
+				Expect(errupdate).NotTo(HaveOccurred(), "Failed to update v4PoolObject")
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolObject := common.GetIppoolByName(frame, v6PoolName)
 				v6PoolObject.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v6PoolObject.Spec.NamespaceAffinity.MatchLabels = nsLabel
-				Expect(common.UpdateIppool(frame, v6PoolObject)).NotTo(HaveOccurred(), "Failed to update v6PoolObject")
+				errupdate := common.UpdateIppool(frame, v6PoolObject)
+				Expect(errupdate).NotTo(HaveOccurred(), "Failed to update v6PoolObject")
 			}
 
-			// create 2 deployment in different ns
+			// create 2 deployment1 in different ns
 			depMap := map[string]string{
 				deployName1: nsName1,
 				deployName2: nsName2,
 			}
 			for d, deps := range depMap {
-				common.CreateDeployUnitlReadyCheckInIppool(frame, deps, depMap[d], deployOriginialNum, v4PoolNameList, v6PoolNameList)
+				common.CreateDeployUnitlReadyCheckInIppool(frame, deps, depMap[d], int32(2), v4PoolNameList, v6PoolNameList)
+
 			}
 
 			// try to delete deployment
 			for d, deps := range depMap {
-				Expect(frame.DeleteDeployment(deps, depMap[d])).To(Succeed())
+				Expect(frame.DeleteDeploymentUntilFinish(deps, depMap[d], time.Minute)).To(Succeed())
 				GinkgoWriter.Printf("Succeeded to delete deployment %v/%v \n", deps, depMap[deps])
 			}
 		})

@@ -35,6 +35,8 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		)
 
 		BeforeEach(func() {
+			v4PoolNameList = []string{}
+			v6PoolNameList = []string{}
 			// Init matching and non-matching namespaces name and create its
 			matchedNamespace = "matched-ns-" + tools.RandomName()
 			unmatchedNamespace = "unmatched-ns-" + tools.RandomName()

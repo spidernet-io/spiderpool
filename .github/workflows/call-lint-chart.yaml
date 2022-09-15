@@ -53,11 +53,11 @@ jobs:
 
       - name: check version
         run: |
-          version=`cat VERSION | tr -d ' ' `
+          chart_version=`cat VERSION | tr -d ' ' | tr -d 'v' `
           [ -z "$version" ] && echo "error, failed to find version" && exit 1
           echo "check version $version for chart"
-          ! egrep "^version: \"*${version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, version in Chart.yaml is not $version" && exit 1
-          ! egrep "^appVersion: \"*${version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, appVersion in Chart.yaml is not $version" && exit 1
+          ! egrep "^version: \"*${chart_version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, version in Chart.yaml is not $chart_version" && exit 1
+          ! egrep "^appVersion: \"*${chart_version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, appVersion in Chart.yaml is not $chart_version" && exit 1
           exit 0
 
       # The cached helm binary path is prepended to the PATH environment variable as well as stored in the helm-path output variable

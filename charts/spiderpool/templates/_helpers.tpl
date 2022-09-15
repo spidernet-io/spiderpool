@@ -144,9 +144,10 @@ return the spiderpoolAgent image
 {{- end -}}
 {{- if .Values.spiderpoolAgent.image.digest }}
     {{- print "@" .Values.spiderpoolAgent.image.digest -}}
+{{- else if .Values.spiderpoolAgent.image.tag -}}
+    {{- printf ":%s" .Values.spiderpoolController.image.tag -}}
 {{- else -}}
-    {{- $tag := default .Chart.AppVersion .Values.spiderpoolAgent.image.tag -}}
-    {{- printf ":%s" $tag -}}
+    {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
 
@@ -165,9 +166,10 @@ return the spiderpoolController image
 {{- end -}}
 {{- if .Values.spiderpoolController.image.digest }}
     {{- print "@" .Values.spiderpoolController.image.digest -}}
+{{- else if .Values.spiderpoolController.image.tag -}}
+    {{- printf ":%s" .Values.spiderpoolController.image.tag -}}
 {{- else -}}
-    {{- $tag := default .Chart.AppVersion .Values.spiderpoolController.image.tag -}}
-    {{- printf ":%s" $tag -}}
+    {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
 
@@ -186,8 +188,9 @@ return the spiderpoolInit image
 {{- end -}}
 {{- if .Values.spiderpoolInit.image.digest }}
     {{- print "@" .Values.spiderpoolInit.image.digest -}}
+{{- else if .Values.spiderpoolAgent.image.tag -}}
+    {{- printf ":%s" .Values.spiderpoolAgent.image.tag -}}
 {{- else -}}
-    {{- $tag := default .Chart.AppVersion .Values.spiderpoolInit.image.tag -}}
-    {{- printf ":%s" $tag -}}
+    {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}

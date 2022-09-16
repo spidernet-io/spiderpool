@@ -231,3 +231,4 @@ ipam_deallocation_latest_duration_seconds
 ipam_deallocation_duration_seconds
 ip_gc_total_counts
 ip_gc_failure_counts
+binded

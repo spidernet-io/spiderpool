@@ -6,11 +6,10 @@ package reservedipmanager
 import (
 	"context"
 	"fmt"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"strconv"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -23,7 +22,7 @@ var (
 	ipsField       *field.Path = field.NewPath("spec").Child("ips")
 )
 
-func (rm *reservedIPManager) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) error {
+func (rm *reservedIPManager) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
 	var errs field.ErrorList
 	if err := rm.validateReservedIPSpec(ctx, rIP); err != nil {
 		errs = append(errs, err)
@@ -33,14 +32,14 @@ func (rm *reservedIPManager) validateCreateReservedIP(ctx context.Context, rIP *
 		return nil
 	}
 
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderReservedIPKind},
-		rIP.Name,
-		errs,
-	)
+	return errs
 }
 
-func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) error {
+func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+	if err := rm.validateReservedIPShouldNotBeChanged(ctx, oldRIP, newRIP); err != nil {
+		return field.ErrorList{err}
+	}
+
 	var errs field.ErrorList
 	if err := rm.validateReservedIPSpec(ctx, newRIP); err != nil {
 		errs = append(errs, err)
@@ -50,11 +49,18 @@ func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRI
 		return nil
 	}
 
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderReservedIPKind},
-		newRIP.Name,
-		errs,
-	)
+	return errs
+}
+
+func (rm *reservedIPManager) validateReservedIPShouldNotBeChanged(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
+	if newRIP.Spec.IPVersion != oldRIP.Spec.IPVersion {
+		return field.Forbidden(
+			ipVersionField,
+			"is not changeable",
+		)
+	}
+
+	return nil
 }
 
 func (rm *reservedIPManager) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
@@ -73,7 +79,7 @@ func (rm *reservedIPManager) validateReservedIPIPVersion(ctx context.Context, ve
 		return field.Invalid(
 			ipVersionField,
 			version,
-			"is not generated correctly, 'ips[0]' may be invalid",
+			"is not generated correctly, 'spec.ips' is empty or 'spec.ips[0]' may be invalid",
 		)
 	}
 
@@ -122,27 +128,19 @@ func (rm *reservedIPManager) validateReservedIPAvailableIP(ctx context.Context, 
 }
 
 func (rm *reservedIPManager) validateReservedIPIPs(ctx context.Context, version types.IPVersion, ips []string) *field.Error {
-	n := len(ips)
-	if n == 0 {
+	if len(ips) == 0 {
 		return field.Required(
 			ipsField,
 			"requires at least one item",
 		)
 	}
 
-	if n == 1 {
-		return nil
-	}
-
-	for i := 0; i < n; i++ {
-		for j := i + 1; j < n; j++ {
-			overlap, _ := spiderpoolip.IsIPRangeOverlap(version, ips[i], ips[j])
-			if !overlap {
-				continue
-			}
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("%s overlaps with %s", ips[i], ips[j]),
+	for i, r := range ips {
+		if err := spiderpoolip.IsIPRange(version, r); err != nil {
+			return field.Invalid(
+				ipsField.Index(i),
+				ips[i],
+				err.Error(),
 			)
 		}
 	}

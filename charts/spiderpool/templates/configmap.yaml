@@ -19,6 +19,7 @@ data:
     enableIPv4: {{ .Values.feature.enableIPv4 }}
     enableIPv6: {{ .Values.feature.enableIPv6 }}
     enableStatefulSet: {{ .Values.feature.enableStatefulSet }}
+    enableSpiderSubnet: {{ .Values.feature.enableSpiderSubnet }}
     {{- if ( and .Values.feature.enableIPv4 .Values.clusterDefaultPool.installIPv4IPPool ) }}
     clusterDefaultIPv4IPPool: [{{ .Values.clusterDefaultPool.ipv4IPPoolName }}]
     {{- else}}

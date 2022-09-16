@@ -14,6 +14,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
@@ -162,7 +163,7 @@ func (im *ipPoolManager) updateSpiderIPPool(ctx context.Context, oldSpiderIPPool
 		// the original object in a threadsafe manner.
 		spiderIPPool := currentSpiderIPPool.DeepCopy()
 
-		totalIPs, err := assembleTotalIPs(spiderIPPool)
+		totalIPs, err := spiderpoolip.AssembleTotalIPs(*spiderIPPool.Spec.IPVersion, spiderIPPool.Spec.IPs, spiderIPPool.Spec.ExcludeIPs)
 		if nil != err {
 			return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", currentSpiderIPPool.Name, err)
 		}

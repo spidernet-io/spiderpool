@@ -29,6 +29,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -230,6 +231,23 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.StsManager = statefulSetManager
+
+	if controllerContext.Cfg.EnableSpiderSubnet {
+		logger.Info("Begin to initialize Subnet Manager")
+		subnetManager, err := subnetmanager.NewSubnetManager(controllerContext.CRDManager, controllerContext.Cfg.EnableSpiderSubnet)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		controllerContext.SubnetManager = subnetManager
+
+		logger.Info("Begin to set up Subnet webhook")
+		err = controllerContext.SubnetManager.SetupWebhook()
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+	} else {
+		logger.Info("Feature SpiderSubnet is disabled")
+	}
 
 	logger.Info("Begin to initialize IPPool Manager")
 	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs

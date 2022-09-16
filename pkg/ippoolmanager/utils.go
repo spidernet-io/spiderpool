@@ -11,23 +11,6 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
-// AssembleTotalIP will calculate an IPPool CR object usable IPs number,
-// it summaries the IPPool IPs then subtracts ExcludeIPs.
-// notice: this method would not filter ReservedIP CR object data!
-func assembleTotalIPs(ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error) {
-	ips, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.IPs)
-	if nil != err {
-		return nil, err
-	}
-	excludeIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
-	if nil != err {
-		return nil, err
-	}
-	totalIPs := spiderpoolip.IPsDiffSet(ips, excludeIPs)
-
-	return totalIPs, nil
-}
-
 func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, poolName string) (*models.IPConfig, error) {
 	ipNet, err := spiderpoolip.ParseIP(*poolSpec.IPVersion, poolSpec.Subnet, true)
 	if err != nil {

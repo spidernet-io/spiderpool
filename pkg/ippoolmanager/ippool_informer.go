@@ -162,7 +162,7 @@ func (im *ipPoolManager) updateSpiderIPPool(ctx context.Context, oldSpiderIPPool
 		// the original object in a threadsafe manner.
 		spiderIPPool := currentSpiderIPPool.DeepCopy()
 
-		totalIPs, err := im.AssembleTotalIPs(ctx, spiderIPPool)
+		totalIPs, err := assembleTotalIPs(spiderIPPool)
 		if nil != err {
 			return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", currentSpiderIPPool.Name, err)
 		}

@@ -58,6 +58,9 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager
 	if podManager == nil {
 		return nil, errors.New("PodManager must be specified")
 	}
+	if stsManager == nil {
+		return nil, errors.New("StatefulSetManager must be specified")
+	}
 
 	ipamLimiter := limiter.NewLimiter(c.LimiterMaxQueueSize, c.LimiterMaxWaitTime)
 	return &ipam{
@@ -77,68 +80,134 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 
 	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Pod %s: %v", *addArgs.PodName, err)
+		return nil, fmt.Errorf("failed to get Pod: %v", err)
 	}
-	podStatus, allocatable := i.podManager.CheckPodStatus(pod)
+	podStatus, allocatable := podmanager.CheckPodStatus(pod)
 	if !allocatable {
 		return nil, fmt.Errorf("%w: %s Pod", constant.ErrNotAllocatablePod, podStatus)
 	}
 
-	we, err := i.weManager.GetEndpointByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
+	endpoint, err := i.weManager.GetEndpointByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Endpoint: %v", err)
 	}
 
-	// StatefulSet
 	if i.ipamConfig.EnabledStatefulSet && podmanager.GetControllerOwnerType(pod) == constant.OwnerStatefulSet {
-		ipamAddResp, err := i.retrieveStsAllocatedIPs(ctx, *addArgs.ContainerID, pod, we)
-		if nil != err {
-			return nil, fmt.Errorf("failed to retrieve StatefulSet allocated IPs, error: %v", err)
+		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, pod, endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet: %v", err)
 		}
-
-		if ipamAddResp != nil {
-			return ipamAddResp, nil
+		if addResp != nil {
+			return addResp, nil
+		}
+	} else {
+		addResp, err := i.retrieveMultiNICIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve the IP allocation in multi-NIC mode: %v", err)
+		}
+		if addResp != nil {
+			return addResp, nil
 		}
 	}
 
-	addResp := &models.IpamAddResponse{}
-	allocation, currently, err := i.weManager.RetrieveIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, false, we)
-	if err != nil {
-		return nil, err
+	return i.allocateInStandardMode(ctx, addArgs, pod, endpoint)
+}
+
+func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic string, pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
+	logger := logutils.FromContext(ctx)
+
+	if endpoint == nil {
+		logger.Debug("Endpoint not found, do not retrieve anything for StatefulSet and try to allocate IP in standard mode")
+		return nil, nil
 	}
 
-	if allocation != nil && currently {
-		logger.Sugar().Infof("Retrieve an existing IP allocation: %+v", allocation.IPs)
-		addResp.Ips, addResp.Routes = convertIPDetailsToIPConfigsAndAllRoutes(allocation.IPs)
-		return addResp, nil
+	// There's no possible that a StatefulSet Pod Endpoint's field 'Status.Current' is nil.
+	if endpoint.Status.Current == nil {
+		return nil, fmt.Errorf("current IP allocation is lost, endpoint data broken: %+v", endpoint)
 	}
+
+	logger.Info("Retrieve the IP allocation of StatefulSet")
+	nicMatched := false
+	ips, routes := convertIPDetailsToIPConfigsAndAllRoutes(endpoint.Status.Current.IPs)
+	for _, c := range ips {
+		if *c.Nic == nic {
+			if err := i.ipPoolManager.UpdateAllocatedIPs(ctx, containerID, pod, *c); err != nil {
+				return nil, fmt.Errorf("failed to update the IPPool IPs of StatefulSet: %v", err)
+			}
+			nicMatched = true
+		}
+	}
+
+	if !nicMatched {
+		return nil, fmt.Errorf("nic %s do not match the current IP allocation of StatefulSet: %s", nic, endpoint.Status.Current)
+	}
+
+	// Refresh Endpoint current IP allocation.
+	if err := i.weManager.UpdateCurrentStatus(ctx, containerID, pod); err != nil {
+		return nil, fmt.Errorf("failed to update the current IP allocation of StatefulSet: %v", err)
+	}
+
+	addResp := &models.IpamAddResponse{
+		Ips:    ips,
+		Routes: routes,
+	}
+	logger.Sugar().Infof("Succeed to retrieve the IP allocation of StatefulSet: %+v", *addResp)
+
+	return addResp, nil
+}
+
+func (i *ipam) retrieveMultiNICIPAllocation(ctx context.Context, containerID, nic string, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
+	logger := logutils.FromContext(ctx)
+	logger.Debug("Retrieve the existing IP allocation in multi-NIC mode")
+
+	allocation, _ := workloadendpointmanager.RetrieveIPAllocation(containerID, nic, false, endpoint)
+	if allocation == nil {
+		logger.Debug("Nothing retrieved to allocate")
+		return nil, nil
+	}
+
+	ips, routes := convertIPDetailsToIPConfigsAndAllRoutes(allocation.IPs)
+	addResp := &models.IpamAddResponse{
+		Ips:    ips,
+		Routes: routes,
+	}
+	logger.Sugar().Infof("Succeed to retrieve the IP allocation in multi-NIC mode: %+v", *addResp)
+
+	return addResp, nil
+}
+
+func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
+	logger := logutils.FromContext(ctx)
+	logger.Debug("Allocate IP in standard mode")
 
 	toBeAllocatedSet, err := i.genToBeAllocatedSet(ctx, *addArgs.IfName, addArgs.DefaultIPV4IPPool, addArgs.DefaultIPV6IPPool, addArgs.CleanGateway, pod)
 	if err != nil {
 		return nil, err
 	}
-	results, we, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, we, pod)
+	results, endpoint, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, endpoint, pod)
 	resIPs, resRoutes := convertResultsToIPConfigsAndAllRoutes(results)
 	if err != nil {
 		// If there are any other errors that might have been thrown at Allocate
 		// after the allocateForAllInterfaces is called, use defer.
 		if len(resIPs) != 0 {
-			if err := i.release(ctx, *addArgs.ContainerID, convertResultsToIPDetails(results)); err != nil {
-				logger.Sugar().Warnf("Failed to roll back allocated IP: %v", err)
+			if rollbackErr := i.release(ctx, *addArgs.ContainerID, convertResultsToIPDetails(results)); rollbackErr != nil {
+				logger.Sugar().Warnf("Failed to roll back the allocated IPs: %v", rollbackErr)
 				return nil, err
 			}
 		}
 
-		if err := i.weManager.ClearCurrentIPAllocation(ctx, *addArgs.ContainerID, we); err != nil {
-			logger.Sugar().Warnf("Failed to clear current IP allocation: %v", err)
+		if err := i.weManager.ClearCurrentIPAllocation(ctx, *addArgs.ContainerID, endpoint); err != nil {
+			logger.Sugar().Warnf("Failed to clear the current IP allocation: %v", err)
 		}
 
 		return nil, err
 	}
 
-	addResp.Ips = resIPs
-	addResp.Routes = resRoutes
-	logger.Sugar().Infof("Succeed to allocate: %+v", addResp)
+	addResp := &models.IpamAddResponse{
+		Ips:    resIPs,
+		Routes: resRoutes,
+	}
+	logger.Sugar().Infof("Succeed to allocate: %+v", *addResp)
 
 	return addResp, nil
 }
@@ -170,7 +239,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, nic string, defaultIPV4I
 	return toBeAllocatedSet, nil
 }
 
-func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
+func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
 	logger := logutils.FromContext(ctx)
 
 	customRoutes, err := getCustomRoutes(ctx, pod)
@@ -179,19 +248,19 @@ func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, cont
 	}
 
 	// TODO(iiiceoo): Comment why containerID should be written first.
-	we, err = i.weManager.MarkIPAllocation(ctx, containerID, we, pod)
+	endpoint, err = i.weManager.MarkIPAllocation(ctx, containerID, endpoint, pod)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to mark IP allocation: %v", err)
 	}
 
 	var allResults []*AllocationResult
 	for _, t := range tt {
-		oneResults, we, err := i.allocateForOneNIC(ctx, t, containerID, &customRoutes, we, pod)
+		oneResults, endpoint, err := i.allocateForOneNIC(ctx, t, containerID, &customRoutes, endpoint, pod)
 		if len(oneResults) != 0 {
 			allResults = append(allResults, oneResults...)
 		}
 		if err != nil {
-			return allResults, we, err
+			return allResults, endpoint, err
 		}
 	}
 	if len(customRoutes) != 0 {
@@ -201,16 +270,17 @@ func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, cont
 	ips, _ := convertResultsToIPConfigsAndAllRoutes(allResults)
 	anno, err := genIPAssignmentAnnotation(ips)
 	if err != nil {
-		return allResults, we, err
+		return allResults, endpoint, err
 	}
 
 	if err := i.podManager.MergeAnnotations(ctx, pod.Namespace, pod.Name, anno); err != nil {
-		return allResults, we, fmt.Errorf("failed to merge IP assignment annotation of Pod: %v", err)
+		return allResults, endpoint, fmt.Errorf("failed to merge IP assignment annotation of Pod: %v", err)
 	}
 
-	return allResults, we, nil
+	return allResults, endpoint, nil
 }
-func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containerID string, customRoutes *[]*models.Route, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
+
+func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containerID string, customRoutes *[]*models.Route, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
 	var results []*AllocationResult
 	for _, c := range t.PoolCandidates {
 		result, err := i.allocateIPFromPoolCandidates(ctx, c, t.NIC, containerID, t.CleanGateway, pod)
@@ -218,26 +288,26 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 			results = append(results, result)
 		}
 		if err != nil {
-			return results, we, err
+			return results, endpoint, err
 		}
 
 		routes, err := groupCustomRoutesByGW(ctx, customRoutes, result.IP)
 		if err != nil {
-			return results, we, err
+			return results, endpoint, err
 		}
 		result.Routes = append(result.Routes, routes...)
 
 		patch := convertResultsToIPDetails([]*AllocationResult{result})
-		we, err = i.weManager.PatchIPAllocation(ctx, &spiderpoolv1.PodIPAllocation{
+		endpoint, err = i.weManager.PatchIPAllocation(ctx, &spiderpoolv1.PodIPAllocation{
 			ContainerID: containerID,
 			IPs:         patch,
-		}, we)
+		}, endpoint)
 		if err != nil {
-			return results, we, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint: %v", patch, err)
+			return results, endpoint, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint: %v", patch, err)
 		}
 	}
 
-	return results, we, nil
+	return results, endpoint, nil
 }
 
 func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidate, nic, containerID string, cleanGateway bool, pod *corev1.Pod) (*AllocationResult, error) {
@@ -396,44 +466,39 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger.Info("Start to release IP")
 
 	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
-	if nil != err {
-		return err
+	if err != nil {
+		return fmt.Errorf("failed to get Pod: %v", err)
 	}
 
-	// StatefulSet
 	if i.ipamConfig.EnabledStatefulSet && podmanager.GetControllerOwnerType(pod) == constant.OwnerStatefulSet {
 		isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, podmanager.GetControllerOwnerType(pod))
-		if nil != err {
-			return fmt.Errorf("failed to check whether clean up StatefulSet pod, error: %v", err)
+		if err != nil {
+			return err
 		}
-
 		if isValidStsPod {
-			logger.Sugar().Infof("no need to release for StatefulSet pod '%s/%s'", pod.Namespace, pod.Name)
+			logger.Info("No need to release the IP allocation of an StatefulSet whose scale is not reduced")
 			return nil
 		}
 	}
 
-	we, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
+	endpoint, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
-		return err
+		return fmt.Errorf("failed to get Endpoint: %v", err)
 	}
-	allocation, currently, err := i.weManager.RetrieveIPAllocation(ctx, *delArgs.ContainerID, *delArgs.IfName, true, we)
-	if err != nil {
-		return err
-	}
+	allocation, currently := workloadendpointmanager.RetrieveIPAllocation(*delArgs.ContainerID, *delArgs.IfName, true, endpoint)
 	if allocation == nil {
 		logger.Info("Nothing retrieved for releasing")
 		return nil
 	}
 	if !currently {
-		logger.Warn("Request to release a non current IP allocation, there may be concurrency between the same Pod")
+		logger.Warn("Request to release non current IP allocation, concurrency may exist between the same Pod")
 	}
 
 	if err = i.release(ctx, allocation.ContainerID, allocation.IPs); err != nil {
 		return err
 	}
-	if err := i.weManager.ClearCurrentIPAllocation(ctx, *delArgs.ContainerID, we); err != nil {
-		return err
+	if err := i.weManager.ClearCurrentIPAllocation(ctx, *delArgs.ContainerID, endpoint); err != nil {
+		return fmt.Errorf("failed to clear current IP allocation: %v", err)
 	}
 	logger.Sugar().Infof("Succeed to release: %+v", allocation.IPs)
 

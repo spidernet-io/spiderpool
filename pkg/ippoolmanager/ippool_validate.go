@@ -93,8 +93,8 @@ func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, n
 		return err
 	}
 
-	oldTotalIPs, _ := im.AssembleTotalIPs(ctx, oldIPPool)
-	newTotalIPs, _ := im.AssembleTotalIPs(ctx, newIPPool)
+	oldTotalIPs, _ := assembleTotalIPs(oldIPPool)
+	newTotalIPs, _ := assembleTotalIPs(newIPPool)
 	reducedIPs := spiderpoolip.IPsDiffSet(oldTotalIPs, newTotalIPs)
 
 	for _, ip := range reducedIPs {
@@ -176,13 +176,13 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 		return field.InternalError(ipsField, err)
 	}
 
-	newIPs, _ := im.AssembleTotalIPs(ctx, ipPool)
+	newIPs, _ := assembleTotalIPs(ipPool)
 	for _, pool := range ipPools.Items {
 		if pool.Name == ipPool.Name || pool.Spec.Subnet != ipPool.Spec.Subnet {
 			continue
 		}
 
-		existIPs, err := im.AssembleTotalIPs(ctx, &pool)
+		existIPs, err := assembleTotalIPs(&pool)
 		if err != nil {
 			return field.InternalError(ipsField, err)
 		}

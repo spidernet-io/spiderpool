@@ -63,13 +63,15 @@ func CreateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.Cr
 }
 
 func BatchCreateIppoolWithSpecifiedIPNumber(frame *frame.Framework, ippoolNumber, ipNum int, isV4orv6Pool bool) (ipPoolNameList []string, err error) {
-	ipMap := make(map[string]string)
-	var ipPoolName string
-	var ipPoolObj *v1.SpiderIPPool
-	var iPPoolNameList []string
 	if frame == nil || ippoolNumber < 0 || ipNum < 0 {
 		return nil, errors.New("wrong input")
 	}
+
+	var ipPoolName string
+	var ipPoolObj *v1.SpiderIPPool
+	var iPPoolNameList []string
+	ipMap := make(map[string]string)
+
 OUTER_FOR:
 	// cycle create ippool
 	for i := 1; i <= ippoolNumber; i++ {
@@ -186,9 +188,16 @@ func GetPodIPv6Address(pod *corev1.Pod) *corev1.PodIP {
 }
 
 func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolNameList []string, podList *corev1.PodList) (allIPRecorded, noneIPRecorded, partialIPRecorded bool, err error) {
-	if f == nil || podList == nil {
-		return false, false, false, errors.New("wrong input")
+	if f == nil {
+		return false, false, false, errors.New("wrong input: framework is nil")
 	}
+	if len(v4IppoolNameList) == 0 && len(v6IppoolNameList) == 0 {
+		return false, false, false, fmt.Errorf("wrong input, v4IppoolNameList: '%v', v6IppoolNameList: '%v'", v4IppoolNameList, v6IppoolNameList)
+	}
+	if podList == nil || len(podList.Items) == 0 {
+		return false, false, false, errors.New("wrong input: PodList in empty")
+	}
+	f.Log("cluster IPv4Enabled: '%v', IPv6Enabled: '%v'", f.Info.IpV4Enabled, f.Info.IpV6Enabled)
 
 	var v4ippoolList, v6ippoolList []*v1.SpiderIPPool
 	if len(v4IppoolNameList) != 0 {
@@ -218,60 +227,49 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 	v4BingoNum := 0
 	v6BingoNum := 0
 	podNum := len(podList.Items)
-
 	for _, v := range podList.Items {
 
 		if f.Info.IpV4Enabled {
-			f.Log("checking v4 pool %v , for pod %v/%v \n", v4IppoolNameList, v.Namespace, v.Name)
-			ip := GetPodIPv4Address(&v)
-			if ip == nil {
-				return false, false, false, errors.New("failed to get pod ipv4 address")
-			}
-
 			bingo := false
 
 			for _, m := range v4ippoolList {
-				ok, e := CheckIppoolForUsedIP(f, m, v.Name, v.Namespace, ip)
+				ok, e := CheckIppoolForPodName(f, m, v.Name, v.Namespace)
 				if e != nil || !ok {
-					f.Log("pod %v/%v : ip %v not recorded in v4 pool %v \n", v.Namespace, v.Name, ip.IP, m.Name)
+					f.Log("pod %v/%v not recorded in v4 pool %v \n", v.Namespace, v.Name, m.Name)
 					f.Log("v4 pool %v status : %v \n", v.Name, m.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
 				v4BingoNum++
-				f.Log("pod %v/%v : ip %v recorded in v4 pool %v \n", v.Namespace, v.Name, ip.String(), m.Name)
+				f.Log("pod %v/%v recorded in v4 pool %v \n", v.Namespace, v.Name, m.Name)
 				break
 			}
 			if !bingo {
-				f.Log("pod %v/%v  is not assigned v4 ip %v in v4 pool %v \n", v.Namespace, v.Name, ip.IP, v4IppoolNameList)
+				f.Log("pod %v/%v  is not assigned v4 ip in v4 pool %v \n", v.Namespace, v.Name, v4IppoolNameList)
 			} else {
-				f.Log("succeeded to check pod %v/%v with ip %v in v4 pool %v \n", v.Namespace, v.Name, ip.IP, v4IppoolNameList)
+				f.Log("succeeded to check pod %v/%v in v4 pool %v \n", v.Namespace, v.Name, v4IppoolNameList)
 			}
 		}
 
 		if f.Info.IpV6Enabled {
-			f.Log("checking v6 pool %v , for pod %v/%v \n", v6IppoolNameList, v.Namespace, v.Name)
-			ip := GetPodIPv6Address(&v)
-			if ip == nil {
-				return false, false, false, errors.New("failed to get pod ipv6 address")
-			}
 			bingo := false
+
 			for _, m := range v6ippoolList {
-				ok, e := CheckIppoolForUsedIP(f, m, v.Name, v.Namespace, ip)
+				ok, e := CheckIppoolForPodName(f, m, v.Name, v.Namespace)
 				if e != nil || !ok {
-					f.Log("pod %v/%v : ip %v not recorded in v6 pool %v \n", v.Namespace, v.Name, ip.String(), m.Name)
+					f.Log("pod %v/%v not recorded in v6 pool %v \n", v.Namespace, v.Name, m.Name)
 					f.Log("v6 pool %v status : %v \n", v.Name, m.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
 				v6BingoNum++
-				f.Log("pod %v/%v : ip %v recorded in v6 pool %v \n", v.Namespace, v.Name, ip.String(), m.Name)
+				f.Log("pod %v/%v recorded in v6 pool %v \n", v.Namespace, v.Name, m.Name)
 				break
 			}
 			if !bingo {
-				f.Log("pod %v/%v  is not assigned v6 ip %v in v6 pool %v \n", v.Namespace, v.Name, ip.IP, v6IppoolNameList)
+				f.Log("pod %v/%v is not assigned v6 ip in v6 pool %v \n", v.Namespace, v.Name, v6IppoolNameList)
 			} else {
-				f.Log("succeeded to check pod %v/%v with ip %v in v6 pool %v \n", v.Namespace, v.Name, ip.String(), v6IppoolNameList)
+				f.Log("succeeded to check pod %v/%v in v6 pool %v \n", v.Namespace, v.Name, v6IppoolNameList)
 			}
 		}
 	}
@@ -386,15 +384,12 @@ func GetWorkloadByName(f *frame.Framework, namespace, name string) *v1.SpiderEnd
 	return existing
 }
 
-func CheckIppoolForPodName(f *frame.Framework, poolName, podName, podNamespace string) (bool, error) {
-	if f == nil || poolName == "" || podName == "" || podNamespace == "" {
+func CheckIppoolForPodName(f *frame.Framework, ippool *v1.SpiderIPPool, podName, podNamespace string) (bool, error) {
+	if f == nil || ippool == nil || podName == "" || podNamespace == "" {
 		return false, errors.New("wrong input")
 	}
-	pool := GetIppoolByName(f, poolName)
-	if pool == nil {
-		return false, errors.New("pool not existed")
-	}
-	for _, v := range pool.Status.AllocatedIPs {
+
+	for _, v := range ippool.Status.AllocatedIPs {
 		if v.Pod == podName && v.Namespace == podNamespace {
 			return true, nil
 		}
@@ -405,36 +400,22 @@ func CheckIppoolForPodName(f *frame.Framework, poolName, podName, podNamespace s
 func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameList []string, podList *corev1.PodList, timeOut time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 	defer cancel()
-OUTER:
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("time out to wait IP reclaimed finish")
+			return errors.New("time out to wait ip reclaimed finish")
 		default:
-			for _, pod := range podList.Items {
-				if f.Info.IpV4Enabled && len(v4IppoolNameList) != 0 {
-					for _, poolName := range v4IppoolNameList {
-						ok, err := CheckIppoolForPodName(f, poolName, pod.Name, pod.Namespace)
-						if ok && err == nil {
-							continue OUTER
-						}
-					}
-					GinkgoWriter.Printf("Pod %v/%v IP successfully reclaimed from IPv4Pool \n", pod.Namespace, pod.Name)
-					return nil
-				}
-				if f.Info.IpV6Enabled && len(v6IppoolNameList) != 0 {
-					for _, poolName := range v6IppoolNameList {
-						ok, err := CheckIppoolForPodName(f, poolName, pod.Name, pod.Namespace)
-						if ok && err == nil {
-							continue OUTER
-						}
-					}
-					GinkgoWriter.Printf("Pod %v/%v IP successfully reclaimed from IPv6Pool \n", pod.Namespace, pod.Name)
-					return nil
-				}
+			_, ok, _, err := CheckPodIpRecordInIppool(f, v4IppoolNameList, v6IppoolNameList, podList)
+			if err != nil {
+				return err
 			}
+			if ok {
+				return nil
+			}
+			time.Sleep(time.Second)
 		}
 	}
+
 }
 
 func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {

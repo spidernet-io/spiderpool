@@ -40,7 +40,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
+  --set clusterDefaultPool.ipv4IPRanges=${Ipv4Range} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
   
 ```
@@ -86,10 +86,10 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.installIPv6IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
+  --set clusterDefaultPool.ipv4IPRanges=${Ipv4Range} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway} \
   --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} \
-  --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}} \
+  --set clusterDefaultPool.ipv6IPRanges=${Ipv6Range} \
   --set clusterDefaultPool.ipv6Gateway=${Ipv6Gateway}
 ```
 
@@ -119,7 +119,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${ipv4_ip_range}} \
+  --set clusterDefaultPool.ipv4IPRanges=${ipv4_range} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
 
 ```

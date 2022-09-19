@@ -65,7 +65,6 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 func convertResultsToIPConfigsAndAllRoutes(results []*AllocationResult) ([]*models.IPConfig, []*models.Route) {
 	var ips []*models.IPConfig
 	var routes []*models.Route
-	var ipv4DefaultRoute, ipv6DefaultRoute *models.Route
 	for _, r := range results {
 		ips = append(ips, r.IP)
 		routes = append(routes, r.Routes...)
@@ -75,13 +74,7 @@ func convertResultsToIPConfigsAndAllRoutes(results []*AllocationResult) ([]*mode
 		}
 
 		if r.IP.Gateway != "" {
-			if ipv4DefaultRoute == nil && *r.IP.Version == constant.IPv4 {
-				ipv4DefaultRoute = genDefaultRoute(*r.IP.Nic, r.IP.Gateway)
-				routes = append(routes, ipv4DefaultRoute)
-			} else if ipv6DefaultRoute == nil && *r.IP.Version == constant.IPv6 {
-				ipv6DefaultRoute = genDefaultRoute(*r.IP.Nic, r.IP.Gateway)
-				routes = append(routes, ipv6DefaultRoute)
-			}
+			routes = append(routes, genDefaultRoute(*r.IP.Nic, r.IP.Gateway))
 		}
 	}
 

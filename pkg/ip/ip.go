@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/big"
 	"net"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -26,8 +25,8 @@ func IsIPVersion(version types.IPVersion) error {
 
 // ParseIP parses IP string as a CIDR notation IP address of the specified
 // IP version.
-func ParseIP(version types.IPVersion, s string) (*net.IPNet, error) {
-	if strings.ContainsAny(s, "/") {
+func ParseIP(version types.IPVersion, s string, isCIDR bool) (*net.IPNet, error) {
+	if isCIDR {
 		if err := IsCIDR(version, s); err != nil {
 			return nil, err
 		}

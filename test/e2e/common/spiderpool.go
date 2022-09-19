@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -524,6 +525,14 @@ func UpdateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.Up
 		return errors.New("wrong input")
 	}
 	return f.UpdateResource(ippool, opts...)
+}
+
+func PatchIppool(f *frame.Framework, desiredPool, originalPool *v1.SpiderIPPool, opts ...client.PatchOption) error {
+	if desiredPool == nil || f == nil || originalPool == nil {
+		return errors.New("wrong input")
+	}
+	mergePatch := client.MergeFrom(originalPool)
+	return f.PatchResource(desiredPool, mergePatch, opts...)
 }
 
 func BatchDeletePoolUntilFinish(f *frame.Framework, iPPoolNameList []string, ctx context.Context) error {

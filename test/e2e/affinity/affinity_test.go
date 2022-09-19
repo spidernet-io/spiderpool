@@ -10,12 +10,11 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 
-	corev1 "k8s.io/api/core/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -543,18 +542,19 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				}
 				Expect(frame.UpdateResource(nsObject)).To(Succeed())
 			}
+
 			// set ippool label selector to ns1 and ns2
 			if frame.Info.IpV4Enabled {
 				v4PoolObject := common.GetIppoolByName(frame, v4PoolName)
 				v4PoolObject.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v4PoolObject.Spec.NamespaceAffinity.MatchLabels = nsLabel
-				Expect(common.UpdateIppool(frame, v4PoolObject)).NotTo(HaveOccurred(), "Failed to update v4PoolObject")
+				Expect(common.PatchIppool(frame, v4PoolObject, v4PoolObj)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolObject := common.GetIppoolByName(frame, v6PoolName)
 				v6PoolObject.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v6PoolObject.Spec.NamespaceAffinity.MatchLabels = nsLabel
-				Expect(common.UpdateIppool(frame, v6PoolObject)).NotTo(HaveOccurred(), "Failed to update v6PoolObject")
+				Expect(common.PatchIppool(frame, v6PoolObject, v6PoolObj)).NotTo(HaveOccurred())
 			}
 
 			// create 2 deployment in different ns

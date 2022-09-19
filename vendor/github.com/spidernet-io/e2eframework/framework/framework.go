@@ -42,7 +42,7 @@ type ClusterInfo struct {
 	MultusAdditionalCni string
 }
 
-var clusterInfo = &ClusterInfo{}
+var ClusterInformation = &ClusterInfo{}
 
 type envconfig struct {
 	EnvName  string
@@ -68,19 +68,19 @@ const (
 
 var envConfigList = []envconfig{
 	// --- multus field
-	{EnvName: E2E_Multus_DefaultCni, DestStr: &clusterInfo.MultusDefaultCni, Default: "", Required: false},
-	{EnvName: E2E_Multus_AdditionalCni, DestStr: &clusterInfo.MultusAdditionalCni, Default: "", Required: false},
+	{EnvName: E2E_Multus_DefaultCni, DestStr: &ClusterInformation.MultusDefaultCni, Default: "", Required: false},
+	{EnvName: E2E_Multus_AdditionalCni, DestStr: &ClusterInformation.MultusAdditionalCni, Default: "", Required: false},
 	// --- require field
-	{EnvName: E2E_CLUSTER_NAME, DestStr: &clusterInfo.ClusterName, Default: "", Required: true},
-	{EnvName: E2E_KUBECONFIG_PATH, DestStr: &clusterInfo.KubeConfigPath, Default: "", Required: true},
+	{EnvName: E2E_CLUSTER_NAME, DestStr: &ClusterInformation.ClusterName, Default: "", Required: true},
+	{EnvName: E2E_KUBECONFIG_PATH, DestStr: &ClusterInformation.KubeConfigPath, Default: "", Required: true},
 	// ---- optional field
-	{EnvName: E2E_IPV4_ENABLED, DestBool: &clusterInfo.IpV4Enabled, Default: "true", Required: false},
-	{EnvName: E2E_IPV6_ENABLED, DestBool: &clusterInfo.IpV6Enabled, Default: "true", Required: false},
-	{EnvName: E2E_MULTUS_CNI_ENABLED, DestBool: &clusterInfo.MultusEnabled, Default: "false", Required: false},
-	{EnvName: E2E_SPIDERPOOL_IPAM_ENABLED, DestBool: &clusterInfo.SpiderIPAMEnabled, Default: "false", Required: false},
-	{EnvName: E2E_WHEREABOUT_IPAM_ENABLED, DestBool: &clusterInfo.WhereaboutIPAMEnabled, Default: "false", Required: false},
+	{EnvName: E2E_IPV4_ENABLED, DestBool: &ClusterInformation.IpV4Enabled, Default: "true", Required: false},
+	{EnvName: E2E_IPV6_ENABLED, DestBool: &ClusterInformation.IpV6Enabled, Default: "true", Required: false},
+	{EnvName: E2E_MULTUS_CNI_ENABLED, DestBool: &ClusterInformation.MultusEnabled, Default: "false", Required: false},
+	{EnvName: E2E_SPIDERPOOL_IPAM_ENABLED, DestBool: &ClusterInformation.SpiderIPAMEnabled, Default: "false", Required: false},
+	{EnvName: E2E_WHEREABOUT_IPAM_ENABLED, DestBool: &ClusterInformation.WhereaboutIPAMEnabled, Default: "false", Required: false},
 	// ---- kind field
-	{EnvName: E2E_KIND_CLUSTER_NODE_LIST, DestStr: &clusterInfo.KindNodeListRaw, Default: "false", Required: false},
+	{EnvName: E2E_KIND_CLUSTER_NODE_LIST, DestStr: &ClusterInformation.KindNodeListRaw, Default: "false", Required: false},
 	// ---- vagrant field
 }
 
@@ -129,7 +129,7 @@ func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme) error, 
 	var ok bool
 
 	// defer GinkgoRecover()
-	if len(clusterInfo.ClusterName) == 0 {
+	if len(ClusterInformation.ClusterName) == 0 {
 		if e := initClusterInfo(); e != nil {
 			return nil, e
 		}
@@ -139,7 +139,7 @@ func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme) error, 
 	f.t = t
 	f.EnableLog = true
 
-	v := deepcopy.Copy(*clusterInfo)
+	v := deepcopy.Copy(*ClusterInformation)
 	f.Info, ok = v.(ClusterInfo)
 	if !ok {
 		return nil, fmt.Errorf("internal error, failed to deepcopy")
@@ -234,9 +234,15 @@ func (f *Framework) UpdateResource(obj client.Object, opts ...client.UpdateOptio
 }
 
 func (f *Framework) UpdateResourceStatus(obj client.Object, opts ...client.UpdateOption) error {
-	ctx, cancel := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
-	defer cancel()
-	return f.KClient.Status().Update(ctx, obj, opts...)
+	ctx6, cancel6 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel6()
+	return f.KClient.Status().Update(ctx6, obj, opts...)
+}
+
+func (f *Framework) PatchResource(obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+	ctx7, cancel7 := context.WithTimeout(context.Background(), f.Config.ApiOperateTimeout)
+	defer cancel7()
+	return f.KClient.Patch(ctx7, obj, patch, opts...)
 }
 
 func initClusterInfo() error {
@@ -261,8 +267,8 @@ func initClusterInfo() error {
 		}
 	}
 
-	if len(clusterInfo.KindNodeListRaw) > 0 {
-		clusterInfo.KindNodeList = strings.Split(clusterInfo.KindNodeListRaw, ",")
+	if len(ClusterInformation.KindNodeListRaw) > 0 {
+		ClusterInformation.KindNodeList = strings.Split(ClusterInformation.KindNodeListRaw, ",")
 	}
 	return nil
 

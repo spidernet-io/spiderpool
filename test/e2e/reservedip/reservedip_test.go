@@ -129,16 +129,16 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			// S00003: Failed to set same IP in excludeIPs when an IP is assigned to a Pod
 			if frame.Info.IpV4Enabled {
 				GinkgoWriter.Printf("Update the v4 IPPool and set the IP %v used by the Pod in the excludeIPs. \n", iPv4PoolObj.Spec.IPs)
-				iPv4PoolObj = common.GetIppoolByName(frame, v4PoolName)
-				iPv4PoolObj.Spec.ExcludeIPs = iPv4PoolObj.Spec.IPs
-				Expect(common.UpdateIppool(frame, iPv4PoolObj)).NotTo(Succeed())
+				desiredV4PoolObj := common.GetIppoolByName(frame, v4PoolName)
+				desiredV4PoolObj.Spec.ExcludeIPs = desiredV4PoolObj.Spec.IPs
+				Expect(common.PatchIppool(frame, desiredV4PoolObj, iPv4PoolObj)).NotTo(Succeed())
 				GinkgoWriter.Printf("Failed to update v4 IPPool %v when setting the IP %v used by the Pod in the IPPool's excludeIPs \n", v4PoolName, iPv4PoolObj.Spec.IPs)
 			}
 			if frame.Info.IpV6Enabled {
 				GinkgoWriter.Printf("Update the v6 IPPool and set the IP %v used by the Pod in the excludeIPs. \n", iPv6PoolObj.Spec.IPs)
-				iPv6PoolObj = common.GetIppoolByName(frame, v6PoolName)
-				iPv6PoolObj.Spec.ExcludeIPs = iPv6PoolObj.Spec.IPs
-				Expect(common.UpdateIppool(frame, iPv6PoolObj)).NotTo(Succeed())
+				desiredV6PoolObj := common.GetIppoolByName(frame, v6PoolName)
+				desiredV6PoolObj.Spec.ExcludeIPs = desiredV6PoolObj.Spec.IPs
+				Expect(common.PatchIppool(frame, desiredV6PoolObj, iPv6PoolObj)).NotTo(Succeed())
 				GinkgoWriter.Printf("Failed to update v6 IPPool %v when setting the IP %v used by the Pod in the IPPool's excludeIPs \n", v6PoolName, iPv6PoolObj.Spec.IPs)
 			}
 

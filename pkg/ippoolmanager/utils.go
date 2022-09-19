@@ -29,7 +29,7 @@ func assembleTotalIPs(ipPool *spiderpoolv1.SpiderIPPool) ([]net.IP, error) {
 }
 
 func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, poolName string) (*models.IPConfig, error) {
-	ipNet, err := spiderpoolip.ParseIP(*poolSpec.IPVersion, poolSpec.Subnet)
+	ipNet, err := spiderpoolip.ParseIP(*poolSpec.IPVersion, poolSpec.Subnet, true)
 	if err != nil {
 		return nil, err
 	}

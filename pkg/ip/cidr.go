@@ -30,7 +30,7 @@ func ContainsIP(version types.IPVersion, subnet string, ip string) (bool, error)
 	if err != nil {
 		return false, err
 	}
-	address, err := ParseIP(version, ip)
+	address, err := ParseIP(version, ip, false)
 	if err != nil {
 		return false, err
 	}

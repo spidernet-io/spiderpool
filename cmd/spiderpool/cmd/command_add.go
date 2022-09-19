@@ -180,7 +180,7 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 	for _, ipconfig := range ipamResponse.Payload.Ips {
 		// filter IPAM multi-Interfaces
 		if *ipconfig.Nic == IfName {
-			address, err := spiderpoolip.ParseIP(*ipconfig.Version, *ipconfig.Address)
+			address, err := spiderpoolip.ParseIP(*ipconfig.Version, *ipconfig.Address, true)
 			if err != nil {
 				return nil, err
 			}

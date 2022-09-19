@@ -130,13 +130,15 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
 		}
 
+		ownerControllerType, ownerControllerName := podmanager.GetOwnerControllerType(pod)
 		ipPool.Status.AllocatedIPs[allocatedIP.String()] = spiderpoolv1.PoolIPAllocation{
 			ContainerID:         containerID,
 			NIC:                 nic,
 			Node:                pod.Spec.NodeName,
 			Namespace:           pod.Namespace,
 			Pod:                 pod.Name,
-			OwnerControllerType: podmanager.GetControllerOwnerType(pod),
+			OwnerControllerType: ownerControllerType,
+			OwnerControllerName: ownerControllerName,
 		}
 
 		if ipPool.Status.AllocatedIPCount == nil {

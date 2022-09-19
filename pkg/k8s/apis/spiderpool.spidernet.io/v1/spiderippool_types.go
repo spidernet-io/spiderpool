@@ -93,6 +93,9 @@ type PoolIPAllocation struct {
 
 	// +kubebuilder:validation:Required
 	OwnerControllerType string `json:"ownerControllerType"`
+
+	// +kubebuilder:validation:Required
+	OwnerControllerName string `json:"ownerControllerName"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderippools",scope="Cluster",shortName={sp},singular="spiderippool"

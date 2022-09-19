@@ -176,6 +176,8 @@ spec:
                   - containerID
                   type: object
                 type: array
+              ownerControllerName:
+                type: string
               ownerControllerType:
                 type: string
             type: object

@@ -101,6 +101,7 @@ func (in *WorkloadEndpointStatus) String() string {
 		`Current:` + fmt.Sprintf("%v", in.Current) + `,`,
 		`History:` + repeatedStringForHistory + `,`,
 		`OwnerControllerType:` + fmt.Sprintf("%v", in.OwnerControllerType) + `,`,
+		`OwnerControllerName` + fmt.Sprintf("%v", in.OwnerControllerName) + `,`,
 		`}`,
 	}, "")
 	return s

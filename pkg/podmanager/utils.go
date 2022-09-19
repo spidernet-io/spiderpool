@@ -13,10 +13,10 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func GetControllerOwnerType(pod *corev1.Pod) string {
+func GetOwnerControllerType(pod *corev1.Pod) (string, string) {
 	owner := metav1.GetControllerOf(pod)
 	if owner == nil {
-		return constant.OwnerNone
+		return constant.OwnerNone, ""
 	}
 
 	var ownerType string
@@ -35,7 +35,7 @@ func GetControllerOwnerType(pod *corev1.Pod) string {
 		ownerType = constant.OwnerUnknown
 	}
 
-	return ownerType
+	return ownerType, owner.Name
 }
 
 func CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable bool) {

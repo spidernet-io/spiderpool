@@ -92,7 +92,8 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		return nil, fmt.Errorf("failed to get Endpoint: %v", err)
 	}
 
-	if i.ipamConfig.EnabledStatefulSet && podmanager.GetControllerOwnerType(pod) == constant.OwnerStatefulSet {
+	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
+	if i.ipamConfig.EnabledStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
 		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, pod, endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet: %v", err)
@@ -470,8 +471,9 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		return fmt.Errorf("failed to get Pod: %v", err)
 	}
 
-	if i.ipamConfig.EnabledStatefulSet && podmanager.GetControllerOwnerType(pod) == constant.OwnerStatefulSet {
-		isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, podmanager.GetControllerOwnerType(pod))
+	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
+	if i.ipamConfig.EnabledStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
+		isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, ownerControllerType)
 		if err != nil {
 			return err
 		}

@@ -264,6 +264,8 @@ spec:
                       type: string
                     node:
                       type: string
+                    ownerControllerName:
+                      type: string
                     ownerControllerType:
                       type: string
                     pod:
@@ -273,6 +275,7 @@ spec:
                   - interface
                   - namespace
                   - node
+                  - ownerControllerName
                   - ownerControllerType
                   - pod
                   type: object

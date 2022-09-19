@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -37,6 +38,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 			if nil != logger {
 				logger.Error(msg)
 			}
+			debug.PrintStack()
 		}
 	}()
 

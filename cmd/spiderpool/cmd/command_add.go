@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -48,6 +49,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			if nil != logger {
 				logger.Error(msg)
 			}
+			debug.PrintStack()
 		}
 	}()
 

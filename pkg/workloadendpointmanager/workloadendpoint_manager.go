@@ -101,13 +101,12 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 		}
 
 		controllerutil.AddFinalizer(newWE, constant.SpiderFinalizer)
-
-		controllerOwnerType := podmanager.GetControllerOwnerType(pod)
+		ownerControllerType, ownerControllerName := podmanager.GetOwnerControllerType(pod)
 
 		// We don't set ownerReference for Endpoint when the pod belongs to StatefulSet
 		// Once the StatefulSet pod restarts, we can retrieve the corresponding data immediately.
 		// And we don't need to wait the corresponding Endpoint clean up to create a new one if ownerReference exists.
-		if controllerOwnerType != constant.OwnerStatefulSet {
+		if ownerControllerType != constant.OwnerStatefulSet {
 			if err := controllerutil.SetOwnerReference(pod, newWE, em.scheme); err != nil {
 				return nil, err
 			}
@@ -119,7 +118,8 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 
 		newWE.Status.Current = allocation
 		newWE.Status.History = []spiderpoolv1.PodIPAllocation{*allocation}
-		newWE.Status.OwnerControllerType = controllerOwnerType
+		newWE.Status.OwnerControllerType = ownerControllerType
+		newWE.Status.OwnerControllerName = ownerControllerName
 		if err := em.client.Status().Update(ctx, newWE); err != nil {
 			return nil, err
 		}

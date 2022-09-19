@@ -47,9 +47,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			}
 
 			if nil != logger {
-				logger.Error(msg)
+				logger.Sugar().Errorf("%s\n\n%s", msg, debug.Stack())
 			}
-			debug.PrintStack()
 		}
 	}()
 

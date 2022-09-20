@@ -32,13 +32,12 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 			if err != nil {
 				// If it is recovering and an error occurs, then we need to
 				// present both.
-				msg = fmt.Sprintf("%s: error=%v", msg, err)
+				msg = fmt.Sprintf("%s: error=%v", msg, err.Error())
 			}
 
 			if nil != logger {
-				logger.Error(msg)
+				logger.Sugar().Errorf("%s\n\n%s", msg, debug.Stack())
 			}
-			debug.PrintStack()
 		}
 	}()
 

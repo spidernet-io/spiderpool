@@ -103,7 +103,7 @@ Refer to [installation](./docs/usage/install.md).
 
 ## Quick Start
 
-Refer to [demo](./docs/usage/demo.md).
+Refer to [demo](./docs/usage/basic.md).
 
 ## Development
 

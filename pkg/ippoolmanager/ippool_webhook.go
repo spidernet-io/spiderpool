@@ -8,7 +8,9 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -38,17 +40,18 @@ var _ webhook.CustomDefaulter = (*ipPoolManager)(nil)
 func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error {
 	ipPool, ok := obj.(*spiderpoolv1.SpiderIPPool)
 	if !ok {
-		return fmt.Errorf("mutating webhook of IPPool got an object with mismatched type: %+v", obj.GetObjectKind().GroupVersionKind())
+		return apierrors.NewBadRequest(fmt.Sprintf("mutating webhook of IPPool got an object with mismatched GVK: %+v", obj.GetObjectKind().GroupVersionKind()))
 	}
 
 	logger := webhookLogger.Named("Mutating").With(
 		zap.String("IPPoolName", ipPool.Name),
 		zap.String("Operation", "DEFAULT"),
 	)
-	logger.Sugar().Debugf("Request IPPool: %v", ipPool)
+	logger.Info("Start to mutate IPPool")
+	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
 
-	// do not mutate when it's a deleting object
 	if ipPool.DeletionTimestamp != nil {
+		logger.Info("Deleting IPPool, noting to mutate")
 		return nil
 	}
 
@@ -58,19 +61,39 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 			version = constant.IPv4
 		} else if spiderpoolip.IsIPv6CIDR(ipPool.Spec.Subnet) {
 			version = constant.IPv6
+		} else {
+			logger.Error("Invalid 'spec.ipVersion', noting to mutate")
+			return nil
 		}
 
-		if version == constant.IPv4 || version == constant.IPv6 {
-			ipPool.Spec.IPVersion = new(types.IPVersion)
-			*ipPool.Spec.IPVersion = version
-			logger.Sugar().Infof("Set ipVersion '%d'", version)
+		ipPool.Spec.IPVersion = new(types.IPVersion)
+		*ipPool.Spec.IPVersion = version
+		logger.Sugar().Infof("Set 'spec.ipVersion' to %d", version)
+	}
+
+	if len(ipPool.Spec.IPs) > 1 {
+		mergedIPs, err := spiderpoolip.MergeIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.IPs)
+		if err != nil {
+			logger.Sugar().Errorf("Failed to merge 'spec.ips': %v", err)
+		} else {
+			ipPool.Spec.IPs = mergedIPs
+			logger.Sugar().Debugf("Merge 'spec.ips':\n%v\n\nto:\n\n%v", ipPool.Spec.IPs, mergedIPs)
 		}
 	}
 
-	// add finalizer for IPPool CR
+	if len(ipPool.Spec.ExcludeIPs) > 1 {
+		mergedExcludeIPs, err := spiderpoolip.MergeIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
+		if err != nil {
+			logger.Sugar().Errorf("Failed to merge 'spec.excludeIPs': %v", err)
+		} else {
+			ipPool.Spec.ExcludeIPs = mergedExcludeIPs
+			logger.Sugar().Debugf("Merge 'spec.excludeIPs':\n%v\n\nto:\n\n%v", ipPool.Spec.ExcludeIPs, mergedExcludeIPs)
+		}
+	}
+
 	if !slices.Contains(ipPool.Finalizers, constant.SpiderFinalizer) {
 		ipPool.Finalizers = append(ipPool.Finalizers, constant.SpiderFinalizer)
-		logger.Sugar().Infof("Add finalizer '%s'", constant.SpiderFinalizer)
+		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
 	}
 
 	return nil
@@ -82,18 +105,22 @@ var _ webhook.CustomValidator = (*ipPoolManager)(nil)
 func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object) error {
 	ipPool, ok := obj.(*spiderpoolv1.SpiderIPPool)
 	if !ok {
-		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", obj.GetObjectKind().GroupVersionKind())
+		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of IPPool got an object with mismatched GVK: %+v", obj.GetObjectKind().GroupVersionKind()))
 	}
 
 	logger := webhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", ipPool.Name),
 		zap.String("Operation", "CREATE"),
 	)
-	logger.Sugar().Debugf("Request IPPool: %v", ipPool)
+	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
 
-	if err := im.validateCreateIPPool(ctx, ipPool); err != nil {
-		logger.Sugar().Errorf("Failed to validate: %v", err)
-		return err
+	if errs := im.validateCreateIPPool(ctx, ipPool); len(errs) != 0 {
+		logger.Sugar().Errorf("Failed to create IPPool: %v", errs.ToAggregate().Error())
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
+			ipPool.Name,
+			errs,
+		)
 	}
 
 	return nil
@@ -104,19 +131,23 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	oldIPPool, _ := oldObj.(*spiderpoolv1.SpiderIPPool)
 	newIPPool, ok := newObj.(*spiderpoolv1.SpiderIPPool)
 	if !ok {
-		return fmt.Errorf("validating webhook of IPPool got an object with mismatched type: %+v", newObj.GetObjectKind().GroupVersionKind())
+		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of IPPool got an object with mismatched GVK: %+v", newObj.GetObjectKind().GroupVersionKind()))
 	}
 
 	logger := webhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", newIPPool.Name),
 		zap.String("Operation", "UPDATE"),
 	)
-	logger.Sugar().Debugf("Request old IPPool: %v", oldIPPool)
-	logger.Sugar().Debugf("Request new IPPool: %v", newIPPool)
+	logger.Sugar().Debugf("Request old IPPool: %+v", *oldIPPool)
+	logger.Sugar().Debugf("Request new IPPool: %+v", *newIPPool)
 
-	if err := im.validateUpdateIPPool(ctx, oldIPPool, newIPPool); err != nil {
-		logger.Sugar().Errorf("Failed to validate: %v", err)
-		return err
+	if errs := im.validateUpdateIPPool(ctx, oldIPPool, newIPPool); len(errs) != 0 {
+		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
+			newIPPool.Name,
+			errs,
+		)
 	}
 
 	return nil

@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"strconv"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -27,7 +25,7 @@ var (
 	routesField     *field.Path = field.NewPath("spec").Child("routes")
 )
 
-func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
+func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	var errs field.ErrorList
 	if err := im.validateIPPoolSpec(ctx, ipPool); err != nil {
 		errs = append(errs, err)
@@ -37,16 +35,16 @@ func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spide
 		return nil
 	}
 
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
-		ipPool.Name,
-		errs,
-	)
+	return errs
 }
 
-func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) error {
-	if err := im.validateCreateIPPool(ctx, newIPPool); err != nil {
-		return err
+func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
+	if err := im.validateIPPoolShouldNotBeChanged(ctx, oldIPPool, newIPPool); err != nil {
+		return field.ErrorList{err}
+	}
+
+	if err := im.validateIPPoolSpec(ctx, newIPPool); err != nil {
+		return field.ErrorList{err}
 	}
 
 	var errs field.ErrorList
@@ -58,11 +56,25 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 		return nil
 	}
 
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
-		newIPPool.Name,
-		errs,
-	)
+	return errs
+}
+
+func (im *ipPoolManager) validateIPPoolShouldNotBeChanged(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if newIPPool.Spec.IPVersion != oldIPPool.Spec.IPVersion {
+		return field.Forbidden(
+			ipVersionField,
+			"is not changeable",
+		)
+	}
+
+	if newIPPool.Spec.Subnet != oldIPPool.Spec.Subnet {
+		return field.Forbidden(
+			subnetField,
+			"is not changeable",
+		)
+	}
+
+	return nil
 }
 
 func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
@@ -93,15 +105,15 @@ func (im *ipPoolManager) validateIPPoolIPInUse(ctx context.Context, oldIPPool, n
 		return err
 	}
 
-	oldTotalIPs, _ := assembleTotalIPs(oldIPPool)
-	newTotalIPs, _ := assembleTotalIPs(newIPPool)
+	oldTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldIPPool.Spec.IPVersion, oldIPPool.Spec.IPs, oldIPPool.Spec.ExcludeIPs)
+	newTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newIPPool.Spec.IPVersion, newIPPool.Spec.IPs, newIPPool.Spec.ExcludeIPs)
 	reducedIPs := spiderpoolip.IPsDiffSet(oldTotalIPs, newTotalIPs)
 
 	for _, ip := range reducedIPs {
 		if allocation, ok := newIPPool.Status.AllocatedIPs[ip.String()]; ok {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("reduces an IP %s that is being used by Pod %s/%s, total IPs of an IPPool are jointly determined by 'ips' and 'excludeIPs'", ip.String(), allocation.Namespace, allocation.Pod),
+				fmt.Sprintf("remove an IP address %s that is being used by Pod %s/%s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ip.String(), allocation.Namespace, allocation.Pod),
 			)
 		}
 	}
@@ -114,7 +126,7 @@ func (im *ipPoolManager) validateIPPoolIPVersion(ctx context.Context, version *t
 		return field.Invalid(
 			ipVersionField,
 			version,
-			"is not generated correctly, 'subnet' may be invalid",
+			"is not generated correctly, 'spec.subnet' may be invalid",
 		)
 	}
 
@@ -132,12 +144,12 @@ func (im *ipPoolManager) validateIPPoolIPVersion(ctx context.Context, version *t
 }
 
 func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types.IPVersion, poolName, subnet string) *field.Error {
-	ipPools, err := im.ListIPPools(ctx)
+	ipPoolList, err := im.ListIPPools(ctx)
 	if err != nil {
 		return field.InternalError(subnetField, err)
 	}
 
-	for _, pool := range ipPools.Items {
+	for _, pool := range ipPoolList.Items {
 		if pool.Name == poolName || *pool.Spec.IPVersion != version {
 			continue
 		}
@@ -146,7 +158,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 		if err != nil {
 			return field.Invalid(
 				subnetField,
-				pool.Spec.Subnet,
+				subnet,
 				err.Error(),
 			)
 		}
@@ -155,7 +167,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 			return field.Invalid(
 				subnetField,
 				subnet,
-				fmt.Sprintf("overlaps with IPPool %s which subnet is %s", pool.Name, pool.Spec.Subnet),
+				fmt.Sprintf("overlaps with IPPool %s which 'spec.subnet' is %s", pool.Name, pool.Spec.Subnet),
 			)
 		}
 	}
@@ -171,25 +183,25 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 		return err
 	}
 
-	ipPools, err := im.ListIPPools(ctx)
+	ipPoolList, err := im.ListIPPools(ctx)
 	if err != nil {
 		return field.InternalError(ipsField, err)
 	}
 
-	newIPs, _ := assembleTotalIPs(ipPool)
-	for _, pool := range ipPools.Items {
+	newIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	for _, pool := range ipPoolList.Items {
 		if pool.Name == ipPool.Name || pool.Spec.Subnet != ipPool.Spec.Subnet {
 			continue
 		}
 
-		existIPs, err := assembleTotalIPs(&pool)
+		existIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 		if err != nil {
 			return field.InternalError(ipsField, err)
 		}
 		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("overlaps with IPPool %s, total IPs of an IPPool are jointly determined by 'ips' and 'excludeIPs'", pool.Name),
+				fmt.Sprintf("overlaps with IPPool %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name),
 			)
 		}
 	}
@@ -198,8 +210,7 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 }
 
 func (im *ipPoolManager) validateIPPoolIPs(ctx context.Context, version types.IPVersion, subnet string, ips []string) *field.Error {
-	n := len(ips)
-	if n == 0 {
+	if len(ips) == 0 {
 		return field.Required(
 			ipsField,
 			"requires at least one item",
@@ -207,25 +218,8 @@ func (im *ipPoolManager) validateIPPoolIPs(ctx context.Context, version types.IP
 	}
 
 	for i, r := range ips {
-		if err := validateContainsIPRange(ctx, ipsField.Index(i), version, subnet, r); err != nil {
+		if err := ValidateContainsIPRange(ctx, ipsField.Index(i), version, subnet, r); err != nil {
 			return err
-		}
-	}
-
-	if n == 1 {
-		return nil
-	}
-
-	for i := 0; i < n; i++ {
-		for j := i + 1; j < n; j++ {
-			overlap, _ := spiderpoolip.IsIPRangeOverlap(version, ips[i], ips[j])
-			if !overlap {
-				continue
-			}
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("%s overlaps with %s", ips[i], ips[j]),
-			)
 		}
 	}
 
@@ -234,26 +228,8 @@ func (im *ipPoolManager) validateIPPoolIPs(ctx context.Context, version types.IP
 
 func (im *ipPoolManager) validateIPPoolExcludeIPs(ctx context.Context, version types.IPVersion, subnet string, excludeIPs []string) *field.Error {
 	for i, r := range excludeIPs {
-		if err := validateContainsIPRange(ctx, excludeIPsField.Index(i), version, subnet, r); err != nil {
+		if err := ValidateContainsIPRange(ctx, excludeIPsField.Index(i), version, subnet, r); err != nil {
 			return err
-		}
-	}
-
-	n := len(excludeIPs)
-	if n <= 1 {
-		return nil
-	}
-
-	for i := 0; i < n; i++ {
-		for j := i + 1; j < n; j++ {
-			overlap, _ := spiderpoolip.IsIPRangeOverlap(version, excludeIPs[i], excludeIPs[j])
-			if !overlap {
-				continue
-			}
-			return field.Forbidden(
-				excludeIPsField,
-				fmt.Sprintf("%s overlaps with %s", excludeIPs[i], excludeIPs[j]),
-			)
 		}
 	}
 
@@ -262,7 +238,7 @@ func (im *ipPoolManager) validateIPPoolExcludeIPs(ctx context.Context, version t
 
 func (im *ipPoolManager) validateIPPoolGateway(ctx context.Context, version types.IPVersion, subnet string, gateway *string) *field.Error {
 	if gateway != nil {
-		return validateContainsIP(ctx, gatewayField, version, subnet, *gateway)
+		return ValidateContainsIP(ctx, gatewayField, version, subnet, *gateway)
 	}
 
 	return nil
@@ -278,7 +254,7 @@ func (im *ipPoolManager) validateIPPoolRoutes(ctx context.Context, version types
 			)
 		}
 
-		if err := validateContainsIP(ctx, routesField.Index(i).Child("gw"), version, subnet, r.Gw); err != nil {
+		if err := ValidateContainsIP(ctx, routesField.Index(i).Child("gw"), version, subnet, r.Gw); err != nil {
 			return err
 		}
 	}
@@ -286,7 +262,7 @@ func (im *ipPoolManager) validateIPPoolRoutes(ctx context.Context, version types
 	return nil
 }
 
-func validateContainsIPRange(ctx context.Context, fieldPath *field.Path, version types.IPVersion, subnet string, ipRange string) *field.Error {
+func ValidateContainsIPRange(ctx context.Context, fieldPath *field.Path, version types.IPVersion, subnet string, ipRange string) *field.Error {
 	contains, err := spiderpoolip.ContainsIPRange(version, subnet, ipRange)
 	if err != nil {
 		return field.Invalid(
@@ -300,14 +276,14 @@ func validateContainsIPRange(ctx context.Context, fieldPath *field.Path, version
 		return field.Invalid(
 			fieldPath,
 			ipRange,
-			fmt.Sprintf("not pertains to the subnet %s of IPPool", subnet),
+			fmt.Sprintf("not pertains to the 'spec.subnet' %s of IPPool", subnet),
 		)
 	}
 
 	return nil
 }
 
-func validateContainsIP(ctx context.Context, fieldPath *field.Path, version types.IPVersion, subnet string, ip string) *field.Error {
+func ValidateContainsIP(ctx context.Context, fieldPath *field.Path, version types.IPVersion, subnet string, ip string) *field.Error {
 	contains, err := spiderpoolip.ContainsIP(version, subnet, ip)
 	if err != nil {
 		return field.Invalid(
@@ -321,7 +297,7 @@ func validateContainsIP(ctx context.Context, fieldPath *field.Path, version type
 		return field.Invalid(
 			fieldPath,
 			ip,
-			fmt.Sprintf("not pertains to the subnet %s of IPPool", subnet),
+			fmt.Sprintf("not pertains to the 'spec.subnet' %s of IPPool", subnet),
 		)
 	}
 

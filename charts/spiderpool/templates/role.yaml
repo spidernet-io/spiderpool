@@ -97,3 +97,23 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spidersubnets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spidersubnets/status
+  verbs:
+  - get
+  - patch
+  - update

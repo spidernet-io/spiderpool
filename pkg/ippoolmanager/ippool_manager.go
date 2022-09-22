@@ -191,7 +191,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 		return nil, err
 	}
 
-	totalIPs, err := assembleTotalIPs(ipPool)
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
 		return nil, err
 	}

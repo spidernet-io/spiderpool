@@ -16,6 +16,19 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+// MergeIPRanges merges dispersed IP ranges.
+// For example, transport [192.168.0.1-192.168.0.3, 192.168.0.2-192.168.0.5]
+// to [192.168.0.1-192.168.0.5]. The overlapping part of two IP ranges will
+// be ignored.
+func MergeIPRanges(version types.IPVersion, ipRanges []string) ([]string, error) {
+	ips, err := ParseIPRanges(version, ipRanges)
+	if err != nil {
+		return nil, err
+	}
+
+	return ConvertIPsToIPRanges(version, ips)
+}
+
 // ParseIPRanges parses IP ranges as a IP address slices of the specified
 // IP version.
 func ParseIPRanges(version types.IPVersion, ipRanges []string) ([]net.IP, error) {
@@ -58,17 +71,24 @@ func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 }
 
 // ConvertIPsToIPRanges converts the IP address slices of the specified
-// IP version into a group of sorted and merged IP ranges.
+// IP version into a group of distinct, sorted and merged IP ranges.
 func ConvertIPsToIPRanges(version types.IPVersion, ips []net.IP) ([]string, error) {
 	if err := IsIPVersion(version); err != nil {
 		return nil, err
 	}
 
+	set := map[string]struct{}{}
 	for _, ip := range ips {
 		if (version == constant.IPv4 && ip.To4() == nil) ||
 			(version == constant.IPv6 && ip.To4() != nil) {
 			return nil, fmt.Errorf("%wv%d IP '%s'", ErrInvalidIP, version, ip.String())
 		}
+		set[ip.String()] = struct{}{}
+	}
+
+	ips = ips[0:0]
+	for v := range set {
+		ips = append(ips, net.ParseIP(v))
 	}
 
 	sort.Slice(ips, func(i, j int) bool {
@@ -135,7 +155,7 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 	}
 
 	// Ignore the error returned here. The format of the IP range has been
-	// verified in IsCIDR above.
+	// verified in IsIPRange above.
 	ips1, _ := ParseIPRange(version, ipRange1)
 	ips2, _ := ParseIPRange(version, ipRange2)
 	if len(ips1) > len(IPsDiffSet(ips1, ips2)) {

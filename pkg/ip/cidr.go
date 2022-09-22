@@ -22,20 +22,20 @@ func ParseCIDR(version types.IPVersion, subnet string) (*net.IPNet, error) {
 	return ipNet, nil
 }
 
-// ContainsIP reports whether the subnet parsed from the subnet string
-// includes the IP address parsed from the IP string. Both must belong
-// to the same IP version.
-func ContainsIP(version types.IPVersion, subnet string, ip string) (bool, error) {
-	ipNet, err := ParseCIDR(version, subnet)
-	if err != nil {
+// ContainsCIDR reports whether subnet1 includes subnet2. Both of them
+// are parsed from subnet strings and must belong to the same IP version.
+func ContainsCIDR(version types.IPVersion, subnet1 string, subnet2 string) (bool, error) {
+	if err := IsIPVersion(version); err != nil {
 		return false, err
 	}
-	address, err := ParseIP(version, ip, false)
-	if err != nil {
+	if err := IsCIDR(version, subnet1); err != nil {
+		return false, err
+	}
+	if err := IsCIDR(version, subnet2); err != nil {
 		return false, err
 	}
 
-	return ipNet.Contains(address.IP), nil
+	return containsCIDR(subnet1, subnet2), nil
 }
 
 // IsCIDROverlap reports whether the subnets of specific IP version
@@ -51,20 +51,21 @@ func IsCIDROverlap(version types.IPVersion, subnet1, subnet2 string) (bool, erro
 		return false, err
 	}
 
-	// Ignore the error returned here. The format of the subnet has been
-	// verified in IsCIDR above.
+	return containsCIDR(subnet1, subnet2) || containsCIDR(subnet2, subnet1), nil
+}
+
+func containsCIDR(subnet1 string, subnet2 string) bool {
+	// Ignore the error returned here. The format of the subnet should be
+	// verified in external IsCIDR.
 	_, ipNet1, _ := net.ParseCIDR(subnet1)
 	_, ipNet2, _ := net.ParseCIDR(subnet2)
 	ones1, _ := ipNet1.Mask.Size()
 	ones2, _ := ipNet2.Mask.Size()
 	if ones1 < ones2 && ipNet1.Contains(ipNet2.IP) {
-		return true, nil
-	}
-	if ones1 > ones2 && ipNet2.Contains(ipNet1.IP) {
-		return true, nil
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 // IsCIDR reports whether subnet string is a CIDR notation IP address

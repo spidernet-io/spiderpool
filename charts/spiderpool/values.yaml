@@ -46,6 +46,9 @@ feature:
   ## @param feature.enableStatefulSet the network mode
   enableStatefulSet: true
 
+  ## @param feature.enableSpiderSubnet SpiderSubnet feature gate.
+  enableSpiderSubnet: false
+
   gc:
     ## @param feature.gc.enabled enable retrieve IP in spiderippool CR
     enabled: true

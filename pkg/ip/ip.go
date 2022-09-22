@@ -40,6 +40,22 @@ func ParseIP(version types.IPVersion, s string, isCIDR bool) (*net.IPNet, error)
 	}
 }
 
+// ContainsIP reports whether the subnet parsed from the subnet string
+// includes the IP address parsed from the IP string. Both must belong
+// to the same IP version.
+func ContainsIP(version types.IPVersion, subnet string, ip string) (bool, error) {
+	ipNet, err := ParseCIDR(version, subnet)
+	if err != nil {
+		return false, err
+	}
+	address, err := ParseIP(version, ip, false)
+	if err != nil {
+		return false, err
+	}
+
+	return ipNet.Contains(address.IP), nil
+}
+
 // IsIP reports whether IP string is a IP address of the specified IP version.
 func IsIP(version types.IPVersion, s string) error {
 	if err := IsIPVersion(version); err != nil {

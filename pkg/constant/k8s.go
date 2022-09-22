@@ -69,6 +69,7 @@ const (
 	SpiderIPPoolKind       = "SpiderIPPool"
 	SpiderEndpointKind     = "SpiderEndpoint"
 	SpiderReservedIPKind   = "SpiderReservedIP"
+	SpiderSubnetKind       = "SpiderSubnet"
 )
 
 const (

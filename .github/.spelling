@@ -11,6 +11,9 @@ workloadendpoint
 workloadendpoints
 reservedip
 reservedips
+spidersubnet
+spidersubnets
+spidersubnetlist
 spiderippool
 spiderippools
 spiderippoollist

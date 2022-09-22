@@ -27,6 +27,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -105,7 +106,8 @@ type Config struct {
 	LeaseRetryGap      int
 
 	// configmap
-	EnableStatefulSet bool `yaml:"enableStatefulSet"`
+	EnableStatefulSet  bool `yaml:"enableStatefulSet"`
+	EnableSpiderSubnet bool `yaml:"enableSpiderSubnet"`
 }
 
 type ControllerContext struct {
@@ -125,6 +127,7 @@ type ControllerContext struct {
 	RIPManager    reservedipmanager.ReservedIPManager
 	NodeManager   nodemanager.NodeManager
 	NSManager     namespacemanager.NamespaceManager
+	SubnetManager subnetmanager.SubnetManager
 	IPPoolManager ippoolmanager.IPPoolManager
 	PodManager    podmanager.PodManager
 	GCManager     gcmanager.GCManager

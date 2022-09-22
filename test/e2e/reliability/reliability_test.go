@@ -96,7 +96,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
 		Entry("Successfully run a pod during the API-server is restarting",
 			Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, time.Second*90),
-		Entry("Successfully run a pod during the coreDns is restarting",
+		PEntry("Successfully run a pod during the coreDns is restarting",
 			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Minute*2),
 		Entry("Successfully run a pod during the Spiderpool agent is restarting",
 			Label("R00004", "G00008"), constant.SpiderpoolAgent, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent}, time.Second*90),

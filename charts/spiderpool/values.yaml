@@ -76,6 +76,12 @@ clusterDefaultPool:
   ## @param clusterDefaultPool.ipv6IPPoolName the name of ipv6 spiderpool instance
   ipv6IPPoolName: "default-v6-ippool"
 
+  ## @param clusterDefaultPool.ipv4SubnetName the name of ipv4 spidersubnet instance
+  ipv4SubnetName: "default-v4-subnet"
+
+  ## @param clusterDefaultPool.ipv6SubnetName the name of ipv6 spidersubnet instance
+  ipv6SubnetName: "default-v6-subnet"
+
   ## @param clusterDefaultPool.ipv4Subnet the subnet of ipv4 spiderpool instance
   ipv4Subnet: ""
 

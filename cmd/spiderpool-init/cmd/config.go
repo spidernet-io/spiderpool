@@ -11,11 +11,13 @@ import (
 )
 
 const (
+	EnvDefaultIPv4SubnetName   = "SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME"
 	EnvDefaultIPv4PoolName     = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME"
 	EnvDefaultIPv4PoolSubnet   = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET"
 	EnvDefaultIPv4PoolIPRanges = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_IPRANGES"
 	EnvDefaultIPv4PoolGateway  = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_GATEWAY"
 
+	EnvDefaultIPv6SubnetName   = "SPIDERPOOL_INIT_DEFAULT_IPV6_SUBNET_NAME"
 	EnvDefaultIPv6PoolName     = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME"
 	EnvDefaultIPv6PoolSubnet   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET"
 	EnvDefaultIPv6PoolIPRanges = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
@@ -26,11 +28,13 @@ const (
 )
 
 type _Config struct {
+	SubnetV4Name   string
 	PoolV4Name     string
 	PoolV4Subnet   string
 	PoolV4IPRanges []string
 	PoolV4Gateway  string
 
+	SubnetV6Name   string
 	PoolV6Name     string
 	PoolV6Subnet   string
 	PoolV6IPRanges []string
@@ -41,6 +45,9 @@ var Config = _Config{}
 
 func init() {
 	// -------- for ipv4
+	Config.SubnetV4Name = os.Getenv(EnvDefaultIPv4SubnetName)
+	logger.Sugar().Infof("SubnetV4Name=%s", Config.SubnetV4Name)
+
 	Config.PoolV4Name = os.Getenv(EnvDefaultIPv4PoolName)
 	logger.Sugar().Infof("PoolV4Name=%s", Config.PoolV4Name)
 
@@ -74,6 +81,9 @@ func init() {
 	}
 
 	// ---------- for ipv6
+	Config.SubnetV6Name = os.Getenv(EnvDefaultIPv6SubnetName)
+	logger.Sugar().Infof("SubnetV6Name=%s", Config.SubnetV4Name)
+
 	Config.PoolV6Name = os.Getenv(EnvDefaultIPv6PoolName)
 	logger.Sugar().Infof("PoolV6Name=%s", Config.PoolV6Name)
 

@@ -1,4 +1,5 @@
 #============ e2e-kind-config ====================
+
 # iptables or ipvs, default iptables
 E2E_KUBE_PROXY_MODE ?= iptables
 
@@ -43,6 +44,8 @@ GINKGO_OPTION ?=
 E2E_TIMEOUT ?= 60m
 
 E2E_GINKGO_PROCS ?= 4
+
+E2E_SPIDERPOOL_ENABLE_SUBNET ?= false
 
 #============Image version===========
 IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:v3.8-$(ARCH)

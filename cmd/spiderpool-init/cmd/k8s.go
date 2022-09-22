@@ -76,9 +76,34 @@ func k8sCreateIppool(runtimeClient client.Client, pool *spiderpoolv1.SpiderIPPoo
 
 }
 
-func k8sCheckIppoolExisted(runtimeClient client.Client, poolName string) (*spiderpoolv1.SpiderIPPool, error) {
-	v := apitypes.NamespacedName{Name: poolName}
+func k8sCreateSubnet(runtimeClient client.Client, subnet *spiderpoolv1.SpiderSubnet) error {
+
+	ctx4, cancel4 := context.WithTimeout(context.Background(), ConstApiTimeOut)
+	defer cancel4()
+	return runtimeClient.Create(ctx4, subnet)
+
+}
+
+func k8sCheckIppoolExisted(runtimeClient client.Client, name string) (*spiderpoolv1.SpiderIPPool, error) {
+	v := apitypes.NamespacedName{Name: name}
 	existing := &spiderpoolv1.SpiderIPPool{}
+
+	ctx4, cancel4 := context.WithTimeout(context.Background(), ConstApiTimeOut)
+	defer cancel4()
+
+	e := runtimeClient.Get(ctx4, v, existing)
+	if e != nil {
+		if apierrors.IsNotFound(e) {
+			return nil, nil
+		}
+		return nil, e
+	}
+	return existing, nil
+}
+
+func k8sCheckSubnetExisted(runtimeClient client.Client, name string) (*spiderpoolv1.SpiderSubnet, error) {
+	v := apitypes.NamespacedName{Name: name}
+	existing := &spiderpoolv1.SpiderSubnet{}
 
 	ctx4, cancel4 := context.WithTimeout(context.Background(), ConstApiTimeOut)
 	defer cancel4()

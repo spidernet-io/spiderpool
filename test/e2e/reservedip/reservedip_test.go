@@ -4,7 +4,6 @@ package reservedip_test
 
 import (
 	"context"
-	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
@@ -16,18 +15,17 @@ import (
 )
 
 var _ = Describe("test reservedIP", Label("reservedIP"), func() {
-	var nsName, DeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName, nic string
+	var nsName, DeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName string
 	var v4PoolNameList, v6PoolNameList []string
 	var iPv4PoolObj, iPv6PoolObj *v1.SpiderIPPool
 	var v4ReservedIpObj, v6ReservedIpObj *v1.SpiderReservedIP
 	var err error
 
 	BeforeEach(func() {
-		nic = "eth0"
 		//Init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("Try to create namespace %v \n", nsName)
-		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace %v", nsName)
 
 		// Init test Deployment/Pod name
@@ -84,7 +82,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				GinkgoWriter.Printf("Successfully created v6 reservedIP : %v \n", v6ReservedIpName)
 			}
 			// Generate IPPool annotation string
-			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
+			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
 
 			// Generate Deployment yaml and annotation
 			deployObject := common.GenerateExampleDeploymentYaml(DeployName, nsName, int32(deployOriginialNum))
@@ -92,22 +90,22 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			GinkgoWriter.Printf("Try to create Deployment: %v/%v with annotation %v = %v \n", nsName, DeployName, constant.AnnoPodIPPool, podIppoolAnnoStr)
 
 			// Try to create a Deployment and wait for replicas to meet expectations（because the Pod is not running）
-			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+			ctx1, cancel1 := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel1()
 			podlist, err := common.CreateDeployUntilExpectedReplicas(frame, deployObject, ctx1)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(int32(len(podlist.Items))).Should(Equal(*deployObject.Spec.Replicas))
 
 			// Get the Pod creation failure Event
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), common.EventOccurTimeout)
 			defer cancel()
 			for _, pod := range podlist.Items {
-				Expect(frame.WaitExceptEventOccurred(ctx, common.PodEventKind, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
+				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
 				GinkgoWriter.Printf("IP assignment for Deployment/Pod: %v/%v fails when an IP is set in the ReservedIP CRD. \n", pod.Namespace, pod.Name)
 			}
 
 			// Try deleting the reservedIP and check if the reserved IP can be assigned to a pod.
-			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute)
+			ctx2, cancel2 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
 			defer cancel2()
 			if frame.Info.IpV4Enabled {
 				Expect(common.DeleteResverdIPUntilFinish(ctx2, frame, v4ReservedIpName)).To(Succeed())
@@ -119,11 +117,11 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			}
 
 			// After removing the reservedIP, wait for the Pod to restart until running
-			err = frame.RestartDeploymentPodUntilReady(DeployName, nsName, time.Minute)
+			err = frame.RestartDeploymentPodUntilReady(DeployName, nsName, common.PodReStartTimeout)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Succeeded to assign IPv4、IPv6 ip for Deployment/Pod and Deployment/Pod IP recorded in IPPool
-			podlist = common.CheckPodIpReadyByLabel(frame, deployObject.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
+			common.CheckPodIpReadyByLabel(frame, deployObject.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 			GinkgoWriter.Printf("Pod %v/%v IP recorded in IPPool %v %v \n", nsName, DeployName, v4PoolNameList, v6PoolNameList)
 
 			// S00003: Failed to set same IP in excludeIPs when an IP is assigned to a Pod
@@ -142,9 +140,8 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				GinkgoWriter.Printf("Failed to update v6 IPPool %v when setting the IP %v used by the Pod in the IPPool's excludeIPs \n", v6PoolName, iPv6PoolObj.Spec.IPs)
 			}
 
-			// Delete the deployment and then check that the Pod IP in the IPPool has been reclaimed correctly.
-			Expect(frame.DeleteDeploymentUntilFinish(DeployName, nsName, time.Minute)).To(Succeed())
-			GinkgoWriter.Printf("Delete Deployment: %v/%v successfully \n", nsName, DeployName)
-			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, time.Minute)).To(Succeed())
+			// Delete the deployment
+			GinkgoWriter.Printf("Delete Deployment: %v/%v \n", nsName, DeployName)
+			Expect(frame.DeleteDeployment(DeployName, nsName)).To(Succeed())
 		})
 })

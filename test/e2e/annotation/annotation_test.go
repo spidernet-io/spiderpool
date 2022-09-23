@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
@@ -21,15 +20,14 @@ import (
 )
 
 var _ = Describe("test annotation", Label("annotation"), func() {
-	var nsName, podName, nic string
+	var nsName, podName string
 
 	BeforeEach(func() {
 		// Init test info and create namespace
-		nic = "eth0"
 		podName = "pod" + tools.RandomName()
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("Create namespace %v \n", nsName)
-		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
 		// Clean test env
@@ -55,9 +53,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Expect(pod.Annotations[annotationKeyName]).To(Equal(podYaml.Annotations[annotationKeyName]))
 
 		// When an annotation has an invalid field or value, the Pod will fail to run.
-		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
+		ctx1, cancel1 := context.WithTimeout(context.Background(), common.EventOccurTimeout)
 		defer cancel1()
-		err = frame.WaitExceptEventOccurred(ctx1, common.PodEventKind, podName, nsName, common.CNIFailedToSetUpNetwork)
+		err = frame.WaitExceptEventOccurred(ctx1, common.OwnerPod, podName, nsName, common.CNIFailedToSetUpNetwork)
 		Expect(err).NotTo(HaveOccurred(), "failed to get event  %v/%v %v\n", nsName, podName, common.CNIFailedToSetUpNetwork)
 		GinkgoWriter.Printf("The annotation has an invalid field or value and the Pod %v/%v fails to run. \n", nsName, podName)
 		Expect(pod.Status.Phase).To(Equal(corev1.PodPending))
@@ -165,7 +163,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to create ipv6pool %v \n", v6PoolName)
 
 		// Generate IPPool annotations string
-		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, []string{v4PoolName}, []string{v6PoolName})
+		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, []string{v4PoolName}, []string{v6PoolName})
 
 		// Generate Pod yaml and add IPPool annotations to it
 		GinkgoWriter.Printf("try to create pod %v/%v with annotation %v=%v \n", nsName, podName, pkgconstant.AnnoPodIPPool, podIppoolAnnoStr)
@@ -174,10 +172,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Expect(frame.CreatePod(podYaml)).NotTo(HaveOccurred())
 
 		// It fails to run a pod with different VLAN for ipv4 and ipv6 ippool
-		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
+		ctx1, cancel1 := context.WithTimeout(context.Background(), common.EventOccurTimeout)
 		defer cancel1()
 		GinkgoWriter.Printf("different VLAN for ipv4 and ipv6 ippool with fail to run pod %v/%v \n", nsName, podName)
-		err = frame.WaitExceptEventOccurred(ctx1, common.PodEventKind, podName, nsName, common.CNIFailedToSetUpNetwork)
+		err = frame.WaitExceptEventOccurred(ctx1, common.OwnerPod, podName, nsName, common.CNIFailedToSetUpNetwork)
 		Expect(err).NotTo(HaveOccurred(), "Failedto get event %v/%v = %v\n", nsName, podName, common.CNIFailedToSetUpNetwork)
 		pod, err := frame.GetPod(podName, nsName)
 		Expect(err).NotTo(HaveOccurred())
@@ -226,10 +224,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		It(`the "ippools" annotation has the higher priority over the "ippool" annotation`, Label("A00005"), func() {
 			// Generate IPPool annotation string
-			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, ClusterDefaultV4IppoolList, ClusterDefaultV6IppoolList)
+			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, ClusterDefaultV4IppoolList, ClusterDefaultV6IppoolList)
 
 			// Generate IPPools annotation string
-			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, nic, cleanGateway, v4PoolNameList, v6PoolNameList)
+			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, common.NIC1, cleanGateway, v4PoolNameList, v6PoolNameList)
 
 			// Generate Pod Yaml with IPPool annotations and IPPools annotations
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -251,7 +249,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			var containerNum int = 2
 
 			// Generate IPPool annotation string
-			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
+			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
 
 			// Generate a pod yaml with multiple containers and long annotations
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -262,7 +260,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				annotationKeyName: common.GenerateString(annotationLength, false)}
 			Expect(podYaml).NotTo(BeNil())
 
-			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, time.Second*30)
+			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, common.PodStartTimeout)
 			GinkgoWriter.Printf("Pod %v/%v: podIPv4: %v, podIPv6: %v \n", nsName, podName, podIPv4, podIPv6)
 
 			// A00008: Successfully run an annotated multi-container pod
@@ -282,7 +280,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// Delete the Pod and check that the Pod IP in the IPPool is correctly reclaimed.
 			Expect(frame.DeletePod(podName, nsName)).NotTo(HaveOccurred(), "Failed to delete Pod %v/%v \n", nsName, podName)
 			GinkgoWriter.Printf("Successful deletion of pods %v/%v \n", nsName, podName)
-			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, &corev1.PodList{Items: []corev1.Pod{*pod}}, time.Minute)).To(Succeed())
+			Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, &corev1.PodList{Items: []corev1.Pod{*pod}}, common.IPReclaimTimeout)).To(Succeed())
 			GinkgoWriter.Printf("The Pod %v/%v IP in the IPPool was reclaimed correctly \n", nsName, podName)
 		})
 
@@ -324,7 +322,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					}
 
 					// Generate Pod.IPPool annotations string
-					podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, newV4PoolNameList, newV6PoolNameList)
+					podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, newV4PoolNameList, newV6PoolNameList)
 
 					// Generate Pod Yaml
 					podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -366,13 +364,13 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					}
 
 					// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
-					deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, podOriginialNum, nic, append(v4PoolNameList1, v4PoolNameList2...), append(v6PoolNameList1, v6PoolNameList2...))
+					deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, podOriginialNum, common.NIC1, append(v4PoolNameList1, v4PoolNameList2...), append(v6PoolNameList1, v6PoolNameList2...))
 					podList := common.CheckPodIpReadyByLabel(frame, deploy.Spec.Template.Labels, v4PoolNameList, v6PoolNameList)
 
 					// Wait for new Pod to be created and expect its ip to be in the next pool in the array
 					deploy, err = frame.ScaleDeployment(deploy, int32(podScaleupNum))
 					Expect(err).NotTo(HaveOccurred(), "Failed to scale deployment")
-					ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute)
+					ctx2, cancel2 := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 					defer cancel2()
 					err = frame.WaitPodListRunning(deploy.Spec.Selector.MatchLabels, podScaleupNum, ctx2)
 					Expect(err).NotTo(HaveOccurred())
@@ -392,9 +390,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					Expect(ok).To(BeTrue())
 
 					// Delete Deployment and check that the Pod IP in the IPPool is reclaimed properly
-					Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, time.Minute)).To(Succeed())
+					Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, common.ResourceDeleteTimeout)).To(Succeed())
 					GinkgoWriter.Printf("Succeeded to delete deployment %v/%v \n", nsName, deployName)
-					Expect(common.WaitIPReclaimedFinish(frame, append(v4PoolNameList1, v4PoolNameList2...), append(v6PoolNameList1, v6PoolNameList2...), scalePodList, time.Minute)).To(Succeed())
+					Expect(common.WaitIPReclaimedFinish(frame, append(v4PoolNameList1, v4PoolNameList2...), append(v6PoolNameList1, v6PoolNameList2...), scalePodList, common.IPReclaimTimeout)).To(Succeed())
 					GinkgoWriter.Println("Pod IP is successfully released")
 				})
 
@@ -472,7 +470,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		// create pod
 		GinkgoWriter.Printf("create pod %v/%v\n", nsName, podName)
 		Expect(frame.CreatePod(podYaml)).To(Succeed(), "failed to create pod %v/%v\n", nsName, podName)
-		ctxCreate, cancelCreate := context.WithTimeout(context.Background(), time.Minute)
+		ctxCreate, cancelCreate := context.WithTimeout(context.Background(), common.PodStartTimeout)
 		defer cancelCreate()
 		pod, err := frame.WaitPodStarted(podName, nsName, ctxCreate)
 		Expect(err).NotTo(HaveOccurred(), "timeout to wait pod %v/%v started\n", nsName, podName)
@@ -482,14 +480,14 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		GinkgoWriter.Println("check whether the route is effective")
 		if frame.Info.IpV4Enabled {
 			command := fmt.Sprintf("ip r | grep 'default via %s'", ipv4Gw)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
 			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
 			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
 		}
 		if frame.Info.IpV6Enabled {
 			command := fmt.Sprintf("ip -6 r | grep 'default via %s'", ipv6Gw)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
 			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
 			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
@@ -513,7 +511,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 func checkAnnotationPriority(podYaml *corev1.Pod, podName, nsName string, v4PoolNameList, v6PoolNameList []string) {
 
-	pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, time.Second*30)
+	pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, common.PodStartTimeout)
 	GinkgoWriter.Printf("pod %v/%v: podIPv4: %v, podIPv6: %v \n", nsName, podName, podIPv4, podIPv6)
 
 	// Check Pod IP recorded in IPPool
@@ -525,13 +523,13 @@ func checkAnnotationPriority(podYaml *corev1.Pod, podName, nsName string, v4Pool
 	Expect(ok).To(BeTrue())
 
 	// Try to delete Pod
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
 	defer cancel()
 	err := frame.DeletePodUntilFinish(podName, nsName, ctx)
 	Expect(err).NotTo(HaveOccurred(), "Failed to delete pod %v/%v \n", nsName, podName)
 	GinkgoWriter.Printf("Succeeded to delete pod %v/%v \n", nsName, podName)
 
 	// Check if the Pod IP in IPPool reclaimed normally
-	Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, time.Minute)).To(Succeed())
+	Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podlist, common.IPReclaimTimeout)).To(Succeed())
 	GinkgoWriter.Println("Pod ip successfully released")
 }

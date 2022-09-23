@@ -7,6 +7,6 @@
 | D00003  | Failed to add wrong IPPool gateway and route to an IPPool CR | p2       |       | done   |       |
 | D00004  | Failed to delete an IPPool whose IP is not de-allocated at all | p2              | done   |       |
 | D00005  | A "true" value of IPPool/Spec/disabled should forbid IP allocation, but still allow ip de-allocation | p2       |       | done   |       |
-| D00006  | Successfully create and delete IPPools in batch              | p2       |       | done   |       |
-| D00007  | Modify `routes` in the ippool spec to disallow using `0.0.0.0/0` |          |       |        |       |
-| D00008  | Add, delete, modify, and query ippools that are created manually |          |       |        |       |
+| D00006  | Successfully create and delete IPPools in batch                  | p2      |       | done   |       |
+| D00007  | Modify `routes` in the ippool spec to disallow using `0.0.0.0/0` | p3      |       |        |       |
+| D00008  | Add, delete, modify, and query ippools that are created manually | p1      |       |        |       |

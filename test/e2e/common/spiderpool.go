@@ -413,7 +413,7 @@ func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameLis
 			if ok {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(ForcedWaitingTime)
 		}
 	}
 
@@ -515,7 +515,7 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 			if pool == nil {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(ForcedWaitingTime)
 		}
 	}
 }
@@ -601,7 +601,7 @@ func WaitIppoolStatusConditionByAllocatedIPs(ctx context.Context, f *frame.Frame
 				GinkgoWriter.Printf("the IP %v reclaimed from IPPool %v \n", checkIPs, poolName)
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(ForcedWaitingTime)
 		}
 	}
 }
@@ -620,7 +620,7 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 			if workload == nil && err != nil {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(ForcedWaitingTime)
 		}
 	}
 }

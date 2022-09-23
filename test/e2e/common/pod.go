@@ -96,7 +96,7 @@ func CreatePodWithAnnoPodIPPool(frame *e2e.Framework, podName, namespace string,
 
 	GinkgoWriter.Printf("create pod %v/%v\n", namespace, podName)
 	Expect(frame.CreatePod(podYaml)).To(Succeed(), "failed to create pod %v/%v\n", namespace, podName)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), PodStartTimeout)
 	defer cancel()
 	pod, err := frame.WaitPodStarted(podName, namespace, ctx)
 	Expect(err).NotTo(HaveOccurred(), "failed to wait pod %v/%v started\n", namespace, podName)

@@ -2,17 +2,55 @@
 // SPDX-License-Identifier: Apache-2.0
 package common
 
-var DeploymentNameString = "deployment"
-var StatefulSetNameString = "statefulSet"
-var DaemonSetNameString = "daemonSet"
-var ReplicaSetNameString = "replicaSet"
-var JobSetNameString = "job"
+import "time"
 
-var SpiderPoolConfigmapName = "spiderpool-conf"
-var SpiderPoolConfigmapNameSpace = "kube-system"
+// Defining K8s resource types
+const (
+	OwnerDeployment  string = "Deployment"
+	OwnerStatefulSet string = "StatefulSet"
+	OwnerDaemonSet   string = "DaemonSet"
+	OwnerReplicaSet  string = "ReplicaSet"
+	OwnerJob         string = "Job"
+	OwnerPod         string = "Pod"
+)
 
-var CNIFailedToSetUpNetwork = "failed to setup network for sandbox"
+// Default timeouts to be used in context.WithTimeout
+const (
+	PodStartTimeout            = time.Minute
+	PodReStartTimeout          = time.Minute * 2
+	IPReclaimTimeout           = time.Minute
+	ExecCommandTimeout         = time.Minute
+	EventOccurTimeout          = time.Second * 30
+	ServiceAccountReadyTimeout = time.Second * 20
+	NodeReadyTimeout           = time.Minute
+	ResourceDeleteTimeout      = time.Minute
+)
 
-var GetIpamAllocationFailed = "get ipam allocation failed"
+var ForcedWaitingTime = time.Second
 
-var PodEventKind = "Pod"
+// SpiderPool configurations
+const (
+	SpiderPoolConfigmapName      = "spiderpool-conf"
+	SpiderPoolConfigmapNameSpace = "kube-system"
+)
+
+// Network configurations
+var (
+	// multus CNI
+	MultusNetworks string = "k8s.v1.cni.cncf.io/networks"
+	MacvlanCNIName string = "kube-system/macvlan-cni2"
+
+	// Route
+	V4Dst string = "0.0.0.0/0"
+	V6Dst string = "::/0"
+
+	// Network Name
+	NIC1 string = "eth0"
+	NIC2 string = "net2"
+)
+
+// Error
+const (
+	CNIFailedToSetUpNetwork = "failed to setup network for sandbox"
+	GetIpamAllocationFailed = "get ipam allocation failed"
+)

@@ -19,20 +19,19 @@ import (
 
 var _ = Describe("performance test case", Serial, Label("performance"), func() {
 	var (
-		perName, nsName, v4PoolName, v6PoolName, nic, podIppoolAnnoStr string
-		err                                                            error
-		dpm                                                            *appsv1.Deployment
-		podlist                                                        *corev1.PodList
-		iPv4PoolObj, iPv6PoolObj                                       *spiderpoolv1.SpiderIPPool
-		v4PoolNameList, v6PoolNameList                                 []string
+		perName, nsName, v4PoolName, v6PoolName, podIppoolAnnoStr string
+		err                                                       error
+		dpm                                                       *appsv1.Deployment
+		podlist                                                   *corev1.PodList
+		iPv4PoolObj, iPv6PoolObj                                  *spiderpoolv1.SpiderIPPool
+		v4PoolNameList, v6PoolNameList                            []string
 	)
 
 	BeforeEach(func() {
 		// Init test ENV
-		nic = "eth0"
 		perName = "per" + tools.RandomName()
 		nsName = "ns" + tools.RandomName()
-		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 		GinkgoWriter.Printf("Successful creation of namespace %v \n", nsName)
 
@@ -71,11 +70,11 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				Expect(common.CreateIppool(frame, iPv6PoolObj)).NotTo(HaveOccurred())
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 			}
-			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, nic, v4PoolNameList, v6PoolNameList)
+			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
 
 			// Generate Deployment yaml with Pod.IPPool annotation
 			switch {
-			case controllerType == common.DeploymentNameString:
+			case controllerType == common.OwnerDeployment:
 				dpm = common.GenerateExampleDeploymentYaml(perName, nsName, replicas)
 				dpm.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			default:
@@ -124,6 +123,6 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		},
 		// TODO (tao.yang), N controller replicas in Ippool for N IP, Through this template complete gc performance closed-loop test together
 		Entry("time cost for creating, rebuilding, deleting deployment pod in batches",
-			Label("P00002"), common.DeploymentNameString, int32(40), time.Minute*4),
+			Label("P00002"), common.OwnerDeployment, int32(40), time.Minute*4),
 	)
 })

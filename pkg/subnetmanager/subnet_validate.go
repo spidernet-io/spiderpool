@@ -74,7 +74,7 @@ func (sm *subnetManager) validateDeleteSubnet(ctx context.Context, subnet *spide
 }
 
 func (sm *subnetManager) validateSubnetShouldNotBeChanged(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if newSubnet.Spec.IPVersion != oldSubnet.Spec.IPVersion {
+	if *newSubnet.Spec.IPVersion != *oldSubnet.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",

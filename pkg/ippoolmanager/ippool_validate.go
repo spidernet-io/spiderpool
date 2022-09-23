@@ -60,7 +60,7 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 }
 
 func (im *ipPoolManager) validateIPPoolShouldNotBeChanged(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if newIPPool.Spec.IPVersion != oldIPPool.Spec.IPVersion {
+	if *newIPPool.Spec.IPVersion != *oldIPPool.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",

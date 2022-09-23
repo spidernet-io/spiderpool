@@ -15,13 +15,15 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -32,16 +34,17 @@ type IPAM interface {
 }
 
 type ipam struct {
-	ipamConfig    *IPAMConfig
+	config        *IPAMConfig
 	ipamLimiter   limiter.Limiter
-	ipPoolManager ippoolmanager.IPPoolManager
+	ipPoolManager ippoolmanagertypes.IPPoolManager
 	weManager     workloadendpointmanager.WorkloadEndpointManager
+	nodeManager   nodemanager.NodeManager
 	nsManager     namespacemanager.NamespaceManager
 	podManager    podmanager.PodManager
 	stsManager    statefulsetmanager.StatefulSetManager
 }
 
-func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager,
+func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager, nodeManager nodemanager.NodeManager,
 	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager) (IPAM, error) {
 	if c == nil {
 		return nil, errors.New("IPAM config must be specified")
@@ -51,6 +54,9 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager
 	}
 	if weManager == nil {
 		return nil, errors.New("EndpointManager must be specified")
+	}
+	if nodeManager == nil {
+		return nil, errors.New("NodeManager must be specified")
 	}
 	if nsManager == nil {
 		return nil, errors.New("NamespaceManager must be specified")
@@ -62,12 +68,13 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager
 		return nil, errors.New("StatefulSetManager must be specified")
 	}
 
-	ipamLimiter := limiter.NewLimiter(c.LimiterMaxQueueSize, c.LimiterMaxWaitTime)
+	ipamLimiter := limiter.NewLimiter(c.LimiterConfig)
 	return &ipam{
-		ipamConfig:    c,
+		config:        c,
 		ipamLimiter:   ipamLimiter,
 		ipPoolManager: ipPoolManager,
 		weManager:     weManager,
+		nodeManager:   nodeManager,
 		nsManager:     nsManager,
 		podManager:    podManager,
 		stsManager:    stsManager,
@@ -93,7 +100,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 
 	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
-	if i.ipamConfig.EnabledStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
+	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
 		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, pod, endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet: %v", err)
@@ -222,7 +229,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, nic string, defaultIPV4I
 	}
 	logger.Sugar().Infof("Preliminary IPPool candidates: %s", preliminary)
 
-	if err := i.ipamConfig.checkIPVersionEnable(ctx, preliminary); err != nil {
+	if err := i.config.checkIPVersionEnable(ctx, preliminary); err != nil {
 		return nil, err
 	}
 
@@ -376,7 +383,7 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 	}
 
 	// configmap
-	t, err = i.ipamConfig.getClusterDefaultPool(ctx, nic, cleanGateway)
+	t, err = i.config.getClusterDefaultPool(ctx, nic, cleanGateway)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +433,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, po
 		for _, c := range t.PoolCandidates {
 			var selectedPools []string
 			for _, pool := range c.Pools {
-				eligible, err := i.ipPoolManager.SelectByPod(ctx, c.IPVersion, pool, pod)
+				eligible, err := i.selectByPod(ctx, c.IPVersion, pool, pod)
 				if err != nil {
 					return nil, err
 				}
@@ -442,6 +449,68 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, po
 	}
 
 	return tt, nil
+}
+
+func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) (bool, error) {
+	logger := logutils.FromContext(ctx)
+
+	ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName)
+	if err != nil {
+		logger.Sugar().Warnf("Failed to get IPPool %s: %v", poolName, err)
+		return false, err
+	}
+
+	if ipPool.DeletionTimestamp != nil {
+		logger.Sugar().Warnf("IPPool %s is terminating", poolName)
+		return false, nil
+	}
+
+	if *ipPool.Spec.Disable {
+		logger.Sugar().Warnf("IPPool %s is disable", poolName)
+		return false, nil
+	}
+
+	if *ipPool.Spec.IPVersion != version {
+		logger.Sugar().Warnf("IPPool %s has different version with specified via input", poolName)
+		return false, nil
+	}
+
+	// TODO(iiiceoo): Check whether there are any unused IP
+
+	if ipPool.Spec.NodeAffinity != nil {
+		nodeMatched, err := i.nodeManager.MatchLabelSelector(ctx, pod.Spec.NodeName, ipPool.Spec.NodeAffinity)
+		if err != nil {
+			return false, err
+		}
+		if !nodeMatched {
+			logger.Sugar().Infof("Unmatched Node selector, IPPool %s is filtered", poolName)
+			return false, nil
+		}
+	}
+
+	if ipPool.Spec.NamespaceAffinity != nil {
+		nsMatched, err := i.nsManager.MatchLabelSelector(ctx, pod.Namespace, ipPool.Spec.NamespaceAffinity)
+		if err != nil {
+			return false, err
+		}
+		if !nsMatched {
+			logger.Sugar().Infof("Unmatched Namespace selector, IPPool %s is filtered", poolName)
+			return false, nil
+		}
+	}
+
+	if ipPool.Spec.PodAffinity != nil {
+		podMatched, err := i.podManager.MatchLabelSelector(ctx, pod.Namespace, pod.Name, ipPool.Spec.PodAffinity)
+		if err != nil {
+			return false, err
+		}
+		if !podMatched {
+			logger.Sugar().Infof("Unmatched Pod selector, IPPool %s is filtered", poolName)
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func (i *ipam) verifyPoolCandidates(ctx context.Context, tt []*ToBeAllocated) error {
@@ -472,7 +541,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	}
 
 	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
-	if i.ipamConfig.EnabledStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
+	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
 		isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, ownerControllerType)
 		if err != nil {
 			return err
@@ -520,7 +589,7 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 	wg.Add(len(poolToIPAndCIDs))
 
 	for pool, ipAndCIDs := range poolToIPAndCIDs {
-		go func(pool string, ipAndCIDs []ippoolmanager.IPAndCID) {
+		go func(pool string, ipAndCIDs []types.IPAndCID) {
 			defer wg.Done()
 
 			_, err := i.ipamLimiter.AcquireTicket(ctx, pool)

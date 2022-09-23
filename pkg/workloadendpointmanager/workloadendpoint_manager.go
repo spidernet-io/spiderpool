@@ -16,14 +16,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type WorkloadEndpointManager interface {
@@ -34,34 +35,30 @@ type WorkloadEndpointManager interface {
 	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.SpiderEndpoint, error)
 	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
-	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error)
+	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]types.IPAndCID, error)
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
 	CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error)
 	UpdateCurrentStatus(ctx context.Context, containerID string, pod *corev1.Pod) error
 }
 
 type workloadEndpointManager struct {
-	client                client.Client
-	scheme                *runtime.Scheme
-	maxHistoryRecords     int
-	maxConflictRetrys     int
-	conflictRetryUnitTime time.Duration
+	config *EndpointManagerConfig
+	client client.Client
+	scheme *runtime.Scheme
 }
 
-func NewWorkloadEndpointManager(c client.Client, scheme *runtime.Scheme, maxHistoryRecords, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(c *EndpointManagerConfig, mgr ctrl.Manager) (WorkloadEndpointManager, error) {
 	if c == nil {
-		return nil, errors.New("k8s client must be specified")
+		return nil, errors.New("endpoint manager config must be specified")
 	}
-	if scheme == nil {
-		return nil, errors.New("object scheme must be specified")
+	if mgr == nil {
+		return nil, errors.New("k8s manager must be specified")
 	}
 
 	return &workloadEndpointManager{
-		client:                c,
-		scheme:                scheme,
-		maxHistoryRecords:     maxHistoryRecords,
-		maxConflictRetrys:     maxConflictRetrys,
-		conflictRetryUnitTime: conflictRetryUnitTime,
+		config: c,
+		client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
 	}, nil
 }
 
@@ -132,9 +129,9 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 
 	we.Status.Current = allocation
 	we.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, we.Status.History...)
-	if len(we.Status.History) > em.maxHistoryRecords {
-		logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", em.maxHistoryRecords)
-		we.Status.History = we.Status.History[:em.maxHistoryRecords]
+	if len(we.Status.History) > em.config.MaxHistoryRecords {
+		logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", em.config.MaxHistoryRecords)
+		we.Status.History = we.Status.History[:em.config.MaxHistoryRecords]
 	}
 
 	if err := em.client.Status().Update(ctx, we); err != nil {
@@ -197,7 +194,7 @@ func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context,
 
 // RemoveFinalizer removes a specific finalizer field in finalizers string array.
 func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
-	for i := 0; i <= em.maxConflictRetrys; i++ {
+	for i := 0; i <= em.config.MaxConflictRetrys; i++ {
 		we, err := em.GetEndpointByName(ctx, namespace, podName)
 		if err != nil {
 			return err
@@ -212,10 +209,10 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == em.maxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from Endpoint %s", em.maxConflictRetrys, constant.SpiderFinalizer, podName)
+			if i == em.config.MaxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from Endpoint %s", em.config.MaxConflictRetrys, constant.SpiderFinalizer, podName)
 			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.conflictRetryUnitTime)
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)
 			continue
 		}
 		break
@@ -225,13 +222,13 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 }
 
 // ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.
-func (em *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]ippoolmanager.IPAndCID, error) {
+func (em *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]types.IPAndCID, error) {
 	wep, err := em.GetEndpointByName(ctx, namespace, podName)
 	if err != nil {
 		return nil, err
 	}
 
-	recordHistoryIPs := func(historyIPs map[string][]ippoolmanager.IPAndCID, poolName, ipAndCIDR *string, podName, podNS, containerID string) {
+	recordHistoryIPs := func(historyIPs map[string][]types.IPAndCID, poolName, ipAndCIDR *string, podName, podNS, containerID string) {
 		if poolName != nil {
 			if ipAndCIDR == nil {
 				logutils.Logger.Sugar().Errorf("WEP data broken, pod '%s/%s' containerID '%s' used ippool '%s' with no ip", podNS, podName, containerID, *poolName)
@@ -242,15 +239,15 @@ func (em *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, nam
 
 			ips, ok := historyIPs[*poolName]
 			if !ok {
-				ips = []ippoolmanager.IPAndCID{{IP: ip, ContainerID: containerID}}
+				ips = []types.IPAndCID{{IP: ip, ContainerID: containerID}}
 			} else {
-				ips = append(ips, ippoolmanager.IPAndCID{IP: ip, ContainerID: containerID})
+				ips = append(ips, types.IPAndCID{IP: ip, ContainerID: containerID})
 			}
 			historyIPs[*poolName] = ips
 		}
 	}
 
-	wepHistoryIPs := make(map[string][]ippoolmanager.IPAndCID)
+	wepHistoryIPs := make(map[string][]types.IPAndCID)
 
 	// circle to traverse each allocation
 	for _, PodIPAllocation := range wep.Status.History {
@@ -328,7 +325,7 @@ func (r *workloadEndpointManager) Delete(ctx context.Context, sep *spiderpoolv1.
 
 // UpdateCurrentStatus serves for StatefulSet pod re-create
 func (em *workloadEndpointManager) UpdateCurrentStatus(ctx context.Context, containerID string, pod *corev1.Pod) error {
-	for i := 0; i <= em.maxConflictRetrys; i++ {
+	for i := 0; i <= em.config.MaxConflictRetrys; i++ {
 		sep, err := em.GetEndpointByName(ctx, pod.Namespace, pod.Name)
 		if nil != err {
 			return err
@@ -355,11 +352,11 @@ func (em *workloadEndpointManager) UpdateCurrentStatus(ctx context.Context, cont
 					return err
 				}
 
-				if i == em.maxConflictRetrys {
-					return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet SpiderEndpoint '%s/%s'", em.maxConflictRetrys, pod.Namespace, pod.Name)
+				if i == em.config.MaxConflictRetrys {
+					return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet SpiderEndpoint '%s/%s'", em.config.MaxConflictRetrys, pod.Namespace, pod.Name)
 				}
 
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.conflictRetryUnitTime)
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)
 				continue
 			}
 		}

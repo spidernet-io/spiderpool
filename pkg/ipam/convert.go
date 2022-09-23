@@ -11,7 +11,6 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -253,17 +252,17 @@ func genIPAssignmentAnnotation(ips []*models.IPConfig) (map[string]string, error
 	return podAnnotations, nil
 }
 
-func GroupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetail) map[string][]ippoolmanager.IPAndCID {
-	poolToIPAndCIDs := map[string][]ippoolmanager.IPAndCID{}
+func GroupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetail) map[string][]types.IPAndCID {
+	poolToIPAndCIDs := map[string][]types.IPAndCID{}
 	for _, d := range details {
 		if d.IPv4 != nil {
-			poolToIPAndCIDs[*d.IPv4Pool] = append(poolToIPAndCIDs[*d.IPv4Pool], ippoolmanager.IPAndCID{
+			poolToIPAndCIDs[*d.IPv4Pool] = append(poolToIPAndCIDs[*d.IPv4Pool], types.IPAndCID{
 				IP:          strings.Split(*d.IPv4, "/")[0],
 				ContainerID: containerID,
 			})
 		}
 		if d.IPv6 != nil {
-			poolToIPAndCIDs[*d.IPv6Pool] = append(poolToIPAndCIDs[*d.IPv6Pool], ippoolmanager.IPAndCID{
+			poolToIPAndCIDs[*d.IPv6Pool] = append(poolToIPAndCIDs[*d.IPv6Pool], types.IPAndCID{
 				IP:          strings.Split(*d.IPv6, "/")[0],
 				ContainerID: containerID,
 			})

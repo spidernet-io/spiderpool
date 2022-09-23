@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
@@ -177,15 +178,20 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initControllerServiceManagers(ctx context.Context) {
+	updateCRConfig := config.UpdateCRConfig{
+		MaxConflictRetrys:     controllerContext.Cfg.UpdateCRMaxRetrys,
+		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+	}
+
 	// init spiderpool controller leader election
 	logger.Info("Begin to initialize spiderpool controller leader election")
 	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
 	logger.Info("Begin to initialize WorkloadEndpoint Manager")
-	retrys := controllerContext.Cfg.UpdateCRMaxRetrys
-	unitTime := time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
-	historySize := controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(controllerContext.CRDManager.GetClient(), controllerContext.CRDManager.GetScheme(), historySize, retrys, unitTime)
+	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
+		UpdateCRConfig:    updateCRConfig,
+		MaxHistoryRecords: controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
+	}, controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -219,7 +225,9 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.NSManager = nsManager
 
 	logger.Info("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(controllerContext.CRDManager.GetClient(), retrys, unitTime)
+	podManager, err := podmanager.NewPodManager(&podmanager.PodManagerConfig{
+		UpdateCRConfig: updateCRConfig,
+	}, controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -232,27 +240,13 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.StsManager = statefulSetManager
 
-	if controllerContext.Cfg.EnableSpiderSubnet {
-		logger.Info("Begin to initialize Subnet Manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(controllerContext.CRDManager, controllerContext.Cfg.EnableSpiderSubnet)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		controllerContext.SubnetManager = subnetManager
-
-		logger.Info("Begin to set up Subnet webhook")
-		err = controllerContext.SubnetManager.SetupWebhook()
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-	} else {
-		logger.Info("Feature SpiderSubnet is disabled")
-	}
-
 	logger.Info("Begin to initialize IPPool Manager")
-	poolSize := controllerContext.Cfg.IPPoolMaxAllocatedIPs
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(controllerContext.CRDManager, controllerContext.RIPManager, controllerContext.NodeManager,
-		controllerContext.NSManager, controllerContext.PodManager, poolSize, retrys, unitTime)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
+		UpdateCRConfig:      updateCRConfig,
+		EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
+		MaxAllocatedIPs:     controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+	}, controllerContext.CRDManager, controllerContext.RIPManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -264,8 +258,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	leaderRetryElectGap := time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
-	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader, &leaderRetryElectGap)
+	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -275,6 +268,26 @@ func initControllerServiceManagers(ctx context.Context) {
 	err = controllerContext.IPPoolManager.SetupWebhook()
 	if err != nil {
 		logger.Fatal(err.Error())
+	}
+
+	if controllerContext.Cfg.EnableSpiderSubnet {
+		logger.Info("Begin to initialize Subnet Manager")
+		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
+			EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
+		}, controllerContext.CRDManager)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		controllerContext.SubnetManager = subnetManager
+		ipPoolManager.InjectSubnetManager(controllerContext.SubnetManager)
+
+		logger.Info("Begin to set up Subnet webhook")
+		err = controllerContext.SubnetManager.SetupWebhook()
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+	} else {
+		logger.Info("Feature SpiderSubnet is disabled")
 	}
 }
 

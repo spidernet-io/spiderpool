@@ -25,20 +25,21 @@ type PodManager interface {
 }
 
 type podManager struct {
-	client                client.Client
-	maxConflictRetrys     int
-	conflictRetryUnitTime time.Duration
+	config *PodManagerConfig
+	client client.Client
 }
 
-func NewPodManager(c client.Client, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (PodManager, error) {
+func NewPodManager(c *PodManagerConfig, client client.Client) (PodManager, error) {
 	if c == nil {
+		return nil, errors.New("pod manager config must be specified")
+	}
+	if client == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
 
 	return &podManager{
-		client:                c,
-		maxConflictRetrys:     maxConflictRetrys,
-		conflictRetryUnitTime: conflictRetryUnitTime,
+		config: c,
+		client: client,
 	}, nil
 }
 
@@ -62,7 +63,7 @@ func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (
 
 func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= pm.maxConflictRetrys; i++ {
+	for i := 0; i <= pm.config.MaxConflictRetrys; i++ {
 		pod, err := pm.GetPodByName(ctx, namespace, podName)
 		if err != nil {
 			return err
@@ -79,10 +80,10 @@ func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName s
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == pm.maxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", pm.maxConflictRetrys)
+			if i == pm.config.MaxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", pm.config.MaxConflictRetrys)
 			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * pm.conflictRetryUnitTime)
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * pm.config.ConflictRetryUnitTime)
 			continue
 		}
 		break

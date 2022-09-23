@@ -31,7 +31,7 @@ type reservedIPManager struct {
 
 func NewReservedIPManager(mgr ctrl.Manager) (ReservedIPManager, error) {
 	if mgr == nil {
-		return nil, errors.New("runtime manager must be specified")
+		return nil, errors.New("k8s manager must be specified")
 	}
 
 	return &reservedIPManager{

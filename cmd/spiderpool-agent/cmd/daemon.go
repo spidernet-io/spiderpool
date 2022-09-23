@@ -17,8 +17,10 @@ import (
 	"github.com/pyroscope-io/client/pyroscope"
 	"go.uber.org/zap"
 
+	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -106,14 +108,17 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize IPAM")
 	ipam, err := ipam.NewIPAM(&ipam.IPAMConfig{
-		EnabledStatefulSet:       agentContext.Cfg.EnableStatefulSet,
 		EnableIPv4:               agentContext.Cfg.EnableIPv4,
 		EnableIPv6:               agentContext.Cfg.EnableIPv6,
 		ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
 		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
-		LimiterMaxQueueSize:      agentContext.Cfg.LimiterMaxQueueSize,
-		LimiterMaxWaitTime:       time.Duration(agentContext.Cfg.LimiterMaxWaitTime) * time.Second,
-	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager)
+		EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
+		EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
+		LimiterConfig: &limiter.LimiterConfig{
+			MaxQueueSize: agentContext.Cfg.LimiterMaxQueueSize,
+			MaxWaitTime:  time.Duration(agentContext.Cfg.LimiterMaxWaitTime) * time.Second,
+		},
+	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager)
 	agentContext.IPAM = ipam
 
 	go func() {
@@ -219,11 +224,16 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initAgentServiceManagers(ctx context.Context) {
+	updateCRConfig := config.UpdateCRConfig{
+		MaxConflictRetrys:     agentContext.Cfg.UpdateCRMaxRetrys,
+		ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+	}
+
 	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
-	retrys := agentContext.Cfg.UpdateCRMaxRetrys
-	unitTime := time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond
-	historySize := agentContext.Cfg.WorkloadEndpointMaxHistoryRecords
-	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(agentContext.CRDManager.GetClient(), agentContext.CRDManager.GetScheme(), historySize, retrys, unitTime)
+	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
+		UpdateCRConfig:    updateCRConfig,
+		MaxHistoryRecords: agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
+	}, agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -251,15 +261,19 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(agentContext.CRDManager.GetClient(), retrys, unitTime)
+	podManager, err := podmanager.NewPodManager(&podmanager.PodManagerConfig{
+		UpdateCRConfig: updateCRConfig,
+	}, agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.PodManager = podManager
 
 	logger.Debug("Begin to initialize IPPool Manager")
-	poolSize := agentContext.Cfg.IPPoolMaxAllocatedIPs
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(agentContext.CRDManager, agentContext.RIPManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, poolSize, retrys, unitTime)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
+		UpdateCRConfig:  updateCRConfig,
+		MaxAllocatedIPs: agentContext.Cfg.IPPoolMaxAllocatedIPs,
+	}, agentContext.CRDManager, agentContext.RIPManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

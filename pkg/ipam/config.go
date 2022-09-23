@@ -6,21 +6,23 @@ package ipam
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 type IPAMConfig struct {
-	EnabledStatefulSet       bool
 	EnableIPv4               bool
 	EnableIPv6               bool
 	ClusterDefaultIPv4IPPool []string
 	ClusterDefaultIPv6IPPool []string
-	LimiterMaxQueueSize      int
-	LimiterMaxWaitTime       time.Duration
+
+	EnableSpiderSubnet bool
+	EnableStatefulSet  bool
+
+	LimiterConfig *limiter.LimiterConfig
 }
 
 func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {

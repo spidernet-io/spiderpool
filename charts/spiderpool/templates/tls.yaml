@@ -27,7 +27,7 @@ spec:
   duration: {{ printf "%dh" (mul .Values.spiderpoolController.tls.certmanager.certValidityDuration 24) }}
 {{- end }}
 
-{{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+{{- if or (eq .Values.spiderpoolController.tls.method "provided") (eq .Values.spiderpoolController.tls.method "auto") }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -35,7 +35,13 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: kubernetes.io/tls
 data:
+{{- if (eq .Values.spiderpoolController.tls.method "provided") }}
   ca.crt:  {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
   tls.crt: {{ .Values.spiderpoolController.tls.provided.tlsCert | required "missing spiderpoolController.tls.provided.tlsCert" }}
   tls.key: {{ .Values.spiderpoolController.tls.provided.tlsKey  | required "missing spiderpoolController.tls.provided.tlsKey"  }}
+{{- else }}
+  ca.crt:  ""
+  tls.crt: ""
+  tls.key: ""
+{{- end }}
 {{- end }}

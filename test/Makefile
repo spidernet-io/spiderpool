@@ -143,6 +143,11 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
 		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
+		    HELM_OPTION+=" --set feature.enableSpiderSubnet=true " ; \
+		else \
+		    HELM_OPTION+=" --set feature.enableSpiderSubnet=false " ; \
+		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \

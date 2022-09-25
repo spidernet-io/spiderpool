@@ -82,6 +82,37 @@ func CreateIppool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) {
 	}
 }
 
+func CreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) {
+
+	for {
+
+		if v, e := k8sCheckSubnetExisted(runtimeClient, subnet.Name); e == nil && v != nil {
+			logger.Sugar().Errorf(" subnet %v is already existed, ignore creating , detail=%v ", subnet.Name, *v)
+			return
+		}
+
+		e := k8sCreateSubnet(runtimeClient, subnet)
+		if e != nil {
+			if apierrors.IsAlreadyExists(e) {
+				logger.Sugar().Errorf(" subnet %v is already existed, ignore creating ", subnet.Name)
+				return
+			}
+			logger.Sugar().Warnf("failed to create subnet %s , reason=%v ", subnet.Name, e)
+		} else {
+			logger.Sugar().Infof("succeeded to create subnet %v ", subnet.Name)
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			logger.Fatal("time out , failed  ")
+
+		default:
+			time.Sleep(RetryIntervalForApi)
+		}
+	}
+}
+
 func Execute() {
 	// init k8s client
 	runtimeClient = InitK8sClient()
@@ -92,6 +123,28 @@ func Execute() {
 
 	// wait for spider controller endpoint and the webhook is ready
 	WaitForSpiderControllerEndpoint(ctx)
+
+	// create ipv4 subnet
+	if len(Config.SubnetV4Name) > 0 {
+		logger.Sugar().Infof("Ipv4 subnet will be created ")
+
+		obj := &spiderpoolv1.SpiderSubnet{
+			ObjectMeta: metav1.ObjectMeta{Name: Config.SubnetV4Name},
+			Spec: spiderpoolv1.SubnetSpec{
+				Subnet: Config.PoolV4Subnet,
+				IPs:    Config.PoolV4IPRanges,
+			},
+		}
+		if len(Config.PoolV4Gateway) > 0 {
+			obj.Spec.Gateway = &Config.PoolV4Gateway
+		}
+		logger.Sugar().Infof("try to create subnet: %+v ", obj)
+
+		CreateSubnet(ctx, obj)
+
+	} else {
+		logger.Info("Ipv4 subnet will not be created")
+	}
 
 	// create ipv4 ippool
 	if len(Config.PoolV4Name) > 0 {
@@ -113,6 +166,28 @@ func Execute() {
 
 	} else {
 		logger.Info("Ipv4 ippool will not be created")
+	}
+
+	// create ipv6 subnet
+	if len(Config.SubnetV6Name) > 0 {
+		logger.Sugar().Infof("Ipv6 subnet will be created ")
+
+		obj := &spiderpoolv1.SpiderSubnet{
+			ObjectMeta: metav1.ObjectMeta{Name: Config.SubnetV6Name},
+			Spec: spiderpoolv1.SubnetSpec{
+				Subnet: Config.PoolV6Subnet,
+				IPs:    Config.PoolV6IPRanges,
+			},
+		}
+		if len(Config.PoolV6Gateway) > 0 {
+			obj.Spec.Gateway = &Config.PoolV6Gateway
+		}
+		logger.Sugar().Infof("try to create subnet: %+v ", obj)
+
+		CreateSubnet(ctx, obj)
+
+	} else {
+		logger.Info("Ipv6 subnet will not be created")
 	}
 
 	// create ipv6 ippool

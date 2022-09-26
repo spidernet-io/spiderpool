@@ -1,5 +1,5 @@
-# cloud.google.com/go v0.99.0
-## explicit; go 1.11
+# cloud.google.com/go/compute v1.7.0
+## explicit; go 1.15
 cloud.google.com/go/compute/metadata
 # github.com/Azure/go-autorest v14.2.0+incompatible
 ## explicit
@@ -20,6 +20,15 @@ github.com/Azure/go-autorest/logger
 # github.com/Azure/go-autorest/tracing v0.6.0
 ## explicit; go 1.12
 github.com/Azure/go-autorest/tracing
+# github.com/Masterminds/goutils v1.1.1
+## explicit
+github.com/Masterminds/goutils
+# github.com/Masterminds/semver/v3 v3.1.1
+## explicit; go 1.12
+github.com/Masterminds/semver/v3
+# github.com/Masterminds/sprig/v3 v3.2.2
+## explicit; go 1.13
+github.com/Masterminds/sprig/v3
 # github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 ## explicit; go 1.13
 github.com/asaskevich/govalidator
@@ -63,14 +72,14 @@ github.com/evanphx/json-patch
 # github.com/fatih/color v1.13.0
 ## explicit; go 1.13
 github.com/fatih/color
-# github.com/felixge/httpsnoop v1.0.2
+# github.com/felixge/httpsnoop v1.0.3
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
 # github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 ## explicit
 github.com/form3tech-oss/jwt-go
-# github.com/fsnotify/fsnotify v1.5.1
-## explicit; go 1.13
+# github.com/fsnotify/fsnotify v1.5.4
+## explicit; go 1.16
 github.com/fsnotify/fsnotify
 # github.com/go-logr/logr v1.2.3
 ## explicit; go 1.16
@@ -129,8 +138,8 @@ github.com/go-openapi/swag
 # github.com/go-openapi/validate v0.22.0
 ## explicit; go 1.14
 github.com/go-openapi/validate
-# github.com/go-swagger/go-swagger v0.29.0
-## explicit; go 1.17
+# github.com/go-swagger/go-swagger v0.30.3
+## explicit; go 1.19
 github.com/go-swagger/go-swagger/cmd/swagger
 github.com/go-swagger/go-swagger/cmd/swagger/commands
 github.com/go-swagger/go-swagger/cmd/swagger/commands/diff
@@ -204,6 +213,9 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
+# github.com/huandu/xstrings v1.3.2
+## explicit; go 1.12
+github.com/huandu/xstrings
 # github.com/imdario/mergo v0.3.12
 ## explicit; go 1.13
 github.com/imdario/mergo
@@ -225,7 +237,7 @@ github.com/kr/pretty
 # github.com/kr/text v0.2.0
 ## explicit
 github.com/kr/text
-# github.com/magiconair/properties v1.8.5
+# github.com/magiconair/properties v1.8.6
 ## explicit; go 1.13
 github.com/magiconair/properties
 # github.com/mailru/easyjson v0.7.7
@@ -242,9 +254,15 @@ github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/mitchellh/mapstructure v1.4.3
+# github.com/mitchellh/copystructure v1.2.0
+## explicit; go 1.15
+github.com/mitchellh/copystructure
+# github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
 github.com/mitchellh/mapstructure
+# github.com/mitchellh/reflectwalk v1.0.2
+## explicit
+github.com/mitchellh/reflectwalk
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 ## explicit
 github.com/modern-go/concurrent
@@ -302,9 +320,15 @@ github.com/onsi/gomega/types
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
 github.com/opentracing/opentracing-go/log
-# github.com/pelletier/go-toml v1.9.4
+# github.com/pelletier/go-toml v1.9.5
 ## explicit; go 1.12
 github.com/pelletier/go-toml
+# github.com/pelletier/go-toml/v2 v2.0.1
+## explicit; go 1.16
+github.com/pelletier/go-toml/v2
+github.com/pelletier/go-toml/v2/internal/ast
+github.com/pelletier/go-toml/v2/internal/danger
+github.com/pelletier/go-toml/v2/internal/tracker
 # github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5
 ## explicit
 github.com/petermattis/goid
@@ -337,8 +361,8 @@ github.com/pyroscope-io/client/internal/sortedmap
 github.com/pyroscope-io/client/pyroscope
 github.com/pyroscope-io/client/upstream
 github.com/pyroscope-io/client/upstream/remote
-# github.com/rogpeppe/go-internal v1.8.1
-## explicit; go 1.16
+# github.com/rogpeppe/go-internal v1.9.0
+## explicit; go 1.17
 github.com/rogpeppe/go-internal/fmtsort
 # github.com/russross/blackfriday/v2 v2.1.0
 ## explicit
@@ -346,12 +370,15 @@ github.com/russross/blackfriday/v2
 # github.com/sasha-s/go-deadlock v0.3.1
 ## explicit
 github.com/sasha-s/go-deadlock
-# github.com/spf13/afero v1.8.0
+# github.com/shopspring/decimal v1.2.0
+## explicit; go 1.13
+github.com/shopspring/decimal
+# github.com/spf13/afero v1.8.2
 ## explicit; go 1.13
 github.com/spf13/afero
 github.com/spf13/afero/mem
-# github.com/spf13/cast v1.4.1
-## explicit
+# github.com/spf13/cast v1.5.0
+## explicit; go 1.18
 github.com/spf13/cast
 # github.com/spf13/cobra v1.5.0
 ## explicit; go 1.15
@@ -363,11 +390,14 @@ github.com/spf13/jwalterweatherman
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/spf13/viper v1.10.1
+# github.com/spf13/viper v1.12.0
 ## explicit; go 1.17
 github.com/spf13/viper
 github.com/spf13/viper/internal/encoding
+github.com/spf13/viper/internal/encoding/dotenv
 github.com/spf13/viper/internal/encoding/hcl
+github.com/spf13/viper/internal/encoding/ini
+github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
@@ -375,13 +405,13 @@ github.com/spf13/viper/internal/encoding/yaml
 ## explicit; go 1.17
 github.com/spidernet-io/e2eframework/framework
 github.com/spidernet-io/e2eframework/tools
-# github.com/subosito/gotenv v1.2.0
-## explicit
+# github.com/subosito/gotenv v1.3.0
+## explicit; go 1.18
 github.com/subosito/gotenv
 # github.com/toqueteos/webbrowser v1.2.0
 ## explicit; go 1.12
 github.com/toqueteos/webbrowser
-# go.mongodb.org/mongo-driver v1.10.0
+# go.mongodb.org/mongo-driver v1.10.1
 ## explicit; go 1.10
 go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
@@ -454,16 +484,20 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
+# golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 ## explicit; go 1.17
+golang.org/x/crypto/bcrypt
+golang.org/x/crypto/blowfish
+golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
+golang.org/x/crypto/scrypt
 # golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+# golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -475,8 +509,8 @@ golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/netutil
-# golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
-## explicit; go 1.11
+# golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094
+## explicit; go 1.17
 golang.org/x/oauth2
 golang.org/x/oauth2/authhandler
 golang.org/x/oauth2/google
@@ -484,7 +518,7 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
+# golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -560,7 +594,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/protobuf v1.28.0
+# google.golang.org/protobuf v1.28.1
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
@@ -595,7 +629,7 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
-# gopkg.in/ini.v1 v1.66.3
+# gopkg.in/ini.v1 v1.66.4
 ## explicit
 gopkg.in/ini.v1
 # gopkg.in/natefinch/lumberjack.v2 v2.0.0

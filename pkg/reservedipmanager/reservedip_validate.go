@@ -53,7 +53,7 @@ func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRI
 }
 
 func (rm *reservedIPManager) validateReservedIPShouldNotBeChanged(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if newRIP.Spec.IPVersion != oldRIP.Spec.IPVersion {
+	if *newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",

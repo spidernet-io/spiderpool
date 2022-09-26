@@ -24,13 +24,9 @@ import (
 var informerLogger *zap.Logger
 
 // SetupInformer will set up SpiderIPPool informer in circle
-func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector, leaderRetryElectGap *time.Duration) error {
+func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector) error {
 	if controllerLeader == nil {
 		return fmt.Errorf("failed to start SpiderIPPool informer, controller leader must be specified")
-	}
-
-	if leaderRetryElectGap == nil {
-		return fmt.Errorf("failed to start SpiderIPPool informer, leaderRetryElectGap must be specified")
 	}
 
 	informerLogger = logutils.Logger.Named("SpiderIPPool-Informer")
@@ -41,7 +37,7 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 	go func() {
 		for {
 			if !im.leader.IsElected() {
-				time.Sleep(*leaderRetryElectGap)
+				time.Sleep(im.config.LeaderRetryElectGap)
 				continue
 			}
 
@@ -64,7 +60,7 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 						return
 					}
 
-					time.Sleep(*leaderRetryElectGap)
+					time.Sleep(im.config.LeaderRetryElectGap)
 				}
 			}()
 

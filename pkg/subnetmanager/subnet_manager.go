@@ -12,29 +12,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 )
 
-type SubnetManager interface {
-	SetupWebhook() error
-	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
-	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
-}
-
 type subnetManager struct {
-	client             client.Client
-	runtimeMgr         ctrl.Manager
-	enableSpiderSubnet bool
+	config     *SubnetManagerConfig
+	client     client.Client
+	runtimeMgr ctrl.Manager
 }
 
-func NewSubnetManager(mgr ctrl.Manager, enableSpiderSubnet bool) (SubnetManager, error) {
+func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager) (subnetmanagertypes.SubnetManager, error) {
+	if c == nil {
+		return nil, errors.New("subnet manager config must be specified")
+	}
 	if mgr == nil {
 		return nil, errors.New("k8s manager must be specified")
 	}
 
 	return &subnetManager{
-		client:             mgr.GetClient(),
-		runtimeMgr:         mgr,
-		enableSpiderSubnet: enableSpiderSubnet,
+		config:     c,
+		client:     mgr.GetClient(),
+		runtimeMgr: mgr,
 	}, nil
 }
 

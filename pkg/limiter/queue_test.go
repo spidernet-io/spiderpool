@@ -19,15 +19,14 @@ import (
 var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
-	var maxQueueSize int
-	var maxWaitTime time.Duration
+	var config *limiter.LimiterConfig
 	var queue limiter.Limiter
 
 	var queuers int
 	var workHours time.Duration
 
 	JustBeforeEach(func() {
-		queue = limiter.NewLimiter(maxQueueSize, maxWaitTime)
+		queue = limiter.NewLimiter(config)
 		go func() {
 			defer GinkgoRecover()
 			err := queue.Start(ctx)
@@ -39,9 +38,10 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
-
-			maxQueueSize = 3
-			maxWaitTime = 2 * time.Second
+			config = &limiter.LimiterConfig{
+				MaxQueueSize: 3,
+				MaxWaitTime:  2 * time.Second,
+			}
 			queuers = 3
 			workHours = 1 * time.Second
 		})
@@ -108,8 +108,10 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
 
-			maxQueueSize = 200
-			maxWaitTime = 5 * time.Second
+			config = &limiter.LimiterConfig{
+				MaxQueueSize: 200,
+				MaxWaitTime:  5 * time.Second,
+			}
 			queuers = 200
 			workHours = 50 * time.Millisecond
 
@@ -157,7 +159,7 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 				}
 			}
 
-			GinkgoWriter.Printf("%d queuers who take %v to work queue in a queue with a maximum waiting time %v\n", queuers, workHours, maxWaitTime)
+			GinkgoWriter.Printf("%d queuers who take %v to work queue in a queue with a maximum waiting time %v\n", queuers, workHours, config.MaxWaitTime)
 			GinkgoWriter.Printf("%d queuers completed their work without conflict\n", checkin)
 			GinkgoWriter.Printf("%d queuers work concurrently due to waiting timeout\n", checkinTimeout)
 		})
@@ -168,8 +170,10 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
 
-			maxQueueSize = 3
-			maxWaitTime = 2 * time.Second
+			config = &limiter.LimiterConfig{
+				MaxQueueSize: 3,
+				MaxWaitTime:  2 * time.Second,
+			}
 			queuers = 3
 			workHours = 1 * time.Second
 		})

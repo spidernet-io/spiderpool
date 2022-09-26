@@ -55,7 +55,7 @@ func NewAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 // NewAgentOpenAPIUnixClient creates a new instance of the agent OpenAPI unix client.
 func NewAgentOpenAPIUnixClient(unixSocketPath string) (*agentOpenAPIClient.SpiderpoolAgentAPI, error) {
 	if unixSocketPath == "" {
-		return nil, fmt.Errorf("Error: no unix socket path!")
+		return nil, fmt.Errorf("unix socket path must be specified")
 	}
 	transport := &http.Transport{
 		DisableCompression: true,

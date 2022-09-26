@@ -28,13 +28,13 @@ type namespaceManager struct {
 	client client.Client
 }
 
-func NewNamespaceManager(c client.Client) (NamespaceManager, error) {
-	if c == nil {
+func NewNamespaceManager(client client.Client) (NamespaceManager, error) {
+	if client == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
 
 	return &namespaceManager{
-		client: c,
+		client: client,
 	}, nil
 }
 

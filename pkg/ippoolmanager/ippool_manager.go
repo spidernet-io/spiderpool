@@ -23,74 +23,50 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
-	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-type IPPoolManager interface {
-	SetupWebhook() error
-	SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector, leaderRetryElectGap *time.Duration) error
-	GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error)
-	ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
-	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error)
-	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndCID) error
-	SelectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) (bool, error)
-	CheckVlanSame(ctx context.Context, poolNameList []string) (map[types.Vlan][]string, bool, error)
-	RemoveFinalizer(ctx context.Context, poolName string) error
-	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
-}
-
 type ipPoolManager struct {
-	client                client.Client
-	runtimeMgr            ctrl.Manager
-	rIPManager            reservedipmanager.ReservedIPManager
-	nodeManager           nodemanager.NodeManager
-	nsManager             namespacemanager.NamespaceManager
-	podManager            podmanager.PodManager
-	maxAllocatedIPs       int
-	maxConflictRetrys     int
-	conflictRetryUnitTime time.Duration
+	config        *IPPoolManagerConfig
+	client        client.Client
+	runtimeMgr    ctrl.Manager
+	rIPManager    reservedipmanager.ReservedIPManager
+	subnetManager subnetmanagertypes.SubnetManager
 
 	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
 	leader election.SpiderLeaseElector
 }
 
-func NewIPPoolManager(mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager, nodeManager nodemanager.NodeManager,
-	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager,
-	maxAllocatedIPs, maxConflictRetrys int, conflictRetryUnitTime time.Duration) (IPPoolManager, error) {
+func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
+	if c == nil {
+		return nil, errors.New("ippool manager config must be specified")
+	}
 	if mgr == nil {
 		return nil, errors.New("k8s manager must be specified")
 	}
 	if rIPManager == nil {
-		return nil, errors.New("ReservedIPManager must be specified")
-	}
-	if nodeManager == nil {
-		return nil, errors.New("NodeManager must be specified")
-	}
-	if nsManager == nil {
-		return nil, errors.New("NamespaceManager must be specified")
-	}
-	if podManager == nil {
-		return nil, errors.New("PodManager must be specified")
+		return nil, errors.New("reserved IP manager must be specified")
 	}
 
 	return &ipPoolManager{
-		client:                mgr.GetClient(),
-		runtimeMgr:            mgr,
-		rIPManager:            rIPManager,
-		nodeManager:           nodeManager,
-		nsManager:             nsManager,
-		podManager:            podManager,
-		maxAllocatedIPs:       maxAllocatedIPs,
-		maxConflictRetrys:     maxConflictRetrys,
-		conflictRetryUnitTime: conflictRetryUnitTime,
+		config:     c,
+		client:     mgr.GetClient(),
+		runtimeMgr: mgr,
+		rIPManager: rIPManager,
 	}, nil
+}
+
+func (im *ipPoolManager) InjectSubnetManager(subnetManager subnetmanagertypes.SubnetManager) {
+	if subnetManager == nil {
+		return
+	}
+
+	im.subnetManager = subnetManager
 }
 
 func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error) {
@@ -115,7 +91,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 	var ipConfig *models.IPConfig
 	var usedIPPool *spiderpoolv1.SpiderIPPool
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.maxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return nil, nil, err
@@ -146,18 +122,18 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 		}
 
 		*ipPool.Status.AllocatedIPCount++
-		if *ipPool.Status.AllocatedIPCount > int64(im.maxAllocatedIPs) {
-			return nil, nil, fmt.Errorf("threshold of IP allocations(<=%d) for IPPool exceeded: %w", im.maxAllocatedIPs, constant.ErrIPUsedOut)
+		if *ipPool.Status.AllocatedIPCount > int64(im.config.MaxAllocatedIPs) {
+			return nil, nil, fmt.Errorf("threshold of IP allocations(<=%d) for IPPool exceeded: %w", im.config.MaxAllocatedIPs, constant.ErrIPUsedOut)
 		}
 
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if !apierrors.IsConflict(err) {
 				return nil, nil, err
 			}
-			if i == im.maxConflictRetrys {
-				return nil, nil, fmt.Errorf("insufficient retries(<=%d) to allocate IP from IPPool %s", im.maxConflictRetrys, poolName)
+			if i == im.config.MaxAllocatedIPs {
+				return nil, nil, fmt.Errorf("insufficient retries(<=%d) to allocate IP from IPPool %s", im.config.MaxConflictRetrys, poolName)
 			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.conflictRetryUnitTime)
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
 		}
 
@@ -204,14 +180,9 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 	return availableIPs[rand.Int()%len(availableIPs)], nil
 }
 
-type IPAndCID struct {
-	IP          string
-	ContainerID string
-}
-
-func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []IPAndCID) error {
+func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.maxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return err
@@ -243,78 +214,16 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == im.maxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to release IP %+v from IPPool %s", im.maxConflictRetrys, ipAndCIDs, poolName)
+			if i == im.config.MaxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to release IP %+v from IPPool %s", im.config.MaxConflictRetrys, ipAndCIDs, poolName)
 			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.conflictRetryUnitTime)
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
 		}
 		break
 	}
 
 	return nil
-}
-
-func (im *ipPoolManager) SelectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) (bool, error) {
-	logger := logutils.FromContext(ctx)
-
-	ipPool, err := im.GetIPPoolByName(ctx, poolName)
-	if err != nil {
-		logger.Sugar().Warnf("Failed to get IPPool %s: %v", poolName, err)
-		return false, err
-	}
-
-	if ipPool.DeletionTimestamp != nil {
-		logger.Sugar().Warnf("IPPool %s is terminating", poolName)
-		return false, nil
-	}
-
-	if *ipPool.Spec.Disable {
-		logger.Sugar().Warnf("IPPool %s is disable", poolName)
-		return false, nil
-	}
-
-	if *ipPool.Spec.IPVersion != version {
-		logger.Sugar().Warnf("IPPool %s has different version with specified via input", poolName)
-		return false, nil
-	}
-
-	// TODO(iiiceoo): Check whether there are any unused IP
-
-	if ipPool.Spec.NodeAffinity != nil {
-		nodeMatched, err := im.nodeManager.MatchLabelSelector(ctx, pod.Spec.NodeName, ipPool.Spec.NodeAffinity)
-		if err != nil {
-			return false, err
-		}
-		if !nodeMatched {
-			logger.Sugar().Infof("Unmatched Node selector, IPPool %s is filtered", poolName)
-			return false, nil
-		}
-	}
-
-	if ipPool.Spec.NamespaceAffinity != nil {
-		nsMatched, err := im.nsManager.MatchLabelSelector(ctx, pod.Namespace, ipPool.Spec.NamespaceAffinity)
-		if err != nil {
-			return false, err
-		}
-		if !nsMatched {
-			logger.Sugar().Infof("Unmatched Namespace selector, IPPool %s is filtered", poolName)
-			return false, nil
-		}
-	}
-
-	if ipPool.Spec.PodAffinity != nil {
-		podMatched, err := im.podManager.MatchLabelSelector(ctx, pod.Namespace, pod.Name, ipPool.Spec.PodAffinity)
-		if err != nil {
-			return false, err
-		}
-		if !podMatched {
-			logger.Sugar().Infof("Unmatched Pod selector, IPPool %s is filtered", poolName)
-			return false, nil
-		}
-	}
-
-	return true, nil
 }
 
 // TODO(iiiceoo): Refactor
@@ -337,7 +246,7 @@ func (im *ipPoolManager) CheckVlanSame(ctx context.Context, poolNameList []strin
 }
 
 func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) error {
-	for i := 0; i <= im.maxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return err
@@ -352,10 +261,10 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == im.maxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from IPPool %s", im.maxConflictRetrys, constant.SpiderFinalizer, poolName)
+			if i == im.config.MaxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from IPPool %s", im.config.MaxConflictRetrys, constant.SpiderFinalizer, poolName)
 			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.conflictRetryUnitTime)
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
 		}
 		break
@@ -366,7 +275,7 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 
 // UpdateAllocatedIPs serves for StatefulSet pod re-create
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error {
-	for i := 0; i <= im.maxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
 		pool, err := im.GetIPPoolByName(ctx, oldIPConfig.IPPool)
 		if nil != err {
 			return err
@@ -396,11 +305,11 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID str
 				return err
 			}
 
-			if i == im.maxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet pod '%s/%s' SpiderIPPool IP '%s'", im.maxConflictRetrys, pod.Namespace, pod.Name, singleIP)
+			if i == im.config.MaxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet pod '%s/%s' SpiderIPPool IP '%s'", im.config.MaxConflictRetrys, pod.Namespace, pod.Name, singleIP)
 			}
 
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.conflictRetryUnitTime)
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
 		}
 	}

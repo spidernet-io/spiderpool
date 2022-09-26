@@ -19,7 +19,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -102,7 +102,8 @@ type AgentContext struct {
 
 	// manager
 	IPAM          ipam.IPAM
-	IPPoolManager ippoolmanager.IPPoolManager
+	CRDManager    ctrl.Manager
+	IPPoolManager ippoolmanagertypes.IPPoolManager
 	WEManager     workloadendpointmanager.WorkloadEndpointManager
 	RIPManager    reservedipmanager.ReservedIPManager
 	NodeManager   nodemanager.NodeManager
@@ -111,7 +112,6 @@ type AgentContext struct {
 	StsManager    statefulsetmanager.StatefulSetManager
 
 	// handler
-	CRDManager        ctrl.Manager
 	HttpServer        *server.Server
 	UnixServer        *server.Server
 	MetricsHttpServer *http.Server

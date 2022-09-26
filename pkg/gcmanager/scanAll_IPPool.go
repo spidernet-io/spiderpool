@@ -12,10 +12,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -162,7 +162,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				if !isCurrentContainerID {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation containerID is different with wep current containerID"))
 					// release IP but no need to remove wep finalizer
-					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []ippoolmanager.IPAndCID{{
+					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndCID{{
 						IP:          poolIP,
 						ContainerID: poolIPAllocation.ContainerID},
 					})
@@ -183,7 +183,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poolName, poolIP string, poolIPAllocation spiderpoolv1.PoolIPAllocation) error {
 	log := logutils.FromContext(ctx)
 
-	singleIP := []ippoolmanager.IPAndCID{{IP: poolIP, ContainerID: poolIPAllocation.ContainerID}}
+	singleIP := []types.IPAndCID{{IP: poolIP, ContainerID: poolIPAllocation.ContainerID}}
 	err := s.ippoolMgr.ReleaseIP(ctx, poolName, singleIP)
 	if nil != err {
 		metrics.IPGCFailureCounts.Add(ctx, 1)

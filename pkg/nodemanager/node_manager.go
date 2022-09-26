@@ -23,12 +23,12 @@ type nodeManager struct {
 	client client.Client
 }
 
-func NewNodeManager(c client.Client) (NodeManager, error) {
-	if c == nil {
+func NewNodeManager(client client.Client) (NodeManager, error) {
+	if client == nil {
 		return nil, errors.New("k8s client must be specified")
 	}
 	return &nodeManager{
-		client: c,
+		client: client,
 	}, nil
 }
 

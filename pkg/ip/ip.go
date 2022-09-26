@@ -95,6 +95,52 @@ func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
 	return ips
 }
 
+// IPsUnionSet calculates the union set of two IP address slices.
+// For example, the union set between [172.18.40.1 172.18.40.2] and
+// [172.18.40.2 172.18.40.3] is [172.18.40.1 172.18.40.2 172.18.40.3].
+func IPsUnionSet(ips1, ips2 []net.IP) []net.IP {
+	var ips []net.IP
+	marks := make(map[string]bool)
+	ips1 = append(ips1, ips2...)
+	for _, ip := range ips1 {
+		if ip != nil {
+			marks[ip.String()] = true
+		}
+	}
+
+	for k := range marks {
+		ips = append(ips, net.ParseIP(k))
+	}
+
+	return ips
+}
+
+// IPsIntersectionSet calculates the intersection set of two IP address
+// slices. For example, the intersection set between [172.18.40.1 172.18.40.2]
+// and [172.18.40.2 172.18.40.3] is [172.18.40.2].
+func IPsIntersectionSet(ips1, ips2 []net.IP) []net.IP {
+	var ips []net.IP
+	set := make(map[string]bool)
+	for _, ip := range ips1 {
+		if ip != nil {
+			set[ip.String()] = true
+		}
+	}
+
+	marks := make(map[string]bool)
+	for _, ip := range ips2 {
+		if ip != nil && set[ip.String()] {
+			marks[ip.String()] = true
+		}
+	}
+
+	for k := range marks {
+		ips = append(ips, net.ParseIP(k))
+	}
+
+	return ips
+}
+
 // NextIP returns the next IP address.
 func NextIP(ip net.IP) net.IP {
 	i := ipToInt(ip)

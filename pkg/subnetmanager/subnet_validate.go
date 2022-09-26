@@ -24,6 +24,7 @@ var (
 	excludeIPsField *field.Path = field.NewPath("spec").Child("excludeIPs")
 	gatewayField    *field.Path = field.NewPath("spec").Child("gateway")
 	routesField     *field.Path = field.NewPath("spec").Child("routes")
+	freeIPsField    *field.Path = field.NewPath("status").Child("freeIPs")
 )
 
 func (sm *subnetManager) validateCreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
@@ -122,16 +123,17 @@ func (sm *subnetManager) validateSubnetIPInUse(ctx context.Context, oldSubnet, n
 	oldTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldSubnet.Spec.IPVersion, oldSubnet.Spec.IPs, oldSubnet.Spec.ExcludeIPs)
 	newTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.IPs, newSubnet.Spec.ExcludeIPs)
 	reducedIPs := spiderpoolip.IPsDiffSet(oldTotalIPs, newTotalIPs)
-	reduceIPRanges, _ := spiderpoolip.ConvertIPsToIPRanges(*newSubnet.Spec.IPVersion, reducedIPs)
 	freeIPs, err := spiderpoolip.ParseIPRanges(*newSubnet.Spec.IPVersion, newSubnet.Status.FreeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, err)
+		return field.InternalError(freeIPsField, err)
 	}
 
-	if len(spiderpoolip.IPsDiffSet(reducedIPs, freeIPs)) > 0 {
+	invalidIPs := spiderpoolip.IPsDiffSet(reducedIPs, freeIPs)
+	if len(invalidIPs) > 0 {
+		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*newSubnet.Spec.IPVersion, invalidIPs)
 		return field.Forbidden(
 			ipsField,
-			fmt.Sprintf("removes some IP ranges %s that is being used, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", reduceIPRanges),
+			fmt.Sprintf("remove some IP ranges %v that is being used, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges),
 		)
 	}
 
@@ -149,13 +151,13 @@ func (sm *subnetManager) validateSubnetIPPoolInUse(ctx context.Context, subnet *
 	totalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, err)
+		return field.InternalError(freeIPsField, err)
 	}
 
 	if len(spiderpoolip.IPsDiffSet(totalIPs, freeIPs)) != 0 {
 		return field.Forbidden(
 			ipsField,
-			"removes a Subnet that is still used by some IPPools",
+			"delete a Subnet that is still used by some IPPools",
 		)
 	}
 
@@ -208,7 +210,7 @@ func (sm *subnetManager) validateSubnetSubnet(ctx context.Context, version types
 			return field.Invalid(
 				subnetField,
 				subnet,
-				fmt.Sprintf("overlaps with Subnet %s which 'spec.subnet' is %s", s.Name, s.Spec.Subnet),
+				fmt.Sprintf("overlap with Subnet %s which 'spec.subnet' is %s", s.Name, s.Spec.Subnet),
 			)
 		}
 	}
@@ -242,7 +244,7 @@ func (sm *subnetManager) validateSubnetAvailableIP(ctx context.Context, subnet *
 		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("overlaps with Subnet %s, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", s.Name),
+				fmt.Sprintf("overlap with Subnet %s, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", s.Name),
 			)
 		}
 	}

@@ -5,7 +5,6 @@ package assignip_test
 import (
 	"context"
 	"strings"
-	"time"
 
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
@@ -18,7 +17,7 @@ import (
 var _ = Describe("test pod", Label("assignip"), func() {
 
 	Context("fail to run a pod when IP resource of an ippool is exhausted or its IP been set excludeIPs", func() {
-		var deployName, v4PoolName, v6PoolName, nic, namespace string
+		var deployName, v4PoolName, v6PoolName, namespace string
 		var v4PoolNameList, v6PoolNameList []string
 		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 		var (
@@ -29,11 +28,10 @@ var _ = Describe("test pod", Label("assignip"), func() {
 
 		BeforeEach(func() {
 			// Init test information and create namespace
-			nic = "eth0"
 			deployName = "deploy" + tools.RandomName()
 			namespace = "ns" + tools.RandomName()
 			GinkgoWriter.Printf("create namespace %v \n", namespace)
-			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 
 			// Create IPv4Pool and IPV6Pool
@@ -72,21 +70,21 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		It(" fail to run a pod when IP resource of an ippool is exhausted and an IP who is set in excludeIPs field of ippool, should not be assigned to a pod",
 			Label("E00008", "S00002"), func() {
 				// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
-				deploy := common.CreateDeployWithPodAnnoation(frame, deployName, namespace, deployOriginialNum, nic, v4PoolNameList, v6PoolNameList)
+				deploy := common.CreateDeployWithPodAnnoation(frame, deployName, namespace, deployOriginialNum, common.NIC1, v4PoolNameList, v6PoolNameList)
 				common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 
 				// Scale Deployment to exhaust IP resource
 				GinkgoWriter.Println("scale Deployment to exhaust IP resource")
-				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
 				addPods, _, e4 := common.ScaleDeployUntilExpectedReplicas(frame, deploy, deployScaleupNum, ctx)
 				Expect(e4).NotTo(HaveOccurred())
 
 				// Get the Pod Scale failure Event
-				ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+				ctx1, cancel1 := context.WithTimeout(context.Background(), common.EventOccurTimeout)
 				defer cancel1()
 				for _, pod := range addPods {
-					Expect(frame.WaitExceptEventOccurred(ctx1, common.PodEventKind, pod.Name, pod.Namespace, common.GetIpamAllocationFailed)).To(Succeed())
+					Expect(frame.WaitExceptEventOccurred(ctx1, common.OwnerPod, pod.Name, pod.Namespace, common.GetIpamAllocationFailed)).To(Succeed())
 					GinkgoWriter.Printf("succeeded to detect the message expected: %v\n", common.GetIpamAllocationFailed)
 				}
 
@@ -113,7 +111,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 				// the IP can be assigned to a pod and a record of that pod IP can be checked in the ippool.
 				podList, err := frame.GetPodListByLabel(deploy.Spec.Selector.MatchLabels)
 				Expect(err).NotTo(HaveOccurred())
-				newPodList, err := frame.DeletePodListUntilReady(podList, time.Minute)
+				newPodList, err := frame.DeletePodListUntilReady(podList, common.PodReStartTimeout)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(newPodList.Items)).Should(Equal(deployScaleupNum))
 				ok2, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, newPodList)

@@ -4,10 +4,12 @@ package ippoolcr_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,7 +21,7 @@ import (
 
 var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	var nsName string
-	var v4PoolName, v6PoolName, nic, deployName string
+	var v4PoolName, v6PoolName, deployName string
 	var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 	var v4PoolNameList, v6PoolNameList []string
 	var disable = new(bool)
@@ -28,7 +30,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		// Init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", nsName)
-		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, time.Second*10)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", nsName)
 
 		// Create IPv4 pools and IPv6 pools
@@ -100,12 +102,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		)
 		// ippool.Spec.disabled set to true
 		*disable = true
-
-		nic = "eth0"
 		deployName = "deploy" + tools.RandomName()
 
 		// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
-		deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, deployOriginialNum, nic, v4PoolNameList, v6PoolNameList)
+		deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, deployOriginialNum, common.NIC1, v4PoolNameList, v6PoolNameList)
 		podList := common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 
 		// D00004: Failed to delete an IPPool whose IP is not de-allocated at all
@@ -141,29 +141,29 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		}
 
 		// The value of IPPool.Spec.disabled is "true" and the Scale deployment
-		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+		ctx1, cancel1 := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 		defer cancel1()
 		pods, _, err := common.ScaleDeployUntilExpectedReplicas(frame, deploy, deployScaleupNum, ctx1)
 		Expect(err).NotTo(HaveOccurred(), "Failed to scale deployment")
 
 		// Failed to run pod and Get the Pod Scale failure Event
-		ctx2, cancel2 := context.WithTimeout(context.Background(), time.Minute)
+		ctx2, cancel2 := context.WithTimeout(context.Background(), common.EventOccurTimeout)
 		defer cancel2()
 		for _, pod := range pods {
-			Expect(frame.WaitExceptEventOccurred(ctx2, common.PodEventKind, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
+			Expect(frame.WaitExceptEventOccurred(ctx2, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
 			GinkgoWriter.Printf("Pod %v/%v IP allocation failed when iPv4/iPv6 PoolObj.Spec.Disable is true", pod.Namespace, pod.Name)
 		}
 
 		// Delete the deployment and then check that the Pod IP in the IPPool has been reclaimed correctly.
-		Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, time.Minute)).To(Succeed())
+		Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, common.ResourceDeleteTimeout)).To(Succeed())
 		GinkgoWriter.Printf("Succeeded to delete deployment %v/%v \n", nsName, deployName)
-		Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podList, time.Minute)).To(Succeed())
+		Expect(common.WaitIPReclaimedFinish(frame, v4PoolNameList, v6PoolNameList, podList, common.IPReclaimTimeout)).To(Succeed())
 		GinkgoWriter.Printf("The Pod %v/%v IP in the IPPool was reclaimed correctly \n", nsName, deployName)
 	})
 
-	It("add a route with `routes` and `gateway` fields in the ippool spec", Label("D00002", "D00003", "smoke"), func() {
-		podName := "pod" + tools.RandomName()
-		annoPodIPPool := types.AnnoPodIPPoolValue{}
+	It("add a route with `routes` and `gateway` fields in the ippool spec", Label("D00002", "D00003", "smoke", "A00011"), func() {
+		podName1 := "pod" + tools.RandomName()
+		podName2 := "pod" + tools.RandomName()
 		var v4Gateway, v6Gateway, v4Dst, v6Dst, v4Via, v6Via string
 		var v4InvalidGateway, v6InvalidGateway string
 		var v4Pool, v6Pool *spiderpoolv1.SpiderIPPool
@@ -172,15 +172,20 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		v4InvalidGateway = common.GenerateExampleIpv4Gateway()
 		v6InvalidGateway = common.GenerateExampleIpv6Gateway()
 
+		annoPodIPPools := types.AnnoPodIPPoolsValue{
+			types.AnnoIPPoolItem{
+				NIC: common.NIC1,
+			},
+		}
 		// Generate valid Gateway and Dst
 		if frame.Info.IpV4Enabled {
-			annoPodIPPool.IPv4Pools = []string{v4PoolName}
+			annoPodIPPools[0].IPv4Pools = []string{v4PoolName}
 			v4Gateway = strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
 			v4Dst = strings.Split(v4PoolObj.Spec.Subnet, ".")[0] + "." + strings.Split(v4PoolObj.Spec.Subnet, "/")[1] + ".0.0/16"
 			v4Via = strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "254"
 		}
 		if frame.Info.IpV6Enabled {
-			annoPodIPPool.IPv6Pools = []string{v6PoolName}
+			annoPodIPPools[0].IPv6Pools = []string{v6PoolName}
 			v6Gateway = strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
 			v6Dst = strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "/32"
 			v6Via = strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "fe"
@@ -270,33 +275,67 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		}
 
 		// The ippool specified by annotation then creates the pod
-		common.CreatePodWithAnnoPodIPPool(frame, podName, nsName, annoPodIPPool)
+		// A00011: Use the ippool route with cleanGateway=false in the pod annotation as a default route
+		podNameCleanGatewayMap := map[string]bool{
+			podName1: false,
+			podName2: true,
+		}
+		for k, v := range podNameCleanGatewayMap {
+			annoPodIPPools[0].CleanGateway = v
+			b, err := json.Marshal(annoPodIPPools)
+			Expect(err).NotTo(HaveOccurred())
+			annoPodIPPoolsStr := string(b)
+			podYaml := common.GenerateExamplePodYaml(k, nsName)
+			podYaml.Annotations = map[string]string{constant.AnnoPodIPPools: annoPodIPPoolsStr}
+			common.CreatePodUntilReady(frame, podYaml, k, nsName, common.PodStartTimeout)
+		}
 
 		// Check whether the route information is effective
 		GinkgoWriter.Println("check whether the route information is effective")
 		if frame.Info.IpV4Enabled {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-			checkGatewayCommand := fmt.Sprintf("ip r | grep 'default via %s'", v4Gateway)
-			checkRouteCommand := fmt.Sprintf("ip r | grep '%s via %s'", v4Dst, v4Via)
-			_, err := frame.ExecCommandInPod(podName, nsName, checkGatewayCommand, ctx)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = frame.ExecCommandInPod(podName, nsName, checkRouteCommand, ctx)
-			Expect(err).NotTo(HaveOccurred())
+			for k := range podNameCleanGatewayMap {
+				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+				defer cancel()
+				checkGatewayCommand := fmt.Sprintf("ip r | grep 'default via %s'", v4Gateway)
+				checkRouteCommand := fmt.Sprintf("ip r | grep '%s via %s'", v4Dst, v4Via)
+				output1, err1 := frame.ExecCommandInPod(k, nsName, checkGatewayCommand, ctx)
+				output2, err2 := frame.ExecCommandInPod(k, nsName, checkRouteCommand, ctx)
+				if k == podName1 {
+					Expect(output1).NotTo(BeEmpty())
+					Expect(err1).NotTo(HaveOccurred())
+				}
+				if k == podName2 {
+					Expect(output1).To(BeEmpty())
+					Expect(err1).To(HaveOccurred(), "cleanGateway=true, will not be used as the default route %v\n")
+				}
+				Expect(err2).NotTo(HaveOccurred())
+				Expect(output2).NotTo(BeEmpty())
+			}
 		}
 		if frame.Info.IpV6Enabled {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-			checkGatewayCommand := fmt.Sprintf("ip -6 r | grep 'default via %s'", v6Gateway)
-			checkRouteCommand := fmt.Sprintf("ip -6 r | grep '%s via %s'", v6Dst, v6Via)
-			_, err := frame.ExecCommandInPod(podName, nsName, checkGatewayCommand, ctx)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = frame.ExecCommandInPod(podName, nsName, checkRouteCommand, ctx)
-			Expect(err).NotTo(HaveOccurred())
+			for k := range podNameCleanGatewayMap {
+				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+				defer cancel()
+				checkGatewayCommand := fmt.Sprintf("ip -6 r | grep 'default via %s'", v6Gateway)
+				checkRouteCommand := fmt.Sprintf("ip -6 r | grep '%s via %s'", v6Dst, v6Via)
+				output1, err1 := frame.ExecCommandInPod(k, nsName, checkGatewayCommand, ctx)
+				output2, err2 := frame.ExecCommandInPod(k, nsName, checkRouteCommand, ctx)
+				if k == podName1 {
+					Expect(output1).NotTo(BeEmpty())
+					Expect(err1).NotTo(HaveOccurred())
+				}
+				if k == podName2 {
+					Expect(output1).To(BeEmpty())
+					Expect(err1).To(HaveOccurred(), "cleanGateway=true, will not be used as the default route %v\n")
+				}
+				Expect(output2).NotTo(BeEmpty())
+				Expect(err2).NotTo(HaveOccurred())
+			}
 		}
 
 		// delete pod
-		Expect(frame.DeletePod(podName, nsName)).To(Succeed())
+		Expect(frame.DeletePod(podName1, nsName)).To(Succeed())
+		Expect(frame.DeletePod(podName2, nsName)).To(Succeed())
 	})
 
 	It("create and delete batch of ippool and check time cost", Label("D00006"), func() {

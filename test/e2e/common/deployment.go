@@ -91,7 +91,7 @@ func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deplo
 				return nil, removedPod, nil
 			}
 		}
-		time.Sleep(time.Second)
+		time.Sleep(ForcedWaitingTime)
 	}
 }
 
@@ -116,7 +116,7 @@ func CreateDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Depl
 			}
 			return podList, nil
 		}
-		time.Sleep(time.Second)
+		time.Sleep(ForcedWaitingTime)
 	}
 }
 
@@ -131,7 +131,7 @@ func CreateDeployWithPodAnnoation(frame *e2e.Framework, name, namespace string, 
 	deployYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: annoPodIPPoolValueStr}
 	Expect(deployYaml).NotTo(BeNil())
 
-	deploy, err := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+	deploy, err := frame.CreateDeploymentUntilReady(deployYaml, PodStartTimeout)
 	Expect(err).NotTo(HaveOccurred())
 	return deploy
 }
@@ -140,7 +140,7 @@ func CreateDeployWithPodAnnoation(frame *e2e.Framework, name, namespace string, 
 func CreateDeployUnitlReadyCheckInIppool(frame *e2e.Framework, depName, namespaceName string, podNum int32, v4PoolNameList, v6PoolNameList []string) {
 	deployYaml := GenerateExampleDeploymentYaml(depName, namespaceName, podNum)
 	Expect(deployYaml).NotTo(BeNil())
-	deploy, err := frame.CreateDeploymentUntilReady(deployYaml, time.Minute)
+	deploy, err := frame.CreateDeploymentUntilReady(deployYaml, PodStartTimeout)
 	Expect(err).NotTo(HaveOccurred())
 
 	// get pod list

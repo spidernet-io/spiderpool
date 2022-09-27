@@ -22,7 +22,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 	BeforeEach(func() {
 		namespace = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", namespace)
-		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 		podName = "pod" + tools.RandomName()
 
@@ -89,7 +89,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(frame.DeletePod(podName, namespace)).NotTo(HaveOccurred())
 			// G00008: The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP
 			if componentName == constant.SpiderpoolAgent || componentName == constant.SpiderpoolController {
-				Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}}, time.Minute)).To(Succeed())
+				Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}}, common.IPReclaimTimeout)).To(Succeed())
 			}
 		},
 		Entry("Successfully run a pod during the ETCD is restarting",
@@ -123,7 +123,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			}
 			// Create the deployment and wait for it to be ready, check that the IP assignment is correct
 			Expect(frame.CreateDeployment(dep)).NotTo(HaveOccurred(), "Failed to create Deployment")
-			podList, err1 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Second*30)
+			podList, err1 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, common.PodStartTimeout)
 			Expect(err1).ShouldNot(HaveOccurred())
 
 			// Check if the IP exists in the IPPool before restarting the node
@@ -133,7 +133,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			GinkgoWriter.Printf("Pod IP recorded in IPPool %v,%v \n", ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList)
 
 			// Send a cmd to restart the node and check the cluster until it is ready
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 			defer cancel()
 			err3 := common.RestartNodeUntilClusterReady(ctx, frame, podList.Items[0].Spec.NodeName)
 			Expect(err3).NotTo(HaveOccurred(), "Execution of cmd fails or node/Pod is not ready, error is: %v \n", err3)
@@ -146,7 +146,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(err4).NotTo(HaveOccurred())
 
 			// After the node is ready then wait for the Deployment to be ready and check that the IP is correctly assigned.
-			restartPodList, err5 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, time.Minute)
+			restartPodList, err5 := frame.WaitDeploymentReadyAndCheckIP(podName, namespace, common.PodStartTimeout)
 			Expect(err5).ShouldNot(HaveOccurred())
 
 			// After restarting the node, check that the IP is still recorded in the ippool.

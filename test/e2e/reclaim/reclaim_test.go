@@ -28,7 +28,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		podName = "pod" + tools.RandomName()
 		namespace = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", namespace)
-		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, time.Second*10)
+		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 
 		DeferCleanup(func() {
@@ -55,7 +55,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		Expect(frame.CreateJob(jd)).NotTo(HaveOccurred(), "Failed to create job %v/%v \n", namespace, jdName)
 
 		// Confirm that the `failed` and `succeeded` job have been assigned an IP address before the job finish
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 		defer cancel()
 		wg.Add(1)
 		go func() {
@@ -84,7 +84,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// Waiting for different behaviour job to be finished
 		GinkgoWriter.Printf("Waiting for job to be finished and behaviour is %v \n", behavior)
-		ctx1, cancel1 := context.WithTimeout(context.Background(), time.Minute)
+		ctx1, cancel1 := context.WithTimeout(context.Background(), common.PodStartTimeout)
 		defer cancel1()
 		jb, ok1, e := frame.WaitJobFinished(jdName, namespace, ctx1)
 		Expect(e).NotTo(HaveOccurred())
@@ -124,7 +124,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// Create a namespace again and name it namespace1
 		GinkgoWriter.Printf("create namespace1 %v \n", namespace1)
-		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace1, time.Second*10)
+		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace1, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace1 %v", namespace1)
 
 		namespaces := []string{namespace, namespace1}
@@ -132,7 +132,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			// Create pods with the same name in different namespaces
 			podYaml := common.GenerateExamplePodYaml(podName, ns)
 			Expect(podYaml).NotTo(BeNil())
-			pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, ns, time.Second*20)
+			pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, ns, common.PodStartTimeout)
 			Expect(pod).NotTo(BeNil(), "Failed to create Pod")
 			// Construct a podlist for another namespace（namepace1）
 			if ns == namespace1 {
@@ -144,7 +144,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// Delete pods from namespace until complete
 		GinkgoWriter.Printf("Delete Pods %v/%v from namespace %v until complete \n", podName, namespace)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 		defer cancel()
 		e2 := frame.DeletePodUntilFinish(podName, namespace, ctx)
 		Expect(e2).NotTo(HaveOccurred())
@@ -163,7 +163,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		GinkgoWriter.Printf("Successfully deleted namespace %v \n", namespace1)
 
 		// Check that the Pod IPs in the IPPool are reclaimed properly after deleting the namespace（namespace1）
-		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, time.Minute)).To(Succeed())
+		Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, common.IPReclaimTimeout)).To(Succeed())
 	})
 
 	It("the IP can be reclaimed after its deployment, statefulSet, daemonSet, replicaSet, or job is deleted, even when CNI binary is gone on the host",
@@ -229,7 +229,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			GinkgoWriter.Printf("Try to create job %v/%v \n", namespace, jobName)
 			Expect(frame.CreateJob(jobYaml)).To(Succeed(), "failed to create job %v/%v \n", namespace, jobName)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
 		LOOP:
 			for {
@@ -244,7 +244,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					// TODO(tao.yang), Inability to accurately sense the cause of failure
 					isOk := frame.CheckPodListRunning(podList)
 					if !isOk {
-						time.Sleep(time.Second)
+						time.Sleep(common.ForcedWaitingTime)
 						continue LOOP
 					}
 					break LOOP
@@ -262,7 +262,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			// remove cni bin
 			GinkgoWriter.Println("remove cni bin")
 			command := "mv /opt/cni/bin/multus /opt/cni/bin/multus.backup"
-			ctx, cancel = context.WithTimeout(context.Background(), time.Second*20)
+			ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
 			err = common.ExecCommandOnKindNode(ctx, frame.Info.KindNodeList, command)
 			Expect(err).NotTo(HaveOccurred())
@@ -297,13 +297,13 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			Expect(frame.DeletePodList(podList, opt)).To(Succeed(), "failed to delete podList\n")
 
 			// Check that the IP in the IPPool has been reclaimed correctly.
-			Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, time.Minute*2)).To(Succeed())
+			Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podList, common.IPReclaimTimeout)).To(Succeed())
 			GinkgoWriter.Println("Delete resource with 0 second grace period where the IP of the resource is correctly reclaimed")
 
 			// restore cni bin
 			GinkgoWriter.Println("restore cni bin")
 			command = "mv /opt/cni/bin/multus.backup /opt/cni/bin/multus"
-			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*20)
+			ctx2, cancel2 := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel2()
 			err = common.ExecCommandOnKindNode(ctx2, frame.Info.KindNodeList, command)
 			Expect(err).NotTo(HaveOccurred())
@@ -311,7 +311,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			// cni wait for node ready after recovery
 			GinkgoWriter.Println("wait cluster node ready")
-			ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute)
+			ctx3, cancel3 := context.WithTimeout(context.Background(), common.NodeReadyTimeout)
 			defer cancel3()
 			ok, err = frame.WaitClusterNodeReady(ctx3)
 			Expect(err).NotTo(HaveOccurred())
@@ -369,16 +369,15 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			})
 		})
 		DescribeTable("dirty IP record in the IPPool should be auto clean by Spiderpool", func() {
-			nic := "eth0"
 			// Generate IPPool annotation string
-			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, nic, v4poolNameList, v6poolNameList)
+			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4poolNameList, v6poolNameList)
 
 			// generate podYaml and create pod
 			podYaml := common.GenerateExamplePodYaml(podName, namespace)
 			Expect(podYaml).NotTo(BeNil())
 			podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			GinkgoWriter.Printf("create pod %v/%v \n", namespace, podName)
-			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, namespace, time.Minute)
+			pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, namespace, common.PodStartTimeout)
 			Expect(pod).NotTo(BeNil())
 			GinkgoWriter.Printf("podIPv4: %v; podIPv6 %v \n", podIPv4, podIPv6)
 
@@ -463,7 +462,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList \n")
 				Expect(spiderpoolControllerPodList.Items).NotTo(BeEmpty(), "failed to get spiderpool controller podList \n")
-				spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, time.Minute)
+				spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, common.PodReStartTimeout)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart \n")
 				Expect(spiderpoolControllerPodList.Items).NotTo(HaveLen(0), "failed to get spiderpool controller podList \n")
@@ -473,13 +472,13 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				GinkgoWriter.Printf("check if the pod %v/%v ip recorded in ippool, check if the dirty ip record reclaimed from ippool\n", namespace, podName)
 				if frame.Info.IpV4Enabled {
 					// check if dirty IPv4 data reclaimed successfully
-					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+					ctx, cancel := context.WithTimeout(context.Background(), common.IPReclaimTimeout)
 					defer cancel()
 					Expect(common.WaitIppoolStatusConditionByAllocatedIPs(ctx, frame, v4poolName, dirtyIPv6, false)).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
 					// check if dirty IPv6 data reclaimed successfully
-					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+					ctx, cancel := context.WithTimeout(context.Background(), common.IPReclaimTimeout)
 					defer cancel()
 					Expect(common.WaitIppoolStatusConditionByAllocatedIPs(ctx, frame, v6poolName, dirtyIPv6, false)).NotTo(HaveOccurred())
 				}

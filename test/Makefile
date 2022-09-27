@@ -205,11 +205,7 @@ setup_spiderpool:
 			--set spiderpoolInit.image.registry="" \
 			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolInit.image.tag=$(TEST_IMAGE_TAG) \
-			--kubeconfig $(E2E_KUBECONFIG) ; \
-		if (($$?!=0)) ; then \
-			KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ;\
-			exit 1 ; \
-		fi ; \
+			--kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 		exit 0
 
 

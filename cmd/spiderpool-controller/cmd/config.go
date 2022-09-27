@@ -73,6 +73,12 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
 	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
 	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
+	{"SPIDERPOOL_GEN_CA", "false", false, nil, &controllerContext.Cfg.AutoGenCA, nil},
+	{"SPIDERPOOL_WEBHOOK_NAME", "", false, &controllerContext.Cfg.WebhookName, nil, nil},
+	{"SPIDERPOOL_CA_SECRET_NAME", "", false, &controllerContext.Cfg.SecretName, nil, nil},
+	{"SPIDERPOOL_SERVICE_NAME", "", false, &controllerContext.Cfg.ServiceName, nil, nil},
+	{"SPIDERPOOL_CA_KEY_BIT_LENGTH", "3072", false, nil, nil, &controllerContext.Cfg.KeyBitLength},
+	{"SPIDERPOOL_CA_EXPIRATION", "630720000s", false, &controllerContext.Cfg.CAExpiration, nil, nil},
 }
 
 type Config struct {
@@ -108,6 +114,13 @@ type Config struct {
 	// configmap
 	EnableStatefulSet  bool `yaml:"enableStatefulSet"`
 	EnableSpiderSubnet bool `yaml:"enableSpiderSubnet"`
+
+	AutoGenCA    bool
+	WebhookName  string
+	SecretName   string
+	ServiceName  string
+	KeyBitLength int    // default 3072
+	CAExpiration string // default '630720000s'
 }
 
 type ControllerContext struct {

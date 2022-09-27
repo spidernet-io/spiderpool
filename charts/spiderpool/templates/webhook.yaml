@@ -2,7 +2,6 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  creationTimestamp: null
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   annotations:
     {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}

@@ -280,6 +280,8 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolController.tls.provided.tlsCert`                           | encoded tls certificate for provided method                                                                                       | `""`                                            |
 | `spiderpoolController.tls.provided.tlsKey`                            | encoded tls key for provided method                                                                                               | `""`                                            |
 | `spiderpoolController.tls.provided.tlsCa`                             | encoded tls CA for provided method                                                                                                | `""`                                            |
+| `spiderpoolController.tls.auto.keyBitLength`                          | ca key bit length for auto method                                                                                                 | `3072`                                          |
+| `spiderpoolController.tls.auto.caExpiration`                          | ca expiration auto method                                                                                                         | `630720000s`                                    |
 
 
 ### spiderpoolInit parameters

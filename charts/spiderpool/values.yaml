@@ -521,6 +521,7 @@ spiderpoolController:
     ## @param spiderpoolController.tls.method the method for generating TLS certificates. [ provided , certmanager ]
     ## - provided:     provide all certificates by helm options
     ## - certmanager:  This method use cert-manager to generate & rotate certificates.
+    ## - auto:         Auto generate cert.
     method: provided
 
     ## @param spiderpoolController.tls.secretName the secret name for storing TLS certificates
@@ -548,6 +549,13 @@ spiderpoolController:
       tlsCert: ""
       tlsKey: ""
       tlsCa: ""
+
+    ## for auto method
+    auto:
+      ## @param spiderpoolController.tls.auto.keyBitLength ca key bit length for auto method
+      keyBitLength: 3072
+      ## @param spiderpoolController.tls.auto.caExpiration ca expiration auto method
+      caExpiration: '630720000s'
 
 ## @section spiderpoolInit parameters
 ##

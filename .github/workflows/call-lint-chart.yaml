@@ -107,10 +107,5 @@ jobs:
       #  It automatically detects charts changed
       - name: Run chart-testing (install)
         run: |
-          tools/cert/generateCert.sh "/tmp/tls"
-          CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
-          SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
-          SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
           ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --namespace kube-system \
-              --helm-extra-set-args "--set=spiderpoolController.tls.provided.tlsCert=${SERVER_CERT} --set=spiderpoolController.tls.provided.tlsKey=${SERVER_KEY} --set=spiderpoolController.tls.provided.tlsCa=${CA}" \
               --helm-extra-args "--timeout 400s"

@@ -25,6 +25,10 @@ var (
 	routesField     *field.Path = field.NewPath("spec").Child("routes")
 )
 
+var (
+	freeIPsField *field.Path = field.NewPath("status").Child("freeIPs")
+)
+
 func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	var errs field.ErrorList
 	if err := im.validateIPPoolSpec(ctx, ipPool); err != nil {
@@ -84,7 +88,7 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	if err := im.validateIPPoolSubnet(ctx, *ipPool.Spec.IPVersion, ipPool.Name, ipPool.Spec.Subnet); err != nil {
 		return err
 	}
-	if err := im.validateIPPoolAvailableIP(ctx, ipPool); err != nil {
+	if err := im.validateIPPoolAvailableIPs(ctx, ipPool); err != nil {
 		return err
 	}
 	if err := im.validateIPPoolGateway(ctx, *ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Gateway); err != nil {
@@ -167,7 +171,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 			return field.Invalid(
 				subnetField,
 				subnet,
-				fmt.Sprintf("overlaps with IPPool %s which 'spec.subnet' is %s", pool.Name, pool.Spec.Subnet),
+				fmt.Sprintf("overlap with IPPool %s which 'spec.subnet' is %s", pool.Name, pool.Spec.Subnet),
 			)
 		}
 	}
@@ -175,7 +179,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+func (im *ipPoolManager) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if err := im.validateIPPoolIPs(ctx, *ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
 		return err
 	}
@@ -201,7 +205,7 @@ func (im *ipPoolManager) validateIPPoolAvailableIP(ctx context.Context, ipPool *
 		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("overlaps with IPPool %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name),
+				fmt.Sprintf("overlap with IPPool %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name),
 			)
 		}
 	}

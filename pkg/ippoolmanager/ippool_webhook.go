@@ -5,14 +5,15 @@ package ippoolmanager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -91,8 +92,8 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		}
 	}
 
-	if !slices.Contains(ipPool.Finalizers, constant.SpiderFinalizer) {
-		ipPool.Finalizers = append(ipPool.Finalizers, constant.SpiderFinalizer)
+	if !controllerutil.ContainsFinalizer(ipPool, constant.SpiderFinalizer) {
+		controllerutil.AddFinalizer(ipPool, constant.SpiderFinalizer)
 		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
 	}
 
@@ -107,6 +108,9 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of IPPool got an object with mismatched GVK: %+v", obj.GetObjectKind().GroupVersionKind()))
 	}
+	if im.config.EnableSpiderSubnet && im.subnetManager == nil {
+		return apierrors.NewInternalError(errors.New("subnet manager must be injected when the feature SpiderSubnet is enabled"))
+	}
 
 	logger := webhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", ipPool.Name),
@@ -114,7 +118,7 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	)
 	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
 
-	if errs := im.validateCreateIPPool(ctx, ipPool); len(errs) != 0 {
+	if errs := im.validateCreateIPPoolAndUpdateSubnetFreeIPs(ctx, ipPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create IPPool: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
@@ -133,6 +137,9 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of IPPool got an object with mismatched GVK: %+v", newObj.GetObjectKind().GroupVersionKind()))
 	}
+	if im.config.EnableSpiderSubnet && im.subnetManager == nil {
+		return apierrors.NewInternalError(errors.New("subnet manager must be injected when the feature SpiderSubnet is enabled"))
+	}
 
 	logger := webhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", newIPPool.Name),
@@ -141,7 +148,7 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	logger.Sugar().Debugf("Request old IPPool: %+v", *oldIPPool)
 	logger.Sugar().Debugf("Request new IPPool: %+v", *newIPPool)
 
-	if errs := im.validateUpdateIPPool(ctx, oldIPPool, newIPPool); len(errs) != 0 {
+	if errs := im.validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx, oldIPPool, newIPPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},

@@ -93,6 +93,30 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv6Gateway=${Ipv6Gateway}
 ```
 
+### install By auto-signed Certificates
+
+The spiderpool automatically generate and maintain certificates
+
+```shell
+helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+
+# for default ipv4 ippool
+# CIDR
+ipv4_subnet="172.20.0.0/16"
+# available IP resource
+ipv4_range="172.20.0.10-172.20.0.200"
+Ipv4Gateway="172.20.0.1"
+
+helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
+  --set spiderpoolController.tls.method=auto \
+  --set feature.enableIPv4=true --set feature.enableIPv6=false \
+  --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false \
+  --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
+  --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
+  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
+
+```
+
 ### install By Cert-manager
 
 the way is not a common situation, because cert-manager needs CNI to create its pod,

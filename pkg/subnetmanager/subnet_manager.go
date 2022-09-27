@@ -11,28 +11,38 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/spidernet-io/spiderpool/pkg/election"
+	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 )
 
 type subnetManager struct {
-	config     *SubnetManagerConfig
-	client     client.Client
-	runtimeMgr ctrl.Manager
+	config        *SubnetManagerConfig
+	client        client.Client
+	runtimeMgr    ctrl.Manager
+	ipPoolManager ippoolmanagertypes.IPPoolManager
+
+	innerCtx context.Context
+	leader   election.SpiderLeaseElector
 }
 
-func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager) (subnetmanagertypes.SubnetManager, error) {
+func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager) (subnetmanagertypes.SubnetManager, error) {
 	if c == nil {
 		return nil, errors.New("subnet manager config must be specified")
 	}
 	if mgr == nil {
 		return nil, errors.New("k8s manager must be specified")
 	}
+	if ipPoolManager == nil {
+		return nil, errors.New("ippool manager must be specified")
+	}
 
 	return &subnetManager{
-		config:     c,
-		client:     mgr.GetClient(),
-		runtimeMgr: mgr,
+		config:        c,
+		client:        mgr.GetClient(),
+		runtimeMgr:    mgr,
+		ipPoolManager: ipPoolManager,
 	}, nil
 }
 

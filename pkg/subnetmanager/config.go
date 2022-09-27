@@ -3,6 +3,14 @@
 
 package subnetmanager
 
+import (
+	"time"
+
+	"github.com/spidernet-io/spiderpool/pkg/config"
+)
+
 type SubnetManagerConfig struct {
-	EnableSpiderSubnet bool
+	config.UpdateCRConfig
+	EnableSpiderSubnet  bool
+	LeaderRetryElectGap time.Duration
 }

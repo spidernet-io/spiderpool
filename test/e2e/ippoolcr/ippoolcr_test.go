@@ -161,7 +161,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		GinkgoWriter.Printf("The Pod %v/%v IP in the IPPool was reclaimed correctly \n", nsName, deployName)
 	})
 
-	It("add a route with `routes` and `gateway` fields in the ippool spec", Label("D00002", "D00003"), func() {
+	It("add a route with `routes` and `gateway` fields in the ippool spec", Label("D00002", "D00003", "smoke"), func() {
 		podName := "pod" + tools.RandomName()
 		annoPodIPPool := types.AnnoPodIPPoolValue{}
 		var v4Gateway, v6Gateway, v4Dst, v6Dst, v4Via, v6Via string

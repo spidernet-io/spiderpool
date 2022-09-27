@@ -36,6 +36,7 @@ import (
 
 // DaemonMain runs controllerContext handlers.
 func DaemonMain() {
+	fmt.Println("debug")
 	// reinitialize the logger
 	logLevel := logutils.ConvertLogLevel(controllerContext.Cfg.LogLevel)
 	if logLevel == nil {

@@ -44,7 +44,7 @@ func (im *ipPoolManager) validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 		return nil
 	}
 
-	if newIPPool.DeletionTimestamp == nil && !controllerutil.ContainsFinalizer(newIPPool, constant.SpiderFinalizer) {
+	if newIPPool.DeletionTimestamp != nil && !controllerutil.ContainsFinalizer(newIPPool, constant.SpiderFinalizer) {
 		return im.validateDeleteIPPoolAndUpdateSubnetFreeIPs(ctx, newIPPool)
 	}
 

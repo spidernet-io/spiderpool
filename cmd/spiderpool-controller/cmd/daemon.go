@@ -292,13 +292,21 @@ func initControllerServiceManagers(ctx context.Context) {
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Info("Begin to initialize Subnet Manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
-		}, controllerContext.CRDManager)
+			UpdateCRConfig:      updateCRConfig,
+			EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
+			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+		}, controllerContext.CRDManager, ipPoolManager)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 		controllerContext.SubnetManager = subnetManager
 		ipPoolManager.InjectSubnetManager(controllerContext.SubnetManager)
+
+		logger.Info("Begin to set up SpiderSubnet informer")
+		err = controllerContext.SubnetManager.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
 
 		logger.Info("Begin to set up Subnet webhook")
 		err = controllerContext.SubnetManager.SetupWebhook()

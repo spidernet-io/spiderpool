@@ -47,25 +47,25 @@ type ipam struct {
 func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager, nodeManager nodemanager.NodeManager,
 	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager) (IPAM, error) {
 	if c == nil {
-		return nil, errors.New("IPAM config must be specified")
+		return nil, errors.New("ipam config must be specified")
 	}
 	if ipPoolManager == nil {
-		return nil, errors.New("IPPoolManager must be specified")
+		return nil, errors.New("ippool manager must be specified")
 	}
 	if weManager == nil {
-		return nil, errors.New("EndpointManager must be specified")
+		return nil, errors.New("endpoint manager must be specified")
 	}
 	if nodeManager == nil {
-		return nil, errors.New("NodeManager must be specified")
+		return nil, errors.New("node manager must be specified")
 	}
 	if nsManager == nil {
-		return nil, errors.New("NamespaceManager must be specified")
+		return nil, errors.New("namespace manager must be specified")
 	}
 	if podManager == nil {
-		return nil, errors.New("PodManager must be specified")
+		return nil, errors.New("pod manager must be specified")
 	}
 	if stsManager == nil {
-		return nil, errors.New("StatefulSetManager must be specified")
+		return nil, errors.New("statefulset manager must be specified")
 	}
 
 	ipamLimiter := limiter.NewLimiter(c.LimiterConfig)

@@ -9,4 +9,4 @@
 | G00005  | A dirty IP record (pod name is wrong) in the IPPool should be auto clean by Spiderpool | p2       |       | done   |       |
 | G00006  | The IP should be reclaimed for the job pod finished with success or failure Status | p2       |       | done   |       |
 | G00007  | A dirty IP record (pod name is right but container ID is wrong) in the IPPool should be auto clean by Spiderpool | p3       |       | done   |       |
-| G00008  | The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP | p3       |       | NA     |       |
+| G00008  | The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP | p3       |       | done    |       |

@@ -139,6 +139,9 @@ setup_spiderpool:
 			SERVER_CERT=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.crt | base64 -w0 | tr -d '\n' ` ; \
 			SERVER_KEY=` cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/tls/server.key | base64 -w0 | tr -d '\n' ` ; \
 			HELM_OPTION="--set spiderpoolController.tls.provided.tlsCert=\"$${SERVER_CERT}\" --set spiderpoolController.tls.provided.tlsKey=\"$${SERVER_KEY}\" --set spiderpoolController.tls.provided.tlsCa=\"$${CA}\" --set spiderpoolController.tls.method=provided" ; \
+		elif [ "$(USE_TLS_METHOD)" == "auto" ] ; then \
+			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
+			HELM_OPTION=" --set spiderpoolController.tls.method=auto " ; \
 		else \
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \

@@ -27,41 +27,35 @@ import (
 
 // Cert define generate instance for spiderpool ca auto generated mode
 type Cert struct {
-	Namespace    string
-	ServiceName  string
-	SecretName   string
-	WebhookName  string
-	CAExpiration string
-	KeyBitLength int
-	CrtPath      string
-	KeyPath      string
+	Namespace   string
+	ServiceName string
+	SecretName  string
+	WebhookName string
+	// in day
+	CAExpiration int
+	// in day
+	CertExpiration int
+	KeyBitLength   int
+	CrtPath        string
+	KeyPath        string
 
 	clientSet kubernetes.Interface
 	logger    *zap.Logger
-}
-
-func (c *Cert) autoFill() {
-	if c.CAExpiration == "" {
-		c.CAExpiration = "630720000s"
-	}
-	if c.KeyBitLength == 0 {
-		c.KeyBitLength = 3072
-	}
 }
 
 // Gen generates cert pair
 // If secret is empty, it will update secret and then update webhook configuration.
 // Otherwise, it will load cert pair from secret, then write to local file path.
 func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
-	c.autoFill()
 	c.clientSet = clientSet
-	c.logger = log
+	c.logger = log.Named("certificate-generator")
 	cfssllog.SetLogger(c)
-	c.logger.Info("cert gen config",
-		zap.String("secret", c.SecretName),
-		zap.String("CAExpiration", c.CAExpiration),
-		zap.String("keyBitLength", c.KeyPath),
-	)
+
+	c.logger.Sugar().Infof("generate server certificate for service %v/%v and webhook %s/%s, to secret %v/%v, with ca expire %v days and keyBitLength %v , cert expire %v days ",
+		c.Namespace, c.ServiceName, c.Namespace, c.WebhookName, c.Namespace, c.SecretName, c.CAExpiration, c.KeyBitLength, c.CertExpiration)
+
+	//  day unit to second
+	CAExpiration := fmt.Sprintf("%ds", c.CAExpiration*24*3600)
 
 	cli := c.clientSet.CoreV1().Secrets(c.Namespace)
 	secret, err := cli.Get(context.Background(), c.SecretName, metav1.GetOptions{})
@@ -82,7 +76,7 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 		}
 	}
 
-	s, caCert, err := c.genCACert()
+	s, caCert, err := c.genCACert(CAExpiration)
 	if err != nil {
 		return fmt.Errorf("error generating ca and signer: %v", err)
 	}
@@ -93,14 +87,17 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 		return fmt.Errorf("error generating csr and private key: %v", err)
 	}
 
-	c.logger.Info("raw CSR and private key successfully created")
+	c.logger.Info("generate server certificate")
 	certificate, err := s.Sign(signer.SignRequest{
-		Request: string(csrRaw),
+		Request:   string(csrRaw),
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Duration(c.CertExpiration) * 24 * time.Hour),
 	})
 	if err != nil {
 		return err
 	}
 
+	c.logger.Info("apply server certificate to secret ")
 	err = c.updateSecret(certificate, key, caCert, secret)
 	if err != nil {
 		// As expected only one initContainer will succeed in creating secret.
@@ -119,28 +116,29 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 		return fmt.Errorf("error occurred while waiting for secret creation: %v", err)
 	}
 
-	c.logger.Info("update webhook configurations")
+	c.logger.Sugar().Infof("update mutating webhook %v/%v", c.Namespace, c.WebhookName)
 	err = c.updateMutatingWebhook(caCert)
 	if err != nil {
 		return fmt.Errorf("error update mutating webhook configuration: %v", err)
 	}
 
+	c.logger.Sugar().Infof("update validating webhook %v/%v", c.Namespace, c.WebhookName)
 	err = c.updateValidatingWebhook(caCert)
 	if err != nil {
 		return fmt.Errorf("error update validating webhook configuration: %v", err)
 	}
 
-	c.logger.Info("mutating webhook configuration successfully created")
 	c.logger.Info("all resources created successfully")
 	return nil
 }
 
-func (c *Cert) genCACert() (*local.Signer, []byte, error) {
+func (c *Cert) genCACert(CAExpiration string) (*local.Signer, []byte, error) {
+
 	certRequest := csr.New()
 	c.logger.Info("key bit length", zap.String("key-bit-length", strconv.Itoa(c.KeyBitLength)))
 	certRequest.KeyRequest = &csr.KeyRequest{A: "rsa", S: c.KeyBitLength}
 	certRequest.CN = "Kubernetes NRI"
-	certRequest.CA = &csr.CAConfig{Expiry: c.CAExpiration}
+	certRequest.CA = &csr.CAConfig{Expiry: CAExpiration}
 	cert, _, key, err := initca.New(certRequest)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating CA certificate failed: %v", err)
@@ -167,8 +165,8 @@ func (c *Cert) genCSR() ([]byte, []byte, error) {
 	certRequest.CN = strings.Join([]string{c.ServiceName, c.Namespace, "svc"}, ".")
 	certRequest.Hosts = []string{
 		c.ServiceName,
-		strings.Join([]string{c.SecretName, c.Namespace}, "."),
-		strings.Join([]string{c.SecretName, c.Namespace, "svc"}, "."),
+		strings.Join([]string{c.ServiceName, c.Namespace}, "."),
+		strings.Join([]string{c.ServiceName, c.Namespace, "svc"}, "."),
 	}
 	return csr.ParseRequest(certRequest)
 }
@@ -186,7 +184,7 @@ func (c *Cert) updateSecret(certificate, key, ca []byte, secret *corev1.Secret) 
 }
 
 func (c *Cert) waitForCertDetailsUpdate() error {
-	return wait.Poll(5*time.Second, 300*time.Second, c.checkSecret)
+	return wait.Poll(10*time.Second, 300*time.Second, c.checkSecret)
 }
 
 func (c *Cert) checkSecret() (bool, error) {

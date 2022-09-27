@@ -53,7 +53,8 @@ IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-$(ARCH
 TEST_IMAGE_NAME := alpine:latest
 
 #USE_TLS_METHOD := certmanager
-USE_TLS_METHOD := provided
+#USE_TLS_METHOD := provided
+USE_TLS_METHOD := auto
 
 IMAGE_PYROSCOPE_NAME := pyroscope/pyroscope:latest
 

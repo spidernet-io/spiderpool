@@ -185,6 +185,8 @@ spec:
           value: "true"
         - name: "SPIDERPOOL_CA_EXPIRATION"
           value: {{ .Values.spiderpoolController.tls.auto.caExpiration | quote }}
+        - name: "SPIDERPOOL_CERT_EXPIRATION"
+          value: {{ .Values.spiderpoolController.tls.auto.certExpiration | quote }}
         - name: "SPIDERPOOL_CA_KEY_BIT_LENGTH"
           value: {{ .Values.spiderpoolController.tls.auto.keyBitLength | quote }}
         - name: "SPIDERPOOL_WEBHOOK_NAME"

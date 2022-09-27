@@ -111,14 +111,15 @@ func DaemonMain() {
 
 	if controllerContext.Cfg.AutoGenCA {
 		err := (&cert.Cert{
-			Namespace:    controllerContext.Cfg.ControllerPodNamespace,
-			ServiceName:  controllerContext.Cfg.SecretName,
-			SecretName:   controllerContext.Cfg.SecretName,
-			WebhookName:  controllerContext.Cfg.WebhookName,
-			CAExpiration: controllerContext.Cfg.CAExpiration,
-			KeyBitLength: controllerContext.Cfg.KeyBitLength,
-			CrtPath:      controllerContext.Cfg.TlsServerCertPath,
-			KeyPath:      controllerContext.Cfg.TlsServerKeyPath,
+			Namespace:      controllerContext.Cfg.ControllerPodNamespace,
+			ServiceName:    controllerContext.Cfg.ServiceName,
+			SecretName:     controllerContext.Cfg.SecretName,
+			WebhookName:    controllerContext.Cfg.WebhookName,
+			CAExpiration:   controllerContext.Cfg.CAExpiration,
+			CertExpiration: controllerContext.Cfg.CertExpiration,
+			KeyBitLength:   controllerContext.Cfg.KeyBitLength,
+			CrtPath:        controllerContext.Cfg.TlsServerCertPath,
+			KeyPath:        controllerContext.Cfg.TlsServerKeyPath,
 		}).Gen(clientSet, logger)
 		if err != nil {
 			logger.Fatal("auto gen ca with error", zap.Error(err))

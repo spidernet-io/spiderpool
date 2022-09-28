@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2022 Authors of spidernet-io
+# SPDX-License-Identifier: Apache-2.0
+
 kubectl get spiderippools | sed '1 d' | awk '{print $1}' | xargs -n 1 -i kubectl patch spiderippools {} --patch '{"metadata": {"finalizers": null}}' --type=merge
 
 kubectl get spidersubnet | sed '1 d' | awk '{print $1}' | xargs -n 1 -i kubectl patch spidersubnet {} --patch '{"metadata": {"finalizers": null}}' --type=merge

@@ -24,6 +24,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
@@ -43,10 +44,11 @@ type ipam struct {
 	nsManager     namespacemanager.NamespaceManager
 	podManager    podmanager.PodManager
 	stsManager    statefulsetmanager.StatefulSetManager
+	subnetManager subnetmanagertypes.SubnetManager
 }
 
 func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager, nodeManager nodemanager.NodeManager,
-	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager) (IPAM, error) {
+	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager, subnetMgr subnetmanagertypes.SubnetManager) (IPAM, error) {
 	if c == nil {
 		return nil, errors.New("ipam config must be specified")
 	}
@@ -68,6 +70,9 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weMa
 	if stsManager == nil {
 		return nil, errors.New("statefulset manager must be specified")
 	}
+	if c.EnableSpiderSubnet && subnetMgr == nil {
+		return nil, errors.New("subnet manager must be specified")
+	}
 
 	ipamLimiter := limiter.NewLimiter(c.LimiterConfig)
 	return &ipam{
@@ -79,6 +84,7 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weMa
 		nsManager:     nsManager,
 		podManager:    podManager,
 		stsManager:    stsManager,
+		subnetManager: subnetMgr,
 	}, nil
 }
 
@@ -663,7 +669,7 @@ func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic strin
 
 	for j := 0; j <= i.config.WaitSubnetPoolRetries; j++ {
 		if len(subnetMgrV4Name) != 0 {
-			v4Pool, err := i.ipPoolManager.RetrieveIPPool(ctx, podTopControllerKind, podTopController, subnetMgrV4Name, constant.IPv4)
+			v4Pool, err := i.subnetManager.RetrieveIPPool(ctx, podTopControllerKind, podTopController, subnetMgrV4Name, constant.IPv4)
 			if nil != err {
 				if j == i.config.WaitSubnetPoolRetries {
 					return nil, fmt.Errorf("%w: %v", ErrPoolNotFound, err)
@@ -686,7 +692,7 @@ func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic strin
 		}
 
 		if len(subnetMgrV6Name) != 0 {
-			v6Pool, err := i.ipPoolManager.RetrieveIPPool(ctx, podTopControllerKind, podTopController, subnetMgrV6Name, constant.IPv6)
+			v6Pool, err := i.subnetManager.RetrieveIPPool(ctx, podTopControllerKind, podTopController, subnetMgrV6Name, constant.IPv6)
 			if nil != err {
 				if j == i.config.WaitSubnetPoolRetries {
 					return nil, fmt.Errorf("%w: %v", ErrPoolNotFound, err)

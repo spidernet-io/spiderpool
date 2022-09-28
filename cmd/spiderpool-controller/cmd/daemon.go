@@ -295,7 +295,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			UpdateCRConfig:      updateCRConfig,
 			EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
 			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.Leader)
+		}, controllerContext.CRDManager, controllerContext.IPPoolManager)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}

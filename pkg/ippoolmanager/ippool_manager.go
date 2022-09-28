@@ -14,7 +14,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -368,12 +367,4 @@ func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 	}
 
 	return nil
-}
-
-func (im *ipPoolManager) RetrieveIPPool(ctx context.Context, appKind string, app metav1.Object, subnetMgrName string, ipVersion types.IPVersion) (pool *spiderpoolv1.SpiderIPPool, err error) {
-	if im.subnetManager != nil {
-		return im.subnetManager.RetrieveIPPool(ctx, appKind, app, subnetMgrName, ipVersion)
-	}
-
-	return nil, fmt.Errorf("failed to call subnet manager, error: subnet manager isn't injected to ippool manager")
 }

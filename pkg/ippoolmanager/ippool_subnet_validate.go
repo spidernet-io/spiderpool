@@ -132,6 +132,9 @@ func (im *ipPoolManager) removeSubnetFreeIPs(ctx context.Context, subnet *spider
 	newFreeIPs := spiderpoolip.IPsDiffSet(freeIPs, poolTotalIPs)
 	ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
 	subnet.Status.FreeIPs = ranges
+
+	freeIPCount := int64(len(newFreeIPs))
+	subnet.Status.FreeIPCount = &freeIPCount
 	if err := im.subnetManager.UpdateSubnetStatusOnce(ctx, subnet); err != nil {
 		return field.InternalError(freeIPsField, err)
 	}
@@ -161,6 +164,9 @@ func (im *ipPoolManager) updateSubnetFreeIPs(ctx context.Context, subnet *spider
 	newFreeIPs := spiderpoolip.IPsDiffSet(spiderpoolip.IPsUnionSet(freeIPs, reducedIPs), addedIPs)
 	ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
 	subnet.Status.FreeIPs = ranges
+
+	freeIPCount := int64(len(newFreeIPs))
+	subnet.Status.FreeIPCount = &freeIPCount
 	if err := im.subnetManager.UpdateSubnetStatusOnce(ctx, subnet); err != nil {
 		return field.InternalError(freeIPsField, err)
 	}
@@ -181,6 +187,9 @@ func (im *ipPoolManager) addSubnetFreeIPs(ctx context.Context, subnet *spiderpoo
 	newFreeIPs := spiderpoolip.IPsUnionSet(freeIPs, validIPs)
 	ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
 	subnet.Status.FreeIPs = ranges
+
+	freeIPCount := int64(len(newFreeIPs))
+	subnet.Status.FreeIPCount = &freeIPCount
 	if err := im.subnetManager.UpdateSubnetStatusOnce(ctx, subnet); err != nil {
 		return field.InternalError(freeIPsField, err)
 	}

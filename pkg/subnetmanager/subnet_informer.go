@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/election"
@@ -81,9 +82,13 @@ func (sm *subnetManager) onSpiderSubnetAdd(obj interface{}) {
 	ctx, cancel := context.WithCancel(sm.innerCtx)
 	defer cancel()
 
-	if err := sm.initSubnetFreeIPsAndCount(logutils.IntoContext(ctx, logger), subnet.Name); err != nil {
+	if err := sm.doAdd(logutils.IntoContext(ctx, logger), subnet.DeepCopy()); err != nil {
 		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
 	}
+}
+
+func (sm *subnetManager) doAdd(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	return sm.initSubnetFreeIPsAndCount(ctx, subnet)
 }
 
 func (sm *subnetManager) onSpiderSubnetUpdate(oldObj interface{}, newObj interface{}) {
@@ -99,18 +104,36 @@ func (sm *subnetManager) onSpiderSubnetUpdate(oldObj interface{}, newObj interfa
 	ctx, cancel := context.WithCancel(sm.innerCtx)
 	defer cancel()
 
-	if err := sm.initSubnetFreeIPsAndCount(logutils.IntoContext(ctx, logger), newSubnet.Name); err != nil {
+	if err := sm.doUpdate(logutils.IntoContext(ctx, logger), oldSubnet.DeepCopy(), newSubnet.DeepCopy()); err != nil {
 		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
 	}
 }
 
-func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnetName string) error {
+func (sm *subnetManager) doUpdate(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) error {
+	change := false
+	if !reflect.DeepEqual(newSubnet.Spec.IPs, oldSubnet.Spec.IPs) ||
+		!reflect.DeepEqual(newSubnet.Spec.ExcludeIPs, oldSubnet.Spec.ExcludeIPs) {
+		change = true
+	}
+
+	if change {
+		return sm.initSubnetFreeIPsAndCount(ctx, newSubnet)
+	}
+
+	return nil
+}
+
+func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= sm.config.MaxConflictRetrys; i++ {
-		subnet, err := sm.GetSubnetByName(ctx, subnetName)
-		if err != nil {
-			return err
+		var err error
+		if i != 0 {
+			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
+			if err != nil {
+				return err
+			}
 		}
+
 		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx)
 		if err != nil {
 			return err

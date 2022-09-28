@@ -6,13 +6,14 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/cert"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/spidernet-io/spiderpool/pkg/cert"
+	"go.uber.org/zap"
 
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
@@ -217,7 +218,10 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.WEPManager = wepManager
 
 	logger.Info("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager)
+	rIPManager, err := reservedipmanager.NewReservedIPManager(&reservedipmanager.ReservedIPManagerConfig{
+		EnableIPv4: controllerContext.Cfg.EnableIPv4,
+		EnableIPv6: controllerContext.Cfg.EnableIPv6,
+	}, controllerContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -261,6 +265,8 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Info("Begin to initialize IPPool Manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
+		EnableIPv4:          controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:          controllerContext.Cfg.EnableIPv6,
 		UpdateCRConfig:      updateCRConfig,
 		EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
 		MaxAllocatedIPs:     controllerContext.Cfg.IPPoolMaxAllocatedIPs,
@@ -291,7 +297,9 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Info("Begin to initialize Subnet Manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetConfig{
+		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
+			EnableIPv4:          controllerContext.Cfg.EnableIPv4,
+			EnableIPv6:          controllerContext.Cfg.EnableIPv6,
 			UpdateCRConfig:      updateCRConfig,
 			EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
 			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,

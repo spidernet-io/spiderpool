@@ -92,6 +92,20 @@ func (rm *reservedIPManager) validateReservedIPIPVersion(ctx context.Context, ve
 		)
 	}
 
+	if *version == constant.IPv4 && !rm.config.EnableIPv4 {
+		return field.Forbidden(
+			ipVersionField,
+			"IPv4 is disabled",
+		)
+	}
+
+	if *version == constant.IPv6 && !rm.config.EnableIPv6 {
+		return field.Forbidden(
+			ipVersionField,
+			"IPv6 is disabled",
+		)
+	}
+
 	return nil
 }
 

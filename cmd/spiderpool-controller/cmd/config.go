@@ -115,6 +115,8 @@ type Config struct {
 	LeaseRetryGap      int
 
 	// configmap
+	EnableIPv4         bool `yaml:"enableIPv4"`
+	EnableIPv6         bool `yaml:"enableIPv6"`
 	EnableStatefulSet  bool `yaml:"enableStatefulSet"`
 	EnableSpiderSubnet bool `yaml:"enableSpiderSubnet"`
 

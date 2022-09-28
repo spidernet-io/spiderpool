@@ -144,6 +144,20 @@ func (im *ipPoolManager) validateIPPoolIPVersion(ctx context.Context, version *t
 		)
 	}
 
+	if *version == constant.IPv4 && !im.config.EnableIPv4 {
+		return field.Forbidden(
+			ipVersionField,
+			"IPv4 is disabled",
+		)
+	}
+
+	if *version == constant.IPv6 && !im.config.EnableIPv6 {
+		return field.Forbidden(
+			ipVersionField,
+			"IPv6 is disabled",
+		)
+	}
+
 	return nil
 }
 

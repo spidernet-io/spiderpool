@@ -31,7 +31,7 @@ var logger *zap.Logger
 var ErrMaxRetries = fmt.Errorf("over max retries")
 
 type subnetManager struct {
-	config        *SubnetConfig
+	config        *SubnetManagerConfig
 	client        client.Client
 	runtimeMgr    ctrl.Manager
 	ipPoolManager ippoolmanagertypes.IPPoolManager
@@ -40,7 +40,7 @@ type subnetManager struct {
 	innerCtx context.Context
 }
 
-func NewSubnetManager(c *SubnetConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager) (subnetmanagertypes.SubnetManager, error) {
+func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager) (subnetmanagertypes.SubnetManager, error) {
 	if c == nil {
 		return nil, errors.New("subnet manager config must be specified")
 	}

@@ -243,7 +243,7 @@ func (sm *subnetManager) RetrieveIPPool(ctx context.Context, appKind string, app
 		return nil, err
 	}
 
-	if pool.DeletionTimestamp != nil {
+	if pool != nil && pool.DeletionTimestamp != nil {
 		return nil, fmt.Errorf("IPPool '%s' is deleting", pool.Name)
 	}
 	return

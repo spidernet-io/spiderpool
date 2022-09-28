@@ -7,7 +7,6 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -32,5 +31,4 @@ type IPPoolManager interface {
 	CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
 	ScaleIPPoolIPs(ctx context.Context, poolName string, expandIPs []string) error
 	DeleteIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
-	RetrieveIPPool(ctx context.Context, appKind string, app metav1.Object, subnetMgrName string, ipVersion types.IPVersion) (pool *spiderpoolv1.SpiderIPPool, err error)
 }

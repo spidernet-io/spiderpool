@@ -40,7 +40,7 @@ type subnetManager struct {
 	innerCtx context.Context
 }
 
-func NewSubnetManager(c *SubnetConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager, spiderControllerLeader election.SpiderLeaseElector) (subnetmanagertypes.SubnetManager, error) {
+func NewSubnetManager(c *SubnetConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager) (subnetmanagertypes.SubnetManager, error) {
 	if c == nil {
 		return nil, errors.New("subnet manager config must be specified")
 	}
@@ -50,9 +50,6 @@ func NewSubnetManager(c *SubnetConfig, mgr ctrl.Manager, ipPoolManager ippoolman
 	if ipPoolManager == nil {
 		return nil, errors.New("ippool manager must be specified")
 	}
-	if spiderControllerLeader == nil {
-		return nil, fmt.Errorf("spiderpool controller leader must be specified")
-	}
 
 	logger = logutils.Logger.Named("Subnet-Manager")
 
@@ -61,7 +58,6 @@ func NewSubnetManager(c *SubnetConfig, mgr ctrl.Manager, ipPoolManager ippoolman
 		client:        mgr.GetClient(),
 		runtimeMgr:    mgr,
 		ipPoolManager: ipPoolManager,
-		leader:        spiderControllerLeader,
 	}, nil
 }
 

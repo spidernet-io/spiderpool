@@ -27,6 +27,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -120,7 +121,7 @@ func DaemonMain() {
 		},
 		WaitSubnetPoolRetries: agentContext.Cfg.UpdateCRMaxRetrys,
 		WaitSubnetPoolTime:    time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager)
+	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
 	agentContext.IPAM = ipam
 
 	go func() {
@@ -287,4 +288,19 @@ func initAgentServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	agentContext.StsManager = statefulSetManager
+
+	if agentContext.Cfg.EnableSpiderSubnet {
+		logger.Info("Begin to initialize Subnet Manager")
+		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetConfig{
+			UpdateCRConfig:     updateCRConfig,
+			EnableSpiderSubnet: agentContext.Cfg.EnableSpiderSubnet,
+		}, agentContext.CRDManager, agentContext.IPPoolManager)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		agentContext.SubnetManager = subnetManager
+		ipPoolManager.InjectSubnetManager(agentContext.SubnetManager)
+	} else {
+		logger.Info("Feature SpiderSubnet is disabled")
+	}
 }

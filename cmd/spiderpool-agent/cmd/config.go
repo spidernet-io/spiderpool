@@ -25,6 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -112,6 +113,7 @@ type AgentContext struct {
 	NSManager     namespacemanager.NamespaceManager
 	PodManager    podmanager.PodManager
 	StsManager    statefulsetmanager.StatefulSetManager
+	SubnetManager subnetmanagertypes.SubnetManager
 
 	// handler
 	HttpServer        *server.Server

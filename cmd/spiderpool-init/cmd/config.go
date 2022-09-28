@@ -4,10 +4,12 @@
 package cmd
 
 import (
-	"github.com/asaskevich/govalidator"
-	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"os"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
+
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 )
 
 const (
@@ -82,7 +84,7 @@ func init() {
 
 	// ---------- for ipv6
 	Config.SubnetV6Name = os.Getenv(EnvDefaultIPv6SubnetName)
-	logger.Sugar().Infof("SubnetV6Name=%s", Config.SubnetV4Name)
+	logger.Sugar().Infof("SubnetV6Name=%s", Config.SubnetV6Name)
 
 	Config.PoolV6Name = os.Getenv(EnvDefaultIPv6PoolName)
 	logger.Sugar().Infof("PoolV6Name=%s", Config.PoolV6Name)

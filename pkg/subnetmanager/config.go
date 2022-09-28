@@ -9,8 +9,9 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/config"
 )
 
-type SubnetManagerConfig struct {
+type SubnetConfig struct {
 	config.UpdateCRConfig
-	EnableSpiderSubnet  bool
+	EnableSpiderSubnet bool
+
 	LeaderRetryElectGap time.Duration
 }

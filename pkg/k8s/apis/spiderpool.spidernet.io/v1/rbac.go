@@ -11,7 +11,8 @@
 // +kubebuilder:rbac:groups="",resources=nodes;namespaces;endpoints;pods;secrets,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;get;list;watch;update;delete
 // +kubebuilder:rbac:groups="coordination.k8s.io",resources=leases,verbs=create;get;update
-// +kubebuilder:rbac:groups="apps",resources=statefulsets,verbs=get;list;update;watch
+// +kubebuilder:rbac:groups="apps",resources=statefulsets;deployments;replicasets;daemonsets,verbs=get;list;update;watch
+// +kubebuilder:rbac:groups="batch",resources=jobs;cronjobs,verbs=get;list;update;watch
 // +kubebuilder:rbac:groups="admissionregistration.k8s.io",resources=mutatingwebhookconfigurations;validatingwebhookconfigurations,verbs=get;list;update;watch;patch
 
 package v1

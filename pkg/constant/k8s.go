@@ -37,6 +37,7 @@ const (
 	OwnerUnknown     string = "Unknown"
 	OwnerReplicaSet  string = "ReplicaSet"
 	OwnerJob         string = "Job"
+	OwnerCronJob     string = "CronJob"
 )
 
 const (
@@ -75,4 +76,22 @@ const (
 const (
 	SpiderControllerElectorLockName = SpiderpoolController + "-" + resourcelock.LeasesResourceLock
 	QualifiedK8sObjNameFmt          = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
+)
+
+// subnet manager annotation and labels
+const (
+	AnnoSubnetManagerPrefix = SpiderpoolAPIGroup
+
+	AnnoSubnetManagerV4               = AnnoSubnetManagerPrefix + "/spider-subnet-v4"
+	AnnoSubnetManagerV6               = AnnoSubnetManagerPrefix + "/spider-subnet-v6"
+	AnnoSubnetManagerAssignIPNumber   = AnnoSubnetManagerPrefix + "/assign-ip-number"
+	AnnoSubnetManagerFlexibleIPNumber = AnnoSubnetManagerPrefix + "/flexible-ip-number"
+	AnnoSubnetManagerReclaimIPPool    = AnnoSubnetManagerPrefix + "/reclaim-ippool"
+
+	LabelIPPoolOwnerSpiderSubnet   = "owner-spider-subnet"
+	LabelIPPoolOwnerApplication    = "owner-application"
+	LabelIPPoolOwnerApplicationUID = "owner-application-uid"
+	LabelIPPoolVersion             = "ippool-version"
+	LabelIPPoolVersionV4           = "v4"
+	LabelIPPoolVersionV6           = "v6"
 )

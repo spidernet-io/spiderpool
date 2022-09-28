@@ -14,6 +14,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -246,6 +247,7 @@ func (im *ipPoolManager) CheckVlanSame(ctx context.Context, poolNameList []strin
 }
 
 func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) error {
+	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
@@ -275,6 +277,7 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 
 // UpdateAllocatedIPs serves for StatefulSet pod re-create
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error {
+	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
 		pool, err := im.GetIPPoolByName(ctx, oldIPConfig.IPPool)
 		if nil != err {
@@ -314,4 +317,63 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID str
 		}
 	}
 	return nil
+}
+
+func (im *ipPoolManager) CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+	err := im.client.Create(ctx, pool)
+	if nil != err {
+		return fmt.Errorf("failed to create IPPool '%s', error: %v", pool.Name, err)
+	}
+
+	return nil
+}
+
+func (im *ipPoolManager) ScaleIPPoolIPs(ctx context.Context, poolName string, expandIPs []string) error {
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < im.config.MaxConflictRetrys; i++ {
+		pool, err := im.GetIPPoolByName(ctx, poolName)
+		if nil != err {
+			return err
+		}
+
+		pool.Spec.IPs = append(pool.Spec.IPs, expandIPs...)
+		sortIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
+		if nil != err {
+			return err
+		}
+
+		pool.Spec.IPs = sortIPRanges
+		err = im.client.Update(ctx, pool)
+		if nil != err {
+			if !apierrors.IsConflict(err) {
+				return err
+			}
+			if i == im.config.MaxConflictRetrys {
+				return fmt.Errorf("insufficient retries(<=%d) to update IPPool '%s'", im.config.MaxConflictRetrys, pool.Name)
+			}
+
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
+			continue
+		}
+		break
+	}
+
+	return nil
+}
+
+func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+	err := im.client.Delete(ctx, pool)
+	if nil != err {
+		return fmt.Errorf("failed to delete IPPool '%s', error: %v", pool.Name, err)
+	}
+
+	return nil
+}
+
+func (im *ipPoolManager) RetrieveIPPool(ctx context.Context, appKind string, app metav1.Object, subnetMgrName string, ipVersion types.IPVersion) (pool *spiderpoolv1.SpiderIPPool, err error) {
+	if im.subnetManager != nil {
+		return im.subnetManager.RetrieveIPPool(ctx, appKind, app, subnetMgrName, ipVersion)
+	}
+
+	return nil, fmt.Errorf("failed to call subnet manager, error: subnet manager isn't injected to ippool manager")
 }

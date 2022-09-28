@@ -43,7 +43,20 @@ rules:
 - apiGroups:
   - apps
   resources:
+  - daemonsets
+  - deployments
+  - replicasets
   - statefulsets
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  - jobs
   verbs:
   - get
   - list

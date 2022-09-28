@@ -44,7 +44,7 @@ func ParseIPRanges(version types.IPVersion, ipRanges []string) ([]net.IP, error)
 	return sum, nil
 }
 
-// ParseIPRange parses IP range as a IP address slices of the specified
+// ParseIPRange parses IP range as an IP address slices of the specified
 // IP version.
 func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 	if err := IsIPRange(version, ipRange); err != nil {
@@ -166,7 +166,7 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 }
 
 // IsIPRange reports whether ipRange string is a valid IP range. An IP
-// range can be an single IP address in the style of '192.168.1.0', or
+// range can be a single IP address in the style of '192.168.1.0', or
 // an address range in the form of '192.168.1.0-192.168.1.10'.
 // The following formats are invalid:
 // "192.168.1.0 - 192.168.1.10": there can be no space between two IP

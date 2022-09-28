@@ -6,11 +6,13 @@ package ipam
 import (
 	"context"
 	"fmt"
+	"time"
+
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 type IPAMConfig struct {
@@ -23,6 +25,9 @@ type IPAMConfig struct {
 	EnableStatefulSet  bool
 
 	LimiterConfig *limiter.LimiterConfig
+
+	WaitSubnetPoolRetries int
+	WaitSubnetPoolTime    time.Duration
 }
 
 func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {

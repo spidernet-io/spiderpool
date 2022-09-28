@@ -567,7 +567,7 @@ spiderpoolController:
 ##
 spiderpoolInit:
   ## @param spiderpoolInit.name the init job for installing default spiderippool
-  name: "spdierpool-init"
+  name: "spiderpool-init"
 
   ## @param spiderpoolInit.binName the binName name of spiderpoolInit
   binName: "spiderpool-init"

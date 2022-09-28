@@ -291,11 +291,11 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Info("Begin to initialize Subnet Manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
+		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetConfig{
 			UpdateCRConfig:      updateCRConfig,
 			EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
 			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-		}, controllerContext.CRDManager, ipPoolManager)
+		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.Leader)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -313,6 +313,8 @@ func initControllerServiceManagers(ctx context.Context) {
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
+
+		go controllerContext.SubnetManager.Run(ctx, controllerContext.ClientSet)
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}

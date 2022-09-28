@@ -58,6 +58,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_LIMITER_MAX_QUEUE_SIZE", "1000", true, nil, nil, &agentContext.Cfg.LimiterMaxQueueSize},
 	{"SPIDERPOOL_LIMITER_MAX_WAIT_TIME", "15", true, nil, nil, &agentContext.Cfg.LimiterMaxWaitTime},
 	{"SPIDERPOOL_ENABLED_STATEFULSET", "true", true, nil, &agentContext.Cfg.EnableStatefulSet, nil},
+	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "1", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
 }
 
 type Config struct {
@@ -77,6 +78,7 @@ type Config struct {
 	UpdateCRRetryUnitTime             int
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
+	WaitSubnetPoolTime                int
 
 	LimiterMaxQueueSize int
 	LimiterMaxWaitTime  int

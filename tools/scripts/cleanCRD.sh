@@ -12,7 +12,7 @@ while read namespace epName other ; do
   kubectl patch -n $namespace $epName --patch '{"metadata": {"finalizers": null}}' --type=merge
 done <<< "$ALL_EP_INFO"
 
-kubectl delete crd spiderippools
-kubectl delete crd spiderreservedips
-kubectl delete crd spiderendpoints
-kubectl delete crd spidersubnets
+kubectl delete crd spiderendpoints.spiderpool.spidernet.io
+kubectl delete crd spiderippools.spiderpool.spidernet.io
+kubectl delete crd spiderreservedips.spiderpool.spidernet.io
+kubectl delete crd spidersubnets.spiderpool.spidernet.io

@@ -9,7 +9,6 @@ import (
 	"net"
 
 	"github.com/asaskevich/govalidator"
-
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )

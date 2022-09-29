@@ -194,3 +194,11 @@ return the spiderpoolInit image
     {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+generate the CA cert
+*/}}
+{{- define "generate-ca-certs" }}
+    {{- $ca := genCA "spidernet.io" (.Values.spiderpoolController.tls.auto.caExpiration | int) -}}
+    {{- $_ := set . "ca" $ca -}}
+{{- end }}

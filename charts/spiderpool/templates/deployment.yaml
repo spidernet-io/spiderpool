@@ -180,22 +180,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        {{- if (eq .Values.spiderpoolController.tls.method "auto") }}
-        - name: "SPIDERPOOL_GEN_CA"
-          value: "true"
-        - name: "SPIDERPOOL_CA_EXPIRATION"
-          value: {{ .Values.spiderpoolController.tls.auto.caExpiration | quote }}
-        - name: "SPIDERPOOL_CERT_EXPIRATION"
-          value: {{ .Values.spiderpoolController.tls.auto.certExpiration | quote }}
-        - name: "SPIDERPOOL_CA_KEY_BIT_LENGTH"
-          value: {{ .Values.spiderpoolController.tls.auto.keyBitLength | quote }}
-        - name: "SPIDERPOOL_WEBHOOK_NAME"
-          value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-        - name: "SPIDERPOOL_SERVICE_NAME"
-          value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-        - name: "SPIDERPOOL_CA_SECRET_NAME"
-          value: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
-        {{- end }}
         {{- with .Values.spiderpoolController.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

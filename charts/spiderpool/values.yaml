@@ -552,16 +552,19 @@ spiderpoolController:
 
     ## for auto method
     auto:
-      ## @param spiderpoolController.tls.auto.keyBitLength ca key bit length for auto method
-      keyBitLength: 3072
-
       ## @param spiderpoolController.tls.auto.caExpiration ca expiration for auto method
       # in day , default 200 years
       caExpiration: '73000'
 
       ## @param spiderpoolController.tls.auto.certExpiration server cert expiration for auto method
-      # in day, default 10 years
-      certExpiration: '3650'
+      # in day, default 200 years
+      certExpiration: '73000'
+
+      ## @param spiderpoolController.tls.auto.extraIpAddresses extra IP addresses of server certificate for auto method
+      extraIpAddresses: []
+
+      ## @param spiderpoolController.tls.auto.extraDnsNames extra DNS names of server cert for auto method
+      extraDnsNames: []
 
 ## @section spiderpoolInit parameters
 ##

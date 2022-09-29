@@ -280,16 +280,17 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolController.tls.provided.tlsCert`                           | encoded tls certificate for provided method                                                                                       | `""`                                            |
 | `spiderpoolController.tls.provided.tlsKey`                            | encoded tls key for provided method                                                                                               | `""`                                            |
 | `spiderpoolController.tls.provided.tlsCa`                             | encoded tls CA for provided method                                                                                                | `""`                                            |
-| `spiderpoolController.tls.auto.keyBitLength`                          | ca key bit length for auto method                                                                                                 | `3072`                                          |
 | `spiderpoolController.tls.auto.caExpiration`                          | ca expiration for auto method                                                                                                     | `73000`                                         |
-| `spiderpoolController.tls.auto.certExpiration`                        | server cert expiration for auto method                                                                                            | `3650`                                          |
+| `spiderpoolController.tls.auto.certExpiration`                        | server cert expiration for auto method                                                                                            | `73000`                                         |
+| `spiderpoolController.tls.auto.extraIpAddresses`                      | extra IP addresses of server certificate for auto method                                                                          | `[]`                                            |
+| `spiderpoolController.tls.auto.extraDnsNames`                         | extra DNS names of server cert for auto method                                                                                    | `[]`                                            |
 
 
 ### spiderpoolInit parameters
 
 | Name                                        | Description                                                                                                                 | Value                                           |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `spiderpoolInit.name`                       | the init job for installing default spiderippool                                                                            | `spdierpool-init`                               |
+| `spiderpoolInit.name`                       | the init job for installing default spiderippool                                                                            | `spiderpool-init`                               |
 | `spiderpoolInit.binName`                    | the binName name of spiderpoolInit                                                                                          | `spiderpool-init`                               |
 | `spiderpoolInit.hostnetwork`                | enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                          |
 | `spiderpoolInit.image.registry`             | the image registry of spiderpoolInit                                                                                        | `ghcr.io`                                       |

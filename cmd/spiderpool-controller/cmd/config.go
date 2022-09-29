@@ -73,13 +73,20 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
 	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
 	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
+	//deprecated
 	{"SPIDERPOOL_GEN_CA", "false", false, nil, &controllerContext.Cfg.AutoGenCA, nil},
+	//deprecated
 	{"SPIDERPOOL_WEBHOOK_NAME", "spiderpool-controller", false, &controllerContext.Cfg.WebhookName, nil, nil},
+	//deprecated
 	{"SPIDERPOOL_CA_SECRET_NAME", "spiderpool-controller-server-certs", false, &controllerContext.Cfg.SecretName, nil, nil},
+	//deprecated
 	{"SPIDERPOOL_SERVICE_NAME", "spiderpool-controller", false, &controllerContext.Cfg.ServiceName, nil, nil},
+	//deprecated
 	{"SPIDERPOOL_CA_KEY_BIT_LENGTH", "3072", false, nil, nil, &controllerContext.Cfg.KeyBitLength},
+	//deprecated
 	// default 73000 days
 	{"SPIDERPOOL_CA_EXPIRATION", "73000", false, nil, nil, &controllerContext.Cfg.CAExpiration},
+	//deprecated
 	// default 3650 days
 	{"SPIDERPOOL_CERT_EXPIRATION", "3650", false, nil, nil, &controllerContext.Cfg.CertExpiration},
 }

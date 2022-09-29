@@ -75,7 +75,8 @@ func init() {
 		tmp = strings.Replace(tmp, "\"", "", -1)
 		tmp = strings.Replace(tmp, "[", "", -1)
 		tmp = strings.Replace(tmp, "]", "", -1)
-		t := strings.Split(tmp, ",")
+		tmp = strings.Replace(tmp, ",", " ", -1)
+		t := strings.Fields(tmp)
 		if _, err := spiderpoolip.ParseIPRanges(4, t); nil != err {
 			logger.Sugar().Fatalf("PoolV4IPRanges format is wrong,  PoolV4IPRanges='%v', error: %v", t, err)
 		}
@@ -111,7 +112,8 @@ func init() {
 		tmp = strings.Replace(tmp, "\"", "", -1)
 		tmp = strings.Replace(tmp, "[", "", -1)
 		tmp = strings.Replace(tmp, "]", "", -1)
-		t := strings.Split(tmp, ",")
+		tmp = strings.Replace(tmp, ",", " ", -1)
+		t := strings.Fields(tmp)
 		if _, err := spiderpoolip.ParseIPRanges(6, t); nil != err {
 			logger.Sugar().Fatalf("PoolV6IPRanges format is wrong,  PoolV6IPRanges='%v', error: %v", t, err)
 		}

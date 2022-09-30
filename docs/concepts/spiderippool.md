@@ -30,7 +30,7 @@ type IPPoolSpec struct {
     // specify the IPPool's IP version
     IPVersion *int64 `json:"ipVersion,omitempty"`
 
-    // specify the IPPools' subnet
+    // specify the IPPool's subnet
     Subnet string `json:"subnet"`
 
     // specify the IPPool's IP ranges

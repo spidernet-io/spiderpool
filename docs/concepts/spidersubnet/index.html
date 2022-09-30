@@ -13,7 +13,7 @@
     
     
       
-        <title>Metric - spiderpool</title>
+        <title>SpiderSubnet - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#metric" class="md-skip">
+        <a href="#spidersubnet" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Metric
+              SpiderSubnet
             
           </span>
         </div>
@@ -453,14 +453,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
       
       
       
@@ -551,66 +549,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Metric
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
         Metric
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-controller" class="md-nav__link">
-    spiderpool controller
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent" class="md-nav__link">
-    spiderpool agent
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metric-reference" class="md-nav__link">
-    Metric Reference
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -871,23 +814,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-controller" class="md-nav__link">
-    spiderpool controller
+  <a href="#crd-definition" class="md-nav__link">
+    CRD Definition
+  </a>
+  
+    <nav class="md-nav" aria-label="CRD Definition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subnet-specification" class="md-nav__link">
+    Subnet Specification
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-agent" class="md-nav__link">
-    spiderpool agent
+        
+          <li class="md-nav__item">
+  <a href="#subnet-status" class="md-nav__link">
+    Subnet Status
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#metric-reference" class="md-nav__link">
-    Metric Reference
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -908,62 +857,69 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/concepts/metrics.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/concepts/spidersubnet.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="metric">Metric</h1>
-<p>Spiderpool supports metrics reporting</p>
-<h2 id="spiderpool-controller">spiderpool controller</h2>
-<p>the metric of spiderpool controller is set by following pod environment</p>
-<table>
-<thead>
-<tr>
-<th>environment</th>
-<th>description</th>
-<th>default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SPIDERPOOL_ENABLED_METRIC</td>
-<td>enable metrics</td>
-<td>false</td>
-</tr>
-<tr>
-<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
-<td>metrics port</td>
-<td>5721</td>
-</tr>
-</tbody>
-</table>
-<h2 id="spiderpool-agent">spiderpool agent</h2>
-<p>the metric of spiderpool agent is set by following pod environment</p>
-<table>
-<thead>
-<tr>
-<th>environment</th>
-<th>description</th>
-<th>default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SPIDERPOOL_ENABLED_METRIC</td>
-<td>enable metrics</td>
-<td>false</td>
-</tr>
-<tr>
-<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
-<td>metrics port</td>
-<td>5721</td>
-</tr>
-</tbody>
-</table>
-<h2 id="metric-reference">Metric Reference</h2>
-<p>Refer to <a href="./../../pkg/metric/README.md">metrics</a> for details.</p>
+<h1 id="spidersubnet">SpiderSubnet</h1>
+<p>A SpiderSubnet resource represents a collection of IP addresses from which Spiderpool expects SpiderIPPool IPs to be assigned.</p>
+<h2 id="crd-definition">CRD Definition</h2>
+<p>The SpiderSubnet custom resource is modeled after a standard Kubernetes resource
+and is split into a <code>spec</code> and <code>status</code> section:</p>
+<pre><code class="language-text">type SpiderSubnet struct {
+    [...]
+
+    // Spec is the specification of the Subnet
+    Spec   SubnetSpec   `json:&quot;spec,omitempty&quot;`
+
+    // Status is the status of the SpiderSubnet
+    Status SubnetStatus `json:&quot;status,omitempty&quot;`
+}
+</code></pre>
+<h3 id="subnet-specification">Subnet Specification</h3>
+<p>The <code>spec</code> section embeds an Subnet specific field which allows to define the list of all IPs, ExcludeIPs, Routes
+and some other data to the Subnet object for allocation:</p>
+<pre><code class="language-text">// SubnetSpec defines the desired state of SpiderSubnet
+type SubnetSpec struct {
+    // specify the SpiderSubnet's IP version
+    IPVersion *int64 `json:&quot;ipVersion,omitempty&quot;`
+
+    // specify the SpiderSubnet's subnet
+    Subnet string `json:&quot;subnet&quot;`
+
+    // specify the SpiderSubnet's IP ranges
+    IPs []string `json:&quot;ips&quot;`
+
+    // specify the exclude IPs for the SpiderSubnet
+    ExcludeIPs []string `json:&quot;excludeIPs,omitempty&quot;`
+
+    // specify the gateway
+    Gateway *string `json:&quot;gateway,omitempty&quot;`
+
+    // specify the vlan
+    Vlan *int64 `json:&quot;vlan,omitempty&quot;`
+
+    //specify the routes
+    Routes []Route `json:&quot;routes,omitempty&quot;`
+}
+</code></pre>
+<h3 id="subnet-status">Subnet Status</h3>
+<p>The <code>status</code> section contains some field to describe the current IPPool allocation details.
+The IPPool status reports all used addresses.</p>
+<pre><code class="language-text">// SubnetStatus defines the observed state of SpiderSubnet
+type SubnetStatus struct {
+    // the SpiderSubnet all allocatable addresses
+    FreeIPs []string `json:&quot;freeIPs,omitempty&quot;`
+
+    // the SpiderSubnet total addresses counts
+    TotalIPCount *int64 `json:&quot;totalIPCount,omitempty&quot;`
+
+    // the SpiderSubnet allocatable addresses counts
+    FreeIPCount *int64 `json:&quot;freeIPCount,omitempty&quot;`
+}
+</code></pre>
 
 
 
@@ -984,42 +940,6 @@
       </main>
       
         <footer class="md-footer">
-  
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../config/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Configuration" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Configuration
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../spiderippool/" class="md-footer__link md-footer__link--next" aria-label="Next: SpiderIPPool" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              SpiderIPPool
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

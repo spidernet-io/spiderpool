@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-deploy-subnet
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-deploy-subnet
+  template:
+    metadata:
+      annotations:
+        spiderpool.spidernet.io/spider-subnet-v4: "subnet-demo-v4"
+        spiderpool.spidernet.io/flexible-ip-number: "1"
+        spiderpool.spidernet.io/reclaim-ippool: "true"
+      labels:
+        app: demo-deploy-subnet
+    spec:
+      containers:
+        - name: demo-deploy-subnet
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

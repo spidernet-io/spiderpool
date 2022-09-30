@@ -11,7 +11,7 @@ If you have not set up Spiderpool yet, follow the guide [Quick Installation](htt
 First, we create two SpiderIPPools, and they both contain 2 IP addresses.
 
 ```bash
-kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
+kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
 ```
 
 Then, run a Pod and allocate one of these IP addresses.

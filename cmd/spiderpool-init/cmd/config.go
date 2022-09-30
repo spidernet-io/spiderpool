@@ -47,13 +47,13 @@ var Config = _Config{}
 
 func init() {
 	// -------- for ipv4
-	Config.SubnetV4Name = os.Getenv(EnvDefaultIPv4SubnetName)
+	Config.SubnetV4Name = strings.Replace(os.Getenv(EnvDefaultIPv4SubnetName), "\"", "", -1)
 	logger.Sugar().Infof("SubnetV4Name=%s", Config.SubnetV4Name)
 
-	Config.PoolV4Name = os.Getenv(EnvDefaultIPv4PoolName)
+	Config.PoolV4Name = strings.Replace(os.Getenv(EnvDefaultIPv4PoolName), "\"", "", -1)
 	logger.Sugar().Infof("PoolV4Name=%s", Config.PoolV4Name)
 
-	Config.PoolV4Subnet = os.Getenv(EnvDefaultIPv4PoolSubnet)
+	Config.PoolV4Subnet = strings.Replace(os.Getenv(EnvDefaultIPv4PoolSubnet), "\"", "", -1)
 	logger.Sugar().Infof("PoolV4Subnet=%s", Config.PoolV4Subnet)
 	if len(Config.PoolV4Subnet) > 0 {
 		if _, e := spiderpoolip.ParseCIDR(4, Config.PoolV4Subnet); e != nil {
@@ -61,7 +61,7 @@ func init() {
 		}
 	}
 
-	Config.PoolV4Gateway = os.Getenv(EnvDefaultIPv4PoolGateway)
+	Config.PoolV4Gateway = strings.Replace(os.Getenv(EnvDefaultIPv4PoolGateway), "\"", "", -1)
 	logger.Sugar().Infof("PoolV4Gateway=%s", Config.PoolV4Gateway)
 	if len(Config.PoolV4Gateway) > 0 {
 		if !govalidator.IsIPv4(Config.PoolV4Gateway) {
@@ -73,6 +73,7 @@ func init() {
 	logger.Sugar().Infof("PoolV4IPRanges=%s", tmp)
 	if len(tmp) > 0 {
 		tmp = strings.Replace(tmp, "\"", "", -1)
+		tmp = strings.Replace(tmp, "\\", "", -1)
 		tmp = strings.Replace(tmp, "[", "", -1)
 		tmp = strings.Replace(tmp, "]", "", -1)
 		tmp = strings.Replace(tmp, ",", " ", -1)
@@ -84,13 +85,13 @@ func init() {
 	}
 
 	// ---------- for ipv6
-	Config.SubnetV6Name = os.Getenv(EnvDefaultIPv6SubnetName)
+	Config.SubnetV6Name = strings.Replace(os.Getenv(EnvDefaultIPv6SubnetName), "\"", "", -1)
 	logger.Sugar().Infof("SubnetV6Name=%s", Config.SubnetV6Name)
 
-	Config.PoolV6Name = os.Getenv(EnvDefaultIPv6PoolName)
+	Config.PoolV6Name = strings.Replace(os.Getenv(EnvDefaultIPv6PoolName), "\"", "", -1)
 	logger.Sugar().Infof("PoolV6Name=%s", Config.PoolV6Name)
 
-	Config.PoolV6Subnet = os.Getenv(EnvDefaultIPv6PoolSubnet)
+	Config.PoolV6Subnet = strings.Replace(os.Getenv(EnvDefaultIPv6PoolSubnet), "\"", "", -1)
 	logger.Sugar().Infof("PoolV6Subnet=%s", Config.PoolV6Subnet)
 	if len(Config.PoolV6Subnet) > 0 {
 		if _, e := spiderpoolip.ParseCIDR(6, Config.PoolV6Subnet); e != nil {
@@ -98,7 +99,7 @@ func init() {
 		}
 	}
 
-	Config.PoolV6Gateway = os.Getenv(EnvDefaultIPv6PoolGateway)
+	Config.PoolV6Gateway = strings.Replace(os.Getenv(EnvDefaultIPv6PoolGateway), "\"", "", -1)
 	logger.Sugar().Infof("PoolV6Gateway=%s", Config.PoolV6Gateway)
 	if len(Config.PoolV6Gateway) > 0 {
 		if !govalidator.IsIPv6(Config.PoolV6Gateway) {
@@ -110,6 +111,7 @@ func init() {
 	logger.Sugar().Infof("PoolV6IPRanges=%s", tmp)
 	if len(tmp) > 0 {
 		tmp = strings.Replace(tmp, "\"", "", -1)
+		tmp = strings.Replace(tmp, "\\", "", -1)
 		tmp = strings.Replace(tmp, "[", "", -1)
 		tmp = strings.Replace(tmp, "]", "", -1)
 		tmp = strings.Replace(tmp, ",", " ", -1)
@@ -120,13 +122,13 @@ func init() {
 		Config.PoolV6IPRanges = t
 	}
 
-	SpiderControllerEndpointNamespace = os.Getenv(EnvNamespace)
+	SpiderControllerEndpointNamespace = strings.Replace(os.Getenv(EnvNamespace), "\"", "", -1)
 	logger.Sugar().Infof("SpiderControllerEndpointNamespace=%s", SpiderControllerEndpointNamespace)
 	if len(SpiderControllerEndpointNamespace) == 0 {
 		logger.Sugar().Fatalf("SpiderControllerEndpointNamespace is empty")
 	}
 
-	SpiderControllerEndpointName = os.Getenv(EnvSpiderpoolControllerName)
+	SpiderControllerEndpointName = strings.Replace(os.Getenv(EnvSpiderpoolControllerName), "\"", "", -1)
 	logger.Sugar().Infof("SpiderControllerEndpointName=%s", SpiderControllerEndpointName)
 	if len(SpiderControllerEndpointName) == 0 {
 		logger.Sugar().Fatalf("SpiderControllerEndpointName is empty")

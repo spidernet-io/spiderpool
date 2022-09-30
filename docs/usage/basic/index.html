@@ -13,7 +13,7 @@
     
     
       
-        <title>Basic - spiderpool</title>
+        <title>Quick start - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#basic" class="md-skip">
+        <a href="#quick-start" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Basic
+              Quick start
             
           </span>
         </div>
@@ -263,12 +263,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Basic
+          Quick start
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Basic
+        Quick start
       </a>
       
         
@@ -287,70 +287,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    Description
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
   </a>
-  
-    <nav class="md-nav" aria-label="Description">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#notice" class="md-nav__link">
-    Notice
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#get-started" class="md-nav__link">
-    get started
-  </a>
-  
-    <nav class="md-nav" aria-label="get started">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install" class="md-nav__link">
-    install
+  <a href="#update-cni-network-configuration" class="md-nav__link">
+    Update CNI network configuration
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#create-ippool" class="md-nav__link">
-    create ippool
+      
+        <li class="md-nav__item">
+  <a href="#create-an-ippool" class="md-nav__link">
+    Create an IPPool
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#create-application" class="md-nav__link">
-    create application
+      
+        <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    Run
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get-metrics" class="md-nav__link">
-    get metrics
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clean-up" class="md-nav__link">
-    clean up
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -509,8 +469,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../cidrManager/" class="md-nav__link">
-        cidrManager
+      <a href="../cidrManager.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -918,70 +878,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    Description
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
   </a>
-  
-    <nav class="md-nav" aria-label="Description">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#notice" class="md-nav__link">
-    Notice
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#get-started" class="md-nav__link">
-    get started
-  </a>
-  
-    <nav class="md-nav" aria-label="get started">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install" class="md-nav__link">
-    install
+  <a href="#update-cni-network-configuration" class="md-nav__link">
+    Update CNI network configuration
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#create-ippool" class="md-nav__link">
-    create ippool
+      
+        <li class="md-nav__item">
+  <a href="#create-an-ippool" class="md-nav__link">
+    Create an IPPool
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#create-application" class="md-nav__link">
-    create application
+      
+        <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    Run
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get-metrics" class="md-nav__link">
-    get metrics
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clean-up" class="md-nav__link">
-    clean up
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1008,16 +928,99 @@
   </a>
 
 
-<h1 id="basic">Basic</h1>
-<h2 id="description">Description</h2>
-<h3 id="notice">Notice</h3>
-<h2 id="get-started">get started</h2>
-<h3 id="install">install</h3>
-<p>Refer to <a href="../install/">installation</a></p>
-<h3 id="create-ippool">create ippool</h3>
-<h3 id="create-application">create application</h3>
-<h3 id="get-metrics">get metrics</h3>
-<h3 id="clean-up">clean up</h3>
+<h1 id="quick-start">Quick start</h1>
+<p><em>Let's start some Pods with Spiderpool in approximately 5 minutes.</em></p>
+<h2 id="install-spiderpool">Install Spiderpool</h2>
+<p>First, add the Spiderpool <code>helm</code> repository.</p>
+<pre><code class="language-bash">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+</code></pre>
+<p>Set the IP addresses included in the cluster default IPv4 IPPool. The cluster default IPPool usually serves some components that need IP addresses when the Kubernetes cluster is initialized, such as CoreDNS.</p>
+<pre><code class="language-bash">IPV4_SUBNET_YOU_EXPECT=&quot;172.18.40.0/24&quot;
+IPV4_IPRANGES_YOU_EXPECT=&quot;172.18.40.40-172.20.40.200&quot;
+</code></pre>
+<p>Install Spiderpool by creating the necessary TLS certificates and custom resources.</p>
+<pre><code class="language-bash">helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
+  --set spiderpoolController.tls.method=auto \
+  --set feature.enableIPv4=true --set feature.enableIPv6=false \
+  --set clusterDefaultPool.installIPv4IPPool=true  \
+  --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
+  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}} \
+</code></pre>
+<p>Here we use <code>--set feature.enableIPv6=false</code> to disable IPv6, more details of <a href="https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters">Spiderpool charts values</a>.</p>
+<h2 id="update-cni-network-configuration">Update CNI network configuration</h2>
+<p>Then, edit the <a href="https://www.cni.dev/docs/spec/#section-1-network-configuration-format">CNI network configuration</a> with the default path <code>/etc/cni/net.d</code> on the related Nodes so that the Main CNI can use Spiderpool IPAM CNI to allocate IP addresses. Replace the <code>ipam</code> object with the following:</p>
+<pre><code class="language-json">&quot;ipam&quot;:{
+    &quot;type&quot;:&quot;spiderpool&quot;
+}
+</code></pre>
+<p>Take a example of Macvlan + Spiderpool.</p>
+<pre><code class="language-json">{
+    &quot;cniVersion&quot;:&quot;1.0.0&quot;,
+    &quot;type&quot;:&quot;macvlan&quot;,
+    &quot;mode&quot;:&quot;bridge&quot;,
+    &quot;master&quot;:&quot;eth0&quot;,
+    &quot;name&quot;:&quot;macvlan&quot;,
+    &quot;ipam&quot;:{
+        &quot;type&quot;:&quot;spiderpool&quot;
+    }
+}
+</code></pre>
+<h2 id="create-an-ippool">Create an IPPool</h2>
+<p>Next, let's try to create an custom IPPool.</p>
+<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/blob/main/docs/example/basic/custom-ipv4-ippool.yaml
+</code></pre>
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderIPPool
+metadata:
+  name: custom-ipv4-ippool
+spec:
+  ipVersion: 4
+  subnet: 172.18.41.0/24
+  ips:
+  - 172.18.41.40-172.18.41.50
+</code></pre>
+<p>We can replace <code>spec.subnet</code> and <code>spec.ips</code> as needed, more details of <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md">SpiderIPPool CRD</a>.</p>
+<h2 id="run">Run</h2>
+<p>Finally, create a Deployment with 3 replicas.</p>
+<pre><code class="language-bash">kubectl create deployment my-dep --image=busybox --replicas=3 -- sleep infinity
+</code></pre>
+<p>We will find that the Pods controlled by it allocate IP addresses from the cluster default IPPool and run successfully.</p>
+<pre><code class="language-bash">kubectl get po -l app=my-dep -o wide
+NAME                      READY   STATUS    RESTARTS   AGE     IP              NODE            NOMINATED NODE   READINESS GATES
+my-dep-864946ffd8-h5z27   1/1     Running   0          3m10s   172.18.40.42    spider-worker   &lt;none&gt;           &lt;none&gt;
+my-dep-864946ffd8-kdl86   1/1     Running   0          3m10s   172.18.40.200   spider-worker   &lt;none&gt;           &lt;none&gt;
+my-dep-864946ffd8-vhnsj   1/1     Running   0          3m10s   172.18.40.38    spider-worker   &lt;none&gt;           &lt;none&gt;
+</code></pre>
+<p>Of course, we can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation <code>ipam.spidernet.io/ippool</code>, more details of <a href="TODO">pool selection rules</a>.</p>
+<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/blob/main/docs/example/basic/custom-ippool.deploy.yaml
+</code></pre>
+<pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-ippool-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: custom-ippool-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            &quot;interface&quot;: &quot;eth0&quot;,
+            &quot;ipv4pools&quot;: [&quot;custom-ipv4-ippool&quot;]
+          }
+      labels:
+        app: custom-ippool-deploy
+    spec:
+      containers:
+      - name: custom-ippool-deploy
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
+</code></pre>
+<p>As expected, Deployment <code>custom-ippool-deploy</code> 's Pods will allocate IP addresses from IPPool <code>custom-ipv4-ippool</code>.</p>
 
 
 

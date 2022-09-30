@@ -13,7 +13,7 @@
     
     
       
-        <title>cidrManager - spiderpool</title>
+        <title>SpiderSubnet - spiderpool</title>
       
     
     
@@ -61,6 +61,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#spidersubnet" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -90,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              cidrManager
+              SpiderSubnet
             
           </span>
         </div>
@@ -204,14 +209,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" >
       
       
       
@@ -249,7 +252,7 @@
   
     <li class="md-nav__item">
       <a href="../basic/" class="md-nav__link">
-        Basic
+        Quick start
       </a>
     </li>
   
@@ -400,19 +403,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        cidrManager
+    <li class="md-nav__item">
+      <a href="../cidrManager.md" class="md-nav__link">
+        None
       </a>
-      
     </li>
   
 
@@ -809,6 +804,70 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+    <nav class="md-nav" aria-label="Description">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notice" class="md-nav__link">
+    Notice
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get Started
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-spidersubnet-feature" class="md-nav__link">
+    Enable SpiderSubnet feature
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-spidersubnet" class="md-nav__link">
+    Create a SpiderSubnet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-the-related-cr-data" class="md-nav__link">
+    Check the related CR data
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -825,15 +884,210 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/cidrManager.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/spider-subnet.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-  <h1>cidrManager</h1>
-
-
+<h1 id="spidersubnet">SpiderSubnet</h1>
+<h2 id="description">Description</h2>
+<p>The spiderpool owns a CRD SpiderSubnet, it can help applications (such as: Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet.) to create a corresponding SpiderIPPool.</p>
+<p>Here are some annotations that you should write down on the application template pod annotation:</p>
+<table>
+<thead>
+<tr>
+<th>annotation</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spiderpool.spidernet.io/spider-subnet-v4</td>
+<td>specify which SpiderSubnet V4 CR to use</td>
+</tr>
+<tr>
+<td>spiderpool.spidernet.io/spider-subnet-v6</td>
+<td>specify which SpiderSubnet V6 CR to use</td>
+</tr>
+<tr>
+<td>spiderpool.spidernet.io/assign-ip-number</td>
+<td>the fixed IP numbers of the corresponding SpiderIPPool (this is the SpiderIPPool IP numbers)</td>
+</tr>
+<tr>
+<td>spiderpool.spidernet.io/flexible-ip-number</td>
+<td>the extra IP numbers to allocate (the SpiderIPPool IP number = "flexible-ip-number" + "application replicas number")</td>
+</tr>
+<tr>
+<td>spiderpool.spidernet.io/reclaim-ippool</td>
+<td>specify the corresponding SpiderIPPool to delete or not once the application was deleted (default true)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="notice">Notice</h3>
+<ol>
+<li>
+<p>The annotation <code>spiderpool.spidernet.io/assign-ip-number</code> has higher priority over <code>spiderpool.spidernet.io/assign-ip-number</code>.
+If you specify both of them two, it only uses <code>spiderpool.spidernet.io/assign-ip-number</code> mode.</p>
+</li>
+<li>
+<p>It only supports single network interfaces to Pods in Kubernetes.</p>
+</li>
+</ol>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-spidersubnet-feature">Enable SpiderSubnet feature</h3>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer <a href="../install/">install</a> for details.</p>
+<p>Check configmap <code>spiderpool-conf</code> property <code>enableSpiderSubnet</code> whether is already set to <code>true</code> or not.</p>
+<pre><code class="language-shell">kubectl -n kube-system get configmap spiderpool-conf -o yaml
+</code></pre>
+<p>If you want to set it <code>true</code>, just execute <code>helm upgrade --set feature.enableSpiderSubnet=true</code>.</p>
+<h3 id="create-a-spidersubnet">Create a SpiderSubnet</h3>
+<p>install a SpiderSubnet example</p>
+<pre><code class="language-shell">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/subnet-demo.yaml
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/deploy-use-subnet.yaml
+</code></pre>
+<h3 id="check-the-related-cr-data">Check the related CR data</h3>
+<ol>
+<li>
+<p>Here's the SpiderSubnet, SpiderIPPool, Pod information</p>
+<p>```
+$ kubectl get ss
+NAME                VERSION   SUBNET          FREE-IP-COUNT   TOTAL-IP-COUNT
+subnet-demo-v4      4         172.16.0.0/16   100             100</p>
+<hr />
+<p>$ kubectl get sp
+NAME                                                       VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+auto-deployment-default-demo-deploy-subnet-v4-1664524013   4         172.16.0.0/16   1                    2                false</p>
+<hr />
+<p>$ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-1664524013 -o yaml 
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderIPPool
+metadata:
+  creationTimestamp: "2022-09-30T07:46:53Z"
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 1
+  labels:
+    ippool-version: v4
+    owner-application: deployment-default-demo-deploy-subnet
+    owner-application-uid: c452047f-3e28-46f4-90e7-18e543b8521d
+    owner-spider-subnet: subnet-demo-v4
+  name: auto-deployment-default-demo-deploy-subnet-v4-1664524013
+  resourceVersion: "200002"
+  uid: 91695195-8547-418f-81c4-f8c3f0521b7b
+spec:
+  disable: false
+  ipVersion: 4
+  ips:
+  - 172.16.41.1-172.16.41.2
+  podAffinity:
+    matchLabels:
+      app: demo-deploy-subnet
+  subnet: 172.16.0.0/16
+  vlan: 0
+status:
+  allocatedIPCount: 1
+  allocatedIPs:
+    172.16.41.2:
+      containerID: 477752c45776e3d3177fdb1c0c869c9ee9f64afeb3131a355ddcd95533b63996
+      interface: eth0
+      namespace: default
+      node: spider-worker
+      ownerControllerName: demo-deploy-subnet-5594f9966b
+      ownerControllerType: ReplicaSet
+      pod: demo-deploy-subnet-5594f9966b-nc6hc
+  totalIPCount: 2</p>
+<hr />
+<p>$ kubectl get po -o wide 
+NAME                                  READY   STATUS    RESTARTS   AGE   IP            NODE            NOMINATED NODE   READINESS GATES
+demo-deploy-subnet-5594f9966b-nc6hc   1/1     Running   0          77s   172.16.41.2   spider-worker   <none>           <none>
+```</p>
+</li>
+<li>
+<p>Try to scale the deployment replicas and check the SpiderIPPool.</p>
+<p>```
+$ kubectl patch deploy demo-deploy-subnet --patch '{"spec": {"replicas": 2}}'
+deployment.apps/demo-deploy-subnet patched</p>
+<hr />
+<p>$ kubectl get ss subnet-demo-v4 -o yaml              <br />
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderSubnet
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"spiderpool.spidernet.io/v1","kind":"SpiderSubnet","metadata":{"annotations":{},"name":"subnet-demo-v4"},"spec":{"ipVersion":4,"ips":["172.16.41.1-172.16.41.100"],"subnet":"172.16.0.0/16"}}
+  creationTimestamp: "2022-09-30T07:46:26Z"
+  generation: 1
+  name: subnet-demo-v4
+  resourceVersion: "201295"
+  uid: 4890e576-d057-4065-b107-1dba294c491f
+spec:
+  ipVersion: 4
+  ips:
+  - 172.16.41.1-172.16.41.100
+  subnet: 172.16.0.0/16
+  vlan: 0
+status:
+  freeIPCount: 97
+  freeIPs:
+  - 172.16.41.4-172.16.41.100
+  totalIPCount: 100</p>
+<hr />
+<p>$ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-1664524013 -o yaml                                                      <br />
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderIPPool
+metadata:
+  creationTimestamp: "2022-09-30T07:46:53Z"
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 2
+  labels:
+    ippool-version: v4
+    owner-application: deployment-default-demo-deploy-subnet
+    owner-application-uid: c452047f-3e28-46f4-90e7-18e543b8521d
+    owner-spider-subnet: subnet-demo-v4
+  name: auto-deployment-default-demo-deploy-subnet-v4-1664524013
+  resourceVersion: "201311"
+  uid: 91695195-8547-418f-81c4-f8c3f0521b7b
+spec:
+  disable: false
+  ipVersion: 4
+  ips:
+  - 172.16.41.1-172.16.41.3
+  podAffinity:
+    matchLabels:
+      app: demo-deploy-subnet
+  subnet: 172.16.0.0/16
+  vlan: 0
+status:
+  allocatedIPCount: 2
+  allocatedIPs:
+    172.16.41.1:
+      containerID: b3228598020e38c4774d62f85bb35ab857434904903027dbeb0d1b8edaea4d63
+      interface: eth0
+      namespace: default
+      node: spider-control-plane
+      ownerControllerName: demo-deploy-subnet-5594f9966b
+      ownerControllerType: ReplicaSet
+      pod: demo-deploy-subnet-5594f9966b-nwqmj
+    172.16.41.2:
+      containerID: 477752c45776e3d3177fdb1c0c869c9ee9f64afeb3131a355ddcd95533b63996
+      interface: eth0
+      namespace: default
+      node: spider-worker
+      ownerControllerName: demo-deploy-subnet-5594f9966b
+      ownerControllerType: ReplicaSet
+      pod: demo-deploy-subnet-5594f9966b-nc6hc
+  totalIPCount: 3</p>
+<hr />
+<p>$ kubectl get po -o wide                                                       <br />
+NAME                                  READY   STATUS    RESTARTS   AGE     IP            NODE                   NOMINATED NODE   READINESS GATES
+demo-deploy-subnet-5594f9966b-nc6hc   1/1     Running   0          14m     172.16.41.2   spider-worker          <none>           <none>
+demo-deploy-subnet-5594f9966b-nwqmj   1/1     Running   0          2m16s   172.16.41.1   spider-control-plane   <none>           <none>
+```</p>
+</li>
+</ol>
+<p>And you can see, the SpiderSubnet object <code>subnet-demo-v4</code> allocate another IP to SpiderIPPool <code>auto-deployment-default-demo-deploy-subnet-v4-1664524013</code>.</p>
 
 
 
@@ -854,42 +1108,6 @@
       </main>
       
         <footer class="md-footer">
-  
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../reserved-ip/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Reserved IP" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Reserved IP
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../debug/" class="md-footer__link md-footer__link--next" aria-label="Next: Q&amp;A" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Q&A
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

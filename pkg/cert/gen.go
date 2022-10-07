@@ -6,6 +6,8 @@ package cert
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"strconv"
@@ -63,17 +65,12 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 		return err
 	}
 
-	tlsKey, ok1 := secret.Data["tls.key"]
-	tlsCrt, ok2 := secret.Data["tls.crt"]
-
-	if ok1 && ok2 {
-		if len(tlsKey) != 0 && len(tlsCrt) != 0 {
-			c.logger.Info(
-				"CA secret.Data len not equal 0, skip gen ca again.",
-				zap.String("secret", c.SecretName),
-			)
-			return nil
-		}
+	canSkip, err := c.skip(secret)
+	if err != nil {
+		return err
+	}
+	if canSkip {
+		return nil
 	}
 
 	s, caCert, err := c.genCACert(CAExpiration)
@@ -97,7 +94,7 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 		return err
 	}
 
-	c.logger.Info("apply server certificate to secret ")
+	c.logger.Info("apply server certificate to secret")
 	err = c.updateSecret(certificate, key, caCert, secret)
 	if err != nil {
 		// As expected only one initContainer will succeed in creating secret.
@@ -108,12 +105,6 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 			return fmt.Errorf("error occurred while waiting for secret creation: %v", err)
 		}
 		return nil
-	}
-
-	// wait secret is updated
-	err = c.waitForCertDetailsUpdate()
-	if err != nil {
-		return fmt.Errorf("error occurred while waiting for secret creation: %v", err)
 	}
 
 	c.logger.Sugar().Infof("update mutating webhook %v/%v", c.Namespace, c.WebhookName)
@@ -128,12 +119,73 @@ func (c *Cert) Gen(clientSet kubernetes.Interface, log *zap.Logger) error {
 		return fmt.Errorf("error update validating webhook configuration: %v", err)
 	}
 
+	// wait secret is updated
+	err = c.waitForCertDetailsUpdate()
+	if err != nil {
+		return fmt.Errorf("error occurred while waiting for secret creation: %v", err)
+	}
+
 	c.logger.Info("all resources created successfully")
 	return nil
 }
 
-func (c *Cert) genCACert(CAExpiration string) (*local.Signer, []byte, error) {
+func (c *Cert) skip(secret *corev1.Secret) (bool, error) {
+	tlsKey, ok1 := secret.Data["tls.key"]
+	tlsCrt, ok2 := secret.Data["tls.crt"]
+	caCrt, ok3 := secret.Data["ca.crt"]
+	if ok1 && ok2 && ok3 {
+		if len(tlsKey) != 0 && len(tlsCrt) != 0 && len(caCrt) != 0 {
+			err := c.updateIfMutatingWebhookIfDifferent(caCrt)
+			if err != nil {
+				return true, fmt.Errorf("update mutating webhook if different ca.crt with error: %v", err)
+			}
+			err = c.updateValidatingWebhookIfDifferent(caCrt)
+			if err != nil {
+				return true, fmt.Errorf("update validating webhook if different ca.crt with error: %v", err)
+			}
 
+			expired, err := c.checkCertHasExpired(caCrt)
+			if err != nil {
+				c.logger.Info("secret certificate check passed, skipping regeneration.", zap.String("secret", c.SecretName))
+				return true, err
+			}
+
+			c.logger.Info("certificate is expired, regenerating")
+			if !expired {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+// checkCertHasExpired Check whether the x.509 certificate has expired.
+func (c *Cert) checkCertHasExpired(certRaw []byte) (bool, error) {
+	c.logger.Sugar().Infof("checking certificate expiration")
+	now := time.Now()
+
+	block, _ := pem.Decode(certRaw)
+	if block == nil {
+		return false, fmt.Errorf("failed to decode certificate")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false, err
+	}
+
+	if now.Before(cert.NotBefore) {
+		return false, fmt.Errorf("the current time is earlier than the valid time of the certificate")
+	}
+
+	if now.After(cert.NotAfter) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (c *Cert) genCACert(CAExpiration string) (*local.Signer, []byte, error) {
 	certRequest := csr.New()
 	c.logger.Info("key bit length", zap.String("key-bit-length", strconv.Itoa(c.KeyBitLength)))
 	certRequest.KeyRequest = &csr.KeyRequest{A: "rsa", S: c.KeyBitLength}
@@ -248,6 +300,33 @@ func (c *Cert) updateMutatingWebhook(certificate []byte) error {
 	return nil
 }
 
+func (c *Cert) updateIfMutatingWebhookIfDifferent(cert []byte) error {
+	cli := c.clientSet.AdmissionregistrationV1().MutatingWebhookConfigurations()
+	hook, err := cli.Get(context.Background(), c.WebhookName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	var flag bool
+
+	for i := range hook.Webhooks {
+		if bytes.Equal(hook.Webhooks[i].ClientConfig.CABundle, cert) {
+			flag = true
+			hook.Webhooks[i].ClientConfig.CABundle = cert
+		}
+	}
+
+	if flag {
+		c.logger.Sugar().Infof("CABundle of mutating webhook is different from the ca.crt in secret, update mutating webhook")
+		_, err = cli.Update(context.TODO(), hook, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (c *Cert) updateValidatingWebhook(certificate []byte) error {
 	cli := c.clientSet.AdmissionregistrationV1().ValidatingWebhookConfigurations()
 	hook, err := cli.Get(context.Background(), c.WebhookName, metav1.GetOptions{})
@@ -262,6 +341,34 @@ func (c *Cert) updateValidatingWebhook(certificate []byte) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *Cert) updateValidatingWebhookIfDifferent(cert []byte) error {
+	hook, err := c.clientSet.AdmissionregistrationV1().ValidatingWebhookConfigurations().
+		Get(context.Background(), c.WebhookName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	var flag bool
+
+	for i := range hook.Webhooks {
+		if bytes.Equal(hook.Webhooks[i].ClientConfig.CABundle, cert) {
+			flag = true
+			hook.Webhooks[i].ClientConfig.CABundle = cert
+		}
+	}
+
+	if flag {
+		c.logger.Sugar().Infof("CABundle of validating webhook is different from the ca.crt in secret, update validating webhook")
+		_, err = c.clientSet.AdmissionregistrationV1().ValidatingWebhookConfigurations().
+			Update(context.TODO(), hook, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

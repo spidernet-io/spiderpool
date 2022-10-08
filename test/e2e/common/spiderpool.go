@@ -472,7 +472,7 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	// Generate ipv6pool name
 	var v6PoolName string = "v6pool-" + tools.RandomName()
 	// Generate random number
-	var randomNumber string = GenerateRandomNumber(9999)
+	var randomNumber string = GenerateString(4, true)
 
 	iPv6PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{

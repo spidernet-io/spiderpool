@@ -2,11 +2,11 @@
 
 ## Description
 
-Configure spiderpool IP address allocation to use dual stack or IPv4 only.
+This page describes how to configure and allocate IP addresses with Spiderpool by using dual stack, IPv4 only, or IPv6 only.
 
 ## Features
 
-spiderpool supports:
+Spiderpool supports:
 
 - **Dual stack** (default)
 
@@ -24,16 +24,16 @@ spiderpool supports:
 
 ### Enable IPv4 only
 
-Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer [install](./install.md) for details
+Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer to [install](./install.md) for details
 
-Check configmap `spiderpool-conf` property `enableIPv4` whether is already set to `true` and property `enableIPv6` whether is set to `false`.
+Check whether the property `enableIPv4` of the configmap `spiderpool-conf` is already set to `true` and whether the property `enableIPv6` is set to `false`.
 
 ```shell
 kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
-If you want to update it `true`, just execute `helm upgrade --set enableIPv4=true --set enableIPv6=false`
+If you want to update it with `true`, run `helm upgrade --set enableIPv4=true --set enableIPv6=false`.
 
 ### Enable dual stack
 
-Same with the upper steps, just execute `helm upgrade --set enableIPv4=true --set enableIPv6=true`
+Same as the above, run `helm upgrade --set enableIPv4=true --set enableIPv6=true`.

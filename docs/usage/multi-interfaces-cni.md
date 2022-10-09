@@ -1,17 +1,17 @@
 # Multi-Interfaces-CNI
 
-We can create multiple Interfaces with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni),
-and let's use CNI configuration file to achieve it.
+You can create multiple interfaces with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni),
+and use the CNI configuration file to implement them.
 
-## Setup Spiderpool
+## Set up Spiderpool
 
-If you have not set up Spiderpool yet, follow the guide [Quick Installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to install and simply configure Spiderpool.
+If you have not set up Spiderpool yet, follow the guide [Quick Installation](./install.md) for instructions on how to install and simply configure Spiderpool.
 
-## Setup Multus
+## Set up Multus
 
 If you have not set up Multus yet, follow the guide [Quick Installation](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#installation) for instructions on how to install and simply configure Multus.
 
 ## Get Started
 
-Following the [Multus CNI Configuration](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md#multus-cni-configuration-reference) steps to implement CNI configuration file,
-and create pod with multiple Interfaces.
+Following the [Multus CNI Configuration](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md#multus-cni-configuration-reference) steps to implement the CNI configuration file,
+and create pod with multiple interfaces.

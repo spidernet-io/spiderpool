@@ -183,6 +183,20 @@ func (sm *subnetManager) validateSubnetIPVersion(ctx context.Context, version *t
 		)
 	}
 
+	if *version == constant.IPv4 && !sm.config.EnableIPv4 {
+		return field.Forbidden(
+			ipVersionField,
+			"IPv4 is disabled",
+		)
+	}
+
+	if *version == constant.IPv6 && !sm.config.EnableIPv6 {
+		return field.Forbidden(
+			ipVersionField,
+			"IPv6 is disabled",
+		)
+	}
+
 	return nil
 }
 

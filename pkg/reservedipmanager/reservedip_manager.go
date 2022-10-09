@@ -25,16 +25,21 @@ type ReservedIPManager interface {
 }
 
 type reservedIPManager struct {
+	config     *ReservedIPManagerConfig
 	client     client.Client
 	runtimeMgr ctrl.Manager
 }
 
-func NewReservedIPManager(mgr ctrl.Manager) (ReservedIPManager, error) {
+func NewReservedIPManager(c *ReservedIPManagerConfig, mgr ctrl.Manager) (ReservedIPManager, error) {
+	if c == nil {
+		return nil, errors.New("reserved IP manager config must be specified")
+	}
 	if mgr == nil {
 		return nil, errors.New("k8s manager must be specified")
 	}
 
 	return &reservedIPManager{
+		config:     c,
 		client:     mgr.GetClient(),
 		runtimeMgr: mgr,
 	}, nil

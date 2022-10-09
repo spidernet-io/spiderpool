@@ -244,7 +244,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.WEManager = weManager
 
 	logger.Debug("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager)
+	rIPManager, err := reservedipmanager.NewReservedIPManager(&reservedipmanager.ReservedIPManagerConfig{
+		EnableIPv4: agentContext.Cfg.EnableIPv4,
+		EnableIPv6: agentContext.Cfg.EnableIPv6,
+	}, agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -275,6 +278,8 @@ func initAgentServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize IPPool Manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
+		EnableIPv4:      agentContext.Cfg.EnableIPv4,
+		EnableIPv6:      agentContext.Cfg.EnableIPv6,
 		UpdateCRConfig:  updateCRConfig,
 		MaxAllocatedIPs: agentContext.Cfg.IPPoolMaxAllocatedIPs,
 	}, agentContext.CRDManager, agentContext.RIPManager)
@@ -292,7 +297,7 @@ func initAgentServiceManagers(ctx context.Context) {
 
 	if agentContext.Cfg.EnableSpiderSubnet {
 		logger.Info("Begin to initialize Subnet Manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetConfig{
+		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
 			UpdateCRConfig:     updateCRConfig,
 			EnableSpiderSubnet: agentContext.Cfg.EnableSpiderSubnet,
 		}, agentContext.CRDManager, agentContext.IPPoolManager)

@@ -10,6 +10,9 @@ import (
 )
 
 type IPPoolManagerConfig struct {
+	EnableIPv4 bool
+	EnableIPv6 bool
+
 	config.UpdateCRConfig
 	EnableSpiderSubnet  bool
 	MaxAllocatedIPs     int

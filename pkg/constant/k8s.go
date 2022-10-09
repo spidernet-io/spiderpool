@@ -62,6 +62,7 @@ const (
 )
 
 const (
+	Spiderpool             = "spiderpool"
 	SpiderpoolAgent        = "spiderpool-agent"
 	SpiderpoolController   = "spiderpool-controller"
 	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"

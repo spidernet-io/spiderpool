@@ -12,9 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/cert"
-	"go.uber.org/zap"
-
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
 	"k8s.io/client-go/kubernetes"

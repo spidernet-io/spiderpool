@@ -240,18 +240,17 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, nic string, defaultIPV4I
 		return nil, err
 	}
 
-	toBeAllocatedSet, err := i.filterPoolCandidates(ctx, preliminary, pod)
-	if err != nil {
+	if err := i.filterPoolCandidates(ctx, preliminary, pod); err != nil {
 		return nil, err
 	}
-	logger.Sugar().Infof("Filtered IPPool candidates: %s", toBeAllocatedSet)
+	logger.Sugar().Infof("Filtered IPPool candidates: %s", preliminary)
 
-	if err := i.verifyPoolCandidates(ctx, toBeAllocatedSet); err != nil {
+	if err := i.verifyPoolCandidates(ctx, preliminary); err != nil {
 		return nil, err
 	}
 	logger.Info("All IPPool candidates valid")
 
-	return toBeAllocatedSet, nil
+	return preliminary, nil
 }
 
 func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
@@ -451,27 +450,27 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 	return t, nil
 }
 
-func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, pod *corev1.Pod) ([]*ToBeAllocated, error) {
+func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, pod *corev1.Pod) error {
 	for _, t := range tt {
 		for _, c := range t.PoolCandidates {
 			var selectedPools []string
 			for _, pool := range c.Pools {
 				eligible, err := i.selectByPod(ctx, c.IPVersion, pool, pod)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				if eligible {
 					selectedPools = append(selectedPools, pool)
 				}
 			}
 			if len(selectedPools) == 0 {
-				return nil, fmt.Errorf("%w, all IPv%d IPPools of %s filtered out", constant.ErrNoAvailablePool, c.IPVersion, t.NIC)
+				return fmt.Errorf("%w, all IPv%d IPPools of %s filtered out", constant.ErrNoAvailablePool, c.IPVersion, t.NIC)
 			}
 			c.Pools = selectedPools
 		}
 	}
 
-	return tt, nil
+	return nil
 }
 
 func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) (bool, error) {

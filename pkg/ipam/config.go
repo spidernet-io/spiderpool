@@ -72,7 +72,7 @@ func (c *IPAMConfig) checkIPVersionEnable(ctx context.Context, tt []*ToBeAllocat
 
 	var errs []error
 	for _, t := range tt {
-		if err := c.checkPoolMisspecified(ctx, t); err != nil {
+		if err := c.filterPoolMisspecified(ctx, t); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -83,27 +83,29 @@ func (c *IPAMConfig) checkIPVersionEnable(ctx context.Context, tt []*ToBeAllocat
 	return nil
 }
 
-func (c *IPAMConfig) checkPoolMisspecified(ctx context.Context, t *ToBeAllocated) error {
+func (c *IPAMConfig) filterPoolMisspecified(ctx context.Context, t *ToBeAllocated) error {
+	logger := logutils.FromContext(ctx)
+
 	var v4Count, v6Count int
-	for _, c := range t.PoolCandidates {
-		if c.IPVersion == constant.IPv4 {
+	var invalidPoolCandidates []*PoolCandidate
+	for _, pc := range t.PoolCandidates {
+		if pc.IPVersion == constant.IPv4 && c.EnableIPv4 {
 			v4Count++
-		} else if c.IPVersion == constant.IPv6 {
+			invalidPoolCandidates = append(invalidPoolCandidates, pc)
+		} else if pc.IPVersion == constant.IPv6 && c.EnableIPv6 {
 			v6Count++
+			invalidPoolCandidates = append(invalidPoolCandidates, pc)
+		} else {
+			logger.Sugar().Warnf("IPv%d is disabled, ignoring to allocate IPv4 IP to NIC %s from IPPool %v", pc.IPVersion, t.NIC, pc.Pools)
 		}
 	}
+	t.PoolCandidates = invalidPoolCandidates
 
 	if c.EnableIPv4 && v4Count == 0 {
-		return fmt.Errorf("%w in interface %s, IPv4 IPPool is not specified when IPv4 is enabled", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w in interface %s, IPv4 is enabled, but no IPv4 IPPool is specified", constant.ErrWrongInput, t.NIC)
 	}
 	if c.EnableIPv6 && v6Count == 0 {
-		return fmt.Errorf("%w in interface %s, IPv6 IPPool is not specified when IPv6 is enabled", constant.ErrWrongInput, t.NIC)
-	}
-	if !c.EnableIPv4 && v4Count != 0 {
-		return fmt.Errorf("%w in interface %s, IPv4 IPPool is specified when IPv4 is disabled", constant.ErrWrongInput, t.NIC)
-	}
-	if !c.EnableIPv6 && v6Count != 0 {
-		return fmt.Errorf("%w in interface %s, IPv6 IPPool is specified when IPv6 is disabled", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w in interface %s, IPv6 is enabled, but no IPv6 IPPool is specified", constant.ErrWrongInput, t.NIC)
 	}
 
 	return nil

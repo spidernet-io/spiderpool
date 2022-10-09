@@ -64,7 +64,7 @@ func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ip
 func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error) {
 	var subnet spiderpoolv1.SpiderSubnet
 	if err := sm.client.Get(ctx, apitypes.NamespacedName{Name: subnetName}, &subnet); err != nil {
-		return nil, fmt.Errorf("failed to get subnet '%s', error: %v", subnetName, err)
+		return nil, err
 	}
 
 	return &subnet, nil
@@ -73,7 +73,7 @@ func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string)
 func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
 	subnetList := &spiderpoolv1.SpiderSubnetList{}
 	if err := sm.client.List(ctx, subnetList, opts...); err != nil {
-		return nil, fmt.Errorf("failed to list subnet with options '%v', error: %v", opts, err)
+		return nil, err
 	}
 
 	return subnetList, nil
@@ -81,7 +81,7 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 
 func (sm *subnetManager) UpdateSubnetStatusOnce(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	if err := sm.client.Status().Update(ctx, subnet); err != nil {
-		return fmt.Errorf("failed to update subnet '%s', error: %v", subnet.Name, err)
+		return err
 	}
 
 	return nil

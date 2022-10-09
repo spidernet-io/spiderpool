@@ -4,7 +4,7 @@
 
 The spiderpool supports IP assignment for StatefulSet.
 
-when the replica number of statefulset is not scaled up or down, all pods could hold same IP address even pod restarting or rebuilding happens.
+When the number of statefulset replicas is not scaled up or down, all pods could hold same IP address even when the pod is restarting or rebuilding.
 
 * Pod restarts
 
@@ -13,7 +13,7 @@ when the replica number of statefulset is not scaled up or down, all pods could 
 
     In the meanwhile, spiderendpoint will still keep the previous IP but refresh the ContainerID property.
 
-* Pod deleted and re-creates
+* Pod is deleted and re-created
 
     After deleting a StatefulSet pod, kubernetes will re-create a pod with the same name.
 
@@ -25,25 +25,25 @@ when the replica number of statefulset is not scaled up or down, all pods could 
 
 * When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the IP of scaled-down pod event they have the same name
 
-* The [RIPOGT feature](./ippool-gc.md) ( reclaim IP for the pod of graceful-period timeout ) does work for statefulset pod.
+* The [RIPOGT feature](./ippool-gc.md) (reclaim IP for the pod of graceful-period timeout) does work for statefulset pod.
 
 ## Get Started
 
 ### Enable StatefulSet support
 
-Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer [install](./install.md) for details
+Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to [install](./install.md) for details.
 
-Check configmap `spiderpool-conf` property `enableStatefulSet` whether is already set to `true` or not.
+Check whether the property `enableStatefulSet` of the configmap `spiderpool-conf` is already set to `true` or not.
 
 ```shell
 kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
-If you want to set it `true`, just execute `helm upgrade --set feature.enableStatefulSet=true`
+If you want to set it `true`, run `helm upgrade --set feature.enableStatefulSet=true`.
 
 ### Create a StatefulSet
 
-install a StatefulSet example
+This is an example to install a StatefulSet.
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset/statefulset-demo.yaml
@@ -51,7 +51,7 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 
 ### Validate the Spiderpool related CR data
 
-1. Here's the created Pod, spiderippool, spiderendpoint CR information:
+1. Here's the created Pod, spiderippool, and spiderendpoint CR information:
 
     ```text
     $ kubectl get po -o wide
@@ -164,11 +164,11 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
           ...
     ```
 
-    And you can see, the re-create Pod still hold the previous IP, and spiderippool, spiderendpoint updated containerID property.
+    And you can see, the re-created Pod still holds the previous IP, spiderippool, and spiderendpoint updated containerID property.
 
 ### clean up
 
-delete StatefulSet object `demo-sts`.
+Delete the StatefulSet object: `demo-sts`.
 
 ```text
 $ kubectl delete sts demo-sts
@@ -184,4 +184,4 @@ $ kubectl get se demo-sts-0 -o yaml
 Error from server (NotFound): spiderendpoints.spiderpool.spidernet.io "demo-sts-0" not found
 ```
 
-   The related data was cleaned up.
+The related data is cleaned up now.

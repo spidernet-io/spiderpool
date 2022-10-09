@@ -1,16 +1,16 @@
 # Install
 
-the spiderpool needs install webhook of kube-apiserver, so it needs tls certificates.
+The spiderpool needs to install webhook of kube-apiserver, so the TLS certificates are required.
 
-there are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificate.
+There are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificates.
 
-## install spiderpool
+## Install spiderpool
 
-### install By Self-signed Certificates
+### Install by self-signed certificates
 
-this way is simple, there is no any dependency. The project provides a script to generate tls certificate
+This way is simple without any dependency. The project provides a script to generate TLS certificates.
 
-the following is a ipv4-only example
+The following is a IPv4-only example.
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -42,16 +42,15 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-  
 ```
 
 > NOTICE:
 >
-> spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
-> it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
-> so, if you set the replicas number of spiderpool-controller to be bigger than 2, make sure there is enough nodes
+> The spiderpool-controller pod is running in the hostnetwork mode, and it needs to take the host port.
+> It is set with `podAntiAffinity` to make sure that a node will only run a spiderpool-controller pod.
+> so, if you set the number of spiderpool-controller replicas to a value more than 2, make sure there are enough nodes.
 
-the following is a dual-stack example
+The following is a dual-stack example.
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -93,9 +92,9 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv6Gateway=${Ipv6Gateway}
 ```
 
-### install By auto-signed Certificates
+### Install by auto-signed certificates
 
-The spiderpool automatically generate and maintain certificates
+The spiderpool automatically generates and maintains certificates.
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -114,18 +113,17 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-
 ```
 
-### install By Cert-manager
+### Install by cert-manager
 
-the way is not a common situation, because cert-manager needs CNI to create its pod,
-but as IPAM, spiderpool is still not installed to provide IP resource. It means cert-manager and spiderpool need each other to finish installation.
+The way is not a common situation, because cert-manager requires CNI to create its pod,
+but as IPAM, spiderpool is still not installed to provide IP resources. It means cert-manager and spiderpool need each other to finish installation.
 
-Therefore, the way may implement on following situation:
+Therefore, you can use this way on the following situations:
 
 - after spiderpool is installed by self-signed certificates, and the cert-manager is deployed, then it could change to cert-manager scheme
-- on cluster with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), the cert-manager pods is deployed by other CNI, then spiderpool could be deployed by cert-manager
+- on cluster with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), the cert-manager pods are deployed by another CNI, then spiderpool could be deployed by cert-manager
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -145,16 +143,15 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-
 ```
 
-## configure CNI  
+## Configure CNI  
 
-after installation of the spiderpool, please edit CNI configuration file under /etc/cni/net.d/ .
+After installation of the spiderpool, please edit the CNI configuration file under `/etc/cni/net.d/`.
 
-The following is an example for macvlan CNI
+The following is an example for macvlan CNI.
 
-```
+```json
 {
   "cniVersion": "0.3.1",
   "type": "macvlan",
@@ -167,4 +164,4 @@ The following is an example for macvlan CNI
 }
 ```
 
-you cloud refer [config](../concepts/config.md) for the detail of the IPAM configuration
+Refer to [config](../concepts/config.md) for details about the IPAM configuration.

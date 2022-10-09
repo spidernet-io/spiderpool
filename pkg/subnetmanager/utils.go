@@ -12,6 +12,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -23,6 +24,22 @@ type PodSubnetAnno struct {
 	flexibleIPNum   *int
 	assignIPNum     int
 	reclaimIPPool   bool
+}
+
+func (in *PodSubnetAnno) String() string {
+	if in == nil {
+		return "nil"
+	}
+
+	s := strings.Join([]string{`&PodSubnetAnnotation{`,
+		`SubnetManagerV4:` + fmt.Sprintf("%v", in.subnetManagerV4) + `,`,
+		`SubnetManagerV6:` + fmt.Sprintf("%v", in.subnetManagerV6) + `,`,
+		`FlexibleIPNumber:` + spiderpoolv1.ValueToStringGenerated(in.flexibleIPNum) + `,`,
+		`AssignIPNumber:` + fmt.Sprintf("%v", in.assignIPNum) + `,`,
+		`ReclaimIPPool:` + fmt.Sprintf("%v", in.reclaimIPPool) + `,`,
+		`}`,
+	}, "")
+	return s
 }
 
 func getSubnetConfigFromPodAnno(annotations map[string]string, appReplicas int) (*PodSubnetAnno, error) {

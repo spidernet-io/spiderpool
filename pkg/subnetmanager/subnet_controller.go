@@ -5,7 +5,6 @@ package subnetmanager
 
 import (
 	"context"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"reflect"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -105,7 +105,7 @@ func (sm *subnetManager) reconcile(ctx context.Context, podSubnetConfig *PodSubn
 	return nil
 }
 
-func hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *PodSubnetAnno) bool {
+func hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *PodSubnetAnno, oldAppReplicas, newAppReplicas int) bool {
 	log := logutils.FromContext(ctx)
 
 	switch {
@@ -133,8 +133,13 @@ func hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfi
 		}
 
 		if reflect.DeepEqual(oldSubnetConfig, newSubnetConfig) {
-			log.Sugar().Debugf("onDeploymentUpdate: new application didn't change SpiderSubnet configuration")
-			return false
+			if oldAppReplicas != newAppReplicas {
+				log.Sugar().Debugf("onDeploymentUpdate: new application changed its replicas from '%d' to '%d'", oldAppReplicas, newAppReplicas)
+				return true
+			}
+		} else {
+			log.Sugar().Debugf("onDeploymentUpdate: new application changed SpiderSubnet configuration, the old one is '%v' and the new one '%v'", oldSubnetConfig, newSubnetConfig)
+			return true
 		}
 
 	default:

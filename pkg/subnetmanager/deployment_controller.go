@@ -72,8 +72,8 @@ func (sm *subnetManager) onDeploymentUpdate(oldObj interface{}, newObj interface
 	}
 
 	ctx := logutils.IntoContext(context.TODO(), logger.With(zap.Any("new deployment", fmt.Sprintf("'%s/%s'", newDeployment.Namespace, newDeployment.Name))))
-	if hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig) || getAppReplicas(oldDeployment.Spec.Replicas) != getAppReplicas(newDeployment.Spec.Replicas) {
-		logger.Sugar().Debugf("onDeploymentUpdate: old deployment '%v' and new deployment '%v' are going to reconcile", oldDeployment, newDeployment)
+	if hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, getAppReplicas(oldDeployment.Spec.Replicas), getAppReplicas(newDeployment.Spec.Replicas)) {
+		logger.Sugar().Debugf("onDeploymentUpdate: old deployment '%v\n' and new deployment '%v\n' are going to reconcile", oldDeployment, newDeployment)
 		newDeployment = newDeployment.DeepCopy()
 		err = sm.reconcile(context.TODO(), newSubnetConfig, constant.OwnerDeployment, newDeployment, newDeployment.GetLabels(), getAppReplicas(newDeployment.Spec.Replicas))
 		if nil != err {

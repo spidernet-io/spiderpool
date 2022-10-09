@@ -95,4 +95,6 @@ const (
 	LabelIPPoolVersion             = "ippool-version"
 	LabelIPPoolVersionV4           = "v4"
 	LabelIPPoolVersionV6           = "v6"
+	LabelReclaimIPPool             = "reclaim-ippool"
+	LabelAllowReclaimIPPool        = "true"
 )

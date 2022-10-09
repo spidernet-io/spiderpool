@@ -1,7 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package subnetmanager
+package controllers
 
 import (
 	"fmt"
@@ -21,11 +21,11 @@ import (
 var ErrorAnnoInput = fmt.Errorf("wrong annotation input")
 
 type PodSubnetAnno struct {
-	subnetManagerV4 string
-	subnetManagerV6 string
-	flexibleIPNum   *int
-	assignIPNum     int
-	reclaimIPPool   bool
+	SubnetManagerV4 string
+	SubnetManagerV6 string
+	FlexibleIPNum   *int
+	AssignIPNum     int
+	ReclaimIPPool   bool
 }
 
 func (in *PodSubnetAnno) String() string {
@@ -34,20 +34,22 @@ func (in *PodSubnetAnno) String() string {
 	}
 
 	s := strings.Join([]string{`&PodSubnetAnnotation{`,
-		`SubnetManagerV4:` + fmt.Sprintf("%v", in.subnetManagerV4) + `,`,
-		`SubnetManagerV6:` + fmt.Sprintf("%v", in.subnetManagerV6) + `,`,
-		`FlexibleIPNumber:` + spiderpoolv1.ValueToStringGenerated(in.flexibleIPNum) + `,`,
-		`AssignIPNumber:` + fmt.Sprintf("%v", in.assignIPNum) + `,`,
-		`ReclaimIPPool:` + fmt.Sprintf("%v", in.reclaimIPPool) + `,`,
+		`SpiderSubnetV4:` + fmt.Sprintf("%v", in.SubnetManagerV4) + `,`,
+		`SpiderSubnetV6:` + fmt.Sprintf("%v", in.SubnetManagerV6) + `,`,
+		`FlexibleIPNumber:` + spiderpoolv1.ValueToStringGenerated(in.FlexibleIPNum) + `,`,
+		`AssignIPNumber:` + fmt.Sprintf("%v", in.AssignIPNum) + `,`,
+		`ReclaimIPPool:` + fmt.Sprintf("%v", in.ReclaimIPPool) + `,`,
 		`}`,
 	}, "")
 	return s
 }
 
-func getSubnetConfigFromPodAnno(annotations map[string]string, appReplicas int) (*PodSubnetAnno, error) {
+// GetSubnetConfigFromPodAnno generates SpiderSubnet configuration from pod annotation,
+// if the pod doesn't have the related subnet annotation it will return nil
+func GetSubnetConfigFromPodAnno(podAnnotations map[string]string, appReplicas int) (*PodSubnetAnno, error) {
 	// annotation: "spiderpool.spidernet.io/spider-subnet-v4" and "spiderpool.spidernet.io/spider-subnet-v6"
-	subnetManagerV4, enableSubnetMgrV4 := annotations[constant.AnnoSubnetManagerV4]
-	subnetManagerV6, enableSubnetMgrV6 := annotations[constant.AnnoSubnetManagerV6]
+	subnetManagerV4, enableSubnetMgrV4 := podAnnotations[constant.AnnoSubnetManagerV4]
+	subnetManagerV6, enableSubnetMgrV6 := podAnnotations[constant.AnnoSubnetManagerV6]
 
 	// standard IPAM mode, do not use subnet manager
 	if !enableSubnetMgrV4 && !enableSubnetMgrV6 {
@@ -55,11 +57,11 @@ func getSubnetConfigFromPodAnno(annotations map[string]string, appReplicas int) 
 	}
 
 	podSubnetConfig := new(PodSubnetAnno)
-	podSubnetConfig.subnetManagerV4 = subnetManagerV4
-	podSubnetConfig.subnetManagerV6 = subnetManagerV6
+	podSubnetConfig.SubnetManagerV4 = subnetManagerV4
+	podSubnetConfig.SubnetManagerV6 = subnetManagerV6
 
 	// annotation: "spiderpool.spidernet.io/flexible-ip-number"
-	flexibleIPNumber, enableFlexibleIPNum := annotations[constant.AnnoSubnetManagerFlexibleIPNumber]
+	flexibleIPNumber, enableFlexibleIPNum := podAnnotations[constant.AnnoSubnetManagerFlexibleIPNumber]
 	if enableFlexibleIPNum {
 		// invalid case: "spiderpool.spidernet.io/flexible-ip-number":""
 		if flexibleIPNumber == "" {
@@ -74,10 +76,10 @@ func getSubnetConfigFromPodAnno(annotations map[string]string, appReplicas int) 
 		if i < 0 {
 			return nil, fmt.Errorf("%w: subnet manager '%s' value must equal or greater than 0", ErrorAnnoInput, constant.AnnoSubnetManagerFlexibleIPNumber)
 		}
-		podSubnetConfig.flexibleIPNum = pointer.Int(i)
+		podSubnetConfig.FlexibleIPNum = pointer.Int(i)
 	} else {
 		// annotation: "spiderpool.spidernet.io/assign-ip-number"
-		assignIPNum, enableAssignIPNumber := annotations[constant.AnnoSubnetManagerAssignIPNumber]
+		assignIPNum, enableAssignIPNumber := podAnnotations[constant.AnnoSubnetManagerAssignIPNumber]
 		if enableAssignIPNumber {
 			// invalid case: "spiderpool.spidernet.io/assign-ip-number":""
 			if assignIPNum == "" {
@@ -92,22 +94,22 @@ func getSubnetConfigFromPodAnno(annotations map[string]string, appReplicas int) 
 			if i < 0 {
 				return nil, fmt.Errorf("%w: subnet manager '%s' value must equal or greater than 0", ErrorAnnoInput, constant.AnnoSubnetManagerAssignIPNumber)
 			}
-			podSubnetConfig.assignIPNum = i
+			podSubnetConfig.AssignIPNum = i
 		} else {
-			podSubnetConfig.assignIPNum = appReplicas
+			podSubnetConfig.AssignIPNum = appReplicas
 		}
 	}
 
 	// annotation: "spiderpool.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)
-	reclaimPool, ok := annotations[constant.AnnoSubnetManagerReclaimIPPool]
+	reclaimPool, ok := podAnnotations[constant.AnnoSubnetManagerReclaimIPPool]
 	if ok {
 		parseBool, err := strconv.ParseBool(reclaimPool)
 		if nil != err {
 			return nil, fmt.Errorf("%w: failed to parse subnet manager '%s', error: %v", ErrorAnnoInput, constant.AnnoSubnetManagerReclaimIPPool, err)
 		}
-		podSubnetConfig.reclaimIPPool = parseBool
+		podSubnetConfig.ReclaimIPPool = parseBool
 	} else {
-		podSubnetConfig.reclaimIPPool = true
+		podSubnetConfig.ReclaimIPPool = true
 	}
 
 	return podSubnetConfig, nil
@@ -122,7 +124,7 @@ func AppLabelValue(appKind string, appNS, appName string) string {
 	return fmt.Sprintf("%s-%s-%s", strings.ToLower(appKind), strings.ToLower(appNS), strings.ToLower(appName))
 }
 
-func getAppReplicas(replicas *int32) int {
+func GetAppReplicas(replicas *int32) int {
 	if replicas == nil {
 		return 0
 	}

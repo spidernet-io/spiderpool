@@ -344,7 +344,10 @@ func initControllerServiceManagers(ctx context.Context) {
 			logger.Fatal(err.Error())
 		}
 
-		go controllerContext.SubnetManager.Run(ctx, controllerContext.ClientSet)
+		err = controllerContext.SubnetManager.SetupControllers(ctx, controllerContext.ClientSet)
+		if nil != err {
+			logger.Fatal(err.Error())
+		}
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}

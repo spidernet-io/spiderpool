@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -23,6 +24,7 @@ import (
 	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -113,13 +115,13 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetMgrNam
 		return nil, err
 	}
 
-	logger.Sugar().Infof("generated '%d' IPs '%v' from subnet manager '%s'", ipNum, allocateIPRange, subnetMgrName)
+	logger.Sugar().Infof("generated '%d' IPs '%v' from SpiderSubnet '%s'", ipNum, allocateIPRange, subnetMgrName)
 
 	return allocateIPRange, nil
 }
 
-func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, controllerLabels map[string]string,
-	ipNum int, ipVersion types.IPVersion) error {
+func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podSelector map[string]string,
+	ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error {
 	if len(subnetMgrName) == 0 {
 		return fmt.Errorf("subnet manager name must be specified")
 	}
@@ -153,18 +155,23 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 
 		poolLabels := map[string]string{
 			constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
-			constant.LabelIPPoolOwnerApplication:    AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+			constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
 			constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
 		}
+
 		if ipVersion == constant.IPv4 {
 			poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV4
 		} else {
 			poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV6
 		}
 
+		if reclaimIPPool {
+			poolLabels[constant.LabelReclaimIPPool] = constant.LabelAllowReclaimIPPool
+		}
+
 		sp := &spiderpoolv1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   SubnetPoolName(appKind, app.GetNamespace(), app.GetName(), ipVersion),
+				Name:   controllers.SubnetPoolName(appKind, app.GetNamespace(), app.GetName(), ipVersion),
 				Labels: poolLabels,
 			},
 			Spec: spiderpoolv1.IPPoolSpec{
@@ -174,7 +181,7 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 				Vlan:    subnet.Spec.Vlan,
 				Routes:  subnet.Spec.Routes,
 				PodAffinity: &metav1.LabelSelector{
-					MatchLabels: controllerLabels,
+					MatchLabels: podSelector,
 				},
 			},
 		}
@@ -197,47 +204,42 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 	return nil
 }
 
-// RetrieveIPPool try to retrieve IPPools by app label
-func (sm *subnetManager) RetrieveIPPool(ctx context.Context, appKind string, app metav1.Object, subnetMgrName string, ipVersion types.IPVersion) (pool *spiderpoolv1.SpiderIPPool, err error) {
+// RetrieveIPPoolsByAppUID try to retrieve IPPools with application UID, and you can also specify some IPPool labels (optional).
+// This will return nil once we don't match any IPPool with the given application UID or labels.
+func (sm *subnetManager) RetrieveIPPoolsByAppUID(ctx context.Context, appUID apitypes.UID, labels ...client.MatchingLabels) ([]*spiderpoolv1.SpiderIPPool, error) {
 	matchLabel := client.MatchingLabels{
-		constant.LabelIPPoolOwnerSpiderSubnet:   subnetMgrName,
-		constant.LabelIPPoolOwnerApplication:    AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-		constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+		constant.LabelIPPoolOwnerApplicationUID: string(appUID),
 	}
 
-	retrievePool := func(labelIPPoolVersion string) (*spiderpoolv1.SpiderIPPool, error) {
-		matchLabel[constant.LabelIPPoolVersion] = labelIPPoolVersion
-		poolList, err := sm.ipPoolManager.ListIPPools(ctx, matchLabel)
-		if client.IgnoreNotFound(err) != nil {
-			return nil, err
+	for _, label := range labels {
+		for k, v := range label {
+			matchLabel[k] = v
 		}
-		if len(poolList.Items) == 0 {
+	}
+
+	poolList, err := sm.ipPoolManager.ListIPPools(ctx, matchLabel)
+	if nil != err {
+		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
-		if len(poolList.Items) != 1 {
-			return nil, fmt.Errorf("unmatch IPPool list items number '%d' with labels '%v'", len(poolList.Items), matchLabel)
-		}
 
-		pool := poolList.Items[0]
-		return &pool, nil
+		return nil, fmt.Errorf("failed to retrieve IPPool with labels '%+v'", matchLabel)
 	}
 
-	if ipVersion == constant.IPv4 {
-		pool, err = retrievePool(constant.LabelIPPoolVersionV4)
-	} else {
-		pool, err = retrievePool(constant.LabelIPPoolVersionV6)
-	}
-	if nil != err {
-		return nil, err
+	if len(poolList.Items) == 0 {
+		return nil, nil
 	}
 
-	if pool != nil && pool.DeletionTimestamp != nil {
-		return nil, fmt.Errorf("IPPool '%s' is deleting", pool.Name)
+	var pools []*spiderpoolv1.SpiderIPPool
+	for _, pool := range poolList.Items {
+		tmpPool := pool
+		pools = append(pools, &tmpPool)
 	}
-	return
+
+	return pools, nil
 }
 
-// CheckScaleIPPool will fetch some IPs from the specified subnet managger to expand the pool IPs
+// CheckScaleIPPool will fetch some IPs from the specified subnet manager to expand the pool IPs
 func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetMgrName string, ipNum int) error {
 	if pool == nil {
 		return fmt.Errorf("IPPool must be specified")
@@ -271,7 +273,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 			continue
 		}
 
-		logger.Sugar().Infof("try to scale IPPool '%s' IPs '%v'", pool.Name, ipsFromSubnet)
+		logger.Sugar().Infof("try to scale IPPool '%s' IP number from '%d' to '%d' with generated IPs '%v'", pool.Name, len(ips), ipNum, ipsFromSubnet)
 		// update IPPool
 		err = sm.ipPoolManager.ScaleIPPoolIPs(logutils.IntoContext(ctx, logger), pool.Name, ipsFromSubnet)
 		if nil != err {

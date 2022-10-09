@@ -19,7 +19,7 @@ import (
 var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
-	var config *limiter.LimiterConfig
+	var config limiter.LimiterConfig
 	var queue limiter.Limiter
 
 	var queuers int
@@ -38,9 +38,12 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
-			config = &limiter.LimiterConfig{
-				MaxQueueSize: 3,
-				MaxWaitTime:  2 * time.Second,
+
+			maxQueueSize := 3
+			maxWaitTime := 2 * time.Second
+			config = limiter.LimiterConfig{
+				MaxQueueSize: &maxQueueSize,
+				MaxWaitTime:  &maxWaitTime,
 			}
 			queuers = 3
 			workHours = 1 * time.Second
@@ -108,9 +111,11 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
 
-			config = &limiter.LimiterConfig{
-				MaxQueueSize: 200,
-				MaxWaitTime:  5 * time.Second,
+			maxQueueSize := 200
+			maxWaitTime := 5 * time.Second
+			config = limiter.LimiterConfig{
+				MaxQueueSize: &maxQueueSize,
+				MaxWaitTime:  &maxWaitTime,
 			}
 			queuers = 200
 			workHours = 50 * time.Millisecond
@@ -170,9 +175,11 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
 
-			config = &limiter.LimiterConfig{
-				MaxQueueSize: 3,
-				MaxWaitTime:  2 * time.Second,
+			maxQueueSize := 3
+			maxWaitTime := 2 * time.Second
+			config = limiter.LimiterConfig{
+				MaxQueueSize: &maxQueueSize,
+				MaxWaitTime:  &maxWaitTime,
 			}
 			queuers = 3
 			workHours = 1 * time.Second

@@ -20,12 +20,14 @@ type Limiter interface {
 	Start(ctx context.Context) error
 }
 
-func NewLimiter(c *LimiterConfig) Limiter {
+func NewLimiter(c LimiterConfig) Limiter {
+	c = setDefaultsForLimiterConfig(c)
+
 	q := &queue{
 		cond:           sync.NewCond(&lock.Mutex{}),
-		maxQueueSize:   c.MaxQueueSize,
-		maxWaitTime:    c.MaxWaitTime,
-		elements:       make([]*e, 0, c.MaxQueueSize),
+		maxQueueSize:   *c.MaxQueueSize,
+		maxWaitTime:    *c.MaxWaitTime,
+		elements:       make([]*e, 0, *c.MaxQueueSize),
 		grantedTickets: map[string]int{},
 	}
 

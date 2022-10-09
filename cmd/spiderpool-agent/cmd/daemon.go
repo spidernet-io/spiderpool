@@ -108,6 +108,7 @@ func DaemonMain() {
 	initAgentServiceManagers(agentContext.InnerCtx)
 
 	logger.Info("Begin to initialize IPAM")
+	limiterMaxWaitTime := time.Duration(agentContext.Cfg.LimiterMaxWaitTime) * time.Second
 	ipam, err := ipam.NewIPAM(&ipam.IPAMConfig{
 		EnableIPv4:               agentContext.Cfg.EnableIPv4,
 		EnableIPv6:               agentContext.Cfg.EnableIPv6,
@@ -115,9 +116,9 @@ func DaemonMain() {
 		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
 		EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
 		EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
-		LimiterConfig: &limiter.LimiterConfig{
-			MaxQueueSize: agentContext.Cfg.LimiterMaxQueueSize,
-			MaxWaitTime:  time.Duration(agentContext.Cfg.LimiterMaxWaitTime) * time.Second,
+		LimiterConfig: limiter.LimiterConfig{
+			MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize,
+			MaxWaitTime:  &limiterMaxWaitTime,
 		},
 		WaitSubnetPoolRetries: agentContext.Cfg.UpdateCRMaxRetrys,
 		WaitSubnetPoolTime:    time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,

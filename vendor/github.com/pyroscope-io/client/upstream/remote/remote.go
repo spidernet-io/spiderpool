@@ -33,6 +33,8 @@ type Remote struct {
 
 	done chan struct{}
 	wg   sync.WaitGroup
+
+	flushWG sync.WaitGroup
 }
 
 type Config struct {
@@ -102,11 +104,19 @@ func (r *Remote) Stop() {
 }
 
 func (r *Remote) Upload(j *upstream.UploadJob) {
+	r.flushWG.Add(1)
 	select {
 	case r.jobs <- j:
 	default:
+		r.flushWG.Done()
 		r.logger.Errorf("remote upload queue is full, dropping a profile job")
 	}
+}
+func (r *Remote) Flush() {
+	if r.done == nil {
+		return
+	}
+	r.flushWG.Wait()
 }
 
 func (r *Remote) uploadProfile(j *upstream.UploadJob) error {
@@ -200,6 +210,7 @@ func (r *Remote) handleJobs() {
 			return
 		case job := <-r.jobs:
 			r.safeUpload(job)
+			r.flushWG.Done()
 		}
 	}
 }

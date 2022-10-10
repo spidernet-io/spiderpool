@@ -19,7 +19,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo/v2 v2.2.0
 	github.com/onsi/gomega v1.21.1
-	github.com/pyroscope-io/client v0.3.0
+	github.com/pyroscope-io/client v0.4.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5

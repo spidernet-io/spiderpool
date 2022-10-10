@@ -24,4 +24,4 @@ jobs:
         with:
           manifest: .github/labels.yml
           # delete all existing labels which is not mentioned in manifest
-          prune: true
+          prune: false

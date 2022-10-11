@@ -122,7 +122,6 @@ webhooks:
     operations:
     - CREATE
     - UPDATE
-    - DELETE
     resources:
     - spidersubnets
   sideEffects: None

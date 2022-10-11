@@ -61,19 +61,6 @@ func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, ne
 	return errs
 }
 
-func (sm *subnetManager) validateDeleteSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
-	var errs field.ErrorList
-	if err := sm.validateSubnetIPPoolInUse(ctx, subnet); err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(errs) == 0 {
-		return nil
-	}
-
-	return errs
-}
-
 func (sm *subnetManager) validateSubnetShouldNotBeChanged(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	if *newSubnet.Spec.IPVersion != *oldSubnet.Spec.IPVersion {
 		return field.Forbidden(
@@ -134,30 +121,6 @@ func (sm *subnetManager) validateSubnetIPInUse(ctx context.Context, oldSubnet, n
 		return field.Forbidden(
 			ipsField,
 			fmt.Sprintf("remove some IP ranges %v that is being used, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges),
-		)
-	}
-
-	return nil
-}
-
-func (sm *subnetManager) validateSubnetIPPoolInUse(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := sm.validateSubnetIPs(ctx, *subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
-		return err
-	}
-	if err := sm.validateSubnetExcludeIPs(ctx, *subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.ExcludeIPs); err != nil {
-		return err
-	}
-
-	totalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
-	freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
-	if err != nil {
-		return field.InternalError(freeIPsField, err)
-	}
-
-	if len(spiderpoolip.IPsDiffSet(totalIPs, freeIPs)) != 0 {
-		return field.Forbidden(
-			ipsField,
-			"delete a Subnet that is still used by some IPPools",
 		)
 	}
 

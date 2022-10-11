@@ -326,16 +326,10 @@ func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []s
 	GinkgoWriter.Printf("yaml config: %v \n", conf)
 
 	if conf.EnableIPv4 && len(conf.ClusterDefaultIPv4IPPool) == 0 {
-		return nil, nil, fmt.Errorf("IPv4 pool is not specified when IPv4 is enabled: %w", constant.ErrWrongInput)
-	}
-	if !conf.EnableIPv4 && len(conf.ClusterDefaultIPv4IPPool) != 0 {
-		return nil, nil, fmt.Errorf("IPv4 pool is specified when IPv4 is disabled: %w", constant.ErrWrongInput)
+		return nil, nil, errors.New("IPv4 IPPool is not specified when IPv4 is enabled")
 	}
 	if conf.EnableIPv6 && len(conf.ClusterDefaultIPv6IPPool) == 0 {
-		return nil, nil, fmt.Errorf("IPv6 pool is not specified when IPv6 is enabled: %w", constant.ErrWrongInput)
-	}
-	if !conf.EnableIPv6 && len(conf.ClusterDefaultIPv6IPPool) != 0 {
-		return nil, nil, fmt.Errorf("IPv6 pool is specified when IPv6 is disabled: %w", constant.ErrWrongInput)
+		return nil, nil, errors.New("IPv6 IPPool is not specified when IPv6 is enabled")
 	}
 
 	return conf.ClusterDefaultIPv4IPPool, conf.ClusterDefaultIPv6IPPool, nil

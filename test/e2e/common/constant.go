@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package common
 
-import "time"
+import (
+	"time"
+
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
+)
 
 // Defining K8s resource types
 const (
@@ -50,7 +54,7 @@ var (
 )
 
 // Error
-const (
-	CNIFailedToSetUpNetwork = "failed to setup network for sandbox"
-	GetIpamAllocationFailed = "get ipam allocation failed"
+var (
+	CNIFailedToSetUpNetwork = cmd.ErrPostIPAM.Error()
+	GetIpamAllocationFailed = cmd.ErrPostIPAM.Error()
 )

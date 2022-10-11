@@ -1,7 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package metrics
+package metric
 
 import (
 	"context"
@@ -18,8 +18,14 @@ import (
 
 const (
 	// spiderpool agent ipam allocation metrics name
-	ipam_allocation_total_counts             = "ipam_allocation_total_counts"
-	ipam_allocation_failure_counts           = "ipam_allocation_failure_counts"
+	ipam_allocation_total_counts                 = "ipam_allocation_total_counts"
+	ipam_allocation_failure_counts               = "ipam_allocation_failure_counts"
+	ipam_allocation_rollback_failure_counts      = "ipam_allocation_rollback_failure_counts"
+	ipam_allocation_err_internal_counts          = "ipam_allocation_err_internal_counts"
+	ipam_allocation_err_no_available_pool_counts = "ipam_allocation_err_no_available_pool_counts"
+	ipam_allocation_err_retries_exhausted_counts = "ipam_allocation_err_retries_exhausted_counts"
+	ipam_allocation_err_ip_used_out_counts       = "ipam_allocation_err_ip_used_out_counts"
+
 	ipam_allocation_average_duration_seconds = "ipam_allocation_average_duration_seconds"
 	ipam_allocation_max_duration_seconds     = "ipam_allocation_max_duration_seconds"
 	ipam_allocation_min_duration_seconds     = "ipam_allocation_min_duration_seconds"
@@ -27,8 +33,11 @@ const (
 	ipam_allocation_duration_seconds         = "ipam_allocation_duration_seconds"
 
 	// spiderpool agent ipam deallocation metrics name
-	ipam_deallocation_total_counts             = "ipam_deallocation_total_counts"
-	ipam_deallocation_failure_counts           = "ipam_deallocation_failure_counts"
+	ipam_deallocation_total_counts              = "ipam_deallocation_total_counts"
+	ipam_deallocation_failure_counts            = "ipam_deallocation_failure_counts"
+	ipam_releasing_err_internal_counts          = "ipam_releasing_err_internal_counts"
+	ipam_releasing_err_retries_exhausted_counts = "ipam_releasing_err_retries_exhausted_counts"
+
 	ipam_deallocation_average_duration_seconds = "ipam_deallocation_average_duration_seconds"
 	ipam_deallocation_max_duration_seconds     = "ipam_deallocation_max_duration_seconds"
 	ipam_deallocation_min_duration_seconds     = "ipam_deallocation_min_duration_seconds"
@@ -42,8 +51,14 @@ const (
 
 var (
 	// spiderpool agent ipam allocation metrics
-	IpamAllocationTotalCounts            syncint64.Counter
-	IpamAllocationFailureCounts          syncint64.Counter
+	IpamAllocationTotalCounts               syncint64.Counter
+	IpamAllocationFailureCounts             syncint64.Counter
+	IpamAllocationRollbackFailureCounts     syncint64.Counter
+	IpamAllocationErrInternalCounts         syncint64.Counter
+	IpamAllocationErrNoAvailablePoolCounts  syncint64.Counter
+	IpamAllocationErrRetriesExhaustedCounts syncint64.Counter
+	IpamAllocationErrIPUsedOutCounts        syncint64.Counter
+
 	ipamAllocationAverageDurationSeconds asyncFloat64Gauge
 	ipamAllocationMaxDurationSeconds     asyncFloat64Gauge
 	ipamAllocationMinDurationSeconds     asyncFloat64Gauge
@@ -53,6 +68,9 @@ var (
 	// spiderpool agent ipam deallocation metrics
 	IpamDeallocationTotalCounts            syncint64.Counter
 	IpamDeallocationFailureCounts          syncint64.Counter
+	IpamReleasingErrInternalCounts         syncint64.Counter
+	IpamReleasingErrRetriesExhaustedCounts syncint64.Counter
+
 	ipamDeallocationAverageDurationSeconds asyncFloat64Gauge
 	ipamDeallocationMaxDurationSeconds     asyncFloat64Gauge
 	ipamDeallocationMinDurationSeconds     asyncFloat64Gauge
@@ -100,6 +118,41 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_failure_counts, err)
 	}
 	IpamAllocationFailureCounts = allocationFailureCounts
+
+	// spiderpool agent ipam allocation rollback failure counts, metric type "int64 counter"
+	allocationRollbackFailureCounts, err := NewMetricInt64Counter(ipam_allocation_rollback_failure_counts, "spiderpool agent ipam allocation rollback failure counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_rollback_failure_counts, err)
+	}
+	IpamAllocationRollbackFailureCounts = allocationRollbackFailureCounts
+
+	// spiderpool agent ipam allocation internal error counts, metric type "int64 counter"
+	allocationErrInternalCounts, err := NewMetricInt64Counter(ipam_allocation_err_internal_counts, "spiderpool agent ipam allocation internal error counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_internal_counts, err)
+	}
+	IpamAllocationErrInternalCounts = allocationErrInternalCounts
+
+	// spiderpool agent ipam allocation no available IPPool error counts, metric type "int64 counter"
+	allocationErrNoAvailablePoolCounts, err := NewMetricInt64Counter(ipam_allocation_err_no_available_pool_counts, "spiderpool agent ipam allocation no available IPPool error counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_no_available_pool_counts, err)
+	}
+	IpamAllocationErrNoAvailablePoolCounts = allocationErrNoAvailablePoolCounts
+
+	// spiderpool agent ipam allocation retries exhausted error counts, metric type "int64 counter"
+	allocationErrRetriesExhaustedCounts, err := NewMetricInt64Counter(ipam_allocation_err_retries_exhausted_counts, "spiderpool agent ipam allocation retries exhausted error counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_retries_exhausted_counts, err)
+	}
+	IpamAllocationErrRetriesExhaustedCounts = allocationErrRetriesExhaustedCounts
+
+	// spiderpool agent ipam allocation IP addresses used out error counts, metric type "int64 counter"
+	allocationErrIPUsedOutCounts, err := NewMetricInt64Counter(ipam_allocation_err_ip_used_out_counts, "spiderpool agent ipam allocation IP addresses used out error counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_ip_used_out_counts, err)
+	}
+	IpamAllocationErrIPUsedOutCounts = allocationErrIPUsedOutCounts
 
 	// spiderpool agent ipam average allocation duration, metric type "float64 gauge"
 	allocationAvgDuration, err := NewMetricFloat64Gauge(ipam_allocation_average_duration_seconds, "spiderpool agent ipam average allocation duration")
@@ -228,6 +281,20 @@ func initSpiderpoolAgentDeallocationMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_failure_counts, err)
 	}
 	IpamDeallocationFailureCounts = deallocationFailureCounts
+
+	// spiderpool agent ipam releasing internal error counts, metric type "int64 counter"
+	releasingErrInternalCounts, err := NewMetricInt64Counter(ipam_releasing_err_internal_counts, "spiderpool agent ipam releasing internal error counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_releasing_err_internal_counts, err)
+	}
+	IpamReleasingErrInternalCounts = releasingErrInternalCounts
+
+	// spiderpool agent ipam releasing retries exhausted error counts, metric type "int64 counter"
+	releasingErrRetriesExhaustedCounts, err := NewMetricInt64Counter(ipam_releasing_err_retries_exhausted_counts, "spiderpool agent ipam releasing retries exhausted error counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_releasing_err_retries_exhausted_counts, err)
+	}
+	IpamReleasingErrRetriesExhaustedCounts = releasingErrRetriesExhaustedCounts
 
 	// spiderpool agent ipam average deallocation duration, metric type "float64 gauge"
 	deallocationAvgDuration, err := NewMetricFloat64Gauge(ipam_deallocation_average_duration_seconds, "spiderpool agent ipam average deallocation duration")

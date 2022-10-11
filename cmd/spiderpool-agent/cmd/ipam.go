@@ -4,18 +4,20 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 
 	"github.com/go-openapi/runtime/middleware"
 	"go.uber.org/zap"
 
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
-// Singleton
+// Singleton.
 var (
 	unixPostAgentIpamIp    = &_unixPostAgentIpamIp{}
 	unixDeleteAgentIpamIp  = &_unixDeleteAgentIpamIp{}
@@ -25,7 +27,7 @@ var (
 
 type _unixPostAgentIpamIp struct{}
 
-// Handle handles POST requests for /ipam/ip .
+// Handle handles POST requests for /ipam/ip.
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
 	logger := logutils.Logger.Named("IPAM").With(zap.String("CNICommand", "ADD"),
 		zap.String("ContainerID", *params.IpamAddArgs.ContainerID),
@@ -36,36 +38,24 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 	)
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
-	// spiderpool agent ipam allocation total counts metric
-	metrics.IpamAllocationTotalCounts.Add(ctx, 1)
+	// The total count of IP allocations.
+	metric.IpamAllocationTotalCounts.Add(ctx, 1)
 
-	timeRecorder := metrics.NewTimeRecorder()
+	timeRecorder := metric.NewTimeRecorder()
 	defer func() {
-		// record spiderpool agent allocation duration metrics
+		// Time taken for once IP allocation.
 		allocationDuration := timeRecorder.SinceInSeconds()
-		metrics.AllocDurationConstruct.RecordIPAMAllocationDuration(ctx, allocationDuration)
+		metric.AllocDurationConstruct.RecordIPAMAllocationDuration(ctx, allocationDuration)
 		logger.Sugar().Infof("IPAM allocation duration: %v", allocationDuration)
 	}()
 
 	resp, err := agentContext.IPAM.Allocate(ctx, params.IpamAddArgs)
 	if err != nil {
-		// spiderpool agent ipam allocation failed counts metric
-		metrics.IpamAllocationFailureCounts.Add(ctx, 1)
-
-		logger.Sugar().Errorf("Failed to allocate: %v", err)
-		if errors.Is(err, constant.ErrWrongInput) {
-			return daemonset.NewPostIpamIPStatus512()
-		}
-		if errors.Is(err, constant.ErrNotAllocatablePod) {
-			return daemonset.NewPostIpamIPStatus513()
-		}
-		if errors.Is(err, constant.ErrNoAvailablePool) {
-			return daemonset.NewPostIpamIPStatus514()
-		}
-		if errors.Is(err, constant.ErrIPUsedOut) {
-			return daemonset.NewPostIpamIPStatus515()
-		}
-		return daemonset.NewPostIpamIPInternalServerError()
+		// The count of failures in IP allocations.
+		metric.IpamAllocationFailureCounts.Add(ctx, 1)
+		gatherIPAMAllocationErrMetric(ctx, err)
+		logger.Error(err.Error())
+		return daemonset.NewPostIpamIPFailure().WithPayload(models.Error(err.Error()))
 	}
 
 	return daemonset.NewPostIpamIPOK().WithPayload(resp)
@@ -73,7 +63,7 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 
 type _unixDeleteAgentIpamIp struct{}
 
-// Handle handles DELETE requests for /ipam/ip .
+// Handle handles DELETE requests for /ipam/ip.
 func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
 	logger := logutils.Logger.Named("IPAM").With(zap.String("CNICommand", "DEL"),
 		zap.String("ContainerID", *params.IpamDelArgs.ContainerID),
@@ -84,22 +74,23 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 	)
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
-	// spiderpool agent ipam deallocation total counts metric
-	metrics.IpamDeallocationTotalCounts.Add(ctx, 1)
+	// The total count of IP releasing.
+	metric.IpamDeallocationTotalCounts.Add(ctx, 1)
 
-	timeRecorder := metrics.NewTimeRecorder()
+	timeRecorder := metric.NewTimeRecorder()
 	defer func() {
-		// record spiderpool agent deallocation duration metrics
+		// Time taken for once IP releasing.
 		deallocationDuration := timeRecorder.SinceInSeconds()
-		metrics.DeallocDurationConstruct.RecordIPAMDeallocationDuration(ctx, deallocationDuration)
-		logger.Sugar().Infof("IPAM deallocation duration: %v", deallocationDuration)
+		metric.DeallocDurationConstruct.RecordIPAMDeallocationDuration(ctx, deallocationDuration)
+		logger.Sugar().Infof("IPAM releasing duration: %v", deallocationDuration)
 	}()
 
 	if err := agentContext.IPAM.Release(ctx, params.IpamDelArgs); err != nil {
-		metrics.IpamDeallocationFailureCounts.Add(ctx, 1)
-
-		logger.Sugar().Errorf("Failed to release: %v", err)
-		return daemonset.NewDeleteIpamIPInternalServerError()
+		// The count of failures in IP releasing.
+		metric.IpamDeallocationFailureCounts.Add(ctx, 1)
+		gatherIPAMReleasingErrMetric(ctx, err)
+		logger.Error(err.Error())
+		return daemonset.NewDeleteIpamIPFailure().WithPayload(models.Error(err.Error()))
 	}
 
 	return daemonset.NewDeleteIpamIPOK()
@@ -107,7 +98,7 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 
 type _unixPostAgentIpamIps struct{}
 
-// Handle handles POST requests for /ipam/ips .
+// Handle handles POST requests for /ipam/ips.
 func (g *_unixPostAgentIpamIps) Handle(params daemonset.PostIpamIpsParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 
@@ -116,9 +107,45 @@ func (g *_unixPostAgentIpamIps) Handle(params daemonset.PostIpamIpsParams) middl
 
 type _unixDeleteAgentIpamIps struct{}
 
-// Handle handles DELETE requests for /ipam/ips .
+// Handle handles DELETE requests for /ipam/ips.
 func (g *_unixDeleteAgentIpamIps) Handle(params daemonset.DeleteIpamIpsParams) middleware.Responder {
 	// TODO (Icarus9913): return the http status code with logic.
 
 	return daemonset.NewDeleteIpamIpsOK()
+}
+
+func gatherIPAMAllocationErrMetric(ctx context.Context, err error) {
+	internal := true
+	if errors.Is(err, constant.ErrWrongInput) {
+		metric.IpamAllocationErrRetriesExhaustedCounts.Add(ctx, 1)
+		internal = false
+	}
+	if errors.Is(err, constant.ErrNoAvailablePool) {
+		metric.IpamAllocationErrNoAvailablePoolCounts.Add(ctx, 1)
+		internal = false
+	}
+	if errors.Is(err, constant.ErrRetriesExhausted) {
+		metric.IpamAllocationErrRetriesExhaustedCounts.Add(ctx, 1)
+		internal = false
+	}
+	if errors.Is(err, constant.ErrIPUsedOut) {
+		metric.IpamAllocationErrIPUsedOutCounts.Add(ctx, 1)
+		internal = false
+	}
+
+	if internal {
+		metric.IpamAllocationErrInternalCounts.Add(ctx, 1)
+	}
+}
+
+func gatherIPAMReleasingErrMetric(ctx context.Context, err error) {
+	internal := true
+	if errors.Is(err, constant.ErrRetriesExhausted) {
+		metric.IpamReleasingErrRetriesExhaustedCounts.Add(ctx, 1)
+		internal = false
+	}
+
+	if internal {
+		metric.IpamReleasingErrInternalCounts.Add(ctx, 1)
+	}
 }

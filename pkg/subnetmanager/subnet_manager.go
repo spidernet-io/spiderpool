@@ -136,10 +136,10 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		subnet, err := sm.GetSubnetByName(ctx, subnetMgrName)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: %v", ErrMaxRetries, err)
 			}
 
@@ -150,7 +150,7 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 
 		poolIPs, err := sm.GenerateIPsFromSubnet(ctx, subnetMgrName, ipNum)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: failed to generate IPs from subnet '%s', error: %v", ErrMaxRetries, subnetMgrName, err)
 			}
 
@@ -190,7 +190,7 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 		logger.Sugar().Infof("try to create IPPool '%v'", sp)
 		err = sm.ipPoolManager.CreateIPPool(ctx, sp)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w, failed to create IPPool, error: %v", ErrMaxRetries, err)
 			}
 
@@ -267,10 +267,10 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i < sm.config.MaxConflictRetries; i++ {
 		ipsFromSubnet, err := sm.GenerateIPsFromSubnet(ctx, subnetMgrName, ipNum-len(ips))
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: failed to generate IPs from subnet '%s', error: %v", ErrMaxRetries, subnetMgrName, err)
 			}
 
@@ -283,7 +283,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 		// update IPPool
 		err = sm.ipPoolManager.ScaleIPPoolIPs(logutils.IntoContext(ctx, logger), pool.Name, ipsFromSubnet)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: %v", ErrMaxRetries, err)
 			}
 

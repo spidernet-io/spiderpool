@@ -22,30 +22,30 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) ([]*ToBeAllo
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
 	var annoPodIPPools types.AnnoPodIPPoolsValue
-	errPrefix := fmt.Errorf("%w of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPools)
+	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPools)
 	err := json.Unmarshal([]byte(anno), &annoPodIPPools)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
 	}
 	if len(annoPodIPPools) == 0 {
-		return nil, fmt.Errorf("%w, value requires at least one item", errPrefix)
+		return nil, fmt.Errorf("%w: value requires at least one item", errPrefix)
 	}
 
 	nicSet := map[string]struct{}{}
 	for _, v := range annoPodIPPools {
 		if v.NIC == "" {
-			return nil, fmt.Errorf("%w, interface must be specified", errPrefix)
+			return nil, fmt.Errorf("%w: interface must be specified", errPrefix)
 		}
 		if len(v.IPv4Pools) == 0 && len(v.IPv6Pools) == 0 {
-			return nil, fmt.Errorf("%w, at least one pool must be specified", errPrefix)
+			return nil, fmt.Errorf("%w: at least one pool must be specified", errPrefix)
 		}
 		nicSet[v.NIC] = struct{}{}
 	}
 	if len(nicSet) < len(annoPodIPPools) {
-		return nil, fmt.Errorf("%w, duplicate interface", errPrefix)
+		return nil, fmt.Errorf("%w: duplicate interface", errPrefix)
 	}
 	if _, ok := nicSet[nic]; !ok {
-		return nil, fmt.Errorf("%w, interfaces do not contain that requested by runtime", errPrefix)
+		return nil, fmt.Errorf("%w: interfaces do not contain that requested by runtime", errPrefix)
 	}
 
 	var tt []*ToBeAllocated
@@ -77,17 +77,17 @@ func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway 
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPool)
 
 	var annoPodIPPool types.AnnoPodIPPoolValue
-	errPrifix := fmt.Errorf("%w of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPool)
+	errPrifix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPool)
 	if err := json.Unmarshal([]byte(anno), &annoPodIPPool); err != nil {
 		return nil, fmt.Errorf("%w: %v", errPrifix, err)
 	}
 
 	if annoPodIPPool.NIC != nil && *annoPodIPPool.NIC != nic {
-		return nil, fmt.Errorf("%w, interface is different from that requested by runtime", errPrifix)
+		return nil, fmt.Errorf("%w: interface is different from that requested by runtime", errPrifix)
 	}
 
 	if len(annoPodIPPool.IPv4Pools) == 0 && len(annoPodIPPool.IPv6Pools) == 0 {
-		return nil, fmt.Errorf("%w, at least one pool must be specified", errPrifix)
+		return nil, fmt.Errorf("%w: at least one IPPool must be specified", errPrifix)
 	}
 
 	t := &ToBeAllocated{
@@ -146,9 +146,10 @@ func getCustomRoutes(ctx context.Context, pod *corev1.Pod) ([]*models.Route, err
 	}
 
 	var annoPodRoutes types.AnnoPodRoutesValue
+	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodRoutes)
 	err := json.Unmarshal([]byte(anno), &annoPodRoutes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", errPrefix, err)
 	}
 
 	return convertAnnoPodRoutesToOAIRoutes(annoPodRoutes), nil

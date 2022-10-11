@@ -187,7 +187,7 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	updateCRConfig := config.UpdateCRConfig{
-		MaxConflictRetrys:     controllerContext.Cfg.UpdateCRMaxRetrys,
+		MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
 		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 	}
 

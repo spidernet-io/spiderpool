@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -74,10 +76,9 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weMa
 		return nil, errors.New("subnet manager must be specified")
 	}
 
-	ipamLimiter := limiter.NewLimiter(c.LimiterConfig)
 	return &ipam{
 		config:        c,
-		ipamLimiter:   ipamLimiter,
+		ipamLimiter:   limiter.NewLimiter(c.LimiterConfig),
 		ipPoolManager: ipPoolManager,
 		weManager:     weManager,
 		nodeManager:   nodeManager,
@@ -90,27 +91,27 @@ func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weMa
 
 func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
-	logger.Info("Start to allocate IP")
+	logger.Info("Start to allocate")
 
 	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Pod: %v", err)
+		return nil, fmt.Errorf("failed to get Pod %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
 	podStatus, allocatable := podmanager.CheckPodStatus(pod)
 	if !allocatable {
-		return nil, fmt.Errorf("%w: %s Pod", constant.ErrNotAllocatablePod, podStatus)
+		return nil, fmt.Errorf("%s Pod %s/%s cannot allocate IP addresees", strings.ToLower(string(podStatus)), *addArgs.PodNamespace, *addArgs.PodName)
 	}
 
 	endpoint, err := i.weManager.GetEndpointByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("failed to get Endpoint: %v", err)
+		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
 
-	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
+	ownerControllerType, ownerControllerName := podmanager.GetOwnerControllerType(pod)
 	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
 		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, pod, endpoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet: %v", err)
+			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet %s/%s: %w", *addArgs.PodNamespace, ownerControllerName, err)
 		}
 		if addResp != nil {
 			return addResp, nil
@@ -118,14 +119,19 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	} else {
 		addResp, err := i.retrieveMultiNICIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, endpoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the IP allocation in multi-NIC mode: %v", err)
+			return nil, fmt.Errorf("failed to retrieve the IP allocation in multi-NIC mode: %w", err)
 		}
 		if addResp != nil {
 			return addResp, nil
 		}
 	}
 
-	return i.allocateInStandardMode(ctx, addArgs, pod, endpoint)
+	addResp, err := i.allocateInStandardMode(ctx, addArgs, pod, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to allocate IP addresses in standard mode: %w", err)
+	}
+
+	return addResp, nil
 }
 
 func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic string, pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
@@ -138,7 +144,7 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic str
 
 	// There's no possible that a StatefulSet Pod Endpoint's field 'Status.Current' is nil.
 	if endpoint.Status.Current == nil {
-		return nil, fmt.Errorf("current IP allocation is lost, endpoint data broken: %+v", endpoint)
+		return nil, fmt.Errorf("current IP allocation is lost, endpoint %s/%s data broken: %+v", endpoint.Namespace, endpoint.Name, endpoint)
 	}
 
 	logger.Info("Retrieve the IP allocation of StatefulSet")
@@ -147,19 +153,19 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic str
 	for _, c := range ips {
 		if *c.Nic == nic {
 			if err := i.ipPoolManager.UpdateAllocatedIPs(ctx, containerID, pod, *c); err != nil {
-				return nil, fmt.Errorf("failed to update the IPPool IPs of StatefulSet: %v", err)
+				return nil, fmt.Errorf("failed to update StatefulSet's previous IP allocation records in IPPool %s: %w", c.IPPool, err)
 			}
 			nicMatched = true
 		}
 	}
 
 	if !nicMatched {
-		return nil, fmt.Errorf("nic %s do not match the current IP allocation of StatefulSet: %s", nic, endpoint.Status.Current)
+		return nil, fmt.Errorf("nic %s do not match the current IP allocation of StatefulSet", nic)
 	}
 
 	// Refresh Endpoint current IP allocation.
 	if err := i.weManager.UpdateCurrentStatus(ctx, containerID, pod); err != nil {
-		return nil, fmt.Errorf("failed to update the current IP allocation of StatefulSet: %v", err)
+		return nil, fmt.Errorf("failed to update the current IP allocation of StatefulSet: %w", err)
 	}
 
 	addResp := &models.IpamAddResponse{
@@ -173,7 +179,7 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic str
 
 func (i *ipam) retrieveMultiNICIPAllocation(ctx context.Context, containerID, nic string, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
-	logger.Debug("Retrieve the existing IP allocation in multi-NIC mode")
+	logger.Debug("Try to retrieve the existing IP allocation in multi-NIC mode")
 
 	allocation, _ := workloadendpointmanager.RetrieveIPAllocation(containerID, nic, false, endpoint)
 	if allocation == nil {
@@ -193,7 +199,7 @@ func (i *ipam) retrieveMultiNICIPAllocation(ctx context.Context, containerID, ni
 
 func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
-	logger.Debug("Allocate IP in standard mode")
+	logger.Info("Allocate IP addresses in standard mode")
 
 	toBeAllocatedSet, err := i.genToBeAllocatedSet(ctx, *addArgs.IfName, addArgs.DefaultIPV4IPPool, addArgs.DefaultIPV6IPPool, addArgs.CleanGateway, pod)
 	if err != nil {
@@ -206,6 +212,7 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 		// after the allocateForAllInterfaces is called, use defer.
 		if len(resIPs) != 0 {
 			if rollbackErr := i.release(ctx, *addArgs.ContainerID, convertResultsToIPDetails(results)); rollbackErr != nil {
+				metric.IpamAllocationRollbackFailureCounts.Add(ctx, 1)
 				logger.Sugar().Warnf("Failed to roll back the allocated IPs: %v", rollbackErr)
 				return nil, err
 			}
@@ -284,11 +291,11 @@ func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, cont
 	ips, _ := convertResultsToIPConfigsAndAllRoutes(allResults)
 	anno, err := genIPAssignmentAnnotation(ips)
 	if err != nil {
-		return allResults, endpoint, err
+		return allResults, endpoint, fmt.Errorf("failed to generate IP assignment annotation: %v", err)
 	}
 
 	if err := i.podManager.MergeAnnotations(ctx, pod.Namespace, pod.Name, anno); err != nil {
-		return allResults, endpoint, fmt.Errorf("failed to merge IP assignment annotation of Pod: %v", err)
+		return allResults, endpoint, fmt.Errorf("failed to merge IP assignment annotation: %w", err)
 	}
 
 	return allResults, endpoint, nil
@@ -307,7 +314,7 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 
 		routes, err := groupCustomRoutesByGW(ctx, customRoutes, result.IP)
 		if err != nil {
-			return results, endpoint, err
+			return results, endpoint, fmt.Errorf("failed to group custom routes by gateway: %v", err)
 		}
 		result.Routes = append(result.Routes, routes...)
 
@@ -317,7 +324,7 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 			IPs:         patch,
 		}, endpoint)
 		if err != nil {
-			return results, endpoint, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint: %v", patch, err)
+			return results, endpoint, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint %s/%s: %v", patch, endpoint.Namespace, endpoint.Name, err)
 		}
 	}
 
@@ -353,14 +360,15 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 	}
 
 	if len(errs) == len(c.Pools) {
-		return result, fmt.Errorf("failed to allocate any IPv%d IP to %s from IPPools %v: %v", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs).Error())
+		return result, fmt.Errorf("failed to allocate any IPv%d IP address to %s from IPPools %v: %w", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs))
 	}
 
 	return result, nil
 }
 
 func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool, pod *corev1.Pod) ([]*ToBeAllocated, error) {
-	// subnet manager
+	// Select candidate IPPools through the Pod annotations
+	// "spiderpool.spidernet.io/spider-subnet-v4" and "spiderpool.spidernet.io/spider-subnet-v6".
 	subnetMgrV4Name, enableSubnetMgrV4 := pod.Annotations[constant.AnnoSubnetManagerV4]
 	subnetMgrV6Name, enableSubnetMgrV6 := pod.Annotations[constant.AnnoSubnetManagerV6]
 	if enableSubnetMgrV4 || enableSubnetMgrV6 {
@@ -376,12 +384,12 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 		}
 	}
 
-	// pod annotation: "ipam.spidernet.io/ippools"
+	// Select candidate IPPools through the Pod annotation "ipam.spidernet.io/ippools".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
 		return getPoolFromPodAnnoPools(ctx, anno, nic)
 	}
 
-	// pod annotation: "ipam.spidernet.io/ippool"
+	// Select candidate IPPools through the Pod annotation "ipam.spidernet.io/ippool".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPool]; ok {
 		t, err := getPoolFromPodAnnoPool(ctx, anno, nic, cleanGateway)
 		if err != nil {
@@ -390,7 +398,8 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 		return []*ToBeAllocated{t}, nil
 	}
 
-	// namespace annotation: "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool"
+	// Select candidate IPPools through the Namespace annotations
+	// "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool".
 	t, err := i.getPoolFromNS(ctx, pod.Namespace, nic, cleanGateway)
 	if err != nil {
 		return nil, err
@@ -399,12 +408,12 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 		return []*ToBeAllocated{t}, nil
 	}
 
-	// IPAM configuration file
+	// Select candidate IPPools through CNI network configuration.
 	if t := getPoolFromNetConf(ctx, nic, netConfV4Pool, netConfV6Pool, cleanGateway); t != nil {
 		return []*ToBeAllocated{t}, nil
 	}
 
-	// configmap
+	// Select candidate IPPools through Configmap spiderpool-conf.
 	t, err = i.config.getClusterDefaultPool(ctx, nic, cleanGateway)
 	if err != nil {
 		return nil, err
@@ -457,7 +466,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, po
 			for _, pool := range c.Pools {
 				eligible, err := i.selectByPod(ctx, c.IPVersion, pool, pod)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to select IPPool %s by Pod %s/%s: %v", pool, pod.Namespace, pod.Name, err)
 				}
 				if eligible {
 					selectedPools = append(selectedPools, pool)
@@ -478,8 +487,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, poolNam
 
 	ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName)
 	if err != nil {
-		logger.Sugar().Warnf("Failed to get IPPool %s: %v", poolName, err)
-		return false, err
+		return false, fmt.Errorf("failed to get IPPool %s: %v", poolName, err)
 	}
 
 	if ipPool.DeletionTimestamp != nil {
@@ -555,11 +563,11 @@ func (i *ipam) verifyPoolCandidates(ctx context.Context, tt []*ToBeAllocated) er
 
 func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger := logutils.FromContext(ctx)
-	logger.Info("Start to release IP")
+	logger.Info("Start to release")
 
 	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if err != nil {
-		return fmt.Errorf("failed to get Pod: %v", err)
+		return fmt.Errorf("failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 
 	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
@@ -576,7 +584,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 
 	endpoint, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to get Endpoint: %v", err)
+		return fmt.Errorf("failed to get Endpoint %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 	allocation, currently := workloadendpointmanager.RetrieveIPAllocation(*delArgs.ContainerID, *delArgs.IfName, true, endpoint)
 	if allocation == nil {
@@ -625,7 +633,7 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 				errCh <- err
 				return
 			}
-			logger.Sugar().Infof("Succeed to release IP %+v from IPPool %s", ipAndCIDs, pool)
+			logger.Sugar().Infof("Succeed to release IP address %+v from IPPool %s", ipAndCIDs, pool)
 		}(pool, ipAndCIDs)
 	}
 	wg.Wait()
@@ -637,7 +645,7 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 	}
 
 	if len(errs) != 0 {
-		return fmt.Errorf("failed to release all allocated IP %+v: %w", poolToIPAndCIDs, utilerrors.NewAggregate(errs))
+		return fmt.Errorf("failed to release all allocated IP addresses %+v: %w", poolToIPAndCIDs, utilerrors.NewAggregate(errs))
 	}
 
 	return nil

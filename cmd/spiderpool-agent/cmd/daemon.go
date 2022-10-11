@@ -120,7 +120,7 @@ func DaemonMain() {
 			MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize,
 			MaxWaitTime:  &limiterMaxWaitTime,
 		},
-		WaitSubnetPoolRetries: agentContext.Cfg.UpdateCRMaxRetrys,
+		WaitSubnetPoolRetries: agentContext.Cfg.UpdateCRMaxRetries,
 		WaitSubnetPoolTime:    time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
 	agentContext.IPAM = ipam
@@ -229,7 +229,7 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initAgentServiceManagers(ctx context.Context) {
 	updateCRConfig := config.UpdateCRConfig{
-		MaxConflictRetrys:     agentContext.Cfg.UpdateCRMaxRetrys,
+		MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
 		ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 	}
 

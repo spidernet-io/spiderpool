@@ -17,8 +17,6 @@ import (
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 )
 
-var ErrDeleteIPAM = fmt.Errorf("err: get ipam release failed")
-
 // CmdDel follows CNI SPEC cmdDel.
 func CmdDel(args *skel.CmdArgs) (err error) {
 	var logger *zap.Logger
@@ -104,7 +102,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(params)
 	if nil != err {
 		logger.Error(err.Error())
-		return ErrDeleteIPAM
+		return fmt.Errorf("%w: %v", ErrDeleteIPAM, err)
 	}
 
 	logger.Info("IP release successfully.")

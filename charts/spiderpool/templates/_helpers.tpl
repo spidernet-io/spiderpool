@@ -145,7 +145,7 @@ return the spiderpoolAgent image
 {{- if .Values.spiderpoolAgent.image.digest }}
     {{- print "@" .Values.spiderpoolAgent.image.digest -}}
 {{- else if .Values.spiderpoolAgent.image.tag -}}
-    {{- printf ":%s" .Values.spiderpoolController.image.tag -}}
+    {{- printf ":%s" .Values.spiderpoolAgent.image.tag -}}
 {{- else -}}
     {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}

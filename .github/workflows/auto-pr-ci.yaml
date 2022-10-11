@@ -345,7 +345,7 @@ jobs:
 
       - name: Update Badge For Dual-stack
         if: ${{ steps.get_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: schneegans/dynamic-badges-action@v1.4.0
+        uses: schneegans/dynamic-badges-action@v1.5.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: 38d00a872e830eedb46870c886549561

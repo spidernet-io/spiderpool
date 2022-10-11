@@ -10,6 +10,7 @@ const FormatPprof Format = "pprof"
 
 type Upstream interface {
 	Upload(*UploadJob)
+	Flush()
 }
 
 type SampleType struct {

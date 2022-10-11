@@ -330,8 +330,9 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/pyroscope-io/client v0.3.0
+# github.com/pyroscope-io/client v0.4.0
 ## explicit; go 1.17
+github.com/pyroscope-io/client/internal/alignedticker
 github.com/pyroscope-io/client/internal/flameql
 github.com/pyroscope-io/client/internal/sortedmap
 github.com/pyroscope-io/client/pyroscope

@@ -15,6 +15,7 @@ import (
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
@@ -122,6 +123,9 @@ type ControllerContext struct {
 
 	// kubernetes Clientset
 	ClientSet *kubernetes.Clientset
+
+	// K8s event recorder.
+	Recorder record.EventRecorder
 
 	// manager
 	CRDManager    ctrl.Manager

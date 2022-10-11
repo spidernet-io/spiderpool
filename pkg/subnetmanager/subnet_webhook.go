@@ -5,6 +5,7 @@ package subnetmanager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -52,6 +54,11 @@ func (sm *subnetManager) Default(ctx context.Context, obj runtime.Object) error 
 	if subnet.DeletionTimestamp != nil {
 		logger.Info("Deleting Subnet, noting to mutate")
 		return nil
+	}
+
+	if !controllerutil.ContainsFinalizer(subnet, constant.SpiderFinalizer) {
+		controllerutil.AddFinalizer(subnet, constant.SpiderFinalizer)
+		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
 	}
 
 	if subnet.Spec.IPVersion == nil {
@@ -135,6 +142,14 @@ func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	logger.Sugar().Debugf("Request old Subnet: %+v", *oldSubnet)
 	logger.Sugar().Debugf("Request new Subnet: %+v", *newSubnet)
 
+	if newSubnet.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(newSubnet, constant.SpiderFinalizer) {
+		return apierrors.NewForbidden(
+			schema.GroupResource{},
+			"",
+			errors.New("cannot update a terminaing Subnet"),
+		)
+	}
+
 	if errs := sm.validateUpdateSubnet(ctx, oldSubnet, newSubnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
@@ -149,25 +164,5 @@ func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
 func (sm *subnetManager) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	subnet, ok := obj.(*spiderpoolv1.SpiderSubnet)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of Subnet got an object with mismatched GVK: %+v", obj.GetObjectKind().GroupVersionKind()))
-	}
-
-	logger := webhookLogger.Named("Validating").With(
-		zap.String("SubnetName", subnet.Name),
-		zap.String("Operation", "DELETE"),
-	)
-	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
-
-	if errs := sm.validateDeleteSubnet(ctx, subnet); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to delete Subnet: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},
-			subnet.Name,
-			errs,
-		)
-	}
-
 	return nil
 }

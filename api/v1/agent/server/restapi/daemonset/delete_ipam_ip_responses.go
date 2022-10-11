@@ -12,6 +12,8 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/runtime"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // DeleteIpamIPOKCode is the HTTP code returned for type DeleteIpamIPOK
@@ -39,27 +41,45 @@ func (o *DeleteIpamIPOK) WriteResponse(rw http.ResponseWriter, producer runtime.
 	rw.WriteHeader(200)
 }
 
-// DeleteIpamIPInternalServerErrorCode is the HTTP code returned for type DeleteIpamIPInternalServerError
-const DeleteIpamIPInternalServerErrorCode int = 500
+// DeleteIpamIPFailureCode is the HTTP code returned for type DeleteIpamIPFailure
+const DeleteIpamIPFailureCode int = 500
 
 /*
-DeleteIpamIPInternalServerError Failed
+DeleteIpamIPFailure Addresses release failure
 
-swagger:response deleteIpamIpInternalServerError
+swagger:response deleteIpamIpFailure
 */
-type DeleteIpamIPInternalServerError struct {
+type DeleteIpamIPFailure struct {
+
+	/*
+	  In: Body
+	*/
+	Payload models.Error `json:"body,omitempty"`
 }
 
-// NewDeleteIpamIPInternalServerError creates DeleteIpamIPInternalServerError with default headers values
-func NewDeleteIpamIPInternalServerError() *DeleteIpamIPInternalServerError {
+// NewDeleteIpamIPFailure creates DeleteIpamIPFailure with default headers values
+func NewDeleteIpamIPFailure() *DeleteIpamIPFailure {
 
-	return &DeleteIpamIPInternalServerError{}
+	return &DeleteIpamIPFailure{}
+}
+
+// WithPayload adds the payload to the delete ipam Ip failure response
+func (o *DeleteIpamIPFailure) WithPayload(payload models.Error) *DeleteIpamIPFailure {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the delete ipam Ip failure response
+func (o *DeleteIpamIPFailure) SetPayload(payload models.Error) {
+	o.Payload = payload
 }
 
 // WriteResponse to the client
-func (o *DeleteIpamIPInternalServerError) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
-
-	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
+func (o *DeleteIpamIPFailure) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
 	rw.WriteHeader(500)
+	payload := o.Payload
+	if err := producer.Produce(rw, payload); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
 }

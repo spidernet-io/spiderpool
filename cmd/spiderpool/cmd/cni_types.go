@@ -63,7 +63,7 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 
 	err := json.Unmarshal(argsStdin, netConf)
 	if nil != err {
-		return nil, fmt.Errorf("Unable to parse CNI configuration \"%s\": %s", argsStdin, err)
+		return nil, fmt.Errorf("unable to parse CNI configuration \"%s\": %s", argsStdin, err)
 	}
 
 	if netConf.IPAM.LogLevel == "" {
@@ -80,5 +80,5 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Error: Mismatch the given CNI Version: %s, spiderpool supports CNI version %#v", netConf.CNIVersion, SupportCNIVersions)
+	return nil, fmt.Errorf("mismatch the given CNI Version: %s, spiderpool supports CNI version %#v", netConf.CNIVersion, SupportCNIVersions)
 }

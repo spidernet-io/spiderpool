@@ -8,9 +8,8 @@ import (
 )
 
 var (
-	ErrInternal          = errors.New("internal server error")
-	ErrWrongInput        = errors.New("wrong input")
-	ErrNotAllocatablePod = errors.New("not allocatable Pod")
-	ErrNoAvailablePool   = errors.New("no available IPPool")
-	ErrIPUsedOut         = errors.New("all IP used out")
+	ErrWrongInput       = errors.New("wrong input")
+	ErrNoAvailablePool  = errors.New("no IPPool available")
+	ErrRetriesExhausted = errors.New("insufficient retries")
+	ErrIPUsedOut        = errors.New("all IP addresses used out")
 )

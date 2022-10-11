@@ -43,7 +43,7 @@ const (
 const (
 	PodRunning      types.PodStatus = "Running"
 	PodTerminating  types.PodStatus = "Terminating"
-	PodGraceTimeOut types.PodStatus = "GraceTimeOut"
+	PodGraceTimeout types.PodStatus = "GraceTimeout"
 	PodSucceeded    types.PodStatus = "Succeeded"
 	PodFailed       types.PodStatus = "Failed"
 	PodEvicted      types.PodStatus = "Evicted"
@@ -62,6 +62,7 @@ const (
 )
 
 const (
+	Spiderpool             = "spiderpool"
 	SpiderpoolAgent        = "spiderpool-agent"
 	SpiderpoolController   = "spiderpool-controller"
 	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"

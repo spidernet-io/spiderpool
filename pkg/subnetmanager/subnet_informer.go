@@ -10,16 +10,20 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/election"
-	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 var informerLogger *zap.Logger
@@ -79,16 +83,23 @@ func (sm *subnetManager) onSpiderSubnetAdd(obj interface{}) {
 	)
 	logger.Sugar().Debugf("Reconcile Subnet: %+v", *subnet)
 
-	ctx, cancel := context.WithCancel(sm.innerCtx)
-	defer cancel()
-
-	if err := sm.doAdd(logutils.IntoContext(ctx, logger), subnet.DeepCopy()); err != nil {
+	if err := sm.reconcileOnAdd(logutils.IntoContext(sm.innerCtx, logger), subnet.DeepCopy()); err != nil {
 		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
 	}
 }
 
-func (sm *subnetManager) doAdd(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	return sm.initSubnetFreeIPsAndCount(ctx, subnet)
+func (sm *subnetManager) reconcileOnAdd(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	if err := sm.initSubnetFreeIPsAndCount(ctx, subnet); err != nil {
+		return err
+	}
+
+	if subnet.DeletionTimestamp != nil {
+		if err := sm.removeFinalizer(ctx, subnet); err != nil {
+			return fmt.Errorf("failed to remove finalizer: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func (sm *subnetManager) onSpiderSubnetUpdate(oldObj interface{}, newObj interface{}) {
@@ -101,22 +112,36 @@ func (sm *subnetManager) onSpiderSubnetUpdate(oldObj interface{}, newObj interfa
 	logger.Sugar().Debugf("Reconcile old Subnet: %+v", *oldSubnet)
 	logger.Sugar().Debugf("Reconcile new Subnet: %+v", *newSubnet)
 
-	ctx, cancel := context.WithCancel(sm.innerCtx)
-	defer cancel()
-
-	if err := sm.doUpdate(logutils.IntoContext(ctx, logger), oldSubnet.DeepCopy(), newSubnet.DeepCopy()); err != nil {
+	if err := sm.reconcileOnUpdate(logutils.IntoContext(sm.innerCtx, logger), oldSubnet.DeepCopy(), newSubnet.DeepCopy()); err != nil {
 		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
 	}
 }
 
-func (sm *subnetManager) doUpdate(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) error {
-	change := false
-	if !reflect.DeepEqual(newSubnet.Spec.IPs, oldSubnet.Spec.IPs) ||
-		!reflect.DeepEqual(newSubnet.Spec.ExcludeIPs, oldSubnet.Spec.ExcludeIPs) {
-		change = true
+func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) error {
+	if newSubnet.DeletionTimestamp != nil {
+		if oldSubnet.DeletionTimestamp == nil {
+			if err := sm.client.Delete(
+				ctx,
+				newSubnet,
+				client.PropagationPolicy(metav1.DeletePropagationForeground),
+			); err != nil {
+				return err
+			}
+		}
+
+		if err := sm.removeFinalizer(ctx, newSubnet); err != nil {
+			return fmt.Errorf("failed to remove finalizer: %v", err)
+		}
+		return nil
 	}
 
-	if change {
+	totalIPsChange := false
+	if !reflect.DeepEqual(newSubnet.Spec.IPs, oldSubnet.Spec.IPs) ||
+		!reflect.DeepEqual(newSubnet.Spec.ExcludeIPs, oldSubnet.Spec.ExcludeIPs) {
+		totalIPsChange = true
+	}
+
+	if totalIPsChange {
 		return sm.initSubnetFreeIPsAndCount(ctx, newSubnet)
 	}
 
@@ -125,7 +150,7 @@ func (sm *subnetManager) doUpdate(ctx context.Context, oldSubnet, newSubnet *spi
 
 func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		var err error
 		if i != 0 {
 			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
@@ -173,8 +198,53 @@ func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == sm.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to init the free IP ranges of Subnet", sm.config.MaxConflictRetrys)
+			if i == sm.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to init the free IP ranges of Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
+			}
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
+			continue
+		}
+		break
+	}
+
+	return nil
+}
+
+func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
+		var err error
+		if i != 0 {
+			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
+			if err != nil {
+				return err
+			}
+		}
+		if !controllerutil.ContainsFinalizer(subnet, constant.SpiderFinalizer) {
+			return nil
+		}
+
+		totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+		if err != nil {
+			return err
+		}
+		freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
+		if err != nil {
+			return err
+		}
+
+		// Some IP addresses are still occupied by the controlled IPPools, ignore
+		// to remove the finalizer.
+		if len(spiderpoolip.IPsDiffSet(totalIPs, freeIPs)) > 0 {
+			return nil
+		}
+
+		controllerutil.RemoveFinalizer(subnet, constant.SpiderFinalizer)
+		if err := sm.client.Update(ctx, subnet); err != nil {
+			if !apierrors.IsConflict(err) {
+				return err
+			}
+			if i == sm.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to remove finalizer '%s' from Subnet %s", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries, constant.SpiderFinalizer, subnet.Name)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 			continue

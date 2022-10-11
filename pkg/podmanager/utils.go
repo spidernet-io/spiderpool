@@ -45,7 +45,7 @@ func CheckPodStatus(pod *corev1.Pod) (podStatue types.PodStatus, isAllocatable b
 		deletionTime := pod.DeletionTimestamp.Time
 		deletionGracePeriod := time.Duration(*pod.DeletionGracePeriodSeconds) * time.Second
 		if now.After(deletionTime.Add(deletionGracePeriod)) {
-			return constant.PodGraceTimeOut, false
+			return constant.PodGraceTimeout, false
 		}
 		return constant.PodTerminating, false
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
@@ -99,6 +100,13 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.CRDManager = mgr
+
+	logger.Info("Begin to initialize K8s event recorder")
+	recorder, err := event.NewEventRecorder(constant.Spiderpool, mgr.GetConfig(), mgr.GetScheme())
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.Recorder = recorder
 
 	logger.Info("Begin to initialize k8s Clientset")
 	clientSet, err := initK8sClientSet()
@@ -179,7 +187,7 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	updateCRConfig := config.UpdateCRConfig{
-		MaxConflictRetrys:     controllerContext.Cfg.UpdateCRMaxRetrys,
+		MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
 		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 	}
 

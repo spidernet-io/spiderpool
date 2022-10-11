@@ -10,9 +10,12 @@ package daemonset
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // DeleteIpamIPReader is a Reader for the DeleteIpamIP structure.
@@ -30,7 +33,7 @@ func (o *DeleteIpamIPReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return result, nil
 	case 500:
-		result := NewDeleteIpamIPInternalServerError()
+		result := NewDeleteIpamIPFailure()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -62,24 +65,33 @@ func (o *DeleteIpamIPOK) readResponse(response runtime.ClientResponse, consumer 
 	return nil
 }
 
-// NewDeleteIpamIPInternalServerError creates a DeleteIpamIPInternalServerError with default headers values
-func NewDeleteIpamIPInternalServerError() *DeleteIpamIPInternalServerError {
-	return &DeleteIpamIPInternalServerError{}
+// NewDeleteIpamIPFailure creates a DeleteIpamIPFailure with default headers values
+func NewDeleteIpamIPFailure() *DeleteIpamIPFailure {
+	return &DeleteIpamIPFailure{}
 }
 
 /*
-DeleteIpamIPInternalServerError describes a response with status code 500, with default header values.
+DeleteIpamIPFailure describes a response with status code 500, with default header values.
 
-Failed
+Addresses release failure
 */
-type DeleteIpamIPInternalServerError struct {
+type DeleteIpamIPFailure struct {
+	Payload models.Error
 }
 
-func (o *DeleteIpamIPInternalServerError) Error() string {
-	return fmt.Sprintf("[DELETE /ipam/ip][%d] deleteIpamIpInternalServerError ", 500)
+func (o *DeleteIpamIPFailure) Error() string {
+	return fmt.Sprintf("[DELETE /ipam/ip][%d] deleteIpamIpFailure  %+v", 500, o.Payload)
+}
+func (o *DeleteIpamIPFailure) GetPayload() models.Error {
+	return o.Payload
 }
 
-func (o *DeleteIpamIPInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+func (o *DeleteIpamIPFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }

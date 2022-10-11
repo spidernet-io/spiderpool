@@ -64,7 +64,7 @@ func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ip
 func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error) {
 	var subnet spiderpoolv1.SpiderSubnet
 	if err := sm.client.Get(ctx, apitypes.NamespacedName{Name: subnetName}, &subnet); err != nil {
-		return nil, fmt.Errorf("failed to get subnet '%s', error: %v", subnetName, err)
+		return nil, err
 	}
 
 	return &subnet, nil
@@ -73,7 +73,7 @@ func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string)
 func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
 	subnetList := &spiderpoolv1.SpiderSubnetList{}
 	if err := sm.client.List(ctx, subnetList, opts...); err != nil {
-		return nil, fmt.Errorf("failed to list subnet with options '%v', error: %v", opts, err)
+		return nil, err
 	}
 
 	return subnetList, nil
@@ -81,7 +81,7 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 
 func (sm *subnetManager) UpdateSubnetStatusOnce(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	if err := sm.client.Status().Update(ctx, subnet); err != nil {
-		return fmt.Errorf("failed to update subnet '%s', error: %v", subnet.Name, err)
+		return err
 	}
 
 	return nil
@@ -136,10 +136,10 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		subnet, err := sm.GetSubnetByName(ctx, subnetMgrName)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: %v", ErrMaxRetries, err)
 			}
 
@@ -150,7 +150,7 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 
 		poolIPs, err := sm.GenerateIPsFromSubnet(ctx, subnetMgrName, ipNum)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: failed to generate IPs from subnet '%s', error: %v", ErrMaxRetries, subnetMgrName, err)
 			}
 
@@ -190,7 +190,7 @@ func (sm *subnetManager) AllocateIPPool(ctx context.Context, subnetMgrName strin
 		logger.Sugar().Infof("try to create IPPool '%v'", sp)
 		err = sm.ipPoolManager.CreateIPPool(ctx, sp)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w, failed to create IPPool, error: %v", ErrMaxRetries, err)
 			}
 
@@ -267,10 +267,10 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i < sm.config.MaxConflictRetries; i++ {
 		ipsFromSubnet, err := sm.GenerateIPsFromSubnet(ctx, subnetMgrName, ipNum-len(ips))
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: failed to generate IPs from subnet '%s', error: %v", ErrMaxRetries, subnetMgrName, err)
 			}
 
@@ -283,7 +283,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 		// update IPPool
 		err = sm.ipPoolManager.ScaleIPPoolIPs(logutils.IntoContext(ctx, logger), pool.Name, ipsFromSubnet)
 		if nil != err {
-			if i == sm.config.MaxConflictRetrys {
+			if i == sm.config.MaxConflictRetries {
 				return fmt.Errorf("%w: %v", ErrMaxRetries, err)
 			}
 

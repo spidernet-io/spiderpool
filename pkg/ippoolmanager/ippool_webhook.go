@@ -56,6 +56,17 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		return nil
 	}
 
+	if im.config.EnableSpiderSubnet && len(ipPool.GetOwnerReferences()) == 0 {
+		if err := im.setSubnetReference(ctx, ipPool); err != nil {
+			return apierrors.NewInternalError(fmt.Errorf("failed to set Subnet reference: %v", err))
+		}
+	}
+
+	if !controllerutil.ContainsFinalizer(ipPool, constant.SpiderFinalizer) {
+		controllerutil.AddFinalizer(ipPool, constant.SpiderFinalizer)
+		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
+	}
+
 	if ipPool.Spec.IPVersion == nil {
 		var version types.IPVersion
 		if spiderpoolip.IsIPv4CIDR(ipPool.Spec.Subnet) {
@@ -92,9 +103,24 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		}
 	}
 
-	if !controllerutil.ContainsFinalizer(ipPool, constant.SpiderFinalizer) {
-		controllerutil.AddFinalizer(ipPool, constant.SpiderFinalizer)
-		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
+	return nil
+}
+
+func (im *ipPoolManager) setSubnetReference(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
+	logger := logutils.FromContext(ctx)
+
+	subnetList, err := im.subnetManager.ListSubnets(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, subnet := range subnetList.Items {
+		if subnet.Spec.Subnet == ipPool.Spec.Subnet {
+			if err := ctrl.SetControllerReference(&subnet, ipPool, im.runtimeMgr.GetScheme()); err != nil {
+				return err
+			}
+			logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
+		}
 	}
 
 	return nil
@@ -147,6 +173,14 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	)
 	logger.Sugar().Debugf("Request old IPPool: %+v", *oldIPPool)
 	logger.Sugar().Debugf("Request new IPPool: %+v", *newIPPool)
+
+	if newIPPool.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(newIPPool, constant.SpiderFinalizer) {
+		return apierrors.NewForbidden(
+			schema.GroupResource{},
+			"",
+			errors.New("cannot update a terminaing IPPool"),
+		)
+	}
 
 	if errs := im.validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx, oldIPPool, newIPPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())

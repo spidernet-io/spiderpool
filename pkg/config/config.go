@@ -6,6 +6,6 @@ package config
 import "time"
 
 type UpdateCRConfig struct {
-	MaxConflictRetrys     int
+	MaxConflictRetries    int
 	ConflictRetryUnitTime time.Duration
 }

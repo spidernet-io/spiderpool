@@ -6,9 +6,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"k8s.io/utils/pointer"
+	"strconv"
 	"time"
+
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	frame "github.com/spidernet-io/e2eframework/framework"
@@ -19,44 +22,76 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GenerateExampleV4SubnetObject() (string, *spiderpool.SpiderSubnet) {
+func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet) {
+	if ipNum < 1 || ipNum > 65533 {
+		GinkgoWriter.Println("the IP range should be between 1 and 65533")
+		Fail("the IP range should be between 1 and 65533")
+	}
 	subnetName := "v4-ss-" + tools.RandomName()
 	randNum1 := GenerateRandomNumber(255)
 	randNum2 := GenerateRandomNumber(255)
-	subnetStr := fmt.Sprintf("%s.%s.0.0/16", randNum1, randNum2)
-	gateway := fmt.Sprintf("%s.%s.0.1", randNum1, randNum2)
-	ips := fmt.Sprintf("%s.%s.0.100-%s.%s.0.200", randNum1, randNum2, randNum1, randNum2)
+
 	subnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: subnetName,
 		},
 		Spec: spiderpool.SubnetSpec{
 			IPVersion: pointer.Int64(4),
-			Subnet:    subnetStr,
-			Gateway:   &gateway,
-			IPs:       []string{ips},
 		},
+	}
+	if ipNum <= 253 {
+		gateway := fmt.Sprintf("10.%s.%s.1", randNum1, randNum2)
+		subnetObj.Spec.Gateway = &gateway
+		subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
+		if ipNum == 1 {
+			subnetObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2", randNum1, randNum2)}
+		} else {
+			a := strconv.Itoa(ipNum + 1)
+			subnetObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2-10.%s.%s.%s", randNum1, randNum2, randNum1, randNum2, a)}
+		}
+	} else {
+		gateway := fmt.Sprintf("10.%s.0.1", randNum1)
+		subnetObj.Spec.Gateway = &gateway
+		subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
+		a := fmt.Sprintf("%.0f", float64((ipNum+1)/256))
+		b := strconv.Itoa((ipNum + 1) % 256)
+		subnetObj.Spec.IPs = []string{fmt.Sprintf("10.%s.0.2-10.%s.%s.%s", randNum1, randNum2, a, b)}
 	}
 	return subnetName, subnetObj
 }
 
-func GenerateExampleV6SubnetObject() (string, *spiderpool.SpiderSubnet) {
+func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet) {
+	if ipNum < 1 || ipNum > 65533 {
+		GinkgoWriter.Println("the IP range should be between 1 and 65533")
+		Fail("the IP range should be between 1 and 65533")
+	}
+
 	subnetName := "v6-ss-" + tools.RandomName()
-	randNum1 := GenerateString(4, true)
-	randNum2 := GenerateString(4, true)
-	subnetStr := fmt.Sprintf("%s:%s::/112", randNum1, randNum2)
-	gateway := fmt.Sprintf("%s:%s::1", randNum1, randNum2)
-	ips := fmt.Sprintf("%s:%s::100-%s:%s::200", randNum1, randNum2, randNum1, randNum2)
+	randNum := GenerateString(4, true)
 	subnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: subnetName,
 		},
 		Spec: spiderpool.SubnetSpec{
 			IPVersion: pointer.Int64(6),
-			Subnet:    subnetStr,
-			Gateway:   &gateway,
-			IPs:       []string{ips},
 		},
+	}
+
+	if ipNum <= 253 {
+		gateway := fmt.Sprintf("fd00:%s::1", randNum)
+		subnetObj.Spec.Gateway = &gateway
+		subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
+	} else {
+		gateway := fmt.Sprintf("fd00:%s::1", randNum)
+		subnetObj.Spec.Gateway = &gateway
+		subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
+	}
+
+	if ipNum == 1 {
+		subnetObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2", randNum)}
+	} else {
+		bStr := strconv.FormatInt(int64(ipNum+1), 16)
+		subnetObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2-fd00:%s::%s", randNum, randNum, bStr)}
 	}
 	return subnetName, subnetObj
 }
@@ -137,6 +172,59 @@ func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName
 				return nil
 			}
 			time.Sleep(time.Second)
+		}
+	}
+}
+
+func WaitValidateSubnetFreeIPs(ctx context.Context, f *frame.Framework, subnetName string, freeIPsNum int64) error {
+	if f == nil || subnetName == "" {
+		return frame.ErrWrongInput
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return frame.ErrTimeOut
+		default:
+			subnetObject := GetSubnetByName(f, subnetName)
+			if *subnetObject.Status.FreeIPCount == freeIPsNum {
+				return nil
+			}
+			time.Sleep(ForcedWaitingTime)
+		}
+	}
+}
+
+func PatchSpiderSubnet(f *frame.Framework, desiredSubnet, originalSubnet *v1.SpiderSubnet, opts ...client.PatchOption) error {
+	if desiredSubnet == nil || f == nil || originalSubnet == nil {
+		return frame.ErrWrongInput
+	}
+
+	mergePatch := client.MergeFrom(originalSubnet)
+	return f.PatchResource(desiredSubnet, mergePatch, opts...)
+}
+
+func WaitValidatePoolsCreatedAutomatically(ctx context.Context, f *frame.Framework, subnetName string, poolNums int) error {
+	if f == nil || subnetName == "" || poolNums < 0 {
+		return frame.ErrWrongInput
+	}
+LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("waiting for the expected number of ippool timeouts to be created automatically")
+		default:
+			BingoNum := int(0)
+			subnetObject := GetSubnetByName(f, subnetName)
+			poolList := GetAllIppool(f)
+			for _, v := range poolList.Items {
+				if v.Spec.Subnet == subnetObject.Spec.Subnet {
+					BingoNum++
+				}
+			}
+			if BingoNum != poolNums {
+				continue LOOP
+			}
+			return nil
 		}
 	}
 }

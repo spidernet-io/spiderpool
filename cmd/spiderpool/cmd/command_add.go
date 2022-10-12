@@ -24,10 +24,12 @@ import (
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 )
 
+var BinNamePlugin = filepath.Base(os.Args[0])
+
 var (
-	BinNamePlugin       = filepath.Base(os.Args[0])
-	ErrAgentHealthCheck = fmt.Errorf("err: get spiderpool agent health check failed")
-	ErrPostIPAM         = fmt.Errorf("err: get ipam allocation failed")
+	ErrAgentHealthCheck = fmt.Errorf("spiderpool agent backend is unhealthy")
+	ErrPostIPAM         = fmt.Errorf("spiderpool IP allocation error")
+	ErrDeleteIPAM       = fmt.Errorf("spiderpool IP releasing error")
 )
 
 // CmdAdd follows CNI SPEC cmdAdd.
@@ -118,7 +120,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
 	if nil != err {
 		logger.Error(err.Error())
-		return ErrPostIPAM
+		return fmt.Errorf("%w: %v", ErrPostIPAM, err)
 	}
 	// validate spiderpool-agent response
 	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {

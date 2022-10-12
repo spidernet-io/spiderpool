@@ -124,7 +124,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					}
 					ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsOKCode, mockServerResp)
 				} else {
-					ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.PostIpamIpsInternalServerErrorCode, nil)
+					ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.DeleteIpamIPFailureCode, nil)
 				}
 				server.RouteToHandler("POST", ipamReqRoute, ghttp.CombineHandlers(ipamPostHandleFunc))
 
@@ -363,7 +363,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				if configSets.isDeleteIPAM {
 					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPOKCode, nil)
 				} else {
-					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPInternalServerErrorCode, nil)
+					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPFailureCode, nil)
 				}
 				server.RouteToHandler("DELETE", ipamReqRoute, ghttp.CombineHandlers(ipamDeleteHandleFunc))
 

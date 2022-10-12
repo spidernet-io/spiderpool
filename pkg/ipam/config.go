@@ -33,7 +33,7 @@ func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, clea
 	logger := logutils.FromContext(ctx)
 
 	if len(c.ClusterDefaultIPv4IPPool) == 0 && len(c.ClusterDefaultIPv6IPPool) == 0 {
-		return nil, fmt.Errorf("%w, no IPPool selection rules of any kind are specified", constant.ErrNoAvailablePool)
+		return nil, fmt.Errorf("%w, no pool selection rules of any type are specified", constant.ErrNoAvailablePool)
 	}
 	logger.Info("Use IPPools from cluster default pools")
 
@@ -77,7 +77,7 @@ func (c *IPAMConfig) checkIPVersionEnable(ctx context.Context, tt []*ToBeAllocat
 		}
 	}
 	if len(errs) != 0 {
-		return fmt.Errorf("%w", utilerrors.NewAggregate(errs))
+		return utilerrors.NewAggregate(errs)
 	}
 
 	return nil
@@ -102,10 +102,10 @@ func (c *IPAMConfig) filterPoolMisspecified(ctx context.Context, t *ToBeAllocate
 	t.PoolCandidates = invalidPoolCandidates
 
 	if c.EnableIPv4 && v4Count == 0 {
-		return fmt.Errorf("%w in interface %s, IPv4 is enabled, but no IPv4 IPPool is specified", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w, IPv4 is enabled, but no IPv4 IPPool for %s is specified", constant.ErrWrongInput, t.NIC)
 	}
 	if c.EnableIPv6 && v6Count == 0 {
-		return fmt.Errorf("%w in interface %s, IPv6 is enabled, but no IPv6 IPPool is specified", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w, IPv6 is enabled, but no IPv6 IPPool for %s is specified", constant.ErrWrongInput, t.NIC)
 	}
 
 	return nil

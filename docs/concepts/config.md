@@ -76,7 +76,7 @@ data:
 | SPIDERPOOL_HEALTH_PORT                          | 5710    | Metric HTTP server port.                                     |
 | SPIDERPOOL_METRIC_HTTP_PORT                     | 5711    | Spiderpool-agent backend HTTP server port.                   |
 | SPIDERPOOL_GOPS_LISTEN_PORT                     | 5712    | Port that gops is listen on , set to empty to disable it.    |
-| SPIDERPOOL_UPDATE_CR_MAX_RETRYS                 | 3       | Max retries to update k8s resources.                         |
+| SPIDERPOOL_UPDATE_CR_MAX_RETRIES                 | 3       | Max retries to update k8s resources.                         |
 | SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS | 100     | Max historical IP allocation information allowed for a single Pod recorded in WorkloadEndpoint. |
 | SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.          |
 

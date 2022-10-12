@@ -33,31 +33,7 @@ func (o *PostIpamIPReader) ReadResponse(response runtime.ClientResponse, consume
 		}
 		return result, nil
 	case 500:
-		result := NewPostIpamIPInternalServerError()
-		if err := result.readResponse(response, consumer, o.formats); err != nil {
-			return nil, err
-		}
-		return nil, result
-	case 512:
-		result := NewPostIpamIPStatus512()
-		if err := result.readResponse(response, consumer, o.formats); err != nil {
-			return nil, err
-		}
-		return nil, result
-	case 513:
-		result := NewPostIpamIPStatus513()
-		if err := result.readResponse(response, consumer, o.formats); err != nil {
-			return nil, err
-		}
-		return nil, result
-	case 514:
-		result := NewPostIpamIPStatus514()
-		if err := result.readResponse(response, consumer, o.formats); err != nil {
-			return nil, err
-		}
-		return nil, result
-	case 515:
-		result := NewPostIpamIPStatus515()
+		result := NewPostIpamIPFailure()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -100,112 +76,33 @@ func (o *PostIpamIPOK) readResponse(response runtime.ClientResponse, consumer ru
 	return nil
 }
 
-// NewPostIpamIPInternalServerError creates a PostIpamIPInternalServerError with default headers values
-func NewPostIpamIPInternalServerError() *PostIpamIPInternalServerError {
-	return &PostIpamIPInternalServerError{}
+// NewPostIpamIPFailure creates a PostIpamIPFailure with default headers values
+func NewPostIpamIPFailure() *PostIpamIPFailure {
+	return &PostIpamIPFailure{}
 }
 
 /*
-PostIpamIPInternalServerError describes a response with status code 500, with default header values.
+PostIpamIPFailure describes a response with status code 500, with default header values.
 
-Internal server error
+Allocation failure
 */
-type PostIpamIPInternalServerError struct {
+type PostIpamIPFailure struct {
+	Payload models.Error
 }
 
-func (o *PostIpamIPInternalServerError) Error() string {
-	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpInternalServerError ", 500)
+func (o *PostIpamIPFailure) Error() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpFailure  %+v", 500, o.Payload)
+}
+func (o *PostIpamIPFailure) GetPayload() models.Error {
+	return o.Payload
 }
 
-func (o *PostIpamIPInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+func (o *PostIpamIPFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	return nil
-}
-
-// NewPostIpamIPStatus512 creates a PostIpamIPStatus512 with default headers values
-func NewPostIpamIPStatus512() *PostIpamIPStatus512 {
-	return &PostIpamIPStatus512{}
-}
-
-/*
-PostIpamIPStatus512 describes a response with status code 512, with default header values.
-
-Wrong input information
-*/
-type PostIpamIPStatus512 struct {
-}
-
-func (o *PostIpamIPStatus512) Error() string {
-	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus512 ", 512)
-}
-
-func (o *PostIpamIPStatus512) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
-
-	return nil
-}
-
-// NewPostIpamIPStatus513 creates a PostIpamIPStatus513 with default headers values
-func NewPostIpamIPStatus513() *PostIpamIPStatus513 {
-	return &PostIpamIPStatus513{}
-}
-
-/*
-PostIpamIPStatus513 describes a response with status code 513, with default header values.
-
-Not allocatable pod
-*/
-type PostIpamIPStatus513 struct {
-}
-
-func (o *PostIpamIPStatus513) Error() string {
-	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus513 ", 513)
-}
-
-func (o *PostIpamIPStatus513) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
-
-	return nil
-}
-
-// NewPostIpamIPStatus514 creates a PostIpamIPStatus514 with default headers values
-func NewPostIpamIPStatus514() *PostIpamIPStatus514 {
-	return &PostIpamIPStatus514{}
-}
-
-/*
-PostIpamIPStatus514 describes a response with status code 514, with default header values.
-
-No available IP pool
-*/
-type PostIpamIPStatus514 struct {
-}
-
-func (o *PostIpamIPStatus514) Error() string {
-	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus514 ", 514)
-}
-
-func (o *PostIpamIPStatus514) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
-
-	return nil
-}
-
-// NewPostIpamIPStatus515 creates a PostIpamIPStatus515 with default headers values
-func NewPostIpamIPStatus515() *PostIpamIPStatus515 {
-	return &PostIpamIPStatus515{}
-}
-
-/*
-PostIpamIPStatus515 describes a response with status code 515, with default header values.
-
-All IP used out
-*/
-type PostIpamIPStatus515 struct {
-}
-
-func (o *PostIpamIPStatus515) Error() string {
-	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpStatus515 ", 515)
-}
-
-func (o *PostIpamIPStatus515) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }

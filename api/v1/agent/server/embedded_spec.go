@@ -77,19 +77,11 @@ func init() {
             }
           },
           "500": {
-            "description": "Internal server error"
-          },
-          "512": {
-            "description": "Wrong input information"
-          },
-          "513": {
-            "description": "Not allocatable pod"
-          },
-          "514": {
-            "description": "No available IP pool"
-          },
-          "515": {
-            "description": "All IP used out"
+            "description": "Allocation failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       },
@@ -114,7 +106,11 @@ func init() {
             "description": "Success"
           },
           "500": {
-            "description": "Failed"
+            "description": "Addresses release failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       }
@@ -131,7 +127,11 @@ func init() {
             "description": "Success"
           },
           "500": {
-            "description": "Allocation failure"
+            "description": "Allocation failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       },
@@ -146,7 +146,11 @@ func init() {
             "description": "Success"
           },
           "500": {
-            "description": "Failed"
+            "description": "Addresses release failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       }
@@ -247,6 +251,10 @@ func init() {
           }
         }
       }
+    },
+    "Error": {
+      "description": "API error",
+      "type": "string"
     },
     "IpConfig": {
       "description": "IPAM IPs struct, contains ifName, Address and Gateway",
@@ -458,19 +466,11 @@ func init() {
             }
           },
           "500": {
-            "description": "Internal server error"
-          },
-          "512": {
-            "description": "Wrong input information"
-          },
-          "513": {
-            "description": "Not allocatable pod"
-          },
-          "514": {
-            "description": "No available IP pool"
-          },
-          "515": {
-            "description": "All IP used out"
+            "description": "Allocation failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       },
@@ -495,7 +495,11 @@ func init() {
             "description": "Success"
           },
           "500": {
-            "description": "Failed"
+            "description": "Addresses release failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       }
@@ -512,7 +516,11 @@ func init() {
             "description": "Success"
           },
           "500": {
-            "description": "Allocation failure"
+            "description": "Allocation failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       },
@@ -527,7 +535,11 @@ func init() {
             "description": "Success"
           },
           "500": {
-            "description": "Failed"
+            "description": "Addresses release failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
           }
         }
       }
@@ -628,6 +640,10 @@ func init() {
           }
         }
       }
+    },
+    "Error": {
+      "description": "API error",
+      "type": "string"
     },
     "IpConfig": {
       "description": "IPAM IPs struct, contains ifName, Address and Gateway",

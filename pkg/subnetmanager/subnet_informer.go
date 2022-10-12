@@ -83,10 +83,7 @@ func (sm *subnetManager) onSpiderSubnetAdd(obj interface{}) {
 	)
 	logger.Sugar().Debugf("Reconcile Subnet: %+v", *subnet)
 
-	ctx, cancel := context.WithCancel(sm.innerCtx)
-	defer cancel()
-
-	if err := sm.reconcileOnAdd(logutils.IntoContext(ctx, logger), subnet.DeepCopy()); err != nil {
+	if err := sm.reconcileOnAdd(logutils.IntoContext(sm.innerCtx, logger), subnet.DeepCopy()); err != nil {
 		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
 	}
 }
@@ -115,10 +112,7 @@ func (sm *subnetManager) onSpiderSubnetUpdate(oldObj interface{}, newObj interfa
 	logger.Sugar().Debugf("Reconcile old Subnet: %+v", *oldSubnet)
 	logger.Sugar().Debugf("Reconcile new Subnet: %+v", *newSubnet)
 
-	ctx, cancel := context.WithCancel(sm.innerCtx)
-	defer cancel()
-
-	if err := sm.reconcileOnUpdate(logutils.IntoContext(ctx, logger), oldSubnet.DeepCopy(), newSubnet.DeepCopy()); err != nil {
+	if err := sm.reconcileOnUpdate(logutils.IntoContext(sm.innerCtx, logger), oldSubnet.DeepCopy(), newSubnet.DeepCopy()); err != nil {
 		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
 	}
 }
@@ -156,7 +150,7 @@ func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSu
 
 func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		var err error
 		if i != 0 {
 			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
@@ -204,8 +198,8 @@ func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == sm.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to init the free IP ranges of Subnet", sm.config.MaxConflictRetrys)
+			if i == sm.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to init the free IP ranges of Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 			continue
@@ -217,7 +211,7 @@ func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *
 }
 
 func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	for i := 0; i <= sm.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		var err error
 		if i != 0 {
 			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
@@ -249,8 +243,8 @@ func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpool
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == sm.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from Subnet %s", sm.config.MaxConflictRetrys, constant.SpiderFinalizer, subnet.Name)
+			if i == sm.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to remove finalizer '%s' from Subnet %s", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries, constant.SpiderFinalizer, subnet.Name)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 			continue

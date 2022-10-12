@@ -194,7 +194,7 @@ func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context,
 
 // RemoveFinalizer removes a specific finalizer field in finalizers string array.
 func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
-	for i := 0; i <= em.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= em.config.MaxConflictRetries; i++ {
 		we, err := em.GetEndpointByName(ctx, namespace, podName)
 		if err != nil {
 			return err
@@ -209,8 +209,8 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == em.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from Endpoint %s", em.config.MaxConflictRetrys, constant.SpiderFinalizer, podName)
+			if i == em.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to remove finalizer '%s' from Endpoint %s", constant.ErrRetriesExhausted, em.config.MaxConflictRetries, constant.SpiderFinalizer, podName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)
 			continue
@@ -325,7 +325,7 @@ func (r *workloadEndpointManager) Delete(ctx context.Context, sep *spiderpoolv1.
 
 // UpdateCurrentStatus serves for StatefulSet pod re-create
 func (em *workloadEndpointManager) UpdateCurrentStatus(ctx context.Context, containerID string, pod *corev1.Pod) error {
-	for i := 0; i <= em.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= em.config.MaxConflictRetries; i++ {
 		sep, err := em.GetEndpointByName(ctx, pod.Namespace, pod.Name)
 		if nil != err {
 			return err
@@ -352,8 +352,8 @@ func (em *workloadEndpointManager) UpdateCurrentStatus(ctx context.Context, cont
 					return err
 				}
 
-				if i == em.config.MaxConflictRetrys {
-					return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet SpiderEndpoint '%s/%s'", em.config.MaxConflictRetrys, pod.Namespace, pod.Name)
+				if i == em.config.MaxConflictRetries {
+					return fmt.Errorf("%w(<=%d) to re-allocate StatefulSet SpiderEndpoint '%s/%s'", constant.ErrRetriesExhausted, em.config.MaxConflictRetries, pod.Namespace, pod.Name)
 				}
 
 				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)

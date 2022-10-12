@@ -91,7 +91,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 	var ipConfig *models.IPConfig
 	var usedIPPool *spiderpoolv1.SpiderIPPool
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return nil, nil, err
@@ -123,7 +123,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 
 		*ipPool.Status.AllocatedIPCount++
 		if *ipPool.Status.AllocatedIPCount > int64(im.config.MaxAllocatedIPs) {
-			return nil, nil, fmt.Errorf("threshold of IP allocations(<=%d) for IPPool exceeded: %w", im.config.MaxAllocatedIPs, constant.ErrIPUsedOut)
+			return nil, nil, fmt.Errorf("%w, threshold of IP allocations(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, poolName)
 		}
 
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
@@ -131,7 +131,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 				return nil, nil, err
 			}
 			if i == im.config.MaxAllocatedIPs {
-				return nil, nil, fmt.Errorf("insufficient retries(<=%d) to allocate IP from IPPool %s", im.config.MaxConflictRetrys, poolName)
+				return nil, nil, fmt.Errorf("%w(<=%d) to allocate IP from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, poolName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
@@ -182,7 +182,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 
 func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return err
@@ -214,8 +214,8 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == im.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to release IP %+v from IPPool %s", im.config.MaxConflictRetrys, ipAndCIDs, poolName)
+			if i == im.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to release IP %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
@@ -247,7 +247,7 @@ func (im *ipPoolManager) CheckVlanSame(ctx context.Context, poolNameList []strin
 
 func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return err
@@ -262,8 +262,8 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == im.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to remove finalizer '%s' from IPPool %s", im.config.MaxConflictRetrys, constant.SpiderFinalizer, poolName)
+			if i == im.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to remove finalizer '%s' from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, constant.SpiderFinalizer, poolName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
@@ -277,7 +277,7 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 // UpdateAllocatedIPs serves for StatefulSet pod re-create
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		pool, err := im.GetIPPoolByName(ctx, oldIPConfig.IPPool)
 		if nil != err {
 			return err
@@ -307,8 +307,8 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID str
 				return err
 			}
 
-			if i == im.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to re-allocate StatefulSet pod '%s/%s' SpiderIPPool IP '%s'", im.config.MaxConflictRetrys, pod.Namespace, pod.Name, singleIP)
+			if i == im.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to re-allocate StatefulSet pod '%s/%s' SpiderIPPool IP '%s'", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, pod.Namespace, pod.Name, singleIP)
 			}
 
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
@@ -329,7 +329,7 @@ func (im *ipPoolManager) CreateIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 
 func (im *ipPoolManager) ScaleIPPoolIPs(ctx context.Context, poolName string, expandIPs []string) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < im.config.MaxConflictRetrys; i++ {
+	for i := 0; i < im.config.MaxConflictRetries; i++ {
 		pool, err := im.GetIPPoolByName(ctx, poolName)
 		if nil != err {
 			return err
@@ -347,8 +347,8 @@ func (im *ipPoolManager) ScaleIPPoolIPs(ctx context.Context, poolName string, ex
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == im.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to update IPPool '%s'", im.config.MaxConflictRetrys, pool.Name)
+			if i == im.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to update IPPool '%s'", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, pool.Name)
 			}
 
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)

@@ -69,7 +69,7 @@ func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (
 
 func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName string, annotations map[string]string) error {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= pm.config.MaxConflictRetrys; i++ {
+	for i := 0; i <= pm.config.MaxConflictRetries; i++ {
 		pod, err := pm.GetPodByName(ctx, namespace, podName)
 		if err != nil {
 			return err
@@ -86,8 +86,8 @@ func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName s
 			if !apierrors.IsConflict(err) {
 				return err
 			}
-			if i == pm.config.MaxConflictRetrys {
-				return fmt.Errorf("insufficient retries(<=%d) to merge Pod annotations", pm.config.MaxConflictRetrys)
+			if i == pm.config.MaxConflictRetries {
+				return fmt.Errorf("%w(<=%d) to merge Pod annotations", constant.ErrRetriesExhausted, pm.config.MaxConflictRetries)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * pm.config.ConflictRetryUnitTime)
 			continue

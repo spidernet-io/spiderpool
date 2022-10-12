@@ -50,7 +50,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric, nil},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRYS", "3", false, nil, nil, &agentContext.Cfg.UpdateCRMaxRetrys},
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &agentContext.Cfg.UpdateCRMaxRetries},
 	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "300", false, nil, nil, &agentContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", true, nil, nil, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", true, nil, nil, &agentContext.Cfg.IPPoolMaxAllocatedIPs},
@@ -75,7 +75,7 @@ type Config struct {
 	GopsListenPort   string
 	PyroscopeAddress string
 
-	UpdateCRMaxRetrys                 int
+	UpdateCRMaxRetries                int
 	UpdateCRRetryUnitTime             int
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int

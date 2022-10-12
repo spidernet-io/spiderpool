@@ -41,17 +41,12 @@ paths:
         "200":
           description: Success
           schema:
-            "$ref": "#/definitions/IpamAddResponse"
-        "500":
-          description: Internal server error
-        "512":
-          description: Wrong input information
-        "513":
-          description: Not allocatable pod
-        "514":
-          description: No available IP pool
-        "515":
-          description: All IP used out
+            $ref: "#/definitions/IpamAddResponse"
+        '500':
+          description: Allocation failure
+          x-go-name: Failure
+          schema:
+            $ref: "#/definitions/Error"
     delete:
       summary: Delete ip from spiderpool daemon
       description: |
@@ -67,8 +62,11 @@ paths:
       responses:
         "200":
           description: Success
-        "500":
-          description: Failed
+        '500':
+          description: Addresses release failure
+          x-go-name: Failure
+          schema:
+            $ref: "#/definitions/Error"
   "/ipam/ips":
     post:
       summary: Assign multiple ip as a batch
@@ -81,6 +79,9 @@ paths:
           description: Success
         "500":
           description: Allocation failure
+          x-go-name: Failure
+          schema:
+            $ref: "#/definitions/Error"
     delete:
       summary: Delete multiple ip as a batch
       description: |
@@ -90,8 +91,11 @@ paths:
       responses:
         "200":
           description: Success
-        "500":
-          description: Failed
+        '500':
+          description: Addresses release failure
+          x-go-name: Failure
+          schema:
+            $ref: "#/definitions/Error"
   "/workloadendpoint":
     get:
       summary: Get workloadendpoint status
@@ -137,7 +141,11 @@ paths:
           description: Success
         "500":
           description: Failed
+
 definitions:
+  Error:
+    description: API error
+    type: string
   IpamAddArgs:
     description: IPAM request args
     type: object

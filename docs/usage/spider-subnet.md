@@ -16,8 +16,8 @@ Here are some annotations that you should write down on the application template
 
 ### Notice
 
-1. The annotation `spiderpool.spidernet.io/assign-ip-number` has higher priority over `spiderpool.spidernet.io/assign-ip-number`.
-If you specify both of them two, it only uses `spiderpool.spidernet.io/assign-ip-number` mode.
+1. The annotation `spiderpool.spidernet.io/flexible-ip-number` has higher priority over `spiderpool.spidernet.io/assign-ip-number`.
+If you specify both of them two, it only uses `spiderpool.spidernet.io/flexible-ip-number` mode.
 
 2. It only supports single network interfaces to Pods in Kubernetes.
 

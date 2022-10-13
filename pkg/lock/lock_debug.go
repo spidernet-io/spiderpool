@@ -9,17 +9,18 @@ package lock
 import (
 	"bytes"
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"os"
 	"runtime/debug"
 	"time"
+
+	deadlock "github.com/sasha-s/go-deadlock"
 )
 
 const (
 	// selfishThresholdSec is the number of seconds that should be used when
 	// detecting if a lock was held for more than the specified time.
-	selfishThresholdSec = 0.1
+	selfishThresholdSec = 0.2
 
 	// Waiting for a lock for longer than DeadlockTimeout is considered a deadlock.
 	// Ignored is DeadlockTimeout <= 0.

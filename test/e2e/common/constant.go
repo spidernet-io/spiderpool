@@ -58,3 +58,9 @@ var (
 	CNIFailedToSetUpNetwork = cmd.ErrPostIPAM.Error()
 	GetIpamAllocationFailed = cmd.ErrPostIPAM.Error()
 )
+
+// The way to create an ippool
+const (
+	AutomaticallyCreated = "Automatic"
+	ManuallyCreated      = "Manual"
+)

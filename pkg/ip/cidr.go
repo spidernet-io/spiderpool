@@ -61,7 +61,7 @@ func containsCIDR(subnet1 string, subnet2 string) bool {
 	_, ipNet2, _ := net.ParseCIDR(subnet2)
 	ones1, _ := ipNet1.Mask.Size()
 	ones2, _ := ipNet2.Mask.Size()
-	if ones1 < ones2 && ipNet1.Contains(ipNet2.IP) {
+	if ones1 <= ones2 && ipNet1.Contains(ipNet2.IP) {
 		return true
 	}
 

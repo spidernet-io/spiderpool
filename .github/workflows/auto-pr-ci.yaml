@@ -63,6 +63,7 @@ jobs:
               - 'charts/**'
               - 'Makefile*'
               - '**/Makefile*'
+              - '**/Dockerfile'
             all_e2e:
               - 'test/**'
               - 'vendor/github.com/spidernet-io/**/*.go'
@@ -253,13 +254,16 @@ jobs:
           name: image-tar-spiderpool-controller
           path: test/.download
 
-      - name: Load Spiderpool Image
+      - name: Load And Scan Images
         run: |
           TAR_FILES=` ls test/.download `
           echo $TAR_FILES
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+              echo "---------trivy checkout image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} --------------------"
+              make lint_image_trivy -e IMAGE_NAME=${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}  \
+                  || { echo "RUN_IMAGE_TRIVY_FAIL=true" >> $GITHUB_ENV ; echo "error, image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} is bad" ; }
           done
 
       # ------------- by default , dual stack
@@ -510,4 +514,13 @@ jobs:
               exit 0
           else
               exit 1
+          fi
+
+      - name: Show Trivy Scan Report
+        run: |
+          if [ "${{ env.RUN_IMAGE_TRIVY_FAIL }}" == "true" ] ; then
+              echo "error, image is not secure, see detail on Step 'Load And Scan Images' "
+              exit 1
+          else
+              exit 0
           fi

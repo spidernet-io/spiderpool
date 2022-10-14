@@ -51,6 +51,10 @@ jobs:
           fetch-depth: 0
           ref: ${{ steps.get_ref.outputs.ref }}
 
+      - name: Lint Chart
+        run: |
+          make lint_chart_trivy
+
       - name: check version
         run: |
           chart_version=`cat VERSION | tr -d ' ' | tr -d 'v' `

@@ -69,6 +69,10 @@ jobs:
           persist-credentials: false
           ref: ${{ steps.ref.outputs.ref }}
 
+      - name: Lint Dockerfile Trivy
+        run: |
+          make lint_dockerfile_trivy
+
       - name: Getting Build Arg
         id: arg
         run: |

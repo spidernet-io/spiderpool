@@ -12,7 +12,6 @@ rules:
   - namespaces
   - nodes
   - pods
-  - secrets
   verbs:
   - get
   - list
@@ -27,17 +26,6 @@ rules:
   - delete
   - get
   - list
-  - update
-  - watch
-- apiGroups:
-  - admissionregistration.k8s.io
-  resources:
-  - mutatingwebhookconfigurations
-  - validatingwebhookconfigurations
-  verbs:
-  - get
-  - list
-  - patch
   - update
   - watch
 - apiGroups:

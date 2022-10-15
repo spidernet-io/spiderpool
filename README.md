@@ -89,7 +89,7 @@ The Spiderpool provides a large number of different features as follows.
 
 * Based on CRD storage, all operation could be done with kubernetes API-server.
 
-* Administrator could safely edit kinds of spiderpool CRD resources, the Spiderpool will help validate the modification and prevent from kinds of confliction.
+* Administrator could safely edit kinds of spiderpool CRD resources, the Spiderpool will help validate the modification and prevent from kinds of conflict and mistake.
 
 * Support for both AMD64 and ARM64.
 

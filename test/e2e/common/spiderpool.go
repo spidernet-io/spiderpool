@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -420,15 +421,11 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	}
 	var v4Ipversion = new(types.IPVersion)
 	*v4Ipversion = constant.IPv4
-
-	var iPv4PoolObj *v1.SpiderIPPool
-	// Generate ipv4pool name
 	var v4PoolName string = "v4pool-" + tools.RandomName()
-	// Generate random number
 	var randomNumber1 string = GenerateRandomNumber(255)
 	var randomNumber2 string = GenerateRandomNumber(255)
 
-	iPv4PoolObj = &v1.SpiderIPPool{
+	iPv4PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: v4PoolName,
 		},
@@ -462,11 +459,11 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 
 	var v6Ipversion = new(types.IPVersion)
 	*v6Ipversion = constant.IPv6
-
-	// Generate ipv6pool name
 	var v6PoolName string = "v6pool-" + tools.RandomName()
-	// Generate random number
 	var randomNumber string = GenerateString(4, true)
+	if randomNumber[0:1] == "0" {
+		randomNumber = randomNumber[1:(strings.Count(randomNumber, "") - 1)]
+	}
 
 	iPv6PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -486,7 +483,7 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	if ipNum == 1 {
 		iPv6PoolObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2", randomNumber)}
 	} else {
-		bStr := fmt.Sprintf("%x", ipNum+1)
+		bStr := strconv.FormatInt(int64(ipNum+1), 16)
 		iPv6PoolObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2-fd00:%s::%s", randomNumber, randomNumber, bStr)}
 	}
 	return v6PoolName, iPv6PoolObj

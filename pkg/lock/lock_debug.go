@@ -15,27 +15,33 @@ import (
 	"time"
 
 	deadlock "github.com/sasha-s/go-deadlock"
+	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-const (
-	// selfishThresholdSec is the number of seconds that should be used when
+var (
+	OutputWriter io.Writer = os.Stderr
+
+	// SelfishThresholdSec is the number of seconds that should be used when
 	// detecting if a lock was held for more than the specified time.
-	selfishThresholdSec = 0.2
+	SelfishThresholdSec = 0.2
 
 	// Waiting for a lock for longer than DeadlockTimeout is considered a deadlock.
 	// Ignored is DeadlockTimeout <= 0.
-	deadLockTimeout = 3 * time.Second
+	DeadlockTimeout = 3 * time.Second
+)
+
+var (
+	logger = logutils.Logger.Named("Debug-Lock")
+
+	// selfishThresholdMsg is the message that will be printed when a lock was
+	// held for more than selfishThresholdSec.
+	selfishThresholdMsg = fmt.Sprintf("Goroutine took lock for more than %.2f seconds", SelfishThresholdSec)
 )
 
 func init() {
-	deadlock.Opts.DeadlockTimeout = deadLockTimeout
-	deadlock.Opts.Disable = false
-	deadlock.Opts.DisableLockOrderDetection = false
-	deadlock.Opts.PrintAllCurrentGoroutines = true
-	deadlock.Opts.LogBuf = os.Stderr
-	deadlock.Opts.OnPotentialDeadlock = func() {
-		os.Exit(2)
-	}
+	deadlock.Opts.DeadlockTimeout = DeadlockTimeout
 }
 
 type internalRWMutex struct {
@@ -49,8 +55,8 @@ func (i *internalRWMutex) Lock() {
 }
 
 func (i *internalRWMutex) Unlock() {
-	if sec := time.Since(i.t).Seconds(); sec >= selfishThresholdSec {
-		printStackTo(sec, debug.Stack(), os.Stderr)
+	if sec := time.Since(i.t).Seconds(); sec >= SelfishThresholdSec {
+		printStackTo(sec, debug.Stack(), OutputWriter)
 	}
 	i.RWMutex.Unlock()
 }
@@ -78,8 +84,8 @@ func (i *internalMutex) Lock() {
 }
 
 func (i *internalMutex) Unlock() {
-	if sec := time.Since(i.Time).Seconds(); sec >= selfishThresholdSec {
-		printStackTo(sec, debug.Stack(), os.Stderr)
+	if sec := time.Since(i.Time).Seconds(); sec >= SelfishThresholdSec {
+		printStackTo(sec, debug.Stack(), OutputWriter)
 	}
 	i.Mutex.Unlock()
 }
@@ -98,8 +104,10 @@ func printStackTo(sec float64, stack []byte, writer io.Writer) {
 		goRoutineNumber = stack[:goroutineLine]
 	}
 
-	fmt.Printf("goroutine=%v : Goroutine took lock %v seconds for more than %.2f seconds\n",
-		string(goRoutineNumber[len("goroutine"):len(goRoutineNumber)-1]), sec, selfishThresholdSec)
+	logger.With(
+		zap.Float64("Seconds", sec),
+		zap.String("Goroutine", string(goRoutineNumber[len("goroutine"):len(goRoutineNumber)-1])),
+	).Warn(selfishThresholdMsg)
 
 	// A stack trace is usually in the following format:
 	// goroutine 1432 [running]:

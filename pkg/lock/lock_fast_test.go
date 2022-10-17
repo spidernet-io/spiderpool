@@ -8,27 +8,60 @@ package lock_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/spidernet-io/spiderpool/pkg/lock"
-	"time"
 )
 
-var _ = Describe("LockFast", Label("unitest"), func() {
+var _ = Describe("Fast lock", Label("unitest", "lock_test"), func() {
+	Describe("Mutex", func() {
+		var mutex *lock.Mutex
 
-	// it is daemon , add more test here
-	It("test lock", func() {
-		l := &lock.Mutex{}
-		l.Lock()
-		time.Sleep(1 * time.Second)
-		l.Unlock()
+		BeforeEach(func() {
+			mutex = &lock.Mutex{}
+		})
+
+		It("general use", func() {
+			mutex.Lock()
+			Expect(mutex.TryLock()).NotTo(BeTrue())
+
+			mutex.Unlock()
+			Expect(mutex.TryLock()).To(BeTrue())
+			mutex.Unlock()
+
+			mutex.Lock()
+			mutex.UnlockIgnoreTime()
+		})
 	})
-	It("test RWMutex lock", func() {
-		l := &lock.RWMutex{}
-		l.RLock()
-		time.Sleep(1 * time.Second)
-		l.RUnlock()
 
-		l.Lock()
-		time.Sleep(1 * time.Second)
-		l.Unlock()
+	Describe("RWMutex", func() {
+		var rwMutex *lock.RWMutex
+
+		BeforeEach(func() {
+			rwMutex = &lock.RWMutex{}
+		})
+
+		It("general use", func() {
+			rwMutex.Lock()
+			Expect(rwMutex.TryRLock()).NotTo(BeTrue())
+			Expect(rwMutex.TryLock()).NotTo(BeTrue())
+
+			rwMutex.Unlock()
+			Expect(rwMutex.TryLock()).To(BeTrue())
+			Expect(rwMutex.TryRLock()).NotTo(BeTrue())
+			rwMutex.Unlock()
+
+			rwMutex.RLock()
+			Expect(rwMutex.TryLock()).NotTo(BeTrue())
+			Expect(rwMutex.TryRLock()).To(BeTrue())
+
+			rwMutex.RUnlock()
+			rwMutex.RUnlock()
+			Expect(rwMutex.TryLock()).To(BeTrue())
+			rwMutex.Unlock()
+
+			rwMutex.Lock()
+			rwMutex.UnlockIgnoreTime()
+		})
 	})
 })

@@ -16,7 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 )
 
-var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
+var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var config limiter.LimiterConfig
@@ -42,7 +42,7 @@ var _ = Describe("Queue", Label("unitest", "queue_test"), func() {
 			}()
 		})
 
-		Context("Routine use", func() {
+		Context("General use", func() {
 			BeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
 				DeferCleanup(cancel)

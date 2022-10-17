@@ -108,9 +108,6 @@ spec:
             path: /v1/runtime/startup
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
-            httpHeaders:
-              - name: "checkType"
-                value: "startupProbe"
           failureThreshold: {{ .Values.spiderpoolController.healthChecking.startupProbe.failureThreshold }}
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.startupProbe.periodSeconds }}
           successThreshold: 1
@@ -121,9 +118,6 @@ spec:
             path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
-            httpHeaders:
-              - name: "checkType"
-                value: "livenessProbe"
           initialDelaySeconds: 60
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.livenessProbe.periodSeconds }}
           successThreshold: 1
@@ -135,9 +129,6 @@ spec:
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
-            httpHeaders:
-              - name: "checkType"
-                value: "readinessProbe"
           initialDelaySeconds: 5
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.readinessProbe.periodSeconds }}
           successThreshold: 1

@@ -33,7 +33,7 @@ jobs:
       ref: ${{ steps.result.outputs.ref }}
     steps:
       - name: Check Go Code Changes
-        uses: dorny/paths-filter@v2.10.2
+        uses: dorny/paths-filter@v2.11.1
         if: ${{ github.event_name == 'pull_request' }}
         id: filter_pr
         with:

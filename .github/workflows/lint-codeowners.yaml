@@ -29,7 +29,7 @@ jobs:
       codeowners-changed: ${{ steps.changes.outputs.codeowners-changed }}
     steps:
       - name: Check code changes
-        uses: dorny/paths-filter@v2.10.2
+        uses: dorny/paths-filter@v2.11.1
         id: changes
         with:
           filters: |

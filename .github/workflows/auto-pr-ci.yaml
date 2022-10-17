@@ -48,7 +48,7 @@ jobs:
       e2e_reliability_changed: ${{ steps.get_ref.outputs.e2e_reliablility }}
     steps:
       - name: Check Code Changes
-        uses: dorny/paths-filter@v2.10.2
+        uses: dorny/paths-filter@v2.11.1
         if: ${{ github.event_name == 'pull_request_target' }}
         id: filter_pr
         with:

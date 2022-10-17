@@ -21,7 +21,6 @@ type SubnetManager interface {
 	SetupInformer(ctx context.Context, client crdclientset.Interface, controllerLeader election.SpiderLeaseElector) error
 	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
 	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
-	UpdateSubnetStatusOnce(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error
 	Run(ctx context.Context, client kubernetes.Interface)
 	GenerateIPsFromSubnet(ctx context.Context, subnetMgrName string, ipNum int) ([]string, error)
 	AllocateIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podLabels map[string]string, ipNum int, ipVersion types.IPVersion) error

@@ -115,7 +115,7 @@ func (sm *subnetManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	)
 	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
 
-	if errs := sm.validateCreateSubnet(ctx, subnet); len(errs) != 0 {
+	if errs := sm.validateCreateSubnet(logutils.IntoContext(ctx, logger), subnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},
@@ -150,7 +150,7 @@ func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 		)
 	}
 
-	if errs := sm.validateUpdateSubnet(ctx, oldSubnet, newSubnet); len(errs) != 0 {
+	if errs := sm.validateUpdateSubnet(logutils.IntoContext(ctx, logger), oldSubnet, newSubnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},

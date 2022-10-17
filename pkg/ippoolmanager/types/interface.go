@@ -18,6 +18,7 @@ import (
 )
 
 type IPPoolManager interface {
+	Start(ctx context.Context) error
 	SetupWebhook() error
 	SetupInformer(client crdclientset.Interface, controllerLeader election.SpiderLeaseElector) error
 	InjectSubnetManager(subnetManager subnetmanagertypes.SubnetManager)

@@ -79,14 +79,6 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 	return subnetList, nil
 }
 
-func (sm *subnetManager) UpdateSubnetStatusOnce(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	if err := sm.client.Status().Update(ctx, subnet); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetMgrName string, ipNum int) ([]string, error) {
 	var allocateIPRange []string
 

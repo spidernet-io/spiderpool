@@ -265,6 +265,13 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.IPPoolManager = ipPoolManager
 
+	go func() {
+		logger.Debug("Starting IPPool Manager")
+		if err := ipPoolManager.Start(controllerContext.InnerCtx); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}()
+
 	// start SpiderIPPool informer
 	logger.Info("Begin to set up SpiderIPPool informer")
 	crdClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())

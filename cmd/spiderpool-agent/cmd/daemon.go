@@ -321,7 +321,7 @@ func initAgentServiceManagers(ctx context.Context) {
 		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
 			UpdateCRConfig:     updateCRConfig,
 			EnableSpiderSubnet: agentContext.Cfg.EnableSpiderSubnet,
-		}, agentContext.CRDManager, agentContext.IPPoolManager)
+		}, agentContext.CRDManager, agentContext.IPPoolManager, agentContext.RIPManager)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}

@@ -14,6 +14,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +28,7 @@ import (
 )
 
 func (sm *subnetManager) SetupControllers(ctx context.Context, client kubernetes.Interface) error {
-	subnetController, err := controllers.NewSubnetController(sm.newReconcile(), sm.newCleanUpApp(), logger.Named("Controllers"))
+	subnetController, err := controllers.NewSubnetController(sm.ControllerAddOrUpdateHandler(), sm.ControllerDeleteHandler(), logger.Named("Controllers"))
 	if nil != err {
 		return fmt.Errorf("failed to set up controllers informers, error: %v", err)
 	}
@@ -69,14 +71,14 @@ func (sm *subnetManager) SetupControllers(ctx context.Context, client kubernetes
 	return nil
 }
 
-// newReconcile serves for kubernetes original controller applications(such as: Deployment,ReplicaSet,Job...),
+// ControllerAddOrUpdateHandler serves for kubernetes original controller applications(such as: Deployment,ReplicaSet,Job...),
 // to create a new IPPool or scale the IPPool
-func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
+func (sm *subnetManager) ControllerAddOrUpdateHandler() controllers.AppInformersAddOrUpdateFunc {
 	return func(ctx context.Context, oldObj, newObj interface{}) error {
-		log := logutils.FromContext(ctx)
+		var log *zap.Logger
 
 		var err error
-		var oldSubnetConfig, newSubnetConfig *controllers.PodSubnetAnno
+		var oldSubnetConfig, newSubnetConfig *controllers.PodSubnetAnnoConfig
 		var appKind string
 		var app metav1.Object
 		var podSelector map[string]string
@@ -85,35 +87,37 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 		switch newObject := newObj.(type) {
 		case *appsv1.Deployment:
 			appKind = constant.OwnerDeployment
-			logPrefix := fmt.Sprintf("application '%s/%s/%s'", appKind, newObject.Namespace, newObject.Name)
+			log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("%s is HostNetwork mode, we would not create or scale IPPool for it", logPrefix)
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
 				return nil
 			}
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
 			if owner != nil {
-				log.Sugar().Debugf("%s has a owner '%s/%s', we would not create or scale IPPool for it", logPrefix, owner.Kind, owner.Name)
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
 			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(newObject.Spec.Template.Annotations, newAppReplicas)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
 			if nil != err {
-				return fmt.Errorf("failed to get %s subnet configuration, error: %v", logPrefix, err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
 			if newSubnetConfig == nil {
-				log.Sugar().Debugf("%s will use default IPAM mode with no subnet annotation", logPrefix)
+				log.Debug("app will use default IPAM mode with no subnet annotation")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
-				err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
-				if nil != err {
-					log.Sugar().Errorf("failed try to clean up %s legacy IPPools, error: %v", logPrefix, err)
+				if sm.config.EnableSubnetDeleteStaleIPPool {
+					err = sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
+					if nil != err {
+						log.Sugar().Errorf("failed try to clean up legacy IPPools, error: %v", err)
+					}
 				}
 
 				return nil
@@ -125,43 +129,45 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 			if oldObj != nil {
 				oldDeployment := oldObj.(*appsv1.Deployment)
 				oldAppReplicas = controllers.GetAppReplicas(oldDeployment.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(oldDeployment.Spec.Template.Annotations, oldAppReplicas)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDeployment.Spec.Template.Annotations)
 				if nil != err {
-					return fmt.Errorf("failed to get old %s subnet configuration, error: %v", logPrefix, err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
 			}
 
 		case *appsv1.ReplicaSet:
 			appKind = constant.OwnerReplicaSet
-			logPrefix := fmt.Sprintf("application '%s/%s/%s'", appKind, newObject.Namespace, newObject.Name)
+			log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("%s is HostNetwork mode, we would not create or scale IPPool for it", logPrefix)
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
 				return nil
 			}
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
 			if owner != nil {
-				log.Sugar().Debugf("%s has a owner '%s/%s', we would not create or scale IPPool for it", logPrefix, owner.Kind, owner.Name)
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
 			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(newObject.Spec.Template.Annotations, newAppReplicas)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
 			if nil != err {
-				return fmt.Errorf("failed to get %s subnet configuration, error: %v", logPrefix, err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
 			if newSubnetConfig == nil {
-				log.Sugar().Debugf("%s will use default IPAM mode with no subnet annotation", logPrefix)
+				log.Debug("app will use default IPAM mode with no subnet annotation")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
-				err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
-				if nil != err {
-					log.Sugar().Errorf("failed try to clean up %s legacy IPPools, error: %v", logPrefix, err)
+				if sm.config.EnableSubnetDeleteStaleIPPool {
+					err = sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
+					if nil != err {
+						log.Sugar().Errorf("failed try to clean up legacy IPPools, error: %v", err)
+					}
 				}
 
 				return nil
@@ -173,43 +179,45 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 			if oldObj != nil {
 				oldReplicaSet := oldObj.(*appsv1.ReplicaSet)
 				oldAppReplicas = controllers.GetAppReplicas(oldReplicaSet.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(oldReplicaSet.Spec.Template.Annotations, oldAppReplicas)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldReplicaSet.Spec.Template.Annotations)
 				if nil != err {
-					return fmt.Errorf("failed to get old %s subnet configuration, error: %v", logPrefix, err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
 			}
 
 		case *appsv1.StatefulSet:
 			appKind = constant.OwnerStatefulSet
-			logPrefix := fmt.Sprintf("application '%s/%s/%s'", appKind, newObject.Namespace, newObject.Name)
+			log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("%s is HostNetwork mode, we would not create or scale IPPool for it", logPrefix)
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
 				return nil
 			}
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
 			if owner != nil {
-				log.Sugar().Debugf("%s has a owner '%s/%s', we would not create or scale IPPool for it", logPrefix, owner.Kind, owner.Name)
+				log.Sugar().Debugf("apphas a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
 			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(newObject.Spec.Template.Annotations, newAppReplicas)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
 			if nil != err {
-				return fmt.Errorf("failed to get %s subnet configuration, error: %v", logPrefix, err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
 			if newSubnetConfig == nil {
-				log.Sugar().Debugf("%s will use default IPAM mode with no subnet annotation", logPrefix)
+				log.Debug("app will use default IPAM mode with no subnet annotation")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
-				err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
-				if nil != err {
-					log.Sugar().Errorf("failed try to clean up %s legacy IPPools, error: %v", logPrefix, err)
+				if sm.config.EnableSubnetDeleteStaleIPPool {
+					err = sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
+					if nil != err {
+						log.Sugar().Errorf("failed try to clean up legacy IPPools, error: %v", err)
+					}
 				}
 
 				return nil
@@ -221,43 +229,45 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 			if oldObj != nil {
 				oldStatefulSet := oldObj.(*appsv1.StatefulSet)
 				oldAppReplicas = controllers.GetAppReplicas(oldStatefulSet.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(oldStatefulSet.Spec.Template.Annotations, oldAppReplicas)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldStatefulSet.Spec.Template.Annotations)
 				if nil != err {
-					return fmt.Errorf("failed to get old %s subnet configuration, error: %v", logPrefix, err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
 			}
 
 		case *batchv1.Job:
 			appKind = constant.OwnerJob
-			logPrefix := fmt.Sprintf("application '%s/%s/%s'", appKind, newObject.Namespace, newObject.Name)
+			log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("%s is HostNetwork mode, we would not create or scale IPPool for it", logPrefix)
+				log.Sugar().Debugf("HostNetwork mode, we would not create or scale IPPool for it")
 				return nil
 			}
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
 			if owner != nil {
-				log.Sugar().Debugf("%s has a owner '%s/%s', we would not create or scale IPPool for it", logPrefix, owner.Kind, owner.Name)
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
-			newAppReplicas = calculateJobPodNum(newObject.Spec.Parallelism, newObject.Spec.Completions)
-			newSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(newObject.Spec.Template.Annotations, newAppReplicas)
+			newAppReplicas = controllers.CalculateJobPodNum(newObject.Spec.Parallelism, newObject.Spec.Completions)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
 			if nil != err {
-				return fmt.Errorf("failed to get %s subnet configuration, error: %v", logPrefix, err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
 			if newSubnetConfig == nil {
-				log.Sugar().Debugf("%s will use default IPAM mode with no subnet annotation", logPrefix)
+				log.Debug("app will use default IPAM mode with no subnet annotation")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
-				err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
-				if nil != err {
-					log.Sugar().Errorf("failed try to clean up %s legacy IPPools, error: %v", logPrefix, err)
+				if sm.config.EnableSubnetDeleteStaleIPPool {
+					err = sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
+					if nil != err {
+						log.Sugar().Errorf("failed try to clean up legacy IPPools, error: %v", err)
+					}
 				}
 
 				return nil
@@ -268,47 +278,56 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 
 			if oldObj != nil {
 				oldJob := oldObj.(*batchv1.Job)
-				oldAppReplicas = calculateJobPodNum(oldJob.Spec.Parallelism, oldJob.Spec.Completions)
-				oldSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(oldJob.Spec.Template.Annotations, oldAppReplicas)
+				oldAppReplicas = controllers.CalculateJobPodNum(oldJob.Spec.Parallelism, oldJob.Spec.Completions)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldJob.Spec.Template.Annotations)
 				if nil != err {
-					return fmt.Errorf("failed to get old %s subnet configuration, error: %v", logPrefix, err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
 			}
 
 		case *batchv1.CronJob:
 			appKind = constant.OwnerCronJob
-			logPrefix := fmt.Sprintf("application '%s/%s/%s'", appKind, newObject.Namespace, newObject.Name)
+			log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.JobTemplate.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("%s is HostNetwork mode, we would not create or scale IPPool for it", logPrefix)
+				log.Sugar().Debugf("HostNetwork mode, we would not create or scale IPPool for it")
 				return nil
 			}
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
 			if owner != nil {
-				log.Sugar().Debugf("%s has a owner '%s/%s', we would not create or scale IPPool for it", logPrefix, owner.Kind, owner.Name)
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
-			newAppReplicas = calculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
-			newSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(newObject.Spec.JobTemplate.Spec.Template.Annotations, newAppReplicas)
+			newAppReplicas = controllers.CalculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations)
 			if nil != err {
-				return fmt.Errorf("failed to get %s subnet configuration, error: %v", logPrefix, err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
 			if newSubnetConfig == nil {
-				log.Sugar().Debugf("%s will use default IPAM mode with no subnet annotation", logPrefix)
+				log.Debug("app will use default IPAM mode with no subnet annotation")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
-				err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
-				if nil != err {
-					log.Sugar().Errorf("failed try to clean up %s legacy IPPools, error: %v", logPrefix, err)
+				if sm.config.EnableSubnetDeleteStaleIPPool {
+					err = sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
+					if nil != err {
+						log.Sugar().Errorf("failed try to clean up legacy IPPools, error: %v", err)
+					}
 				}
 
 				return nil
+			}
+
+			var lastJob batchv1.Job
+			lastJobName := newObject.Status.Active[len(newObject.Status.Active)].Name
+			err = sm.client.Get(ctx, apitypes.NamespacedName{Namespace: newObject.Namespace, Name: lastJobName}, &lastJob)
+			if nil != err {
+				return fmt.Errorf("failed to get Job '%s/%s', error: %v", newObject.Namespace, lastJobName, err)
 			}
 
 			app = newObject.DeepCopy()
@@ -316,44 +335,46 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 
 			if oldObj != nil {
 				oldCronJob := oldObj.(*batchv1.CronJob)
-				oldAppReplicas = calculateJobPodNum(oldCronJob.Spec.JobTemplate.Spec.Parallelism, oldCronJob.Spec.JobTemplate.Spec.Completions)
-				oldSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations, oldAppReplicas)
+				oldAppReplicas = controllers.CalculateJobPodNum(oldCronJob.Spec.JobTemplate.Spec.Parallelism, oldCronJob.Spec.JobTemplate.Spec.Completions)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations)
 				if nil != err {
-					return fmt.Errorf("failed to get old %s subnet configuration, error: %v", logPrefix, err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
 			}
 
 		case *appsv1.DaemonSet:
 			appKind = constant.OwnerDaemonSet
-			logPrefix := fmt.Sprintf("application '%s/%s/%s'", appKind, newObject.Namespace, newObject.Name)
+			log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("%s is HostNetwork mode, we would not create or scale IPPool for it", logPrefix)
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
 				return nil
 			}
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
 			if owner != nil {
-				log.Sugar().Debugf("%s has a owner '%s/%s', we would not create or scale IPPool for it", logPrefix, owner.Kind, owner.Name)
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
 			newAppReplicas = int(newObject.Status.DesiredNumberScheduled)
-			newSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(newObject.Spec.Template.Annotations, newAppReplicas)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
 			if nil != err {
-				return fmt.Errorf("failed to get %s subnet configuration, error: %v", logPrefix, err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
 			if newSubnetConfig == nil {
-				log.Sugar().Debugf("%s will use default IPAM mode with no subnet annotation", logPrefix)
+				log.Debug("app will use default IPAM mode with no subnet annotation")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
-				err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
-				if nil != err {
-					log.Sugar().Errorf("failed try to clean up %s legacy IPPools, error: %v", logPrefix, err)
+				if sm.config.EnableSubnetDeleteStaleIPPool {
+					err = sm.tryToCleanUpLegacyIPPools(ctx, appKind, newObject)
+					if nil != err {
+						log.Sugar().Errorf("failed try to clean up legacy IPPools, error: %v", err)
+					}
 				}
 
 				return nil
@@ -365,9 +386,9 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 			if oldObj != nil {
 				oldDaemonSet := oldObj.(*appsv1.DaemonSet)
 				oldAppReplicas = int(oldDaemonSet.Status.DesiredNumberScheduled)
-				oldSubnetConfig, err = controllers.GetSubnetConfigFromPodAnno(oldDaemonSet.Spec.Template.Annotations, oldAppReplicas)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDaemonSet.Spec.Template.Annotations)
 				if nil != err {
-					return fmt.Errorf("failed to get old %s subnet configuration, error: %v", logPrefix, err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
 			}
 
@@ -375,12 +396,10 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 			return fmt.Errorf("unrecognized application: %+v", newObj)
 		}
 
-		log = logger.With(zap.String(appKind, fmt.Sprintf("%s/%s", app.GetNamespace(), app.GetName())))
-
 		// check the difference between the two object and choose to reconcile or not
-		if sm.hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas, appKind, app, log) {
-			log.Debug("Going to create IPPool or check whether to scale IPPool or not")
-			err = sm.createOrScaleIPPool(ctx, *newSubnetConfig, appKind, app, podSelector, newAppReplicas)
+		if sm.hasSubnetConfigChanged(logutils.IntoContext(ctx, log), oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas, appKind, app) {
+			log.Debug("Going to create IPPool or mark IPPool desired IP number")
+			err = sm.createOrMarkIPPool(ctx, *newSubnetConfig, appKind, app, podSelector, newAppReplicas)
 			if nil != err {
 				return fmt.Errorf("failed to create or scale IPPool, error: %v", err)
 			}
@@ -390,10 +409,12 @@ func (sm *subnetManager) newReconcile() controllers.ReconcileAppInformersFunc {
 	}
 }
 
-// createOrScaleIPPool try to create an IPPool or check whether to scale the existed IPPool or not with the give SpiderSubnet configuration
-func (sm *subnetManager) createOrScaleIPPool(ctx context.Context, podSubnetConfig controllers.PodSubnetAnno, appKind string, app metav1.Object, podSelector map[string]string, appReplicas int) error {
+// createOrMarkIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
+func (sm *subnetManager) createOrMarkIPPool(ctx context.Context, podSubnetConfig controllers.PodSubnetAnnoConfig, appKind string, app metav1.Object,
+	podSelector map[string]string, appReplicas int) error {
+
 	// retrieve application pools
-	f := func(ctx context.Context, pools []*spiderpoolv1.SpiderIPPool, subnetMgrName string, ipVersion types.IPVersion) error {
+	f := func(ctx context.Context, poolList *spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion) error {
 		var ipNum int
 		if podSubnetConfig.FlexibleIPNum != nil {
 			ipNum = appReplicas + *(podSubnetConfig.FlexibleIPNum)
@@ -402,55 +423,75 @@ func (sm *subnetManager) createOrScaleIPPool(ctx context.Context, podSubnetConfi
 		}
 
 		// verify whether the pool IPs need to be expanded or not
-		if len(pools) == 0 {
-			// create IPPool when the subnet manager was specified
-			err := sm.AllocateIPPool(ctx, subnetMgrName, appKind, app, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool)
+		if poolList == nil || len(poolList.Items) == 0 {
+			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
+			// and the IPPool informer will implement the scale action
+			err := sm.AllocateEmptyIPPool(ctx, subnetName, appKind, app, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool)
 			if nil != err {
 				return err
 			}
-		} else if len(pools) == 1 {
-			err := sm.CheckScaleIPPool(ctx, pools[0], subnetMgrName, ipNum)
+		} else if len(poolList.Items) == 1 {
+			pool := poolList.Items[0]
+			err := sm.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
 			if nil != err {
 				return err
 			}
 		} else {
 			return fmt.Errorf("it's invalid for '%s/%s/%s' corresponding SpiderSubnet '%s' owns multiple IPPools '%v' for one specify application",
-				appKind, app.GetNamespace(), app.GetName(), subnetMgrName, pools)
+				appKind, app.GetNamespace(), app.GetName(), subnetName, poolList.Items)
 		}
 
 		return nil
 	}
 
-	if len(podSubnetConfig.SubnetManagerV4) != 0 {
-		v4Pools, err := sm.RetrieveIPPoolsByAppUID(ctx, app.GetUID(), client.MatchingLabels{
-			constant.LabelIPPoolOwnerSpiderSubnet: podSubnetConfig.SubnetManagerV4,
-			constant.LabelIPPoolOwnerApplication:  controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-			constant.LabelIPPoolVersion:           constant.LabelIPPoolVersionV4,
-		})
-		if nil != err {
-			return err
-		}
+	if sm.config.EnableIPv4 && len(podSubnetConfig.SubnetName.IPv4) == 0 {
+		return fmt.Errorf("IPv4 SpiderSubnet not specified when configuration enableIPv4 is on")
+	}
+	if sm.config.EnableIPv6 && len(podSubnetConfig.SubnetName.IPv6) == 0 {
+		return fmt.Errorf("IPv6 SpiderSubnet not specified when configuration enableIPv6 is on")
+	}
 
-		err = f(ctx, v4Pools, podSubnetConfig.SubnetManagerV4, constant.IPv4)
-		if nil != err {
-			return err
+	var errs []error
+	if sm.config.EnableIPv4 {
+		if len(podSubnetConfig.SubnetName.IPv4) != 0 {
+			v4PoolList, err := sm.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
+				constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+				constant.LabelIPPoolOwnerSpiderSubnet:   podSubnetConfig.SubnetName.IPv4[0],
+				constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
+			})
+			if nil != err {
+				return err
+			}
+
+			err = f(ctx, v4PoolList, podSubnetConfig.SubnetName.IPv4[0], constant.IPv4)
+			if nil != err {
+				errs = append(errs, err)
+			}
 		}
 	}
 
-	if len(podSubnetConfig.SubnetManagerV6) != 0 {
-		v6Pools, err := sm.RetrieveIPPoolsByAppUID(ctx, app.GetUID(), client.MatchingLabels{
-			constant.LabelIPPoolOwnerSpiderSubnet: podSubnetConfig.SubnetManagerV6,
-			constant.LabelIPPoolOwnerApplication:  controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-			constant.LabelIPPoolVersion:           constant.LabelIPPoolVersionV6,
-		})
-		if nil != err {
-			return err
-		}
+	if sm.config.EnableIPv6 {
+		if len(podSubnetConfig.SubnetName.IPv6) != 0 {
+			v6PoolList, err := sm.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
+				constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+				constant.LabelIPPoolOwnerSpiderSubnet:   podSubnetConfig.SubnetName.IPv6[0],
+				constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
+			})
+			if nil != err {
+				return err
+			}
 
-		err = f(ctx, v6Pools, podSubnetConfig.SubnetManagerV6, constant.IPv6)
-		if nil != err {
-			return err
+			err = f(ctx, v6PoolList, podSubnetConfig.SubnetName.IPv6[0], constant.IPv6)
+			if nil != err {
+				errs = append(errs, err)
+			}
 		}
+	}
+
+	if len(errs) != 0 {
+		return utilerrors.NewAggregate(errs)
 	}
 
 	return nil
@@ -458,12 +499,14 @@ func (sm *subnetManager) createOrScaleIPPool(ctx context.Context, podSubnetConfi
 
 // hasSubnetConfigChanged checks whether application subnet configuration changed and the application replicas changed or not.
 // The second parameter newSubnetConfig must not be nil.
-func (sm *subnetManager) hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *controllers.PodSubnetAnno, oldAppReplicas, newAppReplicas int,
-	appKind string, app metav1.Object, log *zap.Logger) bool {
+func (sm *subnetManager) hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *controllers.PodSubnetAnnoConfig,
+	oldAppReplicas, newAppReplicas int, appKind string, app metav1.Object) bool {
 	// go to reconcile directly with new application
 	if oldSubnetConfig == nil {
 		return true
 	}
+
+	log := logutils.FromContext(ctx)
 
 	var isChanged bool
 	if reflect.DeepEqual(oldSubnetConfig, newSubnetConfig) {
@@ -475,25 +518,29 @@ func (sm *subnetManager) hasSubnetConfigChanged(ctx context.Context, oldSubnetCo
 		isChanged = true
 		log.Sugar().Debugf("new application changed SpiderSubnet configuration, the old one is '%v' and the new one '%v'", oldSubnetConfig, newSubnetConfig)
 
-		if oldSubnetConfig.SubnetManagerV4 != "" && newSubnetConfig.SubnetManagerV4 != "" && oldSubnetConfig.SubnetManagerV4 != newSubnetConfig.SubnetManagerV4 {
-			log.Sugar().Warnf("change SpiderSubnet V4 from '%s' to '%s'", oldSubnetConfig.SubnetManagerV4, newSubnetConfig.SubnetManagerV4)
+		if len(oldSubnetConfig.SubnetName.IPv4) != 0 && oldSubnetConfig.SubnetName.IPv4[0] != newSubnetConfig.SubnetName.IPv4[0] {
+			log.Sugar().Warnf("change SpiderSubnet IPv4 from '%s' to '%s'", oldSubnetConfig.SubnetName.IPv4[0], newSubnetConfig.SubnetName.IPv4[0])
 
 			// we should clean up the legacy IPPools once changed the SpiderSubnet
-			if err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, app, client.MatchingLabels{
-				constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetManagerV4,
-			}); err != nil {
-				log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V4 IPPools, error: %v", oldSubnetConfig.SubnetManagerV4, err)
+			if sm.config.EnableSubnetDeleteStaleIPPool {
+				if err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, app, client.MatchingLabels{
+					constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetName.IPv4[0],
+				}); err != nil {
+					log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V4 IPPools, error: %v", oldSubnetConfig.SubnetName.IPv4[0], err)
+				}
 			}
 		}
 
-		if oldSubnetConfig.SubnetManagerV6 != "" && newSubnetConfig.SubnetManagerV6 != "" && oldSubnetConfig.SubnetManagerV6 != newSubnetConfig.SubnetManagerV6 {
-			log.Sugar().Warnf("change SpiderSubnet V6 from '%s' to '%s'", oldSubnetConfig.SubnetManagerV6, newSubnetConfig.SubnetManagerV6)
+		if len(oldSubnetConfig.SubnetName.IPv6) != 0 && oldSubnetConfig.SubnetName.IPv6[0] != newSubnetConfig.SubnetName.IPv6[0] {
+			log.Sugar().Warnf("change SpiderSubnet IPv6 from '%s' to '%s'", oldSubnetConfig.SubnetName.IPv6[0], newSubnetConfig.SubnetName.IPv6[0])
 
 			// we should clean up the legacy IPPools once changed the SpiderSubnet
-			if err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, app, client.MatchingLabels{
-				constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetManagerV6,
-			}); err != nil {
-				log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V6 IPPools, error: %v", oldSubnetConfig.SubnetManagerV6, err)
+			if sm.config.EnableSubnetDeleteStaleIPPool {
+				if err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, app, client.MatchingLabels{
+					constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetName.IPv6[0],
+				}); err != nil {
+					log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V6 IPPools, error: %v", oldSubnetConfig.SubnetName.IPv6[0], err)
+				}
 			}
 		}
 	}
@@ -501,44 +548,8 @@ func (sm *subnetManager) hasSubnetConfigChanged(ctx context.Context, oldSubnetCo
 	return isChanged
 }
 
-// calculateJobPodNum will calculate the job replicas
-// once Parallelism and Completions are unset, the API-server will set them to 1
-// reference: https://kubernetes.io/docs/concepts/workloads/controllers/job/
-func calculateJobPodNum(jobSpecParallelism, jobSpecCompletions *int32) int {
-	switch {
-	case jobSpecParallelism != nil && jobSpecCompletions == nil:
-		// parallel Jobs with a work queue
-		if *jobSpecParallelism == 0 {
-			return 1
-		} else {
-			// ignore negative integer, cause API-server will refuse the job creation
-			return int(*jobSpecParallelism)
-		}
-
-	case jobSpecParallelism == nil && jobSpecCompletions != nil:
-		// non-parallel Jobs
-		if *jobSpecCompletions == 0 {
-			return 1
-		} else {
-			// ignore negative integer, cause API-server will refuse the job creation
-			return int(*jobSpecCompletions)
-		}
-
-	case jobSpecParallelism != nil && jobSpecCompletions != nil:
-		// parallel Jobs with a fixed completion count
-		if *jobSpecCompletions == 0 {
-			return 1
-		} else {
-			// ignore negative integer, cause API-server will refuse the job creation
-			return int(*jobSpecCompletions)
-		}
-	}
-
-	return 1
-}
-
-// newCleanUpApp will return a function that clean up the application SpiderSubnet legacies (such as: the before created IPPools)
-func (sm *subnetManager) newCleanUpApp() controllers.CleanUpAPPInformersFunc {
+// ControllerDeleteHandler will return a function that clean up the application SpiderSubnet legacies (such as: the before created IPPools)
+func (sm *subnetManager) ControllerDeleteHandler() controllers.APPInformersDelFunc {
 	return func(ctx context.Context, obj interface{}) error {
 		log := logutils.FromContext(ctx)
 
@@ -634,7 +645,8 @@ func (sm *subnetManager) tryToCleanUpLegacyIPPools(ctx context.Context, appKind 
 	log := logutils.FromContext(ctx).With(zap.String(appKind, fmt.Sprintf("%s/%s", app.GetNamespace(), app.GetName())))
 
 	matchLabel := client.MatchingLabels{
-		constant.LabelReclaimIPPool: constant.LabelAllowReclaimIPPool,
+		constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+		constant.LabelIPPoolReclaimIPPool:       constant.True,
 	}
 
 	for _, label := range labels {
@@ -643,12 +655,12 @@ func (sm *subnetManager) tryToCleanUpLegacyIPPools(ctx context.Context, appKind 
 		}
 	}
 
-	pools, err := sm.RetrieveIPPoolsByAppUID(ctx, app.GetUID(), matchLabel)
+	poolList, err := sm.ipPoolManager.ListIPPools(ctx, matchLabel)
 	if nil != err {
 		return fmt.Errorf("failed to retrieve '%s/%s/%s' IPPools, error: %v", appKind, app.GetNamespace(), app.GetName(), err)
 	}
 
-	if len(pools) != 0 {
+	if poolList != nil && len(poolList.Items) != 0 {
 		wg := new(sync.WaitGroup)
 
 		deletePool := func(pool *spiderpoolv1.SpiderIPPool) {
@@ -662,9 +674,10 @@ func (sm *subnetManager) tryToCleanUpLegacyIPPools(ctx context.Context, appKind 
 			log.Sugar().Infof("delete IPPool '%s' successfully", pool.Name)
 		}
 
-		for i := range pools {
+		for i := range poolList.Items {
 			wg.Add(1)
-			go deletePool(pools[i])
+			pool := poolList.Items[i]
+			go deletePool(&pool)
 		}
 
 		wg.Wait()

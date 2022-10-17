@@ -51,7 +51,8 @@ const (
 )
 
 const (
-	AnnotationPre       = "ipam.spidernet.io"
+	AnnotationPre = "ipam.spidernet.io"
+
 	AnnoPodIPPool       = AnnotationPre + "/ippool"
 	AnnoPodIPPools      = AnnotationPre + "/ippools"
 	AnnoPodRoutes       = AnnotationPre + "/routes"
@@ -59,6 +60,20 @@ const (
 	AnnoPodStatus       = AnnotationPre + "/status"
 	AnnoNSDefautlV4Pool = AnnotationPre + "/default-ipv4-ippool"
 	AnnoNSDefautlV6Pool = AnnotationPre + "/default-ipv6-ippool"
+
+	// subnet manager annotation and labels
+	AnnoSpiderSubnet              = AnnotationPre + "/subnet"
+	AnnoSpiderSubnets             = AnnotationPre + "/subnets"
+	AnnoSpiderSubnetPoolIPNumber  = AnnotationPre + "/ippool-ip-number"
+	AnnoSpiderSubnetReclaimIPPool = AnnotationPre + "/reclaim-ippool"
+
+	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
+	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"
+	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
+	LabelIPPoolVersion             = AnnotationPre + "/ippool-version"
+	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
+	LabelIPPoolVersionV4           = "IPv4"
+	LabelIPPoolVersionV6           = "IPv6"
 )
 
 const (
@@ -79,22 +94,7 @@ const (
 	QualifiedK8sObjNameFmt          = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 )
 
-// subnet manager annotation and labels
 const (
-	AnnoSubnetManagerPrefix = SpiderpoolAPIGroup
-
-	AnnoSubnetManagerV4               = AnnoSubnetManagerPrefix + "/spider-subnet-v4"
-	AnnoSubnetManagerV6               = AnnoSubnetManagerPrefix + "/spider-subnet-v6"
-	AnnoSubnetManagerAssignIPNumber   = AnnoSubnetManagerPrefix + "/assign-ip-number"
-	AnnoSubnetManagerFlexibleIPNumber = AnnoSubnetManagerPrefix + "/flexible-ip-number"
-	AnnoSubnetManagerReclaimIPPool    = AnnoSubnetManagerPrefix + "/reclaim-ippool"
-
-	LabelIPPoolOwnerSpiderSubnet   = "owner-spider-subnet"
-	LabelIPPoolOwnerApplication    = "owner-application"
-	LabelIPPoolOwnerApplicationUID = "owner-application-uid"
-	LabelIPPoolVersion             = "ippool-version"
-	LabelIPPoolVersionV4           = "v4"
-	LabelIPPoolVersionV6           = "v6"
-	LabelReclaimIPPool             = "reclaim-ippool"
-	LabelAllowReclaimIPPool        = "true"
+	True  = "true"
+	False = "false"
 )

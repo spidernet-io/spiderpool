@@ -16,9 +16,8 @@ type IPPoolSpec struct {
 	// +kubebuilder:validation:Required
 	Subnet string `json:"subnet"`
 
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Required
-	IPs []string `json:"ips"`
+	// +kubebuilder:validation:Optional
+	IPs []string `json:"ips,omitempty"`
 
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
@@ -69,6 +68,10 @@ type IPPoolStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	AutoDesiredIPCount *int64 `json:"autoDesiredIPCount,omitempty"`
 }
 
 // PoolIPAllocations is a map of IP allocation details indexed by IP address.

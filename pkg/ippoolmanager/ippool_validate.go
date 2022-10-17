@@ -49,7 +49,7 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	}
 
 	var errs field.ErrorList
-	if err := validateIPPoolIPInUse(newIPPool); err != nil {
+	if err := validateIPPoolIPInUse(newIPPool, im.config.EnableSpiderSubnet); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -95,8 +95,8 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	return validateIPPoolRoutes(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Routes)
 }
 
-func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
+func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool, enableSubnet bool) *field.Error {
+	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs, enableSubnet); err != nil {
 		return err
 	}
 	if err := validateIPPoolExcludeIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.ExcludeIPs); err != nil {
@@ -198,7 +198,7 @@ func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types
 }
 
 func (im *ipPoolManager) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
+	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs, im.config.EnableSpiderSubnet); err != nil {
 		return err
 	}
 	if err := validateIPPoolExcludeIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.ExcludeIPs); err != nil {
@@ -235,8 +235,12 @@ func (im *ipPoolManager) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 	return nil
 }
 
-func validateIPPoolIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
+func validateIPPoolIPs(version types.IPVersion, subnet string, ips []string, enableSubnet bool) *field.Error {
 	if len(ips) == 0 {
+		if enableSubnet {
+			return nil
+		}
+
 		return field.Required(
 			ipsField,
 			"requires at least one item",

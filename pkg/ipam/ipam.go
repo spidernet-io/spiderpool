@@ -26,7 +26,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
-	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
+	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
@@ -368,21 +368,13 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 }
 
 func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool, pod *corev1.Pod) ([]*ToBeAllocated, error) {
-	// Select candidate IPPools through the Pod annotations
-	// "spiderpool.spidernet.io/spider-subnet-v4" and "spiderpool.spidernet.io/spider-subnet-v6".
-	subnetMgrV4Name, enableSubnetMgrV4 := pod.Annotations[constant.AnnoSubnetManagerV4]
-	subnetMgrV6Name, enableSubnetMgrV6 := pod.Annotations[constant.AnnoSubnetManagerV6]
-	if enableSubnetMgrV4 || enableSubnetMgrV6 {
-		if i.config.EnableSpiderSubnet {
-			t, err := i.getPoolFromSubnet(ctx, pod, nic, cleanGateway, subnetMgrV4Name, subnetMgrV6Name)
-			if nil != err {
-				return nil, err
-			}
-
-			return []*ToBeAllocated{t}, nil
-		} else {
-			return nil, fmt.Errorf("feature SpiderSubnet is disabled, but the Pod annotation for automatically creating the IPPool is specified")
-		}
+	// Select candidate IPPools through the Pod annotations "ipam.spidernet.io/subnets" or "ipam.spidernet.io/subnet"
+	fromSubnet, err := i.getPoolFromSubnet(ctx, pod, nic, cleanGateway)
+	if nil != err {
+		return nil, fmt.Errorf("failed to get IPPool from SpiderSubnet, error: %v", err)
+	}
+	if fromSubnet != nil {
+		return []*ToBeAllocated{fromSubnet}, nil
 	}
 
 	// Select candidate IPPools through the Pod annotation "ipam.spidernet.io/ippools".
@@ -423,83 +415,106 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 	return []*ToBeAllocated{t}, nil
 }
 
-func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool, subnetMgrV4Name, subnetMgrV6Name string) (*ToBeAllocated, error) {
+func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool) (*ToBeAllocated, error) {
+	subnetAnnoConfig, err := subnetmanagercontrollers.GetSubnetAnnoConfig(pod.Annotations)
+	if nil != err {
+		return nil, err
+	}
+
+	if subnetAnnoConfig == nil {
+		// default IPAM mode
+		return nil, nil
+	}
+
+	if i.config.EnableIPv4 && len(subnetAnnoConfig.SubnetName.IPv4) == 0 {
+		return nil, fmt.Errorf("no specified IPv4 SpiderSubnet")
+	}
+	if i.config.EnableIPv6 && len(subnetAnnoConfig.SubnetName.IPv6) == 0 {
+		return nil, fmt.Errorf("no specified IPv6 SpiderSubnet")
+	}
+
 	logger := logutils.FromContext(ctx)
-	logger.Info("Use IPPools from subnet manager")
 
 	podTopControllerKind, podTopController, err := i.podManager.GetPodTopController(ctx, pod)
 	if nil != err {
 		return nil, fmt.Errorf("failed to get pod top owner reference, error: %v", err)
 	}
 	if podTopControllerKind == constant.OwnerNone || podTopControllerKind == constant.OwnerUnknown {
-		return nil, fmt.Errorf("subnet manager doesn't support pod '%s/%s' owner controller", pod.Namespace, pod.Name)
+		return nil, fmt.Errorf("spider subnet doesn't support pod '%s/%s' owner controller", pod.Namespace, pod.Name)
 	}
-
-	var ErrPoolNotFound = fmt.Errorf("failed to get IPPool from SpiderSubnet")
 
 	t := &ToBeAllocated{
 		NIC:          nic,
 		CleanGateway: cleanGateway,
 	}
 
+	subnetName := subnetAnnoConfig.SubnetName
 	for j := 0; j <= i.config.WaitSubnetPoolRetries; j++ {
-		if len(subnetMgrV4Name) != 0 {
-			v4Pools, err := i.subnetManager.RetrieveIPPoolsByAppUID(ctx, podTopController.GetUID(), client.MatchingLabels{
-				constant.LabelIPPoolVersion:           constant.LabelIPPoolVersionV4,
-				constant.LabelIPPoolOwnerSpiderSubnet: subnetMgrV4Name,
-				constant.LabelIPPoolOwnerApplication:  controllers.AppLabelValue(podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName()),
+		// if enableIPv4 is off and get the specified SpiderSubnet IPv4 name, just filter it out
+		if i.config.EnableIPv4 && len(subnetName.IPv4) != 0 {
+			v4PoolList, err := i.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
+				constant.LabelIPPoolOwnerApplicationUID: string(podTopController.GetUID()),
+				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
+				constant.LabelIPPoolOwnerSpiderSubnet:   subnetName.IPv4[0],
+				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName()),
 			})
 			if nil != err {
 				if j == i.config.WaitSubnetPoolRetries {
-					return nil, fmt.Errorf("%w: %v", ErrPoolNotFound, err)
+					return nil, err
 				}
 
 				logger.Error(err.Error())
 				continue
 			}
 
-			if len(v4Pools) == 0 {
-				logger.Sugar().Errorf("no V4 IPPool retrieved from SpiderSubnet '%s', wait for a second and get a retry", subnetMgrV4Name)
+			// if we do not get any IPv4 IPPool, we should wait for a second to let the spiderpool-controller app informers to create it.
+			if v4PoolList == nil || len(v4PoolList.Items) == 0 {
+				logger.Sugar().Errorf("no IPv4 IPPool retrieved from SpiderSubnet '%s', wait for a second and get a retry", subnetName.IPv4[0])
 				time.Sleep(i.config.WaitSubnetPoolTime)
 				continue
-			} else if len(v4Pools) > 1 {
+			} else if len(v4PoolList.Items) > 1 {
+				// in the current mechanism, it's impossible to get multiple IPPools with the specified Labels, unless someone create it by hands.
 				return nil, fmt.Errorf("it's invalid for '%s/%s/%s' corresponding SpiderSubnet '%s' owns multiple IPPools '%v' for one specify application",
-					podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName(), subnetMgrV4Name, v4Pools)
+					podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName(), subnetName.IPv4[0], v4PoolList.Items)
 			}
 
 			t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
 				IPVersion: constant.IPv4,
-				Pools:     []string{v4Pools[0].Name},
+				Pools:     []string{v4PoolList.Items[0].Name},
 			})
 		}
 
-		if len(subnetMgrV6Name) != 0 {
-			v6Pools, err := i.subnetManager.RetrieveIPPoolsByAppUID(ctx, podTopController.GetUID(), client.MatchingLabels{
-				constant.LabelIPPoolVersion:           constant.LabelIPPoolVersionV6,
-				constant.LabelIPPoolOwnerSpiderSubnet: subnetMgrV6Name,
-				constant.LabelIPPoolOwnerApplication:  controllers.AppLabelValue(podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName()),
+		// if enableIPv6 is off and get the specified SpiderSubnet IPv6 name, just filter it out
+		if i.config.EnableIPv6 && len(subnetName.IPv6) != 0 {
+			v6PoolList, err := i.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
+				constant.LabelIPPoolOwnerApplicationUID: string(podTopController.GetUID()),
+				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
+				constant.LabelIPPoolOwnerSpiderSubnet:   subnetName.IPv6[0],
+				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName()),
 			})
 			if nil != err {
 				if j == i.config.WaitSubnetPoolRetries {
-					return nil, fmt.Errorf("%w: %v", ErrPoolNotFound, err)
+					return nil, err
 				}
 
 				logger.Error(err.Error())
 				continue
 			}
 
-			if len(v6Pools) == 0 {
-				logger.Sugar().Errorf("no V6 IPPool retrieved from SpiderSubnet '%s', wait for a second and get a retry", subnetMgrV6Name)
+			// if we do not get any IPv6 IPPool, we should wait for a second to let the spiderpool-controller app informers to create it.
+			if v6PoolList == nil || len(v6PoolList.Items) == 0 {
+				logger.Sugar().Errorf("no IPv6 IPPool retrieved from SpiderSubnet '%s', wait for a second and get a retry", subnetName.IPv6[0])
 				time.Sleep(i.config.WaitSubnetPoolTime)
 				continue
-			} else if len(v6Pools) > 1 {
+			} else if len(v6PoolList.Items) > 1 {
+				// in the current mechanism, it's impossible to get multiple IPPools with the specified Labels, unless someone create it by hands.
 				return nil, fmt.Errorf("it's invalid for '%s/%s/%s' corresponding SpiderSubnet '%s' owns multiple IPPools '%v' for one specify application",
-					podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName(), subnetMgrV6Name, v6Pools)
+					podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName(), subnetName.IPv6[0], v6PoolList.Items)
 			}
 
 			t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
 				IPVersion: constant.IPv6,
-				Pools:     []string{v6Pools[0].Name},
+				Pools:     []string{v6PoolList.Items[0].Name},
 			})
 		}
 

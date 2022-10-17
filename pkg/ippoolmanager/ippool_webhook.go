@@ -184,8 +184,8 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 		zap.String("IPPoolName", newIPPool.Name),
 		zap.String("Operation", "UPDATE"),
 	)
-	logger.Sugar().Debugf("Request old IPPool: %+v", *oldIPPool)
-	logger.Sugar().Debugf("Request new IPPool: %+v", *newIPPool)
+	logger.Sugar().Infof("Request old IPPool: %+v", *oldIPPool)
+	logger.Sugar().Infof("Request new IPPool: %+v", *newIPPool)
 
 	if newIPPool.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(newIPPool, constant.SpiderFinalizer) {
 		return apierrors.NewForbidden(

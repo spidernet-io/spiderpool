@@ -12,15 +12,15 @@ import (
 
 var controllersLogger *zap.Logger
 
-type ReconcileAppInformersFunc func(ctx context.Context, oldObj, newObj interface{}) error
-type CleanUpAPPInformersFunc func(ctx context.Context, obj interface{}) error
+type AppInformersAddOrUpdateFunc func(ctx context.Context, oldObj, newObj interface{}) error
+type APPInformersDelFunc func(ctx context.Context, obj interface{}) error
 
-type controller struct {
-	reconcileFunc ReconcileAppInformersFunc
-	cleanupFunc   CleanUpAPPInformersFunc
+type Controller struct {
+	reconcileFunc AppInformersAddOrUpdateFunc
+	cleanupFunc   APPInformersDelFunc
 }
 
-func NewSubnetController(reconcile ReconcileAppInformersFunc, cleanup CleanUpAPPInformersFunc, logger *zap.Logger) (*controller, error) {
+func NewSubnetController(reconcile AppInformersAddOrUpdateFunc, cleanup APPInformersDelFunc, logger *zap.Logger) (*Controller, error) {
 	if reconcile == nil {
 		return nil, fmt.Errorf("the controllers informers reconcile function must be specified")
 	}
@@ -30,5 +30,5 @@ func NewSubnetController(reconcile ReconcileAppInformersFunc, cleanup CleanUpAPP
 
 	controllersLogger = logger
 
-	return &controller{reconcileFunc: reconcile, cleanupFunc: cleanup}, nil
+	return &Controller{reconcileFunc: reconcile, cleanupFunc: cleanup}, nil
 }

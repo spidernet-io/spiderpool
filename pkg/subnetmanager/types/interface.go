@@ -7,7 +7,6 @@ import (
 	"context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -22,10 +21,8 @@ type SubnetManager interface {
 	SetupInformer(ctx context.Context, client crdclientset.Interface, controllerLeader election.SpiderLeaseElector) error
 	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
 	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
-	UpdateSubnetStatusOnce(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error
 	SetupControllers(ctx context.Context, client kubernetes.Interface) error
-	GenerateIPsFromSubnet(ctx context.Context, subnetMgrName string, ipNum int) ([]string, error)
-	AllocateIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podSelector map[string]string, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error
-	RetrieveIPPoolsByAppUID(ctx context.Context, appUID apitypes.UID, labels ...client.MatchingLabels) ([]*spiderpoolv1.SpiderIPPool, error)
+	GenerateIPsFromSubnet(ctx context.Context, subnetMgrName string, ipNum int, excludeIPRanges []string) ([]string, error)
+	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podSelector map[string]string, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error
 	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
 }

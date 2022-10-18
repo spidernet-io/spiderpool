@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -461,9 +460,6 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	*v6Ipversion = constant.IPv6
 	var v6PoolName string = "v6pool-" + tools.RandomName()
 	var randomNumber string = GenerateString(4, true)
-	if randomNumber[0:1] == "0" {
-		randomNumber = randomNumber[1:(strings.Count(randomNumber, "") - 1)]
-	}
 
 	iPv6PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{

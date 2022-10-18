@@ -486,11 +486,13 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
 		}
 		if frame.Info.IpV6Enabled {
-			command := fmt.Sprintf("ip -6 r | grep 'default via %s'", ipv6Gw)
+			command := "ip -6 r | grep 'default via'| awk '{print $3}' "
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
-			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			out, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
 			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
+			effectiveIpv6GwStr := strings.TrimSpace(string(out))
+			Expect(common.ContrastIpv6ToIntValues(effectiveIpv6GwStr, ipv6Gw)).NotTo(HaveOccurred())
 		}
 
 		// delete pod

@@ -306,7 +306,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				}
 				if k == podName2 {
 					Expect(output1).To(BeEmpty())
-					Expect(err1).To(HaveOccurred(), "cleanGateway=true, will not be used as the default route %v\n")
+					Expect(err1).To(HaveOccurred(), "cleanGateway=true, will not be used as the default route:%v \n", err1)
 				}
 				Expect(err2).NotTo(HaveOccurred())
 				Expect(output2).NotTo(BeEmpty())
@@ -316,20 +316,23 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			for k := range podNameCleanGatewayMap {
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 				defer cancel()
-				checkGatewayCommand := fmt.Sprintf("ip -6 r | grep 'default via %s'", v6Gateway)
-				checkRouteCommand := fmt.Sprintf("ip -6 r | grep '%s via %s'", v6Dst, v6Via)
-				output1, err1 := frame.ExecCommandInPod(k, nsName, checkGatewayCommand, ctx)
-				output2, err2 := frame.ExecCommandInPod(k, nsName, checkRouteCommand, ctx)
+				checkGatewayCommand := "ip -6 r | grep 'default via' | awk '{print $3}'"
+				checkRouteDstCommand := fmt.Sprintf("ip -6 r | grep 'via' | grep '%s' | grep -v 'default' | awk '{print $1}'", common.NIC1)
+				checkRouteViaCommand := fmt.Sprintf("ip -6 r | grep 'via' | grep '%s' | grep -v 'default' | awk '{print $3}'", common.NIC1)
+				effectiveIpv6Gw, err1 := frame.ExecCommandInPod(k, nsName, checkGatewayCommand, ctx)
+				effectiveIpv6Dst, err2 := frame.ExecCommandInPod(k, nsName, checkRouteDstCommand, ctx)
+				effectiveIpv6Via, err3 := frame.ExecCommandInPod(k, nsName, checkRouteViaCommand, ctx)
 				if k == podName1 {
-					Expect(output1).NotTo(BeEmpty())
-					Expect(err1).NotTo(HaveOccurred())
+					Expect(common.ContrastIpv6ToIntValues(strings.TrimSpace(string(effectiveIpv6Gw)), v6Gateway)).NotTo(HaveOccurred())
+					Expect(err1).NotTo(HaveOccurred(), "failed execute command %v,error:%v", checkGatewayCommand, err1)
 				}
 				if k == podName2 {
-					Expect(output1).To(BeEmpty())
-					Expect(err1).To(HaveOccurred(), "cleanGateway=true, will not be used as the default route %v\n")
+					Expect(effectiveIpv6Gw).To(BeEmpty())
 				}
-				Expect(output2).NotTo(BeEmpty())
-				Expect(err2).NotTo(HaveOccurred())
+				Expect(common.ContrastIpv6ToIntValues(strings.TrimSpace(string(effectiveIpv6Dst)), v6Dst)).NotTo(HaveOccurred())
+				Expect(common.ContrastIpv6ToIntValues(strings.TrimSpace(string(effectiveIpv6Via)), v6Via)).NotTo(HaveOccurred())
+				Expect(err2).NotTo(HaveOccurred(), "failed execute command %v,error:%v", checkRouteDstCommand, err2)
+				Expect(err3).NotTo(HaveOccurred(), "failed execute command %v,error:%v", checkRouteViaCommand, err3)
 			}
 		}
 

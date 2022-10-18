@@ -57,7 +57,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
-	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "500", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "300", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
 	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCForTerminatingPod, nil},
 	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &gcIPConfig.ReleaseIPWorkerNum},

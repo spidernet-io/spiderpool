@@ -144,7 +144,7 @@ func (im *ipPoolManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	)
 	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
 
-	if errs := im.validateCreateIPPoolAndUpdateSubnetFreeIPs(ctx, ipPool); len(errs) != 0 {
+	if errs := im.validateCreateIPPoolAndUpdateSubnetFreeIPs(logutils.IntoContext(ctx, logger), ipPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create IPPool: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
@@ -182,7 +182,7 @@ func (im *ipPoolManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 		)
 	}
 
-	if errs := im.validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx, oldIPPool, newIPPool); len(errs) != 0 {
+	if errs := im.validateUpdateIPPoolAndUpdateSubnetFreeIPs(logutils.IntoContext(ctx, logger), oldIPPool, newIPPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},

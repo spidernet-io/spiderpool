@@ -25,6 +25,7 @@ import (
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
@@ -32,11 +33,12 @@ import (
 )
 
 type ipPoolManager struct {
-	config        *IPPoolManagerConfig
-	client        client.Client
-	runtimeMgr    ctrl.Manager
-	rIPManager    reservedipmanager.ReservedIPManager
-	subnetManager subnetmanagertypes.SubnetManager
+	config         *IPPoolManagerConfig
+	freeIPsLimiter limiter.Limiter
+	client         client.Client
+	runtimeMgr     ctrl.Manager
+	rIPManager     reservedipmanager.ReservedIPManager
+	subnetManager  subnetmanagertypes.SubnetManager
 
 	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
 	leader election.SpiderLeaseElector
@@ -53,12 +55,24 @@ func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reser
 		return nil, errors.New("reserved IP manager must be specified")
 	}
 
+	maxQueueSize := 1000
+	maxWaitTime := 5 * time.Second
+	freeIPsLimiter := limiter.NewLimiter(limiter.LimiterConfig{
+		MaxQueueSize: &maxQueueSize,
+		MaxWaitTime:  &maxWaitTime,
+	})
+
 	return &ipPoolManager{
-		config:     c,
-		client:     mgr.GetClient(),
-		runtimeMgr: mgr,
-		rIPManager: rIPManager,
+		config:         c,
+		freeIPsLimiter: freeIPsLimiter,
+		client:         mgr.GetClient(),
+		runtimeMgr:     mgr,
+		rIPManager:     rIPManager,
 	}, nil
+}
+
+func (im *ipPoolManager) Start(ctx context.Context) error {
+	return im.freeIPsLimiter.Start(ctx)
 }
 
 func (im *ipPoolManager) InjectSubnetManager(subnetManager subnetmanagertypes.SubnetManager) {

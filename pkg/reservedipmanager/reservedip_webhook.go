@@ -106,7 +106,7 @@ func (rm *reservedIPManager) ValidateCreate(ctx context.Context, obj runtime.Obj
 	)
 	logger.Sugar().Debugf("Request ReservedIP: %+v", *rIP)
 
-	if errs := rm.validateCreateReservedIP(ctx, rIP); len(errs) != 0 {
+	if errs := rm.validateCreateReservedIP(logutils.IntoContext(ctx, logger), rIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create ReservedIP: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderReservedIPKind},
@@ -134,7 +134,7 @@ func (rm *reservedIPManager) ValidateUpdate(ctx context.Context, oldObj, newObj 
 	logger.Sugar().Debugf("Request old ReservedIP: %+v", *oldRIP)
 	logger.Sugar().Debugf("Request new ReservedIP: %+v", *newRIP)
 
-	if errs := rm.validateUpdateReservedIP(ctx, oldRIP, newRIP); len(errs) != 0 {
+	if errs := rm.validateUpdateReservedIP(logutils.IntoContext(ctx, logger), oldRIP, newRIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update ReservedIP: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderReservedIPKind},

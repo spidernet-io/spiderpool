@@ -6,12 +6,18 @@ package ippoolmanager
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"net"
+	"time"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 func (im *ipPoolManager) validateCreateIPPoolAndUpdateSubnetFreeIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
@@ -123,27 +129,7 @@ func (im *ipPoolManager) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 
 func (im *ipPoolManager) removeSubnetFreeIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	poolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
-	freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
-	if err != nil {
-		return field.InternalError(freeIPsField, err)
-	}
-
-	notFreeIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, freeIPs)
-	if len(notFreeIPs) > 0 {
-		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*ipPool.Spec.IPVersion, notFreeIPs)
-		return field.Forbidden(
-			ipsField,
-			fmt.Sprintf("add some IP ranges %v that are not free in controller Subnet %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges, subnet.Name),
-		)
-	}
-
-	newFreeIPs := spiderpoolip.IPsDiffSet(freeIPs, poolTotalIPs)
-	ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
-	subnet.Status.FreeIPs = ranges
-
-	freeIPCount := int64(len(newFreeIPs))
-	subnet.Status.FreeIPCount = &freeIPCount
-	if err := im.subnetManager.UpdateSubnetStatusOnce(ctx, subnet); err != nil {
+	if err := im.updateSubnetStatus(ctx, poolTotalIPs, nil, subnet); err != nil {
 		return field.InternalError(freeIPsField, err)
 	}
 
@@ -154,28 +140,8 @@ func (im *ipPoolManager) updateSubnetFreeIPs(ctx context.Context, subnet *spider
 	oldPoolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldIPPool.Spec.IPVersion, oldIPPool.Spec.IPs, oldIPPool.Spec.ExcludeIPs)
 	newPoolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newIPPool.Spec.IPVersion, newIPPool.Spec.IPs, newIPPool.Spec.ExcludeIPs)
 	addedIPs := spiderpoolip.IPsDiffSet(newPoolTotalIPs, oldPoolTotalIPs)
-	freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
-	if err != nil {
-		return field.InternalError(freeIPsField, err)
-	}
-
-	notFreeIPs := spiderpoolip.IPsDiffSet(addedIPs, freeIPs)
-	if len(notFreeIPs) > 0 {
-		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*newIPPool.Spec.IPVersion, notFreeIPs)
-		return field.Forbidden(
-			ipsField,
-			fmt.Sprintf("add some IP ranges %v that are not free in controller Subnet %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges, subnet.Name),
-		)
-	}
-
 	reducedIPs := spiderpoolip.IPsDiffSet(oldPoolTotalIPs, newPoolTotalIPs)
-	newFreeIPs := spiderpoolip.IPsDiffSet(spiderpoolip.IPsUnionSet(freeIPs, reducedIPs), addedIPs)
-	ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
-	subnet.Status.FreeIPs = ranges
-
-	freeIPCount := int64(len(newFreeIPs))
-	subnet.Status.FreeIPCount = &freeIPCount
-	if err := im.subnetManager.UpdateSubnetStatusOnce(ctx, subnet); err != nil {
+	if err := im.updateSubnetStatus(ctx, addedIPs, reducedIPs, subnet); err != nil {
 		return field.InternalError(freeIPsField, err)
 	}
 
@@ -183,23 +149,71 @@ func (im *ipPoolManager) updateSubnetFreeIPs(ctx context.Context, subnet *spider
 }
 
 func (im *ipPoolManager) addSubnetFreeIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
-	if err != nil {
-		return field.InternalError(freeIPsField, err)
-	}
-
 	poolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	validIPs := spiderpoolip.IPsIntersectionSet(poolTotalIPs, subnetTotalIPs)
-
-	newFreeIPs := spiderpoolip.IPsUnionSet(freeIPs, validIPs)
-	ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
-	subnet.Status.FreeIPs = ranges
-
-	freeIPCount := int64(len(newFreeIPs))
-	subnet.Status.FreeIPCount = &freeIPCount
-	if err := im.subnetManager.UpdateSubnetStatusOnce(ctx, subnet); err != nil {
+	if err := im.updateSubnetStatus(ctx, nil, validIPs, subnet); err != nil {
 		return field.InternalError(freeIPsField, err)
+	}
+
+	return nil
+}
+
+func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, poolAddedIPs, poolReducedIPs []net.IP, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+	logger := logutils.FromContext(ctx)
+
+	_, err := im.freeIPsLimiter.AcquireTicket(ctx, subnet.Name)
+	if err != nil {
+		logger.Sugar().Errorf("Failed to queue correctly: %v", err)
+	} else {
+		defer im.freeIPsLimiter.ReleaseTicket(ctx, subnet.Name)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i <= im.config.MaxConflictRetries; i++ {
+		var err error
+		if i != 0 {
+			subnet, err = im.subnetManager.GetSubnetByName(ctx, subnet.Name)
+			if err != nil {
+				return field.InternalError(freeIPsField, err)
+			}
+		}
+
+		freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
+		if err != nil {
+			return field.InternalError(freeIPsField, err)
+		}
+
+		notFreeIPs := spiderpoolip.IPsDiffSet(poolAddedIPs, freeIPs)
+		if len(notFreeIPs) > 0 {
+			ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, notFreeIPs)
+			return field.Forbidden(
+				ipsField,
+				fmt.Sprintf("add some IP ranges %v that are not free in controller Subnet %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges, subnet.Name),
+			)
+		}
+
+		newFreeIPs := spiderpoolip.IPsDiffSet(spiderpoolip.IPsUnionSet(freeIPs, poolReducedIPs), poolAddedIPs)
+		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
+		subnet.Status.FreeIPs = ranges
+
+		freeIPCount := int64(len(newFreeIPs))
+		subnet.Status.FreeIPCount = &freeIPCount
+
+		if err := im.client.Status().Update(ctx, subnet); err != nil {
+			if !apierrors.IsConflict(err) {
+				return field.InternalError(freeIPsField, err)
+			}
+			if i == im.config.MaxConflictRetries {
+				return field.InternalError(
+					freeIPsField,
+					fmt.Errorf("%w(<=%d) to update free IP addresses of Subnet %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
+				)
+			}
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
+			continue
+		}
+		break
 	}
 
 	return nil

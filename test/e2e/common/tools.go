@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
 	"math/rand"
 	"net"
 	"os/exec"
@@ -18,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	frame "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -95,13 +95,6 @@ func ExecCommand(ctx context.Context, cmd *exec.Cmd) (string, error) {
 	}
 }
 
-func Ipv6ToInt(ip net.IP) (*big.Int, error) {
-	if ip == nil {
-		return nil, errors.New("invalid ipv6")
-	}
-	return big.NewInt(0).SetBytes(ip.To16()), nil
-}
-
 func ContrastIpv6ToIntValues(ip1, ip2 string) error {
 	if ip1 == "" || ip2 == "" {
 		return errors.New("invalid value")
@@ -109,10 +102,8 @@ func ContrastIpv6ToIntValues(ip1, ip2 string) error {
 
 	netIp1 := net.ParseIP(ip1)
 	netIp2 := net.ParseIP(ip2)
-	bigInt1, _ := Ipv6ToInt(netIp1)
-	bigInt2, _ := Ipv6ToInt(netIp2)
 
-	if res := bigInt1.Cmp(bigInt2); res != 0 {
+	if res := ip.Cmp(netIp1, netIp2); res != 0 {
 		return errors.New("both Mismatch")
 	}
 	return nil

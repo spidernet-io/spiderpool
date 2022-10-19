@@ -10,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -56,9 +57,9 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 		return nil
 	}
 
-	if im.config.EnableSpiderSubnet && len(ipPool.GetOwnerReferences()) == 0 {
-		if err := im.setSubnetReference(ctx, ipPool); err != nil {
-			return apierrors.NewInternalError(fmt.Errorf("failed to set Subnet reference: %v", err))
+	if im.config.EnableSpiderSubnet {
+		if err := im.setControllerSubnet(ctx, ipPool); err != nil {
+			return apierrors.NewInternalError(fmt.Errorf("failed to set reference for controller Subnet: %v", err))
 		}
 	}
 
@@ -106,9 +107,10 @@ func (im *ipPoolManager) Default(ctx context.Context, obj runtime.Object) error 
 	return nil
 }
 
-func (im *ipPoolManager) setSubnetReference(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
+func (im *ipPoolManager) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
 	logger := logutils.FromContext(ctx)
 
+	// TODO(iiiceoo): Should not List every time.
 	subnetList, err := im.subnetManager.ListSubnets(ctx)
 	if err != nil {
 		return err
@@ -116,10 +118,21 @@ func (im *ipPoolManager) setSubnetReference(ctx context.Context, ipPool *spiderp
 
 	for _, subnet := range subnetList.Items {
 		if subnet.Spec.Subnet == ipPool.Spec.Subnet {
-			if err := ctrl.SetControllerReference(&subnet, ipPool, im.runtimeMgr.GetScheme()); err != nil {
-				return err
+			if !metav1.IsControlledBy(ipPool, &subnet) {
+				if err := ctrl.SetControllerReference(&subnet, ipPool, im.runtimeMgr.GetScheme()); err != nil {
+					return err
+				}
+				logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
 			}
-			logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
+
+			if ipPool.Labels == nil {
+				ipPool.Labels = make(map[string]string)
+			}
+			if v, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
+				ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
+				logger.Sugar().Infof("Set label %s: %s", constant.LabelIPPoolOwnerSpiderSubnet, subnet.Name)
+			}
+			break
 		}
 	}
 

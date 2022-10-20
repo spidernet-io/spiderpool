@@ -32,8 +32,8 @@ Check whether the property `enableIPv4` of the configmap `spiderpool-conf` is al
 kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
-If you want to update it with `true`, run `helm upgrade --set enableIPv4=true --set enableIPv6=false`.
+If you want to update it with `true`, run `helm upgrade spiderpool spiderpool/spiderpool --set feature.enableIPv4=true --set feature.enableIPv6=false -n kube-system`.
 
 ### Enable dual stack
 
-Same as the above, run `helm upgrade --set enableIPv4=true --set enableIPv6=true`.
+Same as the above, run `helm upgrade spiderpool spiderpool/spiderpool --set feature.enableIPv4=true --set feature.enableIPv6=true -n kube-system`.

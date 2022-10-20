@@ -145,7 +145,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
 ```
 
-## Configure CNI  
+## Configure CNI
 
 After installation of the spiderpool, please edit the CNI configuration file under `/etc/cni/net.d/`.
 

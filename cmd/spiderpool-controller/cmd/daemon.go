@@ -66,6 +66,7 @@ func DaemonMain() {
 	if len(controllerContext.Cfg.AppVersion) > 0 {
 		logger.Sugar().Infof("AppVersion: %v \n", controllerContext.Cfg.AppVersion)
 	}
+	logger.Sugar().Infof("config: %+v \n", controllerContext.Cfg)
 
 	// load Configmap
 	err = controllerContext.LoadConfigmap()

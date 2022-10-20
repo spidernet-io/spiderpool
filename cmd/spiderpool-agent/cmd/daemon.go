@@ -63,6 +63,8 @@ func DaemonMain() {
 		logger.Sugar().Infof("AppVersion: %v \n", agentContext.Cfg.AppVersion)
 	}
 
+	logger.Sugar().Infof("config: %+v \n", agentContext.Cfg)
+
 	// load Configmap
 	err = agentContext.LoadConfigmap()
 	if nil != err {

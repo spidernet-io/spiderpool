@@ -67,10 +67,11 @@ endif
 	@echo -e "    you could use following command to access the cluster "
 	@echo -e ""
 	@echo -e "         export KUBECONFIG=$(E2E_KUBECONFIG) "
-	@echo -e "         kubectl get nodes "
+	@echo -e "         kubectl get pod -o wide -A "
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
+	@ KUBECONFIG=$(E2E_KUBECONFIG) kubectl get pods -o wide -A
 
 
 .PHONY: setup_kind
@@ -181,6 +182,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=true" ; \
 		fi ; \
+		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabled=true --set spiderpoolController.prometheus.enabled=true " ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
         			docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
         			docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \

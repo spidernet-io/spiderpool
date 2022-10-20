@@ -4,8 +4,10 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -15,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	frame "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -90,4 +93,18 @@ func ExecCommand(ctx context.Context, cmd *exec.Cmd) (string, error) {
 		}
 		time.Sleep(time.Second)
 	}
+}
+
+func ContrastIpv6ToIntValues(ip1, ip2 string) error {
+	if ip1 == "" || ip2 == "" {
+		return errors.New("invalid value")
+	}
+
+	netIp1 := net.ParseIP(ip1)
+	netIp2 := net.ParseIP(ip2)
+
+	if res := ip.Cmp(netIp1, netIp2); res != 0 {
+		return errors.New("both Mismatch")
+	}
+	return nil
 }

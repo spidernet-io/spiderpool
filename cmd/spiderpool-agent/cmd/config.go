@@ -60,9 +60,17 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_LIMITER_MAX_WAIT_TIME", "15", true, nil, nil, &agentContext.Cfg.LimiterMaxWaitTime},
 	{"SPIDERPOOL_ENABLED_STATEFULSET", "true", true, nil, &agentContext.Cfg.EnableStatefulSet, nil},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "1", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
+	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &agentContext.Cfg.GoMaxProcs},
+	{"GIT_COMMIT_VERSION", "", false, &agentContext.Cfg.CommitVersion, nil, nil},
+	{"GIT_COMMIT_TIME", "", false, &agentContext.Cfg.CommitTime, nil, nil},
+	{"VERSION", "", false, &agentContext.Cfg.AppVersion, nil, nil},
 }
 
 type Config struct {
+	CommitVersion string
+	CommitTime    string
+	AppVersion    string
+
 	// flags
 	ConfigPath string
 
@@ -93,6 +101,8 @@ type Config struct {
 	NetworkMode              string   `yaml:"networkMode"`
 	EnableStatefulSet        bool     `yaml:"enableStatefulSet"`
 	EnableSpiderSubnet       bool     `yaml:"enableSpiderSubnet"`
+
+	GoMaxProcs int
 }
 
 type AgentContext struct {

@@ -33,6 +33,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
+	"runtime"
 )
 
 // DaemonMain runs controllerContext handlers.
@@ -47,6 +48,24 @@ func DaemonMain() {
 		panic(fmt.Sprintf("failed to initialize logger with level %s, reason=%v \n", controllerContext.Cfg.LogLevel, err))
 	}
 	logger = logutils.Logger.Named(BinNameController)
+
+	currentP := runtime.GOMAXPROCS(-1)
+	logger.Sugar().Infof("default max golang procs %v \n", currentP)
+	if currentP > int(controllerContext.Cfg.GoMaxProcs) {
+		runtime.GOMAXPROCS(int(controllerContext.Cfg.GoMaxProcs))
+		currentP = runtime.GOMAXPROCS(-1)
+		logger.Sugar().Infof("change max golang procs %v \n", currentP)
+	}
+
+	if len(controllerContext.Cfg.CommitVersion) > 0 {
+		logger.Sugar().Infof("CommitVersion: %v \n", controllerContext.Cfg.CommitVersion)
+	}
+	if len(controllerContext.Cfg.CommitTime) > 0 {
+		logger.Sugar().Infof("CommitTime: %v \n", controllerContext.Cfg.CommitTime)
+	}
+	if len(controllerContext.Cfg.AppVersion) > 0 {
+		logger.Sugar().Infof("AppVersion: %v \n", controllerContext.Cfg.AppVersion)
+	}
 
 	// load Configmap
 	err = controllerContext.LoadConfigmap()
@@ -79,7 +98,7 @@ func DaemonMain() {
 		_, e = pyroscope.Start(pyroscope.Config{
 			ApplicationName: BinNameController,
 			ServerAddress:   controllerContext.Cfg.PyroscopeAddress,
-			Logger:          pyroscope.StandardLogger,
+			Logger:          nil,
 			Tags:            map[string]string{"node": node},
 			ProfileTypes: []pyroscope.ProfileType{
 				pyroscope.ProfileCPU,

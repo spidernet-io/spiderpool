@@ -16,6 +16,7 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
 	"go.uber.org/zap"
+	"runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -43,6 +44,26 @@ func DaemonMain() {
 		panic(fmt.Sprintf("failed to initialize logger with level %s, reason=%v \n", agentContext.Cfg.LogLevel, err))
 	}
 	logger = logutils.Logger.Named(BinNameAgent)
+
+	currentP := runtime.GOMAXPROCS(-1)
+	logger.Sugar().Infof("default max golang procs %v \n", currentP)
+	if currentP > int(agentContext.Cfg.GoMaxProcs) {
+		runtime.GOMAXPROCS(int(agentContext.Cfg.GoMaxProcs))
+		currentP = runtime.GOMAXPROCS(-1)
+		logger.Sugar().Infof("change max golang procs %v \n", currentP)
+	}
+
+	if len(agentContext.Cfg.CommitVersion) > 0 {
+		logger.Sugar().Infof("CommitVersion: %v \n", agentContext.Cfg.CommitVersion)
+	}
+	if len(agentContext.Cfg.CommitTime) > 0 {
+		logger.Sugar().Infof("CommitTime: %v \n", agentContext.Cfg.CommitTime)
+	}
+	if len(agentContext.Cfg.AppVersion) > 0 {
+		logger.Sugar().Infof("AppVersion: %v \n", agentContext.Cfg.AppVersion)
+	}
+
+	logger.Sugar().Infof("config: %+v \n", agentContext.Cfg)
 
 	// load Configmap
 	err = agentContext.LoadConfigmap()
@@ -82,7 +103,7 @@ func DaemonMain() {
 		_, e = pyroscope.Start(pyroscope.Config{
 			ApplicationName: BinNameAgent,
 			ServerAddress:   agentContext.Cfg.PyroscopeAddress,
-			Logger:          pyroscope.StandardLogger,
+			Logger:          nil,
 			Tags:            map[string]string{"node": node},
 			ProfileTypes: []pyroscope.ProfileType{
 				pyroscope.ProfileCPU,

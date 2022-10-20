@@ -74,9 +74,17 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
 	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
 	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
+	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &controllerContext.Cfg.GoMaxProcs},
+	{"GIT_COMMIT_VERSION", "", false, &controllerContext.Cfg.CommitVersion, nil, nil},
+	{"GIT_COMMIT_TIME", "", false, &controllerContext.Cfg.CommitTime, nil, nil},
+	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
 }
 
 type Config struct {
+	CommitVersion string
+	CommitTime    string
+	AppVersion    string
+
 	ControllerPodNamespace string
 	ControllerPodName      string
 
@@ -111,6 +119,8 @@ type Config struct {
 	EnableIPv6         bool `yaml:"enableIPv6"`
 	EnableStatefulSet  bool `yaml:"enableStatefulSet"`
 	EnableSpiderSubnet bool `yaml:"enableSpiderSubnet"`
+
+	GoMaxProcs int
 }
 
 type ControllerContext struct {

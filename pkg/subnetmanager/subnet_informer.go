@@ -14,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -89,6 +90,9 @@ func (sm *subnetManager) onSpiderSubnetAdd(obj interface{}) {
 }
 
 func (sm *subnetManager) reconcileOnAdd(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	if err := sm.initControllerSubnet(ctx, subnet); err != nil {
+		return err
+	}
 	if err := sm.initSubnetFreeIPsAndCount(ctx, subnet); err != nil {
 		return err
 	}
@@ -142,7 +146,67 @@ func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSu
 	}
 
 	if totalIPsChange {
+		if err := sm.initControllerSubnet(ctx, newSubnet); err != nil {
+			return err
+		}
 		return sm.initSubnetFreeIPsAndCount(ctx, newSubnet)
+	}
+
+	return nil
+}
+
+func (sm *subnetManager) initControllerSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	rand.Seed(time.Now().UnixNano())
+OUTER:
+	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
+		var err error
+		if i != 0 {
+			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
+			if err != nil {
+				return err
+			}
+		}
+
+		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, pool := range ipPoolList.Items {
+			if pool.Spec.Subnet != subnet.Spec.Subnet {
+				continue
+			}
+
+			orphan := false
+			if !metav1.IsControlledBy(&pool, subnet) {
+				if err := ctrl.SetControllerReference(subnet, &pool, sm.runtimeMgr.GetScheme()); err != nil {
+					return err
+				}
+				orphan = true
+			}
+
+			if pool.Labels == nil {
+				pool.Labels = make(map[string]string)
+			}
+			if v, ok := pool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
+				pool.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
+				orphan = true
+			}
+
+			if orphan {
+				if err := sm.client.Update(ctx, &pool); err != nil {
+					if !apierrors.IsConflict(err) {
+						return err
+					}
+					if i == sm.config.MaxConflictRetries {
+						return fmt.Errorf("%w(<=%d) to init reference for controller Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
+					}
+					time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
+					continue OUTER
+				}
+			}
+		}
+		break
 	}
 
 	return nil
@@ -159,7 +223,15 @@ func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *
 			}
 		}
 
-		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx)
+		selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx, client.MatchingLabelsSelector{Selector: selector})
 		if err != nil {
 			return err
 		}
@@ -170,13 +242,11 @@ func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *
 		}
 		freeIPs := subnetTotalIPs
 		for _, pool := range ipPoolList.Items {
-			if subnet.Spec.Subnet == pool.Spec.Subnet {
-				poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-				if err != nil {
-					return err
-				}
-				freeIPs = spiderpoolip.IPsDiffSet(freeIPs, poolTotalIPs)
+			poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+			if err != nil {
+				return err
 			}
+			freeIPs = spiderpoolip.IPsDiffSet(freeIPs, poolTotalIPs)
 		}
 
 		// Merge free IP ranges.

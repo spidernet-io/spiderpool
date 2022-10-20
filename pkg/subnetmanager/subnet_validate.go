@@ -41,7 +41,7 @@ func (sm *subnetManager) validateCreateSubnet(ctx context.Context, subnet *spide
 }
 
 func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
-	if err := sm.validateSubnetShouldNotBeChanged(ctx, oldSubnet, newSubnet); err != nil {
+	if err := validateSubnetShouldNotBeChanged(oldSubnet, newSubnet); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -50,7 +50,7 @@ func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, ne
 	}
 
 	var errs field.ErrorList
-	if err := sm.validateSubnetIPInUse(ctx, oldSubnet, newSubnet); err != nil {
+	if err := validateSubnetIPInUse(oldSubnet, newSubnet); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -61,7 +61,7 @@ func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, ne
 	return errs
 }
 
-func (sm *subnetManager) validateSubnetShouldNotBeChanged(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	if *newSubnet.Spec.IPVersion != *oldSubnet.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
@@ -80,30 +80,24 @@ func (sm *subnetManager) validateSubnetShouldNotBeChanged(ctx context.Context, o
 }
 
 func (sm *subnetManager) validateSubnetSpec(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := sm.validateSubnetIPVersion(ctx, subnet.Spec.IPVersion); err != nil {
+	if err := sm.validateSubnetIPVersion(subnet.Spec.IPVersion); err != nil {
 		return err
 	}
 	if err := sm.validateSubnetSubnet(ctx, *subnet.Spec.IPVersion, subnet.Name, subnet.Spec.Subnet); err != nil {
 		return err
 	}
-	if err := sm.validateSubnetAvailableIP(ctx, subnet); err != nil {
-		return err
-	}
-	if err := sm.validateSubnetGateway(ctx, *subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Gateway); err != nil {
-		return err
-	}
-	if err := sm.validateSubnetRoutes(ctx, *subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Routes); err != nil {
+	if err := validateSubnetGateway(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Gateway); err != nil {
 		return err
 	}
 
-	return nil
+	return validateSubnetRoutes(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Routes)
 }
 
-func (sm *subnetManager) validateSubnetIPInUse(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := sm.validateSubnetIPs(ctx, *newSubnet.Spec.IPVersion, newSubnet.Spec.Subnet, newSubnet.Spec.IPs); err != nil {
+func validateSubnetIPInUse(oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
+	if err := validateSubnetIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.Subnet, newSubnet.Spec.IPs); err != nil {
 		return err
 	}
-	if err := sm.validateSubnetExcludeIPs(ctx, *newSubnet.Spec.IPVersion, newSubnet.Spec.Subnet, newSubnet.Spec.ExcludeIPs); err != nil {
+	if err := validateSubnetExcludeIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.Subnet, newSubnet.Spec.ExcludeIPs); err != nil {
 		return err
 	}
 
@@ -127,7 +121,7 @@ func (sm *subnetManager) validateSubnetIPInUse(ctx context.Context, oldSubnet, n
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetIPVersion(ctx context.Context, version *types.IPVersion) *field.Error {
+func (sm *subnetManager) validateSubnetIPVersion(version *types.IPVersion) *field.Error {
 	if version == nil {
 		return field.Invalid(
 			ipVersionField,
@@ -195,41 +189,7 @@ func (sm *subnetManager) validateSubnetSubnet(ctx context.Context, version types
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetAvailableIP(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := sm.validateSubnetIPs(ctx, *subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
-		return err
-	}
-	if err := sm.validateSubnetExcludeIPs(ctx, *subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.ExcludeIPs); err != nil {
-		return err
-	}
-
-	subnetList, err := sm.ListSubnets(ctx)
-	if err != nil {
-		return field.InternalError(ipsField, err)
-	}
-
-	newIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
-	for _, s := range subnetList.Items {
-		if s.Name == subnet.Name || s.Spec.Subnet != subnet.Spec.Subnet {
-			continue
-		}
-
-		existIPs, err := spiderpoolip.AssembleTotalIPs(*s.Spec.IPVersion, s.Spec.IPs, s.Spec.ExcludeIPs)
-		if err != nil {
-			return field.InternalError(ipsField, err)
-		}
-		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("overlap with Subnet %s, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", s.Name),
-			)
-		}
-	}
-
-	return nil
-}
-
-func (sm *subnetManager) validateSubnetIPs(ctx context.Context, version types.IPVersion, subnet string, ips []string) *field.Error {
+func validateSubnetIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
 	n := len(ips)
 	if n == 0 {
 		return field.Required(
@@ -239,7 +199,7 @@ func (sm *subnetManager) validateSubnetIPs(ctx context.Context, version types.IP
 	}
 
 	for i, r := range ips {
-		if err := ippoolmanager.ValidateContainsIPRange(ctx, ipsField.Index(i), version, subnet, r); err != nil {
+		if err := ippoolmanager.ValidateContainsIPRange(ipsField.Index(i), version, subnet, r); err != nil {
 			return err
 		}
 	}
@@ -247,9 +207,9 @@ func (sm *subnetManager) validateSubnetIPs(ctx context.Context, version types.IP
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetExcludeIPs(ctx context.Context, version types.IPVersion, subnet string, excludeIPs []string) *field.Error {
+func validateSubnetExcludeIPs(version types.IPVersion, subnet string, excludeIPs []string) *field.Error {
 	for i, r := range excludeIPs {
-		if err := ippoolmanager.ValidateContainsIPRange(ctx, excludeIPsField.Index(i), version, subnet, r); err != nil {
+		if err := ippoolmanager.ValidateContainsIPRange(excludeIPsField.Index(i), version, subnet, r); err != nil {
 			return err
 		}
 	}
@@ -257,15 +217,15 @@ func (sm *subnetManager) validateSubnetExcludeIPs(ctx context.Context, version t
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetGateway(ctx context.Context, version types.IPVersion, subnet string, gateway *string) *field.Error {
+func validateSubnetGateway(version types.IPVersion, subnet string, gateway *string) *field.Error {
 	if gateway != nil {
-		return ippoolmanager.ValidateContainsIP(ctx, gatewayField, version, subnet, *gateway)
+		return ippoolmanager.ValidateContainsIP(gatewayField, version, subnet, *gateway)
 	}
 
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetRoutes(ctx context.Context, version types.IPVersion, subnet string, routes []spiderpoolv1.Route) *field.Error {
+func validateSubnetRoutes(version types.IPVersion, subnet string, routes []spiderpoolv1.Route) *field.Error {
 	for i, r := range routes {
 		if err := spiderpoolip.IsCIDR(version, r.Dst); err != nil {
 			return field.Invalid(
@@ -275,7 +235,7 @@ func (sm *subnetManager) validateSubnetRoutes(ctx context.Context, version types
 			)
 		}
 
-		if err := ippoolmanager.ValidateContainsIP(ctx, routesField.Index(i).Child("gw"), version, subnet, r.Gw); err != nil {
+		if err := ippoolmanager.ValidateContainsIP(routesField.Index(i).Child("gw"), version, subnet, r.Gw); err != nil {
 			return err
 		}
 	}

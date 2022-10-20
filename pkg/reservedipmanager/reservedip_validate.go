@@ -35,7 +35,7 @@ func (rm *reservedIPManager) validateCreateReservedIP(ctx context.Context, rIP *
 }
 
 func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
-	if err := rm.validateReservedIPShouldNotBeChanged(ctx, oldRIP, newRIP); err != nil {
+	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -51,7 +51,7 @@ func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRI
 	return errs
 }
 
-func (rm *reservedIPManager) validateReservedIPShouldNotBeChanged(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
+func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
 	if *newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
@@ -63,7 +63,7 @@ func (rm *reservedIPManager) validateReservedIPShouldNotBeChanged(ctx context.Co
 }
 
 func (rm *reservedIPManager) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if err := rm.validateReservedIPIPVersion(ctx, rIP.Spec.IPVersion); err != nil {
+	if err := rm.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
 		return err
 	}
 	if err := rm.validateReservedIPAvailableIP(ctx, *rIP.Spec.IPVersion, rIP); err != nil {
@@ -73,7 +73,7 @@ func (rm *reservedIPManager) validateReservedIPSpec(ctx context.Context, rIP *sp
 	return nil
 }
 
-func (rm *reservedIPManager) validateReservedIPIPVersion(ctx context.Context, version *types.IPVersion) *field.Error {
+func (rm *reservedIPManager) validateReservedIPIPVersion(version *types.IPVersion) *field.Error {
 	if version == nil {
 		return field.Invalid(
 			ipVersionField,
@@ -110,7 +110,7 @@ func (rm *reservedIPManager) validateReservedIPIPVersion(ctx context.Context, ve
 }
 
 func (rm *reservedIPManager) validateReservedIPAvailableIP(ctx context.Context, version types.IPVersion, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if err := rm.validateReservedIPIPs(ctx, version, rIP.Spec.IPs); err != nil {
+	if err := validateReservedIPIPs(version, rIP.Spec.IPs); err != nil {
 		return err
 	}
 
@@ -140,7 +140,7 @@ func (rm *reservedIPManager) validateReservedIPAvailableIP(ctx context.Context, 
 	return nil
 }
 
-func (rm *reservedIPManager) validateReservedIPIPs(ctx context.Context, version types.IPVersion, ips []string) *field.Error {
+func validateReservedIPIPs(version types.IPVersion, ips []string) *field.Error {
 	if len(ips) == 0 {
 		return field.Required(
 			ipsField,

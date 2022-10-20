@@ -32,7 +32,7 @@ func (im *ipPoolManager) validateCreateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 	if err != nil {
 		return field.ErrorList{err}
 	}
-	if err := im.validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx, subnet, ipPool); err != nil {
+	if err := validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet, ipPool); err != nil {
 		return field.ErrorList{err}
 	}
 	if err := im.removeSubnetFreeIPs(ctx, subnet, ipPool); err != nil {
@@ -58,7 +58,7 @@ func (im *ipPoolManager) validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 	if err != nil {
 		return field.ErrorList{err}
 	}
-	if err := im.validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx, subnet, newIPPool); err != nil {
+	if err := validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet, newIPPool); err != nil {
 		return field.ErrorList{err}
 	}
 	if err := im.updateSubnetFreeIPs(ctx, subnet, oldIPPool, newIPPool); err != nil {
@@ -112,7 +112,7 @@ func (im *ipPoolManager) validateSubnetControllerExist(ctx context.Context, ipPo
 	return nil, nil
 }
 
-func (im *ipPoolManager) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+func validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	poolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	outIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, subnetTotalIPs)

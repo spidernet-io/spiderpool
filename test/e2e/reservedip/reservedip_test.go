@@ -20,8 +20,24 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 	var iPv4PoolObj, iPv6PoolObj *v1.SpiderIPPool
 	var v4ReservedIpObj, v6ReservedIpObj *v1.SpiderReservedIP
 	var err error
+	var v4SubnetName, v6SubnetName string
+	var v4SubnetObject, v6SubnetObject *v1.SpiderSubnet
 
 	BeforeEach(func() {
+		if frame.Info.SpiderSubnetEnabled {
+			// Subnet Adaptation
+			if frame.Info.IpV4Enabled {
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(1)
+				Expect(v4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(1)
+				Expect(v6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			}
+		}
+
 		//Init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("Try to create namespace %v \n", nsName)
@@ -33,6 +49,10 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 
 		if frame.Info.IpV4Enabled {
 			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
+			if frame.Info.SpiderSubnetEnabled {
+				iPv4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+				iPv4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+			}
 			err := common.CreateIppool(frame, iPv4PoolObj)
 			Expect(err).NotTo(HaveOccurred(), "Failed to create v4 Pool %v \n", v4PoolName)
 			GinkgoWriter.Printf("Successfully created v4 Pool: %v \n", v4PoolName)
@@ -41,6 +61,10 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 
 		if frame.Info.IpV6Enabled {
 			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(1)
+			if frame.Info.SpiderSubnetEnabled {
+				iPv6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+				iPv6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+			}
 			err := common.CreateIppool(frame, iPv6PoolObj)
 			Expect(err).NotTo(HaveOccurred(), "Failed to create v6 Pool %v \n", v6PoolName)
 			GinkgoWriter.Printf("Successfully created v6 Pool: %v \n", v6PoolName)
@@ -54,12 +78,16 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			GinkgoWriter.Printf("Successful deletion of namespace %v \n", nsName)
 
 			if frame.Info.IpV4Enabled {
-				err := common.DeleteIPPoolByName(frame, v4PoolName)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				if frame.Info.SpiderSubnetEnabled {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+				}
 			}
 			if frame.Info.IpV6Enabled {
-				err := common.DeleteIPPoolByName(frame, v6PoolName)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				if frame.Info.SpiderSubnetEnabled {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+				}
 			}
 		})
 	})

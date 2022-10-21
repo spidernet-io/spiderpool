@@ -254,7 +254,7 @@ jobs:
                 -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e E2E_IP_FAMILY=dual
+                -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT=""
 
       - name: Run e2e Test For Dual-stack
         id: dualstack_e2e
@@ -346,7 +346,7 @@ jobs:
                 -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e E2E_IP_FAMILY=ipv4
+                -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT=""
 
       - name: Run e2e Test For ipv4-only
         id: ipv4only_e2e

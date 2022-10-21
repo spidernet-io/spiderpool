@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"reflect"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,7 +36,7 @@ func (im *ipPoolManager) validateCreateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 	if err := validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet, ipPool); err != nil {
 		return field.ErrorList{err}
 	}
-	if err := im.removeSubnetFreeIPs(ctx, subnet, ipPool); err != nil {
+	if err := im.updateControlledIPPoolIPs(ctx, subnet, ipPool); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -61,8 +62,17 @@ func (im *ipPoolManager) validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 	if err := validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet, newIPPool); err != nil {
 		return field.ErrorList{err}
 	}
-	if err := im.updateSubnetFreeIPs(ctx, subnet, oldIPPool, newIPPool); err != nil {
-		return field.ErrorList{err}
+
+	totalIPsChange := false
+	if !reflect.DeepEqual(newIPPool.Spec.IPs, oldIPPool.Spec.IPs) ||
+		!reflect.DeepEqual(newIPPool.Spec.ExcludeIPs, oldIPPool.Spec.ExcludeIPs) {
+		totalIPsChange = true
+	}
+
+	if totalIPsChange {
+		if err := im.updateControlledIPPoolIPs(ctx, subnet, newIPPool); err != nil {
+			return field.ErrorList{err}
+		}
 	}
 
 	return nil
@@ -77,7 +87,7 @@ func (im *ipPoolManager) validateDeleteIPPoolAndUpdateSubnetFreeIPs(ctx context.
 		return nil
 	}
 
-	if err := im.addSubnetFreeIPs(ctx, subnet, ipPool); err != nil {
+	if err := im.removeControlledIPPoolIPs(ctx, subnet, ipPool); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -127,39 +137,68 @@ func validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet *spiderpoolv1.SpiderSub
 	return nil
 }
 
-func (im *ipPoolManager) removeSubnetFreeIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+func (im *ipPoolManager) updateControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	logger := logutils.FromContext(ctx)
+
 	poolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
-	if err := im.updateSubnetStatus(ctx, poolTotalIPs, nil, subnet); err != nil {
-		return field.InternalError(freeIPsField, err)
+	_, err := im.freeIPsLimiter.AcquireTicket(ctx, subnet.Name)
+	if err != nil {
+		logger.Sugar().Errorf("Failed to queue correctly: %v", err)
+	} else {
+		defer im.freeIPsLimiter.ReleaseTicket(ctx, subnet.Name)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i <= im.config.MaxConflictRetries; i++ {
+		var err error
+		if i != 0 {
+			subnet, err = im.subnetManager.GetSubnetByName(ctx, subnet.Name)
+			if err != nil {
+				return field.InternalError(controlledIPPoolsField, err)
+			}
+		}
+
+		subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+		validIPs := spiderpoolip.IPsIntersectionSet(poolTotalIPs, subnetTotalIPs)
+		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, validIPs)
+
+		var oldPoolTotalIPs []net.IP
+		if subnet.Status.ControlledIPPools == nil {
+			subnet.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{}
+		} else if pool, ok := subnet.Status.ControlledIPPools[ipPool.Name]; ok {
+			oldPoolTotalIPs, err = spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, pool.IPs)
+			if err != nil {
+				return field.InternalError(controlledIPPoolsField, err)
+			}
+		}
+		subnet.Status.ControlledIPPools[ipPool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
+
+		if subnet.Status.AllocatedIPCount == nil {
+			subnet.Status.AllocatedIPCount = new(int64)
+		}
+		delta := int64(len(poolTotalIPs) - len(oldPoolTotalIPs))
+		*subnet.Status.AllocatedIPCount += delta
+
+		if err := im.client.Status().Update(ctx, subnet); err != nil {
+			if !apierrors.IsConflict(err) {
+				return field.InternalError(controlledIPPoolsField, err)
+			}
+			if i == im.config.MaxConflictRetries {
+				return field.InternalError(
+					controlledIPPoolsField,
+					fmt.Errorf("%w(<=%d) to update the IP addresses of the controlled IPPool of the Subnet %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
+				)
+			}
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
+			continue
+		}
+		break
 	}
 
 	return nil
 }
 
-func (im *ipPoolManager) updateSubnetFreeIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	oldPoolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldIPPool.Spec.IPVersion, oldIPPool.Spec.IPs, oldIPPool.Spec.ExcludeIPs)
-	newPoolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newIPPool.Spec.IPVersion, newIPPool.Spec.IPs, newIPPool.Spec.ExcludeIPs)
-	addedIPs := spiderpoolip.IPsDiffSet(newPoolTotalIPs, oldPoolTotalIPs)
-	reducedIPs := spiderpoolip.IPsDiffSet(oldPoolTotalIPs, newPoolTotalIPs)
-	if err := im.updateSubnetStatus(ctx, addedIPs, reducedIPs, subnet); err != nil {
-		return field.InternalError(freeIPsField, err)
-	}
-
-	return nil
-}
-
-func (im *ipPoolManager) addSubnetFreeIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	poolTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
-	subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
-	validIPs := spiderpoolip.IPsIntersectionSet(poolTotalIPs, subnetTotalIPs)
-	if err := im.updateSubnetStatus(ctx, nil, validIPs, subnet); err != nil {
-		return field.InternalError(freeIPsField, err)
-	}
-
-	return nil
-}
-
-func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, poolAddedIPs, poolReducedIPs []net.IP, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func (im *ipPoolManager) removeControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	logger := logutils.FromContext(ctx)
 
 	_, err := im.freeIPsLimiter.AcquireTicket(ctx, subnet.Name)
@@ -175,39 +214,33 @@ func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, poolAddedIPs, p
 		if i != 0 {
 			subnet, err = im.subnetManager.GetSubnetByName(ctx, subnet.Name)
 			if err != nil {
-				return field.InternalError(freeIPsField, err)
+				return field.InternalError(controlledIPPoolsField, err)
 			}
 		}
 
-		freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
+		if subnet.Status.ControlledIPPools == nil {
+			return nil
+		}
+
+		pool, ok := subnet.Status.ControlledIPPools[ipPool.Name]
+		if !ok {
+			return nil
+		}
+		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, pool.IPs)
 		if err != nil {
-			return field.InternalError(freeIPsField, err)
+			return field.InternalError(controlledIPPoolsField, err)
 		}
-
-		notFreeIPs := spiderpoolip.IPsDiffSet(poolAddedIPs, freeIPs)
-		if len(notFreeIPs) > 0 {
-			ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, notFreeIPs)
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("add some IP ranges %v that are not free in controller Subnet %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges, subnet.Name),
-			)
-		}
-
-		newFreeIPs := spiderpoolip.IPsDiffSet(spiderpoolip.IPsUnionSet(freeIPs, poolReducedIPs), poolAddedIPs)
-		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, newFreeIPs)
-		subnet.Status.FreeIPs = ranges
-
-		freeIPCount := int64(len(newFreeIPs))
-		subnet.Status.FreeIPCount = &freeIPCount
+		delete(subnet.Status.ControlledIPPools, ipPool.Name)
+		*subnet.Status.AllocatedIPCount -= int64(len(poolTotalIPs))
 
 		if err := im.client.Status().Update(ctx, subnet); err != nil {
 			if !apierrors.IsConflict(err) {
-				return field.InternalError(freeIPsField, err)
+				return field.InternalError(controlledIPPoolsField, err)
 			}
 			if i == im.config.MaxConflictRetries {
 				return field.InternalError(
-					freeIPsField,
-					fmt.Errorf("%w(<=%d) to update free IP addresses of Subnet %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
+					controlledIPPoolsField,
+					fmt.Errorf("%w(<=%d) to remove the IP addresses of the controlled IPPool of the Subnet %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
 				)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)

@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// IPPoolSpec defines the desired state of SpiderIPPool
+// IPPoolSpec defines the desired state of SpiderIPPool.
 type IPPoolSpec struct {
 	// +kubebuilder:validation:Enum=4;6
 	// +kubebuilder:validation:Optional
@@ -57,7 +57,7 @@ type Route struct {
 	Gw string `json:"gw"`
 }
 
-// IPPoolStatus defines the observed state of SpiderIPPool
+// IPPoolStatus defines the observed state of SpiderIPPool.
 type IPPoolStatus struct {
 	// +kubebuilder:validation:Optional
 	AllocatedIPs PoolIPAllocations `json:"allocatedIPs,omitempty"`
@@ -71,10 +71,9 @@ type IPPoolStatus struct {
 	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
 }
 
-// PoolIPAllocations is a map of allocated IPs indexed by IP
+// PoolIPAllocations is a map of IP allocation details indexed by IP address.
 type PoolIPAllocations map[string]PoolIPAllocation
 
-// PoolIPAllocation is an IP already has been allocated
 type PoolIPAllocation struct {
 	// +kubebuilder:validation:Required
 	ContainerID string `json:"containerID"`
@@ -109,7 +108,7 @@ type PoolIPAllocation struct {
 // +genclient
 // +genclient:nonNamespaced
 
-// SpiderIPPool is the Schema for the spiderippools API
+// SpiderIPPool is the Schema for the spiderippools API.
 type SpiderIPPool struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -120,7 +119,7 @@ type SpiderIPPool struct {
 
 // +kubebuilder:object:root=true
 
-// SpiderIPPoolList contains a list of SpiderIPPool
+// SpiderIPPoolList contains a list of SpiderIPPool.
 type SpiderIPPoolList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

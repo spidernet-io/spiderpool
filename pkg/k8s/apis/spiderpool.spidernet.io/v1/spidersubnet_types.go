@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SubnetSpec defines the desired state of SpiderSubnet
+// SubnetSpec defines the desired state of SpiderSubnet.
 type SubnetSpec struct {
 	// +kubebuilder:validation:Enum=4;6
 	// +kubebuilder:validation:Optional
@@ -36,10 +36,10 @@ type SubnetSpec struct {
 	Routes []Route `json:"routes,omitempty"`
 }
 
-// SubnetStatus defines the observed state of SpiderSubnet
+// SubnetStatus defines the observed state of SpiderSubnet.
 type SubnetStatus struct {
 	// +kubebuilder:validation:Optional
-	FreeIPs []string `json:"freeIPs,omitempty"`
+	ControlledIPPools PoolIPPreAllocations `json:"controlledIPPools,omitempty"`
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
@@ -47,20 +47,28 @@ type SubnetStatus struct {
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	FreeIPCount *int64 `json:"freeIPCount,omitempty"`
+	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+}
+
+// PoolIPPreAllocations is a map of pool IP pre-allocation details indexed by pool name.
+type PoolIPPreAllocations map[string]PoolIPPreAllocation
+
+type PoolIPPreAllocation struct {
+	// +kubebuilder:validation:Required
+	IPs []string `json:"ips"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spidersubnets",scope="Cluster",shortName={ss},singular="spidersubnet"
 // +kubebuilder:printcolumn:JSONPath=".spec.ipVersion",description="ipVersion",name="VERSION",type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.subnet",description="subnet",name="SUBNET",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.freeIPCount",description="freeIPCount",name="FREE-IP-COUNT",type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.allocatedIPCount",description="allocatedIPCount",name="ALLOCATED-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalIPCount",description="totalIPCount",name="TOTAL-IP-COUNT",type=integer
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +genclient
 // +genclient:nonNamespaced
 
-// SpiderSubnet is the Schema for the spidersubnets API
+// SpiderSubnet is the Schema for the spidersubnets API.
 type SpiderSubnet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -71,7 +79,7 @@ type SpiderSubnet struct {
 
 // +kubebuilder:object:root=true
 
-// SpiderSubnetList contains a list of SpiderSubnet
+// SpiderSubnetList contains a list of SpiderSubnet.
 type SpiderSubnetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

@@ -93,7 +93,7 @@ func (sm *subnetManager) reconcileOnAdd(ctx context.Context, subnet *spiderpoolv
 	if err := sm.initControllerSubnet(ctx, subnet); err != nil {
 		return err
 	}
-	if err := sm.initSubnetFreeIPsAndCount(ctx, subnet); err != nil {
+	if err := sm.initControlledIPPoolIPs(ctx, subnet); err != nil {
 		return err
 	}
 
@@ -149,7 +149,7 @@ func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSu
 		if err := sm.initControllerSubnet(ctx, newSubnet); err != nil {
 			return err
 		}
-		return sm.initSubnetFreeIPsAndCount(ctx, newSubnet)
+		return sm.initControlledIPPoolIPs(ctx, newSubnet)
 	}
 
 	return nil
@@ -212,7 +212,7 @@ OUTER:
 	return nil
 }
 
-func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		var err error
@@ -223,46 +223,44 @@ func (sm *subnetManager) initSubnetFreeIPsAndCount(ctx context.Context, subnet *
 			}
 		}
 
-		selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
-			},
-		})
+		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx)
 		if err != nil {
 			return err
 		}
-		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx, client.MatchingLabelsSelector{Selector: selector})
-		if err != nil {
-			return err
-		}
-
 		subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 		if err != nil {
 			return err
 		}
-		freeIPs := subnetTotalIPs
+
+		// Merge pre-allocated IP addresses of each IPPool and calculate their count.
+		var tmpCount int
+		controlledIPPools := spiderpoolv1.PoolIPPreAllocations{}
 		for _, pool := range ipPoolList.Items {
-			poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-			if err != nil {
-				return err
+			if pool.Spec.Subnet == subnet.Spec.Subnet {
+				poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+				if err != nil {
+					return err
+				}
+
+				validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs)
+				tmpCount += len(validIPs)
+
+				ranges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, validIPs)
+				if err != nil {
+					return err
+				}
+				controlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
 			}
-			freeIPs = spiderpoolip.IPsDiffSet(freeIPs, poolTotalIPs)
 		}
+		subnet.Status.ControlledIPPools = controlledIPPools
 
-		// Merge free IP ranges.
-		ranges, err := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, freeIPs)
-		if err != nil {
-			return err
-		}
-		subnet.Status.FreeIPs = ranges
-
-		// Calculate the count of total IP addresses.
+		// Update the count of total IP addresses.
 		totalIPCount := int64(len(subnetTotalIPs))
 		subnet.Status.TotalIPCount = &totalIPCount
 
-		// Calculate the count of free IP addresses.
-		freeIPCount := int64(len(freeIPs))
-		subnet.Status.FreeIPCount = &freeIPCount
+		// Update the count of pre-allocated IP addresses.
+		allocatedIPCount := int64(tmpCount)
+		subnet.Status.AllocatedIPCount = &allocatedIPCount
 
 		if err := sm.client.Status().Update(ctx, subnet); err != nil {
 			if !apierrors.IsConflict(err) {
@@ -297,7 +295,7 @@ func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpool
 		if err != nil {
 			return err
 		}
-		freeIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnet.Status.FreeIPs)
+		freeIPs, err := GenSubnetFreeIPs(subnet)
 		if err != nil {
 			return err
 		}

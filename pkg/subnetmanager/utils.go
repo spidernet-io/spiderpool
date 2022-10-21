@@ -5,6 +5,7 @@ package subnetmanager
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -126,4 +128,23 @@ func getAppReplicas(replicas *int32) int {
 	}
 
 	return int(*replicas)
+}
+
+func GenSubnetFreeIPs(subnet *spiderpoolv1.SpiderSubnet) ([]net.IP, error) {
+	var used []string
+	for _, pool := range subnet.Status.ControlledIPPools {
+		used = append(used, pool.IPs...)
+	}
+	usedIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, used)
+	if err != nil {
+		return nil, err
+	}
+
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	if err != nil {
+		return nil, err
+	}
+	freeIPs := spiderpoolip.IPsDiffSet(totalIPs, usedIPs)
+
+	return freeIPs, nil
 }

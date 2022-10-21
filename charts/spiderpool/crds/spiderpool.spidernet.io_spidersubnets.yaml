@@ -28,9 +28,9 @@ spec:
       jsonPath: .spec.subnet
       name: SUBNET
       type: string
-    - description: freeIPCount
-      jsonPath: .status.freeIPCount
-      name: FREE-IP-COUNT
+    - description: allocatedIPCount
+      jsonPath: .status.allocatedIPCount
+      name: ALLOCATED-IP-COUNT
       type: integer
     - description: totalIPCount
       jsonPath: .status.totalIPCount
@@ -39,7 +39,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: SpiderSubnet is the Schema for the spidersubnets API
+        description: SpiderSubnet is the Schema for the spidersubnets API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -54,7 +54,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: SubnetSpec defines the desired state of SpiderSubnet
+            description: SubnetSpec defines the desired state of SpiderSubnet.
             properties:
               excludeIPs:
                 items:
@@ -98,16 +98,25 @@ spec:
             - subnet
             type: object
           status:
-            description: SubnetStatus defines the observed state of SpiderSubnet
+            description: SubnetStatus defines the observed state of SpiderSubnet.
             properties:
-              freeIPCount:
+              allocatedIPCount:
                 format: int64
                 minimum: 0
                 type: integer
-              freeIPs:
-                items:
-                  type: string
-                type: array
+              controlledIPPools:
+                additionalProperties:
+                  properties:
+                    ips:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - ips
+                  type: object
+                description: PoolIPPreAllocations is a map of pool IP pre-allocation
+                  details indexed by pool name.
+                type: object
               totalIPCount:
                 format: int64
                 minimum: 0

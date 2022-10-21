@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// WorkloadEndpointStatus defines the observed state of SpiderEndpoint
+// WorkloadEndpointStatus defines the observed state of SpiderEndpoint.
 type WorkloadEndpointStatus struct {
 	// +kubebuilder:validation:Optional
 	Current *PodIPAllocation `json:"current,omitempty"`
@@ -82,7 +82,7 @@ type IPAllocationDetail struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Spiderndpoint is the Schema for the spiderendpoints API
+// Spiderndpoint is the Schema for the spiderendpoints API.
 type SpiderEndpoint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -92,7 +92,7 @@ type SpiderEndpoint struct {
 
 // +kubebuilder:object:root=true
 
-// SpiderEndpointList contains a list of SpiderEndpoint
+// SpiderEndpointList contains a list of SpiderEndpoint.
 type SpiderEndpointList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

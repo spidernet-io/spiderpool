@@ -27,7 +27,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: SpiderReservedIP is the Schema for the spiderreservedips API
+        description: SpiderReservedIP is the Schema for the spiderreservedips API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -42,7 +42,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ReservedIPSpec defines the desired state of SpiderReservedIP
+            description: ReservedIPSpec defines the desired state of SpiderReservedIP.
             properties:
               ipVersion:
                 enum:

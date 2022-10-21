@@ -94,7 +94,7 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetMgrNam
 		return nil, fmt.Errorf("subnet '%v' misses spec IP version", subnet)
 	}
 
-	freeIPs, err := spiderpoolip.ParseIPRanges(ipVersion, subnet.Status.FreeIPs)
+	freeIPs, err := GenSubnetFreeIPs(subnet)
 	if nil != err {
 		return nil, err
 	}

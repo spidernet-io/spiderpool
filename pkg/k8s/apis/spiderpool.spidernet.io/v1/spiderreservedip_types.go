@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReservedIPSpec defines the desired state of SpiderReservedIP
+// ReservedIPSpec defines the desired state of SpiderReservedIP.
 type ReservedIPSpec struct {
 	// +kubebuilder:validation:Enum=4;6
 	// +kubebuilder:validation:Optional
@@ -22,7 +22,7 @@ type ReservedIPSpec struct {
 // +kubebuilder:printcolumn:JSONPath=".spec.ipVersion",description="ipVersion",name="VERSION",type=string
 // +kubebuilder:object:root=true
 
-// SpiderReservedIP is the Schema for the spiderreservedips API
+// SpiderReservedIP is the Schema for the spiderreservedips API.
 type SpiderReservedIP struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -32,7 +32,7 @@ type SpiderReservedIP struct {
 
 // +kubebuilder:object:root=true
 
-// SpiderReservedIPList contains a list of SpiderReservedIP
+// SpiderReservedIPList contains a list of SpiderReservedIP.
 type SpiderReservedIPList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

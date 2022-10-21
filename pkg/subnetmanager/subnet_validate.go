@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	ipVersionField  *field.Path = field.NewPath("spec").Child("ipVersion")
-	subnetField     *field.Path = field.NewPath("spec").Child("subnet")
-	ipsField        *field.Path = field.NewPath("spec").Child("ips")
-	excludeIPsField *field.Path = field.NewPath("spec").Child("excludeIPs")
-	gatewayField    *field.Path = field.NewPath("spec").Child("gateway")
-	routesField     *field.Path = field.NewPath("spec").Child("routes")
-	freeIPsField    *field.Path = field.NewPath("status").Child("freeIPs")
+	ipVersionField         *field.Path = field.NewPath("spec").Child("ipVersion")
+	subnetField            *field.Path = field.NewPath("spec").Child("subnet")
+	ipsField               *field.Path = field.NewPath("spec").Child("ips")
+	excludeIPsField        *field.Path = field.NewPath("spec").Child("excludeIPs")
+	gatewayField           *field.Path = field.NewPath("spec").Child("gateway")
+	routesField            *field.Path = field.NewPath("spec").Child("routes")
+	controlledIPPoolsField *field.Path = field.NewPath("status").Child("controlledIPPools")
 )
 
 func (sm *subnetManager) validateCreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
@@ -110,9 +110,9 @@ func (sm *subnetManager) validateSubnetIPInUse(ctx context.Context, oldSubnet, n
 	oldTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldSubnet.Spec.IPVersion, oldSubnet.Spec.IPs, oldSubnet.Spec.ExcludeIPs)
 	newTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.IPs, newSubnet.Spec.ExcludeIPs)
 	reducedIPs := spiderpoolip.IPsDiffSet(oldTotalIPs, newTotalIPs)
-	freeIPs, err := spiderpoolip.ParseIPRanges(*newSubnet.Spec.IPVersion, newSubnet.Status.FreeIPs)
+	freeIPs, err := GenSubnetFreeIPs(newSubnet)
 	if err != nil {
-		return field.InternalError(freeIPsField, err)
+		return field.InternalError(controlledIPPoolsField, err)
 	}
 
 	invalidIPs := spiderpoolip.IPsDiffSet(reducedIPs, freeIPs)

@@ -17,16 +17,13 @@ import (
 )
 
 var (
-	ipVersionField  *field.Path = field.NewPath("spec").Child("ipVersion")
-	subnetField     *field.Path = field.NewPath("spec").Child("subnet")
-	ipsField        *field.Path = field.NewPath("spec").Child("ips")
-	excludeIPsField *field.Path = field.NewPath("spec").Child("excludeIPs")
-	gatewayField    *field.Path = field.NewPath("spec").Child("gateway")
-	routesField     *field.Path = field.NewPath("spec").Child("routes")
-)
-
-var (
-	freeIPsField *field.Path = field.NewPath("status").Child("freeIPs")
+	ipVersionField         *field.Path = field.NewPath("spec").Child("ipVersion")
+	subnetField            *field.Path = field.NewPath("spec").Child("subnet")
+	ipsField               *field.Path = field.NewPath("spec").Child("ips")
+	excludeIPsField        *field.Path = field.NewPath("spec").Child("excludeIPs")
+	gatewayField           *field.Path = field.NewPath("spec").Child("gateway")
+	routesField            *field.Path = field.NewPath("spec").Child("routes")
+	controlledIPPoolsField *field.Path = field.NewPath("status").Child("controlledIPPools")
 )
 
 func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {

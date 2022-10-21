@@ -20,12 +20,12 @@ ipam.spidernet.io/ippool: |-
 ```
 
 - `interface` (string, optional): When integrated with [multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), it could specify which ippool is used to the interface. The interface information in the CNI request will be used as the default value when this field is not specified.
-- `ipv4pools` (array, optional): Specify which ippool is used to allocate the IPv4 IP. When `enableIPv4` in the `spiderpool-conf` ConfigMap is set to true,  this field is required.
-- `ipv6pools` (array, optional): Specify which ippool is used to allocate the IPv6 IP. When `enableIPv6` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
+- `ipv4pools` (array, optional): Specify which ippool is used to allocate the IPv4 address. When `enableIPv4` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
+- `ipv6pools` (array, optional): Specify which ippool is used to allocate the IPv6 address. When `enableIPv6` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
 
 ### ipam.spidernet.io/ippools
 
-It is similar to `ipam.spidernet.io/ippool`, but could be used to multiple interfaces case. BTW, `ipam.spidernet.io/ippools` has precedence over `ipam.spidernet.io/ippool`.
+It is similar to `ipam.spidernet.io/ippool` but could be used in the case with multiple interfaces. Note that `ipam.spidernet.io/ippools` has precedence over `ipam.spidernet.io/ippool`.
 
 ```yaml
 ipam.spidernet.io/ippools: |-
@@ -42,9 +42,9 @@ ipam.spidernet.io/ippools: |-
   }]
 ```
 
-- `interface` (string, required): Since the CNI request only carries the information of one interface, in the case of multiple interfaces, the interface field must be specified to distinguish.
-- `ipv4pools` (array, optional): Specify which ippool is used to allocate IPv4 IP. When `enableIPv4` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
-- `ipv6pools` (array, optional): Specify which ippool is used to allocate IPv6 IP. When `enableIPv6` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
+- `interface` (string, required): Since the CNI request only carries the information of one interface, the `interface` field shall be specified to distinguish in the case of multiple interfaces.
+- `ipv4pools` (array, optional): Specify which ippool is used to allocate the IPv4 address. When `enableIPv4` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
+- `ipv6pools` (array, optional): Specify which ippool is used to allocate the IPv6 address. When `enableIPv6` in the `spiderpool-conf` ConfigMap is set to true, this field is required.
 - `defaultRoute` (bool, optional): If set to true, the IPAM plugin will return the default gateway route recorded in the ippool.
 
 For different interfaces, it is not recommended to use ippools of the same subnet.

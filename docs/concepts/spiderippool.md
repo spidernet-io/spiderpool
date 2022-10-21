@@ -2,10 +2,10 @@
 
 A SpiderIPPool resource represents a collection of IP addresses from which Spiderpool expects endpoint IPs to be assigned.
 
-## CRD Definition
+## CRD definition
 
 The SpiderIPPool custom resource is modeled after a standard Kubernetes resource
-and is split into a ``spec`` and ``status`` section:
+and is split into a `spec` and a `status` section:
 
 ```text
 type SpiderIPPool struct {
@@ -19,9 +19,9 @@ type SpiderIPPool struct {
 }
 ```
 
-### IPPool Specification
+### IPPool spec
 
-The ``spec`` section embeds an IPPool specific field which allows to define the list of all IPs, ExcludeIPs, Routes
+The `spec` section embeds a specific IPPool field which allows to define the list of all IPs, ExcludeIPs, Routes,
 and some other data to the IPPool object for allocation:
 
 ```text
@@ -67,9 +67,9 @@ type Route struct {
 }
 ```
 
-### IPPool Status
+### IPPool status
 
-The ``status`` section contains some field to describe the current IPPool allocation details.
+The `status` section contains some fields to describe details about the current IPPool allocation.
 The IPPool status reports all used addresses.
 
 ```text

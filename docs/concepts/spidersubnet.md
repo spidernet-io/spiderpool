@@ -2,10 +2,10 @@
 
 A SpiderSubnet resource represents a collection of IP addresses from which Spiderpool expects SpiderIPPool IPs to be assigned.
 
-## CRD Definition
+## CRD definition
 
 The SpiderSubnet custom resource is modeled after a standard Kubernetes resource
-and is split into a ``spec`` and ``status`` section:
+and is split into a `spec` and a `status` section:
 
 ```text
 type SpiderSubnet struct {
@@ -19,9 +19,9 @@ type SpiderSubnet struct {
 }
 ```
 
-### Subnet Specification
+### Subnet spec
 
-The ``spec`` section embeds an Subnet specific field which allows to define the list of all IPs, ExcludeIPs, Routes
+The `spec` section embeds a specific Subnet field which allows to define the list of all IPs, ExcludeIPs, Routes,
 and some other data to the Subnet object for allocation:
 
 ```text
@@ -50,9 +50,9 @@ type SubnetSpec struct {
 }
 ```
 
-### Subnet Status
+### Subnet status
 
-The ``status`` section contains some field to describe the current IPPool allocation details.
+The `status` section contains some fields to describe details about the current IPPool allocation.
 The IPPool status reports all used addresses.
 
 ```text

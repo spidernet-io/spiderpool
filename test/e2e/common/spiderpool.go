@@ -611,3 +611,21 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 		}
 	}
 }
+
+func CheckUniqueUuidInSpiderPool(f *frame.Framework, poolName string, podList *corev1.PodList) error {
+	if f == nil || poolName == "" || len(podList.Items) == 0 {
+		return frame.ErrWrongInput
+	}
+	ippool := GetIppoolByName(f, poolName)
+	if ippool == nil {
+		return fmt.Errorf("failed get pool %v", poolName)
+	}
+	ipAndUuidMap := map[string]string{}
+	for _, v := range ippool.Status.AllocatedIPs {
+		if d, ok := ipAndUuidMap[v.ContainerID]; ok {
+			return fmt.Errorf("pod %v uuid %v is not unique", d, v.ContainerID)
+		}
+		ipAndUuidMap[v.ContainerID] = v.Pod
+	}
+	return nil
+}

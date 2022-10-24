@@ -205,7 +205,14 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	if err != nil {
 		return nil, err
 	}
-	results, endpoint, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, endpoint, pod)
+
+	// TODO(iiiceoo): Comment why containerID should be written first.
+	endpoint, err = i.weManager.MarkIPAllocation(ctx, *addArgs.ContainerID, endpoint, pod)
+	if err != nil {
+		return nil, fmt.Errorf("failed to mark IP allocation: %v", err)
+	}
+
+	results, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, endpoint, pod)
 	resIPs, resRoutes := convertResultsToIPConfigsAndAllRoutes(results)
 	if err != nil {
 		// If there are any other errors that might have been thrown at Allocate
@@ -260,28 +267,22 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, nic string, defaultIPV4I
 	return preliminary, nil
 }
 
-func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
+func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, containerID string, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
 	customRoutes, err := getCustomRoutes(ctx, pod)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	// TODO(iiiceoo): Comment why containerID should be written first.
-	endpoint, err = i.weManager.MarkIPAllocation(ctx, containerID, endpoint, pod)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to mark IP allocation: %v", err)
+		return nil, err
 	}
 
 	var allResults []*AllocationResult
 	for _, t := range tt {
-		oneResults, endpoint, err := i.allocateForOneNIC(ctx, t, containerID, &customRoutes, endpoint, pod)
+		oneResults, err := i.allocateForOneNIC(ctx, t, containerID, &customRoutes, endpoint, pod)
 		if len(oneResults) != 0 {
 			allResults = append(allResults, oneResults...)
 		}
 		if err != nil {
-			return allResults, endpoint, err
+			return allResults, err
 		}
 	}
 	if len(customRoutes) != 0 {
@@ -291,17 +292,17 @@ func (i *ipam) allocateForAllNICs(ctx context.Context, tt []*ToBeAllocated, cont
 	ips, _ := convertResultsToIPConfigsAndAllRoutes(allResults)
 	anno, err := genIPAssignmentAnnotation(ips)
 	if err != nil {
-		return allResults, endpoint, fmt.Errorf("failed to generate IP assignment annotation: %v", err)
+		return allResults, fmt.Errorf("failed to generate IP assignment annotation: %v", err)
 	}
 
 	if err := i.podManager.MergeAnnotations(ctx, pod.Namespace, pod.Name, anno); err != nil {
-		return allResults, endpoint, fmt.Errorf("failed to merge IP assignment annotation: %w", err)
+		return allResults, fmt.Errorf("failed to merge IP assignment annotation: %w", err)
 	}
 
-	return allResults, endpoint, nil
+	return allResults, nil
 }
 
-func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containerID string, customRoutes *[]*models.Route, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, *spiderpoolv1.SpiderEndpoint, error) {
+func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containerID string, customRoutes *[]*models.Route, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) ([]*AllocationResult, error) {
 	var results []*AllocationResult
 	for _, c := range t.PoolCandidates {
 		result, err := i.allocateIPFromPoolCandidates(ctx, c, t.NIC, containerID, t.CleanGateway, pod)
@@ -309,26 +310,25 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 			results = append(results, result)
 		}
 		if err != nil {
-			return results, endpoint, err
+			return results, err
 		}
 
 		routes, err := groupCustomRoutesByGW(ctx, customRoutes, result.IP)
 		if err != nil {
-			return results, endpoint, fmt.Errorf("failed to group custom routes by gateway: %v", err)
+			return results, fmt.Errorf("failed to group custom routes by gateway: %v", err)
 		}
 		result.Routes = append(result.Routes, routes...)
 
 		patch := convertResultsToIPDetails([]*AllocationResult{result})
-		endpoint, err = i.weManager.PatchIPAllocation(ctx, &spiderpoolv1.PodIPAllocation{
+		if err = i.weManager.PatchIPAllocation(ctx, &spiderpoolv1.PodIPAllocation{
 			ContainerID: containerID,
 			IPs:         patch,
-		}, endpoint)
-		if err != nil {
-			return results, endpoint, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint %s/%s: %v", patch, endpoint.Namespace, endpoint.Name, err)
+		}, endpoint); err != nil {
+			return results, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint %s/%s: %v", patch, endpoint.Namespace, endpoint.Name, err)
 		}
 	}
 
-	return results, endpoint, nil
+	return results, nil
 }
 
 func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidate, nic, containerID string, cleanGateway bool, pod *corev1.Pod) (*AllocationResult, error) {

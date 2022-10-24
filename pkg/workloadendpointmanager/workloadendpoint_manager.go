@@ -32,7 +32,7 @@ type WorkloadEndpointManager interface {
 	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
 	Delete(ctx context.Context, wep *spiderpoolv1.SpiderEndpoint) error
 	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error)
-	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.SpiderEndpoint, error)
+	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) error
 	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]types.IPAndCID, error)
@@ -141,13 +141,13 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 	return we, nil
 }
 
-func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.SpiderEndpoint, error) {
+func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) error {
 	if we == nil || we.Status.Current == nil {
-		return nil, errors.New("patch a unmarked Endpoint")
+		return errors.New("patch a unmarked Endpoint")
 	}
 
 	if we.Status.Current.ContainerID != allocation.ContainerID {
-		return nil, fmt.Errorf("patch a mismarked Endpoint with IP allocation: %v", *we.Status.Current)
+		return fmt.Errorf("patch a mismarked Endpoint with IP allocation: %v", *we.Status.Current)
 	}
 
 	var merged bool
@@ -165,11 +165,7 @@ func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, alloca
 		we.Status.History[0].IPs = append(we.Status.History[0].IPs, allocation.IPs...)
 	}
 
-	if err := em.client.Status().Update(ctx, we); err != nil {
-		return nil, err
-	}
-
-	return we, nil
+	return em.client.Status().Update(ctx, we)
 }
 
 func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error {

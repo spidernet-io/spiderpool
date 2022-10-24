@@ -46,7 +46,7 @@ func (sm *subnetManager) SetupInformer(ctx context.Context, client crdclientset.
 			}
 
 			informerLogger.Info("Initialize SpiderSubnet informer")
-			factory := externalversions.NewSharedInformerFactory(client, 0)
+			factory := externalversions.NewSharedInformerFactory(client, sm.config.ResyncPeriod)
 			subnetInformer := factory.Spiderpool().V1().SpiderSubnets().Informer()
 			subnetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 				AddFunc:    sm.onSpiderSubnetAdd,

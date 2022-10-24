@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -33,7 +34,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
-	"runtime"
 )
 
 // DaemonMain runs controllerContext handlers.
@@ -318,6 +318,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			UpdateCRConfig:      updateCRConfig,
 			EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
 			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			ResyncPeriod:        time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
 		}, controllerContext.CRDManager, controllerContext.IPPoolManager)
 		if err != nil {
 			logger.Fatal(err.Error())

@@ -16,4 +16,5 @@ type SubnetManagerConfig struct {
 	config.UpdateCRConfig
 	EnableSpiderSubnet  bool
 	LeaderRetryElectGap time.Duration
+	ResyncPeriod        time.Duration
 }

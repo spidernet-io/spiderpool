@@ -312,7 +312,7 @@ jobs:
 
       - name: Upload e2e log For Dual-stack
         if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3.1.1
         with:
           name: dualstack-debuglog.txt
           path: test/e2edebugLog.txt
@@ -320,7 +320,7 @@ jobs:
 
       - name: Upload e2e report For Dual-stack
         if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3.1.1
         with:
           name: dualstack-e2ereport.json
           path: e2ereport.json
@@ -414,7 +414,7 @@ jobs:
 
       - name: Upload e2e log For ipv4-only
         if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3.1.1
         with:
           name: ipv4Only-debuglog.txt
           path: test/e2edebugLog.txt
@@ -422,7 +422,7 @@ jobs:
 
       - name: Upload e2e report For ipv4-only
         if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3.1.1
         with:
           name: ipv4Only-e2ereport.json
           path: e2ereport.json
@@ -493,7 +493,7 @@ jobs:
 
       - name: Upload e2e log For ipv6-only
         if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3.1.1
         with:
           name: ipv6Only-debuglog.txt
           path: test/e2edebugLog.txt
@@ -501,7 +501,7 @@ jobs:
 
       - name: Upload e2e report For ipv6-only
         if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3.1.1
         with:
           name: ipv6Only-e2ereport.json
           path: e2ereport.json

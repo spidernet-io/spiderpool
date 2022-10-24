@@ -8,11 +8,17 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 	"time"
+
+	. "github.com/onsi/gomega"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -352,4 +358,52 @@ LOOP:
 			return nil
 		}
 	}
+}
+
+func BatchCreateSubnet(f *frame.Framework, version types.IPVersion, subnetNums, subnetIpNums int) ([]string, error) {
+	if f == nil || subnetNums <= 0 || subnetIpNums <= 0 {
+		return nil, frame.ErrWrongInput
+	}
+
+	var subnetName string
+	var subnetObject *v1.SpiderSubnet
+	var subnetNameList []string
+	var subnetObjectList []*v1.SpiderSubnet
+	CirdMap := make(map[string]string)
+
+OUTER_FOR:
+	for i := 1; i <= subnetNums; i++ {
+		if version == constant.IPv4 {
+			subnetName, subnetObject = GenerateExampleV4SubnetObject(subnetIpNums)
+		} else {
+			subnetName, subnetObject = GenerateExampleV6SubnetObject(subnetIpNums)
+		}
+
+		if d, ok := CirdMap[subnetObject.Spec.Subnet]; ok {
+			GinkgoWriter.Printf("subnet objects %v and %v have conflicted subnet: %v \n", d, subnetName, subnetObject.Spec.Subnet)
+			i--
+			continue OUTER_FOR
+		}
+		CirdMap[string(subnetObject.Spec.Subnet)] = subnetName
+		subnetObjectList = append(subnetObjectList, subnetObject)
+	}
+
+	lock := lock.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(subnetObjectList))
+	for _, subentObj := range subnetObjectList {
+		s := subentObj
+		go func() {
+			defer GinkgoRecover()
+			defer wg.Done()
+			Expect(CreateSubnet(f, s)).NotTo(HaveOccurred())
+
+			lock.Lock()
+			subnetNameList = append(subnetNameList, s.Name)
+			lock.Unlock()
+		}()
+	}
+	wg.Wait()
+	Expect(len(subnetNameList)).To(Equal(subnetNums))
+	return subnetNameList, nil
 }

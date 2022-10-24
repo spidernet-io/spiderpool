@@ -22,6 +22,7 @@ import (
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -244,7 +245,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			nodeList, err = frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(nodeList).NotTo(BeNil())
-
 			if frame.Info.IpV4Enabled {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetAvailableIpNum)
 				Expect(v4SubnetObject).NotTo(BeNil())
@@ -636,7 +636,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				}
 				return true
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-
 			ctx1, cancel1 := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel1()
 			for _, pod := range podList.Items {
@@ -644,6 +643,285 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}
 
 			Expect(frame.DeleteDeployment(deployName, namespace)).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("Manual create the subnet and ippool.", func() {
+		var v4PoolObject, v6PoolObject *spiderpool.SpiderIPPool
+		var v4SubnetNameList, v6SubnetNameList []string
+		var v4PoolNameList, v6PoolNameList []string
+
+		// failed to run case, Refer to https://github.com/spidernet-io/spiderpool/issues/868
+		// the same spec is used to create the subnet and only one should succeed
+		// the same spec is used to create the ippool and only one should succeed
+		PIt("the same spec is used to create the subnet/ippool and only one should succeed.", Label("I00009", "I00010"), func() {
+			var (
+				batchCreateSubnetNumber int = 2
+				batchCreateIPPoolNumber int = 2
+			)
+
+			// Generate example v4 or v6 subnetObject/poolObject
+			if frame.Info.IpV4Enabled {
+				_, v4SubnetObject = common.GenerateExampleV4SubnetObject(200)
+				_, v4PoolObject = common.GenerateExampleIpv4poolObject(200)
+				v4PoolObject.Spec.Subnet = v4SubnetObject.Spec.Subnet
+				v4PoolObject.Spec.IPs = v4SubnetObject.Spec.IPs
+			}
+			if frame.Info.IpV6Enabled {
+				_, v6SubnetObject = common.GenerateExampleV6SubnetObject(200)
+				_, v6PoolObject = common.GenerateExampleIpv6poolObject(200)
+				v6PoolObject.Spec.Subnet = v6SubnetObject.Spec.Subnet
+				v6PoolObject.Spec.IPs = v6SubnetObject.Spec.IPs
+			}
+			GinkgoWriter.Printf("v4SubnetObject %v; v6SubnetObject %v \n", v4SubnetObject, v6SubnetObject)
+			GinkgoWriter.Printf("v4PoolObject %v; v6PoolObject %v \n", v4PoolObject, v6PoolObject)
+
+			lock := lock.Mutex{}
+			wg := sync.WaitGroup{}
+			wg.Add(batchCreateSubnetNumber)
+			for i := 1; i <= batchCreateSubnetNumber; i++ {
+				// Create `batchCreateSubnetNumber` subnets simultaneously using the same subnet.spec.
+				// The same spec is used to create the subnet and only one should succeed
+				j := i
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					if frame.Info.IpV4Enabled {
+						v4SubnetName := "v4-ss-" + strconv.Itoa(j) + "-" + tools.RandomName()
+						v4SubnetObj := &spiderpool.SpiderSubnet{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: v4SubnetName,
+							},
+							Spec: v4SubnetObject.Spec,
+						}
+						err := common.CreateSubnet(frame, v4SubnetObj)
+						if err == nil {
+							subnet := common.GetSubnetByName(frame, v4SubnetName)
+							if subnet.Spec.Subnet == v4SubnetObj.Spec.Subnet {
+								GinkgoWriter.Printf("succeed to create subnet %v, spec.subnet is %v \n", v4SubnetName, v4SubnetObj.Spec.Subnet)
+								lock.Lock()
+								v4SubnetNameList = append(v4SubnetNameList, v4SubnetName)
+								lock.Unlock()
+							}
+						}
+					}
+					if frame.Info.IpV6Enabled {
+						v6SubnetName := "v6-ss-" + strconv.Itoa(j) + "-" + tools.RandomName()
+						v6SubnetObj := &spiderpool.SpiderSubnet{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: v6SubnetName,
+							},
+							Spec: v6SubnetObject.Spec,
+						}
+						err := common.CreateSubnet(frame, v6SubnetObj)
+						if err == nil {
+							subnet := common.GetSubnetByName(frame, v4SubnetName)
+							if subnet.Spec.Subnet == v6SubnetObj.Spec.Subnet {
+								GinkgoWriter.Printf("succeed to create subnet %v, spec.subnet is %v \n", v6SubnetName, v6SubnetObj.Spec.Subnet)
+								lock.Lock()
+								v6SubnetNameList = append(v6SubnetNameList, v6SubnetName)
+								lock.Unlock()
+							}
+						}
+					}
+				}()
+			}
+			GinkgoWriter.Printf("v4SubnetNameList %v;v6SubnetNameList %v \n", v4SubnetNameList, v6SubnetNameList)
+			wg.Wait()
+			// TODO(tao.yang),failed to run the case,refer to https://github.com/spidernet-io/spiderpool/issues/868
+			if frame.Info.IpV4Enabled {
+				Expect(len(v4SubnetNameList)).To(Equal(1))
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(len(v6SubnetNameList)).To(Equal(1))
+			}
+
+			wg = sync.WaitGroup{}
+			wg.Add(batchCreateIPPoolNumber)
+			for i := 1; i <= batchCreateIPPoolNumber; i++ {
+				// Create `batchCreateIPPoolNumber` ippools simultaneously using the same ippool.spec.
+				// The same spec is used to create the ippool and only one should succeed.
+				j := i
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					if frame.Info.IpV4Enabled {
+						v4PoolName := "v4-pool-" + strconv.Itoa(j) + "-" + tools.RandomName()
+						v4PoolObj := &spiderpool.SpiderIPPool{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: v4PoolName,
+							},
+							Spec: v4PoolObject.Spec,
+						}
+						err := common.CreateIppool(frame, v4PoolObj)
+						if err == nil {
+							pool := common.GetIppoolByName(frame, v4PoolName)
+							if pool.Spec.Subnet == v4PoolObj.Spec.Subnet {
+								GinkgoWriter.Printf("succeed to create ippool %v, spec.ips is %v \n", v4PoolName, v4PoolObj.Spec.IPs)
+								lock.Lock()
+								v4PoolNameList = append(v4PoolNameList, v4PoolName)
+								lock.Unlock()
+							}
+						}
+					}
+					if frame.Info.IpV6Enabled {
+						v6PoolName := "v6-pool-" + strconv.Itoa(j) + "-" + tools.RandomName()
+						v6PoolObj := &spiderpool.SpiderIPPool{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: v6PoolName,
+							},
+							Spec: v6PoolObject.Spec,
+						}
+						err := common.CreateIppool(frame, v6PoolObj)
+						if err == nil {
+							pool := common.GetIppoolByName(frame, v6PoolName)
+							if pool.Spec.Subnet == v6PoolObj.Spec.Subnet {
+								GinkgoWriter.Printf("succeed to create ippool %v, spec.ips is %v \n", v6PoolName, v6PoolObj.Spec.IPs)
+								lock.Lock()
+								v6PoolNameList = append(v6PoolNameList, v6PoolName)
+								lock.Unlock()
+							}
+						}
+					}
+				}()
+			}
+			GinkgoWriter.Printf("v4PoolNameList %v;v6PoolNameList %v \n", v4PoolNameList, v6PoolNameList)
+			wg.Wait()
+			// TODO(tao.yang), failed to run the case,refer to https://github.com/spidernet-io/spiderpool/issues/868
+			if frame.Info.IpV4Enabled {
+				Expect(len(v4PoolNameList)).To(Equal(1))
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(len(v6PoolNameList)).To(Equal(1))
+			}
+
+			// delete all ippool
+			GinkgoWriter.Printf("delete v4 pool %v, v6 pool %v \n", v4PoolNameList, v6PoolNameList)
+			if frame.Info.IpV4Enabled {
+				for _, v := range v4PoolNameList {
+					Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
+				}
+			}
+			if frame.Info.IpV6Enabled {
+				for _, v := range v6PoolNameList {
+					Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
+				}
+			}
+			// delete all subnet
+			GinkgoWriter.Printf("delete v4 subnet %v, v6 subnet %v \n", v4SubnetNameList, v6SubnetNameList)
+			if frame.Info.IpV4Enabled {
+				for _, v := range v4SubnetNameList {
+					Expect(common.DeleteSubnetByName(frame, v)).NotTo(HaveOccurred())
+				}
+			}
+			if frame.Info.IpV6Enabled {
+				for _, v := range v6SubnetNameList {
+					Expect(common.DeleteSubnetByName(frame, v)).NotTo(HaveOccurred())
+				}
+			}
+		})
+
+		// Manual batch create of subnets and ippools and record time
+		// batch delete ippools under subnet and record time
+		// batch delete subnets and record time
+		PIt("the different spec is used to create the subnet/ippool and should all be successful.", Label("I00007", "D00008"), func() {
+			var (
+				batchCreateSubnetNumber int = 20
+				batchCreateIPPoolNumber int = 10
+				subnetIpNumber          int = 200
+				ippoolIpNumber          int = 2
+				err                     error
+			)
+			// batch create subnet and ippool and record time
+			if frame.Info.IpV4Enabled {
+				startT1 := time.Now()
+				v4SubnetNameList, err = common.BatchCreateSubnet(frame, constant.IPv4, batchCreateSubnetNumber, subnetIpNumber)
+				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("succeed to batch create %v v4 subnet \n", len(v4SubnetNameList))
+				endT1 := time.Since(startT1)
+				GinkgoWriter.Printf("Time cost to create %v v4 subnet is %v \n", batchCreateSubnetNumber, endT1)
+				startT1 = time.Now()
+				v4SubnetObject = common.GetSubnetByName(frame, v4SubnetNameList[1])
+				v4PoolNameList, err = common.BatchCreateIPPoolsInSpiderSubnet(frame, constant.IPv4, v4SubnetObject.Spec.Subnet, v4SubnetObject.Spec.IPs, batchCreateIPPoolNumber, ippoolIpNumber)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(v4PoolNameList)).To(Equal(batchCreateIPPoolNumber))
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+				defer cancel()
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetNameList[1])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("succeed to batch create %v v4 pool \n", len(v4PoolNameList))
+				endT1 = time.Since(startT1)
+				GinkgoWriter.Printf("Time cost to create %v v4 ippool is %v \n", batchCreateIPPoolNumber, endT1)
+			}
+			if frame.Info.IpV6Enabled {
+				startT1 := time.Now()
+				v6SubnetNameList, err = common.BatchCreateSubnet(frame, constant.IPv6, batchCreateSubnetNumber, subnetIpNumber)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(v6SubnetNameList)).To(Equal(batchCreateSubnetNumber))
+				GinkgoWriter.Printf("succeed to batch create %v v6 subnet \n", len(v6SubnetNameList))
+				endT1 := time.Since(startT1)
+				GinkgoWriter.Printf("Time cost to create %v v6 subnet is %v \n", batchCreateSubnetNumber, endT1)
+				startT1 = time.Now()
+				v6SubnetObject = common.GetSubnetByName(frame, v6SubnetNameList[1])
+				v6PoolNameList, err = common.BatchCreateIPPoolsInSpiderSubnet(frame, constant.IPv6, v6SubnetObject.Spec.Subnet, v6SubnetObject.Spec.IPs, batchCreateIPPoolNumber, ippoolIpNumber)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(v6PoolNameList)).To(Equal(batchCreateIPPoolNumber))
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+				defer cancel()
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetNameList[1])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("succeed to batch create %v v6 pool \n", len(v6PoolNameList))
+				endT1 = time.Since(startT1)
+				GinkgoWriter.Printf("Time cost to create %v v6 ippool is %v \n", batchCreateIPPoolNumber, endT1)
+			}
+
+			// batch delete ippool under subnet and record time
+			startT2 := time.Now()
+			var poolNameList []string
+			poolNameList = append(append(poolNameList, v4PoolNameList...), v6PoolNameList...)
+			ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+			defer cancel()
+			wg := sync.WaitGroup{}
+			wg.Add(len(poolNameList))
+			for _, poolName := range poolNameList {
+				name := poolName
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					err = common.DeleteIPPoolUntilFinish(frame, name, ctx)
+					Expect(err).NotTo(HaveOccurred())
+				}()
+			}
+			wg.Wait()
+			ctx, cancel = context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetNameList[1], 0)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetNameList[1], 0)).NotTo(HaveOccurred())
+			}
+			endT2 := time.Since(startT2)
+			GinkgoWriter.Printf("Time cost to delete %v ippool is %v \n", batchCreateIPPoolNumber, endT2)
+
+			// batch delete subnet and record time
+			startT3 := time.Now()
+			ctx, cancel = context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+			defer cancel()
+			var subnetNameList []string
+			subnetNameList = append(append(subnetNameList, v4SubnetNameList...), v6SubnetNameList...)
+			wg = sync.WaitGroup{}
+			wg.Add(len(subnetNameList))
+			for _, subnetName := range subnetNameList {
+				name := subnetName
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					err = common.DeleteSubnetUntilFinish(ctx, frame, name)
+					Expect(err).NotTo(HaveOccurred())
+				}()
+			}
+			wg.Wait()
+			endT3 := time.Since(startT3)
+			GinkgoWriter.Printf("Time cost to delete %v subnet is %v \n", batchCreateSubnetNumber, endT3)
 		})
 	})
 })

@@ -291,18 +291,9 @@ func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpool
 			return nil
 		}
 
-		totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
-		if err != nil {
-			return err
-		}
-		freeIPs, err := GenSubnetFreeIPs(subnet)
-		if err != nil {
-			return err
-		}
-
 		// Some IP addresses are still occupied by the controlled IPPools, ignore
 		// to remove the finalizer.
-		if len(spiderpoolip.IPsDiffSet(totalIPs, freeIPs)) > 0 {
+		if len(subnet.Status.ControlledIPPools) > 0 {
 			return nil
 		}
 

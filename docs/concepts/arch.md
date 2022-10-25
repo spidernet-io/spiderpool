@@ -4,9 +4,9 @@
 
 Spiderpool consists of following components:
 
-* Spiderpool IPAM plugin, a binary installed on each host. It is called by a CNI plugin to assign and release IP for a pod
+* Spiderpool IPAM plugin, a binary installed on each host. It is called by a CNI plugin to assign and release IP for a pod.
 
-* spiderpool-agent, deployed as a daemonset. It receives IPAM requests from the IPAM plugin, assigns and releases IP from the ippool resource
+* spiderpool-agent, deployed as a daemonset. It receives IPAM requests from the IPAM plugin, assigns and releases IP from the ippool resource.
 
 * spiderpool-controller, deployed as a deployment.
 
@@ -14,7 +14,7 @@ Spiderpool consists of following components:
 
   * It uses a webhook to watch the ippool resource, help the administrator to validate creation, modification, and deletion.
 
-* spiderpoolctl, a CLI tool for debugging
+* spiderpoolctl, a CLI tool for debugging.
 
 ## CRDs
 

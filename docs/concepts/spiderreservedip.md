@@ -2,10 +2,10 @@
 
 A SpiderReservedIP resource represents a collection of IP addresses that Spiderpool expects not to be allocated.
 
-## CRD Definition
+## CRD definition
 
 The SpiderReservedIP custom resource is modeled after a standard Kubernetes resource
-and is split into a ``spec`` section:
+and is split into a `spec` section:
 
 ```text
 // SpiderReservedIP is the Schema for the spiderreservedips API
@@ -17,9 +17,9 @@ type SpiderReservedIP struct {
 }
 ```
 
-### SpiderReservedIP Specification
+### SpiderReservedIP spec
 
-The ``spec`` section embeds an ReservedIP specific field which allows to define the list of all reserved IPs:
+The `spec` section embeds a specific ReservedIP field which allows to define the list of all reserved IPs:
 
 ```text
 // ReservedIPSpec defines the desired state of SpiderReservedIP

@@ -2,10 +2,10 @@
 
 A SpiderEndpoint resource represents IP address allocation details for a specific endpoint object.
 
-## CRD Definition
+## CRD definition
 
 The SpiderEndpoint custom resource is modeled after a standard Kubernetes resource
-and is split into ``status`` section:
+and is split into the `status` section:
 
 ```text
 type SpiderEndpoint struct {
@@ -16,9 +16,9 @@ type SpiderEndpoint struct {
 }
 ```
 
-### SpiderEndpoint Status
+### SpiderEndpoint status
 
-The ``status`` section contains some field to describe the current Endpoint allocation details.
+The `status` section contains some fields to describe details about the current Endpoint allocation.
 
 ```text
 // WorkloadEndpointStatus defines the observed state of SpiderEndpoint

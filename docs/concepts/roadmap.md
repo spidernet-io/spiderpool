@@ -1,6 +1,6 @@
-# spiderpool road map
+# Spiderpool Roadmap
 
-## feature
+## Features
 
 ---
 
@@ -77,7 +77,7 @@
 
 ---
 
-## goal of April
+## Goals of April
 
 * [x] 第一个 Helm Release，可以一键部署（可持续 CICD）
 
@@ -105,7 +105,7 @@
 
 ---
 
-## goal of May
+## Goals of May
 
 * [ ] 完成 IPAM plug in
 
@@ -135,7 +135,7 @@
 
 ---
 
-## goal of June
+## Goals of June
 
 * [ ] 完成所有满足 alpha feature 的业务代码
 
@@ -163,7 +163,7 @@
 
 ---
 
-## goal of July
+## Goals of July
 
 * [ ] 完成所有满足 beta feature 的代码
 
@@ -171,7 +171,7 @@
 
 ---
 
-## goal of August
+## Goals of August
 
 * [ ] finish most of GA feature , wait for spiderflat ready to debug
 
@@ -183,6 +183,6 @@
 
 ---
 
-## goal of September
+## Goals of September
 
 * [ ] start spiderflat

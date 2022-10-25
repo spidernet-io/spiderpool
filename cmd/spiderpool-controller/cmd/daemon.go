@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -33,7 +34,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
-	"runtime"
 )
 
 // DaemonMain runs controllerContext handlers.
@@ -224,6 +224,12 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.WEPManager = wepManager
+
+	logger.Info("Begin to set up Endpoint webhook")
+	err = controllerContext.WEPManager.SetupWebhook()
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 
 	logger.Info("Begin to initialize ReservedIP Manager")
 	rIPManager, err := reservedipmanager.NewReservedIPManager(&reservedipmanager.ReservedIPManagerConfig{

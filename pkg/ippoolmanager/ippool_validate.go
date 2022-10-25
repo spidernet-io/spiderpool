@@ -103,7 +103,11 @@ func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 		return err
 	}
 
-	totalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	if err != nil {
+		return field.InternalError(ipsField, err)
+	}
+
 	totalIPsMap := map[string]bool{}
 	for _, ip := range totalIPs {
 		totalIPsMap[ip.String()] = true
@@ -206,7 +210,11 @@ func (im *ipPoolManager) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		return field.InternalError(ipsField, err)
 	}
 
-	newIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	newIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	if err != nil {
+		return field.InternalError(ipsField, err)
+	}
+
 	for _, pool := range ipPoolList.Items {
 		if pool.Name == ipPool.Name || pool.Spec.Subnet != ipPool.Spec.Subnet {
 			continue

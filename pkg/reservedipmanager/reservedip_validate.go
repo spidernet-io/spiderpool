@@ -119,7 +119,11 @@ func (rm *reservedIPManager) validateReservedIPAvailableIP(ctx context.Context, 
 		return field.InternalError(ipsField, err)
 	}
 
-	newReservedIPs, _ := spiderpoolip.ParseIPRanges(version, rIP.Spec.IPs)
+	newReservedIPs, err := spiderpoolip.ParseIPRanges(version, rIP.Spec.IPs)
+	if err != nil {
+		return field.InternalError(ipsField, err)
+	}
+
 	for _, r := range rIPList.Items {
 		if r.Name == rIP.Name || *r.Spec.IPVersion != version {
 			continue

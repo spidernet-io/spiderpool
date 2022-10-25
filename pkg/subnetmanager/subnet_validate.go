@@ -101,7 +101,11 @@ func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 		return err
 	}
 
-	totalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	if err != nil {
+		return field.InternalError(ipsField, err)
+	}
+
 	for poolName, preAllocation := range subnet.Status.ControlledIPPools {
 		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
 		if err != nil {

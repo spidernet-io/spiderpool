@@ -209,18 +209,18 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 			ipPool.Status.AllocatedIPCount = new(int64)
 		}
 
-		needRelease := false
+		needToRelease := false
 		for _, e := range ipAndCIDs {
 			if a, ok := ipPool.Status.AllocatedIPs[e.IP]; ok {
 				if a.ContainerID == e.ContainerID {
 					delete(ipPool.Status.AllocatedIPs, e.IP)
 					*ipPool.Status.AllocatedIPCount--
-					needRelease = true
+					needToRelease = true
 				}
 			}
 		}
 
-		if !needRelease {
+		if !needToRelease {
 			return nil
 		}
 

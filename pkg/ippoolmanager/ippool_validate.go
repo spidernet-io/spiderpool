@@ -49,7 +49,7 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	}
 
 	var errs field.ErrorList
-	if err := validateIPPoolIPInUse(oldIPPool, newIPPool); err != nil {
+	if err := validateIPPoolIPInUse(newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -95,23 +95,25 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	return validateIPPoolRoutes(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Routes)
 }
 
-func validateIPPoolIPInUse(oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if err := validateIPPoolIPs(*newIPPool.Spec.IPVersion, newIPPool.Spec.Subnet, newIPPool.Spec.IPs); err != nil {
+func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
 		return err
 	}
-	if err := validateIPPoolExcludeIPs(*newIPPool.Spec.IPVersion, newIPPool.Spec.Subnet, newIPPool.Spec.ExcludeIPs); err != nil {
+	if err := validateIPPoolExcludeIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.ExcludeIPs); err != nil {
 		return err
 	}
 
-	oldTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldIPPool.Spec.IPVersion, oldIPPool.Spec.IPs, oldIPPool.Spec.ExcludeIPs)
-	newTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newIPPool.Spec.IPVersion, newIPPool.Spec.IPs, newIPPool.Spec.ExcludeIPs)
-	reducedIPs := spiderpoolip.IPsDiffSet(oldTotalIPs, newTotalIPs)
+	totalIPs, _ := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	totalIPsMap := map[string]bool{}
+	for _, ip := range totalIPs {
+		totalIPsMap[ip.String()] = true
+	}
 
-	for _, ip := range reducedIPs {
-		if allocation, ok := newIPPool.Status.AllocatedIPs[ip.String()]; ok {
+	for ip, allocation := range ipPool.Status.AllocatedIPs {
+		if _, ok := totalIPsMap[ip]; !ok {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("remove an IP address %s that is being used by Pod %s/%s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ip.String(), allocation.Namespace, allocation.Pod),
+				fmt.Sprintf("remove an IP address %s that is being used by Pod %s/%s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ip, allocation.Namespace, allocation.Pod),
 			)
 		}
 	}

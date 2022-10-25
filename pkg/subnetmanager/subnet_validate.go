@@ -50,7 +50,7 @@ func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, ne
 	}
 
 	var errs field.ErrorList
-	if err := validateSubnetIPInUse(oldSubnet, newSubnet); err != nil {
+	if err := validateSubnetIPInUse(newSubnet); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -93,29 +93,28 @@ func (sm *subnetManager) validateSubnetSpec(ctx context.Context, subnet *spiderp
 	return validateSubnetRoutes(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Routes)
 }
 
-func validateSubnetIPInUse(oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := validateSubnetIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.Subnet, newSubnet.Spec.IPs); err != nil {
+func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+	if err := validateSubnetIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
 		return err
 	}
-	if err := validateSubnetExcludeIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.Subnet, newSubnet.Spec.ExcludeIPs); err != nil {
+	if err := validateSubnetExcludeIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.ExcludeIPs); err != nil {
 		return err
 	}
 
-	oldTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*oldSubnet.Spec.IPVersion, oldSubnet.Spec.IPs, oldSubnet.Spec.ExcludeIPs)
-	newTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*newSubnet.Spec.IPVersion, newSubnet.Spec.IPs, newSubnet.Spec.ExcludeIPs)
-	reducedIPs := spiderpoolip.IPsDiffSet(oldTotalIPs, newTotalIPs)
-	freeIPs, err := GenSubnetFreeIPs(newSubnet)
-	if err != nil {
-		return field.InternalError(controlledIPPoolsField, err)
-	}
-
-	invalidIPs := spiderpoolip.IPsDiffSet(reducedIPs, freeIPs)
-	if len(invalidIPs) > 0 {
-		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*newSubnet.Spec.IPVersion, invalidIPs)
-		return field.Forbidden(
-			ipsField,
-			fmt.Sprintf("remove some IP ranges %v that is being used, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges),
-		)
+	totalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	for poolName, preAllocation := range subnet.Status.ControlledIPPools {
+		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
+		if err != nil {
+			return field.InternalError(controlledIPPoolsField, err)
+		}
+		invalidIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, totalIPs)
+		if len(invalidIPs) > 0 {
+			ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, invalidIPs)
+			return field.Forbidden(
+				ipsField,
+				fmt.Sprintf("remove some IP ranges %v that is being used by IPPool %s, total IP addresses of an Subnet are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ranges, poolName),
+			)
+		}
 	}
 
 	return nil

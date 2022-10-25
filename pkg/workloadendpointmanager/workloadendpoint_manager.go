@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,6 +27,7 @@ import (
 )
 
 type WorkloadEndpointManager interface {
+	SetupWebhook() error
 	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.SpiderEndpoint, error)
 	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
 	Delete(ctx context.Context, wep *spiderpoolv1.SpiderEndpoint) error
@@ -42,9 +42,9 @@ type WorkloadEndpointManager interface {
 }
 
 type workloadEndpointManager struct {
-	config *EndpointManagerConfig
-	client client.Client
-	scheme *runtime.Scheme
+	config     *EndpointManagerConfig
+	client     client.Client
+	runtimeMgr ctrl.Manager
 }
 
 func NewWorkloadEndpointManager(c *EndpointManagerConfig, mgr ctrl.Manager) (WorkloadEndpointManager, error) {
@@ -56,9 +56,9 @@ func NewWorkloadEndpointManager(c *EndpointManagerConfig, mgr ctrl.Manager) (Wor
 	}
 
 	return &workloadEndpointManager{
-		config: c,
-		client: mgr.GetClient(),
-		scheme: mgr.GetScheme(),
+		config:     c,
+		client:     mgr.GetClient(),
+		runtimeMgr: mgr,
 	}, nil
 }
 
@@ -104,7 +104,7 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 		// Once the StatefulSet pod restarts, we can retrieve the corresponding data immediately.
 		// And we don't need to wait the corresponding Endpoint clean up to create a new one if ownerReference exists.
 		if ownerControllerType != constant.OwnerStatefulSet {
-			if err := controllerutil.SetOwnerReference(pod, newWE, em.scheme); err != nil {
+			if err := controllerutil.SetOwnerReference(pod, newWE, em.runtimeMgr.GetScheme()); err != nil {
 				return nil, err
 			}
 		}

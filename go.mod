@@ -26,7 +26,7 @@ require (
 	github.com/spidernet-io/e2eframework v0.0.0-20220922072853-e06039bab469
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.31.0
-	go.opentelemetry.io/otel/metric v0.32.1
+	go.opentelemetry.io/otel/metric v0.33.0
 	go.opentelemetry.io/otel/sdk v1.11.0
 	go.opentelemetry.io/otel/sdk/metric v0.31.0
 	go.uber.org/atomic v1.10.0

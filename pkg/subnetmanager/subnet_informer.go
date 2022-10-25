@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,6 +29,7 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 var informerLogger *zap.Logger
@@ -117,6 +119,13 @@ func (sm *subnetManager) reconcileOnAdd(ctx context.Context, subnet *spiderpoolv
 		}
 	}
 
+	if subnet.Status.TotalIPCount != nil && subnet.Status.AllocatedIPCount != nil {
+		subnetFreeIPsCounts := (*subnet.Status.TotalIPCount) - (*subnet.Status.AllocatedIPCount)
+		attributes := attribute.String(constant.SpiderSubnetKind, subnet.Name)
+		metric.SubnetTotalIPCounts.Add(ctx, *subnet.Status.TotalIPCount, attributes)
+		metric.SubnetFreeIPCounts.Add(ctx, subnetFreeIPsCounts, attributes)
+	}
+
 	return nil
 }
 
@@ -166,6 +175,13 @@ func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSu
 		return sm.initControlledIPPoolIPs(ctx, newSubnet)
 	}
 
+	if newSubnet.Status.TotalIPCount != nil && newSubnet.Status.AllocatedIPCount != nil {
+		subnetFreeIPsCounts := (*newSubnet.Status.TotalIPCount) - (*newSubnet.Status.AllocatedIPCount)
+		attributes := attribute.String(constant.SpiderSubnetKind, newSubnet.Name)
+		metric.SubnetTotalIPCounts.Add(ctx, *newSubnet.Status.TotalIPCount, attributes)
+		metric.SubnetFreeIPCounts.Add(ctx, subnetFreeIPsCounts, attributes)
+	}
+
 	return nil
 }
 
@@ -186,6 +202,7 @@ OUTER:
 			return err
 		}
 
+		var subnetCorrespondingPoolCounts int64
 		for _, pool := range ipPoolList.Items {
 			if pool.Spec.Subnet != subnet.Spec.Subnet {
 				continue
@@ -219,7 +236,10 @@ OUTER:
 					continue OUTER
 				}
 			}
+
+			subnetCorrespondingPoolCounts++
 		}
+		metric.SubnetIPPoolCounts.Add(ctx, subnetCorrespondingPoolCounts, attribute.String(constant.SpiderSubnetKind, subnet.Name))
 		break
 	}
 

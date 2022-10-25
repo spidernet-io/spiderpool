@@ -96,14 +96,32 @@ func NewMetricFloat64Histogram(metricName string, description string) (syncfloat
 	return meter.SyncFloat64().Histogram(metricName, instrument.WithDescription(description))
 }
 
-// NewMetricFloat64Gauge will create otel Float64Gauge metric.
+// NewMetricAsyncFloat64Gauge will create otel Float64Gauge metric.
 // The first param metricName is required and the second param is optional.
-func NewMetricFloat64Gauge(metricName string, description string) (asyncfloat64.Gauge, error) {
+func NewMetricAsyncFloat64Gauge(metricName string, description string) (asyncfloat64.Gauge, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Guage, metric name is asked to be set")
 	}
 
 	return meter.AsyncFloat64().Gauge(metricName, instrument.WithDescription(description))
+}
+
+// NewMetricFloat64Gauge will create otel Float64Gauge metric.
+// The first param metricName is required and the second param is optional.
+func NewMetricFloat64Gauge(metricName string, description string) (syncfloat64.UpDownCounter, error) {
+	if len(metricName) == 0 {
+		return nil, fmt.Errorf("failed to create metric Gauge, metric name is asked to be set")
+	}
+
+	return meter.SyncFloat64().UpDownCounter(metricName, instrument.WithDescription(description))
+}
+
+func NewMetricInt64Gauge(metricName string, description string) (syncint64.UpDownCounter, error) {
+	if len(metricName) == 0 {
+		return nil, fmt.Errorf("failed to create metric Gauge, metric name is asked to be set")
+	}
+
+	return meter.SyncInt64().UpDownCounter(metricName, instrument.WithDescription(description))
 }
 
 var _ TimeRecorder = &timeRecorder{}

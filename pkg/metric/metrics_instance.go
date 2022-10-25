@@ -7,13 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-
-	"github.com/spidernet-io/spiderpool/pkg/lock"
 )
 
 const (
@@ -32,21 +27,29 @@ const (
 	ipam_allocation_latest_duration_seconds  = "ipam_allocation_latest_duration_seconds"
 	ipam_allocation_duration_seconds         = "ipam_allocation_duration_seconds"
 
-	// spiderpool agent ipam deallocation metrics name
-	ipam_deallocation_total_counts              = "ipam_deallocation_total_counts"
-	ipam_deallocation_failure_counts            = "ipam_deallocation_failure_counts"
-	ipam_releasing_err_internal_counts          = "ipam_releasing_err_internal_counts"
-	ipam_releasing_err_retries_exhausted_counts = "ipam_releasing_err_retries_exhausted_counts"
+	// spiderpool agent ipam release metrics name
+	ipam_release_total_counts                 = "ipam_release_total_counts"
+	ipam_release_failure_counts               = "ipam_release_failure_counts"
+	ipam_release_err_internal_counts          = "ipam_release_err_internal_counts"
+	ipam_release_err_retries_exhausted_counts = "ipam_release_err_retries_exhausted_counts"
 
-	ipam_deallocation_average_duration_seconds = "ipam_deallocation_average_duration_seconds"
-	ipam_deallocation_max_duration_seconds     = "ipam_deallocation_max_duration_seconds"
-	ipam_deallocation_min_duration_seconds     = "ipam_deallocation_min_duration_seconds"
-	ipam_deallocation_latest_duration_seconds  = "ipam_deallocation_latest_duration_seconds"
-	ipam_deallocation_duration_seconds         = "ipam_deallocation_duration_seconds"
+	ipam_release_average_duration_seconds = "ipam_release_average_duration_seconds"
+	ipam_release_max_duration_seconds     = "ipam_release_max_duration_seconds"
+	ipam_release_min_duration_seconds     = "ipam_release_min_duration_seconds"
+	ipam_release_latest_duration_seconds  = "ipam_release_latest_duration_seconds"
+	ipam_release_duration_seconds         = "ipam_release_duration_seconds"
 
 	// spiderpool controller IP GC metrics name
 	ip_gc_total_counts   = "ip_gc_total_counts"
 	ip_gc_failure_counts = "ip_gc_failure_counts"
+
+	subnet_total_ip_counts = "subnet_total_ip_counts"
+	subnet_free_ip_counts  = "subnet_free_ip_counts"
+
+	ippool_total_ip_counts = "ippool_total_ip_counts"
+	ippool_free_ip_counts  = "ippool_free_ip_counts"
+
+	subnet_ippool_counts = "subnet_ippool_counts"
 )
 
 var (
@@ -59,35 +62,36 @@ var (
 	IpamAllocationErrRetriesExhaustedCounts syncint64.Counter
 	IpamAllocationErrIPUsedOutCounts        syncint64.Counter
 
-	ipamAllocationAverageDurationSeconds asyncFloat64Gauge
-	ipamAllocationMaxDurationSeconds     asyncFloat64Gauge
-	ipamAllocationMinDurationSeconds     asyncFloat64Gauge
-	ipamAllocationLatestDurationSeconds  asyncFloat64Gauge
+	ipamAllocationAverageDurationSeconds syncfloat64.UpDownCounter
+	ipamAllocationMaxDurationSeconds     syncfloat64.UpDownCounter
+	ipamAllocationMinDurationSeconds     syncfloat64.UpDownCounter
+	ipamAllocationLatestDurationSeconds  syncfloat64.UpDownCounter
 	ipamAllocationDurationSeconds        syncfloat64.Histogram
 
-	// spiderpool agent ipam deallocation metrics
-	IpamDeallocationTotalCounts            syncint64.Counter
-	IpamDeallocationFailureCounts          syncint64.Counter
+	// spiderpool agent ipam release metrics
+	IpamReleaseTotalCounts                 syncint64.Counter
+	IpamReleaseFailureCounts               syncint64.Counter
 	IpamReleasingErrInternalCounts         syncint64.Counter
 	IpamReleasingErrRetriesExhaustedCounts syncint64.Counter
 
-	ipamDeallocationAverageDurationSeconds asyncFloat64Gauge
-	ipamDeallocationMaxDurationSeconds     asyncFloat64Gauge
-	ipamDeallocationMinDurationSeconds     asyncFloat64Gauge
-	ipamDeallocationLatestDurationSeconds  asyncFloat64Gauge
-	ipamDeallocationDurationSeconds        syncfloat64.Histogram
+	ipamReleaseAverageDurationSeconds syncfloat64.UpDownCounter
+	ipamReleaseMaxDurationSeconds     syncfloat64.UpDownCounter
+	ipamReleaseMinDurationSeconds     syncfloat64.UpDownCounter
+	ipamReleaseLatestDurationSeconds  syncfloat64.UpDownCounter
+	ipamReleaseDurationSeconds        syncfloat64.Histogram
 
 	// spiderpool controller IP GC metrics
 	IPGCTotalCounts   syncint64.Counter
 	IPGCFailureCounts syncint64.Counter
-)
 
-type asyncFloat64Gauge struct {
-	gaugeMetric           asyncfloat64.Gauge
-	observerLock          lock.RWMutex
-	observerValueToReport *float64
-	observerAttrsToReport *[]attribute.KeyValue
-}
+	SubnetTotalIPCounts syncint64.UpDownCounter
+	SubnetFreeIPCounts  syncint64.UpDownCounter
+
+	IPPoolTotalIPCounts syncint64.UpDownCounter
+	IPPoolFreeIPCounts  syncint64.UpDownCounter
+
+	SubnetIPPoolCounts syncint64.UpDownCounter
+)
 
 // InitSpiderpoolAgentMetrics serves for spiderpool agent metrics initialization
 func InitSpiderpoolAgentMetrics(ctx context.Context) error {
@@ -96,7 +100,7 @@ func InitSpiderpoolAgentMetrics(ctx context.Context) error {
 		return err
 	}
 
-	err = initSpiderpoolAgentDeallocationMetrics(ctx)
+	err = initSpiderpoolAgentReleaseMetrics(ctx)
 	if nil != err {
 		return err
 	}
@@ -159,76 +163,28 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_average_duration_seconds, err)
 	}
-	ipamAllocationAverageDurationSeconds.gaugeMetric = allocationAvgDuration
-	ipamAllocationAverageDurationSeconds.observerValueToReport = new(float64)
-	ipamAllocationAverageDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamAllocationAverageDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamAllocationAverageDurationSeconds.observerLock.RLock()
-		value := *ipamAllocationAverageDurationSeconds.observerValueToReport
-		attrs := *ipamAllocationAverageDurationSeconds.observerAttrsToReport
-		ipamAllocationAverageDurationSeconds.observerLock.RUnlock()
-		ipamAllocationAverageDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_allocation_average_duration_seconds, err)
-	}
+	ipamAllocationAverageDurationSeconds = allocationAvgDuration
 
 	// spiderpool agent ipam maximum allocation duration, metric type "float64 gauge"
 	allocationMaxDuration, err := NewMetricFloat64Gauge(ipam_allocation_max_duration_seconds, "spiderpool agent ipam maximum allocation duration")
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_max_duration_seconds, err)
 	}
-	ipamAllocationMaxDurationSeconds.gaugeMetric = allocationMaxDuration
-	ipamAllocationMaxDurationSeconds.observerValueToReport = new(float64)
-	ipamAllocationMaxDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamAllocationMaxDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamAllocationMaxDurationSeconds.observerLock.RLock()
-		value := *ipamAllocationMaxDurationSeconds.observerValueToReport
-		attrs := *ipamAllocationMaxDurationSeconds.observerAttrsToReport
-		ipamAllocationMaxDurationSeconds.observerLock.RUnlock()
-		ipamAllocationMaxDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_allocation_max_duration_seconds, err)
-	}
+	ipamAllocationMaxDurationSeconds = allocationMaxDuration
 
 	// spiderpool agent ipam minimum allocation duration, metric type "float64 gauge"
 	allocationMinDuration, err := NewMetricFloat64Gauge(ipam_allocation_min_duration_seconds, "spiderpool agent ipam minimum allocation average duration")
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_min_duration_seconds, err)
 	}
-	ipamAllocationMinDurationSeconds.gaugeMetric = allocationMinDuration
-	ipamAllocationMinDurationSeconds.observerValueToReport = new(float64)
-	ipamAllocationMinDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamAllocationMinDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamAllocationMinDurationSeconds.observerLock.RLock()
-		value := *ipamAllocationMinDurationSeconds.observerValueToReport
-		attrs := *ipamAllocationMinDurationSeconds.observerAttrsToReport
-		ipamAllocationMinDurationSeconds.observerLock.RUnlock()
-		ipamAllocationMinDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_allocation_min_duration_seconds, err)
-	}
+	ipamAllocationMinDurationSeconds = allocationMinDuration
 
 	// spiderpool agent ipam latest allocation duration, metric type "float64 gauge"
 	allocationLatestDuration, err := NewMetricFloat64Gauge(ipam_allocation_latest_duration_seconds, "spiderpool agent ipam latest allocation duration")
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_latest_duration_seconds, err)
 	}
-	ipamAllocationLatestDurationSeconds.gaugeMetric = allocationLatestDuration
-	ipamAllocationLatestDurationSeconds.observerValueToReport = new(float64)
-	ipamAllocationLatestDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamAllocationLatestDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamAllocationLatestDurationSeconds.observerLock.RLock()
-		value := *ipamAllocationLatestDurationSeconds.observerValueToReport
-		attrs := *ipamAllocationLatestDurationSeconds.observerAttrsToReport
-		ipamAllocationLatestDurationSeconds.observerLock.RUnlock()
-		ipamAllocationLatestDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_allocation_latest_duration_seconds, err)
-	}
+	ipamAllocationLatestDurationSeconds = allocationLatestDuration
 
 	// spiderpool agent ipam allocation duration bucket, metric type "float64 histogram"
 	allocationHistogram, err := NewMetricFloat64Histogram(ipam_allocation_duration_seconds, "spiderpool agent ipam allocation duration bucket")
@@ -242,24 +198,16 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	IpamAllocationFailureCounts.Add(ctx, 0)
 
 	// set the spiderpool agent ipam average allocation duration initial data
-	ipamAllocationAverageDurationSeconds.observerLock.Lock()
-	*ipamAllocationAverageDurationSeconds.observerValueToReport = 0
-	ipamAllocationAverageDurationSeconds.observerLock.Unlock()
+	ipamAllocationAverageDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam maximum allocation duration initial data
-	ipamAllocationMaxDurationSeconds.observerLock.Lock()
-	*ipamAllocationMaxDurationSeconds.observerValueToReport = 0
-	ipamAllocationMaxDurationSeconds.observerLock.Unlock()
+	ipamAllocationMaxDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam minimum allocation duration initial data
-	ipamAllocationMinDurationSeconds.observerLock.Lock()
-	*ipamAllocationMinDurationSeconds.observerValueToReport = 0
-	ipamAllocationMinDurationSeconds.observerLock.Unlock()
+	ipamAllocationMinDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam latest allocation duration initial data
-	ipamAllocationLatestDurationSeconds.observerLock.Lock()
-	*ipamAllocationLatestDurationSeconds.observerValueToReport = 0
-	ipamAllocationLatestDurationSeconds.observerLock.Unlock()
+	ipamAllocationLatestDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam allocation duration bucket initial data
 	ipamAllocationDurationSeconds.Record(ctx, 0)
@@ -267,144 +215,88 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	return nil
 }
 
-func initSpiderpoolAgentDeallocationMetrics(ctx context.Context) error {
-	// spiderpool agent ipam deallocation total counts, metric type "int64 counter"
-	deallocationTotalCounts, err := NewMetricInt64Counter(ipam_deallocation_total_counts, "spiderpool agent ipam deallocation total counts")
+func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
+	// spiderpool agent ipam release total counts, metric type "int64 counter"
+	releaseTotalCounts, err := NewMetricInt64Counter(ipam_release_total_counts, "spiderpool agent ipam release total counts")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_total_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_total_counts, err)
 	}
-	IpamDeallocationTotalCounts = deallocationTotalCounts
+	IpamReleaseTotalCounts = releaseTotalCounts
 
-	// spiderpool agent ipam deallocation failure counts, metric type "int64 counter"
-	deallocationFailureCounts, err := NewMetricInt64Counter(ipam_deallocation_failure_counts, "spiderpool agent ipam deallocation failure counts")
+	// spiderpool agent ipam release failure counts, metric type "int64 counter"
+	releaseFailureCounts, err := NewMetricInt64Counter(ipam_release_failure_counts, "spiderpool agent ipam release failure counts")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_failure_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_failure_counts, err)
 	}
-	IpamDeallocationFailureCounts = deallocationFailureCounts
+	IpamReleaseFailureCounts = releaseFailureCounts
 
-	// spiderpool agent ipam releasing internal error counts, metric type "int64 counter"
-	releasingErrInternalCounts, err := NewMetricInt64Counter(ipam_releasing_err_internal_counts, "spiderpool agent ipam releasing internal error counts")
+	// spiderpool agent ipam release internal error counts, metric type "int64 counter"
+	releaseErrInternalCounts, err := NewMetricInt64Counter(ipam_release_err_internal_counts, "spiderpool agent ipam release internal error counts")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_releasing_err_internal_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_err_internal_counts, err)
 	}
-	IpamReleasingErrInternalCounts = releasingErrInternalCounts
+	IpamReleasingErrInternalCounts = releaseErrInternalCounts
 
-	// spiderpool agent ipam releasing retries exhausted error counts, metric type "int64 counter"
-	releasingErrRetriesExhaustedCounts, err := NewMetricInt64Counter(ipam_releasing_err_retries_exhausted_counts, "spiderpool agent ipam releasing retries exhausted error counts")
+	// spiderpool agent ipam release retries exhausted error counts, metric type "int64 counter"
+	releaseErrRetriesExhaustedCounts, err := NewMetricInt64Counter(ipam_release_err_retries_exhausted_counts, "spiderpool agent ipam release retries exhausted error counts")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_releasing_err_retries_exhausted_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_err_retries_exhausted_counts, err)
 	}
-	IpamReleasingErrRetriesExhaustedCounts = releasingErrRetriesExhaustedCounts
+	IpamReleasingErrRetriesExhaustedCounts = releaseErrRetriesExhaustedCounts
 
-	// spiderpool agent ipam average deallocation duration, metric type "float64 gauge"
-	deallocationAvgDuration, err := NewMetricFloat64Gauge(ipam_deallocation_average_duration_seconds, "spiderpool agent ipam average deallocation duration")
+	// spiderpool agent ipam average release duration, metric type "float64 gauge"
+	releaseAvgDuration, err := NewMetricFloat64Gauge(ipam_release_average_duration_seconds, "spiderpool agent ipam average release duration")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_average_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_average_duration_seconds, err)
 	}
-	ipamDeallocationAverageDurationSeconds.gaugeMetric = deallocationAvgDuration
-	ipamDeallocationAverageDurationSeconds.observerValueToReport = new(float64)
-	ipamDeallocationAverageDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamDeallocationAverageDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamDeallocationAverageDurationSeconds.observerLock.RLock()
-		value := *ipamDeallocationAverageDurationSeconds.observerValueToReport
-		attrs := *ipamDeallocationAverageDurationSeconds.observerAttrsToReport
-		ipamDeallocationAverageDurationSeconds.observerLock.RUnlock()
-		ipamDeallocationAverageDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_deallocation_average_duration_seconds, err)
-	}
+	ipamReleaseAverageDurationSeconds = releaseAvgDuration
 
-	// spiderpool agent ipam maximum deallocation duration, metric type "float64 gauge"
-	deallocationMaxDuration, err := NewMetricFloat64Gauge(ipam_deallocation_max_duration_seconds, "spiderpool agent ipam maximum deallocation duration")
+	// spiderpool agent ipam maximum release duration, metric type "float64 gauge"
+	releaseMaxDuration, err := NewMetricFloat64Gauge(ipam_release_max_duration_seconds, "spiderpool agent ipam maximum release duration")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_max_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_max_duration_seconds, err)
 	}
-	ipamDeallocationMaxDurationSeconds.gaugeMetric = deallocationMaxDuration
-	ipamDeallocationMaxDurationSeconds.observerValueToReport = new(float64)
-	ipamDeallocationMaxDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamDeallocationMaxDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamDeallocationMaxDurationSeconds.observerLock.RLock()
-		value := *ipamDeallocationMaxDurationSeconds.observerValueToReport
-		attrs := *ipamDeallocationMaxDurationSeconds.observerAttrsToReport
-		ipamDeallocationMaxDurationSeconds.observerLock.RUnlock()
-		ipamDeallocationMaxDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_deallocation_max_duration_seconds, err)
-	}
+	ipamReleaseMaxDurationSeconds = releaseMaxDuration
 
 	// spiderpool agent ipam minimum allocation duration, metric type "float64 gauge"
-	deallocationMinDuration, err := NewMetricFloat64Gauge(ipam_deallocation_min_duration_seconds, "spiderpool agent ipam minimum deallocation average duration")
+	releaseMinDuration, err := NewMetricFloat64Gauge(ipam_release_min_duration_seconds, "spiderpool agent ipam minimum release average duration")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_min_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_min_duration_seconds, err)
 	}
-	ipamDeallocationMinDurationSeconds.gaugeMetric = deallocationMinDuration
-	ipamDeallocationMinDurationSeconds.observerValueToReport = new(float64)
-	ipamDeallocationMinDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamDeallocationMinDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamDeallocationMinDurationSeconds.observerLock.RLock()
-		value := *ipamDeallocationMinDurationSeconds.observerValueToReport
-		attrs := *ipamDeallocationMinDurationSeconds.observerAttrsToReport
-		ipamDeallocationMinDurationSeconds.observerLock.RUnlock()
-		ipamDeallocationMinDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_deallocation_min_duration_seconds, err)
-	}
+	ipamReleaseMinDurationSeconds = releaseMinDuration
 
-	// spiderpool agent ipam latest deallocation duration, metric type "float64 gauge"
-	deallocationLatestDuration, err := NewMetricFloat64Gauge(ipam_deallocation_latest_duration_seconds, "spiderpool agent ipam latest deallocation duration")
+	// spiderpool agent ipam latest release duration, metric type "float64 gauge"
+	releaseLatestDuration, err := NewMetricFloat64Gauge(ipam_release_latest_duration_seconds, "spiderpool agent ipam latest release duration")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_latest_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_latest_duration_seconds, err)
 	}
-	ipamDeallocationLatestDurationSeconds.gaugeMetric = deallocationLatestDuration
-	ipamDeallocationLatestDurationSeconds.observerValueToReport = new(float64)
-	ipamDeallocationLatestDurationSeconds.observerAttrsToReport = new([]attribute.KeyValue)
-	err = meter.RegisterCallback([]instrument.Asynchronous{ipamDeallocationLatestDurationSeconds.gaugeMetric}, func(ctx context.Context) {
-		ipamDeallocationLatestDurationSeconds.observerLock.RLock()
-		value := *ipamDeallocationLatestDurationSeconds.observerValueToReport
-		attrs := *ipamDeallocationLatestDurationSeconds.observerAttrsToReport
-		ipamDeallocationLatestDurationSeconds.observerLock.RUnlock()
-		ipamDeallocationLatestDurationSeconds.gaugeMetric.Observe(ctx, value, attrs...)
-	})
-	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool agent metric '%s', error: %v", ipam_deallocation_latest_duration_seconds, err)
-	}
+	ipamReleaseLatestDurationSeconds = releaseLatestDuration
 
 	// spiderpool agent ipam allocation duration bucket, metric type "float64 histogram"
-	deallocationHistogram, err := NewMetricFloat64Histogram(ipam_deallocation_duration_seconds, "spiderpool agent ipam deallocation duration bucket")
+	releaseHistogram, err := NewMetricFloat64Histogram(ipam_release_duration_seconds, "spiderpool agent ipam release duration bucket")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_deallocation_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_duration_seconds, err)
 	}
-	ipamDeallocationDurationSeconds = deallocationHistogram
+	ipamReleaseDurationSeconds = releaseHistogram
 
 	// set the spiderpool agent ipam allocation total counts initial data
-	IpamDeallocationTotalCounts.Add(ctx, 0)
-	IpamDeallocationFailureCounts.Add(ctx, 0)
+	IpamReleaseTotalCounts.Add(ctx, 0)
+	IpamReleaseFailureCounts.Add(ctx, 0)
 
 	// set the spiderpool agent ipam average allocation duration initial data
-	ipamDeallocationAverageDurationSeconds.observerLock.Lock()
-	*ipamDeallocationAverageDurationSeconds.observerValueToReport = 0
-	ipamDeallocationAverageDurationSeconds.observerLock.Unlock()
+	ipamReleaseAverageDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam maximum allocation duration initial data
-	ipamDeallocationMaxDurationSeconds.observerLock.Lock()
-	*ipamDeallocationMaxDurationSeconds.observerValueToReport = 0
-	ipamDeallocationMaxDurationSeconds.observerLock.Unlock()
+	ipamReleaseMaxDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam minimum allocation duration initial data
-	ipamDeallocationMinDurationSeconds.observerLock.Lock()
-	*ipamDeallocationMinDurationSeconds.observerValueToReport = 0
-	ipamDeallocationMinDurationSeconds.observerLock.Unlock()
+	ipamReleaseMinDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam latest allocation duration initial data
-	ipamDeallocationLatestDurationSeconds.observerLock.Lock()
-	*ipamDeallocationLatestDurationSeconds.observerValueToReport = 0
-	ipamDeallocationLatestDurationSeconds.observerLock.Unlock()
+	ipamReleaseLatestDurationSeconds.Add(ctx, 0)
 
 	// set the spiderpool agent ipam allocation duration bucket initial data
-	ipamDeallocationDurationSeconds.Record(ctx, 0)
+	ipamReleaseDurationSeconds.Record(ctx, 0)
 
 	return nil
 }
@@ -422,6 +314,36 @@ func InitSpiderpoolControllerMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ip_gc_failure_counts, err)
 	}
 	IPGCFailureCounts = ipGCFailureCounts
+
+	subnetTotalIPCounts, err := NewMetricInt64Gauge(subnet_total_ip_counts, "spider subnet total ip counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", subnet_total_ip_counts, err)
+	}
+	SubnetTotalIPCounts = subnetTotalIPCounts
+
+	subnetFreeIPCounts, err := NewMetricInt64Gauge(subnet_free_ip_counts, "spider subnet free ip counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", subnet_free_ip_counts, err)
+	}
+	SubnetFreeIPCounts = subnetFreeIPCounts
+
+	poolTotalIPCounts, err := NewMetricInt64Gauge(ippool_total_ip_counts, "spider ippool total ip counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_total_ip_counts, err)
+	}
+	IPPoolTotalIPCounts = poolTotalIPCounts
+
+	poolFreeIPCounts, err := NewMetricInt64Gauge(ippool_free_ip_counts, "spider ippool free ip counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_free_ip_counts, err)
+	}
+	IPPoolFreeIPCounts = poolFreeIPCounts
+
+	subnetIPPoolCounts, err := NewMetricInt64Gauge(subnet_ippool_counts, "spider subnet corresponding ippool counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", subnet_ippool_counts, err)
+	}
+	SubnetIPPoolCounts = subnetIPPoolCounts
 
 	IPGCTotalCounts.Add(ctx, 0)
 	IPGCFailureCounts.Add(ctx, 0)

@@ -13,6 +13,7 @@ import (
 	"sort"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -31,6 +32,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 const DefaultRetryNum = 5
@@ -206,6 +208,11 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 			return fmt.Errorf("failed to update IPPool '%s' status TotalIPCount, error: %v", currentIPPool.Name, err)
 		}
 	}
+
+	metricAttribute := attribute.String(constant.SpiderIPPoolKind, currentIPPool.Name)
+	metric.IPPoolTotalIPCounts.Add(ctx, *currentIPPool.Status.TotalIPCount, metricAttribute)
+	poolFreeIPCounts := (*currentIPPool.Status.TotalIPCount) - (*currentIPPool.Status.AllocatedIPCount)
+	metric.IPPoolFreeIPCounts.Add(ctx, poolFreeIPCounts, metricAttribute)
 
 	return nil
 }

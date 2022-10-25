@@ -75,19 +75,19 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
 	// The total count of IP releasing.
-	metric.IpamDeallocationTotalCounts.Add(ctx, 1)
+	metric.IpamReleaseTotalCounts.Add(ctx, 1)
 
 	timeRecorder := metric.NewTimeRecorder()
 	defer func() {
 		// Time taken for once IP releasing.
 		deallocationDuration := timeRecorder.SinceInSeconds()
-		metric.DeallocDurationConstruct.RecordIPAMDeallocationDuration(ctx, deallocationDuration)
+		metric.DeallocDurationConstruct.RecordIPAMReleaseDuration(ctx, deallocationDuration)
 		logger.Sugar().Infof("IPAM releasing duration: %v", deallocationDuration)
 	}()
 
 	if err := agentContext.IPAM.Release(ctx, params.IpamDelArgs); err != nil {
 		// The count of failures in IP releasing.
-		metric.IpamDeallocationFailureCounts.Add(ctx, 1)
+		metric.IpamReleaseFailureCounts.Add(ctx, 1)
 		gatherIPAMReleasingErrMetric(ctx, err)
 		logger.Error(err.Error())
 		return daemonset.NewDeleteIpamIPFailure().WithPayload(models.Error(err.Error()))

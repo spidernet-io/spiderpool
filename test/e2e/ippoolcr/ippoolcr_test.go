@@ -120,7 +120,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			})
 	})
 
-	It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00004", "D00005"), Pending, func() {
+	It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip release`, Label("D00004", "D00005"), Pending, func() {
 		var (
 			deployOriginialNum int = 1
 			deployScaleupNum   int = 2

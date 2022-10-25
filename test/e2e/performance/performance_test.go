@@ -91,6 +91,14 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			// The Pods IP is recorded in the IPPool.
 			podlist = common.CheckPodIpReadyByLabel(frame, dpm.Spec.Template.Labels, v4PoolNameList, v6PoolNameList)
 			GinkgoWriter.Printf("Pod %v/%v IP recorded in IPPool %v %v \n", nsName, perName, v4PoolNameList, v6PoolNameList)
+
+			// check uuid in ippool
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v4PoolName, podlist)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v6PoolName, podlist)).NotTo(HaveOccurred())
+			}
 			endT1 := time.Since(startT1)
 
 			// Calculate the time cost of rebuilding Deployment/Pods in batches
@@ -102,6 +110,14 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			// All Pod IPs are still recorded in the IPPool after the deployment rebuild.
 			podlist = common.CheckPodIpReadyByLabel(frame, dpm.Spec.Template.Labels, v4PoolNameList, v6PoolNameList)
 			GinkgoWriter.Printf("Pod %v/%v IP recorded in IPPool %v %v \n", nsName, perName, v4PoolNameList, v6PoolNameList)
+
+			// check uuid in ippool
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v4PoolName, podlist)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v6PoolName, podlist)).NotTo(HaveOccurred())
+			}
 			endT2 := time.Since(startT2)
 
 			// Calculate the time cost of deleting a deployment until the Pod IP is fully reclaimed.

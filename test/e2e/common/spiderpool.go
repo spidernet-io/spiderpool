@@ -604,7 +604,10 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 			return errors.New("time out to wait Workload delete until finish")
 		default:
 			workload, err := GetWorkloadByName(f, namespace, name)
-			if workload == nil && err != nil {
+			if err != nil {
+				return err
+			}
+			if workload == nil || (workload.ObjectMeta.DeletionTimestamp != nil && workload.Status.Current == nil) {
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)

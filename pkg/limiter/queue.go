@@ -47,7 +47,7 @@ const (
 )
 
 var (
-	ErrUnexpectedBlocking = errors.New("unexpected blocking, queuer may be lost")
+	ErrUnexpectedBlocking = errors.New("unexpected blocking, forgot to start the queue or the queuer may be lost")
 	ErrShutdownQueue      = errors.New("queue has been shutdown")
 	ErrFullQueue          = errors.New("queue is full")
 )

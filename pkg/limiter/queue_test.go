@@ -29,12 +29,37 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 		})
 	})
 
+	Describe("Incorrect use", func() {
+		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+			DeferCleanup(cancel)
+
+			maxWaitTime := 0 * time.Second
+			config = limiter.LimiterConfig{
+				MaxWaitTime: &maxWaitTime,
+			}
+		})
+
+		It("forgot to start the limiter", func() {
+			queue := limiter.NewLimiter(config)
+			Expect(queue).NotTo(BeNil())
+
+			ctx := context.TODO()
+			reason, err := queue.AcquireTicket(ctx)
+			Expect(err).To(MatchError(limiter.ErrUnexpectedBlocking))
+			Expect(reason).To(Equal(limiter.UnexpectedBlocking))
+			queue.ReleaseTicket(ctx)
+		})
+	})
+
 	Describe("Use", func() {
 		var queuers int
 		var workHours time.Duration
 
 		JustBeforeEach(func() {
 			queue = limiter.NewLimiter(config)
+			Expect(queue).NotTo(BeNil())
+
 			go func() {
 				defer GinkgoRecover()
 				err := queue.Start(ctx)
@@ -42,7 +67,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 			}()
 		})
 
-		Context("General use", func() {
+		Context("General", func() {
 			BeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
 				DeferCleanup(cancel)

@@ -460,20 +460,23 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 }
 
 func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, pod *corev1.Pod) error {
+	logger := logutils.FromContext(ctx)
+
 	for _, t := range tt {
 		for _, c := range t.PoolCandidates {
+			var errs []error
 			var selectedPools []string
 			for _, pool := range c.Pools {
-				eligible, err := i.selectByPod(ctx, c.IPVersion, pool, pod)
-				if err != nil {
-					return fmt.Errorf("failed to select IPPool %s by Pod %s/%s: %v", pool, pod.Namespace, pod.Name, err)
+				if err := i.selectByPod(ctx, c.IPVersion, pool, pod); err != nil {
+					errs = append(errs, err)
+					logger.Sugar().Warnf("IPPool %s is filtered by Pod %s/%s: %v", pool, pod.Namespace, pod.Name, err)
+					continue
 				}
-				if eligible {
-					selectedPools = append(selectedPools, pool)
-				}
+				selectedPools = append(selectedPools, pool)
 			}
-			if len(selectedPools) == 0 {
-				return fmt.Errorf("%w, all IPv%d IPPools of %s filtered out", constant.ErrNoAvailablePool, c.IPVersion, t.NIC)
+
+			if len(errs) == len(c.Pools) {
+				return fmt.Errorf("%w, all IPv%d IPPools %v of %s filtered out: %v", constant.ErrNoAvailablePool, c.IPVersion, c.Pools, t.NIC, utilerrors.NewAggregate(errs))
 			}
 			c.Pools = selectedPools
 		}
@@ -482,67 +485,64 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, tt []*ToBeAllocated, po
 	return nil
 }
 
-func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) (bool, error) {
-	logger := logutils.FromContext(ctx)
-
+func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, poolName string, pod *corev1.Pod) error {
 	ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName)
 	if err != nil {
-		return false, fmt.Errorf("failed to get IPPool %s: %v", poolName, err)
+		return fmt.Errorf("failed to get IPPool %s: %v", poolName, err)
 	}
 
 	if ipPool.DeletionTimestamp != nil {
-		logger.Sugar().Warnf("IPPool %s is terminating", poolName)
-		return false, nil
+		return fmt.Errorf("terminating IPPool %s", poolName)
 	}
 
 	if *ipPool.Spec.Disable {
-		logger.Sugar().Warnf("IPPool %s is disable", poolName)
-		return false, nil
+		return fmt.Errorf("disabled IPPool %s", poolName)
 	}
 
 	if *ipPool.Spec.IPVersion != version {
-		logger.Sugar().Warnf("IPPool %s has different version with specified via input", poolName)
-		return false, nil
+		return fmt.Errorf("expect an IPv%d IPPool, but the version of the IPPool %s is IPv%d", version, poolName, *ipPool.Spec.IPVersion)
 	}
 
-	// TODO(iiiceoo): Check whether there are any unused IP
+	if ipPool.Status.TotalIPCount != nil && ipPool.Status.AllocatedIPCount != nil {
+		if *ipPool.Status.TotalIPCount-*ipPool.Status.AllocatedIPCount == 0 {
+			return constant.ErrIPUsedOut
+		}
+	}
 
 	if ipPool.Spec.NodeAffinity != nil {
 		nodeMatched, err := i.nodeManager.MatchLabelSelector(ctx, pod.Spec.NodeName, ipPool.Spec.NodeAffinity)
 		if err != nil {
-			return false, err
+			return fmt.Errorf("failed to check the Node affinity of IPPool %s: %v", poolName, err)
 		}
 		if !nodeMatched {
-			logger.Sugar().Infof("Unmatched Node selector, IPPool %s is filtered", poolName)
-			return false, nil
+			return fmt.Errorf("unmatched Node affinity of IPPool %s", poolName)
 		}
 	}
 
 	if ipPool.Spec.NamespaceAffinity != nil {
 		nsMatched, err := i.nsManager.MatchLabelSelector(ctx, pod.Namespace, ipPool.Spec.NamespaceAffinity)
 		if err != nil {
-			return false, err
+			return fmt.Errorf("failed to check the Namespace affinity of IPPool %s: %v", poolName, err)
 		}
 		if !nsMatched {
-			logger.Sugar().Infof("Unmatched Namespace selector, IPPool %s is filtered", poolName)
-			return false, nil
+			return fmt.Errorf("unmatched Namespace affinity of IPPool %s", poolName)
 		}
 	}
 
 	if ipPool.Spec.PodAffinity != nil {
 		podMatched, err := i.podManager.MatchLabelSelector(ctx, pod.Namespace, pod.Name, ipPool.Spec.PodAffinity)
 		if err != nil {
-			return false, err
+			return fmt.Errorf("failed to check the Pod affinity of IPPool %s: %v", poolName, err)
 		}
 		if !podMatched {
-			logger.Sugar().Infof("Unmatched Pod selector, IPPool %s is filtered", poolName)
-			return false, nil
+			return fmt.Errorf("unmatched Pod affinity of IPPool %s", poolName)
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
+// TODO(iiiceoo): Refactor
 func (i *ipam) verifyPoolCandidates(ctx context.Context, tt []*ToBeAllocated) error {
 	for _, t := range tt {
 		var allPools []string

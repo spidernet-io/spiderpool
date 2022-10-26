@@ -111,8 +111,6 @@ spec:
                       items:
                         type: string
                       type: array
-                  required:
-                  - ips
                   type: object
                 description: PoolIPPreAllocations is a map of pool IP pre-allocation
                   details indexed by pool name.

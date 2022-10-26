@@ -14,7 +14,8 @@ type SubnetManagerConfig struct {
 	EnableIPv6 bool
 
 	config.UpdateCRConfig
-	EnableSpiderSubnet  bool
-	LeaderRetryElectGap time.Duration
-	ResyncPeriod        time.Duration
+	EnableSpiderSubnet            bool
+	EnableSubnetDeleteStaleIPPool bool
+	LeaderRetryElectGap           time.Duration
+	ResyncPeriod                  time.Duration
 }

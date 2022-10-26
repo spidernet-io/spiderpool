@@ -12,9 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -26,6 +28,7 @@ import (
 	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
@@ -42,6 +45,9 @@ type ipPoolManager struct {
 
 	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
 	leader election.SpiderLeaseElector
+
+	// rateLimitQueue serves for IPPool informer
+	rateLimitQueue workqueue.RateLimitingInterface
 }
 
 func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
@@ -62,13 +68,15 @@ func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reser
 		MaxWaitTime:  &maxWaitTime,
 	})
 
-	return &ipPoolManager{
+	poolMgr := &ipPoolManager{
 		config:         c,
 		freeIPsLimiter: freeIPsLimiter,
 		client:         mgr.GetClient(),
 		runtimeMgr:     mgr,
 		rIPManager:     rIPManager,
-	}, nil
+	}
+
+	return poolMgr, nil
 }
 
 func (im *ipPoolManager) Start(ctx context.Context) error {
@@ -335,40 +343,11 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID str
 func (im *ipPoolManager) CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	err := im.client.Create(ctx, pool)
 	if nil != err {
+		if apierrors.IsAlreadyExists(err) {
+			return nil
+		}
+
 		return fmt.Errorf("failed to create IPPool '%s', error: %v", pool.Name, err)
-	}
-
-	return nil
-}
-
-func (im *ipPoolManager) ScaleIPPoolIPs(ctx context.Context, poolName string, expandIPs []string) error {
-	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < im.config.MaxConflictRetries; i++ {
-		pool, err := im.GetIPPoolByName(ctx, poolName)
-		if nil != err {
-			return err
-		}
-
-		pool.Spec.IPs = append(pool.Spec.IPs, expandIPs...)
-		sortIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-		if nil != err {
-			return err
-		}
-
-		pool.Spec.IPs = sortIPRanges
-		err = im.client.Update(ctx, pool)
-		if nil != err {
-			if !apierrors.IsConflict(err) {
-				return err
-			}
-			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w(<=%d) to update IPPool '%s'", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, pool.Name)
-			}
-
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
-			continue
-		}
-		break
 	}
 
 	return nil
@@ -381,4 +360,130 @@ func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 	}
 
 	return nil
+}
+
+func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ippoolmanagertypes.ScaleAction, desiredIPNum int) error {
+	log := logutils.FromContext(ctx)
+	rand.Seed(time.Now().UnixNano())
+
+	var err error
+	for i := 0; i < im.config.MaxConflictRetries; i++ {
+		if i != 0 {
+			pool, err = im.GetIPPoolByName(ctx, pool.Name)
+			if nil != err {
+				return err
+			}
+		}
+
+		// filter out exclude IPs.
+		currentIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+		if nil != err {
+			return fmt.Errorf("failed to assemble Total IP addresses: %v", err)
+		}
+
+		if len(currentIPs) == desiredIPNum {
+			log.Sugar().Debugf("IPPool '%s' already has desired IP number '%d' IPs, non need to scale it", pool.Name, desiredIPNum)
+			return nil
+		}
+
+		if action == ippoolmanagertypes.ScaleUpIP {
+			pool.Spec.IPs = append(pool.Spec.IPs, ipRanges...)
+			sortedIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
+			if nil != err {
+				return fmt.Errorf("failed to merge IP ranges '%v', error: %v", pool.Spec.IPs, err)
+			}
+
+			log.With(zap.String("ScaleUpIP", fmt.Sprintf("add IPs '%v'", ipRanges))).
+				Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
+			pool.Spec.IPs = sortedIPRanges
+		} else {
+			discardedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, ipRanges)
+			if nil != err {
+				return fmt.Errorf("failed to parse IP ranges '%v', error: %v", ipRanges, err)
+			}
+
+			// the original IPPool.Spec.IPs
+			totalIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
+			if nil != err {
+				return fmt.Errorf("failed to parse IP ranges '%v', error: %v", pool.Spec.IPs, err)
+			}
+
+			sortedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, spiderpoolip.IPsDiffSet(totalIPs, discardedIPs))
+			if nil != err {
+				return fmt.Errorf("failed to convert IPs '%v' to IP ranges, error: %v", ipRanges, err)
+			}
+
+			log.With(zap.String("ScaleDownIP", fmt.Sprintf("discard IPs '%v'", ipRanges))).
+				Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
+			pool.Spec.IPs = sortedIPRanges
+		}
+
+		err = im.client.Update(ctx, pool)
+		if nil != err {
+			if !apierrors.IsConflict(err) {
+				return fmt.Errorf("failed to update IPPool '%s', error: %v", pool.Name, err)
+			}
+			if i == im.config.MaxConflictRetries {
+				return fmt.Errorf("insufficient retries(<=%d) to update IPPool '%s'", im.config.MaxConflictRetries, pool.Name)
+			}
+
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
+			continue
+		}
+
+		break
+	}
+
+	return nil
+}
+
+func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error {
+	rand.Seed(time.Now().UnixNano())
+
+	var err error
+	for i := 0; i < im.config.MaxConflictRetries; i++ {
+		if i != 0 {
+			pool, err = im.GetIPPoolByName(ctx, pool.Name)
+			if nil != err {
+				return err
+			}
+		}
+
+		if pool.Status.AutoDesiredIPCount == nil {
+			pool.Status.AutoDesiredIPCount = new(int64)
+		} else {
+			if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
+				return nil
+			}
+		}
+
+		*pool.Status.AutoDesiredIPCount = int64(ipNum)
+		err = im.client.Status().Update(ctx, pool)
+		if nil != err {
+			if !apierrors.IsConflict(err) {
+				return fmt.Errorf("failed to update IPPool '%s' status DesiredIPNumber '%d', error: %v", pool.Name, ipNum, err)
+			}
+
+			if i == im.config.MaxConflictRetries {
+				return fmt.Errorf("insufficient retries(<=%d) to update IPPool '%s' status DesiredIPNumber '%d'", im.config.MaxConflictRetries, pool.Name, ipNum)
+			}
+
+			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
+			continue
+		}
+
+		break
+	}
+
+	return nil
+}
+
+// GetAutoPoolRateLimitQueue serves for auto-created IPPool
+func (im *ipPoolManager) GetAutoPoolRateLimitQueue() workqueue.RateLimitingInterface {
+	return im.rateLimitQueue
+}
+
+// GetAutoPoolRateLimitQueue serves for auto-created IPPool
+func (im *ipPoolManager) GetAutoPoolMaxWorkQueueLength() int {
+	return im.config.MaxWorkQueueLength
 }

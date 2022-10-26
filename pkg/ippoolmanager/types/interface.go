@@ -7,6 +7,7 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -15,6 +16,13 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+)
+
+type ScaleAction bool
+
+const (
+	ScaleUpIP   ScaleAction = true
+	ScaleDownIP ScaleAction = false
 )
 
 type IPPoolManager interface {
@@ -30,6 +38,9 @@ type IPPoolManager interface {
 	RemoveFinalizer(ctx context.Context, poolName string) error
 	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
 	CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
-	ScaleIPPoolIPs(ctx context.Context, poolName string, expandIPs []string) error
+	ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ScaleAction, desiredIPNum int) error
 	DeleteIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
+	UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error
+	GetAutoPoolRateLimitQueue() workqueue.RateLimitingInterface
+	GetAutoPoolMaxWorkQueueLength() int
 }

@@ -54,7 +54,7 @@ type SubnetStatus struct {
 type PoolIPPreAllocations map[string]PoolIPPreAllocation
 
 type PoolIPPreAllocation struct {
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	IPs []string `json:"ips"`
 }
 

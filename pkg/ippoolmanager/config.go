@@ -17,4 +17,5 @@ type IPPoolManagerConfig struct {
 	EnableSpiderSubnet  bool
 	MaxAllocatedIPs     int
 	LeaderRetryElectGap time.Duration
+	MaxWorkQueueLength  int
 }

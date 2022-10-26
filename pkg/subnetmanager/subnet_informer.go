@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
@@ -51,6 +52,17 @@ func (sm *subnetManager) SetupInformer(ctx context.Context, client crdclientset.
 			subnetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 				AddFunc:    sm.onSpiderSubnetAdd,
 				UpdateFunc: sm.onSpiderSubnetUpdate,
+				DeleteFunc: nil,
+			})
+
+			// concurrent callback hook to notify the subnet's corresponding auto-created IPPools to check scale
+			subnetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					sm.notifySubnetIPPool(obj)
+				},
+				UpdateFunc: func(oldObj, newObj interface{}) {
+					sm.notifySubnetIPPool(newObj)
+				},
 				DeleteFunc: nil,
 			})
 
@@ -223,7 +235,15 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 			}
 		}
 
-		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx)
+		selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx, client.MatchingLabelsSelector{Selector: selector})
 		if err != nil {
 			return err
 		}
@@ -312,4 +332,41 @@ func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpool
 	}
 
 	return nil
+}
+
+// notifySubnetIPPool will list the subnet's corresponding auto-created IPPools,
+// it will insert the IPPools name to IPPool informer work queue if the IPPool need to be scaled.
+func (sm *subnetManager) notifySubnetIPPool(obj interface{}) {
+	if sm.ipPoolManager.GetAutoPoolRateLimitQueue() == nil {
+		informerLogger.Warn("IPPool manager doesn't have IPPool informer rate limit workqueue!")
+		return
+	}
+
+	subnet := obj.(*spiderpoolv1.SpiderSubnet)
+
+	matchLabel := client.MatchingLabels{
+		constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
+	}
+	autoPoolList, err := sm.ipPoolManager.ListIPPools(context.TODO(), matchLabel)
+	if nil != err {
+		informerLogger.Sugar().Errorf("failed to list IPPools with labels '%v', error: %v", matchLabel, err)
+		return
+	}
+
+	if autoPoolList == nil || len(autoPoolList.Items) == 0 {
+		return
+	}
+
+	maxQueueLength := sm.ipPoolManager.GetAutoPoolMaxWorkQueueLength()
+	for _, pool := range autoPoolList.Items {
+		if ippoolmanager.ShouldScaleIPPool(pool) {
+			if sm.ipPoolManager.GetAutoPoolRateLimitQueue().Len() >= maxQueueLength {
+				informerLogger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
+				return
+			}
+
+			sm.ipPoolManager.GetAutoPoolRateLimitQueue().AddRateLimited(pool.Name)
+			informerLogger.Sugar().Debugf("added '%s' to IPPool workqueue", pool.Name)
+		}
+	}
 }

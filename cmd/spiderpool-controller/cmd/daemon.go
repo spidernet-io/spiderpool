@@ -174,6 +174,12 @@ func DaemonMain() {
 	logger.Info("Set spiderpool-controller Startup probe ready")
 	controllerContext.IsStartupProbe.Store(true)
 
+	// the webhook must be ready or we can't work
+	checkWebhookReady()
+
+	// set up informers
+	setupInformers()
+
 	// start notifying signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
@@ -285,6 +291,7 @@ func initControllerServiceManagers(ctx context.Context) {
 		EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
 		MaxAllocatedIPs:     controllerContext.Cfg.IPPoolMaxAllocatedIPs,
 		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+		MaxWorkQueueLength:  controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
 	}, controllerContext.CRDManager, controllerContext.RIPManager)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -298,17 +305,6 @@ func initControllerServiceManagers(ctx context.Context) {
 		}
 	}()
 
-	// start SpiderIPPool informer
-	logger.Info("Begin to set up SpiderIPPool informer")
-	crdClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
 	// set up spiderpool controller IPPool webhook
 	logger.Info("Begin to set up SpiderIPPool webhook")
 	err = controllerContext.IPPoolManager.SetupWebhook()
@@ -319,32 +315,25 @@ func initControllerServiceManagers(ctx context.Context) {
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Info("Begin to initialize Subnet Manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			EnableIPv4:          controllerContext.Cfg.EnableIPv4,
-			EnableIPv6:          controllerContext.Cfg.EnableIPv6,
-			UpdateCRConfig:      updateCRConfig,
-			EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
-			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-			ResyncPeriod:        time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
-		}, controllerContext.CRDManager, controllerContext.IPPoolManager)
+			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+			UpdateCRConfig:                updateCRConfig,
+			EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
+			EnableSubnetDeleteStaleIPPool: controllerContext.Cfg.EnableSubnetDeleteStaleIPPool,
+			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			ResyncPeriod:                  time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
+		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 		controllerContext.SubnetManager = subnetManager
 		ipPoolManager.InjectSubnetManager(controllerContext.SubnetManager)
 
-		logger.Info("Begin to set up SpiderSubnet informer")
-		err = controllerContext.SubnetManager.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-
 		logger.Info("Begin to set up Subnet webhook")
 		err = controllerContext.SubnetManager.SetupWebhook()
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-
-		go controllerContext.SubnetManager.Run(ctx, controllerContext.ClientSet)
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}
@@ -394,4 +383,52 @@ func initK8sClientSet() (*kubernetes.Clientset, error) {
 	}
 
 	return clientSet, nil
+}
+
+// setupInformers will run IPPool,Subnet... informers,
+// because these informers count on webhook
+func setupInformers() {
+	// start SpiderIPPool informer
+	crdClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	logger.Info("Begin to set up SpiderIPPool informer")
+	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	if controllerContext.Cfg.EnableSpiderSubnet {
+		logger.Info("Begin to set up SpiderSubnet informer")
+		err = controllerContext.SubnetManager.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+
+		err = controllerContext.SubnetManager.SetupControllers(controllerContext.InnerCtx, controllerContext.ClientSet)
+		if nil != err {
+			logger.Fatal(err.Error())
+		}
+	}
+}
+
+func checkWebhookReady() {
+	// TODO(Icarus9913): [Refactor] give a variable rather than hard code 100
+	for i := 1; i <= 100; i++ {
+		if i == 100 {
+			logger.Fatal("out of the max wait duration for webhook ready in process starting phase")
+		}
+
+		err := WebhookHealthyCheck(controllerContext.Cfg.WebhookPort)
+		if nil != err {
+			logger.Error(err.Error())
+
+			time.Sleep(time.Second)
+			continue
+		}
+
+		break
+	}
 }

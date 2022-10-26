@@ -82,10 +82,6 @@ func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway 
 		return nil, fmt.Errorf("%w: %v", errPrifix, err)
 	}
 
-	if annoPodIPPool.NIC != nil && *annoPodIPPool.NIC != nic {
-		return nil, fmt.Errorf("%w: interface is different from that requested by runtime", errPrifix)
-	}
-
 	if len(annoPodIPPool.IPv4Pools) == 0 && len(annoPodIPPool.IPv6Pools) == 0 {
 		return nil, fmt.Errorf("%w: at least one IPPool must be specified", errPrifix)
 	}

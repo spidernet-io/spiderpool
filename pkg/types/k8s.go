@@ -6,18 +6,17 @@ package types
 type PodStatus string
 
 type AnnoPodIPPoolValue struct {
-	NIC       *string  `json:"interface,omitempty"`
-	IPv4Pools []string `json:"ipv4pools,omitempty"`
-	IPv6Pools []string `json:"ipv6pools,omitempty"`
+	IPv4Pools []string `json:"ipv4,omitempty"`
+	IPv6Pools []string `json:"ipv6,omitempty"`
 }
 
 type AnnoPodIPPoolsValue []AnnoIPPoolItem
 
 type AnnoIPPoolItem struct {
 	NIC          string   `json:"interface"`
-	IPv4Pools    []string `json:"ipv4pools,omitempty"`
-	IPv6Pools    []string `json:"ipv6pools,omitempty"`
-	CleanGateway bool     `json:"cleanGateway"`
+	IPv4Pools    []string `json:"ipv4,omitempty"`
+	IPv6Pools    []string `json:"ipv6,omitempty"`
+	CleanGateway bool     `json:"cleangateway"`
 }
 
 type AnnoPodRoutesValue []AnnoRouteItem

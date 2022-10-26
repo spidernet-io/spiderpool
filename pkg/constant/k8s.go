@@ -57,8 +57,8 @@ const (
 	AnnoPodRoutes       = AnnotationPre + "/routes"
 	AnnoPodDNS          = AnnotationPre + "/dns"
 	AnnoPodStatus       = AnnotationPre + "/status"
-	AnnoNSDefautlV4Pool = AnnotationPre + "/defaultv4ippool"
-	AnnoNSDefautlV6Pool = AnnotationPre + "/defaultv6ippool"
+	AnnoNSDefautlV4Pool = AnnotationPre + "/default-ipv4-ippool"
+	AnnoNSDefautlV6Pool = AnnotationPre + "/default-ipv6-ippool"
 )
 
 const (

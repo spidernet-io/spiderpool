@@ -20,12 +20,11 @@ func SetNamespaceIppoolAnnotation(IppoolAnnoValue []string, nsObject *corev1.Nam
 	GinkgoWriter.Printf("Generate namespace objects: %v with namespace annotations \n", nsObject.Annotations)
 }
 
-func GeneratePodIPPoolAnnotations(frame *e2e.Framework, nic string, v4PoolNameList, v6PoolNameList []string) string {
+func GeneratePodIPPoolAnnotations(frame *e2e.Framework, _ string, v4PoolNameList, v6PoolNameList []string) string {
 	podAnno := types.AnnoPodIPPoolValue{
-		NIC: &nic,
+		IPv4Pools: v4PoolNameList,
+		IPv6Pools: v6PoolNameList,
 	}
-	podAnno.IPv4Pools = v4PoolNameList
-	podAnno.IPv6Pools = v6PoolNameList
 
 	b, err := json.Marshal(podAnno)
 	Expect(err).NotTo(HaveOccurred())

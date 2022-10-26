@@ -65,7 +65,7 @@ const (
 	AnnoSpiderSubnet              = AnnotationPre + "/subnet"
 	AnnoSpiderSubnets             = AnnotationPre + "/subnets"
 	AnnoSpiderSubnetPoolIPNumber  = AnnotationPre + "/ippool-ip-number"
-	AnnoSpiderSubnetReclaimIPPool = AnnotationPre + "/reclaim-ippool"
+	AnnoSpiderSubnetReclaimIPPool = AnnotationPre + "/ippool-reclaim"
 
 	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
 	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"

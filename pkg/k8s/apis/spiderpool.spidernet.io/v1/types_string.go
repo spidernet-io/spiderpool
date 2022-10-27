@@ -178,3 +178,52 @@ func (in *ReservedIPSpec) String() string {
 	}, "")
 	return s
 }
+
+// String serves for SpiderSubnet
+func (in *SpiderSubnet) String() string {
+	if in == nil {
+		return "nil"
+	}
+
+	s := strings.Join([]string{`&SpiderSubnet{`,
+		`ObjectMeta:` + strings.Replace(fmt.Sprintf("%v", in.ObjectMeta), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(in.Spec.String(), "SubnetSpec", "SubnetSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(in.Status.String(), "SubnetStatus", "SubnetStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+
+// String serves for SpiderSubnet Spec
+func (in *SubnetSpec) String() string {
+	if in == nil {
+		return "nil"
+	}
+
+	s := strings.Join([]string{`&SubnetSpec{`,
+		`IPVersion:` + ValueToStringGenerated(in.IPVersion) + `,`,
+		`Subnet:` + fmt.Sprintf("%v", in.Subnet) + `,`,
+		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
+		`ExcludeIPs:` + fmt.Sprintf("%v", in.ExcludeIPs) + `,`,
+		`Gateway:` + ValueToStringGenerated(in.Gateway) + `,`,
+		`Vlan:` + ValueToStringGenerated(in.Vlan) + `,`,
+		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+
+// String serves for SpiderSubnet Status
+func (in *SubnetStatus) String() string {
+	if in == nil {
+		return "nil"
+	}
+
+	s := strings.Join([]string{`SubnetStatus{`,
+		`ControlledIPPools:` + fmt.Sprintf("%v", in.ControlledIPPools) + `,`,
+		`TotalIPCount:` + ValueToStringGenerated(in.TotalIPCount) + `,`,
+		`AllocatedIPCount:` + ValueToStringGenerated(in.AllocatedIPCount) + `,`,
+		`}`,
+	}, "")
+	return s
+}

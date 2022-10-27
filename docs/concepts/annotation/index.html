@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -322,7 +322,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/ippool-affinity-pod/" class="md-nav__link">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
     </li>
   
@@ -1023,11 +1023,11 @@
 </code></pre>
 <ul>
 <li><code>interface</code> (string, optional): When integrated with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">multus CNI</a>, it could specify which ippool is used to the interface. The interface information in the CNI request will be used as the default value when this field is not specified.</li>
-<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to allocate the IPv4 IP. When <code>enableIPv4</code> in the <code>spiderpool-conf</code> ConfigMap is set to true,  this field is required.</li>
-<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to allocate the IPv6 IP. When <code>enableIPv6</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
+<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to allocate the IPv4 address. When <code>enableIPv4</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
+<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to allocate the IPv6 address. When <code>enableIPv6</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
 </ul>
 <h3 id="ipamspidernetioippools">ipam.spidernet.io/ippools</h3>
-<p>It is similar to <code>ipam.spidernet.io/ippool</code>, but could be used to multiple interfaces case. BTW, <code>ipam.spidernet.io/ippools</code> has precedence over <code>ipam.spidernet.io/ippool</code>.</p>
+<p>It is similar to <code>ipam.spidernet.io/ippool</code> but could be used in the case with multiple interfaces. Note that <code>ipam.spidernet.io/ippools</code> has precedence over <code>ipam.spidernet.io/ippool</code>.</p>
 <pre><code class="language-yaml">ipam.spidernet.io/ippools: |-
   [{
       &quot;interface&quot;: &quot;eth0&quot;,
@@ -1042,9 +1042,9 @@
   }]
 </code></pre>
 <ul>
-<li><code>interface</code> (string, required): Since the CNI request only carries the information of one interface, in the case of multiple interfaces, the interface field must be specified to distinguish.</li>
-<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to allocate IPv4 IP. When <code>enableIPv4</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
-<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to allocate IPv6 IP. When <code>enableIPv6</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
+<li><code>interface</code> (string, required): Since the CNI request only carries the information of one interface, the <code>interface</code> field shall be specified to distinguish in the case of multiple interfaces.</li>
+<li><code>ipv4pools</code> (array, optional): Specify which ippool is used to allocate the IPv4 address. When <code>enableIPv4</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
+<li><code>ipv6pools</code> (array, optional): Specify which ippool is used to allocate the IPv6 address. When <code>enableIPv6</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
 <li><code>defaultRoute</code> (bool, optional): If set to true, the IPAM plugin will return the default gateway route recorded in the ippool.</li>
 </ul>
 <p>For different interfaces, it is not recommended to use ippools of the same subnet.</p>
@@ -1162,10 +1162,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

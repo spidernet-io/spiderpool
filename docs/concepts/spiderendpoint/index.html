@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -322,7 +322,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/ippool-affinity-pod/" class="md-nav__link">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
     </li>
   
@@ -630,15 +630,15 @@
       
         <li class="md-nav__item">
   <a href="#crd-definition" class="md-nav__link">
-    CRD Definition
+    CRD definition
   </a>
   
-    <nav class="md-nav" aria-label="CRD Definition">
+    <nav class="md-nav" aria-label="CRD definition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#spiderendpoint-status" class="md-nav__link">
-    SpiderEndpoint Status
+    SpiderEndpoint status
   </a>
   
 </li>
@@ -871,15 +871,15 @@
       
         <li class="md-nav__item">
   <a href="#crd-definition" class="md-nav__link">
-    CRD Definition
+    CRD definition
   </a>
   
-    <nav class="md-nav" aria-label="CRD Definition">
+    <nav class="md-nav" aria-label="CRD definition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#spiderendpoint-status" class="md-nav__link">
-    SpiderEndpoint Status
+    SpiderEndpoint status
   </a>
   
 </li>
@@ -914,9 +914,9 @@
 
 <h1 id="spiderendpoint">SpiderEndpoint</h1>
 <p>A SpiderEndpoint resource represents IP address allocation details for a specific endpoint object.</p>
-<h2 id="crd-definition">CRD Definition</h2>
+<h2 id="crd-definition">CRD definition</h2>
 <p>The SpiderEndpoint custom resource is modeled after a standard Kubernetes resource
-and is split into <code>status</code> section:</p>
+and is split into the <code>status</code> section:</p>
 <pre><code class="language-text">type SpiderEndpoint struct {
     [...]
 
@@ -924,8 +924,8 @@ and is split into <code>status</code> section:</p>
     Status WorkloadEndpointStatus `json:&quot;status,omitempty&quot;`
 }
 </code></pre>
-<h3 id="spiderendpoint-status">SpiderEndpoint Status</h3>
-<p>The <code>status</code> section contains some field to describe the current Endpoint allocation details.</p>
+<h3 id="spiderendpoint-status">SpiderEndpoint status</h3>
+<p>The <code>status</code> section contains some fields to describe details about the current Endpoint allocation.</p>
 <pre><code class="language-text">// WorkloadEndpointStatus defines the observed state of SpiderEndpoint
 type WorkloadEndpointStatus struct {
     // the endpoint current allocation details
@@ -1061,10 +1061,10 @@ type IPAllocationDetail struct {
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

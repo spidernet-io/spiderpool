@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -322,7 +322,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/ippool-affinity-pod/" class="md-nav__link">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
     </li>
   
@@ -930,10 +930,10 @@
 
 <h1 id="configuration">Configuration</h1>
 <blockquote>
-<p>Instructions for global configuration and environment args of Spiderpool.</p>
+<p>Instructions for global configuration and environment arguments of Spiderpool.</p>
 </blockquote>
 <h2 id="ipam-plugin-configuration">IPAM Plugin Configuration</h2>
-<p>There is an example of IPAM configuration.</p>
+<p>Here is an example of IPAM configuration.</p>
 <pre><code class="language-json">{
     &quot;cniVersion&quot;:&quot;0.3.1&quot;,
     &quot;name&quot;:&quot;macvlan-pod-network&quot;,
@@ -957,7 +957,7 @@
 }
 </code></pre>
 <ul>
-<li><code>log_file_path</code> (string, optional): Path to log file  of IPAM plugin, default to <code>"/var/log/spidernet/spiderpool.log"</code>.</li>
+<li><code>log_file_path</code> (string, optional): Path to log file of IPAM plugin, default to <code>"/var/log/spidernet/spiderpool.log"</code>.</li>
 <li><code>log_file_max_size</code> (string, optional): Max size of each rotated file, default to <code>"100M"</code>.</li>
 <li><code>log_file_max_age</code> (string, optional): Max age of each rotated file, default to <code>"30d"</code>.</li>
 <li><code>log_file_max_count</code> (string, optional): Max number of rotated file, default to <code>"7"</code>.</li>
@@ -979,7 +979,7 @@ data:
   clusterDefaultIPv6IPPool: [default-v6-ippool]
 </code></pre>
 <ul>
-<li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handle IPAM requests from IPAM plugin.</li>
+<li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.</li>
 <li><code>networkMode</code>:</li>
 <li><code>legacy</code>: Applicable to the traditional physical machine network.</li>
 <li><code>enableIPv4</code> (bool):</li>
@@ -988,8 +988,8 @@ data:
 <li><code>enableIPv6</code> (bool):</li>
 <li><code>true</code>: Enable IPv6 IP allocation capability of Spiderpool.</li>
 <li><code>false</code>: Disable IPv6 IP allocation capability of Spiderpool.</li>
-<li><code>clusterDefaultIPv4IPPool</code> (array): Global default IPv4 ippools. It takes effect throughout the cluster.</li>
-<li><code>clusterDefaultIPv6IPPool</code> (array): Global default IPv6 ippools. It takes effect throughout the cluster.</li>
+<li><code>clusterDefaultIPv4IPPool</code> (array): Global default IPv4 ippools. It takes effect across the cluster.</li>
+<li><code>clusterDefaultIPv6IPPool</code> (array): Global default IPv6 ippools. It takes effect across the cluster.</li>
 </ul>
 <h2 id="spiderpool-agent-env">Spiderpool-agent env</h2>
 <table>
@@ -1009,7 +1009,7 @@ data:
 <tr>
 <td>SPIDERPOOL_ENABLED_METRIC</td>
 <td>false</td>
-<td>Whether to enable metrics.</td>
+<td>Enable/disable metrics.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_HEALTH_PORT</td>
@@ -1024,10 +1024,10 @@ data:
 <tr>
 <td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
 <td>5712</td>
-<td>Port that gops is listen on , set to empty to disable it.</td>
+<td>Port that gops is listening on. Disabled if empty.</td>
 </tr>
 <tr>
-<td>SPIDERPOOL_UPDATE_CR_MAX_RETRYS</td>
+<td>SPIDERPOOL_UPDATE_CR_MAX_RETRIES</td>
 <td>3</td>
 <td>Max retries to update k8s resources.</td>
 </tr>
@@ -1061,7 +1061,7 @@ data:
 <tr>
 <td>SPIDERPOOL_ENABLED_METRIC</td>
 <td>false</td>
-<td>Whether to enable metrics.</td>
+<td>Enable/disable metrics.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_HEALTH_PORT</td>
@@ -1086,7 +1086,7 @@ data:
 <tr>
 <td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
 <td>5724</td>
-<td>Port that gops is listen on , set to empty to disable it.</td>
+<td>Port that gops is listening on. Disabled if empty.</td>
 </tr>
 </tbody>
 </table>
@@ -1168,10 +1168,10 @@ data:
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -322,7 +322,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/ippool-affinity-pod/" class="md-nav__link">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
     </li>
   
@@ -554,14 +554,14 @@
         
           <li class="md-nav__item">
   <a href="#context" class="md-nav__link">
-    context
+    Context
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#solution" class="md-nav__link">
-    solution
+    Solution
   </a>
   
 </li>
@@ -900,14 +900,14 @@
         
           <li class="md-nav__item">
   <a href="#context" class="md-nav__link">
-    context
+    Context
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#solution" class="md-nav__link">
-    solution
+    Solution
   </a>
   
 </li>
@@ -956,58 +956,58 @@
 
 <h1 id="resource-reclaim">Resource Reclaim</h1>
 <h2 id="ip-garbage-collection">IP garbage collection</h2>
-<h3 id="context">context</h3>
+<h3 id="context">Context</h3>
 <p>When a pod is normally deleted, the CNI plugin will be called to clean IP on a pod interface and make IP free on IPAM database.
 This can make sure all IPs are managed correctly and no IP leakage issue occurs.</p>
-<p>But on cases, it may go wrong and IP of IPAM database is still recorded to be used by a non-existed pod.</p>
-<p>when some error happened, the CNI plugin is not called correctly when pod deletion. This could happen like cases:</p>
+<p>But on cases, it may go wrong and IP of IPAM database is still marked as used by a nonexistent pod.</p>
+<p>when some errors happened, the CNI plugin is not called correctly when pod deletion. This could happen like cases:</p>
 <ul>
 <li>
-<p>When CNI plugin is called, its network communication goes wrong and fails to release IP.</p>
+<p>When a CNI plugin is called, its network communication goes wrong and fails to release IP.</p>
 </li>
 <li>
-<p>The container runtime goes wrong and fail to call CNI plugin.</p>
+<p>The container runtime goes wrong and fails to call CNI plugin.</p>
 </li>
 <li>
-<p>A node is breakdown and then always not recovery, the api-server makes pods of the breakdown node to be deleting status, but the CNI plugin fails to be called.</p>
+<p>A node breaks down and then always can not recover, the api-server makes pods of the breakdown node to be <code>deleting</code> status, but the CNI plugin fails to be called.</p>
 </li>
 </ul>
-<p>BTW, this fault could be simply simulated by removing CNI binary on host when pod deletion.</p>
-<p>This issue will make bad result:</p>
+<p>BTW, this fault could be simply simulated by removing the CNI binary on a host when pod deletion.</p>
+<p>This issue will make a bad result:</p>
 <ul>
 <li>
-<p>the new pod maybe fail to run because the expected IP is still occupied.</p>
+<p>the new pod may fail to run because the expected IP is still occupied.</p>
 </li>
 <li>
-<p>the IP resource is exhausted gradually although the actual pod number does not grow.</p>
+<p>the IP resource is exhausted gradually although the actual number of pods does not grow.</p>
 </li>
 </ul>
-<p>Some CNI or IPAM plugins, they could not handle this issue. For some CNI, the administrator self needs to find issue IP and use CLI tool to reclaim them.
-For some CNI, it runs an interval job to find the issue IP and not reclaim them in time. For some CNI, there is not any mechanism at all, to fix these issue IP.</p>
-<h3 id="solution">solution</h3>
-<p>For some CNI, its IP CIDR is big enough, so the leaked IP issue is not urgent.
-For spiderpool, all IP resource is managed by Administrator, and application will be bound to fixed IP, so the IP reclaim must be finished in time.</p>
-<p>The spiderpool controller takes charge of this responsibility. For more details, please refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/pkg/gcmanager/README.md">IP GC</a></p>
+<p>Some CNI or IPAM plugins could not handle this issue. For some CNIs, the administrator self needs to find the IP with this issue and use a CLI tool to reclaim them.
+For some CNIs, it runs an interval job to find the IP with this issue and not reclaim them in time. For some CNIs, there is not any mechanism at all to fix the IP issue.</p>
+<h3 id="solution">Solution</h3>
+<p>For some CNIs, its IP CIDR is big enough, so the leaked IP issue is not urgent.
+For Spiderpool, all IP resources are managed by administrator, and an application will be bound to a fixed IP, so the IP reclaim can be finished in time.</p>
+<p>The spiderpool controller takes charge of this responsibility. For more details, please refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/pkg/gcmanager/README.md">IP GC</a>.</p>
 <h2 id="spiderippool-garbage-collection">SpiderIPPool garbage collection</h2>
-<p>To prevent IP from leaking when ippool resource is deleted, the spiderpool has some rules:</p>
+<p>To prevent IP from leaking when the ippool resource is deleted, Spiderpool has some rules:</p>
 <ul>
 <li>
-<p>For an ippool, if there is still IP taken by pods, the spiderpool uses webhook to reject deleting request of ippool resource.</p>
+<p>For an ippool, if IP still taken by pods, Spiderpool uses webhook to reject deleting request of the ippool resource.</p>
 </li>
 <li>
 <p>For a deleting ippool, the IPAM plugin will stop assigning IP from it, but could release IP from it.</p>
 </li>
 <li>
-<p>The ippool is set a finalizer by the spiderpool controller once it was created. After the ippool goes to be deleting status,
-the spiderpool controller will remove the finalizer when all IP in the ippool is free, then the ippool object will be deleted.</p>
+<p>The ippool sets a finalizer by the spiderpool controller once it is created. After the ippool goes to be <code>deleting</code> status,
+the spiderpool controller will remove the finalizer when all IPs in the ippool are free, then the ippool object will be deleted.</p>
 </li>
 </ul>
 <h2 id="spiderendpoint-garbage-collection">SpiderEndpoint garbage collection</h2>
-<p>Once a pod was created and got IPs from SpiderIPPool, the Spiderpool will create a corresponding SpiderEndpoint object at the same time,
-and it will take a finalizer (except StatefulSet pod) and will be set <code>OwnerReference</code> with the pod.</p>
-<p>When a pod was deleted, spiderpool will release its IPs with the corresponding SpiderEndpoint object recorded data,
-then spiderpool controller will remove the SpiderEndpoint object <code>Current</code> data and remove its finalizer.
-(For StatefulSet SpiderEndpoint, the spiderpool will delete it directly if its <code>Current</code> data was cleaned up)</p>
+<p>Once a pod is created and gets IPs from <code>SpiderIPPool</code>, Spiderpool will create a corresponding <code>SpiderEndpoint</code> object at the same time.
+It will take a finalizer (except the StatefulSet pod) and will be set to <code>OwnerReference</code> with the pod.</p>
+<p>When a pod is deleted, Spiderpool will release its IPs with the recorded data by a corresponding <code>SpiderEndpoint</code> object,
+then spiderpool controller will remove the <code>Current</code> data of SpiderEndpoint object and remove its finalizer.
+(For the StatefulSet <code>SpiderEndpoint</code>, Spiderpool will delete it directly if its <code>Current</code> data was cleaned up)</p>
 
 
 
@@ -1086,10 +1086,10 @@ then spiderpool controller will remove the SpiderEndpoint object <code>Current</
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

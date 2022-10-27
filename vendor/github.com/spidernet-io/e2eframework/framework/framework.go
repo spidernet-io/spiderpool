@@ -40,6 +40,7 @@ type ClusterInfo struct {
 	// multus
 	MultusDefaultCni    string
 	MultusAdditionalCni string
+	SpiderSubnetEnabled bool
 }
 
 var ClusterInformation = &ClusterInfo{}
@@ -64,6 +65,7 @@ const (
 	E2E_KIND_CLUSTER_NODE_LIST  = "E2E_KIND_CLUSTER_NODE_LIST"
 	E2E_Multus_DefaultCni       = "E2E_Multus_DefaultCni"
 	E2E_Multus_AdditionalCni    = "E2E_Multus_AdditionalCni"
+	E2E_SPIDERSUBNET_ENABLED    = "E2E_SPIDERSUBNET_ENABLED"
 )
 
 var envConfigList = []envconfig{
@@ -81,6 +83,9 @@ var envConfigList = []envconfig{
 	{EnvName: E2E_WHEREABOUT_IPAM_ENABLED, DestBool: &ClusterInformation.WhereaboutIPAMEnabled, Default: "false", Required: false},
 	// ---- kind field
 	{EnvName: E2E_KIND_CLUSTER_NODE_LIST, DestStr: &ClusterInformation.KindNodeListRaw, Default: "false", Required: false},
+	// ---- subnet field
+	{EnvName: E2E_SPIDERSUBNET_ENABLED, DestBool: &ClusterInformation.SpiderSubnetEnabled, Default: "true", Required: false},
+
 	// ---- vagrant field
 }
 

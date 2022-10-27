@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
@@ -327,9 +328,25 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			dirtyIPv4Record, dirtyIPv6Record = new(spiderpool.PoolIPAllocation), new(spiderpool.PoolIPAllocation)
 		)
 		var dirtyIPv4, dirtyIPv6 string
-		var dirtyPodName, dirtyContainerID string
+		var dirtyPodName, dirtyContainerID, v4SubnetName, v6SubnetName string
+		var v4SubnetObject, v6SubnetObject *v1.SpiderSubnet
 
 		BeforeEach(func() {
+
+			if frame.Info.SpiderSubnetEnabled {
+				// Subnet Adaptation
+				if frame.Info.IpV4Enabled {
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(1)
+					Expect(v4SubnetObject).NotTo(BeNil())
+					Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(1)
+					Expect(v6SubnetObject).NotTo(BeNil())
+					Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+				}
+			}
+
 			// generate dirty ip, pod name and dirty containerID
 			dirtyIPv4 = common.GenerateExampleIpv4Address()
 			GinkgoWriter.Printf("generate dirty IPv4 :%v \n", dirtyIPv4)
@@ -347,12 +364,20 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			if frame.Info.IpV4Enabled {
 				GinkgoWriter.Println("create ipv4 pool")
 				v4poolName, v4poolObj = common.GenerateExampleIpv4poolObject(1)
+				if frame.Info.SpiderSubnetEnabled {
+					v4poolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+					v4poolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+				}
 				v4poolNameList = []string{v4poolName}
 				Expect(common.CreateIppool(frame, v4poolObj)).To(Succeed())
 			}
 			if frame.Info.IpV6Enabled {
 				GinkgoWriter.Println("create ipv6 pool")
 				v6poolName, v6poolObj = common.GenerateExampleIpv6poolObject(1)
+				if frame.Info.SpiderSubnetEnabled {
+					v6poolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+					v6poolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				}
 				v6poolNameList = []string{v6poolName}
 				Expect(common.CreateIppool(frame, v6poolObj)).To(Succeed())
 			}
@@ -365,6 +390,14 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				if frame.Info.IpV6Enabled {
 					err := common.DeleteIPPoolByName(frame, v6poolName)
 					Expect(err).NotTo(HaveOccurred())
+				}
+				if frame.Info.SpiderSubnetEnabled {
+					if frame.Info.IpV4Enabled {
+						Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+					}
+					if frame.Info.IpV6Enabled {
+						Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+					}
 				}
 			})
 		})

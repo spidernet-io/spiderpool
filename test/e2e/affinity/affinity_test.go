@@ -20,8 +20,24 @@ import (
 
 var _ = Describe("test Affinity", Label("affinity"), func() {
 	var namespace string
+	var v4SubnetName, v6SubnetName string
+	var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 
 	BeforeEach(func() {
+
+		if frame.Info.SpiderSubnetEnabled {
+			if frame.Info.IpV4Enabled {
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(5)
+				Expect(v4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(5)
+				Expect(v6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			}
+		}
+
 		// create namespace
 		namespace = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", namespace)
@@ -32,6 +48,15 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err = frame.DeleteNamespace(namespace)
 			Expect(err).NotTo(HaveOccurred())
+
+			if frame.Info.SpiderSubnetEnabled {
+				if frame.Info.IpV4Enabled {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+				}
+			}
 		})
 	})
 
@@ -88,6 +113,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// Assign different type of affinity to the ippool and create it
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
+				if frame.Info.SpiderSubnetEnabled {
+					v4Pool.Spec.Subnet = v4SubnetObject.Spec.Subnet
+					v4Pool.Spec.IPs = v4SubnetObject.Spec.IPs
+				}
 				GinkgoWriter.Printf("create v4 ippool %v\n", v4PoolName)
 				v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 				v4Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
@@ -101,6 +130,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
+				if frame.Info.SpiderSubnetEnabled {
+					v6Pool.Spec.Subnet = v6SubnetObject.Spec.Subnet
+					v6Pool.Spec.IPs = v6SubnetObject.Spec.IPs
+				}
 				GinkgoWriter.Printf("create v6 ippool %v\n", v6PoolName)
 				v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 				v6Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
@@ -213,10 +246,14 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			for _, node := range nodeList.Items {
 				if frame.Info.IpV4Enabled {
 					v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(1)
-					GinkgoWriter.Printf("Create v4 ippool %v\n", v4PoolName)
 					v4Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 					v4Pool.Spec.NodeAffinity.MatchLabels = node.Labels
-					Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
+					GinkgoWriter.Printf("Create v4 ippool %v\n", v4PoolName)
+					if frame.Info.SpiderSubnetEnabled {
+						Expect(common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, v4Pool, 1)).To(Succeed())
+					} else {
+						Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
+					}
 
 					allV4PoolNameList = append(allV4PoolNameList, v4PoolName)
 					nodeV4PoolMap[node.Name] = []string{v4PoolName}
@@ -224,10 +261,14 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				}
 				if frame.Info.IpV6Enabled {
 					v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(1)
-					GinkgoWriter.Printf("Create v6 ippool %v\n", v6PoolName)
 					v6Pool.Spec.NodeAffinity = new(v1.LabelSelector)
 					v6Pool.Spec.NodeAffinity.MatchLabels = node.Labels
-					Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+					GinkgoWriter.Printf("Create v6 ippool %v\n", v6PoolName)
+					if frame.Info.SpiderSubnetEnabled {
+						Expect(common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, v6Pool, 1)).To(Succeed())
+					} else {
+						Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+					}
 
 					allV6PoolNameList = append(allV6PoolNameList, v6PoolName)
 					nodeV6PoolMap[node.Name] = []string{v6PoolName}
@@ -249,6 +290,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				}
 			})
 		})
+
 		It("Successfully run daemonSet/pod who is cross-zone daemonSet with matched `NodeAffinity`", Label("L00007"), func() {
 			// generate daemonSet yaml
 			GinkgoWriter.Println("generate example daemonSet yaml")
@@ -316,11 +358,19 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// Create IPv4 pools and IPv6 pools
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
+				if frame.Info.SpiderSubnetEnabled {
+					v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+					v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+				}
 				GinkgoWriter.Printf("try to create v6 ippool %v \n", v4PoolObj.Name)
 				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
+				if frame.Info.SpiderSubnetEnabled {
+					v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+					v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				}
 				GinkgoWriter.Printf("try to create v6 ippool %v \n", v6PoolObj.Name)
 				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
 			}
@@ -485,12 +535,20 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// create IPPool
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
+				if frame.Info.SpiderSubnetEnabled {
+					v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+					v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+				}
 				Expect(v4PoolObj.Spec.IPs).NotTo(BeNil())
 				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
+				if frame.Info.SpiderSubnetEnabled {
+					v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+					v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				}
 				Expect(v6PoolObj.Spec.IPs).NotTo(BeNil())
 				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)

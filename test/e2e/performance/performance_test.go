@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,11 +23,13 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		err                                                       error
 		dpm                                                       *appsv1.Deployment
 		podlist                                                   *corev1.PodList
-		iPv4PoolObj, iPv6PoolObj                                  *spiderpoolv1.SpiderIPPool
+		iPv4PoolObj, iPv6PoolObj                                  *v1.SpiderIPPool
 		v4PoolNameList, v6PoolNameList                            []string
+		v4SubnetName, v6SubnetName                                string
+		v4SubnetObject, v6SubnetObject                            *v1.SpiderSubnet
 	)
-
 	BeforeEach(func() {
+
 		// Init test ENV
 		perName = "per" + tools.RandomName()
 		nsName = "ns" + tools.RandomName()
@@ -47,25 +49,51 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 
 			if frame.Info.IpV4Enabled {
 				Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				if frame.Info.SpiderSubnetEnabled {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+				}
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				if frame.Info.SpiderSubnetEnabled {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+				}
 			}
 		})
 	})
 
 	DescribeTable("time cost for creating, rebuilding, deleting deployment pod in batches",
 		func(controllerType string, replicas int32, overtimeCheck time.Duration) {
-
+			if frame.Info.SpiderSubnetEnabled {
+				// Subnet Adaptation
+				if frame.Info.IpV4Enabled {
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(int(replicas))
+					Expect(v4SubnetObject).NotTo(BeNil())
+					Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(int(replicas))
+					Expect(v6SubnetObject).NotTo(BeNil())
+					Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+				}
+			}
 			// Generate Pod.IPPool annotations string and create IPv4Pool and IPV6Pool
 			if frame.Info.IpV4Enabled {
 				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(int(replicas))
+				if frame.Info.SpiderSubnetEnabled {
+					iPv4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+					iPv4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+				}
 				GinkgoWriter.Printf("try to create IPv4pool: %v \n", v4PoolName)
 				Expect(common.CreateIppool(frame, iPv4PoolObj)).NotTo(HaveOccurred())
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(int(replicas))
+				if frame.Info.SpiderSubnetEnabled {
+					iPv6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+					iPv6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				}
 				GinkgoWriter.Printf("try to create IPv6pool: %v \n", v6PoolName)
 				Expect(common.CreateIppool(frame, iPv6PoolObj)).NotTo(HaveOccurred())
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)

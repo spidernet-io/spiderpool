@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -629,6 +630,64 @@ func CheckUniqueUuidInSpiderPool(f *frame.Framework, poolName string, podList *c
 			return fmt.Errorf("pod %v uuid %v is not unique", d, v.ContainerID)
 		}
 		ipAndUuidMap[v.ContainerID] = v.Pod
+	}
+	return nil
+}
+
+func GetIppoolsInSubnet(f *frame.Framework, subnetName string) (*v1.SpiderIPPoolList, error) {
+	if f == nil || subnetName == "" {
+		return nil, frame.ErrWrongInput
+	}
+
+	opt := []client.ListOption{
+		client.MatchingLabelsSelector{
+			Selector: labels.SelectorFromSet(map[string]string{
+				constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
+			}),
+		},
+	}
+
+	poolList := GetAllIppool(f, opt...)
+	if poolList == nil {
+		return nil, errors.New("failed to get ippool in subnet")
+	}
+
+	return poolList, nil
+}
+
+func CreateIppoolInSpiderSubnet(f *frame.Framework, subnetName string, pool *v1.SpiderIPPool, ipNum int) error {
+	if f == nil || subnetName == "" || pool == nil || ipNum <= 0 {
+		return frame.ErrWrongInput
+	}
+
+	subnetObj := GetSubnetByName(f, subnetName)
+	if subnetObj == nil {
+		return fmt.Errorf("failed to get subnet %v", subnetName)
+	}
+
+	ips, err := GetAvailableIpsInSubnet(f, subnetName)
+	if err != nil {
+		return err
+	}
+	if len(ips) < ipNum {
+		return errors.New("insufficient subnet ip")
+	}
+
+	selectIPs := SelectIpFromIps(ips, ipNum)
+	if selectIPs == nil {
+		return errors.New("failed select ip from ips")
+	}
+
+	selectIPsRange, err := ip.ConvertIPsToIPRanges(*subnetObj.Spec.IPVersion, selectIPs)
+	if err != nil {
+		return err
+	}
+
+	pool.Spec.Subnet = subnetObj.Spec.Subnet
+	pool.Spec.IPs = selectIPsRange
+	err = CreateIppool(f, pool)
+	if err != nil {
+		return err
 	}
 	return nil
 }

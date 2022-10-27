@@ -20,6 +20,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		var deployName, v4PoolName, v6PoolName, namespace string
 		var v4PoolNameList, v6PoolNameList []string
 		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
+		var v4SubnetName, v6SubnetName string
+		var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
+
 		var (
 			deployOriginialNum int = 1
 			deployScaleupNum   int = 2
@@ -27,6 +30,18 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		)
 
 		BeforeEach(func() {
+			if frame.Info.SpiderSubnetEnabled {
+				if frame.Info.IpV4Enabled {
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(ippoolIpNum)
+					Expect(v4SubnetObject).NotTo(BeNil())
+					Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(ippoolIpNum)
+					Expect(v6SubnetObject).NotTo(BeNil())
+					Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+				}
+			}
 			// Init test information and create namespace
 			deployName = "deploy" + tools.RandomName()
 			namespace = "ns" + tools.RandomName()
@@ -38,6 +53,10 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(ippoolIpNum)
 				// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
+				if frame.Info.SpiderSubnetEnabled {
+					v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+					v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+				}
 				v4PoolObj.Spec.ExcludeIPs = strings.Split(v4PoolObj.Spec.IPs[0], "-")[:1]
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
@@ -46,6 +65,10 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(ippoolIpNum)
 				// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
+				if frame.Info.SpiderSubnetEnabled {
+					v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+					v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				}
 				v6PoolObj.Spec.ExcludeIPs = strings.Split(v6PoolObj.Spec.IPs[0], "-")[:1]
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
@@ -60,9 +83,15 @@ var _ = Describe("test pod", Label("assignip"), func() {
 				GinkgoWriter.Printf("Try to delete IPPool %v, %v \n", v4PoolName, v6PoolName)
 				if frame.Info.IpV4Enabled {
 					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+					if frame.Info.SpiderSubnetEnabled {
+						Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+					}
 				}
 				if frame.Info.IpV6Enabled {
 					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+					if frame.Info.IpV6Enabled {
+						Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+					}
 				}
 			})
 		})

@@ -25,8 +25,22 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 	var v4PoolNameList, v6PoolNameList []string
 	var disable = new(bool)
+	var v4SubnetName, v6SubnetName string
+	var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 
 	BeforeEach(func() {
+		if frame.Info.SpiderSubnetEnabled {
+			if frame.Info.IpV4Enabled {
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(20)
+				Expect(v4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(20)
+				Expect(v6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			}
+		}
 		// Init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("create namespace %v \n", nsName)
@@ -37,6 +51,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV4Enabled {
 			v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
 			Expect(v4PoolObj.Spec.IPs).NotTo(BeNil())
+			if frame.Info.SpiderSubnetEnabled {
+				v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+				v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+			}
 			Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
 			GinkgoWriter.Printf("Succeeded to create ippool %v \n", v4PoolObj.Name)
 			v4PoolNameList = append(v4PoolNameList, v4PoolName)
@@ -44,24 +62,31 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV6Enabled {
 			v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
 			Expect(v6PoolObj.Spec.IPs).NotTo(BeNil())
+			if frame.Info.SpiderSubnetEnabled {
+				v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+				v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+			}
 			Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
 			GinkgoWriter.Printf("Succeeded to create ippool %v \n", v6PoolObj.Name)
 			v6PoolNameList = append(v6PoolNameList, v6PoolName)
 		}
 
-		// Clean test ENV
 		DeferCleanup(func() {
-			GinkgoWriter.Printf("delete namespace %v \n", nsName)
+			GinkgoWriter.Println("Clean test ENV")
 			err = frame.DeleteNamespace(nsName)
-			Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v", nsName)
+			Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v, err: %v", nsName, err)
 
-			// Delete IPv4 pools and IPv6 pools
-			GinkgoWriter.Printf("Delete IPv4 pools %v and IPv6 pools %v \n", v4PoolName, v6PoolName)
 			if frame.Info.IpV4Enabled {
 				Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				if frame.Info.SpiderSubnetEnabled {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+				}
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				if frame.Info.SpiderSubnetEnabled {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+				}
 			}
 		})
 	})
@@ -342,13 +367,19 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	})
 
 	It("create and delete batch of ippool and check time cost", Label("D00006"), func() {
+		if frame.Info.SpiderSubnetEnabled {
+			Skip("Suitable for no subnets")
+		}
+
+		var ipv4PoolNameList, ipv6PoolNameList []string
+		var err error
 		const ippoolNumber = 10
-		const ipNum = 2
+		const ipNum = 1
 
 		if frame.Info.IpV4Enabled {
 			// Create and delete a batch of IPv4 IPPools and check the time cost
 			startT1 := time.Now()
-			ipv4PoolNameList, err := common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, true)
+			ipv4PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, true)
 			Expect(err).NotTo(HaveOccurred())
 			endT1 := time.Since(startT1)
 			GinkgoWriter.Printf("Time cost to create %v ipv4 ippools is %v \n", ippoolNumber, endT1)
@@ -365,7 +396,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV6Enabled {
 			// Create and delete a batch of IPv6 IPPools and check the time cost
 			startT3 := time.Now()
-			ipv6PoolNameList, err := common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, false)
+			ipv6PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, ippoolNumber, ipNum, false)
 			Expect(err).NotTo(HaveOccurred())
 			endT3 := time.Since(startT3)
 			GinkgoWriter.Printf("Time cost to create %v ipv6 ippools is %v \n", ippoolNumber, endT3)

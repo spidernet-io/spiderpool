@@ -108,3 +108,14 @@ func ContrastIpv6ToIntValues(ip1, ip2 string) error {
 	}
 	return nil
 }
+
+func SelectIpFromIps(ips []net.IP, ipNum int) []net.IP {
+	var ipArray []net.IP
+
+	length := len(ips)
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < ipNum; i++ {
+		ipArray = []net.IP{ips[rand.Intn(length)]}
+	}
+	return ipArray
+}

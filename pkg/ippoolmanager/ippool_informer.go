@@ -328,7 +328,7 @@ func (c *poolInformerController) processNextWorkItem() bool {
 			// processing.
 			if apierrors.IsNotFound(err) {
 				c.workQueue.Forget(obj)
-				informerLogger.Sugar().Errorf("IPPool '%s' in work queue no longer exists", poolName)
+				informerLogger.Sugar().Debugf("IPPool '%s' in work queue no longer exists", poolName)
 				return nil
 			}
 
@@ -342,6 +342,12 @@ func (c *poolInformerController) processNextWorkItem() bool {
 			if errors.Is(err, constant.ErrWrongInput) {
 				c.workQueue.Forget(obj)
 				informerLogger.Sugar().Errorf("failed to scale IPPool '%s', error: %v", pool.Name, err)
+				return nil
+			}
+
+			if apierrors.IsConflict(err) {
+				c.workQueue.AddRateLimited(poolName)
+				informerLogger.Sugar().Warnf("encountered update conflict '%v', retrying...", err)
 				return nil
 			}
 

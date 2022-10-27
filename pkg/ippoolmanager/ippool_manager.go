@@ -362,76 +362,60 @@ func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 	return nil
 }
 
+// ScaleIPPoolWithIPs will expand or shrink the IPPool with the given action.
+// Notice: we shouldn't get retries in this method and the upper level calling function will requeue the workqueue once we return an error,
 func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ippoolmanagertypes.ScaleAction, desiredIPNum int) error {
 	log := logutils.FromContext(ctx)
 	rand.Seed(time.Now().UnixNano())
 
 	var err error
-	for i := 0; i < im.config.MaxConflictRetries; i++ {
-		if i != 0 {
-			pool, err = im.GetIPPoolByName(ctx, pool.Name)
-			if nil != err {
-				return err
-			}
-		}
 
-		// filter out exclude IPs.
-		currentIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	// filter out exclude IPs.
+	currentIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	if nil != err {
+		return fmt.Errorf("failed to assemble Total IP addresses: %v", err)
+	}
+
+	if len(currentIPs) == desiredIPNum {
+		log.Sugar().Debugf("IPPool '%s' already has desired IP number '%d' IPs, non need to scale it", pool.Name, desiredIPNum)
+		return nil
+	}
+
+	if action == ippoolmanagertypes.ScaleUpIP {
+		pool.Spec.IPs = append(pool.Spec.IPs, ipRanges...)
+		sortedIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
 		if nil != err {
-			return fmt.Errorf("failed to assemble Total IP addresses: %v", err)
+			return fmt.Errorf("failed to merge IP ranges '%v', error: %v", pool.Spec.IPs, err)
 		}
 
-		if len(currentIPs) == desiredIPNum {
-			log.Sugar().Debugf("IPPool '%s' already has desired IP number '%d' IPs, non need to scale it", pool.Name, desiredIPNum)
-			return nil
-		}
-
-		if action == ippoolmanagertypes.ScaleUpIP {
-			pool.Spec.IPs = append(pool.Spec.IPs, ipRanges...)
-			sortedIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-			if nil != err {
-				return fmt.Errorf("failed to merge IP ranges '%v', error: %v", pool.Spec.IPs, err)
-			}
-
-			log.With(zap.String("ScaleUpIP", fmt.Sprintf("add IPs '%v'", ipRanges))).
-				Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
-			pool.Spec.IPs = sortedIPRanges
-		} else {
-			discardedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, ipRanges)
-			if nil != err {
-				return fmt.Errorf("failed to parse IP ranges '%v', error: %v", ipRanges, err)
-			}
-
-			// the original IPPool.Spec.IPs
-			totalIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-			if nil != err {
-				return fmt.Errorf("failed to parse IP ranges '%v', error: %v", pool.Spec.IPs, err)
-			}
-
-			sortedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, spiderpoolip.IPsDiffSet(totalIPs, discardedIPs))
-			if nil != err {
-				return fmt.Errorf("failed to convert IPs '%v' to IP ranges, error: %v", ipRanges, err)
-			}
-
-			log.With(zap.String("ScaleDownIP", fmt.Sprintf("discard IPs '%v'", ipRanges))).
-				Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
-			pool.Spec.IPs = sortedIPRanges
-		}
-
-		err = im.client.Update(ctx, pool)
+		log.With(zap.String("ScaleUpIP", fmt.Sprintf("add IPs '%v'", ipRanges))).
+			Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
+		pool.Spec.IPs = sortedIPRanges
+	} else {
+		discardedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, ipRanges)
 		if nil != err {
-			if !apierrors.IsConflict(err) {
-				return fmt.Errorf("failed to update IPPool '%s', error: %v", pool.Name, err)
-			}
-			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("insufficient retries(<=%d) to update IPPool '%s'", im.config.MaxConflictRetries, pool.Name)
-			}
-
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
-			continue
+			return fmt.Errorf("failed to parse IP ranges '%v', error: %v", ipRanges, err)
 		}
 
-		break
+		// the original IPPool.Spec.IPs
+		totalIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
+		if nil != err {
+			return fmt.Errorf("failed to parse IP ranges '%v', error: %v", pool.Spec.IPs, err)
+		}
+
+		sortedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, spiderpoolip.IPsDiffSet(totalIPs, discardedIPs))
+		if nil != err {
+			return fmt.Errorf("failed to convert IPs '%v' to IP ranges, error: %v", ipRanges, err)
+		}
+
+		log.With(zap.String("ScaleDownIP", fmt.Sprintf("discard IPs '%v'", ipRanges))).
+			Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
+		pool.Spec.IPs = sortedIPRanges
+	}
+
+	err = im.client.Update(ctx, pool)
+	if nil != err {
+		return fmt.Errorf("failed to update IPPool '%s', error: %v", pool.Name, err)
 	}
 
 	return nil

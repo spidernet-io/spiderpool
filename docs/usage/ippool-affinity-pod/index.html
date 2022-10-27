@@ -9,15 +9,15 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
-        <title>pod affinity of ippool - spiderpool</title>
+        <title>Pod affinity of ippool - spiderpool</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              pod affinity of ippool
+              Pod affinity of ippool
             
           </span>
         </div>
@@ -333,12 +333,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          pod affinity of ippool
+          Pod affinity of ippool
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
       
         
@@ -928,15 +928,15 @@
   </a>
 
 
-<h1 id="pod-affinity-of-ippool">pod affinity of ippool</h1>
+<h1 id="pod-affinity-of-ippool">Pod affinity of ippool</h1>
 <blockquote>
-<p>Spiderpool supports multiple ways to select ippool. Pod will select a specific ippool to allocate IP according to the corresponding rules that with different priorities. Meanwhile, ippool can use selector to filter its user.</p>
+<p>Spiderpool supports multiple ways to select ippool. A Pod will select a specific ippool to allocate IP according to the corresponding rules with different priorities. Meanwhile, ippool can use selectors to filter its user.</p>
 </blockquote>
 <h2 id="priority">Priority</h2>
 <p>Spiderpool supports the following ways to specify ippool for Pod:</p>
 <ol>
 <li>
-<p>Pod annotations (<strong>high priority</strong>): Specifies which ippool the current Pod should use to allocate IP, which overrides any other selection rules.</p>
+<p>Pod annotations (<strong>high priority</strong>): Specifies which ippool the current Pod should use to allocate IP. This takes precedence over any other selection rules.</p>
 </li>
 <li>
 <p><code>ipam.spidernet.io/ippool</code>: For single interface case. Ensure that the interface field specified in Pod annotations is consistent with that in the CNI request.</p>
@@ -949,7 +949,7 @@
    }</code></p>
 </li>
 <li>
-<p><code>ipam.spidernet.io/ippools</code>: For multiple interfaces case. Note that it does not means that CNI will return the IP allocation results of multiple interfaces in one request (this will break the <a href="https://www.cni.dev/docs/spec/">CNI Specification</a>). Spiderpool will allocate multiple IP in one request, but return them in several times. It is mainly used with <a href="TODO">Spiderflat CNI</a> and <a href="https://github.com/k8snetworkplumbingwg/multus-cni">multus CNI</a>. You can get more details of "multus + Spiderpool" <a href="TODO">here</a>.</p>
+<p><code>ipam.spidernet.io/ippools</code>: For multiple interfaces case. Note that it does not mean that CNI will return the IP allocation results of multiple interfaces in one request (this will break the <a href="https://www.cni.dev/docs/spec/">CNI Specification</a>). Spiderpool will allocate multiple IPs in one request, but return them in several times. It is mainly used with <a href="TODO">Spiderflat CNI</a> and <a href="https://github.com/k8snetworkplumbingwg/multus-cni">multus CNI</a>. You can get more details of "multus + Spiderpool" <a href="TODO">here</a>.</p>
 <p><code>yaml
  ipam.spidernet.io/ippools: |-
    [{
@@ -994,10 +994,10 @@
      clusterDefaultIPv4IPPool: [default-v4-ippool]
      clusterDefaultIPv6IPPool: [default-v6-ippool]
      ...</code></p>
-<p>More details of Spiderpool <a href="https://spidernet-io.github.io/spiderpool/usage/annotation/">annotation</a> and <a href="https://spidernet-io.github.io/spiderpool/usage/config/">configuration</a>.</p>
+<p>More details see Spiderpool <a href="https://spidernet-io.github.io/spiderpool/usage/annotation/">annotation</a> and <a href="https://spidernet-io.github.io/spiderpool/usage/config/">configuration</a>.</p>
 <h2 id="backup">Backup</h2>
-<p>Each ippool selection rule supports 'backup'. We can specify multiple ippools in the array to achieve this effect. Spiderpool will successively try to allocate IP in the order of the elements in the ippool array until the first allocation succeeds or all fail.</p>
-<p>The following is an example of Pod annotation <code>ipam.spidernet.io/ippool</code>, the same is true for other ippool selection rules. We can create such a Pod:</p>
+<p>Each ippool selection rule supports 'backup'. We can specify multiple ippools in the array to achieve this effect. Spiderpool will successively try to allocate IP in the order of elements in the ippool array until the first allocation succeeds or all fail.</p>
+<p>The following is an example of Pod annotation <code>ipam.spidernet.io/ippool</code>, and the same is true for other ippool selection rules.</p>
 <pre><code class="language-yaml">apiVersion: v1
 kind: Pod
 metadata:
@@ -1015,20 +1015,20 @@ spec:
     imagePullPolicy: IfNotPresent
     command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
 </code></pre>
-<p>As we can see from the above, Pod <code>sample-backup</code> will attempt to allocate IP from ippools defined in field <code>ipv4pools</code>.</p>
+<p>As you can see from the above, Pod <code>sample-backup</code> will attempt to allocate IP from ippools defined in field <code>ipv4pools</code>.</p>
 <p>Unfortunately, ippool <code>default-v4-ippool</code> has run out of IP.</p>
 <pre><code class="language-bash">$ kubectl get spl
 NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
 default-v4-ippool   IPv4      172.18.0.0/16             5                    5                false
 backup-v4-ippool    IPv4      172.18.0.0/16             1                    5                false
 </code></pre>
-<p>We will see Pod <code>sample-backup</code> successfully allocated IP from ippool <code>backup-v4-ippool</code>.</p>
+<p>You will see Pod <code>sample-backup</code> successfully allocated IP from ippool <code>backup-v4-ippool</code>.</p>
 <pre><code class="language-bash">$ kubectl get swe sample-backup -n default
 NAME            INTERFACE   IPV4POOL           IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
 sample-backup   eth0        backup-v4-ippool   172.18.40.40/16                     spider-worker   1m33s
 </code></pre>
 <h2 id="selectors">Selectors</h2>
-<p>Ippool can also use <code>nodeSelector</code>, <code>namesapceSelector</code>, and <code>podSelector</code> to filter its users. It should be regarded as a <strong>filtering mechanism</strong> rather than an ippool selection rule (refer to chapter <a href="#priority">Priority</a> for ippool selection rules).</p>
+<p>Ippool can also use <code>nodeSelector</code>, <code>namesapceSelector</code>, and <code>podSelector</code> to filter its users. It should be regarded as a <strong>filtering mechanism</strong> rather than an ippool selection rule (refer to <a href="#priority">Priority</a> for ippool selection rules).</p>
 <p>All selectors follow the syntax of <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/">Kubernetes label selector</a>, just like:</p>
 <pre><code class="language-yaml">selector:
   matchLabels:
@@ -1037,7 +1037,7 @@ sample-backup   eth0        backup-v4-ippool   172.18.40.40/16                  
     - {key: tier, operator: In, values: [cache]}
     - {key: environment, operator: NotIn, values: [dev]}
 </code></pre>
-<p>We have such an ippool:</p>
+<p>You have such an ippool now:</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: IPPool
 metadata:
@@ -1070,7 +1070,7 @@ data:
 <p>Try to create a Deployment in <code>default</code> Namespace.</p>
 <pre><code class="language-bash">$ kubectl create deployment my-deploy --image=nginx
 </code></pre>
-<p>However, this Deployment will eventually fail to function properly because it is not allocated any IP, and not in a Namespace that matches ippool's <code>namespaceSelector</code>. So don't give too harsh selectors to cluster default ippools , which will not make life better :)</p>
+<p>However, this Deployment will eventually fail to function properly because it is not allocated any IP, and not in a Namespace that matches ippool's <code>namespaceSelector</code>. So don't give too harsh selectors to cluster default ippools, which will not make life better :)</p>
 <h2 id="example">Example</h2>
 <p>After understanding what selectors' "filtering mechanism" is, let's take a look at how selectors work with ippool selection rules. There are two ippools:</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
@@ -1086,7 +1086,7 @@ spec:
     matchExpressions:
     - {key: node-role.kubernetes.io/master, operator: Exists}
 </code></pre>
-<p>Obviously, ippool <code>master-v4-ippool</code> only works with the control plane nodes of Kubernetes. The Pod which scheduled to the master nodes can be correctly allocated IP from this ippool.</p>
+<p>Obviously, ippool <code>master-v4-ippool</code> only works with the control plane nodes of Kubernetes. The Pod which is scheduled to the master nodes can be correctly allocated IP from this ippool.</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: IPPool
 metadata:
@@ -1100,8 +1100,8 @@ spec:
     matchExpressions:
     - {key: node-role.kubernetes.io/master, operator: DoesNotExist}
 </code></pre>
-<p>ippool <code>worker-v4-ippool</code> is the opposite.</p>
-<p>Then, we run the following Deployment <code>example</code>, which has 5 replicas. We expect that the Pods controlled by <code>example</code> can be evenly scheduled to master nodes and worker nodes. Of course, maybe you should remove some related Taints.</p>
+<p>The ippool <code>worker-v4-ippool</code> is the opposite.</p>
+<p>Then, you can run the following Deployment <code>example</code>, which has 5 replicas. It is expected that the Pods controlled by <code>example</code> can be evenly scheduled to master nodes and worker nodes. Of course, maybe you should remove some related Taints.</p>
 <pre><code class="language-yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1128,7 +1128,7 @@ spec:
         name: example
         command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
 </code></pre>
-<p>Finally, we will find that Pods at different nodes use different ippools.</p>
+<p>Finally, you will find that Pods at different nodes use different ippools.</p>
 <pre><code class="language-bash">$ kubectl get swe -n default
 NAME                       INTERFACE   IPV4POOL           IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
 example-554cc84db6-kr8j5   eth0        master-v4-ippool   172.18.50.47/16                     control-plane   3s
@@ -1215,10 +1215,10 @@ example-554cc84db6-rjstk   eth0        master-v4-ippool   172.18.50.43/16       
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

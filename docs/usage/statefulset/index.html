@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -324,7 +324,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
     </li>
   
@@ -997,7 +997,7 @@
 <h1 id="statefulset">StatefulSet</h1>
 <h2 id="description">Description</h2>
 <p>The spiderpool supports IP assignment for StatefulSet.</p>
-<p>when the replica number of statefulset is not scaled up or down, all pods could hold same IP address even pod restarting or rebuilding happens.</p>
+<p>When the number of statefulset replicas is not scaled up or down, all pods could hold same IP address even when the pod is restarting or rebuilding.</p>
 <ul>
 <li>
 <p>Pod restarts</p>
@@ -1006,7 +1006,7 @@ and change the IPPool CR property ContainerID with the new pause container ID.</
 <p>In the meanwhile, spiderendpoint will still keep the previous IP but refresh the ContainerID property.</p>
 </li>
 <li>
-<p>Pod deleted and re-creates</p>
+<p>Pod is deleted and re-created</p>
 <p>After deleting a StatefulSet pod, kubernetes will re-create a pod with the same name.</p>
 <p>In this case, Spiderpool will also keep the previous IP and update the ContainerID.</p>
 </li>
@@ -1020,24 +1020,24 @@ and change the IPPool CR property ContainerID with the new pause container ID.</
 <p>When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the IP of scaled-down pod event they have the same name</p>
 </li>
 <li>
-<p>The <a href="./ippool-gc.md">RIPOGT feature</a> ( reclaim IP for the pod of graceful-period timeout ) does work for statefulset pod.</p>
+<p>The <a href="./ippool-gc.md">RIPOGT feature</a> (reclaim IP for the pod of graceful-period timeout) does work for statefulset pod.</p>
 </li>
 </ul>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-statefulset-support">Enable StatefulSet support</h3>
-<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer <a href="../install/">install</a> for details</p>
-<p>Check configmap <code>spiderpool-conf</code> property <code>enableStatefulSet</code> whether is already set to <code>true</code> or not.</p>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to <a href="../install/">install</a> for details.</p>
+<p>Check whether the property <code>enableStatefulSet</code> of the configmap <code>spiderpool-conf</code> is already set to <code>true</code> or not.</p>
 <pre><code class="language-shell">kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre>
-<p>If you want to set it <code>true</code>, just execute <code>helm upgrade --set feature.enableStatefulSet=true</code></p>
+<p>If you want to set it <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableStatefulSet=true -n kube-system</code>.</p>
 <h3 id="create-a-statefulset">Create a StatefulSet</h3>
-<p>install a StatefulSet example</p>
+<p>This is an example to install a StatefulSet.</p>
 <pre><code class="language-shell">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset/statefulset-demo.yaml
 </code></pre>
 <h3 id="validate-the-spiderpool-related-cr-data">Validate the Spiderpool related CR data</h3>
 <ol>
 <li>
-<p>Here's the created Pod, spiderippool, spiderendpoint CR information:</p>
+<p>Here's the created Pod, spiderippool, and spiderendpoint CR information:</p>
 <p>```text
 $ kubectl get po -o wide
 NAME                        READY   STATUS    RESTARTS      AGE   IP              NODE            NOMINATED NODE   READINESS GATES
@@ -1138,11 +1138,11 @@ history:
       ownerControllerType: StatefulSet
       ...
 ```</p>
-<p>And you can see, the re-create Pod still hold the previous IP, and spiderippool, spiderendpoint updated containerID property.</p>
+<p>And you can see, the re-created Pod still holds the previous IP, spiderippool, and spiderendpoint updated containerID property.</p>
 </li>
 </ol>
 <h3 id="clean-up">clean up</h3>
-<p>delete StatefulSet object <code>demo-sts</code>.</p>
+<p>Delete the StatefulSet object: <code>demo-sts</code>.</p>
 <pre><code class="language-text">$ kubectl delete sts demo-sts
 statefulset.apps &quot;demo-sts&quot; deleted
 
@@ -1155,7 +1155,7 @@ $ kubectl get sp default-v4-ippool -o yaml | grep demo-sts-0
 $ kubectl get se demo-sts-0 -o yaml
 Error from server (NotFound): spiderendpoints.spiderpool.spidernet.io &quot;demo-sts-0&quot; not found
 </code></pre>
-<p>The related data was cleaned up.</p>
+<p>The related data is cleaned up now.</p>
 
 
 
@@ -1234,10 +1234,10 @@ Error from server (NotFound): spiderendpoints.spiderpool.spidernet.io &quot;demo
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

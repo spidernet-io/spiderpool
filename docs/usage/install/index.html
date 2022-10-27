@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -274,29 +274,29 @@
       
         <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
-    install spiderpool
+    Install spiderpool
   </a>
   
-    <nav class="md-nav" aria-label="install spiderpool">
+    <nav class="md-nav" aria-label="Install spiderpool">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#install-by-self-signed-certificates" class="md-nav__link">
-    install By Self-signed Certificates
+    Install by self-signed certificates
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#install-by-auto-signed-certificates" class="md-nav__link">
-    install By auto-signed Certificates
+    Install by auto-signed certificates
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#install-by-cert-manager" class="md-nav__link">
-    install By Cert-manager
+    Install by cert-manager
   </a>
   
 </li>
@@ -308,7 +308,7 @@
       
         <li class="md-nav__item">
   <a href="#configure-cni" class="md-nav__link">
-    configure CNI
+    Configure CNI
   </a>
   
 </li>
@@ -399,7 +399,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        pod affinity of ippool
+        Pod affinity of ippool
       </a>
     </li>
   
@@ -892,29 +892,29 @@
       
         <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
-    install spiderpool
+    Install spiderpool
   </a>
   
-    <nav class="md-nav" aria-label="install spiderpool">
+    <nav class="md-nav" aria-label="Install spiderpool">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#install-by-self-signed-certificates" class="md-nav__link">
-    install By Self-signed Certificates
+    Install by self-signed certificates
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#install-by-auto-signed-certificates" class="md-nav__link">
-    install By auto-signed Certificates
+    Install by auto-signed certificates
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#install-by-cert-manager" class="md-nav__link">
-    install By Cert-manager
+    Install by cert-manager
   </a>
   
 </li>
@@ -926,7 +926,7 @@
       
         <li class="md-nav__item">
   <a href="#configure-cni" class="md-nav__link">
-    configure CNI
+    Configure CNI
   </a>
   
 </li>
@@ -955,12 +955,12 @@
 
 
 <h1 id="install">Install</h1>
-<p>the spiderpool needs install webhook of kube-apiserver, so it needs tls certificates.</p>
-<p>there are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificate.</p>
-<h2 id="install-spiderpool">install spiderpool</h2>
-<h3 id="install-by-self-signed-certificates">install By Self-signed Certificates</h3>
-<p>this way is simple, there is no any dependency. The project provides a script to generate tls certificate</p>
-<p>the following is a ipv4-only example</p>
+<p>The spiderpool needs to install webhook of kube-apiserver, so the TLS certificates are required.</p>
+<p>There are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificates.</p>
+<h2 id="install-spiderpool">Install spiderpool</h2>
+<h3 id="install-by-self-signed-certificates">Install by self-signed certificates</h3>
+<p>This way is simple without any dependency. The project provides a script to generate TLS certificates.</p>
+<p>The following is a IPv4-only example.</p>
 <pre><code class="language-shell">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 git clone https://github.com/spidernet-io/spiderpool.git
@@ -990,15 +990,14 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-
 </code></pre>
 <blockquote>
 <p>NOTICE:</p>
-<p>spiderpool-controller pod is running as hostnetwork mode, and it needs take host port,
-it is set with podAntiAffinity to make sure that a node will only run a spiderpool-controller pod.
-so, if you set the replicas number of spiderpool-controller to be bigger than 2, make sure there is enough nodes</p>
+<p>The spiderpool-controller pod is running in the hostnetwork mode, and it needs to take the host port.
+It is set with <code>podAntiAffinity</code> to make sure that a node will only run a spiderpool-controller pod.
+so, if you set the number of spiderpool-controller replicas to a value more than 2, make sure there are enough nodes.</p>
 </blockquote>
-<p>the following is a dual-stack example</p>
+<p>The following is a dual-stack example.</p>
 <pre><code class="language-shell">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 # generate the certificates
@@ -1037,8 +1036,8 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}} \
   --set clusterDefaultPool.ipv6Gateway=${Ipv6Gateway}
 </code></pre>
-<h3 id="install-by-auto-signed-certificates">install By auto-signed Certificates</h3>
-<p>The spiderpool automatically generate and maintain certificates</p>
+<h3 id="install-by-auto-signed-certificates">Install by auto-signed certificates</h3>
+<p>The spiderpool automatically generates and maintains certificates.</p>
 <pre><code class="language-shell">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 # for default ipv4 ippool
@@ -1055,15 +1054,14 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-
 </code></pre>
-<h3 id="install-by-cert-manager">install By Cert-manager</h3>
-<p>the way is not a common situation, because cert-manager needs CNI to create its pod,
-but as IPAM, spiderpool is still not installed to provide IP resource. It means cert-manager and spiderpool need each other to finish installation.</p>
-<p>Therefore, the way may implement on following situation:</p>
+<h3 id="install-by-cert-manager">Install by cert-manager</h3>
+<p>The way is not a common situation, because cert-manager requires CNI to create its pod,
+but as IPAM, spiderpool is still not installed to provide IP resources. It means cert-manager and spiderpool need each other to finish installation.</p>
+<p>Therefore, you can use this way on the following situations:</p>
 <ul>
 <li>after spiderpool is installed by self-signed certificates, and the cert-manager is deployed, then it could change to cert-manager scheme</li>
-<li>on cluster with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>, the cert-manager pods is deployed by other CNI, then spiderpool could be deployed by cert-manager</li>
+<li>on cluster with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>, the cert-manager pods are deployed by another CNI, then spiderpool could be deployed by cert-manager</li>
 </ul>
 <pre><code class="language-shell">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
@@ -1082,12 +1080,11 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
   --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
   --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-
 </code></pre>
-<h2 id="configure-cni">configure CNI</h2>
-<p>after installation of the spiderpool, please edit CNI configuration file under /etc/cni/net.d/ .</p>
-<p>The following is an example for macvlan CNI</p>
-<pre><code>{
+<h2 id="configure-cni">Configure CNI</h2>
+<p>After installation of the spiderpool, please edit the CNI configuration file under <code>/etc/cni/net.d/</code>.</p>
+<p>The following is an example for macvlan CNI.</p>
+<pre><code class="language-json">{
   &quot;cniVersion&quot;: &quot;0.3.1&quot;,
   &quot;type&quot;: &quot;macvlan&quot;,
   &quot;mode&quot;: &quot;bridge&quot;,
@@ -1098,7 +1095,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   }
 }
 </code></pre>
-<p>you cloud refer <a href="../../concepts/config/">config</a> for the detail of the IPAM configuration</p>
+<p>Refer to <a href="../../concepts/config/">config</a> for details about the IPAM configuration.</p>
 
 
 
@@ -1162,10 +1159,10 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
       
     
   </body>

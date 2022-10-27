@@ -9,6 +9,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -37,9 +38,15 @@ func newCRDManager() (ctrl.Manager, error) {
 			&corev1.Pod{},
 			&appsv1.Deployment{},
 			&appsv1.StatefulSet{},
+			&appsv1.ReplicaSet{},
+			&appsv1.DaemonSet{},
+			&batchv1.Job{},
+			&batchv1.CronJob{},
 			&spiderpoolv1.SpiderIPPool{},
 			&spiderpoolv1.SpiderEndpoint{},
-			&spiderpoolv1.SpiderReservedIP{}},
+			&spiderpoolv1.SpiderReservedIP{},
+			&spiderpoolv1.SpiderSubnet{},
+		},
 	})
 
 	if err != nil {

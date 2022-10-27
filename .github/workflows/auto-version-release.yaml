@@ -56,15 +56,13 @@ jobs:
           fi
           #no need to check chart version, which will auto update to /VERSION by CI
 
-      - name: create branch
-        run: |
-          BRANCH_NAME=release-${{ steps.get_ref.outputs.tag }}
-          git checkout -b $BRANCH_NAME
-          if git push origin ${BRANCH_NAME}:${BRANCH_NAME} -f ; then
-              echo "error, failed to push release branch"
-              exit 1
-          fi
-          exit 0
+      - name: Create branch
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: 'release-${{ steps.get_ref.outputs.tag }}'
+          sha: '${{ steps.get_ref.outputs.tag }}'
 
   build-release-image:
     needs: get-tag

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -21,7 +20,6 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -202,7 +200,7 @@ func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName
 	}
 }
 
-func WaitValidateSubnetFreeIPs(ctx context.Context, f *frame.Framework, subnetName string, freeIPsNum int64) error {
+func WaitValidateSubnetAllocatedIPCount(ctx context.Context, f *frame.Framework, subnetName string, allocatedIPCount int64) error {
 	if f == nil || subnetName == "" {
 		return frame.ErrWrongInput
 	}
@@ -213,10 +211,7 @@ func WaitValidateSubnetFreeIPs(ctx context.Context, f *frame.Framework, subnetNa
 			return frame.ErrTimeOut
 		default:
 			subnetObject := GetSubnetByName(f, subnetName)
-			if v := reflect.ValueOf(subnetObject.Status.AllocatedIPCount); v.IsNil() {
-				continue
-			}
-			if *subnetObject.Status.AllocatedIPCount == freeIPsNum {
+			if *subnetObject.Status.AllocatedIPCount == allocatedIPCount {
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)
@@ -233,14 +228,9 @@ func PatchSpiderSubnet(f *frame.Framework, desiredSubnet, originalSubnet *v1.Spi
 	return f.PatchResource(desiredSubnet, mergePatch, opts...)
 }
 
-func WaitIppoolNumberInSubnet(ctx context.Context, f *frame.Framework, label map[string]string, poolNums int) error {
-	if f == nil || label == nil || poolNums < 0 {
+func WaitIppoolNumberInSubnet(ctx context.Context, f *frame.Framework, subnetName string, poolNums int) error {
+	if f == nil || subnetName == "" || poolNums < 0 {
 		return frame.ErrWrongInput
-	}
-	opt := []client.ListOption{
-		client.MatchingLabelsSelector{
-			Selector: labels.SelectorFromSet(label),
-		},
 	}
 
 LOOP:
@@ -249,8 +239,12 @@ LOOP:
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			poolList := GetAllIppool(f, opt...)
+			poolList, err := GetIppoolsInSubnet(f, subnetName)
+			if err != nil {
+				return err
+			}
 			if len(poolList.Items) != poolNums {
+				time.Sleep(ForcedWaitingTime)
 				continue LOOP
 			}
 			return nil
@@ -290,4 +284,42 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 
 	ips := ip.IPsDiffSet(ips1, ips2)
 	return ips, nil
+}
+
+func ValidateSubnetAndPoolIpConsistency(ctx context.Context, f *frame.Framework, subnetName string) error {
+	if f == nil || subnetName == "" {
+		return frame.ErrWrongInput
+	}
+
+	subnetObject := GetSubnetByName(f, subnetName)
+	if subnetObject == nil {
+		return fmt.Errorf("failed to get subnet %v object", subnetName)
+	}
+
+	poolList, err := GetIppoolsInSubnet(f, subnetName)
+	if err != nil && len(poolList.Items) != 0 {
+		return err
+	}
+
+	for poolInSubnet, ipsInSubnet := range subnetObject.Status.ControlledIPPools {
+		for _, pool := range poolList.Items {
+			if pool.Name == poolInSubnet {
+				ips1, err := ip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
+				if err != nil {
+					return err
+				}
+
+				ips2, err := ip.ParseIPRanges(*subnetObject.Spec.IPVersion, ipsInSubnet.IPs)
+				if err != nil {
+					return err
+				}
+
+				diffIps := ip.IPsDiffSet(ips1, ips2)
+				if diffIps != nil {
+					return fmt.Errorf("inconsistent ip records in subnet %v and pool %v ", subnetName, pool.Name)
+				}
+			}
+		}
+	}
+	return nil
 }

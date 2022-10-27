@@ -56,17 +56,13 @@ jobs:
           fi
           #no need to check chart version, which will auto update to /VERSION by CI
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4.2.0
+      - name: Create branch
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          title: "release branch ${{ steps.get_ref.outputs.tag }}"
-          commit-message: "release branch ${{ steps.get_ref.outputs.tag }}"
-          branch: release-${{ steps.get_ref.outputs.tag }}
-          base: ${{ steps.get_ref.outputs.tag }}
-          signoff: true
-          token: ${{ secrets.WELAN_PAT }}
-          labels: ${{ env.PR_LABEL }}
-          reviewers: ${{ env.PR_REVIWER }}
+          branch: 'release-${{ steps.get_ref.outputs.tag }}'
+          sha: '${{ github.sha }}'
 
   build-release-image:
     needs: get-tag

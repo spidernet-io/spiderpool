@@ -89,12 +89,16 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 	return subnetList, nil
 }
 
-func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetMgrName string, ipNum int, excludeIPRanges []string) ([]string, error) {
+func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetName string, ipNum int, excludeIPRanges []string) ([]string, error) {
 	var allocateIPRange []string
 
-	subnet, err := sm.GetSubnetByName(ctx, subnetMgrName)
+	subnet, err := sm.GetSubnetByName(ctx, subnetName)
 	if nil != err {
 		return nil, err
+	}
+
+	if subnet.DeletionTimestamp != nil {
+		return nil, fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't generate IPs from it", constant.ErrWrongInput, subnet.Name)
 	}
 
 	var ipVersion types.IPVersion
@@ -153,7 +157,7 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetMgrNam
 		return nil, err
 	}
 
-	logger.Sugar().Infof("generated '%d' IPs '%v' from SpiderSubnet '%s'", ipNum, allocateIPRange, subnetMgrName)
+	logger.Sugar().Infof("generated '%d' IPs '%v' from SpiderSubnet '%s'", ipNum, allocateIPRange, subnet.Name)
 
 	return allocateIPRange, nil
 }
@@ -178,6 +182,10 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 			logger.Error(err.Error())
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 			continue
+		}
+
+		if subnet.DeletionTimestamp != nil {
+			return fmt.Errorf("SpiderSubnet '%s' is terminating, we can't create a corresponding IPPool", subnet.Name)
 		}
 
 		poolLabels := map[string]string{
@@ -243,7 +251,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 }
 
 // CheckScaleIPPool will fetch some IPs from the specified subnet manager to expand the pool IPs
-func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetMgrName string, ipNum int) error {
+func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetName string, ipNum int) error {
 	if pool == nil {
 		return fmt.Errorf("IPPool must be specified")
 	}
@@ -258,7 +266,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 	} else {
 		// ignore it if they are equal
 		if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
-			logger.Sugar().Debugf("no need to scale subnet '%s' IPPool '%s'", subnetMgrName, pool.Name)
+			logger.Sugar().Debugf("no need to scale subnet '%s' IPPool '%s'", subnetName, pool.Name)
 			return nil
 		}
 

@@ -35,7 +35,7 @@ jobs:
             echo ::set-output name=tag::${{ github.event.inputs.tag }}
           elif ${{ github.event_name == 'push' }} ; then
             echo "call by push tag"
-            echo ::set-output name=tag::${GITHUB_REF##*/}
+            echo ::set-output name=tag::${{ github.sha }}
           else
             echo "unexpected event: ${{ github.event_name }}"
             exit 1

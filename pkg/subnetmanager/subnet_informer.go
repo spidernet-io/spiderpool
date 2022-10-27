@@ -344,6 +344,11 @@ func (sm *subnetManager) notifySubnetIPPool(obj interface{}) {
 
 	subnet := obj.(*spiderpoolv1.SpiderSubnet)
 
+	if subnet.DeletionTimestamp != nil {
+		informerLogger.Sugar().Warnf("SpiderSubnet '%s' is terminating, no need to scale its corresponding IPPools!", subnet.Name)
+		return
+	}
+
 	matchLabel := client.MatchingLabels{
 		constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
 	}
@@ -359,6 +364,11 @@ func (sm *subnetManager) notifySubnetIPPool(obj interface{}) {
 
 	maxQueueLength := sm.ipPoolManager.GetAutoPoolMaxWorkQueueLength()
 	for _, pool := range autoPoolList.Items {
+		if pool.DeletionTimestamp != nil {
+			informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
+			continue
+		}
+
 		if ippoolmanager.ShouldScaleIPPool(pool) {
 			if sm.ipPoolManager.GetAutoPoolRateLimitQueue().Len() >= maxQueueLength {
 				informerLogger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)

@@ -218,7 +218,7 @@ func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, p
 		if i != 0 {
 			pool, err = c.poolMgr.GetIPPoolByName(ctx, pool.Name)
 			if nil != err {
-				return fmt.Errorf("failed to get IPPool '%s', error: %v", pool.Name, err)
+				return err
 			}
 		}
 
@@ -254,6 +254,11 @@ func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, p
 // enqueueAutoIPPool will insert auto-created IPPool name into workQueue
 func (c *poolInformerController) enqueueAutoIPPool(obj interface{}) {
 	pool := obj.(*spiderpoolv1.SpiderIPPool)
+
+	if pool.DeletionTimestamp != nil {
+		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
+		return
+	}
 
 	maxQueueLength := c.poolMgr.GetAutoPoolMaxWorkQueueLength()
 	// only add some pools that the current IP number is not equal with the desired IP number
@@ -361,6 +366,11 @@ func (c *poolInformerController) processNextWorkItem() bool {
 }
 
 func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+	if pool.DeletionTimestamp != nil {
+		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
+		return nil
+	}
+
 	poolLabels := pool.GetLabels()
 	subnetName, ok := poolLabels[constant.LabelIPPoolOwnerSpiderSubnet]
 	if !ok {
@@ -371,6 +381,8 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 		informerLogger.Sugar().Debugf("maybe IPPool '%s' is just created for a while, wait for updating status DesiredIPCount", pool.Name)
 		return nil
 	}
+
+	pool = pool.DeepCopy()
 
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if nil != err {
@@ -385,8 +397,6 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 		return nil
 	}
 	informerLogger.Sugar().Debugf("IPPool '%s' need to change its IP number from '%d' to desired number '%d'", pool.Name, totalIPCount, desiredIPNum)
-
-	pool = pool.DeepCopy()
 
 	if desiredIPNum > totalIPCount {
 		// expand

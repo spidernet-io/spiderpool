@@ -175,6 +175,7 @@ func DaemonMain() {
 	controllerContext.IsStartupProbe.Store(true)
 
 	// the webhook must be ready or we can't work
+	controllerContext.webhookClient = newWebhookHealthCheckClient()
 	checkWebhookReady()
 
 	// set up informers
@@ -421,7 +422,7 @@ func checkWebhookReady() {
 			logger.Fatal("out of the max wait duration for webhook ready in process starting phase")
 		}
 
-		err := WebhookHealthyCheck(controllerContext.Cfg.WebhookPort)
+		err := WebhookHealthyCheck(controllerContext.webhookClient, controllerContext.Cfg.WebhookPort)
 		if nil != err {
 			logger.Error(err.Error())
 

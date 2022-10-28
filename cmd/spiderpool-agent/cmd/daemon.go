@@ -206,6 +206,13 @@ func DaemonMain() {
 	logger.Info("Begin to initialize spiderpool-agent metrics http server")
 	initAgentMetricsServer(agentContext.InnerCtx)
 
+	// new unix client
+	spiderpoolAgentAPI, err := NewAgentOpenAPIUnixClient(agentContext.Cfg.IpamUnixSocketPath)
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	agentContext.unixClient = spiderpoolAgentAPI
+
 	// TODO (Icarus9913): improve k8s StartupProbe
 	logger.Info("Set spiderpool-agent Startup probe ready")
 	agentContext.IsStartupProbe.Store(true)

@@ -22,3 +22,6 @@ MD014: false
 
 # Inline HTML
 MD033: false
+
+# no-trailing-spaces Trailing spaces
+MD009: false

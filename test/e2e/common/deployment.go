@@ -5,12 +5,16 @@ package common
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -152,4 +156,30 @@ func CreateDeployUnitlReadyCheckInIppool(frame *e2e.Framework, depName, namespac
 	ok, _, _, err := CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(ok).To(BeTrue())
+}
+
+func BatchCreateDeployment(frame *e2e.Framework, expectedNum, replicas int, namespace string, annotationMap, nodeLanbel map[string]string) []string {
+	var deployNameList []string
+
+	lock := lock.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(expectedNum)
+	for i := 1; i <= expectedNum; i++ {
+		var deployObject *appsv1.Deployment
+		j := strconv.Itoa(i)
+		go func() {
+			defer GinkgoRecover()
+			defer wg.Done()
+			deployName := "deploy-" + j + "-" + tools.RandomName()
+			lock.Lock()
+			deployNameList = append(deployNameList, deployName)
+			lock.Unlock()
+			deployObject = GenerateExampleDeploymentYaml(deployName, namespace, int32(replicas))
+			deployObject.Spec.Template.Spec.NodeSelector = nodeLanbel
+			deployObject.Spec.Template.Annotations = annotationMap
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+		}()
+	}
+	wg.Wait()
+	return deployNameList
 }

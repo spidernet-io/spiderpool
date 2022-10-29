@@ -140,6 +140,15 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get spiderreservedips -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
+    echo "=============== spiderpool crd spidersubnet ============== "
+    echo "-------- kubectl get spidersubnet -o wide "
+    kubectl get spidersubnet -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "-------- kubectl get spidersubnet -o json "
+    kubectl get spidersubnet -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
     echo "=============== IPAM log  ============== "
     KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
     KIND_NODES=$(  kind get  nodes --name ${KIND_CLUSTER_NAME} )
@@ -148,8 +157,6 @@ elif [ "$TYPE"x == "detail"x ] ; then
         echo "--------- IPAM logs from node ${NODE}"
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
     done
-
-
 
 elif [ "$TYPE"x == "datarace"x ] ; then
     LOG_MARK="WARNING: DATA RACE"

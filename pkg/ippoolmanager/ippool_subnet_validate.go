@@ -11,11 +11,13 @@ import (
 	"reflect"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -162,6 +164,8 @@ func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, op Operation, s
 		defer im.freeIPsLimiter.ReleaseTicket(ctx, subnet.Name)
 	}
 
+	var eventReason, eventAction string
+
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		var err error
@@ -175,11 +179,15 @@ func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, op Operation, s
 		needToUpdate := true
 		switch op {
 		case creating, updating:
-			if err := updateControlledIPPoolIPs(subnet, ipPool); err != nil {
+			eventReason = constant.EventReasonScaleIPPool
+
+			if eventAction, err = updateControlledIPPoolIPs(subnet, ipPool); err != nil {
 				return field.InternalError(controlledIPPoolsField, err)
 			}
 		case deleting:
-			needToUpdate, err = removeControlledIPPoolIPs(subnet, ipPool)
+			eventReason = constant.EventReasonDeleteIPPool
+
+			needToUpdate, eventAction, err = removeControlledIPPoolIPs(subnet, ipPool)
 			if err != nil {
 				return field.InternalError(controlledIPPoolsField, err)
 			}
@@ -194,6 +202,7 @@ func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, op Operation, s
 				return field.InternalError(controlledIPPoolsField, err)
 			}
 			if i == im.config.MaxConflictRetries {
+				event.EventRecorder.Event(subnet, corev1.EventTypeWarning, eventReason, fmt.Sprintf("%s unsuccessfully", eventAction))
 				return field.InternalError(
 					controlledIPPoolsField,
 					fmt.Errorf("%w(<=%d) to update the IP addresses of the controlled IPPool of the Subnet %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
@@ -202,25 +211,26 @@ func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, op Operation, s
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
 		}
+		event.EventRecorder.Event(subnet, corev1.EventTypeNormal, eventReason, fmt.Sprintf("%s successfully", eventAction))
 		break
 	}
 
 	return nil
 }
 
-func updateControlledIPPoolIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) error {
+func updateControlledIPPoolIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) (eventAction string, err error) {
 	poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return err
+		return
 	}
 	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
-		return err
+		return
 	}
 	validIPs := spiderpoolip.IPsIntersectionSet(poolTotalIPs, subnetTotalIPs)
 	ranges, err := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, validIPs)
 	if err != nil {
-		return err
+		return
 	}
 
 	var oldPoolTotalIPs []net.IP
@@ -229,7 +239,7 @@ func updateControlledIPPoolIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spider
 	} else if pool, ok := subnet.Status.ControlledIPPools[ipPool.Name]; ok {
 		oldPoolTotalIPs, err = spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, pool.IPs)
 		if err != nil {
-			return err
+			return
 		}
 	}
 	subnet.Status.ControlledIPPools[ipPool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
@@ -240,24 +250,39 @@ func updateControlledIPPoolIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spider
 	delta := int64(len(poolTotalIPs) - len(oldPoolTotalIPs))
 	*subnet.Status.AllocatedIPCount += delta
 
-	return nil
+	if delta > 0 {
+		eventAction = fmt.Sprintf("IPPool '%s' requests to generate '%d' IPs", ipPool.Name, delta)
+	} else if delta < 0 {
+		eventAction = fmt.Sprintf("IPPool '%s' requests to return '%d' IPs", ipPool.Name, -1*delta)
+	} else {
+		if len(poolTotalIPs) == 0 {
+			eventAction = fmt.Sprintf("Creating an empty IPPool '%s'", ipPool.Name)
+		} else {
+			// TODO(Icarus9913): refactor this case description
+			// rare case: update IPPool totalIPs, its count is same with the old totalIP counts
+			eventAction = fmt.Sprintf("update IPPool '%s' totalIPs from '%s' to '%s'", ipPool.Name, oldPoolTotalIPs, ranges)
+		}
+	}
+	return
 }
 
-func removeControlledIPPoolIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) (bool, error) {
+func removeControlledIPPoolIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) (needToUpdate bool, eventAction string, err error) {
 	if subnet.Status.ControlledIPPools == nil {
-		return false, nil
+		return
 	}
 
 	pool, ok := subnet.Status.ControlledIPPools[ipPool.Name]
 	if !ok {
-		return false, nil
+		return
 	}
 	poolTotalIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, pool.IPs)
 	if err != nil {
-		return false, err
+		return
 	}
 	delete(subnet.Status.ControlledIPPools, ipPool.Name)
 	*subnet.Status.AllocatedIPCount -= int64(len(poolTotalIPs))
 
-	return true, nil
+	eventAction = fmt.Sprintf("IPPool '%s' requests to return '%d' IPs", ipPool.Name, len(poolTotalIPs))
+
+	return true, eventAction, nil
 }

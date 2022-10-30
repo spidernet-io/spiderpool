@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
 	"go.uber.org/zap"
-	"runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"

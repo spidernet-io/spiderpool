@@ -19,25 +19,27 @@ func initControllerMetricsServer(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
-	metricsSrv := &http.Server{
-		Addr:    fmt.Sprintf(":%s", controllerContext.Cfg.MetricHttpPort),
-		Handler: metricController,
-	}
-
-	go func() {
-		if err := metricsSrv.ListenAndServe(); nil != err {
-			if err == http.ErrServerClosed {
-				return
-			}
-
-			logger.Fatal(err.Error())
-		}
-	}()
-
-	controllerContext.MetricsHttpServer = metricsSrv
-
 	err = metric.InitSpiderpoolControllerMetrics(ctx)
 	if nil != err {
 		logger.Fatal(err.Error())
+	}
+
+	if controllerContext.Cfg.EnabledMetric {
+		metricsSrv := &http.Server{
+			Addr:    fmt.Sprintf(":%s", controllerContext.Cfg.MetricHttpPort),
+			Handler: metricController,
+		}
+
+		go func() {
+			if err := metricsSrv.ListenAndServe(); nil != err {
+				if err == http.ErrServerClosed {
+					return
+				}
+
+				logger.Fatal(err.Error())
+			}
+		}()
+
+		controllerContext.MetricsHttpServer = metricsSrv
 	}
 }

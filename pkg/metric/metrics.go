@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
@@ -104,6 +105,16 @@ func NewMetricFloat64Gauge(metricName string, description string) (asyncfloat64.
 	}
 
 	return meter.AsyncFloat64().Gauge(metricName, instrument.WithDescription(description))
+}
+
+// NewMetricInt64Gauge will create otel Int64Gauge metric.
+// The first param metricName is required and the second param is optional.
+func NewMetricInt64Gauge(metricName string, description string) (asyncint64.Gauge, error) {
+	if len(metricName) == 0 {
+		return nil, fmt.Errorf("failed to create metric Float64Guage, metric name is asked to be set")
+	}
+
+	return meter.AsyncInt64().Gauge(metricName, instrument.WithDescription(description))
 }
 
 var _ TimeRecorder = &timeRecorder{}

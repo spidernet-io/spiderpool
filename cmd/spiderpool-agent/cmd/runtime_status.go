@@ -36,13 +36,7 @@ type _httpGetAgentReadiness struct {
 
 // Handle handles GET requests for k8s readiness probe.
 func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
-	unixClient, err := NewAgentOpenAPIUnixClient(g.Cfg.IpamUnixSocketPath)
-	if nil != err {
-		logger.Error(err.Error())
-		return runtime.NewGetRuntimeReadinessInternalServerError()
-	}
-
-	_, err = unixClient.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
+	_, err := g.unixClient.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
 		logger.Error(err.Error())
 		return runtime.NewGetRuntimeReadinessInternalServerError()
@@ -57,13 +51,7 @@ type _httpGetAgentLiveness struct {
 
 // Handle handles GET requests for k8s liveness probe.
 func (g *_httpGetAgentLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
-	unixClient, err := NewAgentOpenAPIUnixClient(g.Cfg.IpamUnixSocketPath)
-	if nil != err {
-		logger.Error(err.Error())
-		return runtime.NewGetRuntimeLivenessInternalServerError()
-	}
-
-	_, err = unixClient.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
+	_, err := g.unixClient.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
 		logger.Error(err.Error())
 		return runtime.NewGetRuntimeLivenessInternalServerError()

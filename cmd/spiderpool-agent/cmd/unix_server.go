@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	runtime_client "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/jessevdk/go-flags"
+
 	agentOpenAPIClient "github.com/spidernet-io/spiderpool/api/v1/agent/client"
 	agentOpenAPIServer "github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	agentOpenAPIRestapi "github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi"
@@ -57,13 +59,16 @@ func NewAgentOpenAPIUnixClient(unixSocketPath string) (*agentOpenAPIClient.Spide
 	if unixSocketPath == "" {
 		return nil, fmt.Errorf("unix socket path must be specified")
 	}
-	transport := &http.Transport{
-		DisableCompression: true,
-		Dial: func(_, _ string) (net.Conn, error) {
-			return net.Dial("unix", unixSocketPath)
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			DisableCompression: true,
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return net.Dial("unix", unixSocketPath)
+			},
+			DisableKeepAlives: true,
 		},
 	}
-	httpClient := &http.Client{Transport: transport}
 	clientTrans := runtime_client.NewWithClient(unixSocketPath, agentOpenAPIClient.DefaultBasePath,
 		agentOpenAPIClient.DefaultSchemes, httpClient)
 	client := agentOpenAPIClient.New(clientTrans, strfmt.Default)

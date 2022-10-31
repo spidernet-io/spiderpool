@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"path"
 	"strconv"
-	"time"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -60,17 +58,17 @@ func newCRDManager() (ctrl.Manager, error) {
 	}
 
 	// register a http handler for webhook health check
-	mgr.GetWebhookServer().Register(webhookMutateRoute, &_webhookHealthyCheck{})
+	mgr.GetWebhookServer().Register(webhookMutateRoute, &_webhookHealthCheck{})
 
 	return mgr, nil
 }
 
 const webhookMutateRoute = "/webhook-health-check"
 
-type _webhookHealthyCheck struct{}
+type _webhookHealthCheck struct{}
 
 // ServeHTTP only serves for SpiderIPPool webhook health check, it will return http status code 200 for GET request
-func (*_webhookHealthyCheck) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (*_webhookHealthCheck) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method == http.MethodGet {
 		//logger.Debug("SpiderIPPool webhook health check ready")
 		writer.WriteHeader(http.StatusOK)
@@ -79,17 +77,8 @@ func (*_webhookHealthyCheck) ServeHTTP(writer http.ResponseWriter, request *http
 
 // WebhookHealthyCheck servers for spiderpool controller readiness and liveness probe.
 // This is a Layer7 check.
-func WebhookHealthyCheck(webhookPort string) error {
+func WebhookHealthyCheck(httpClient *http.Client, webhookPort string) error {
 	webhookMutateURL := fmt.Sprintf("https://localhost:%s%s", webhookPort, webhookMutateRoute)
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-		Timeout: 5 * time.Second,
-	}
 
 	req, err := http.NewRequest(http.MethodGet, webhookMutateURL, nil)
 	if nil != err {
@@ -100,12 +89,27 @@ func WebhookHealthyCheck(webhookPort string) error {
 	if nil != err {
 		return fmt.Errorf("webhook server is not reachable: %w", err)
 	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("webhook health check status code: %d", resp.StatusCode)
 	}
 
-	_ = resp.Body.Close()
-
 	return nil
+}
+
+// newWebhookHealthCheckClient creates one http client which serves for webhook health check
+func newWebhookHealthCheckClient() *http.Client {
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			DisableKeepAlives: true,
+		},
+	}
+
+	return httpClient
 }

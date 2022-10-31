@@ -160,6 +160,9 @@ type ControllerContext struct {
 	HttpServer        *server.Server
 	MetricsHttpServer *http.Server
 
+	// webhook http client
+	webhookClient *http.Client
+
 	// probe
 	IsStartupProbe atomic.Bool
 }

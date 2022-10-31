@@ -16,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -129,6 +130,9 @@ type AgentContext struct {
 	HttpServer        *server.Server
 	UnixServer        *server.Server
 	MetricsHttpServer *http.Server
+
+	// client
+	unixClient *client.SpiderpoolAgentAPI
 
 	// probe
 	IsStartupProbe atomic.Bool

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 
@@ -47,6 +48,8 @@ const (
 	// spiderpool controller IP GC metrics name
 	ip_gc_total_counts   = "ip_gc_total_counts"
 	ip_gc_failure_counts = "ip_gc_failure_counts"
+
+	subne_ippool_counts = "subne_ippool_counts"
 )
 
 var (
@@ -80,13 +83,45 @@ var (
 	// spiderpool controller IP GC metrics
 	IPGCTotalCounts   syncint64.Counter
 	IPGCFailureCounts syncint64.Counter
+
+	SubnetPoolCounts asyncInt64Gauge
 )
+
+type gaugeCommon struct {
+	observerLock          lock.RWMutex
+	observerAttrsToReport *[]attribute.KeyValue
+}
 
 type asyncFloat64Gauge struct {
 	gaugeMetric           asyncfloat64.Gauge
-	observerLock          lock.RWMutex
 	observerValueToReport *float64
-	observerAttrsToReport *[]attribute.KeyValue
+	gaugeCommon
+}
+
+func (ai *asyncFloat64Gauge) Record(value float64, attrs ...attribute.KeyValue) {
+	ai.observerLock.Lock()
+	*ai.observerValueToReport = value
+	if len(attrs) != 0 {
+		*ai.observerAttrsToReport = attrs
+	}
+
+	ai.observerLock.Unlock()
+}
+
+type asyncInt64Gauge struct {
+	gaugeMetric           asyncint64.Gauge
+	observerValueToReport *int64
+	gaugeCommon
+}
+
+func (ai *asyncInt64Gauge) Record(value int64, attrs ...attribute.KeyValue) {
+	ai.observerLock.Lock()
+	*ai.observerValueToReport = value
+	if len(attrs) != 0 {
+		*ai.observerAttrsToReport = attrs
+	}
+
+	ai.observerLock.Unlock()
 }
 
 // InitSpiderpoolAgentMetrics serves for spiderpool agent metrics initialization
@@ -413,15 +448,33 @@ func initSpiderpoolAgentDeallocationMetrics(ctx context.Context) error {
 func InitSpiderpoolControllerMetrics(ctx context.Context) error {
 	ipGCTotalCounts, err := NewMetricInt64Counter(ip_gc_total_counts, "spiderpool controller ip gc total counts")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ip_gc_total_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ip_gc_total_counts, err)
 	}
 	IPGCTotalCounts = ipGCTotalCounts
 
 	ipGCFailureCounts, err := NewMetricInt64Counter(ip_gc_failure_counts, "spiderpool controller ip gc total counts")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ip_gc_failure_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ip_gc_failure_counts, err)
 	}
 	IPGCFailureCounts = ipGCFailureCounts
+
+	subnetPoolCounts, err := NewMetricInt64Gauge(subne_ippool_counts, "spider subnet corresponding ippools counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", subne_ippool_counts, err)
+	}
+	SubnetPoolCounts.gaugeMetric = subnetPoolCounts
+	SubnetPoolCounts.observerValueToReport = new(int64)
+	SubnetPoolCounts.observerAttrsToReport = new([]attribute.KeyValue)
+	err = meter.RegisterCallback([]instrument.Asynchronous{SubnetPoolCounts.gaugeMetric}, func(ctx context.Context) {
+		SubnetPoolCounts.observerLock.RLock()
+		value := *SubnetPoolCounts.observerValueToReport
+		attrs := *SubnetPoolCounts.observerAttrsToReport
+		SubnetPoolCounts.observerLock.RUnlock()
+		SubnetPoolCounts.gaugeMetric.Observe(ctx, value, attrs...)
+	})
+	if nil != err {
+		return fmt.Errorf("failed to register callback for spiderpool controller metric '%s', error: %v", subne_ippool_counts, err)
+	}
 
 	IPGCTotalCounts.Add(ctx, 0)
 	IPGCFailureCounts.Add(ctx, 0)

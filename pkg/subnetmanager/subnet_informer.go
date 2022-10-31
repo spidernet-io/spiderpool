@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,6 +29,7 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 var informerLogger *zap.Logger
@@ -186,6 +188,7 @@ OUTER:
 			return err
 		}
 
+		var controlledPoolCounts int64
 		for _, pool := range ipPoolList.Items {
 			if pool.Spec.Subnet != subnet.Spec.Subnet {
 				continue
@@ -219,7 +222,11 @@ OUTER:
 					continue OUTER
 				}
 			}
+
+			controlledPoolCounts++
 		}
+
+		metric.SubnetPoolCounts.Record(controlledPoolCounts, attribute.String(constant.SpiderSubnetKind, subnet.Name))
 		break
 	}
 

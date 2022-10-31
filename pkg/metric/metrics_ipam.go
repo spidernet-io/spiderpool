@@ -33,9 +33,7 @@ func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context
 
 	go func() {
 		// latest allocation duration
-		ipamAllocationLatestDurationSeconds.observerLock.Lock()
-		*ipamAllocationLatestDurationSeconds.observerValueToReport = allocationDuration
-		ipamAllocationLatestDurationSeconds.observerLock.Unlock()
+		ipamAllocationLatestDurationSeconds.Record(allocationDuration)
 
 		// allocation duration histogram
 		ipamAllocationDurationSeconds.Record(ctx, allocationDuration)
@@ -45,24 +43,18 @@ func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context
 		// IPAM average allocation duration
 		adc.allocationAvgDuration = (adc.allocationAvgDuration*float64(adc.allocationCounts) + allocationDuration) / float64(adc.allocationCounts+1)
 		adc.allocationCounts++
-		ipamAllocationAverageDurationSeconds.observerLock.Lock()
-		*ipamAllocationAverageDurationSeconds.observerValueToReport = adc.allocationAvgDuration
-		ipamAllocationAverageDurationSeconds.observerLock.Unlock()
+		ipamAllocationAverageDurationSeconds.Record(adc.allocationAvgDuration)
 
 		// IPAM maximum allocation duration
 		if allocationDuration > adc.maxAllocationDuration {
 			adc.maxAllocationDuration = allocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Lock()
-			*ipamAllocationMaxDurationSeconds.observerValueToReport = adc.maxAllocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Unlock()
+			ipamAllocationMaxDurationSeconds.Record(adc.maxAllocationDuration)
 		}
 
 		// IPAM minimum allocation duration
 		if adc.allocationCounts == 1 || allocationDuration < adc.minAllocationDuration {
 			adc.minAllocationDuration = allocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Lock()
-			*ipamAllocationMinDurationSeconds.observerValueToReport = adc.minAllocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Unlock()
+			ipamAllocationMinDurationSeconds.Record(adc.minAllocationDuration)
 		}
 
 		adc.cacheLock.Unlock()
@@ -87,9 +79,7 @@ func (ddc *deallocationDurationConstruct) RecordIPAMDeallocationDuration(ctx con
 
 	go func() {
 		// latest deallocation duration
-		ipamAllocationLatestDurationSeconds.observerLock.Lock()
-		*ipamAllocationLatestDurationSeconds.observerValueToReport = deallocationDuration
-		ipamAllocationLatestDurationSeconds.observerLock.Unlock()
+		ipamDeallocationLatestDurationSeconds.Record(deallocationDuration)
 
 		// deallocation duration histogram
 		ipamAllocationDurationSeconds.Record(ctx, deallocationDuration)
@@ -99,24 +89,18 @@ func (ddc *deallocationDurationConstruct) RecordIPAMDeallocationDuration(ctx con
 		// IPAM average deallocation duration
 		ddc.deallocationAvgDuration = (ddc.deallocationAvgDuration*float64(ddc.deallocationCounts) + deallocationDuration) / float64(ddc.deallocationCounts+1)
 		ddc.deallocationCounts++
-		ipamAllocationAverageDurationSeconds.observerLock.Lock()
-		*ipamAllocationAverageDurationSeconds.observerValueToReport = ddc.deallocationAvgDuration
-		ipamAllocationAverageDurationSeconds.observerLock.Unlock()
+		ipamDeallocationAverageDurationSeconds.Record(ddc.deallocationAvgDuration)
 
 		// IPAM maximum deallocation duration
 		if deallocationDuration > ddc.maxDeallocationDuration {
 			ddc.maxDeallocationDuration = deallocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Lock()
-			*ipamAllocationMaxDurationSeconds.observerValueToReport = ddc.maxDeallocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Unlock()
+			ipamDeallocationMaxDurationSeconds.Record(ddc.maxDeallocationDuration)
 		}
 
 		// IPAM minimum deallocation duration
 		if ddc.deallocationCounts == 1 || deallocationDuration < ddc.minDeallocationDuration {
 			ddc.minDeallocationDuration = deallocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Lock()
-			*ipamAllocationMinDurationSeconds.observerValueToReport = ddc.minDeallocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Unlock()
+			ipamDeallocationMinDurationSeconds.Record(ddc.minDeallocationDuration)
 		}
 
 		ddc.cacheLock.Unlock()

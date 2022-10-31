@@ -98,3 +98,9 @@ const (
 	True  = "true"
 	False = "false"
 )
+
+const (
+	EventReasonScaleIPPool  = "ScaleIPPool"
+	EventReasonDeleteIPPool = "DeleteIPPool"
+	EventReasonResyncSubnet = "ResyncSubnet"
+)

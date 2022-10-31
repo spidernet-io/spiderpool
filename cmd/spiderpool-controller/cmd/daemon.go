@@ -121,19 +121,15 @@ func DaemonMain() {
 	}
 	controllerContext.CRDManager = mgr
 
-	logger.Info("Begin to initialize K8s event recorder")
-	recorder, err := event.NewEventRecorder(constant.Spiderpool, mgr.GetConfig(), mgr.GetScheme())
-	if nil != err {
-		logger.Fatal(err.Error())
-	}
-	controllerContext.Recorder = recorder
-
 	logger.Info("Begin to initialize k8s Clientset")
 	clientSet, err := initK8sClientSet()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.ClientSet = clientSet
+
+	logger.Info("Begin to initialize K8s event recorder")
+	event.InitEventRecorder(controllerContext.ClientSet, mgr.GetScheme(), constant.Spiderpool)
 
 	// init managers...
 	initControllerServiceManagers(controllerContext.InnerCtx)

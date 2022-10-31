@@ -4,32 +4,35 @@
 package event
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes"
+	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func NewEventRecorder(sourceComponent string, clientConfig *rest.Config, scheme *runtime.Scheme) (record.EventRecorder, error) {
-	eventClient, err := v1core.NewForConfig(ctrl.GetConfigOrDie())
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize Spiderpool event client: %v", err)
-	}
+// EventRecorder is Singleton
+var EventRecorder record.EventRecorder
 
+const FakeRecorderBufferSize = 1024
+
+// init will give the EventRecorder with default fake Recorder to avoid panic if someone forget to initialize it
+func init() {
+	EventRecorder = record.NewFakeRecorder(FakeRecorderBufferSize)
+}
+
+// InitEventRecorder will initialize the Singleton EventRecorder
+func InitEventRecorder(client *kubernetes.Clientset, scheme *runtime.Scheme, sourceComponent string) {
 	eventBroadcaster := record.NewBroadcaster()
-	logger := logutils.Logger.Named(sourceComponent)
-	eventBroadcaster.StartLogging(logger.Sugar().Infof)
-	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
-		Interface: eventClient.Events(""),
+
+	eventBroadcaster.StartLogging(logutils.Logger.Named(sourceComponent).Sugar().Infof)
+	eventBroadcaster.StartRecordingToSink(&typedv1.EventSinkImpl{
+		Interface: typedv1.New(client.CoreV1().RESTClient()).Events(""),
 	})
 
-	return eventBroadcaster.NewRecorder(scheme, corev1.EventSource{
+	EventRecorder = eventBroadcaster.NewRecorder(scheme, corev1.EventSource{
 		Component: sourceComponent,
-	}), nil
+	})
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -226,10 +228,12 @@ OUTER:
 
 func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	rand.Seed(time.Now().UnixNano())
+
+	deepCopySubnet := subnet.DeepCopy()
 	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		var err error
 		if i != 0 {
-			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
+			deepCopySubnet, err = sm.GetSubnetByName(ctx, deepCopySubnet.Name)
 			if err != nil {
 				return err
 			}
@@ -237,7 +241,7 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 
 		selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
+				constant.LabelIPPoolOwnerSpiderSubnet: deepCopySubnet.Name,
 			},
 		})
 		if err != nil {
@@ -247,7 +251,7 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 		if err != nil {
 			return err
 		}
-		subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+		subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*deepCopySubnet.Spec.IPVersion, deepCopySubnet.Spec.IPs, deepCopySubnet.Spec.ExcludeIPs)
 		if err != nil {
 			return err
 		}
@@ -256,8 +260,8 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 		var tmpCount int
 		controlledIPPools := spiderpoolv1.PoolIPPreAllocations{}
 		for _, pool := range ipPoolList.Items {
-			if pool.Spec.Subnet == subnet.Spec.Subnet {
-				poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+			if pool.Spec.Subnet == deepCopySubnet.Spec.Subnet {
+				poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*deepCopySubnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 				if err != nil {
 					return err
 				}
@@ -272,26 +276,31 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 				controlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
 			}
 		}
-		subnet.Status.ControlledIPPools = controlledIPPools
+		deepCopySubnet.Status.ControlledIPPools = controlledIPPools
 
 		// Update the count of total IP addresses.
 		totalIPCount := int64(len(subnetTotalIPs))
-		subnet.Status.TotalIPCount = &totalIPCount
+		deepCopySubnet.Status.TotalIPCount = &totalIPCount
 
 		// Update the count of pre-allocated IP addresses.
 		allocatedIPCount := int64(tmpCount)
-		subnet.Status.AllocatedIPCount = &allocatedIPCount
+		deepCopySubnet.Status.AllocatedIPCount = &allocatedIPCount
 
-		if err := sm.client.Status().Update(ctx, subnet); err != nil {
-			if !apierrors.IsConflict(err) {
-				return err
+		if !reflect.DeepEqual(subnet, deepCopySubnet.Status) {
+			if err := sm.client.Status().Update(ctx, deepCopySubnet); err != nil {
+				if !apierrors.IsConflict(err) {
+					return err
+				}
+				if i == sm.config.MaxConflictRetries {
+					return fmt.Errorf("%w(<=%d) to init the free IP ranges of Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
+				}
+				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
+				continue
 			}
-			if i == sm.config.MaxConflictRetries {
-				return fmt.Errorf("%w(<=%d) to init the free IP ranges of Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
-			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
-			continue
+			subnet = deepCopySubnet
+			event.EventRecorder.Event(subnet, corev1.EventTypeNormal, constant.EventReasonResyncSubnet, fmt.Sprintf("Resync to update status from '%s' to '%s'", subnet, subnet.Status.String()))
 		}
+
 		break
 	}
 

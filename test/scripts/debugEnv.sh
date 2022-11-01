@@ -171,9 +171,10 @@ elif [ "$TYPE"x == "error"x ] ; then
 
         echo ""
         echo "---------${POD}--------"
-        if kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} | grep -E -i "${LOG_MARK}" &>/dev/null ; then
+        MESSAGE=` kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} |& grep -E -i "${LOG_MARK}" `
+        if  [ -n "$MESSAGE" ] ; then
             echo "error, in ${POD}, found error, ${LOG_MARK} !!!!!!!"
-            kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+            echo "${MESSAGE}"
             RESUTL_CODE=1
         else
             echo "no error "

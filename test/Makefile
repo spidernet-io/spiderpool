@@ -285,8 +285,7 @@ e2e_test:
 		echo "=========== after test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "gops" "$(E2E_LOG_FILE)" ; \
 		KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; \
-		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "longlock" "$(E2E_LOG_FILE)" || { echo "error, found long lock !!!" ; RESULT=1 ; } ; \
-		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "datarace" "$(E2E_LOG_FILE)" || { echo "error, found data race !!!" ; RESULT=1 ; } ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "error" "$(E2E_LOG_FILE)" || { echo "error, found error log !!!" ; RESULT=1 ; } ; \
 		if (($${RESULT} != 0)) ; then \
 		   echo "failed to run e2e test"  ; \
 		   exit 1 ; \

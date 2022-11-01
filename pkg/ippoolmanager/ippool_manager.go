@@ -415,7 +415,7 @@ func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoo
 
 	err = im.client.Update(ctx, pool)
 	if nil != err {
-		return fmt.Errorf("failed to update IPPool '%s', error: %v", pool.Name, err)
+		return fmt.Errorf("failed to update IPPool '%s', error: %w", pool.Name, err)
 	}
 
 	return nil

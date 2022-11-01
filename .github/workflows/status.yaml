@@ -65,7 +65,7 @@ jobs:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: e1d3c092d1b9f61f1c8e36f09d2809cb
           filename: spiderpoole2e.json
-          label: e2e
+          label: e2e cover
           message: ${{ env.E2E_STATUS }}
           color: lightgrey
 

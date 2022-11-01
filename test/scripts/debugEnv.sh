@@ -18,6 +18,7 @@ echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
 NAMESPACE="kube-system"
 COMPONENT_GOROUTINE_MAX=300
+COMPONENT_PS_PROCESS_MAX=50
 
 
 CONTROLLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/component=spiderpool-controller --output jsonpath={.items[*].metadata.name} )
@@ -34,23 +35,23 @@ fi
 
 
 RESUTL_CODE=0
-if [ "$TYPE"x == "gops"x ] ; then
+if [ "$TYPE"x == "system"x ] ; then
     echo ""
-    echo "=============== gops data of controller ============== "
-    for POD in $CONTROLLER_POD_LIST ; do
+    echo "=============== system data ============== "
+    for POD in $CONTROLLER_POD_LIST $AGENT_POD_LIST ; do
       echo ""
-      echo "---------${POD}--------"
-      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}  gops stats 1
-      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}  gops memstats 1
-    done
+      echo "--------- gops ${NAMESPACE}/${POD} "
+      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} -- gops stats 1
+      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} -- gops memstats 1
 
-    echo ""
-    echo "=============== gops data of agent ============== "
-    for POD in $AGENT_POD_LIST ; do
       echo ""
-      echo "---------${POD}--------"
-      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}  gops stats 1
-      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}  gops memstats 1
+      echo "--------- ps ${NAMESPACE}/${POD} "
+      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} -- ps aux
+
+      echo ""
+      echo "--------- fd of pids ${NAMESPACE}/${POD} "
+      kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} -- find /proc -print | grep -P '/proc/\d+/fd/' | grep -E -o "/proc/[0-9]+" | uniq -c | sort -rn | head
+
     done
 
 elif [ "$TYPE"x == "detail"x ] ; then
@@ -217,6 +218,16 @@ elif [ "$TYPE"x == "error"x ] ; then
             echo "warning, failed to find RESTARTS in ${NAMESPACE}/${POD} "
         elif (( RESTARTS != 0 )) ; then
              echo "found pod restart event"
+             RESUTL_CODE=1
+        fi
+
+        echo ""
+        echo "----- check process number in ${NAMESPACE}/${POD}"
+        PROCESS_NUM=` kubectl exec ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} -- ps aux | wc -l `
+        if [ -z "$PROCESS_NUM" ] ; then
+            echo "warning, failed to find process in ${NAMESPACE}/${POD} "
+        elif (( PROCESS_NUM >= COMPONENT_PS_PROCESS_MAX )) ; then
+             echo "error, found ${PROCESS_NUM} process more than default $COMPONENT_PS_PROCESS_MAX "
              RESUTL_CODE=1
         fi
 

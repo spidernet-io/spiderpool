@@ -469,3 +469,24 @@ jobs:
           else
               exit 1
           fi
+
+  creat_issue:
+    runs-on: ubuntu-latest
+    needs: [e2e_against_commit]
+    if: ${{ needs.e2e_against_commit.outputs.result == 'failure' }}
+    steps:
+      - name: echo
+        run: |
+          echo ${{ github.repository }}
+          echo ${{ github.repository_owner }}
+          echo "TIMESTAMP=`date +%Y-%m-%d`" >> $GITHUB_ENV
+
+      - name: create an issue
+        uses: dacbd/create-issue-action@v1.2.1
+        with:
+          token: ${{ secrets.WELAN_PAT }}
+          title: "Night CI ${{ ENV.TIMESTAMP }}: Failed"
+          body: |
+            action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          labels: "kind/bug"
+          assignees: "weizhoublue"

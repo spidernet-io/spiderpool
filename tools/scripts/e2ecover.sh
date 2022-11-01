@@ -29,6 +29,9 @@ for ITEM in $ALL_CASE ; do
     ((TOTAL++))
     grep "\"${ITEM}\"" <<< "${ALL_GINKGO_CASE}" &>/dev/null && ((BINGO++))
 done
-echo "${BINGO}/${TOTAL}"
+
+E2ECOVER=$(awk 'BEGIN{printf "%.1f%%\n",('${BINGO}'/'${TOTAL}')*100}')
+
+echo "${BINGO}/${TOTAL}|${E2ECOVER}"
 
 exit 0

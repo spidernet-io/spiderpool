@@ -406,16 +406,16 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 
 	if desiredIPNum > totalIPCount {
 		// expand
-		ipsFromSubnet, err := c.poolMgr.subnetManager.GenerateIPsFromSubnet(ctx, subnetName, desiredIPNum-totalIPCount, pool.Spec.ExcludeIPs)
+		ipsFromSubnet, err := c.poolMgr.subnetManager.GenerateIPsFromSubnetWhenScaleUpIP(logutils.IntoContext(ctx, informerLogger), subnetName, pool)
 		if nil != err {
-			return fmt.Errorf("failed to generate IPs from subnet '%s', error: %v", subnetName, err)
+			return fmt.Errorf("failed to generate IPs from subnet '%s', error: %w", subnetName, err)
 		}
 
 		informerLogger.Sugar().Infof("try to scale IPPool '%s' IP number from '%d' to '%d' with generated IPs '%v'", pool.Name, totalIPCount, desiredIPNum, ipsFromSubnet)
 		// the IPPool webhook will automatically assign the scaled IP from SpiderSubnet
 		err = c.poolMgr.ScaleIPPoolWithIPs(ctx, pool, ipsFromSubnet, ippoolmanagertypes.ScaleUpIP, desiredIPNum)
 		if nil != err {
-			return fmt.Errorf("failed to expand IPPool '%s' with IPs '%v', error: %v", pool.Name, ipsFromSubnet, err)
+			return fmt.Errorf("failed to expand IPPool '%s' with IPs '%v', error: %w", pool.Name, ipsFromSubnet, err)
 		}
 	} else {
 		// shrink: free IP number >= return IP Num
@@ -445,7 +445,7 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 			// the IPPool webhook will automatically return the released IP back to SpiderSubnet
 			err = c.poolMgr.ScaleIPPoolWithIPs(logutils.IntoContext(ctx, informerLogger), pool, discardedIPRanges, ippoolmanagertypes.ScaleDownIP, desiredIPNum)
 			if nil != err {
-				return fmt.Errorf("failed to shrink IPPool '%s' with IPs '%v', error: %v", pool.Name, discardedIPs, err)
+				return fmt.Errorf("failed to shrink IPPool '%s' with IPs '%v', error: %w", pool.Name, discardedIPs, err)
 			}
 		}
 	}

@@ -89,8 +89,10 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 	return subnetList, nil
 }
 
-func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetName string, ipNum int, excludeIPRanges []string) ([]string, error) {
-	var allocateIPRange []string
+func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool) ([]string, error) {
+	if pool.Status.AutoDesiredIPCount == nil {
+		return nil, fmt.Errorf("%w: we can't generate IPs for the IPPool '%s' who doesn't have Status AutoDesiredIPCount", constant.ErrWrongInput, pool.Name)
+	}
 
 	subnet, err := sm.GetSubnetByName(ctx, subnetName)
 	if nil != err {
@@ -105,12 +107,59 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetName s
 	if subnet.Spec.IPVersion != nil {
 		ipVersion = *subnet.Spec.IPVersion
 	} else {
-		return nil, fmt.Errorf("subnet '%v' misses spec IP version", subnet)
+		return nil, fmt.Errorf("%w: SpiderSubnet '%v' misses spec IP version", constant.ErrWrongInput, subnet)
+	}
+
+	log := logutils.FromContext(ctx)
+
+	var beforeAllocatedIPs []net.IP
+
+	desiredIPNum := int(*pool.Status.AutoDesiredIPCount)
+	poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(ipVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	if nil != err {
+		return nil, fmt.Errorf("%w: failed to assemble IPPool '%s' total IPs, error: %v", constant.ErrWrongInput, pool.Name, err)
+	}
+	ipNum := desiredIPNum - len(poolTotalIPs)
+	if ipNum <= 0 {
+		return nil, fmt.Errorf("%w: IPPool '%s' status desiredIPNum is '%d' and total IP counts is '%d', we can't generate IPs for it",
+			constant.ErrWrongInput, pool.Name, desiredIPNum, len(poolTotalIPs))
+	}
+
+	subnetPoolAllocation, ok := subnet.Status.ControlledIPPools[pool.Name]
+	if ok {
+		subnetPoolAllocatedIPs, err := spiderpoolip.ParseIPRanges(ipVersion, subnetPoolAllocation.IPs)
+		if nil != err {
+			return nil, fmt.Errorf("%w: failed to parse SpiderSubnet '%s' Status ControlledIPPool '%s' IPs '%v', error: %v",
+				constant.ErrWrongInput, subnet.Name, pool.Name, subnetPoolAllocation.IPs, err)
+		}
+
+		// the subnetPoolAllocatedIPs is greater than pool total IP counts indicates that
+		// the SpiderSubnet updated successfully but the IPPool failed to update in the last procession
+		if len(subnetPoolAllocatedIPs) > len(poolTotalIPs) {
+			lastAllocatedIPs := spiderpoolip.IPsDiffSet(subnetPoolAllocatedIPs, poolTotalIPs)
+			log.Sugar().Warnf("SpiderSubnet '%s' Status ControlledIPPool '%s' has the allocated IPs '%v', try to re-use it!", subnetName, pool.Name, lastAllocatedIPs)
+			if len(lastAllocatedIPs) == desiredIPNum-len(poolTotalIPs) {
+				// last allocated IPs is same with the current allocation request
+				return spiderpoolip.ConvertIPsToIPRanges(ipVersion, lastAllocatedIPs)
+			} else if len(lastAllocatedIPs) > desiredIPNum-len(poolTotalIPs) {
+				// last allocated IPs is greater than the current allocation request,
+				// we will update the SpiderSubnet status correctly in next IPPool webhook SpiderSubnet update procession
+				sort.Slice(lastAllocatedIPs, func(i, j int) bool {
+					return bytes.Compare(lastAllocatedIPs[i].To16(), lastAllocatedIPs[j].To16()) < 0
+				})
+				return spiderpoolip.ConvertIPsToIPRanges(ipVersion, lastAllocatedIPs[:desiredIPNum-len(poolTotalIPs)])
+			} else {
+				// last allocated IPs less than the current allocation request,
+				// we can re-use the allocated IPs and generate some another IPs
+				beforeAllocatedIPs = lastAllocatedIPs
+				ipNum = desiredIPNum - len(poolTotalIPs) - len(lastAllocatedIPs)
+			}
+		}
 	}
 
 	freeIPs, err := controllers.GenSubnetFreeIPs(subnet)
 	if nil != err {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate SpiderSubnet '%s' free IPs, error: %v", subnetName, err)
 	}
 
 	// filter reserved IPs
@@ -129,10 +178,10 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetName s
 		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, reservedIPs)
 	}
 
-	if len(excludeIPRanges) != 0 {
-		excludeIPs, err := spiderpoolip.ParseIPRanges(ipVersion, excludeIPRanges)
+	if len(pool.Spec.ExcludeIPs) != 0 {
+		excludeIPs, err := spiderpoolip.ParseIPRanges(ipVersion, pool.Spec.ExcludeIPs)
 		if nil != err {
-			return nil, fmt.Errorf("failed to parse exclude IP ranges '%v', error: %v", excludeIPRanges, err)
+			return nil, fmt.Errorf("failed to parse exclude IP ranges '%v', error: %v", pool.Spec.ExcludeIPs, err)
 		}
 		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, excludeIPs)
 	}
@@ -152,7 +201,12 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetName s
 		allocateIPs[j] = freeIPs[j]
 	}
 
-	allocateIPRange, err = spiderpoolip.ConvertIPsToIPRanges(ipVersion, allocateIPs)
+	// re-use the last allocated IPs
+	if len(beforeAllocatedIPs) != 0 {
+		allocateIPs = append(allocateIPs, beforeAllocatedIPs...)
+	}
+
+	allocateIPRange, err := spiderpoolip.ConvertIPsToIPRanges(ipVersion, allocateIPs)
 	if nil != err {
 		return nil, err
 	}
@@ -160,6 +214,7 @@ func (sm *subnetManager) GenerateIPsFromSubnet(ctx context.Context, subnetName s
 	logger.Sugar().Infof("generated '%d' IPs '%v' from SpiderSubnet '%s'", ipNum, allocateIPRange, subnet.Name)
 
 	return allocateIPRange, nil
+
 }
 
 func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, appKind string, app metav1.Object, podSelector map[string]string,

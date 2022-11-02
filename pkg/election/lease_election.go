@@ -168,7 +168,7 @@ func (sl *SpiderLeader) tryToElect(ctx context.Context) {
 		// If there's a leader and another node will try to acquire the lease lock persistently until the leader renew failed.
 		sl.leaderElector.Run(ctx)
 
-		logger.Sugar().Warnf("'%s/%s/%s' election request disconnected, and it will continue to elect after '%d' seconds",
+		logger.Sugar().Warnf("'%s/%s/%s' election request disconnected, and it will continue to elect after '%v'",
 			sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity, sl.leaderRetryElectGap)
 
 		time.Sleep(sl.leaderRetryElectGap)

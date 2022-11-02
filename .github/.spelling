@@ -250,3 +250,10 @@ spider-subnet-v6
 vx.x.x
 release-vx
 x.x
+subnet-demo-v4
+subnet-demo-v6
+v4-subnet1
+v4-subnet2
+v6-subnet1
+v6-subnet2
+eth0

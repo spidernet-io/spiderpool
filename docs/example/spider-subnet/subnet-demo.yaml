@@ -6,4 +6,14 @@ spec:
   ipVersion: 4
   subnet: 172.16.0.0/16
   ips:
-    - 172.16.41.1-172.16.41.100
+    - 172.16.41.1-172.16.41.200
+---
+apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v6
+spec:
+  ipVersion: 6
+  subnet: fc00:f853:ccd:e790::/64
+  ips:
+    - fc00:f853:ccd:e790:d::1-fc00:f853:ccd:e790:d::c8

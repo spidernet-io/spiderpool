@@ -1,6 +1,10 @@
 # workflow for release
 
-## push the tag
+## pre-steps
+
+submit a PR , which should modify version in 'VERSION' and 'charts/spiderpool/Chart.yaml'
+
+## push a version tag
 
 If a tag vx.x.x is pushed , the following steps will automatically run:
 

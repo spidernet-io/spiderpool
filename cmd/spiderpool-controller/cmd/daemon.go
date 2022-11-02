@@ -282,13 +282,14 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Info("Begin to initialize IPPool Manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		EnableIPv4:          controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:          controllerContext.Cfg.EnableIPv6,
-		UpdateCRConfig:      updateCRConfig,
-		EnableSpiderSubnet:  controllerContext.Cfg.EnableSpiderSubnet,
-		MaxAllocatedIPs:     controllerContext.Cfg.IPPoolMaxAllocatedIPs,
-		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-		MaxWorkQueueLength:  controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
+		EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+		UpdateCRConfig:                updateCRConfig,
+		EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
+		MaxAllocatedIPs:               controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+		LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+		MaxWorkQueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
+		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.IPPoolWorkQueueRequeueDelayDuration) * time.Second,
 	}, controllerContext.CRDManager, controllerContext.RIPManager)
 	if err != nil {
 		logger.Fatal(err.Error())

@@ -80,6 +80,7 @@ var envInfo = []envConf{
 	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
 	{"SPIDERPOOL_ENABLE_SUBNET_DELETE_STALE_IPPOOL", "false", true, nil, &controllerContext.Cfg.EnableSubnetDeleteStaleIPPool, nil},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
+	{"SPIDERPOOL_AUTO_IPPOOL_WORKQUEUE_REQUEUE_DELAY_DURATION", "10", true, nil, nil, &controllerContext.Cfg.IPPoolWorkQueueRequeueDelayDuration},
 }
 
 type Config struct {
@@ -113,6 +114,9 @@ type Config struct {
 	IPPoolMaxAllocatedIPs             int
 	SubnetResyncPeriod                int
 	IPPoolInformerMaxWorkQueueLength  int
+
+	// if IPPoolWorkQueueRequeueDelayDuration is negative number, we would not requeue it
+	IPPoolWorkQueueRequeueDelayDuration int
 
 	LeaseDuration      int
 	LeaseRenewDeadline int

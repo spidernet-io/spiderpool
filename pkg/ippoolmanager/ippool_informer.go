@@ -73,7 +73,8 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 
 			informerLogger.Info("create SpiderIPPool informer")
 			factory := externalversions.NewSharedInformerFactory(client, 0)
-			c := newIPPoolInformerController(im, client, factory.Spiderpool().V1().SpiderIPPools(), im.config.EnableSpiderSubnet, im.rateLimitQueue)
+			c := newIPPoolInformerController(im, client, factory.Spiderpool().V1().SpiderIPPools(), im.config.EnableSpiderSubnet,
+				im.rateLimitQueue, im.config.WorkQueueRequeueDelayDuration)
 			factory.Start(stopper)
 
 			if err := c.Run(1, stopper); nil != err {
@@ -94,16 +95,19 @@ type poolInformerController struct {
 	poolLister listers.SpiderIPPoolLister
 	poolSynced cache.InformerSynced
 	workQueue  workqueue.RateLimitingInterface
+
+	requeueDelayDuration time.Duration
 }
 
 func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Interface, poolInformer informers.SpiderIPPoolInformer,
-	enableSubnet bool, rateLimitQueue workqueue.RateLimitingInterface) *poolInformerController {
+	enableSubnet bool, rateLimitQueue workqueue.RateLimitingInterface, requeueDelayDuration time.Duration) *poolInformerController {
 	c := &poolInformerController{
-		poolMgr:    poolMgr,
-		client:     client,
-		poolLister: poolInformer.Lister(),
-		poolSynced: poolInformer.Informer().HasSynced,
-		workQueue:  rateLimitQueue,
+		poolMgr:              poolMgr,
+		client:               client,
+		poolLister:           poolInformer.Lister(),
+		poolSynced:           poolInformer.Informer().HasSynced,
+		workQueue:            rateLimitQueue,
+		requeueDelayDuration: requeueDelayDuration,
 	}
 
 	// for all IPPool processing
@@ -313,6 +317,8 @@ func (c *poolInformerController) processNextWorkItem() bool {
 		return false
 	}
 
+	// it doesn't master to discard some data,
+	// the subnet informer and its resync will add those not desired pool name to the workqueue
 	process := func(obj interface{}) error {
 		defer c.workQueue.Done(obj)
 		poolName, ok := obj.(string)
@@ -341,8 +347,7 @@ func (c *poolInformerController) processNextWorkItem() bool {
 			// discard some wrong input items
 			if errors.Is(err, constant.ErrWrongInput) {
 				c.workQueue.Forget(obj)
-				informerLogger.Sugar().Errorf("failed to scale IPPool '%s', error: %v", pool.Name, err)
-				return nil
+				return fmt.Errorf("failed to scale IPPool '%s', error: %v", pool.Name, err)
 			}
 
 			if apierrors.IsConflict(err) {
@@ -351,12 +356,15 @@ func (c *poolInformerController) processNextWorkItem() bool {
 				return nil
 			}
 
-			// it doesn't master to discard some over max retries data,
-			// the subnet informer and its resync will add those not desired pool name to the workqueue
-			if c.workQueue.NumRequeues(obj) < DefaultRetryNum {
-				c.workQueue.AddRateLimited(poolName)
-				return fmt.Errorf("error syncing '%s': %s, requeuing", poolName, err.Error())
+			// if we set positive number for the requeue delay duration, we will requeue it. otherwise we will discard it.
+			if c.requeueDelayDuration >= 0 {
+				informerLogger.Sugar().Warnf("encountered error '%v', requeue it after '%v'", err, c.requeueDelayDuration)
+				c.workQueue.AddAfter(poolName, c.requeueDelayDuration)
+				return nil
 			}
+
+			c.workQueue.Forget(obj)
+			return fmt.Errorf("error syncing '%s': %s", poolName, err.Error())
 		}
 
 		c.workQueue.Forget(obj)

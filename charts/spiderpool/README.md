@@ -73,33 +73,15 @@ The Spiderpool provides a large number of different features as follows.
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
-# generate the certificates
-tools/cert/generateCert.sh "/tmp/tls"
-CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
-SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
-SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
+IPV4_SUBNET_YOU_EXPECT="172.18.40.0/24"
+IPV4_IPRANGES_YOU_EXPECT="172.18.40.40-172.20.40.200"
 
-# for default ipv4 ippool
-# CIDR
-Ipv4Subnet="172.20.0.0/16"
-# available IP resource
-Ipv4Range="172.20.0.10-172.20.0.200"
-# for default ipv6 ippool
-# CIDR
-Ipv6Subnet="fd00::/112"
-# available IP resource
-Ipv6Range="fd00::10-fd00::200"
-
-# deploy the spiderpool
 helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
-  --set spiderpoolController.tls.method=provided \
-  --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
-  --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
-  --set spiderpoolController.tls.provided.tlsCa="${CA}" \
-  --set feature.enableIPv4=true --set feature.enableIPv6=true \
-  --set clusterDefaultPool.installIPv4IPPool=true  --set clusterDefaultPool.installIPv6IPPool=true  \
-  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
-  --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}}
+  --set spiderpoolController.tls.method=auto \
+  --set feature.enableIPv4=true --set feature.enableIPv6=false \
+  --set clusterDefaultPool.installIPv4IPPool=true  \
+  --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
+  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
 ```
 
 > NOTICE:

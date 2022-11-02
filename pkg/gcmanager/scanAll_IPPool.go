@@ -195,10 +195,13 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 
 	err = s.wepMgr.RemoveFinalizer(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 	if nil != err {
-		return fmt.Errorf("failed to remove wep '%s/%s' finalizer, error: '%v'", poolIPAllocation.Namespace, poolIPAllocation.Pod, err)
+		if apierrors.IsNotFound(err) {
+			log.Sugar().Debugf("SpiderEndpoint '%s/%s' is already cleaned up", poolIPAllocation.Namespace, poolIPAllocation.Pod)
+			return nil
+		}
+		return fmt.Errorf("failed to remove SpiderEndpoint '%s/%s' finalizer, error: '%v'", poolIPAllocation.Namespace, poolIPAllocation.Pod, err)
 	}
 
-	log.Sugar().Infof("remove wep '%s/%s' finalizer successfully", poolIPAllocation.Namespace, poolIPAllocation.Pod)
-
+	log.Sugar().Infof("remove SpiderEndpoint '%s/%s' finalizer successfully", poolIPAllocation.Namespace, poolIPAllocation.Pod)
 	return nil
 }

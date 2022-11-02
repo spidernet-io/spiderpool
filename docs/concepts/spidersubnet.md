@@ -58,13 +58,24 @@ The IPPool status reports all used addresses.
 ```text
 // SubnetStatus defines the observed state of SpiderSubnet
 type SubnetStatus struct {
-    // the SpiderSubnet all allocatable addresses
-    FreeIPs []string `json:"freeIPs,omitempty"`
+    // the SpiderSubnet IPPool pre-allocations
+    ControlledIPPools PoolIPPreAllocations `json:"controlledIPPools,omitempty"`
 
     // the SpiderSubnet total addresses counts
     TotalIPCount *int64 `json:"totalIPCount,omitempty"`
 
-    // the SpiderSubnet allocatable addresses counts
-    FreeIPCount *int64 `json:"freeIPCount,omitempty"`
+    // the SpiderSubnet allocated addresses counts
+    AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
 }
 ```
+
+```text
+// PoolIPPreAllocations is a map of pool IP pre-allocation details indexed by pool name.
+type PoolIPPreAllocations map[string]PoolIPPreAllocation
+
+type PoolIPPreAllocation struct {
+    // specify the SpiderSubnet's IPPool allocation IP ranges
+    IPs []string `json:"ips"`
+}
+```
+

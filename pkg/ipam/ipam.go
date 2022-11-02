@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -344,16 +345,28 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 	}
 
 	var errs []error
+	var usedIPPool *spiderpoolv1.SpiderIPPool
 	result := &AllocationResult{}
+
+	// TODO(iiiceoo): Debug panic https://github.com/spidernet-io/spiderpool/issues/974
+	defer func() {
+		if e := recover(); e != nil {
+			logger.Sugar().Errorf("panic runtime error: AllocationResult: %+v", result)
+			logger.Sugar().Errorf("panic runtime error: IPPool: %+v", usedIPPool)
+			logger.Sugar().Errorf("%s", debug.Stack())
+		}
+	}()
+
 	for _, pool := range c.Pools {
-		var err error
-		var ipPool *spiderpoolv1.SpiderIPPool
-		result.IP, ipPool, err = i.ipPoolManager.AllocateIP(ctx, pool, containerID, nic, pod)
+		ip, ipPool, err := i.ipPoolManager.AllocateIP(ctx, pool, containerID, nic, pod)
 		if err != nil {
 			errs = append(errs, err)
 			logger.Sugar().Warnf("Failed to allocate IPv%d IP to %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
 			continue
 		}
+		usedIPPool = ipPool
+
+		result.IP = ip
 		result.CleanGateway = cleanGateway
 		result.Routes = append(result.Routes, convertSpecRoutesToOAIRoutes(nic, ipPool.Spec.Routes)...)
 		logger.Sugar().Infof("Allocate IPv%d IP %s to %s from IPPool %s", c.IPVersion, *result.IP.Address, nic, pool)

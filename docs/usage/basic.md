@@ -25,7 +25,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
-  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}} \
+  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
 ```
 
 Here we use `--set feature.enableIPv6=false` to disable IPv6, more details of [Spiderpool charts values](https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters).

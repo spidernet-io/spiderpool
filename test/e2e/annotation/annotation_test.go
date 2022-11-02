@@ -439,9 +439,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					Expect(common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, iPv6PoolObj2, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v6 pool")
 					v6PoolNameList2 = append(v6PoolNameList2, v6PoolName2)
 				} else {
-					v6PoolNameList1, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, true)
+					v6PoolNameList1, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, false)
 					Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool")
-					v6PoolNameList2, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, true)
+					v6PoolNameList2, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, false)
 					Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool")
 				}
 			}

@@ -89,7 +89,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 				}
 				if frame.Info.IpV6Enabled {
 					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
-					if frame.Info.IpV6Enabled {
+					if frame.Info.SpiderSubnetEnabled {
 						Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
 					}
 				}

@@ -112,7 +112,7 @@ func (sm *subnetManager) reconcileOnAdd(ctx context.Context, subnet *spiderpoolv
 	}
 
 	if subnet.DeletionTimestamp != nil {
-		if err := sm.removeFinalizer(ctx, subnet); err != nil {
+		if err := sm.removeFinalizer(ctx, subnet); client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("failed to remove finalizer: %v", err)
 		}
 	}
@@ -147,7 +147,7 @@ func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSu
 			}
 		}
 
-		if err := sm.removeFinalizer(ctx, newSubnet); err != nil {
+		if err := sm.removeFinalizer(ctx, newSubnet); client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("failed to remove finalizer: %v", err)
 		}
 		return nil
@@ -308,6 +308,8 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 }
 
 func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	logger := logutils.FromContext(ctx)
+
 	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
 		var err error
 		if i != 0 {
@@ -337,6 +339,7 @@ func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpool
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 			continue
 		}
+		logger.Sugar().Debugf("Remove finalizer %s", constant.SpiderFinalizer)
 		break
 	}
 

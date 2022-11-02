@@ -14,8 +14,9 @@ type IPPoolManagerConfig struct {
 	EnableIPv6 bool
 
 	config.UpdateCRConfig
-	EnableSpiderSubnet  bool
-	MaxAllocatedIPs     int
-	LeaderRetryElectGap time.Duration
-	MaxWorkQueueLength  int
+	EnableSpiderSubnet            bool
+	MaxAllocatedIPs               int
+	LeaderRetryElectGap           time.Duration
+	MaxWorkQueueLength            int
+	WorkQueueRequeueDelayDuration time.Duration
 }

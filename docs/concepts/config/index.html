@@ -947,10 +947,12 @@
             &quot;ipam&quot;:{
                 &quot;type&quot;:&quot;spiderpool&quot;,
                 &quot;log_file_path&quot;:&quot;/var/log/spidernet/spiderpool.log&quot;,
-                &quot;log_file_max_size&quot;:&quot;100M&quot;,
-                &quot;log_file_max_age&quot;:&quot;30d&quot;,
+                &quot;log_file_max_size&quot;:&quot;100&quot;,
+                &quot;log_file_max_age&quot;:&quot;30&quot;,
                 &quot;log_file_max_count&quot;:7,
-                &quot;log_level&quot;:&quot;INFO&quot;
+                &quot;log_level&quot;:&quot;INFO&quot;,
+                &quot;default_ipv4_ippool&quot;: [&quot;default-ipv4-pool1&quot;,&quot;default-ipv4-pool2&quot;],
+                &quot;default_ipv6_ippool&quot;: [&quot;default-ipv6-pool1&quot;,&quot;default-ipv6-pool2&quot;]
             }
         }
     ]
@@ -958,10 +960,12 @@
 </code></pre>
 <ul>
 <li><code>log_file_path</code> (string, optional): Path to log file of IPAM plugin, default to <code>"/var/log/spidernet/spiderpool.log"</code>.</li>
-<li><code>log_file_max_size</code> (string, optional): Max size of each rotated file, default to <code>"100M"</code>.</li>
-<li><code>log_file_max_age</code> (string, optional): Max age of each rotated file, default to <code>"30d"</code>.</li>
+<li><code>log_file_max_size</code> (string, optional): Max size of each rotated file, default to <code>"100"</code>(unit MByte).</li>
+<li><code>log_file_max_age</code> (string, optional): Max age of each rotated file, default to <code>"30"</code>(unit Day).</li>
 <li><code>log_file_max_count</code> (string, optional): Max number of rotated file, default to <code>"7"</code>.</li>
 <li><code>log_level</code> (string, optional): Log level, default to <code>"INFO"</code>. It could be <code>"INFO"</code>, <code>"DEBUG"</code>, <code>"WARN"</code>, <code>"ERROR"</code>.</li>
+<li><code>default_ipv4_ippool</code> (string array, optional): Default IPAM IPv4 Pool to use.</li>
+<li><code>default_ipv6_ippool</code> (string array, optional): Default IPAM IPv6 Pool to use.</li>
 </ul>
 <h2 id="configmap-configuration">Configmap Configuration</h2>
 <p>Configmap "spiderpool-conf" is the global configuration of Spiderpool.</p>

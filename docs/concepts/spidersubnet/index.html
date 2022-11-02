@@ -910,14 +910,22 @@ type SubnetSpec struct {
 The IPPool status reports all used addresses.</p>
 <pre><code class="language-text">// SubnetStatus defines the observed state of SpiderSubnet
 type SubnetStatus struct {
-    // the SpiderSubnet all allocatable addresses
-    FreeIPs []string `json:&quot;freeIPs,omitempty&quot;`
+    // the SpiderSubnet IPPool pre-allocations
+    ControlledIPPools PoolIPPreAllocations `json:&quot;controlledIPPools,omitempty&quot;`
 
     // the SpiderSubnet total addresses counts
     TotalIPCount *int64 `json:&quot;totalIPCount,omitempty&quot;`
 
-    // the SpiderSubnet allocatable addresses counts
-    FreeIPCount *int64 `json:&quot;freeIPCount,omitempty&quot;`
+    // the SpiderSubnet allocated addresses counts
+    AllocatedIPCount *int64 `json:&quot;allocatedIPCount,omitempty&quot;`
+}
+</code></pre>
+<pre><code class="language-text">// PoolIPPreAllocations is a map of pool IP pre-allocation details indexed by pool name.
+type PoolIPPreAllocations map[string]PoolIPPreAllocation
+
+type PoolIPPreAllocation struct {
+    // specify the SpiderSubnet's IPPool allocation IP ranges
+    IPs []string `json:&quot;ips&quot;`
 }
 </code></pre>
 

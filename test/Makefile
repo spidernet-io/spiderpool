@@ -262,6 +262,7 @@ e2e_test:
 		else \
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "false" ] ; then export E2E_SPIDERSUBNET_ENABLED=false ; else  export E2E_MULTUS_CNI_ENABLED=true ; fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
 		if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
 		if [ "$(INSTALL_SPIDER)" != "true" ] ; then \

@@ -71,6 +71,9 @@ you could follow the below steps to test:
         # run all e2e test on ipv6-only cluster
         $ make e2e_test -e E2E_IP_FAMILY=ipv6
 
+        # Run all e2e tests on an enableSpiderSubnet=false cluster
+        $ make e2e_test -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+
         # run smoke test
         $ make e2e_test -e E2E_GINKGO_LABELS=smoke
 

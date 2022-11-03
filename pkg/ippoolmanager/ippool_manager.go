@@ -148,6 +148,12 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			return nil, nil, fmt.Errorf("%w, threshold of IP allocations(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, poolName)
 		}
 
+		usedIPPool = ipPool
+		ipConfig, err = genResIPConfig(allocatedIP, &ipPool.Spec, nic, poolName)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if !apierrors.IsConflict(err) {
 				return nil, nil, err
@@ -157,12 +163,6 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
-		}
-
-		usedIPPool = ipPool
-		ipConfig, err = genResIPConfig(allocatedIP, &ipPool.Spec, nic, poolName)
-		if err != nil {
-			return nil, nil, err
 		}
 		break
 	}

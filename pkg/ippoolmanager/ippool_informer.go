@@ -165,6 +165,11 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 	if currentIPPool.DeletionTimestamp != nil && len(currentIPPool.Status.AllocatedIPs) == 0 {
 		err := c.poolMgr.RemoveFinalizer(ctx, currentIPPool.Name)
 		if nil != err {
+			// if the IPPool object is already deleted, there's no need for us to process it at all
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
+
 			return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer '%s', error: %v", currentIPPool.Name, constant.SpiderFinalizer, err)
 		}
 
@@ -241,7 +246,7 @@ func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, p
 			}
 
 			if i == c.poolMgr.config.MaxConflictRetries {
-				return fmt.Errorf("insufficient retries(<=%d) to init the free IP ranges of Subnet", c.poolMgr.config.MaxConflictRetries)
+				return fmt.Errorf("%w, failed for %d times, failed to initialize the free IP ranges of Subnet", constant.ErrRetriesExhausted, c.poolMgr.config.MaxConflictRetries)
 			}
 
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * c.poolMgr.config.ConflictRetryUnitTime)

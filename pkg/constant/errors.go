@@ -10,6 +10,6 @@ import (
 var (
 	ErrWrongInput       = errors.New("wrong input")
 	ErrNoAvailablePool  = errors.New("no IPPool available")
-	ErrRetriesExhausted = errors.New("insufficient retries")
+	ErrRetriesExhausted = errors.New("exhaust all retries")
 	ErrIPUsedOut        = errors.New("all IP addresses used out")
 )

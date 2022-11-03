@@ -165,6 +165,11 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 	if currentIPPool.DeletionTimestamp != nil && len(currentIPPool.Status.AllocatedIPs) == 0 {
 		err := c.poolMgr.RemoveFinalizer(ctx, currentIPPool.Name)
 		if nil != err {
+			// if the IPPool object is already deleted, there's no need for us to process it at all
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
+
 			return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer '%s', error: %v", currentIPPool.Name, constant.SpiderFinalizer, err)
 		}
 

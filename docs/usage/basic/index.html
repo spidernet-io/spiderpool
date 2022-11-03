@@ -944,7 +944,7 @@ IPV4_IPRANGES_YOU_EXPECT=&quot;172.18.40.40-172.20.40.200&quot;
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
-  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}} \
+  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
 </code></pre>
 <p>Here we use <code>--set feature.enableIPv6=false</code> to disable IPv6, more details of <a href="https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters">Spiderpool charts values</a>.</p>
 <h2 id="update-cni-network-configuration">Update CNI network configuration</h2>

@@ -159,7 +159,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 				return nil, nil, err
 			}
 			if i == im.config.MaxConflictRetries {
-				return nil, nil, fmt.Errorf("%w, failed for %d times, failed to allocate IP from ippool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, poolName)
+				return nil, nil, fmt.Errorf("%w, failed for %d times, failed to allocate IP from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, poolName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
@@ -237,7 +237,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 				return err
 			}
 			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to release IP (%+v) to ippool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
+				return fmt.Errorf("%w, failed for %d times, failed to release IP %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
@@ -285,7 +285,7 @@ func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) e
 				return err
 			}
 			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to remove finalizer (%+v) for ippool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, constant.SpiderFinalizer, poolName)
+				return fmt.Errorf("%w, failed for %d times, failed to remove finalizer %s for IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, constant.SpiderFinalizer, poolName)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue

@@ -212,7 +212,7 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 		informerLogger.Sugar().Infof("try to update IPPool '%s' status TotalIPCount", currentIPPool.Name)
 		err := c.updateIPPoolTotalIPCount(ctx, currentIPPool)
 		if nil != err {
-			return fmt.Errorf("failed to update IPPool '%s' status TotalIPCount, error: %v", currentIPPool.Name, err)
+			return err
 		}
 	}
 
@@ -246,7 +246,7 @@ func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, p
 			}
 
 			if i == c.poolMgr.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to initialize the free IP ranges of Subnet", constant.ErrRetriesExhausted, c.poolMgr.config.MaxConflictRetries)
+				return fmt.Errorf("%w, failed for %d times, failed to update the total count of IP addresses of IPPool %s", constant.ErrRetriesExhausted, c.poolMgr.config.MaxConflictRetries, pool.Name)
 			}
 
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * c.poolMgr.config.ConflictRetryUnitTime)

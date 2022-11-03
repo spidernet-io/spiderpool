@@ -279,7 +279,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 		err = sm.ipPoolManager.CreateIPPool(ctx, sp)
 		if nil != err {
 			if i == sm.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed to create IPPool, error: %v", ErrMaxRetries, err)
+				return fmt.Errorf("%w, failed for %d times, failed to create IPPool, error: %v", constant.ErrRetriesExhausted, ErrMaxRetries, err)
 			}
 
 			logger.Sugar().Errorf("failed to create IPPool, error: %v", err)

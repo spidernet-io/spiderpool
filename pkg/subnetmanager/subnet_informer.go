@@ -213,7 +213,7 @@ OUTER:
 						return err
 					}
 					if i == sm.config.MaxConflictRetries {
-						return fmt.Errorf("%w(<=%d) to init reference for controller Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
+						return fmt.Errorf("%w, failed for %d times, failed to initialize reference for controller Subnet ", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
 					}
 					time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 					continue OUTER
@@ -292,7 +292,7 @@ func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *sp
 					return err
 				}
 				if i == sm.config.MaxConflictRetries {
-					return fmt.Errorf("%w(<=%d) to init the free IP ranges of Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
+					return fmt.Errorf("%w, failed for %d times, failed to initialize the free IP ranges of Subnet ", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
 				}
 				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
 				continue

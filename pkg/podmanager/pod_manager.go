@@ -87,7 +87,7 @@ func (pm *podManager) MergeAnnotations(ctx context.Context, namespace, podName s
 				return err
 			}
 			if i == pm.config.MaxConflictRetries {
-				return fmt.Errorf("%w(<=%d) to merge Pod annotations", constant.ErrRetriesExhausted, pm.config.MaxConflictRetries)
+				return fmt.Errorf("%w, failed for %d times, failed to merge Pod annotations", constant.ErrRetriesExhausted, pm.config.MaxConflictRetries)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * pm.config.ConflictRetryUnitTime)
 			continue

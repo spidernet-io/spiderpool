@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -308,12 +307,10 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 	var results []*AllocationResult
 	for _, c := range t.PoolCandidates {
 		result, err := i.allocateIPFromPoolCandidates(ctx, c, t.NIC, containerID, t.CleanGateway, pod)
-		if result.IP != nil {
-			results = append(results, result)
-		}
 		if err != nil {
 			return results, err
 		}
+		results = append(results, result)
 
 		routes, err := groupCustomRoutesByGW(ctx, customRoutes, result.IP)
 		if err != nil {
@@ -345,18 +342,7 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 	}
 
 	var errs []error
-	var usedIPPool *spiderpoolv1.SpiderIPPool
-	result := &AllocationResult{}
-
-	// TODO(iiiceoo): Debug panic https://github.com/spidernet-io/spiderpool/issues/974
-	defer func() {
-		if e := recover(); e != nil {
-			logger.Sugar().Errorf("panic runtime error: AllocationResult: %+v", result)
-			logger.Sugar().Errorf("panic runtime error: IPPool: %+v", usedIPPool)
-			logger.Sugar().Errorf("%s", debug.Stack())
-		}
-	}()
-
+	var result *AllocationResult
 	for _, pool := range c.Pools {
 		ip, ipPool, err := i.ipPoolManager.AllocateIP(ctx, pool, containerID, nic, pod)
 		if err != nil {
@@ -364,17 +350,18 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 			logger.Sugar().Warnf("Failed to allocate IPv%d IP to %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
 			continue
 		}
-		usedIPPool = ipPool
 
-		result.IP = ip
-		result.CleanGateway = cleanGateway
-		result.Routes = append(result.Routes, convertSpecRoutesToOAIRoutes(nic, ipPool.Spec.Routes)...)
+		result = &AllocationResult{
+			IP:           ip,
+			CleanGateway: cleanGateway,
+			Routes:       convertSpecRoutesToOAIRoutes(nic, ipPool.Spec.Routes),
+		}
 		logger.Sugar().Infof("Allocate IPv%d IP %s to %s from IPPool %s", c.IPVersion, *result.IP.Address, nic, pool)
 		break
 	}
 
 	if len(errs) == len(c.Pools) {
-		return result, fmt.Errorf("failed to allocate any IPv%d IP address to %s from IPPools %v: %w", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs))
+		return nil, fmt.Errorf("failed to allocate any IPv%d IP address to %s from IPPools %v: %w", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs))
 	}
 
 	return result, nil

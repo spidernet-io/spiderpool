@@ -241,7 +241,7 @@ func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, p
 			}
 
 			if i == c.poolMgr.config.MaxConflictRetries {
-				return fmt.Errorf("insufficient retries(<=%d) to init the free IP ranges of Subnet", c.poolMgr.config.MaxConflictRetries)
+				return fmt.Errorf("%w, failed for %d times, failed to initialize the free IP ranges of Subnet", constant.ErrRetriesExhausted, c.poolMgr.config.MaxConflictRetries)
 			}
 
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * c.poolMgr.config.ConflictRetryUnitTime)

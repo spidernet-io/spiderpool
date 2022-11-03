@@ -96,13 +96,6 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 }
 
 func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool, enableSubnet bool) *field.Error {
-	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs, enableSubnet); err != nil {
-		return err
-	}
-	if err := validateIPPoolExcludeIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.ExcludeIPs); err != nil {
-		return err
-	}
-
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
 		return field.InternalError(ipsField, err)

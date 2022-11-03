@@ -86,6 +86,12 @@ func (sm *subnetManager) validateSubnetSpec(ctx context.Context, subnet *spiderp
 	if err := sm.validateSubnetSubnet(ctx, *subnet.Spec.IPVersion, subnet.Name, subnet.Spec.Subnet); err != nil {
 		return err
 	}
+	if err := validateSubnetIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
+		return err
+	}
+	if err := validateSubnetExcludeIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.ExcludeIPs); err != nil {
+		return err
+	}
 	if err := validateSubnetGateway(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Gateway); err != nil {
 		return err
 	}
@@ -94,13 +100,6 @@ func (sm *subnetManager) validateSubnetSpec(ctx context.Context, subnet *spiderp
 }
 
 func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := validateSubnetIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
-		return err
-	}
-	if err := validateSubnetExcludeIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.ExcludeIPs); err != nil {
-		return err
-	}
-
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
 		return field.InternalError(ipsField, err)

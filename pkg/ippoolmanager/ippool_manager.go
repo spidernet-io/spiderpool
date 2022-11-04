@@ -33,6 +33,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ipPoolManager struct {
@@ -46,8 +47,11 @@ type ipPoolManager struct {
 	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
 	leader election.SpiderLeaseElector
 
-	// rateLimitQueue serves for IPPool informer
-	rateLimitQueue workqueue.RateLimitingInterface
+	// v4AutoCreatedRateLimitQueue serves for IPPool informer
+	v4AutoCreatedRateLimitQueue workqueue.RateLimitingInterface
+
+	// v6AutoCreatedRateLimitQueue serves for IPPool informer
+	v6AutoCreatedRateLimitQueue workqueue.RateLimitingInterface
 }
 
 func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
@@ -175,7 +179,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 	if err != nil {
 		return nil, err
 	}
-	reservedIPs, err := im.rIPManager.GetReservedIPsByIPVersion(ctx, *ipPool.Spec.IPVersion, rIPList)
+	reservedIPs, err := reservedipmanager.GetReservedIPsByIPVersion(*ipPool.Spec.IPVersion, rIPList)
 	if err != nil {
 		return nil, err
 	}
@@ -463,11 +467,15 @@ func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spider
 }
 
 // GetAutoPoolRateLimitQueue serves for auto-created IPPool
-func (im *ipPoolManager) GetAutoPoolRateLimitQueue() workqueue.RateLimitingInterface {
-	return im.rateLimitQueue
+func (im *ipPoolManager) GetAutoPoolRateLimitQueue(ipVersion spiderpooltypes.IPVersion) workqueue.RateLimitingInterface {
+	if ipVersion == constant.IPv4 {
+		return im.v4AutoCreatedRateLimitQueue
+	}
+
+	return im.v6AutoCreatedRateLimitQueue
 }
 
-// GetAutoPoolRateLimitQueue serves for auto-created IPPool
+// GetAutoPoolMaxWorkQueueLength serves for auto-created IPPool
 func (im *ipPoolManager) GetAutoPoolMaxWorkQueueLength() int {
 	return im.config.MaxWorkQueueLength
 }

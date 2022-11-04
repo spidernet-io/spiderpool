@@ -19,4 +19,6 @@ type IPPoolManagerConfig struct {
 	LeaderRetryElectGap           time.Duration
 	MaxWorkQueueLength            int
 	WorkQueueRequeueDelayDuration time.Duration
+	WorkerNum                     int
+	WorkQueueMaxRetries           int
 }

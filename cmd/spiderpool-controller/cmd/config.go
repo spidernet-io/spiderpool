@@ -82,7 +82,9 @@ var envInfo = []envConf{
 	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
 	{"SPIDERPOOL_ENABLE_SUBNET_DELETE_STALE_IPPOOL", "false", true, nil, &controllerContext.Cfg.EnableSubnetDeleteStaleIPPool, nil},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
-	{"SPIDERPOOL_AUTO_IPPOOL_SCALE_RETRY_DELAY_DURATION", "10", true, nil, nil, &controllerContext.Cfg.IPPoolWorkQueueRequeueDelayDuration},
+	{"SPIDERPOOL_AUTO_IPPOOL_SCALE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.IPPoolWorkQueueRequeueDelayDuration},
+	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
+	{"SPIDERPOOL_WORKQUEUE_MAX_RETRIES", "500", true, nil, nil, &controllerContext.Cfg.WorkQueueMaxRetries},
 }
 
 type Config struct {
@@ -118,6 +120,8 @@ type Config struct {
 	SubnetResyncPeriod               int
 	SubnetInformerWorkers            int
 	SubnetInformerMaxWorkqueueLength int
+	WorkQueueMaxRetries              int
+	IPPoolInformerWorkers            int
 
 	// if IPPoolWorkQueueRequeueDelayDuration is negative number, we would not requeue it
 	IPPoolWorkQueueRequeueDelayDuration int

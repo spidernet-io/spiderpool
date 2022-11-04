@@ -32,7 +32,6 @@ import (
 )
 
 var logger *zap.Logger
-var ErrMaxRetries = fmt.Errorf("over max retries")
 
 type subnetManager struct {
 	config        *SubnetManagerConfig
@@ -166,7 +165,7 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 		return nil, fmt.Errorf("failed to list reservedIPs, error: %v", err)
 	}
 
-	reservedIPs, err := sm.reservedMgr.GetReservedIPsByIPVersion(ctx, ipVersion, reservedIPList)
+	reservedIPs, err := reservedipmanager.GetReservedIPsByIPVersion(ipVersion, reservedIPList)
 	if nil != err {
 		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %v",
 			constant.ErrWrongInput, reservedIPs, ipVersion, err)
@@ -231,7 +230,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 		subnet, err := sm.GetSubnetByName(ctx, subnetName)
 		if nil != err {
 			if i == sm.config.MaxConflictRetries {
-				return fmt.Errorf("%w: %v", ErrMaxRetries, err)
+				return fmt.Errorf("%w: %v", constant.ErrRetriesExhausted, err)
 			}
 
 			logger.Error(err.Error())
@@ -279,7 +278,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 		err = sm.ipPoolManager.CreateIPPool(ctx, sp)
 		if nil != err {
 			if i == sm.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to create IPPool, error: %v", constant.ErrRetriesExhausted, ErrMaxRetries, err)
+				return fmt.Errorf("%w, failed for %d times, failed to create IPPool, error: %v", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries, err)
 			}
 
 			logger.Sugar().Errorf("failed to create IPPool, error: %v", err)
@@ -291,7 +290,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 		err = sm.ipPoolManager.UpdateDesiredIPNumber(ctx, sp, ipNum)
 		if nil != err {
 			if i == sm.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed to update IPPool '%s' status DesiredIPNumber '%d', error: %v", ErrMaxRetries, sp.Name, ipNum, err)
+				return fmt.Errorf("%w, failed to update IPPool '%s' status DesiredIPNumber '%d', error: %v", constant.ErrRetriesExhausted, sp.Name, ipNum, err)
 			}
 
 			logger.Sugar().Errorf("failed to update IPPool '%s' status DesiredIPNumber '%d', error: %v", sp.Name, ipNum, err)

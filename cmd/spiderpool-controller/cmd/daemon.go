@@ -290,6 +290,8 @@ func initControllerServiceManagers(ctx context.Context) {
 		LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 		MaxWorkQueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
 		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.IPPoolWorkQueueRequeueDelayDuration) * time.Second,
+		WorkerNum:                     controllerContext.Cfg.IPPoolInformerWorkers,
+		WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
 	}, controllerContext.CRDManager, controllerContext.RIPManager)
 	if err != nil {
 		logger.Fatal(err.Error())

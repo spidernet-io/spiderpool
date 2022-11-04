@@ -216,10 +216,13 @@ func (im *ipPoolManager) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		if err != nil {
 			return field.InternalError(ipsField, err)
 		}
-		if len(newIPs) > len(spiderpoolip.IPsDiffSet(newIPs, existIPs)) {
+
+		overlapIPs := spiderpoolip.IPsIntersectionSet(newIPs, existIPs)
+		if len(overlapIPs) > 0 {
+			overlapRanges, _ := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, overlapIPs)
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("overlap with IPPool %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name),
+				fmt.Sprintf("overlap with IPPool %s in IP ranges %v, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name, overlapRanges),
 			)
 		}
 	}

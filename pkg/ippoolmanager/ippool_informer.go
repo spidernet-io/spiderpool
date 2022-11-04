@@ -200,17 +200,10 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 	}
 
 	if needCalculate {
+		informerLogger.Sugar().Debugf("try to update IPPool '%s' status TotalIPCount", currentIPPool.Name)
 		// we do a deep copy of the object here so that the caller can continue to use
 		// the original object in a threadsafe manner.
-		currentIPPool = currentIPPool.DeepCopy()
-
-		// initial SpiderIPPool AllocatedIPCount property
-		if currentIPPool.DeletionTimestamp == nil && currentIPPool.Status.AllocatedIPCount == nil {
-			currentIPPool.Status.AllocatedIPCount = pointer.Int64(0)
-		}
-
-		informerLogger.Sugar().Infof("try to update IPPool '%s' status TotalIPCount", currentIPPool.Name)
-		err := c.updateIPPoolTotalIPCount(ctx, currentIPPool)
+		err := c.updateIPPoolStatusCounts(ctx, currentIPPool.DeepCopy())
 		if nil != err {
 			return fmt.Errorf("failed to update IPPool '%s' status TotalIPCount, error: %v", currentIPPool.Name, err)
 		}
@@ -219,27 +212,33 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 	return nil
 }
 
-func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+func (c *poolInformerController) updateIPPoolStatusCounts(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	rand.Seed(time.Now().UnixNano())
 
-	var err error
+	deepCopyPool := pool.DeepCopy()
 	for i := 0; i <= c.poolMgr.config.MaxConflictRetries; i++ {
+		var err error
 		if i != 0 {
-			pool, err = c.poolMgr.GetIPPoolByName(ctx, pool.Name)
+			deepCopyPool, err = c.poolMgr.GetIPPoolByName(ctx, deepCopyPool.Name)
 			if nil != err {
 				return err
 			}
 		}
 
-		totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+		// initial SpiderIPPool AllocatedIPCount property
+		if deepCopyPool.DeletionTimestamp == nil && deepCopyPool.Status.AllocatedIPCount == nil {
+			deepCopyPool.Status.AllocatedIPCount = pointer.Int64(0)
+		}
+
+		totalIPs, err := spiderpoolip.AssembleTotalIPs(*deepCopyPool.Spec.IPVersion, deepCopyPool.Spec.IPs, deepCopyPool.Spec.ExcludeIPs)
 		if nil != err {
-			return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", pool.Name, err)
+			return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", deepCopyPool.Name, err)
 		}
 
 		totalIPCount := int64(len(totalIPs))
-		pool.Status.TotalIPCount = &totalIPCount
+		deepCopyPool.Status.TotalIPCount = &totalIPCount
 
-		err = c.poolMgr.client.Status().Update(ctx, pool)
+		err = c.poolMgr.client.Status().Update(ctx, deepCopyPool)
 		if nil != err {
 			if !apierrors.IsConflict(err) {
 				return err
@@ -253,7 +252,8 @@ func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, p
 			continue
 		}
 
-		informerLogger.Sugar().Infof("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, totalIPCount)
+		pool = deepCopyPool
+		informerLogger.Sugar().Debugf("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", deepCopyPool.Name, totalIPCount)
 		break
 	}
 

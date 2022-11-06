@@ -286,40 +286,55 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 	return ips, nil
 }
 
-func ValidateSubnetAndPoolIpConsistency(ctx context.Context, f *frame.Framework, subnetName string) error {
+func WaitValidateSubnetAndPoolIpConsistency(ctx context.Context, f *frame.Framework, subnetName string) error {
 	if f == nil || subnetName == "" {
 		return frame.ErrWrongInput
 	}
 
-	subnetObject := GetSubnetByName(f, subnetName)
-	if subnetObject == nil {
-		return fmt.Errorf("failed to get subnet %v object", subnetName)
-	}
+LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			return frame.ErrTimeOut
+		default:
+			subnetObject := GetSubnetByName(f, subnetName)
+			if subnetObject == nil {
+				return fmt.Errorf("failed to get subnet %v object", subnetName)
+			}
 
-	poolList, err := GetIppoolsInSubnet(f, subnetName)
-	if err != nil && len(poolList.Items) != 0 {
-		return err
-	}
+			poolList, err := GetIppoolsInSubnet(f, subnetName)
+			if err != nil || len(poolList.Items) == 0 {
+				return fmt.Errorf("failed to get ippool in subnet %v", subnetName)
+			}
 
-	for poolInSubnet, ipsInSubnet := range subnetObject.Status.ControlledIPPools {
-		for _, pool := range poolList.Items {
-			if pool.Name == poolInSubnet {
-				ips1, err := ip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-				if err != nil {
-					return err
-				}
+			var poolInSubentList []string
+			for poolInSubnet, ipsInSubnet := range subnetObject.Status.ControlledIPPools {
+				poolInSubentList = append(poolInSubentList, poolInSubnet)
+				for _, pool := range poolList.Items {
+					if pool.Name == poolInSubnet {
+						ips1, err := ip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+						if err != nil {
+							return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", pool.Name, err)
+						}
 
-				ips2, err := ip.ParseIPRanges(*subnetObject.Spec.IPVersion, ipsInSubnet.IPs)
-				if err != nil {
-					return err
-				}
+						ips2, err := ip.ParseIPRanges(*subnetObject.Spec.IPVersion, ipsInSubnet.IPs)
+						if err != nil {
+							return err
+						}
 
-				diffIps := ip.IPsDiffSet(ips1, ips2)
-				if diffIps != nil {
-					return fmt.Errorf("inconsistent ip records in subnet %v and pool %v ", subnetName, pool.Name)
+						diffIps := ip.IPsDiffSet(ips1, ips2)
+						if diffIps != nil {
+							GinkgoWriter.Printf("inconsistent ip records in subnet %v/%v and pool %v/%v ", subnetName, ips2, pool.Name, ips1)
+							continue LOOP
+						}
+						break
+					}
 				}
 			}
+			if len(poolInSubentList) != len(poolList.Items) {
+				continue LOOP
+			}
+			return nil
 		}
 	}
-	return nil
 }

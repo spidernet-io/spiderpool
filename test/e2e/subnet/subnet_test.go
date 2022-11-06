@@ -140,11 +140,11 @@ var _ = Describe("test subnet", Serial, Label("subnet"), func() {
 			// Check that all ip's on the subnet have been assigned
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(originialNum))).NotTo(HaveOccurred())
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(originialNum))).NotTo(HaveOccurred())
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 			endT1 := time.Since(startT1)
 			GinkgoWriter.Printf("%v pools are automatically created, time cost %v \n", originialNum, endT1)
@@ -189,11 +189,11 @@ var _ = Describe("test subnet", Serial, Label("subnet"), func() {
 			GinkgoWriter.Println("Check the free IPs again, it should all be allocated already.")
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(scaleupNum))).NotTo(HaveOccurred())
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(scaleupNum))).NotTo(HaveOccurred())
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 			endT2 := time.Since(startT2)
 			GinkgoWriter.Printf("Allocated IP scaling up from %v to %v, time cost %v.\n", originialNum, scaleupNum, endT2)
@@ -222,11 +222,11 @@ var _ = Describe("test subnet", Serial, Label("subnet"), func() {
 			GinkgoWriter.Println("Checking AllocatedIP after automatic scaling down")
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(originialNum))).NotTo(HaveOccurred())
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(originialNum))).NotTo(HaveOccurred())
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 			endT3 := time.Since(startT3)
 			GinkgoWriter.Printf("Allocated IP scaling down from %v to %v, time cost %v.\n", scaleupNum, originialNum, endT3)
@@ -367,17 +367,19 @@ var _ = Describe("test subnet", Serial, Label("subnet"), func() {
 			// There are enough resources on the node that the deployment pod will eventually run
 			podList, err := frame.GetPodListByLabel(deployObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf("succeed to running a new deployment pod")
+			GinkgoWriter.Printf("succeed to running a new deployment pod \n")
 			podList, err = frame.DeletePodListUntilReady(podList, common.PodReStartTimeout)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(podList.Items)).To(Equal(int(deployScaleupNum)))
 
-			GinkgoWriter.Printf("Check the consistency of the ip recorded in the subnet with the ip recorded in the pool")
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodReStartTimeout)
+			defer cancel()
+			GinkgoWriter.Printf("Check the consistency of the ip recorded in the subnet with the ip recorded in the pool \n")
 			if frame.Info.IpV4Enabled {
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.ValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 
 			// delete all deployment

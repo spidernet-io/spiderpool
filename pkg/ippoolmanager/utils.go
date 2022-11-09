@@ -35,7 +35,7 @@ func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, p
 	}, nil
 }
 
-func ShouldScaleIPPool(pool spiderpoolv1.SpiderIPPool) bool {
+func ShouldScaleIPPool(pool *spiderpoolv1.SpiderIPPool) bool {
 	// only the auto-created IPPool owns the label "ipam.spidernet.io/owner-application"
 	poolLabels := pool.GetLabels()
 	_, ok := poolLabels[constant.LabelIPPoolOwnerApplication]

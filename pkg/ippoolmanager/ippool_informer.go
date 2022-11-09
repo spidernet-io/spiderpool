@@ -96,6 +96,7 @@ type poolInformerController struct {
 	poolSynced cache.InformerSynced
 	workQueue  workqueue.RateLimitingInterface
 
+	genIPsCursor         bool
 	requeueDelayDuration time.Duration
 }
 
@@ -271,7 +272,7 @@ func (c *poolInformerController) enqueueAutoIPPool(obj interface{}) {
 
 	maxQueueLength := c.poolMgr.GetAutoPoolMaxWorkQueueLength()
 	// only add some pools that the current IP number is not equal with the desired IP number
-	if ShouldScaleIPPool(*pool) {
+	if ShouldScaleIPPool(pool) {
 		if c.workQueue.Len() >= maxQueueLength {
 			informerLogger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
 			return
@@ -371,6 +372,7 @@ func (c *poolInformerController) processNextWorkItem() bool {
 			c.workQueue.Forget(obj)
 			return fmt.Errorf("error syncing '%s': %s", poolName, err.Error())
 		}
+		c.iterate()
 
 		c.workQueue.Forget(obj)
 		return nil
@@ -382,6 +384,14 @@ func (c *poolInformerController) processNextWorkItem() bool {
 	}
 
 	return true
+}
+
+func (c *poolInformerController) iterate() {
+	if c.genIPsCursor {
+		c.genIPsCursor = false
+	} else {
+		c.genIPsCursor = true
+	}
 }
 
 func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
@@ -419,7 +429,7 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 
 	if desiredIPNum > totalIPCount {
 		// expand
-		ipsFromSubnet, err := c.poolMgr.subnetManager.GenerateIPsFromSubnetWhenScaleUpIP(logutils.IntoContext(ctx, informerLogger), subnetName, pool)
+		ipsFromSubnet, err := c.poolMgr.subnetManager.GenerateIPsFromSubnetWhenScaleUpIP(logutils.IntoContext(ctx, informerLogger), subnetName, pool, c.genIPsCursor)
 		if nil != err {
 			return fmt.Errorf("failed to generate IPs from subnet '%s', error: %w", subnetName, err)
 		}

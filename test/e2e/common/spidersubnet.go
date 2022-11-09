@@ -308,6 +308,7 @@ LOOP:
 			}
 
 			var poolInSubentList []string
+			ipMap := make(map[string]string)
 			for poolInSubnet, ipsInSubnet := range subnetObject.Status.ControlledIPPools {
 				poolInSubentList = append(poolInSubentList, poolInSubnet)
 				for _, pool := range poolList.Items {
@@ -317,6 +318,13 @@ LOOP:
 							return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", pool.Name, err)
 						}
 
+						for _, v := range ips1 {
+							if d, ok := ipMap[string(v)]; ok {
+								return fmt.Errorf("ippool objects %v and %v have conflicting ip: %v", d, pool.Name, v)
+							}
+							ipMap[string(v)] = pool.Name
+						}
+
 						ips2, err := ip.ParseIPRanges(*subnetObject.Spec.IPVersion, ipsInSubnet.IPs)
 						if err != nil {
 							return err
@@ -324,7 +332,7 @@ LOOP:
 
 						diffIps := ip.IPsDiffSet(ips1, ips2)
 						if diffIps != nil {
-							GinkgoWriter.Printf("inconsistent ip records in subnet %v/%v and pool %v/%v ", subnetName, ips2, pool.Name, ips1)
+							GinkgoWriter.Printf("inconsistent ip records in subnet %v/%v and pool %v/%v \n", subnetName, ips2, pool.Name, ips1)
 							continue LOOP
 						}
 						break

@@ -13,6 +13,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -135,7 +136,6 @@ func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV
 }
 
 func getCustomRoutes(ctx context.Context, pod *corev1.Pod) ([]*models.Route, error) {
-	// TODO(iiiceoo): Check Pod annotations, use pkg ip
 	anno, ok := pod.Annotations[constant.AnnoPodRoutes]
 	if !ok {
 		return nil, nil
@@ -146,6 +146,12 @@ func getCustomRoutes(ctx context.Context, pod *corev1.Pod) ([]*models.Route, err
 	err := json.Unmarshal([]byte(anno), &annoPodRoutes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+	}
+
+	for _, route := range annoPodRoutes {
+		if err := spiderpoolip.IsRouteWithoutIPVersion(route.Dst, route.Gw); err != nil {
+			return nil, fmt.Errorf("%w: %v", errPrefix, err)
+		}
 	}
 
 	return convertAnnoPodRoutesToOAIRoutes(annoPodRoutes), nil

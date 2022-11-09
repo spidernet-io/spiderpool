@@ -205,7 +205,7 @@ func (im *ipPoolManager) updateSubnetStatus(ctx context.Context, op Operation, s
 				event.EventRecorder.Event(subnet, corev1.EventTypeWarning, eventReason, fmt.Sprintf("%s unsuccessfully", eventAction))
 				return field.InternalError(
 					controlledIPPoolsField,
-					fmt.Errorf("%w, failed for %d times, failed to update the IP addresses of the controlled IPPool of the Subnet %s ", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
+					fmt.Errorf("%w, failed for %d times, failed to update the IP addresses of the controlled IPPool of the Subnet %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, subnet.Name),
 				)
 			}
 			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)

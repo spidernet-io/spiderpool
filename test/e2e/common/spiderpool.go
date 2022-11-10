@@ -655,6 +655,22 @@ func GetIppoolsInSubnet(f *frame.Framework, subnetName string) (*v1.SpiderIPPool
 	return poolList, nil
 }
 
+func GetPoolNameListInSubnet(f *frame.Framework, subnetName string) ([]string, error) {
+	if f == nil || subnetName == "" {
+		return nil, frame.ErrWrongInput
+	}
+	var poolNameList []string
+
+	poolList, err := GetIppoolsInSubnet(f, subnetName)
+	if nil != err {
+		return nil, err
+	}
+	for _, v := range poolList.Items {
+		poolNameList = append(poolNameList, v.Name)
+	}
+	return poolNameList, nil
+}
+
 func CreateIppoolInSpiderSubnet(f *frame.Framework, subnetName string, pool *v1.SpiderIPPool, ipNum int) error {
 	if f == nil || subnetName == "" || pool == nil || ipNum <= 0 {
 		return frame.ErrWrongInput

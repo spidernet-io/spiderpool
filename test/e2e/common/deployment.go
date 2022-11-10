@@ -158,7 +158,7 @@ func CreateDeployUnitlReadyCheckInIppool(frame *e2e.Framework, depName, namespac
 	Expect(ok).To(BeTrue())
 }
 
-func BatchCreateDeployment(frame *e2e.Framework, expectedNum, replicas int, namespace string, annotationMap, nodeLanbel map[string]string) []string {
+func BatchCreateDeploymentUntilReady(ctx context.Context, frame *e2e.Framework, expectedNum, replicas int, namespace string, annotationMap map[string]string) []string {
 	var deployNameList []string
 
 	lock := lock.Mutex{}
@@ -175,9 +175,10 @@ func BatchCreateDeployment(frame *e2e.Framework, expectedNum, replicas int, name
 			deployNameList = append(deployNameList, deployName)
 			lock.Unlock()
 			deployObject = GenerateExampleDeploymentYaml(deployName, namespace, int32(replicas))
-			deployObject.Spec.Template.Spec.NodeSelector = nodeLanbel
 			deployObject.Spec.Template.Annotations = annotationMap
 			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+			_, err := frame.WaitDeploymentReady(deployName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred())
 		}()
 	}
 	wg.Wait()

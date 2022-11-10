@@ -53,7 +53,36 @@ Success
 type GetIpamHealthyOK struct {
 }
 
+// IsSuccess returns true when this get ipam healthy o k response has a 2xx status code
+func (o *GetIpamHealthyOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this get ipam healthy o k response has a 3xx status code
+func (o *GetIpamHealthyOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get ipam healthy o k response has a 4xx status code
+func (o *GetIpamHealthyOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get ipam healthy o k response has a 5xx status code
+func (o *GetIpamHealthyOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get ipam healthy o k response a status code equal to that given
+func (o *GetIpamHealthyOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *GetIpamHealthyOK) Error() string {
+	return fmt.Sprintf("[GET /ipam/healthy][%d] getIpamHealthyOK ", 200)
+}
+
+func (o *GetIpamHealthyOK) String() string {
 	return fmt.Sprintf("[GET /ipam/healthy][%d] getIpamHealthyOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Failed
 type GetIpamHealthyInternalServerError struct {
 }
 
+// IsSuccess returns true when this get ipam healthy internal server error response has a 2xx status code
+func (o *GetIpamHealthyInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get ipam healthy internal server error response has a 3xx status code
+func (o *GetIpamHealthyInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get ipam healthy internal server error response has a 4xx status code
+func (o *GetIpamHealthyInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get ipam healthy internal server error response has a 5xx status code
+func (o *GetIpamHealthyInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get ipam healthy internal server error response a status code equal to that given
+func (o *GetIpamHealthyInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *GetIpamHealthyInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /ipam/healthy][%d] getIpamHealthyInternalServerError ", 500)
+}
+
+func (o *GetIpamHealthyInternalServerError) String() string {
 	return fmt.Sprintf("[GET /ipam/healthy][%d] getIpamHealthyInternalServerError ", 500)
 }
 

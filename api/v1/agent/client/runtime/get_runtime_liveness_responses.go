@@ -53,7 +53,36 @@ Success
 type GetRuntimeLivenessOK struct {
 }
 
+// IsSuccess returns true when this get runtime liveness o k response has a 2xx status code
+func (o *GetRuntimeLivenessOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this get runtime liveness o k response has a 3xx status code
+func (o *GetRuntimeLivenessOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get runtime liveness o k response has a 4xx status code
+func (o *GetRuntimeLivenessOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get runtime liveness o k response has a 5xx status code
+func (o *GetRuntimeLivenessOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get runtime liveness o k response a status code equal to that given
+func (o *GetRuntimeLivenessOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *GetRuntimeLivenessOK) Error() string {
+	return fmt.Sprintf("[GET /runtime/liveness][%d] getRuntimeLivenessOK ", 200)
+}
+
+func (o *GetRuntimeLivenessOK) String() string {
 	return fmt.Sprintf("[GET /runtime/liveness][%d] getRuntimeLivenessOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Failed
 type GetRuntimeLivenessInternalServerError struct {
 }
 
+// IsSuccess returns true when this get runtime liveness internal server error response has a 2xx status code
+func (o *GetRuntimeLivenessInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get runtime liveness internal server error response has a 3xx status code
+func (o *GetRuntimeLivenessInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get runtime liveness internal server error response has a 4xx status code
+func (o *GetRuntimeLivenessInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get runtime liveness internal server error response has a 5xx status code
+func (o *GetRuntimeLivenessInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get runtime liveness internal server error response a status code equal to that given
+func (o *GetRuntimeLivenessInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *GetRuntimeLivenessInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /runtime/liveness][%d] getRuntimeLivenessInternalServerError ", 500)
+}
+
+func (o *GetRuntimeLivenessInternalServerError) String() string {
 	return fmt.Sprintf("[GET /runtime/liveness][%d] getRuntimeLivenessInternalServerError ", 500)
 }
 

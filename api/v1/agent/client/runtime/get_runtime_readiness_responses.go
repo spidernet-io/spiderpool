@@ -53,7 +53,36 @@ Success
 type GetRuntimeReadinessOK struct {
 }
 
+// IsSuccess returns true when this get runtime readiness o k response has a 2xx status code
+func (o *GetRuntimeReadinessOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this get runtime readiness o k response has a 3xx status code
+func (o *GetRuntimeReadinessOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get runtime readiness o k response has a 4xx status code
+func (o *GetRuntimeReadinessOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get runtime readiness o k response has a 5xx status code
+func (o *GetRuntimeReadinessOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get runtime readiness o k response a status code equal to that given
+func (o *GetRuntimeReadinessOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *GetRuntimeReadinessOK) Error() string {
+	return fmt.Sprintf("[GET /runtime/readiness][%d] getRuntimeReadinessOK ", 200)
+}
+
+func (o *GetRuntimeReadinessOK) String() string {
 	return fmt.Sprintf("[GET /runtime/readiness][%d] getRuntimeReadinessOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Failed
 type GetRuntimeReadinessInternalServerError struct {
 }
 
+// IsSuccess returns true when this get runtime readiness internal server error response has a 2xx status code
+func (o *GetRuntimeReadinessInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get runtime readiness internal server error response has a 3xx status code
+func (o *GetRuntimeReadinessInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get runtime readiness internal server error response has a 4xx status code
+func (o *GetRuntimeReadinessInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get runtime readiness internal server error response has a 5xx status code
+func (o *GetRuntimeReadinessInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get runtime readiness internal server error response a status code equal to that given
+func (o *GetRuntimeReadinessInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *GetRuntimeReadinessInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /runtime/readiness][%d] getRuntimeReadinessInternalServerError ", 500)
+}
+
+func (o *GetRuntimeReadinessInternalServerError) String() string {
 	return fmt.Sprintf("[GET /runtime/readiness][%d] getRuntimeReadinessInternalServerError ", 500)
 }
 

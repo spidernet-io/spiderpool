@@ -53,7 +53,36 @@ Success
 type GetWorkloadendpointOK struct {
 }
 
+// IsSuccess returns true when this get workloadendpoint o k response has a 2xx status code
+func (o *GetWorkloadendpointOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this get workloadendpoint o k response has a 3xx status code
+func (o *GetWorkloadendpointOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get workloadendpoint o k response has a 4xx status code
+func (o *GetWorkloadendpointOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get workloadendpoint o k response has a 5xx status code
+func (o *GetWorkloadendpointOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get workloadendpoint o k response a status code equal to that given
+func (o *GetWorkloadendpointOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *GetWorkloadendpointOK) Error() string {
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointOK ", 200)
+}
+
+func (o *GetWorkloadendpointOK) String() string {
 	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Get workloadendpoint failure
 type GetWorkloadendpointInternalServerError struct {
 }
 
+// IsSuccess returns true when this get workloadendpoint internal server error response has a 2xx status code
+func (o *GetWorkloadendpointInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get workloadendpoint internal server error response has a 3xx status code
+func (o *GetWorkloadendpointInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get workloadendpoint internal server error response has a 4xx status code
+func (o *GetWorkloadendpointInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get workloadendpoint internal server error response has a 5xx status code
+func (o *GetWorkloadendpointInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get workloadendpoint internal server error response a status code equal to that given
+func (o *GetWorkloadendpointInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *GetWorkloadendpointInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointInternalServerError ", 500)
+}
+
+func (o *GetWorkloadendpointInternalServerError) String() string {
 	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointInternalServerError ", 500)
 }
 

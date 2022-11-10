@@ -53,7 +53,36 @@ Success
 type PostIpamGcIpsOK struct {
 }
 
+// IsSuccess returns true when this post ipam gc ips o k response has a 2xx status code
+func (o *PostIpamGcIpsOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this post ipam gc ips o k response has a 3xx status code
+func (o *PostIpamGcIpsOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this post ipam gc ips o k response has a 4xx status code
+func (o *PostIpamGcIpsOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this post ipam gc ips o k response has a 5xx status code
+func (o *PostIpamGcIpsOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this post ipam gc ips o k response a status code equal to that given
+func (o *PostIpamGcIpsOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *PostIpamGcIpsOK) Error() string {
+	return fmt.Sprintf("[POST /ipam/gc_ips][%d] postIpamGcIpsOK ", 200)
+}
+
+func (o *PostIpamGcIpsOK) String() string {
 	return fmt.Sprintf("[POST /ipam/gc_ips][%d] postIpamGcIpsOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Global gc failure
 type PostIpamGcIpsInternalServerError struct {
 }
 
+// IsSuccess returns true when this post ipam gc ips internal server error response has a 2xx status code
+func (o *PostIpamGcIpsInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this post ipam gc ips internal server error response has a 3xx status code
+func (o *PostIpamGcIpsInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this post ipam gc ips internal server error response has a 4xx status code
+func (o *PostIpamGcIpsInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this post ipam gc ips internal server error response has a 5xx status code
+func (o *PostIpamGcIpsInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this post ipam gc ips internal server error response a status code equal to that given
+func (o *PostIpamGcIpsInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *PostIpamGcIpsInternalServerError) Error() string {
+	return fmt.Sprintf("[POST /ipam/gc_ips][%d] postIpamGcIpsInternalServerError ", 500)
+}
+
+func (o *PostIpamGcIpsInternalServerError) String() string {
 	return fmt.Sprintf("[POST /ipam/gc_ips][%d] postIpamGcIpsInternalServerError ", 500)
 }
 

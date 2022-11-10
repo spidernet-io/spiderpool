@@ -56,7 +56,36 @@ Success
 type DeleteIpamIPOK struct {
 }
 
+// IsSuccess returns true when this delete ipam Ip o k response has a 2xx status code
+func (o *DeleteIpamIPOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this delete ipam Ip o k response has a 3xx status code
+func (o *DeleteIpamIPOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this delete ipam Ip o k response has a 4xx status code
+func (o *DeleteIpamIPOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this delete ipam Ip o k response has a 5xx status code
+func (o *DeleteIpamIPOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this delete ipam Ip o k response a status code equal to that given
+func (o *DeleteIpamIPOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *DeleteIpamIPOK) Error() string {
+	return fmt.Sprintf("[DELETE /ipam/ip][%d] deleteIpamIpOK ", 200)
+}
+
+func (o *DeleteIpamIPOK) String() string {
 	return fmt.Sprintf("[DELETE /ipam/ip][%d] deleteIpamIpOK ", 200)
 }
 
@@ -79,9 +108,39 @@ type DeleteIpamIPFailure struct {
 	Payload models.Error
 }
 
+// IsSuccess returns true when this delete ipam Ip failure response has a 2xx status code
+func (o *DeleteIpamIPFailure) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this delete ipam Ip failure response has a 3xx status code
+func (o *DeleteIpamIPFailure) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this delete ipam Ip failure response has a 4xx status code
+func (o *DeleteIpamIPFailure) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this delete ipam Ip failure response has a 5xx status code
+func (o *DeleteIpamIPFailure) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this delete ipam Ip failure response a status code equal to that given
+func (o *DeleteIpamIPFailure) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *DeleteIpamIPFailure) Error() string {
 	return fmt.Sprintf("[DELETE /ipam/ip][%d] deleteIpamIpFailure  %+v", 500, o.Payload)
 }
+
+func (o *DeleteIpamIPFailure) String() string {
+	return fmt.Sprintf("[DELETE /ipam/ip][%d] deleteIpamIpFailure  %+v", 500, o.Payload)
+}
+
 func (o *DeleteIpamIPFailure) GetPayload() models.Error {
 	return o.Payload
 }

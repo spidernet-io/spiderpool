@@ -20,14 +20,14 @@ const (
 
 // Default timeouts to be used in context.WithTimeout
 const (
-	PodStartTimeout            = time.Minute
+	PodStartTimeout            = time.Minute * 2
 	PodReStartTimeout          = time.Minute * 2
-	IPReclaimTimeout           = time.Minute
+	IPReclaimTimeout           = time.Minute * 2
 	ExecCommandTimeout         = time.Minute
 	EventOccurTimeout          = time.Second * 30
 	ServiceAccountReadyTimeout = time.Second * 20
 	NodeReadyTimeout           = time.Minute
-	ResourceDeleteTimeout      = time.Minute
+	ResourceDeleteTimeout      = time.Minute * 2
 )
 
 var ForcedWaitingTime = time.Second

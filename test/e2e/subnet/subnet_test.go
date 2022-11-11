@@ -16,6 +16,7 @@ import (
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	subnetmanager "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -226,6 +227,199 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			AddReportEntry("Subnet Performance Results",
 				fmt.Sprintf(`{ "createTime": %d , "scaleupAndScaledownTime":%d, "deleteTime": %d }`,
 					int(endT1.Seconds()), int(endT2.Seconds()), int(endT3.Seconds())))
+		})
+	})
+
+	Context("Automatic creation, extension and deletion of ippool by different controllers", func() {
+		var (
+			subnetAvailableIpNum int = 100
+			fixedIPNumber            = "+0"
+			v4PoolNameList       []string
+			v6PoolNameList       []string
+			podList              *corev1.PodList
+		)
+
+		BeforeEach(func() {
+			if frame.Info.IpV4Enabled {
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetAvailableIpNum)
+				Expect(v4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetAvailableIpNum)
+				Expect(v6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			}
+		})
+
+		It("Automatic creation, extension and deletion of ippool by different controllers", Label("I00003"), func() {
+			var (
+				stsName                 string = "sts-" + tools.RandomName()
+				stsReplicasOriginialNum int32  = 1
+				stsReplicasScaleupNum   int32  = 2
+				rsName                  string = "rs-" + tools.RandomName()
+				rsReplicasOriginialNum  int32  = 1
+				rsReplicasScaleupNum    int32  = 2
+				dsName                  string = "ds-" + tools.RandomName()
+				controllerNum           int    = 3
+			)
+
+			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			if frame.Info.IpV4Enabled {
+				subnetAnno.IPv4 = []string{v4SubnetName}
+			}
+			if frame.Info.IpV6Enabled {
+				subnetAnno.IPv6 = []string{v6SubnetName}
+			}
+			subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+			Expect(err).NotTo(HaveOccurred())
+			annotationMap := map[string]string{
+				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+				constant.AnnoSpiderSubnet:             string(subnetAnnoMarshal),
+			}
+
+			// Create different controller resources
+			// Generate example StatefulSet yaml and create StatefulSet
+			stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, stsReplicasOriginialNum)
+			stsYaml.Spec.Template.Annotations = annotationMap
+			Expect(stsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("Tty to create StatefulSet %v/%v \n", namespace, stsName)
+			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed())
+
+			// Generate example daemonSet yaml and create daemonSet
+			dsYaml := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+			dsYaml.Spec.Template.Annotations = annotationMap
+			Expect(dsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("Try to create daemonSet %v/%v \n", namespace, dsName)
+			Expect(frame.CreateDaemonSet(dsYaml)).To(Succeed())
+
+			// Generate example replicaSet yaml and create replicaSet
+			rsYaml := common.GenerateExampleReplicaSetYaml(rsName, namespace, rsReplicasOriginialNum)
+			rsYaml.Spec.Template.Annotations = annotationMap
+			Expect(rsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("Try to create replicaSet %v/%v \n", namespace, rsName)
+			Expect(frame.CreateReplicaSet(rsYaml)).To(Succeed())
+
+			// All pods are running
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Check that the ip of the subnet record matches the record in ippool
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, controllerNum)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, controllerNum)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+			}
+
+			// Check that the pod's ip is recorded in the ippool
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			// scaling up statefulset/replicaset
+			rsObj, err := frame.GetReplicaSet(rsName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+			_, _, err = common.ScaleReplicasetUntilExpectedReplicas(ctx, frame, rsObj, int(rsReplicasScaleupNum))
+			Expect(err).NotTo(HaveOccurred())
+			stsObj, err := frame.GetStatefulSet(stsName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+			_, _, err = common.ScaleStatefulsetUntilExpectedReplicas(ctx, frame, stsObj, int(stsReplicasScaleupNum))
+			Expect(err).NotTo(HaveOccurred())
+			// Wait statefulSet/replicaset until Ready
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Check that the ip of the subnet record matches the record in ippool
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+			}
+
+			// Check that the pod's ip is recorded in the ippool
+			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			// scaling down statefulset/replicaset
+			stsObj, err = frame.GetStatefulSet(stsName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+			_, _, err = common.ScaleStatefulsetUntilExpectedReplicas(ctx, frame, stsObj, int(stsReplicasOriginialNum))
+			Expect(err).NotTo(HaveOccurred())
+			rsObj, err = frame.GetReplicaSet(rsName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+			_, _, err = common.ScaleReplicasetUntilExpectedReplicas(ctx, frame, rsObj, int(rsReplicasOriginialNum))
+			Expect(err).NotTo(HaveOccurred())
+			// All pods are running
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Check that the ip of the subnet record matches the record in ippool
+			ctx2, cancel2 := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel2()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx2, frame, v4SubnetName)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx2, frame, v6SubnetName)).NotTo(HaveOccurred())
+			}
+
+			// Check that the pod's ip is recorded in the ippool
+			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			// delete different controller resource
+			GinkgoWriter.Printf("delete statefulSet %v/%v\n", namespace, stsName)
+			Expect(frame.DeleteStatefulSet(stsName, namespace)).To(Succeed())
+
+			GinkgoWriter.Printf("delete daemonSet %v/%v\n", namespace, dsName)
+			Expect(frame.DeleteDaemonSet(dsName, namespace)).To(Succeed())
+
+			GinkgoWriter.Printf("delete replicaset %v/%v\n", namespace, rsName)
+			Expect(frame.DeleteReplicaSet(rsName, namespace)).To(Succeed())
+
+			// Delete the resource and wait for the subnet to return to its original state
+			ctx3, cancel3 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+			defer cancel3()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx3, frame, v4SubnetName, int64(0))).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx3, frame, v4SubnetName, 0)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx3, frame, v6SubnetName, int64(0))).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx3, frame, v6SubnetName, 0)).NotTo(HaveOccurred())
+			}
 		})
 	})
 })

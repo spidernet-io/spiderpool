@@ -24,5 +24,5 @@ type SubnetManager interface {
 	SetupControllers(ctx context.Context, client kubernetes.Interface) error
 	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podSelector map[string]string, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error
 	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
-	GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool) ([]string, error)
+	GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool, cursor bool) ([]string, error)
 }

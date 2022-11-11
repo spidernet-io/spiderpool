@@ -56,6 +56,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
+	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "3", false, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
+	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
 	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "300", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
@@ -112,11 +114,14 @@ type Config struct {
 	UpdateCRRetryUnitTime             int
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
-	SubnetResyncPeriod                int
-	IPPoolInformerMaxWorkQueueLength  int
+
+	SubnetResyncPeriod               int
+	SubnetInformerWorkers            int
+	SubnetInformerMaxWorkqueueLength int
 
 	// if IPPoolWorkQueueRequeueDelayDuration is negative number, we would not requeue it
 	IPPoolWorkQueueRequeueDelayDuration int
+	IPPoolInformerMaxWorkQueueLength    int
 
 	LeaseDuration      int
 	LeaseRenewDeadline int

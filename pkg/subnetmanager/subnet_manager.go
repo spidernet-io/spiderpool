@@ -42,8 +42,6 @@ type subnetManager struct {
 	reservedMgr   reservedipmanager.ReservedIPManager
 
 	leader election.SpiderLeaseElector
-
-	innerCtx context.Context
 }
 
 func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager, reservedIPMgr reservedipmanager.ReservedIPManager) (subnetmanagertypes.SubnetManager, error) {
@@ -89,7 +87,7 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 	return subnetList, nil
 }
 
-func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool) ([]string, error) {
+func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool, cursor bool) ([]string, error) {
 	if pool.Status.AutoDesiredIPCount == nil {
 		return nil, fmt.Errorf("%w: we can't generate IPs for the IPPool '%s' who doesn't have Status AutoDesiredIPCount", constant.ErrWrongInput, pool.Name)
 	}
@@ -196,9 +194,11 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 		return bytes.Compare(freeIPs[i].To16(), freeIPs[j].To16()) < 0
 	})
 
-	allocateIPs := make([]net.IP, ipNum)
-	for j := 0; j < ipNum; j++ {
-		allocateIPs[j] = freeIPs[j]
+	allocateIPs := make([]net.IP, 0, ipNum)
+	if cursor {
+		allocateIPs = append(allocateIPs, freeIPs[:ipNum]...)
+	} else {
+		allocateIPs = append(allocateIPs, freeIPs[len(freeIPs)-ipNum:]...)
 	}
 
 	// re-use the last allocated IPs

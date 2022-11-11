@@ -320,6 +320,8 @@ func initControllerServiceManagers(ctx context.Context) {
 			EnableSubnetDeleteStaleIPPool: controllerContext.Cfg.EnableSubnetDeleteStaleIPPool,
 			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			ResyncPeriod:                  time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
+			Workers:                       controllerContext.Cfg.SubnetInformerWorkers,
+			MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
 		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
 		if err != nil {
 			logger.Fatal(err.Error())

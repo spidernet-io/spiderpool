@@ -6,15 +6,17 @@ package subnetmanager
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -25,22 +27,39 @@ import (
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
+	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
+	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+)
+
+const (
+	MessageEnqueueSubnet = "Enqueue Subnet"
+	MessageWorkqueueFull = "Workqueue is full, dropping the element"
 )
 
 var informerLogger *zap.Logger
 
-func (sm *subnetManager) SetupInformer(ctx context.Context, client crdclientset.Interface, controllerLeader election.SpiderLeaseElector) error {
-	if controllerLeader == nil {
-		return fmt.Errorf("failed to set up SpiderSubnet informer, controller leader must be specified")
+func (sm *subnetManager) SetupInformer(ctx context.Context, client clientset.Interface, controllerLeader election.SpiderLeaseElector) error {
+	if client == nil {
+		return fmt.Errorf("failed to start Subnet informer, client must be specified")
 	}
-	// TODO(iiiceoo): ctx.Done() --> close(stopper)
-	sm.innerCtx = ctx
-	sm.leader = controllerLeader
+	if controllerLeader == nil {
+		return fmt.Errorf("failed to start Subnet informer, controller leader must be specified")
+	}
 
 	informerLogger = logutils.Logger.Named("Subnet-Informer")
+	sm.leader = controllerLeader
+
+	informerLogger.Info("Initialize Subnet informer")
+	informerFactory := externalversions.NewSharedInformerFactory(client, sm.config.ResyncPeriod)
+	subnetController := newSubnetController(
+		sm,
+		informerFactory.Spiderpool().V1().SpiderSubnets(),
+		informerFactory.Spiderpool().V1().SpiderIPPools(),
+	)
+
 	go func() {
 		for {
 			if !sm.leader.IsElected() {
@@ -48,347 +67,384 @@ func (sm *subnetManager) SetupInformer(ctx context.Context, client crdclientset.
 				continue
 			}
 
-			informerLogger.Info("Initialize SpiderSubnet informer")
-			factory := externalversions.NewSharedInformerFactory(client, sm.config.ResyncPeriod)
-			subnetInformer := factory.Spiderpool().V1().SpiderSubnets().Informer()
-			subnetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-				AddFunc:    sm.onSpiderSubnetAdd,
-				UpdateFunc: sm.onSpiderSubnetUpdate,
-				DeleteFunc: nil,
-			})
-
-			// concurrent callback hook to notify the subnet's corresponding auto-created IPPools to check scale
-			subnetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					sm.notifySubnetIPPool(obj)
-				},
-				UpdateFunc: func(oldObj, newObj interface{}) {
-					sm.notifySubnetIPPool(newObj)
-				},
-				DeleteFunc: nil,
-			})
-
-			stopper := make(chan struct{})
+			subnetController.innerCtx, subnetController.innerCancel = context.WithCancel(ctx)
 			go func() {
 				for {
 					if !sm.leader.IsElected() {
-						informerLogger.Warn("Leader lost, stop SpiderSubnet informer")
-						close(stopper)
+						informerLogger.Warn("Leader lost, stop Subnet informer")
+						subnetController.innerCancel()
 						return
 					}
-
 					time.Sleep(sm.config.LeaderRetryElectGap)
 				}
 			}()
 
-			informerLogger.Info("Starting SpiderSubnet informer")
-			subnetInformer.Run(stopper)
-			informerLogger.Info("SpiderSubnet informer down")
+			informerFactory.Start(subnetController.innerCtx.Done())
+			if err := subnetController.Run(sm.config.Workers, subnetController.innerCtx.Done()); err != nil {
+				subnetController.innerCancel()
+				informerLogger.Sugar().Errorf("Subnet informer down: %v", err)
+			}
 		}
 	}()
 
 	return nil
 }
 
-func (sm *subnetManager) onSpiderSubnetAdd(obj interface{}) {
-	subnet, _ := obj.(*spiderpoolv1.SpiderSubnet)
+func (sc *SubnetController) enqueueSubnetOnAdd(obj interface{}) {
+	subnet := obj.(*spiderpoolv1.SpiderSubnet)
 	logger := informerLogger.With(
 		zap.String("SubnetName", subnet.Name),
 		zap.String("Operation", "ADD"),
 	)
-	logger.Sugar().Debugf("Reconcile Subnet: %+v", *subnet)
 
-	if err := sm.reconcileOnAdd(logutils.IntoContext(sm.innerCtx, logger), subnet.DeepCopy()); err != nil {
-		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
+	if sc.workqueue.Len() >= sc.subnetManager.config.MaxWorkqueueLength {
+		logger.Sugar().Errorf(MessageWorkqueueFull)
+		return
 	}
+
+	sc.workqueue.Add(subnet.Name)
+	logger.Debug(MessageEnqueueSubnet)
 }
 
-func (sm *subnetManager) reconcileOnAdd(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	if err := sm.initControllerSubnet(ctx, subnet); err != nil {
-		return err
-	}
-	if err := sm.initControlledIPPoolIPs(ctx, subnet); err != nil {
-		return err
-	}
-
-	if subnet.DeletionTimestamp != nil {
-		if err := sm.removeFinalizer(ctx, subnet); client.IgnoreNotFound(err) != nil {
-			return fmt.Errorf("failed to remove finalizer: %v", err)
-		}
+func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
+	oldSubnet := oldObj.(*spiderpoolv1.SpiderSubnet)
+	newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
+	if reflect.DeepEqual(newSubnet.Spec.IPs, oldSubnet.Spec.IPs) &&
+		reflect.DeepEqual(newSubnet.Spec.ExcludeIPs, oldSubnet.Spec.ExcludeIPs) {
+		return
 	}
 
-	return nil
-}
-
-func (sm *subnetManager) onSpiderSubnetUpdate(oldObj interface{}, newObj interface{}) {
-	oldSubnet, _ := oldObj.(*spiderpoolv1.SpiderSubnet)
-	newSubnet, _ := newObj.(*spiderpoolv1.SpiderSubnet)
 	logger := informerLogger.With(
 		zap.String("SubnetName", newSubnet.Name),
 		zap.String("Operation", "UPDATE"),
 	)
-	logger.Sugar().Debugf("Reconcile old Subnet: %+v", *oldSubnet)
-	logger.Sugar().Debugf("Reconcile new Subnet: %+v", *newSubnet)
 
-	if err := sm.reconcileOnUpdate(logutils.IntoContext(sm.innerCtx, logger), oldSubnet.DeepCopy(), newSubnet.DeepCopy()); err != nil {
-		logger.Sugar().Errorf("Failed to reconcile Subnet: %v", err)
+	if sc.workqueue.Len() >= sc.subnetManager.config.MaxWorkqueueLength {
+		logger.Sugar().Errorf(MessageWorkqueueFull)
+		return
+	}
+
+	sc.workqueue.Add(newSubnet.Name)
+	logger.Debug(MessageEnqueueSubnet)
+}
+
+func (sc *SubnetController) enqueueSubnetOnIPPoolChange(obj interface{}) {
+	ipPool := obj.(*spiderpoolv1.SpiderIPPool)
+	ownerSubnet, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]
+	if !ok {
+		return
+	}
+
+	logger := informerLogger.With(
+		zap.String("IPPoolName", ipPool.Name),
+		zap.String("SubnetName", ownerSubnet),
+		zap.String("Operation", "SYNC"),
+	)
+
+	if sc.workqueue.Len() >= sc.subnetManager.config.MaxWorkqueueLength {
+		logger.Sugar().Errorf(MessageWorkqueueFull)
+		return
+	}
+
+	sc.workqueue.Add(ownerSubnet)
+	logger.Debug(MessageEnqueueSubnet)
+}
+
+type SubnetController struct {
+	innerCtx      context.Context
+	innerCancel   context.CancelFunc
+	subnetManager *subnetManager
+
+	subnetsLister listers.SpiderSubnetLister
+	subnetsSynced cache.InformerSynced
+	ipPoolsLister listers.SpiderIPPoolLister
+	ipPoolsSynced cache.InformerSynced
+
+	workqueue workqueue.RateLimitingInterface
+}
+
+func newSubnetController(subnetManager *subnetManager, subnetInformer informers.SpiderSubnetInformer, ipPoolInformer informers.SpiderIPPoolInformer) *SubnetController {
+	controller := &SubnetController{
+		subnetManager: subnetManager,
+		subnetsLister: subnetInformer.Lister(),
+		subnetsSynced: subnetInformer.Informer().HasSynced,
+		ipPoolsLister: ipPoolInformer.Lister(),
+		ipPoolsSynced: ipPoolInformer.Informer().HasSynced,
+		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderSubnets"),
+	}
+
+	informerLogger.Info("Setting up event handlers")
+	subnetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    controller.enqueueSubnetOnAdd,
+		UpdateFunc: controller.enqueueSubnetOnUpdate,
+		DeleteFunc: nil,
+	})
+
+	ipPoolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: controller.enqueueSubnetOnIPPoolChange,
+		UpdateFunc: func(old, new interface{}) {
+			oldIPPool := old.(*spiderpoolv1.SpiderIPPool)
+			newIPPool := new.(*spiderpoolv1.SpiderIPPool)
+			if reflect.DeepEqual(newIPPool.Spec.IPs, oldIPPool.Spec.IPs) &&
+				reflect.DeepEqual(newIPPool.Spec.ExcludeIPs, oldIPPool.Spec.ExcludeIPs) {
+				return
+			}
+			controller.enqueueSubnetOnIPPoolChange(new)
+		},
+		DeleteFunc: controller.enqueueSubnetOnIPPoolChange,
+	})
+
+	return controller
+}
+
+func (sc *SubnetController) Run(workers int, stopCh <-chan struct{}) error {
+	defer utilruntime.HandleCrash()
+	defer sc.workqueue.ShutDown()
+
+	informerLogger.Info("Starting Subnet informer")
+
+	informerLogger.Info("Waiting for informer caches to sync")
+	if ok := cache.WaitForCacheSync(stopCh, sc.subnetsSynced, sc.ipPoolsSynced); !ok {
+		return fmt.Errorf("failed to wait for caches to sync")
+	}
+
+	informerLogger.Info("Starting workers")
+	for i := 0; i < workers; i++ {
+		go wait.Until(sc.runWorker, time.Second, stopCh)
+	}
+
+	informerLogger.Info("Started workers")
+	<-stopCh
+	informerLogger.Info("Shutting down workers")
+
+	return nil
+}
+
+func (sc *SubnetController) runWorker() {
+	for sc.processNextWorkItem() {
 	}
 }
 
-func (sm *subnetManager) reconcileOnUpdate(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) error {
-	if newSubnet.DeletionTimestamp != nil {
-		if oldSubnet.DeletionTimestamp == nil {
-			if err := sm.client.Delete(
-				ctx,
-				newSubnet,
-				client.PropagationPolicy(metav1.DeletePropagationForeground),
-			); err != nil {
-				return err
-			}
+func (sc *SubnetController) processNextWorkItem() bool {
+	obj, shutdown := sc.workqueue.Get()
+
+	if shutdown {
+		return false
+	}
+
+	var logger *zap.Logger
+	err := func(obj interface{}) error {
+		defer sc.workqueue.Done(obj)
+
+		var key string
+		var ok bool
+		if key, ok = obj.(string); !ok {
+			sc.workqueue.Forget(obj)
+			return nil
 		}
 
-		if err := sm.removeFinalizer(ctx, newSubnet); client.IgnoreNotFound(err) != nil {
+		logger = informerLogger.With(
+			zap.String("SubnetName", key),
+			zap.String("Operation", "PROCESS"),
+		)
+
+		if err := sc.syncHandler(logutils.IntoContext(sc.innerCtx, logger), key); err != nil {
+			sc.workqueue.AddRateLimited(key)
+			return fmt.Errorf("failed to handle, requeuing: %v", err)
+		}
+		sc.workqueue.Forget(obj)
+
+		return nil
+	}(obj)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return true
+	}
+
+	return true
+}
+
+func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) error {
+	subnet, err := sc.subnetsLister.Get(subnetName)
+	if err != nil {
+		return client.IgnoreNotFound(err)
+	}
+
+	if err := sc.syncControllerSubnet(ctx, subnet); err != nil {
+		return fmt.Errorf("failed to sync reference for controller Subnet: %v", err)
+	}
+
+	subnetCopy := subnet.DeepCopy()
+	if err := sc.syncControlledIPPoolIPs(ctx, subnetCopy); err != nil {
+		return fmt.Errorf("failed to sync the IP ranges of controlled IPPools of Subnet: %v", err)
+	}
+
+	if subnet.DeletionTimestamp != nil {
+		if err := sc.removeFinalizer(ctx, subnetCopy); err != nil {
 			return fmt.Errorf("failed to remove finalizer: %v", err)
 		}
 		return nil
 	}
 
-	totalIPsChange := false
-	if !reflect.DeepEqual(newSubnet.Spec.IPs, oldSubnet.Spec.IPs) ||
-		!reflect.DeepEqual(newSubnet.Spec.ExcludeIPs, oldSubnet.Spec.ExcludeIPs) {
-		totalIPsChange = true
+	if err := sc.notifySubnetIPPool(ctx, subnet); err != nil {
+		return fmt.Errorf("failed to notify the IPPools that did not reach the expected state: %v", err)
 	}
-
-	if totalIPsChange {
-		if err := sm.initControllerSubnet(ctx, newSubnet); err != nil {
-			return err
-		}
-		return sm.initControlledIPPoolIPs(ctx, newSubnet)
-	}
+	event.EventRecorder.Event(subnet, corev1.EventTypeNormal, constant.EventReasonResyncSubnet, "Resynced successfully")
 
 	return nil
 }
 
-func (sm *subnetManager) initControllerSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	rand.Seed(time.Now().UnixNano())
-OUTER:
-	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
-		var err error
-		if i != 0 {
-			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
-			if err != nil {
-				return err
-			}
-		}
-
-		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx)
-		if err != nil {
-			return err
-		}
-
-		for _, pool := range ipPoolList.Items {
-			if pool.Spec.Subnet != subnet.Spec.Subnet {
-				continue
-			}
-
-			orphan := false
-			if !metav1.IsControlledBy(&pool, subnet) {
-				if err := ctrl.SetControllerReference(subnet, &pool, sm.runtimeMgr.GetScheme()); err != nil {
-					return err
-				}
-				orphan = true
-			}
-
-			if pool.Labels == nil {
-				pool.Labels = make(map[string]string)
-			}
-			if v, ok := pool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
-				pool.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
-				orphan = true
-			}
-
-			if orphan {
-				if err := sm.client.Update(ctx, &pool); err != nil {
-					if !apierrors.IsConflict(err) {
-						return err
-					}
-					if i == sm.config.MaxConflictRetries {
-						return fmt.Errorf("%w, failed for %d times, failed to initialize reference for controller Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
-					}
-					time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
-					continue OUTER
-				}
-			}
-		}
-		break
+func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	ipPools, err := sc.ipPoolsLister.List(labels.Everything())
+	if err != nil {
+		return err
 	}
 
-	return nil
-}
-
-func (sm *subnetManager) initControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	rand.Seed(time.Now().UnixNano())
-
-	deepCopySubnet := subnet.DeepCopy()
-	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
-		var err error
-		if i != 0 {
-			deepCopySubnet, err = sm.GetSubnetByName(ctx, deepCopySubnet.Name)
-			if err != nil {
-				return err
-			}
-		}
-
-		selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				constant.LabelIPPoolOwnerSpiderSubnet: deepCopySubnet.Name,
-			},
-		})
-		if err != nil {
-			return err
-		}
-		ipPoolList, err := sm.ipPoolManager.ListIPPools(ctx, client.MatchingLabelsSelector{Selector: selector})
-		if err != nil {
-			return err
-		}
-		subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*deepCopySubnet.Spec.IPVersion, deepCopySubnet.Spec.IPs, deepCopySubnet.Spec.ExcludeIPs)
-		if err != nil {
-			return err
-		}
-
-		// Merge pre-allocated IP addresses of each IPPool and calculate their count.
-		var tmpCount int
-		controlledIPPools := spiderpoolv1.PoolIPPreAllocations{}
-		for _, pool := range ipPoolList.Items {
-			if pool.Spec.Subnet == deepCopySubnet.Spec.Subnet {
-				poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*deepCopySubnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-				if err != nil {
-					return err
-				}
-
-				validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs)
-				tmpCount += len(validIPs)
-
-				ranges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, validIPs)
-				if err != nil {
-					return err
-				}
-				controlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
-			}
-		}
-		deepCopySubnet.Status.ControlledIPPools = controlledIPPools
-
-		// Update the count of total IP addresses.
-		totalIPCount := int64(len(subnetTotalIPs))
-		deepCopySubnet.Status.TotalIPCount = &totalIPCount
-
-		// Update the count of pre-allocated IP addresses.
-		allocatedIPCount := int64(tmpCount)
-		deepCopySubnet.Status.AllocatedIPCount = &allocatedIPCount
-
-		if !reflect.DeepEqual(subnet, deepCopySubnet.Status) {
-			if err := sm.client.Status().Update(ctx, deepCopySubnet); err != nil {
-				if !apierrors.IsConflict(err) {
-					return err
-				}
-				if i == sm.config.MaxConflictRetries {
-					return fmt.Errorf("%w, failed for %d times, failed to initialize the IP ranges of controlled IPPools of Subnet", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries)
-				}
-				time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
-				continue
-			}
-			subnet = deepCopySubnet
-			event.EventRecorder.Event(subnet, corev1.EventTypeNormal, constant.EventReasonResyncSubnet, fmt.Sprintf("Resync to update status from '%s' to '%s'", subnet, subnet.Status.String()))
-		}
-
-		break
-	}
-
-	return nil
-}
-
-func (sm *subnetManager) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	logger := logutils.FromContext(ctx)
-
-	for i := 0; i <= sm.config.MaxConflictRetries; i++ {
-		var err error
-		if i != 0 {
-			subnet, err = sm.GetSubnetByName(ctx, subnet.Name)
-			if err != nil {
-				return err
-			}
-		}
-		if !controllerutil.ContainsFinalizer(subnet, constant.SpiderFinalizer) {
-			return nil
-		}
-
-		// Some IP addresses are still occupied by the controlled IPPools, ignore
-		// to remove the finalizer.
-		if len(subnet.Status.ControlledIPPools) > 0 {
-			return nil
-		}
-
-		controllerutil.RemoveFinalizer(subnet, constant.SpiderFinalizer)
-		if err := sm.client.Update(ctx, subnet); err != nil {
-			if !apierrors.IsConflict(err) {
-				return err
-			}
-			if i == sm.config.MaxConflictRetries {
-				return fmt.Errorf("%w(<=%d) to remove finalizer '%s' from Subnet %s", constant.ErrRetriesExhausted, sm.config.MaxConflictRetries, constant.SpiderFinalizer, subnet.Name)
-			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * sm.config.ConflictRetryUnitTime)
+	for _, pool := range ipPools {
+		if pool.Spec.Subnet != subnet.Spec.Subnet {
 			continue
 		}
-		logger.Sugar().Debugf("Remove finalizer %s", constant.SpiderFinalizer)
-		break
+
+		poolCopy := pool.DeepCopy()
+		orphan := false
+		if !metav1.IsControlledBy(poolCopy, subnet) {
+			if err := ctrl.SetControllerReference(subnet, poolCopy, sc.subnetManager.runtimeMgr.GetScheme()); err != nil {
+				return err
+			}
+			orphan = true
+		}
+
+		if poolCopy.Labels == nil {
+			pool.Labels = make(map[string]string)
+		}
+		if v, ok := poolCopy.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
+			poolCopy.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
+			orphan = true
+		}
+
+		if orphan {
+			if err := sc.subnetManager.client.Update(ctx, poolCopy); err != nil {
+				return err
+			}
+		}
 	}
+
+	return nil
+}
+
+func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	if err != nil {
+		return err
+	}
+
+	selector := labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector()
+	ipPools, err := sc.ipPoolsLister.List(selector)
+	if err != nil {
+		return err
+	}
+
+	// Merge pre-allocated IP addresses of each IPPool and calculate their count.
+	var tmpCount int
+	controlledIPPools := spiderpoolv1.PoolIPPreAllocations{}
+	for _, pool := range ipPools {
+		poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+		if err != nil {
+			return err
+		}
+
+		validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs)
+		tmpCount += len(validIPs)
+
+		ranges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, validIPs)
+		if err != nil {
+			return err
+		}
+		controlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
+	}
+	subnet.Status.ControlledIPPools = controlledIPPools
+
+	// Update the count of total IP addresses.
+	totalIPCount := int64(len(subnetTotalIPs))
+	subnet.Status.TotalIPCount = &totalIPCount
+
+	// Update the count of pre-allocated IP addresses.
+	allocatedIPCount := int64(tmpCount)
+	subnet.Status.AllocatedIPCount = &allocatedIPCount
+
+	return sc.subnetManager.client.Status().Update(ctx, subnet)
+}
+
+func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	logger := logutils.FromContext(ctx)
+
+	if !controllerutil.ContainsFinalizer(subnet, metav1.FinalizerDeleteDependents) {
+		if err := sc.subnetManager.client.Delete(
+			ctx,
+			subnet,
+			client.PropagationPolicy(metav1.DeletePropagationForeground),
+		); err != nil {
+			return err
+		}
+	}
+
+	if !controllerutil.ContainsFinalizer(subnet, constant.SpiderFinalizer) {
+		return nil
+	}
+
+	// Some IP addresses are still occupied by the controlled IPPools, ignore
+	// to remove the finalizer.
+	if len(subnet.Status.ControlledIPPools) > 0 {
+		return nil
+	}
+
+	controllerutil.RemoveFinalizer(subnet, constant.SpiderFinalizer)
+	if err := sc.subnetManager.client.Update(ctx, subnet); err != nil {
+		return err
+	}
+	logger.Sugar().Debugf("Remove finalizer %s", constant.SpiderFinalizer)
 
 	return nil
 }
 
 // notifySubnetIPPool will list the subnet's corresponding auto-created IPPools,
 // it will insert the IPPools name to IPPool informer work queue if the IPPool need to be scaled.
-func (sm *subnetManager) notifySubnetIPPool(obj interface{}) {
-	if sm.ipPoolManager.GetAutoPoolRateLimitQueue() == nil {
-		informerLogger.Warn("IPPool manager doesn't have IPPool informer rate limit workqueue!")
-		return
+func (sc *SubnetController) notifySubnetIPPool(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	logger := logutils.FromContext(ctx)
+
+	if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue() == nil {
+		logger.Warn("IPPool manager doesn't have IPPool informer rate limit workqueue!")
+		return nil
 	}
 
-	subnet := obj.(*spiderpoolv1.SpiderSubnet)
-
-	if subnet.DeletionTimestamp != nil {
-		informerLogger.Sugar().Warnf("SpiderSubnet '%s' is terminating, no need to scale its corresponding IPPools!", subnet.Name)
-		return
+	selector := labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector()
+	ipPools, err := sc.ipPoolsLister.List(selector)
+	if err != nil {
+		return err
 	}
 
-	matchLabel := client.MatchingLabels{
-		constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name,
-	}
-	autoPoolList, err := sm.ipPoolManager.ListIPPools(context.TODO(), matchLabel)
-	if nil != err {
-		informerLogger.Sugar().Errorf("failed to list IPPools with labels '%v', error: %v", matchLabel, err)
-		return
+	if len(ipPools) == 0 {
+		return nil
 	}
 
-	if autoPoolList == nil || len(autoPoolList.Items) == 0 {
-		return
-	}
-
-	maxQueueLength := sm.ipPoolManager.GetAutoPoolMaxWorkQueueLength()
-	for _, pool := range autoPoolList.Items {
+	maxQueueLength := sc.subnetManager.ipPoolManager.GetAutoPoolMaxWorkQueueLength()
+	for _, pool := range ipPools {
 		if pool.DeletionTimestamp != nil {
-			informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
+			logger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
 			continue
 		}
 
 		if ippoolmanager.ShouldScaleIPPool(pool) {
-			if sm.ipPoolManager.GetAutoPoolRateLimitQueue().Len() >= maxQueueLength {
-				informerLogger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
-				return
+			if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue().Len() >= maxQueueLength {
+				logger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
+				return nil
 			}
 
-			sm.ipPoolManager.GetAutoPoolRateLimitQueue().AddRateLimited(pool.Name)
-			informerLogger.Sugar().Debugf("added '%s' to IPPool workqueue", pool.Name)
+			sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue().AddRateLimited(pool.Name)
+			logger.Sugar().Debugf("added '%s' to IPPool workqueue", pool.Name)
 		}
 	}
+
+	return nil
 }

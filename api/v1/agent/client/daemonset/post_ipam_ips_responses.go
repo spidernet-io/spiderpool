@@ -56,7 +56,36 @@ Success
 type PostIpamIpsOK struct {
 }
 
+// IsSuccess returns true when this post ipam ips o k response has a 2xx status code
+func (o *PostIpamIpsOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this post ipam ips o k response has a 3xx status code
+func (o *PostIpamIpsOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this post ipam ips o k response has a 4xx status code
+func (o *PostIpamIpsOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this post ipam ips o k response has a 5xx status code
+func (o *PostIpamIpsOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this post ipam ips o k response a status code equal to that given
+func (o *PostIpamIpsOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *PostIpamIpsOK) Error() string {
+	return fmt.Sprintf("[POST /ipam/ips][%d] postIpamIpsOK ", 200)
+}
+
+func (o *PostIpamIpsOK) String() string {
 	return fmt.Sprintf("[POST /ipam/ips][%d] postIpamIpsOK ", 200)
 }
 
@@ -79,9 +108,39 @@ type PostIpamIpsFailure struct {
 	Payload models.Error
 }
 
+// IsSuccess returns true when this post ipam ips failure response has a 2xx status code
+func (o *PostIpamIpsFailure) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this post ipam ips failure response has a 3xx status code
+func (o *PostIpamIpsFailure) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this post ipam ips failure response has a 4xx status code
+func (o *PostIpamIpsFailure) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this post ipam ips failure response has a 5xx status code
+func (o *PostIpamIpsFailure) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this post ipam ips failure response a status code equal to that given
+func (o *PostIpamIpsFailure) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *PostIpamIpsFailure) Error() string {
 	return fmt.Sprintf("[POST /ipam/ips][%d] postIpamIpsFailure  %+v", 500, o.Payload)
 }
+
+func (o *PostIpamIpsFailure) String() string {
+	return fmt.Sprintf("[POST /ipam/ips][%d] postIpamIpsFailure  %+v", 500, o.Payload)
+}
+
 func (o *PostIpamIpsFailure) GetPayload() models.Error {
 	return o.Payload
 }

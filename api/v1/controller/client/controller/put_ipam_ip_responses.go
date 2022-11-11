@@ -53,7 +53,36 @@ Success
 type PutIpamIPOK struct {
 }
 
+// IsSuccess returns true when this put ipam Ip o k response has a 2xx status code
+func (o *PutIpamIPOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this put ipam Ip o k response has a 3xx status code
+func (o *PutIpamIPOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this put ipam Ip o k response has a 4xx status code
+func (o *PutIpamIPOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this put ipam Ip o k response has a 5xx status code
+func (o *PutIpamIPOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this put ipam Ip o k response a status code equal to that given
+func (o *PutIpamIPOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *PutIpamIPOK) Error() string {
+	return fmt.Sprintf("[PUT /ipam/ip][%d] putIpamIpOK ", 200)
+}
+
+func (o *PutIpamIPOK) String() string {
 	return fmt.Sprintf("[PUT /ipam/ip][%d] putIpamIpOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Force set ip failure
 type PutIpamIPInternalServerError struct {
 }
 
+// IsSuccess returns true when this put ipam Ip internal server error response has a 2xx status code
+func (o *PutIpamIPInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this put ipam Ip internal server error response has a 3xx status code
+func (o *PutIpamIPInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this put ipam Ip internal server error response has a 4xx status code
+func (o *PutIpamIPInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this put ipam Ip internal server error response has a 5xx status code
+func (o *PutIpamIPInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this put ipam Ip internal server error response a status code equal to that given
+func (o *PutIpamIPInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *PutIpamIPInternalServerError) Error() string {
+	return fmt.Sprintf("[PUT /ipam/ip][%d] putIpamIpInternalServerError ", 500)
+}
+
+func (o *PutIpamIPInternalServerError) String() string {
 	return fmt.Sprintf("[PUT /ipam/ip][%d] putIpamIpInternalServerError ", 500)
 }
 

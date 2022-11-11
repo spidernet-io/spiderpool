@@ -53,7 +53,36 @@ Success
 type GetIpamStatusOK struct {
 }
 
+// IsSuccess returns true when this get ipam status o k response has a 2xx status code
+func (o *GetIpamStatusOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this get ipam status o k response has a 3xx status code
+func (o *GetIpamStatusOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get ipam status o k response has a 4xx status code
+func (o *GetIpamStatusOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get ipam status o k response has a 5xx status code
+func (o *GetIpamStatusOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get ipam status o k response a status code equal to that given
+func (o *GetIpamStatusOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *GetIpamStatusOK) Error() string {
+	return fmt.Sprintf("[GET /ipam/status][%d] getIpamStatusOK ", 200)
+}
+
+func (o *GetIpamStatusOK) String() string {
 	return fmt.Sprintf("[GET /ipam/status][%d] getIpamStatusOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Get ipam status failure
 type GetIpamStatusInternalServerError struct {
 }
 
+// IsSuccess returns true when this get ipam status internal server error response has a 2xx status code
+func (o *GetIpamStatusInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get ipam status internal server error response has a 3xx status code
+func (o *GetIpamStatusInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get ipam status internal server error response has a 4xx status code
+func (o *GetIpamStatusInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get ipam status internal server error response has a 5xx status code
+func (o *GetIpamStatusInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get ipam status internal server error response a status code equal to that given
+func (o *GetIpamStatusInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *GetIpamStatusInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /ipam/status][%d] getIpamStatusInternalServerError ", 500)
+}
+
+func (o *GetIpamStatusInternalServerError) String() string {
 	return fmt.Sprintf("[GET /ipam/status][%d] getIpamStatusInternalServerError ", 500)
 }
 

@@ -53,7 +53,36 @@ Success
 type GetRuntimeStartupOK struct {
 }
 
+// IsSuccess returns true when this get runtime startup o k response has a 2xx status code
+func (o *GetRuntimeStartupOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this get runtime startup o k response has a 3xx status code
+func (o *GetRuntimeStartupOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get runtime startup o k response has a 4xx status code
+func (o *GetRuntimeStartupOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get runtime startup o k response has a 5xx status code
+func (o *GetRuntimeStartupOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get runtime startup o k response a status code equal to that given
+func (o *GetRuntimeStartupOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *GetRuntimeStartupOK) Error() string {
+	return fmt.Sprintf("[GET /runtime/startup][%d] getRuntimeStartupOK ", 200)
+}
+
+func (o *GetRuntimeStartupOK) String() string {
 	return fmt.Sprintf("[GET /runtime/startup][%d] getRuntimeStartupOK ", 200)
 }
 
@@ -75,7 +104,36 @@ Failed
 type GetRuntimeStartupInternalServerError struct {
 }
 
+// IsSuccess returns true when this get runtime startup internal server error response has a 2xx status code
+func (o *GetRuntimeStartupInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get runtime startup internal server error response has a 3xx status code
+func (o *GetRuntimeStartupInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get runtime startup internal server error response has a 4xx status code
+func (o *GetRuntimeStartupInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get runtime startup internal server error response has a 5xx status code
+func (o *GetRuntimeStartupInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get runtime startup internal server error response a status code equal to that given
+func (o *GetRuntimeStartupInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *GetRuntimeStartupInternalServerError) Error() string {
+	return fmt.Sprintf("[GET /runtime/startup][%d] getRuntimeStartupInternalServerError ", 500)
+}
+
+func (o *GetRuntimeStartupInternalServerError) String() string {
 	return fmt.Sprintf("[GET /runtime/startup][%d] getRuntimeStartupInternalServerError ", 500)
 }
 

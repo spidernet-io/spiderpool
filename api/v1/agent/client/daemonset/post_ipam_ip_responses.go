@@ -57,9 +57,39 @@ type PostIpamIPOK struct {
 	Payload *models.IpamAddResponse
 }
 
+// IsSuccess returns true when this post ipam Ip o k response has a 2xx status code
+func (o *PostIpamIPOK) IsSuccess() bool {
+	return true
+}
+
+// IsRedirect returns true when this post ipam Ip o k response has a 3xx status code
+func (o *PostIpamIPOK) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this post ipam Ip o k response has a 4xx status code
+func (o *PostIpamIPOK) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this post ipam Ip o k response has a 5xx status code
+func (o *PostIpamIPOK) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this post ipam Ip o k response a status code equal to that given
+func (o *PostIpamIPOK) IsCode(code int) bool {
+	return code == 200
+}
+
 func (o *PostIpamIPOK) Error() string {
 	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpOK  %+v", 200, o.Payload)
 }
+
+func (o *PostIpamIPOK) String() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpOK  %+v", 200, o.Payload)
+}
+
 func (o *PostIpamIPOK) GetPayload() *models.IpamAddResponse {
 	return o.Payload
 }
@@ -90,9 +120,39 @@ type PostIpamIPFailure struct {
 	Payload models.Error
 }
 
+// IsSuccess returns true when this post ipam Ip failure response has a 2xx status code
+func (o *PostIpamIPFailure) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this post ipam Ip failure response has a 3xx status code
+func (o *PostIpamIPFailure) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this post ipam Ip failure response has a 4xx status code
+func (o *PostIpamIPFailure) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this post ipam Ip failure response has a 5xx status code
+func (o *PostIpamIPFailure) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this post ipam Ip failure response a status code equal to that given
+func (o *PostIpamIPFailure) IsCode(code int) bool {
+	return code == 500
+}
+
 func (o *PostIpamIPFailure) Error() string {
 	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpFailure  %+v", 500, o.Payload)
 }
+
+func (o *PostIpamIPFailure) String() string {
+	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpFailure  %+v", 500, o.Payload)
+}
+
 func (o *PostIpamIPFailure) GetPayload() models.Error {
 	return o.Payload
 }

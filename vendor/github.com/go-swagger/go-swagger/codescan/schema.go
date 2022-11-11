@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/types"
 	"log"
 	"os"
@@ -236,7 +237,70 @@ func (s *schemaBuilder) buildFromDecl(decl *entityDecl, schema *spec.Schema) err
 	return nil
 }
 
+func (s *schemaBuilder) buildFromTextMarshal(tpe types.Type, tgt swaggerTypable) error {
+	if typePtr, ok := tpe.(*types.Pointer); ok {
+		return s.buildFromTextMarshal(typePtr.Elem(), tgt)
+	}
+
+	typeNamed, ok := tpe.(*types.Named)
+	if !ok {
+		tgt.Typed("string", "")
+		return nil
+	}
+
+	tio := typeNamed.Obj()
+	if tio.Pkg() == nil && tio.Name() == "error" {
+		return swaggerSchemaForType(tio.Name(), tgt)
+	}
+
+	debugLog("named refined type %s.%s", tio.Pkg().Path(), tio.Name())
+	pkg, found := s.ctx.PkgForType(tpe)
+
+	if strings.ToLower(tio.Name()) == "uuid" {
+		tgt.Typed("string", "uuid")
+		return nil
+	}
+
+	if !found {
+		// this must be a builtin
+		debugLog("skipping because package is nil: %s", tpe.String())
+		return nil
+	}
+	if pkg.Name == "time" && tio.Name() == "Time" {
+		tgt.Typed("string", "date-time")
+		return nil
+	}
+	if pkg.PkgPath == "encoding/json" && tio.Name() == "RawMessage" {
+		tgt.Typed("object", "")
+		return nil
+	}
+	cmt, hasComments := s.ctx.FindComments(pkg, tio.Name())
+	if !hasComments {
+		cmt = new(ast.CommentGroup)
+	}
+
+	if sfnm, isf := strfmtName(cmt); isf {
+		tgt.Typed("string", sfnm)
+		return nil
+	}
+
+	tgt.Typed("string", "")
+	return nil
+}
+
 func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error {
+	pkg, err := importer.Default().Import("encoding")
+	if err != nil {
+		return nil
+	}
+	ifc := pkg.Scope().Lookup("TextMarshaler").Type().Underlying().(*types.Interface)
+
+	// check if the type implements encoding.TextMarshaler interface
+	isTextMarshaler := types.Implements(tpe, ifc)
+	if isTextMarshaler {
+		return s.buildFromTextMarshal(tpe, tgt)
+	}
+
 	switch titpe := tpe.(type) {
 	case *types.Basic:
 		return swaggerSchemaForType(titpe.String(), tgt)
@@ -260,7 +324,8 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 		}
 		eleProp := schemaTypable{sch, tgt.Level()}
 		key := titpe.Key()
-		if key.Underlying().String() == "string" {
+		isTextMarshaler := types.Implements(key, ifc)
+		if key.Underlying().String() == "string" || isTextMarshaler {
 			if err := s.buildFromType(titpe.Elem(), eleProp.AdditionalProperties()); err != nil {
 				return err
 			}
@@ -291,8 +356,14 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 			cmt = new(ast.CommentGroup)
 		}
 
+		if typeName, ok := typeName(cmt); ok {
+			_ = swaggerSchemaForType(typeName, tgt)
+			return nil
+		}
+
 		switch utitpe := tpe.Underlying().(type) {
 		case *types.Struct:
+
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
 				if decl.Type.Obj().Pkg().Path() == "time" && decl.Type.Obj().Name() == "Time" {
 					tgt.Typed("string", "date-time")
@@ -302,6 +373,11 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 					tgt.Typed("string", sfnm)
 					return nil
 				}
+				if typeName, ok := typeName(cmt); ok {
+					_ = swaggerSchemaForType(typeName, tgt)
+					return nil
+				}
+
 				if err := s.makeRef(decl, tgt); err != nil {
 					return err
 				}
@@ -341,6 +417,7 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 			if typeName, ok := typeName(cmt); ok {
 				_ = swaggerSchemaForType(typeName, tgt)
 				return nil
+
 			}
 
 			if isAliasParam(tgt) || aliasParam(cmt) {
@@ -362,6 +439,11 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 					tgt.Typed("string", sfnm)
 					return nil
 				}
+				if sfnm == "bsonobjectid" {
+					tgt.Typed("string", sfnm)
+					return nil
+				}
+
 				tgt.Items().Typed("string", sfnm)
 				return nil
 			}
@@ -411,7 +493,6 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 
 func (s *schemaBuilder) buildFromInterface(decl *entityDecl, it *types.Interface, schema *spec.Schema, seen map[string]string) error {
 	if it.Empty() {
-		schema.Typed("object", "")
 		return nil
 	}
 
@@ -423,9 +504,10 @@ func (s *schemaBuilder) buildFromInterface(decl *entityDecl, it *types.Interface
 	var flist []*ast.Field
 	if specType, ok := decl.Spec.Type.(*ast.InterfaceType); ok {
 		flist = make([]*ast.Field, it.NumEmbeddeds()+it.NumExplicitMethods())
-		for i := range specType.Methods.List {
-			flist[i] = specType.Methods.List[i]
-		}
+		copy(flist, specType.Methods.List)
+		// for i := range specType.Methods.List {
+		// 	flist[i] = specType.Methods.List[i]
+		// }
 	}
 
 	// First collect the embedded interfaces
@@ -603,6 +685,15 @@ func (s *schemaBuilder) buildFromInterface(decl *entityDecl, it *types.Interface
 }
 
 func (s *schemaBuilder) buildFromStruct(decl *entityDecl, st *types.Struct, schema *spec.Schema, seen map[string]string) error {
+	s.ctx.FindComments(decl.Pkg, decl.Type.Obj().Name())
+	cmt, hasComments := s.ctx.FindComments(decl.Pkg, decl.Type.Obj().Name())
+	if !hasComments {
+		cmt = new(ast.CommentGroup)
+	}
+	if typeName, ok := typeName(cmt); ok {
+		_ = swaggerSchemaForType(typeName, schemaTypable{schema: schema})
+		return nil
+	}
 	// First check for all of schemas
 	var tgt *spec.Schema
 	hasAllOf := false

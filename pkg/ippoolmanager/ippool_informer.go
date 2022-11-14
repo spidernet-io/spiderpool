@@ -93,7 +93,8 @@ type poolInformerController struct {
 	allPoolWorkQueue     workqueue.RateLimitingInterface
 	requeueDelayDuration time.Duration
 
-	genIPsCursor bool
+	v4GenIPsCursor bool
+	v6GenIPsCursor bool
 }
 
 func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Interface, poolInformer informers.SpiderIPPoolInformer) *poolInformerController {
@@ -378,7 +379,6 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 			workQueue.Forget(obj)
 			return fmt.Errorf("error syncing '%s': %s", poolName, err.Error())
 		}
-		c.iterate()
 
 		workQueue.Forget(obj)
 		return nil
@@ -426,7 +426,16 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 
 	if desiredIPNum > totalIPCount {
 		// expand
-		ipsFromSubnet, err := c.poolMgr.subnetManager.GenerateIPsFromSubnetWhenScaleUpIP(logutils.IntoContext(ctx, informerLogger), subnetName, pool, c.genIPsCursor)
+		var cursor bool
+		if *pool.Spec.IPVersion == constant.IPv4 {
+			cursor = c.v4GenIPsCursor
+			c.v4GenIPsCursor = !c.v4GenIPsCursor
+		} else {
+			cursor = c.v6GenIPsCursor
+			c.v6GenIPsCursor = !c.v6GenIPsCursor
+		}
+
+		ipsFromSubnet, err := c.poolMgr.subnetManager.GenerateIPsFromSubnetWhenScaleUpIP(logutils.IntoContext(ctx, informerLogger), subnetName, pool, cursor)
 		if nil != err {
 			return fmt.Errorf("failed to generate IPs from subnet '%s', error: %w", subnetName, err)
 		}
@@ -495,12 +504,4 @@ func (c *poolInformerController) updateIPPoolIPCount(ctx context.Context, pool *
 	informerLogger.Sugar().Debugf("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, totalIPCount)
 
 	return nil
-}
-
-func (c *poolInformerController) iterate() {
-	if c.genIPsCursor {
-		c.genIPsCursor = false
-	} else {
-		c.genIPsCursor = true
-	}
 }

@@ -53,10 +53,7 @@ spec:
               ips:
                 items:
                   type: string
-                minItems: 1
                 type: array
-            required:
-            - ips
             type: object
         type: object
     served: true

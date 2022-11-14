@@ -22,6 +22,7 @@ Run the spiderpool controller daemon.
     SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED    enable GC ip of terminating pod whose graceful-time times out (true|false, default to true)
     SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY      delay to GC ip after graceful-time times out (second, default to 0)
     SPIDERPOOL_HEALTH_PORT                      http port  (default to 5710)
+    SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION     all intervals of GC (second, default to 600)
 ```
 
 ## spiderpool-controller shutdown

@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"sort"
 	"time"
@@ -33,8 +32,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-const DefaultRetryNum = 5
-
 var informerLogger *zap.Logger
 
 // SetupInformer will set up SpiderIPPool informer in circle
@@ -46,7 +43,6 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 	informerLogger = logutils.Logger.Named("SpiderIPPool-Informer")
 
 	im.leader = controllerLeader
-	im.rateLimitQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderIPPools")
 
 	informerLogger.Info("try to register SpiderIPPool informer")
 	go func() {
@@ -73,15 +69,14 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 
 			informerLogger.Info("create SpiderIPPool informer")
 			factory := externalversions.NewSharedInformerFactory(client, 0)
-			c := newIPPoolInformerController(im, client, factory.Spiderpool().V1().SpiderIPPools(), im.config.EnableSpiderSubnet,
-				im.rateLimitQueue, im.config.WorkQueueRequeueDelayDuration)
+			c := newIPPoolInformerController(im, client, factory.Spiderpool().V1().SpiderIPPools())
 			factory.Start(stopper)
 
-			if err := c.Run(1, stopper); nil != err {
+			if err := c.Run(im.config.WorkerNum, stopper); nil != err {
 				informerLogger.Sugar().Errorf("failed to run ippool controller, error: %v", err)
 			}
 
-			informerLogger.Error("leader lost, SpiderIPPool informer broken")
+			informerLogger.Error("SpiderIPPool informer broken")
 		}
 	}()
 
@@ -89,26 +84,26 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 }
 
 type poolInformerController struct {
-	poolMgr *ipPoolManager
-	client  crdclientset.Interface
-
+	poolMgr    *ipPoolManager
+	client     crdclientset.Interface
 	poolLister listers.SpiderIPPoolLister
 	poolSynced cache.InformerSynced
-	workQueue  workqueue.RateLimitingInterface
 
-	genIPsCursor         bool
+	// serves for all IPPool status process
+	allPoolWorkQueue     workqueue.RateLimitingInterface
 	requeueDelayDuration time.Duration
+
+	genIPsCursor bool
 }
 
-func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Interface, poolInformer informers.SpiderIPPoolInformer,
-	enableSubnet bool, rateLimitQueue workqueue.RateLimitingInterface, requeueDelayDuration time.Duration) *poolInformerController {
+func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Interface, poolInformer informers.SpiderIPPoolInformer) *poolInformerController {
 	c := &poolInformerController{
 		poolMgr:              poolMgr,
 		client:               client,
 		poolLister:           poolInformer.Lister(),
 		poolSynced:           poolInformer.Informer().HasSynced,
-		workQueue:            rateLimitQueue,
-		requeueDelayDuration: requeueDelayDuration,
+		allPoolWorkQueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderIPPools"),
+		requeueDelayDuration: poolMgr.config.WorkQueueRequeueDelayDuration,
 	}
 
 	// for all IPPool processing
@@ -119,7 +114,10 @@ func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Int
 	})
 
 	// for auto-created IPPool processing
-	if enableSubnet {
+	if poolMgr.config.EnableSpiderSubnet {
+		poolMgr.v4AutoCreatedRateLimitQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "AutoCreated-SpiderIPPools-IPv4")
+		poolMgr.v6AutoCreatedRateLimitQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "AutoCreated-SpiderIPPools-IPv6")
+
 		informerLogger.Debug("add auto-created IPPool processing callback hook")
 		poolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -135,11 +133,43 @@ func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Int
 	return c
 }
 
+// enqueueAutoIPPool will insert auto-created IPPool name into workQueue
+func (c *poolInformerController) enqueueAutoIPPool(obj interface{}) {
+	pool := obj.(*spiderpoolv1.SpiderIPPool)
+
+	if pool.DeletionTimestamp != nil {
+		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to enqueue", pool.Name)
+		return
+	}
+
+	maxQueueLength := c.poolMgr.GetAutoPoolMaxWorkQueueLength()
+	// only add some pools that the current IP number is not equal with the desired IP number
+	if ShouldScaleIPPool(pool) {
+		var workQueue workqueue.RateLimitingInterface
+		ipVersion := *pool.Spec.IPVersion
+
+		if ipVersion == constant.IPv4 {
+			workQueue = c.poolMgr.v4AutoCreatedRateLimitQueue
+		} else {
+			workQueue = c.poolMgr.v6AutoCreatedRateLimitQueue
+		}
+
+		if workQueue.Len() >= maxQueueLength {
+			informerLogger.Sugar().Errorf("The IPPool '%s' workqueue is out of capacity, discard enqueue auto-created IPPool '%s'",
+				fmt.Sprintf("IPv%d", ipVersion), pool.Name)
+			return
+		}
+
+		workQueue.Add(pool.Name)
+		informerLogger.Sugar().Debugf("added '%s' to IPPool '%s' auto-created workqueue", pool.Name, fmt.Sprintf("IPv%d", ipVersion))
+	}
+}
+
 // onAllIPPoolAdd represents SpiderIPPool informer Add Event
 func (c *poolInformerController) onAllIPPoolAdd(obj interface{}) {
 	pool := obj.(*spiderpoolv1.SpiderIPPool)
 
-	err := c.updateAllSpiderIPPool(context.TODO(), nil, pool)
+	err := c.updateSpiderIPPool(context.TODO(), nil, pool)
 	if nil != err {
 		informerLogger.Sugar().Errorf("onSpiderIPPoolAdd error: %v", err)
 	}
@@ -150,36 +180,36 @@ func (c *poolInformerController) onAllIPPoolUpdate(oldObj interface{}, newObj in
 	oldPool := oldObj.(*spiderpoolv1.SpiderIPPool)
 	newPool := newObj.(*spiderpoolv1.SpiderIPPool)
 
-	err := c.updateAllSpiderIPPool(context.TODO(), oldPool, newPool)
+	err := c.updateSpiderIPPool(context.TODO(), oldPool, newPool)
 	if nil != err {
-		informerLogger.Sugar().Errorf("onSpiderIPPoolAdd error: %v", err)
+		informerLogger.Sugar().Errorf("onAllIPPoolUpdate error: %v", err)
 	}
 }
 
-// updateSpiderIPPool serves for SpiderIPPool Informer event hooks
-func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldIPPool, currentIPPool *spiderpoolv1.SpiderIPPool) error {
-	if currentIPPool == nil {
-		return fmt.Errorf("currentSpiderIPPool must be specified")
-	}
-
+// updateSpiderIPPool serves for SpiderIPPool Informer event hooks,
+// it will check whether the SpiderIPPool status AllocatedIPCount/TotalIPCount needs to be initialized
+// and enqueue them.
+func (c *poolInformerController) updateSpiderIPPool(ctx context.Context, oldIPPool, currentIPPool *spiderpoolv1.SpiderIPPool) error {
 	// remove finalizer when SpiderIPPool object is Deleting and its Status AllocatedIPs is empty
 	if currentIPPool.DeletionTimestamp != nil && len(currentIPPool.Status.AllocatedIPs) == 0 {
 		err := c.poolMgr.RemoveFinalizer(ctx, currentIPPool.Name)
 		if nil != err {
-			// if the IPPool object is already deleted, there's no need for us to process it at all
 			if apierrors.IsNotFound(err) {
+				informerLogger.Sugar().Debugf("SpiderIPPool '%s' is already deleted", currentIPPool.Name)
 				return nil
 			}
 
 			return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer '%s', error: %v", currentIPPool.Name, constant.SpiderFinalizer, err)
 		}
 
+		// no need to process it with the following function, the IPPool will be killed by kubernetes API server
 		informerLogger.Sugar().Infof("remove SpiderIPPool '%s' finalizer '%s' successfully", currentIPPool.Name, constant.SpiderFinalizer)
+		return nil
 	}
 
 	// update the TotalIPCount if needed
 	needCalculate := false
-	if currentIPPool.Status.TotalIPCount == nil {
+	if currentIPPool.Status.TotalIPCount == nil || currentIPPool.Status.AllocatedIPCount == nil {
 		needCalculate = true
 	} else {
 		if oldIPPool == nil {
@@ -201,86 +231,26 @@ func (c *poolInformerController) updateAllSpiderIPPool(ctx context.Context, oldI
 	}
 
 	if needCalculate {
-		// we do a deep copy of the object here so that the caller can continue to use
-		// the original object in a threadsafe manner.
-		currentIPPool = currentIPPool.DeepCopy()
-
-		// initial SpiderIPPool AllocatedIPCount property
-		if currentIPPool.DeletionTimestamp == nil && currentIPPool.Status.AllocatedIPCount == nil {
-			currentIPPool.Status.AllocatedIPCount = pointer.Int64(0)
-		}
-
-		informerLogger.Sugar().Infof("try to update IPPool '%s' status TotalIPCount", currentIPPool.Name)
-		err := c.updateIPPoolTotalIPCount(ctx, currentIPPool)
-		if nil != err {
-			return err
-		}
+		informerLogger.Sugar().Debugf("try to add IPPool '%s' to IPPool workqueue to update its status", currentIPPool.Name)
+		c.enqueueAllIPPool(currentIPPool)
 	}
 
 	return nil
 }
 
-func (c *poolInformerController) updateIPPoolTotalIPCount(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
-	rand.Seed(time.Now().UnixNano())
-
-	var err error
-	for i := 0; i <= c.poolMgr.config.MaxConflictRetries; i++ {
-		if i != 0 {
-			pool, err = c.poolMgr.GetIPPoolByName(ctx, pool.Name)
-			if nil != err {
-				return err
-			}
-		}
-
-		totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-		if nil != err {
-			return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", pool.Name, err)
-		}
-
-		totalIPCount := int64(len(totalIPs))
-		pool.Status.TotalIPCount = &totalIPCount
-
-		err = c.poolMgr.client.Status().Update(ctx, pool)
-		if nil != err {
-			if !apierrors.IsConflict(err) {
-				return err
-			}
-
-			if i == c.poolMgr.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to update the total count of IP addresses of IPPool %s", constant.ErrRetriesExhausted, c.poolMgr.config.MaxConflictRetries, pool.Name)
-			}
-
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * c.poolMgr.config.ConflictRetryUnitTime)
-			continue
-		}
-
-		informerLogger.Sugar().Infof("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, totalIPCount)
-		break
-	}
-
-	return nil
-}
-
-// enqueueAutoIPPool will insert auto-created IPPool name into workQueue
-func (c *poolInformerController) enqueueAutoIPPool(obj interface{}) {
-	pool := obj.(*spiderpoolv1.SpiderIPPool)
-
+func (c *poolInformerController) enqueueAllIPPool(pool *spiderpoolv1.SpiderIPPool) {
 	if pool.DeletionTimestamp != nil {
-		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
+		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to enqueue", pool.Name)
 		return
 	}
 
 	maxQueueLength := c.poolMgr.GetAutoPoolMaxWorkQueueLength()
-	// only add some pools that the current IP number is not equal with the desired IP number
-	if ShouldScaleIPPool(pool) {
-		if c.workQueue.Len() >= maxQueueLength {
-			informerLogger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
-			return
-		}
-
-		c.workQueue.Add(pool.Name)
-		informerLogger.Sugar().Debugf("added '%s' to IPPool workqueue", pool.Name)
+	if c.allPoolWorkQueue.Len() >= maxQueueLength {
+		informerLogger.Sugar().Errorf("The All-IPPool workqueue is out of capacity, discard enqueue IPPool '%s'", pool.Name)
+		return
 	}
+	c.allPoolWorkQueue.Add(pool.Name)
+	informerLogger.Sugar().Debugf("added '%s' to All-IPPool workqueue", pool.Name)
 }
 
 // Run will set up the event handlers for IPPool, as well
@@ -288,8 +258,10 @@ func (c *poolInformerController) enqueueAutoIPPool(obj interface{}) {
 // is closed, at which point it will shutdown the workqueue and wait for
 // workers to finish processing their current work items.
 func (c *poolInformerController) Run(workers int, stopCh <-chan struct{}) error {
+	enableV4, enableV6 := c.poolMgr.config.EnableIPv4, c.poolMgr.config.EnableIPv6
+
 	defer utilruntime.HandleCrash()
-	defer c.workQueue.ShutDown()
+	defer c.allPoolWorkQueue.ShutDown()
 
 	informerLogger.Debug("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.poolSynced); !ok {
@@ -297,40 +269,70 @@ func (c *poolInformerController) Run(workers int, stopCh <-chan struct{}) error 
 	}
 
 	for i := 0; i < workers; i++ {
-		go wait.Until(c.runWorker, time.Second, stopCh)
+		informerLogger.Sugar().Debugf("Starting All IPPool processing worker '%d'", i)
+		go wait.Until(c.runAllIPPoolWorker, time.Second, stopCh)
 	}
+
+	if enableV4 {
+		informerLogger.Debug("Staring IPv4 Auto-created IPPool processing worker")
+		defer c.poolMgr.v4AutoCreatedRateLimitQueue.ShutDown()
+		go wait.Until(c.runV4AutoCreatePoolWorker, time.Second, stopCh)
+	}
+	if enableV6 {
+		informerLogger.Debug("Staring IPv6 Auto-created IPPool processing worker")
+		defer c.poolMgr.v6AutoCreatedRateLimitQueue.ShutDown()
+		go wait.Until(c.runV6AutoCreatePoolWorker, time.Second, stopCh)
+	}
+
 	informerLogger.Info("IPPool controller workers started")
 
 	<-stopCh
-	informerLogger.Warn("Shutting down IPPool controller workers")
+	informerLogger.Error("Shutting down IPPool controller workers")
 	return nil
 }
 
-// runWorker is a long-running function that will continually call the
+// runV4AutoCreatePoolWorker is a long-running function that will continually call the
 // processNextWorkItem function in order to read and process a message on the
-// workQueue.
-func (c *poolInformerController) runWorker() {
-	for c.processNextWorkItem() {
+// IPv4 Auto-created workQueue and try to scale it if needed
+func (c *poolInformerController) runV4AutoCreatePoolWorker() {
+	log := informerLogger.With(zap.String("IPPool_Informer_Worker", "IPv4_Auto_created_IPPool"))
+	for c.processNextWorkItem(c.poolMgr.v4AutoCreatedRateLimitQueue, c.scaleIPPoolIfNeeded, log) {
+	}
+}
+
+// runV6AutoCreatePoolWorker is a long-running function that will continually call the
+// processNextWorkItem function in order to read and process a message on the
+// IPv6 Auto-created workQueue and try to scale it if needed
+func (c *poolInformerController) runV6AutoCreatePoolWorker() {
+	log := informerLogger.With(zap.String("IPPool_Informer_Worker", "IPv6_Auto_created_IPPool"))
+	for c.processNextWorkItem(c.poolMgr.v6AutoCreatedRateLimitQueue, c.scaleIPPoolIfNeeded, log) {
+	}
+}
+
+// worker runs a worker thread that just dequeues items, processes them, and marks them done.
+// This will update SpiderIPPool status counts
+func (c *poolInformerController) runAllIPPoolWorker() {
+	log := informerLogger.With(zap.String("IPPool_Informer_Worker", "All_IPPool"))
+	for c.processNextWorkItem(c.allPoolWorkQueue, c.updateIPPoolIPCount, log) {
 	}
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
-// attempt to scale those IPPool which needs
-func (c *poolInformerController) processNextWorkItem() bool {
-	obj, shutdown := c.workQueue.Get()
-
+// attempt to process it with the given function handler.
+// the processNextWorkItem is never invoked concurrently with the same key.
+func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLimitingInterface, fn func(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error, log *zap.Logger) bool {
+	obj, shutdown := workQueue.Get()
 	if shutdown {
+		log.Error("workqueue is already shutdown!")
 		return false
 	}
 
-	// it doesn't master to discard some data,
-	// the subnet informer and its resync will add those not desired pool name to the workqueue
 	process := func(obj interface{}) error {
-		defer c.workQueue.Done(obj)
+		defer workQueue.Done(obj)
 		poolName, ok := obj.(string)
 		if !ok {
-			c.workQueue.Forget(obj)
-			informerLogger.Sugar().Errorf("expected string in workqueue but got %+v", obj)
+			workQueue.Forget(obj)
+			log.Sugar().Errorf("expected string in workQueue but got %+v", obj)
 			return nil
 		}
 
@@ -339,64 +341,61 @@ func (c *poolInformerController) processNextWorkItem() bool {
 			// The IPPool resource may no longer exist, in which case we stop
 			// processing.
 			if apierrors.IsNotFound(err) {
-				c.workQueue.Forget(obj)
-				informerLogger.Sugar().Debugf("IPPool '%s' in work queue no longer exists", poolName)
+				workQueue.Forget(obj)
+				log.Sugar().Debugf("IPPool '%s' in work queue no longer exists", poolName)
 				return nil
 			}
 
-			c.workQueue.AddRateLimited(poolName)
+			workQueue.AddRateLimited(poolName)
 			return fmt.Errorf("error syncing '%s': %s, requeuing", poolName, err.Error())
 		}
 
-		err = c.scaleIPPoolIfNeeded(context.TODO(), pool)
+		err = fn(context.TODO(), pool.DeepCopy())
 		if nil != err {
 			// discard some wrong input items
 			if errors.Is(err, constant.ErrWrongInput) {
-				c.workQueue.Forget(obj)
-				return fmt.Errorf("failed to scale IPPool '%s', error: %v", pool.Name, err)
+				workQueue.Forget(obj)
+				return fmt.Errorf("failed to process IPPool '%s', error: %v", pool.Name, err)
 			}
 
 			if apierrors.IsConflict(err) {
-				c.workQueue.AddRateLimited(poolName)
-				informerLogger.Sugar().Warnf("encountered update conflict '%v', retrying...", err)
+				workQueue.AddRateLimited(poolName)
+				log.Sugar().Warnf("encountered update conflict '%v', retrying...", err)
 				return nil
 			}
 
 			// if we set positive number for the requeue delay duration, we will requeue it. otherwise we will discard it.
 			if c.requeueDelayDuration >= 0 {
-				informerLogger.Sugar().Warnf("encountered error '%v', requeue it after '%v'", err, c.requeueDelayDuration)
-				c.workQueue.AddAfter(poolName, c.requeueDelayDuration)
-				return nil
+				if workQueue.NumRequeues(obj) < c.poolMgr.config.WorkQueueMaxRetries {
+					log.Sugar().Warnf("encountered error '%v', requeue it after '%v'", err, c.requeueDelayDuration)
+					workQueue.AddAfter(poolName, c.requeueDelayDuration)
+					return nil
+				}
+
+				log.Sugar().Warnf("out of work queue max retries, drop IPPool '%s'", pool.Name)
 			}
 
-			c.workQueue.Forget(obj)
+			workQueue.Forget(obj)
 			return fmt.Errorf("error syncing '%s': %s", poolName, err.Error())
 		}
 		c.iterate()
 
-		c.workQueue.Forget(obj)
+		workQueue.Forget(obj)
 		return nil
 	}
 
 	if err := process(obj); nil != err {
-		informerLogger.Error(err.Error())
+		log.Error(err.Error())
 		return true
 	}
 
 	return true
 }
 
-func (c *poolInformerController) iterate() {
-	if c.genIPsCursor {
-		c.genIPsCursor = false
-	} else {
-		c.genIPsCursor = true
-	}
-}
-
+// scaleIPPoolIfNeeded checks whether the provided SpiderIPPool needs to be scaled and try to process it.
 func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	if pool.DeletionTimestamp != nil {
-		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
+		informerLogger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it by subnet!", pool.Name)
 		return nil
 	}
 
@@ -410,8 +409,6 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 		informerLogger.Sugar().Debugf("maybe IPPool '%s' is just created for a while, wait for updating status DesiredIPCount", pool.Name)
 		return nil
 	}
-
-	pool = pool.DeepCopy()
 
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if nil != err {
@@ -474,4 +471,36 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 	}
 
 	return nil
+}
+
+// updateIPPoolIPCount will calculate and update the provided SpiderIPPool status AllocatedIPCount or TotalIPCount.
+func (c *poolInformerController) updateIPPoolIPCount(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+	if pool.DeletionTimestamp == nil && pool.Status.AllocatedIPCount == nil {
+		pool.Status.AllocatedIPCount = pointer.Int64(0)
+	}
+
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	if nil != err {
+		return fmt.Errorf("%w: failed to calculate SpiderIPPool '%s' total IP count, error: %v", constant.ErrWrongInput, pool.Name, err)
+	}
+
+	totalIPCount := int64(len(totalIPs))
+	pool.Status.TotalIPCount = &totalIPCount
+
+	err = c.poolMgr.client.Status().Update(ctx, pool)
+	if nil != err {
+		return err
+	}
+
+	informerLogger.Sugar().Debugf("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, totalIPCount)
+
+	return nil
+}
+
+func (c *poolInformerController) iterate() {
+	if c.genIPsCursor {
+		c.genIPsCursor = false
+	} else {
+		c.genIPsCursor = true
+	}
 }

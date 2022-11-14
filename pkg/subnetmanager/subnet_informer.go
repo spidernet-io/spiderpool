@@ -413,7 +413,7 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 func (sc *SubnetController) notifySubnetIPPool(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 
-	if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue() == nil {
+	if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue(*subnet.Spec.IPVersion) == nil {
 		logger.Warn("IPPool manager doesn't have IPPool informer rate limit workqueue!")
 		return nil
 	}
@@ -436,12 +436,12 @@ func (sc *SubnetController) notifySubnetIPPool(ctx context.Context, subnet *spid
 		}
 
 		if ippoolmanager.ShouldScaleIPPool(pool) {
-			if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue().Len() >= maxQueueLength {
+			if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue(*subnet.Spec.IPVersion).Len() >= maxQueueLength {
 				logger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
 				return nil
 			}
 
-			sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue().AddRateLimited(pool.Name)
+			sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue(*subnet.Spec.IPVersion).AddRateLimited(pool.Name)
 			logger.Sugar().Debugf("added '%s' to IPPool workqueue", pool.Name)
 		}
 	}

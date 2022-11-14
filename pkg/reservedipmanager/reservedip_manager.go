@@ -6,22 +6,18 @@ package reservedipmanager
 import (
 	"context"
 	"errors"
-	"net"
 
 	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ReservedIPManager interface {
 	SetupWebhook() error
 	GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.SpiderReservedIP, error)
 	ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error)
-	GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error)
 }
 
 type reservedIPManager struct {
@@ -61,21 +57,4 @@ func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, opts ...client
 	}
 
 	return &rIPList, nil
-}
-
-func (rm *reservedIPManager) GetReservedIPsByIPVersion(ctx context.Context, version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error) {
-	var ips []net.IP
-	for _, r := range rIPList.Items {
-		if *r.Spec.IPVersion != version {
-			continue
-		}
-
-		rIPs, err := spiderpoolip.ParseIPRanges(version, r.Spec.IPs)
-		if err != nil {
-			return nil, err
-		}
-		ips = append(ips, rIPs...)
-	}
-
-	return ips, nil
 }

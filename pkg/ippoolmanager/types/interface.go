@@ -16,6 +16,7 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ScaleAction bool
@@ -41,6 +42,6 @@ type IPPoolManager interface {
 	ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ScaleAction, desiredIPNum int) error
 	DeleteIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
 	UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error
-	GetAutoPoolRateLimitQueue() workqueue.RateLimitingInterface
+	GetAutoPoolRateLimitQueue(ipVersion spiderpooltypes.IPVersion) workqueue.RateLimitingInterface
 	GetAutoPoolMaxWorkQueueLength() int
 }

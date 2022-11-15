@@ -250,7 +250,9 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 					v4Pool.Spec.NodeAffinity.MatchLabels = node.Labels
 					GinkgoWriter.Printf("Create v4 ippool %v\n", v4PoolName)
 					if frame.Info.SpiderSubnetEnabled {
-						Expect(common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, v4Pool, 1)).To(Succeed())
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, 1)).To(Succeed())
 					} else {
 						Expect(common.CreateIppool(frame, v4Pool)).To(Succeed())
 					}
@@ -265,7 +267,9 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 					v6Pool.Spec.NodeAffinity.MatchLabels = node.Labels
 					GinkgoWriter.Printf("Create v6 ippool %v\n", v6PoolName)
 					if frame.Info.SpiderSubnetEnabled {
-						Expect(common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, v6Pool, 1)).To(Succeed())
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, 1)).To(Succeed())
 					} else {
 						Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
 					}

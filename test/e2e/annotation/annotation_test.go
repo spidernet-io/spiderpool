@@ -178,7 +178,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		iPv4PoolObj.Spec.Vlan = ipv4vlan
 		GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
 		if frame.Info.SpiderSubnetEnabled {
-			err = common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, iPv4PoolObj, ipNum)
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
 		} else {
 			err = common.CreateIppool(frame, iPv4PoolObj)
 		}
@@ -188,7 +190,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		iPv6PoolObj.Spec.Vlan = ipv6vlan
 		GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
 		if frame.Info.SpiderSubnetEnabled {
-			err = common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, iPv6PoolObj, ipNum)
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
 		} else {
 			err = common.CreateIppool(frame, iPv6PoolObj)
 		}
@@ -235,7 +239,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			if frame.Info.IpV4Enabled {
 				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
 				if frame.Info.SpiderSubnetEnabled {
-					err = common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, iPv4PoolObj, ipNum)
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
 				} else {
 					err = common.CreateIppool(frame, iPv4PoolObj)
 				}
@@ -245,7 +251,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			if frame.Info.IpV6Enabled {
 				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
 				if frame.Info.SpiderSubnetEnabled {
-					err = common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, iPv6PoolObj, ipNum)
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
 				} else {
 					err = common.CreateIppool(frame, iPv6PoolObj)
 				}
@@ -359,7 +367,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					if frame.Info.SpiderSubnetEnabled {
 						v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(ipNum)
 						Expect(v4Pool).NotTo(BeNil())
-						err = common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, v4Pool, ipNum)
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, ipNum)
 						newV4PoolNameList = append(newV4PoolNameList, v4PoolName)
 					} else {
 						newV4PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ipNum, true)
@@ -370,7 +380,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					if frame.Info.SpiderSubnetEnabled {
 						v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(ipNum)
 						Expect(v6Pool).NotTo(BeNil())
-						err = common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, v6Pool, ipNum)
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, ipNum)
 						newV6PoolNameList = append(newV6PoolNameList, v6PoolName)
 					} else {
 						newV6PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ipNum, false)
@@ -417,11 +429,13 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// Create one ippool to be used as backup ippool
 			if frame.Info.IpV4Enabled {
 				if frame.Info.SpiderSubnetEnabled {
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
 					v4PoolName1, iPv4PoolObj1 := common.GenerateExampleIpv4poolObject(ippoolIpNum)
-					Expect(common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, iPv4PoolObj1, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v4 pool")
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj1, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v4 pool")
 					v4PoolNameList1 = append(v4PoolNameList1, v4PoolName1)
 					v4PoolName2, iPv4PoolObj2 := common.GenerateExampleIpv4poolObject(ippoolIpNum)
-					Expect(common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, iPv4PoolObj2, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v4 pool")
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj2, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v4 pool")
 					v4PoolNameList2 = append(v4PoolNameList2, v4PoolName2)
 				} else {
 					v4PoolNameList1, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, true)
@@ -432,11 +446,13 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			}
 			if frame.Info.IpV6Enabled {
 				if frame.Info.SpiderSubnetEnabled {
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
 					v6PoolName1, iPv6PoolObj1 := common.GenerateExampleIpv6poolObject(ippoolIpNum)
-					Expect(common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, iPv6PoolObj1, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v6 pool")
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj1, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v6 pool")
 					v6PoolNameList1 = append(v6PoolNameList1, v6PoolName1)
 					v6PoolName2, iPv6PoolObj2 := common.GenerateExampleIpv6poolObject(ippoolIpNum)
-					Expect(common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, iPv6PoolObj2, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v6 pool")
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj2, ippoolIpNum)).NotTo(HaveOccurred(), "Failed to create v6 pool")
 					v6PoolNameList2 = append(v6PoolNameList2, v6PoolName2)
 				} else {
 					v6PoolNameList1, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ippoolIpNum, false)
@@ -514,7 +530,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(v4Pool).NotTo(BeNil())
 			Expect(v4PoolName).NotTo(BeEmpty())
 			if frame.Info.SpiderSubnetEnabled {
-				err = common.CreateIppoolInSpiderSubnet(frame, v4SubnetName, v4Pool, 1)
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, 1)
 			} else {
 				err = common.CreateIppool(frame, v4Pool)
 			}
@@ -534,7 +552,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(v6Pool).NotTo(BeNil())
 			Expect(v6PoolName).NotTo(BeEmpty())
 			if frame.Info.SpiderSubnetEnabled {
-				err = common.CreateIppoolInSpiderSubnet(frame, v6SubnetName, v6Pool, 1)
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, 1)
 			} else {
 				err = common.CreateIppool(frame, v6Pool)
 			}

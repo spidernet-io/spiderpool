@@ -316,7 +316,7 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 		}
 
 		if poolCopy.Labels == nil {
-			pool.Labels = make(map[string]string)
+			poolCopy.Labels = make(map[string]string)
 		}
 		if v, ok := poolCopy.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
 			poolCopy.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name

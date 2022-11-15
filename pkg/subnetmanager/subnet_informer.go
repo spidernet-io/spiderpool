@@ -107,13 +107,7 @@ func (sc *SubnetController) enqueueSubnetOnAdd(obj interface{}) {
 }
 
 func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
-	oldSubnet := oldObj.(*spiderpoolv1.SpiderSubnet)
 	newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
-	if reflect.DeepEqual(newSubnet.Spec.IPs, oldSubnet.Spec.IPs) &&
-		reflect.DeepEqual(newSubnet.Spec.ExcludeIPs, oldSubnet.Spec.ExcludeIPs) {
-		return
-	}
-
 	logger := informerLogger.With(
 		zap.String("SubnetName", newSubnet.Name),
 		zap.String("Operation", "UPDATE"),

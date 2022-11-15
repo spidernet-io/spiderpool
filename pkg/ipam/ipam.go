@@ -145,7 +145,8 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic str
 
 	// There's no possible that a StatefulSet Pod Endpoint's field 'Status.Current' is nil.
 	if endpoint.Status.Current == nil {
-		return nil, fmt.Errorf("current IP allocation is lost, endpoint %s/%s data broken: %+v", endpoint.Namespace, endpoint.Name, endpoint)
+		logger.Sugar().Warnf("SpiderEndpoint '%s/%s' doesn't have current IP allocation, try to re-allocate", endpoint.Namespace, endpoint.Name)
+		return nil, nil
 	}
 
 	logger.Info("Retrieve the IP allocation of StatefulSet")

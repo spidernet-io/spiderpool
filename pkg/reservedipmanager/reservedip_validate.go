@@ -145,13 +145,6 @@ func (rm *reservedIPManager) validateReservedIPAvailableIP(ctx context.Context, 
 }
 
 func validateReservedIPIPs(version types.IPVersion, ips []string) *field.Error {
-	if len(ips) == 0 {
-		return field.Required(
-			ipsField,
-			"requires at least one item",
-		)
-	}
-
 	for i, r := range ips {
 		if err := spiderpoolip.IsIPRange(version, r); err != nil {
 			return field.Invalid(

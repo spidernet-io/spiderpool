@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # must set one of required label, for release note generator
-      - uses: mheap/github-action-required-labels@v2.2.0
+      - uses: mheap/github-action-required-labels@v2.2.3
         with:
           mode: exactly
           count: 1

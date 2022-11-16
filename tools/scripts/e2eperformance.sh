@@ -44,7 +44,7 @@ DATA2=$( LoopList::GetElement "$E2E_DATA" "SuiteDescription" '"Subnet Suite"' )
 E2E_DATA1=$( jq '.SpecReports' <<< "$DATA1" )
 E2E_DATA2=$( jq '.SpecReports' <<< "$DATA2" )
 DATA1=$( LoopList::GetElement "$E2E_DATA1" "LeafNodeLabels"  '["P00002"]'  )
-DATA2=$( LoopList::GetElement "$E2E_DATA2" "LeafNodeLabels"  '["I00006"]'  )
+DATA2=$( LoopList::GetElement "$E2E_DATA2" "LeafNodeLabels"  '["I00006","I00008"]'  )
 (($?!=0)) && echo "error, failed to get LeafNodeLabels" >&2  && echo "$E2E_DATA1" >&2 && echo "$E2E_DATA2" >&2 && exit 1
 
 CASE_STATE1=$( jq '.State' <<< "$DATA1" | tr -d '"' )
@@ -91,18 +91,16 @@ if [ "$CASE_STATE2" == "passed" ] ; then
     (($?!=0)) && echo "error, failed to get data" >&2  && echo "$ENTRY_DATA2" >&2 && exit 1
 
     subnetCreateTime=$( jq '.createTime' <<< "$ENTRY_DATA2" )
-    subnetExpansionTime=$( jq '.expansionTime' <<< "$ENTRY_DATA2" )
-    subnetReducedTime=$( jq '.reducedTime' <<< "$ENTRY_DATA2" )
+    subnetScaleUpAndDownTime=$( jq '.scaleupAndScaledownTime' <<< "$ENTRY_DATA2" )
     subnetDeleteTime=$( jq '.deleteTime' <<< "$ENTRY_DATA2" )
 
     [ -z "$subnetCreateTime" ] && echo "error, failed to get createTime " >&2  && echo "$ENTRY_DATA2" >&2 && exit 1
-    [ -z "$subnetExpansionTime" ] && echo "error, failed to get expansionTime " >&2  && echo "$ENTRY_DATA2" >&2 && exit 1
-    [ -z "$subnetReducedTime" ] && echo "error, failed to get reducedTime " >&2  && echo "$ENTRY_DATA2" >&2 && exit 1
+    [ -z "$subnetScaleUpAndDownTime" ] && echo "error, failed to get scale up and down time " >&2  && echo "$ENTRY_DATA2" >&2 && exit 1
     [ -z "$subnetDeleteTime" ] && echo "error, failed to get deleteTime " >&2  && echo "$ENTRY_DATA2" >&2 && exit 1
 fi
 
 if [ "$CASE_STATE1" == "passed" ] && [ "$CASE_STATE2" == "passed" ] ; then
-    echo "${createTime}/${rebuildTime}/${deleteTime} | ${subnetCreateTime}/${subnetExpansionTime}/${subnetReducedTime}/${subnetDeleteTime}"
+    echo "${createTime}/${rebuildTime}/${deleteTime} | ${subnetCreateTime}/${subnetScaleUpAndDownTime}/${subnetDeleteTime}"
 fi
 
 if [ "$CASE_STATE1" == "passed" ] && [ "$CASE_STATE2" != "passed" ] ; then
@@ -110,5 +108,5 @@ if [ "$CASE_STATE1" == "passed" ] && [ "$CASE_STATE2" != "passed" ] ; then
 fi
 
 if [ "$CASE_STATE1" != "passed" ] && [ "$CASE_STATE2" == "passed" ] ; then
-    echo "${subnetCreateTime}/${subnetExpansionTime}/${subnetReducedTime}/${subnetDeleteTime}"
+    echo "${subnetCreateTime}/${subnetScaleUpAndDownTime}/${subnetDeleteTime}"
 fi

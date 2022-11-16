@@ -279,7 +279,7 @@ e2e_test:
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \
 		RESULT=0 ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh \
-			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none  --slow-spec-threshold=15s \
+			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none --poll-progress-after=60s --poll-progress-interval=15s \
 			--json-report e2ereport.json --output-dir $(ROOT_DIR) --procs $(E2E_GINKGO_PROCS) \
 			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --fail-fast  $(GINKGO_OPTION) \
 			-r e2e/*  || RESULT=1  ; \

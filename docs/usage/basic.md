@@ -4,7 +4,7 @@
 
 ## Install Spiderpool
 
-First, add the Spiderpool `helm` repository.
+First, setup the Helm repository.
 
 ```bash
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -17,10 +17,10 @@ IPV4_SUBNET_YOU_EXPECT="172.18.40.0/24"
 IPV4_IPRANGES_YOU_EXPECT="172.18.40.40-172.20.40.200"
 ```
 
-Install Spiderpool by creating the necessary TLS certificates and custom resources.
+Deploy Spiderpool with the creation of necessary TLS certificates and custom resources, more details about [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md).
 
 ```bash
-helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=auto \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
@@ -28,7 +28,9 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
   --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
 ```
 
-Here we use `--set feature.enableIPv6=false` to disable IPv6, more details of [Spiderpool charts values](https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters).
+Here we disable IPv6, but if you need Spiderpool to work under dual stacks, you can set `feature.enableIPv6=true`. Furthermore, if you also need to create a default IPv6 IPPool, set `clusterDefaultPool.installIPv6IPPool=true` and fill in the desired default IPv6 IPPool information in the `clusterDefaultPool.ipv6Subnet` and `clusterDefaultPool.ipv6IPRanges` parameters at the same time.
+
+More details about [Spiderpool charts parameters](https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters).
 
 ## Update CNI network configuration
 
@@ -44,7 +46,7 @@ Take a example of Macvlan + Spiderpool.
 
 ```json
 {
-    "cniVersion":"1.0.0",
+    "cniVersion":"0.4.0",
     "type":"macvlan",
     "mode":"bridge",
     "master":"eth0",
@@ -75,7 +77,7 @@ spec:
   - 172.18.41.40-172.18.41.50
 ```
 
-We can replace `spec.subnet` and `spec.ips` as needed, more details of [SpiderIPPool CRD](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md).
+We can replace `spec.subnet` and `spec.ips` as needed, more details about [SpiderIPPool CRD](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md).
 
 ## Run
 
@@ -95,7 +97,7 @@ my-dep-864946ffd8-kdl86   1/1     Running   0          3m10s   172.18.40.200   s
 my-dep-864946ffd8-vhnsj   1/1     Running   0          3m10s   172.18.40.38    spider-worker   <none>           <none>
 ```
 
-Of course, we can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation `ipam.spidernet.io/ippool`, more details of [pool selection rules](TODO).
+Of course, we can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation `ipam.spidernet.io/ippool`, more details about [pool selection rules](TODO).
 
 ```bash
 kubectl apply -f https://github.com/spidernet-io/spiderpool/blob/main/docs/example/basic/custom-ippool.deploy.yaml
@@ -116,8 +118,7 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            "interface": "eth0",
-            "ipv4pools": ["custom-ipv4-ippool"]
+            "ipv4": ["custom-ipv4-ippool"]
           }
       labels:
         app: custom-ippool-deploy

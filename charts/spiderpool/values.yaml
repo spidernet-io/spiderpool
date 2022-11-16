@@ -53,13 +53,16 @@ feature:
     ## @param feature.gc.enabled enable retrieve IP in spiderippool CR
     enabled: true
 
+    gcAll:
+      ## @param feature.gc.gcAll.intervalInSecond the gc all interval duration
+      intervalInSecond: 600
+
     GcDeletingTimeOutPod:
       ## @param feature.gc.GcDeletingTimeOutPod.enabled enable retrieve IP for the pod who times out of deleting graceful period
       enabled: true
 
       ## @param feature.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
-
 
 ## @section clusterDefaultPool parameters
 ##

@@ -8,9 +8,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"go.uber.org/zap"
 )
 
 const tmpLogFilePath = "/tmp/cni.log"
@@ -85,4 +85,18 @@ var _ = Describe("Log", Label("unitest", "log_test"), func() {
 			Expect(logger).To(Equal(original))
 		})
 	})
+
+	DescribeTable("check convert log level", func(levelStr string, expectedLogLevel logutils.LogLevel) {
+		logLevel := logutils.ConvertLogLevel(levelStr)
+		if logLevel != nil {
+			Expect(*logLevel).Should(Equal(expectedLogLevel))
+		}
+	},
+		Entry("expected debug level", "debug", logutils.DebugLevel),
+		Entry("expected info level;", "info", logutils.InfoLevel),
+		Entry("expected warn level", "warn", logutils.WarnLevel),
+		Entry("expected error level", "error", logutils.ErrorLevel),
+		Entry("expected panic level", "panic", logutils.PanicLevel),
+		Entry("expected fatal level", "fatal", logutils.FatalLevel),
+	)
 })

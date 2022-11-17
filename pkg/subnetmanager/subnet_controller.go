@@ -398,11 +398,13 @@ func (sm *subnetManager) ControllerAddOrUpdateHandler() controllers.AppInformers
 
 		// check the difference between the two object and choose to reconcile or not
 		if sm.hasSubnetConfigChanged(logutils.IntoContext(ctx, log), oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas, appKind, app) {
-			log.Debug("Going to create IPPool or mark IPPool desired IP number")
-			err = sm.createOrMarkIPPool(ctx, *newSubnetConfig, appKind, app, podSelector, newAppReplicas)
-			if nil != err {
-				return fmt.Errorf("failed to create or scale IPPool, error: %v", err)
-			}
+			go func() {
+				log.Debug("Going to create IPPool or mark IPPool desired IP number")
+				err = sm.createOrMarkIPPool(ctx, *newSubnetConfig, appKind, app, podSelector, newAppReplicas)
+				if nil != err {
+					log.Sugar().Errorf("failed to create or scale IPPool, error: %v", err)
+				}
+			}()
 		}
 
 		return nil
@@ -637,7 +639,14 @@ func (sm *subnetManager) ControllerDeleteHandler() controllers.APPInformersDelFu
 		}
 
 		// clean up all legacy IPPools that matched with the application UID
-		return sm.tryToCleanUpLegacyIPPools(ctx, appKind, app)
+		go func() {
+			err := sm.tryToCleanUpLegacyIPPools(ctx, appKind, app)
+			if nil != err {
+				log.Sugar().Errorf("failed to clean up legacy IPPool, error: %v", err)
+			}
+		}()
+
+		return nil
 	}
 }
 

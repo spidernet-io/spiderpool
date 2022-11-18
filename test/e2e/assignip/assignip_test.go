@@ -106,7 +106,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 				GinkgoWriter.Println("scale Deployment to exhaust IP resource")
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
-				addPods, _, e4 := common.ScaleDeployUntilExpectedReplicas(frame, deploy, deployScaleupNum, ctx)
+				addPods, _, e4 := common.ScaleDeployUntilExpectedReplicas(ctx, frame, deploy, deployScaleupNum, false)
 				Expect(e4).NotTo(HaveOccurred())
 
 				// Get the Pod Scale failure Event

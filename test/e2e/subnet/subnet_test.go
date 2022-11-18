@@ -122,18 +122,18 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			defer cancel()
 			GinkgoWriter.Println("Create deployments in bulk in the subnet and check that the IPs recorded in the subnet status match the IPs recorded in the ippool status.")
 			if frame.Info.IpV4Enabled {
-				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
-				Expect(err).NotTo(HaveOccurred())
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, deployOriginiaNum)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
-				Expect(err).NotTo(HaveOccurred())
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, deployOriginiaNum)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
 			}
 
 			// Check pod ip record in ippool
@@ -159,28 +159,15 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					Expect(err).NotTo(HaveOccurred())
 					// How much of the deployment is for scaling up?
 					if j < deployScaleupNum {
-						_, _, err = common.ScaleDeployUntilExpectedReplicas(frame, deploy, int(deployReplicasScaleupNum), ctx)
+						_, _, err = common.ScaleDeployUntilExpectedReplicas(ctx, frame, deploy, int(deployReplicasScaleupNum), true)
 						Expect(err).NotTo(HaveOccurred())
 					} else {
-						_, _, err = common.ScaleDeployUntilExpectedReplicas(frame, deploy, int(deployReplicasScaledownNum), ctx)
+						_, _, err = common.ScaleDeployUntilExpectedReplicas(ctx, frame, deploy, int(deployReplicasScaledownNum), true)
 						Expect(err).NotTo(HaveOccurred())
 					}
 				}()
 			}
 			wg.Wait()
-
-			// All pods are running
-			Eventually(func() bool {
-				podList, err = frame.GetPodList(client.InNamespace(namespace))
-				if nil != err {
-					return false
-				}
-				return frame.CheckPodListRunning(podList)
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-			// Check pod ip record in ippool
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
-			Expect(ok).NotTo(BeFalse())
-			Expect(err).NotTo(HaveOccurred())
 
 			// After scaling up and down, check that the IPs recorded in the subnet status match the IPs recorded in the ippool status.
 			GinkgoWriter.Println("After scaling up and down, check that the IPs recorded in the subnet status match the IPs recorded in the ippool status.")
@@ -194,6 +181,13 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
+
+			// Check pod ip record in ippool
+			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
 			endT2 := time.Since(startT2)
 			GinkgoWriter.Printf("Scaling up and down deployments at a time cost of %v. \n", endT2)
 
@@ -240,9 +234,15 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			v4PoolNameList       []string
 			v6PoolNameList       []string
 			podList              *corev1.PodList
+			nodeList             *corev1.NodeList
+			err                  error
 		)
 
 		BeforeEach(func() {
+			nodeList, err = frame.GetNodeList()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(nodeList).NotTo(BeNil())
+
 			if frame.Info.IpV4Enabled {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetAvailableIpNum)
 				Expect(v4SubnetObject).NotTo(BeNil())
@@ -303,53 +303,38 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			GinkgoWriter.Printf("Try to create replicaSet %v/%v \n", namespace, rsName)
 			Expect(frame.CreateReplicaSet(rsYaml)).To(Succeed())
 
-			// All pods are running
-			Eventually(func() bool {
-				podList, err = frame.GetPodList(client.InNamespace(namespace))
-				if nil != err {
-					return false
-				}
-				return frame.CheckPodListRunning(podList)
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-
 			// Check that the ip of the subnet record matches the record in ippool
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
 			if frame.Info.IpV4Enabled {
-				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
-				Expect(err).NotTo(HaveOccurred())
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, controllerNum)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
-				Expect(err).NotTo(HaveOccurred())
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, controllerNum)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
 			}
-
-			// Check that the pod's ip is recorded in the ippool
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
-			Expect(ok).NotTo(BeFalse())
-			Expect(err).NotTo(HaveOccurred())
 
 			// scaling up statefulset/replicaset
 			rsObj, err := frame.GetReplicaSet(rsName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			_, _, err = common.ScaleReplicasetUntilExpectedReplicas(ctx, frame, rsObj, int(rsReplicasScaleupNum))
+			_, _, err = common.ScaleReplicasetUntilExpectedReplicas(ctx, frame, rsObj, int(rsReplicasScaleupNum), true)
 			Expect(err).NotTo(HaveOccurred())
 			stsObj, err := frame.GetStatefulSet(stsName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			_, _, err = common.ScaleStatefulsetUntilExpectedReplicas(ctx, frame, stsObj, int(stsReplicasScaleupNum))
+			_, _, err = common.ScaleStatefulsetUntilExpectedReplicas(ctx, frame, stsObj, int(stsReplicasScaleupNum), true)
 			Expect(err).NotTo(HaveOccurred())
-			// Wait statefulSet/replicaset until Ready
-			Eventually(func() bool {
-				podList, err = frame.GetPodList(client.InNamespace(namespace))
-				if nil != err {
-					return false
-				}
-				return frame.CheckPodListRunning(podList)
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Check that the pod's ip is recorded in the ippool
+			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
 
 			// Check that the ip of the subnet record matches the record in ippool
 			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -362,8 +347,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}
 
 			// Check that the pod's ip is recorded in the ippool
-			podList, err = frame.GetPodList(client.InNamespace(namespace))
-			Expect(err).NotTo(HaveOccurred())
 			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
@@ -371,20 +354,12 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// scaling down statefulset/replicaset
 			stsObj, err = frame.GetStatefulSet(stsName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			_, _, err = common.ScaleStatefulsetUntilExpectedReplicas(ctx, frame, stsObj, int(stsReplicasOriginialNum))
+			_, _, err = common.ScaleStatefulsetUntilExpectedReplicas(ctx, frame, stsObj, int(stsReplicasOriginialNum), true)
 			Expect(err).NotTo(HaveOccurred())
 			rsObj, err = frame.GetReplicaSet(rsName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			_, _, err = common.ScaleReplicasetUntilExpectedReplicas(ctx, frame, rsObj, int(rsReplicasOriginialNum))
+			_, _, err = common.ScaleReplicasetUntilExpectedReplicas(ctx, frame, rsObj, int(rsReplicasOriginialNum), true)
 			Expect(err).NotTo(HaveOccurred())
-			// All pods are running
-			Eventually(func() bool {
-				podList, err = frame.GetPodList(client.InNamespace(namespace))
-				if nil != err {
-					return false
-				}
-				return frame.CheckPodListRunning(podList)
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
 			// Check that the ip of the subnet record matches the record in ippool
 			ctx2, cancel2 := context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -398,6 +373,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			// Check that the pod's ip is recorded in the ippool
 			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			Expect(err).NotTo(HaveOccurred())
 			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())

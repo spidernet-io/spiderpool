@@ -58,7 +58,7 @@ func GenerateExampleDeploymentYaml(dpmName, namespace string, replica int32) *ap
 	}
 }
 
-func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deployment, expectedReplicas int, ctx context.Context) (addedPod, removedPod []corev1.Pod, err error) {
+func ScaleDeployUntilExpectedReplicas(ctx context.Context, frame *e2e.Framework, deploy *appsv1.Deployment, expectedReplicas int, scalePodRun bool) (addedPod, removedPod []corev1.Pod, err error) {
 
 	if frame == nil || deploy == nil || expectedReplicas <= 0 || int32(expectedReplicas) == *deploy.Spec.Replicas {
 		return nil, nil, e2e.ErrWrongInput
@@ -73,7 +73,6 @@ func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deplo
 	deploy, err = frame.ScaleDeployment(deploy, int32(expectedReplicas))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(*deploy.Spec.Replicas).To(Equal(int32(expectedReplicas)))
-	GinkgoWriter.Printf("Successful scale order to start waiting for expected replicas: %v \n", expectedReplicas)
 
 	for {
 		select {
@@ -85,6 +84,10 @@ func ScaleDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deplo
 			if len(newPodList.Items) != expectedReplicas {
 				break
 			}
+			if scalePodRun && !frame.CheckPodListRunning(newPodList) {
+				break
+			}
+
 			// return the diff pod
 			if expectedReplicas > len(podList.Items) {
 				addedPod := GetAdditionalPods(podList, newPodList)

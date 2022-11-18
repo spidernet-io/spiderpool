@@ -53,11 +53,10 @@ func GenerateExampleStatefulSetYaml(stsName, namespace string, replica int32) *a
 	}
 }
 
-func ScaleStatefulsetUntilExpectedReplicas(ctx context.Context, frame *e2e.Framework, sts *appsv1.StatefulSet, expectedReplicas int) (addedPod, removedPod []corev1.Pod, err error) {
+func ScaleStatefulsetUntilExpectedReplicas(ctx context.Context, frame *e2e.Framework, sts *appsv1.StatefulSet, expectedReplicas int, scalePodRun bool) (addedPod, removedPod []corev1.Pod, err error) {
 	if frame == nil || sts == nil || expectedReplicas <= 0 || int32(expectedReplicas) == *sts.Spec.Replicas {
 		return nil, nil, e2e.ErrWrongInput
 	}
-
 	var newPodList *corev1.PodList
 
 	podList, err := frame.GetPodListByLabel(sts.Spec.Selector.MatchLabels)
@@ -67,7 +66,6 @@ func ScaleStatefulsetUntilExpectedReplicas(ctx context.Context, frame *e2e.Frame
 	sts, err = frame.ScaleStatefulSet(sts, int32(expectedReplicas))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(*sts.Spec.Replicas).To(Equal(int32(expectedReplicas)))
-	GinkgoWriter.Printf("Successful scale order to start waiting for expected replicas: %v \n", expectedReplicas)
 
 	for {
 		select {
@@ -79,6 +77,10 @@ func ScaleStatefulsetUntilExpectedReplicas(ctx context.Context, frame *e2e.Frame
 			if len(newPodList.Items) != expectedReplicas {
 				break
 			}
+			if scalePodRun && !frame.CheckPodListRunning(newPodList) {
+				break
+			}
+
 			// return the diff pod
 			if expectedReplicas > len(podList.Items) {
 				addedPod := GetAdditionalPods(podList, newPodList)

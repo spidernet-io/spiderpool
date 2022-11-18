@@ -364,8 +364,13 @@ func initSpiderControllerLeaderElect(ctx context.Context) {
 	renewDeadline := time.Duration(controllerContext.Cfg.LeaseRenewDeadline) * time.Second
 	leaseRetryPeriod := time.Duration(controllerContext.Cfg.LeaseRetryPeriod) * time.Second
 	leaderRetryElectGap := time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
-	leaderElector, err := election.NewLeaseElector(ctx, controllerContext.Cfg.ControllerPodNamespace, constant.SpiderControllerElectorLockName,
+	leaderElector, err := election.NewLeaseElector(controllerContext.Cfg.ControllerPodNamespace, constant.SpiderControllerElectorLockName,
 		controllerContext.Cfg.ControllerPodName, &leaseDuration, &renewDeadline, &leaseRetryPeriod, &leaderRetryElectGap)
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+
+	err = leaderElector.Run(ctx, controllerContext.ClientSet)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}

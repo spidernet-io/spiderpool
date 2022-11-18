@@ -11,10 +11,9 @@ import (
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	coordinationv1client "k8s.io/client-go/kubernetes/typed/coordination/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
@@ -24,6 +23,7 @@ import (
 var logger *zap.Logger
 
 type SpiderLeaseElector interface {
+	Run(ctx context.Context, clientSet kubernetes.Interface) error
 	// IsElected returns a boolean value to check current Elector whether is a leader
 	IsElected() bool
 }
@@ -44,7 +44,7 @@ type SpiderLeader struct {
 }
 
 // NewLeaseElector will return a SpiderLeaseElector object
-func NewLeaseElector(ctx context.Context, leaseLockNS, leaseLockName, leaseLockIdentity string,
+func NewLeaseElector(leaseLockNS, leaseLockName, leaseLockIdentity string,
 	leaseDuration, leaseRenewDeadline, leaseRetryPeriod, leaderRetryElectGap *time.Duration) (SpiderLeaseElector, error) {
 	if len(leaseLockNS) == 0 {
 		return nil, fmt.Errorf("failed to new lease elector: Lease Lock Namespace must be specified")
@@ -90,31 +90,30 @@ func NewLeaseElector(ctx context.Context, leaseLockNS, leaseLockName, leaseLockI
 		leaderRetryElectGap: *leaderRetryElectGap,
 	}
 
-	err := sl.register()
-	if nil != err {
-		return nil, err
-	}
-
-	logger = logutils.Logger.Named("Lease-Lock-Election")
-
-	go sl.tryToElect(ctx)
-
 	return sl, nil
 }
 
-// register will new client-go LeaderElector object with options configurations
-func (sl *SpiderLeader) register() error {
-	coordinationClient, err := coordinationv1client.NewForConfig(ctrl.GetConfigOrDie())
-	if err != nil {
-		return fmt.Errorf("unable to new coordination client: %w", err)
+func (sl *SpiderLeader) Run(ctx context.Context, clientSet kubernetes.Interface) error {
+	logger = logutils.Logger.Named("Lease-Lock-Election")
+
+	err := sl.register(clientSet)
+	if nil != err {
+		return err
 	}
 
+	go sl.tryToElect(ctx)
+
+	return nil
+}
+
+// register will new client-go LeaderElector object with options configurations
+func (sl *SpiderLeader) register(clientSet kubernetes.Interface) error {
 	leaseLock := &resourcelock.LeaseLock{
 		LeaseMeta: metav1.ObjectMeta{
 			Name:      sl.leaseLockName,
 			Namespace: sl.leaseLockNamespace,
 		},
-		Client: coordinationClient,
+		Client: clientSet.CoordinationV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
 			Identity: sl.leaseLockIdentity,
 		},

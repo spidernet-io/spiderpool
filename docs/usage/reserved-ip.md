@@ -4,9 +4,9 @@
 
 ## IPPool excludeIPs
 
-You may have observed that there is a field `excludeIPs` in SpiderIPPool CRD . To some extent, it is also a mechanism for reserving IP, but its main work is not like this. Field `excludeIPs` is more of a **syntax sugar**, so that users can more flexibly define the IP address ranges of the IPPool.
+You may have observed that there is a field `excludeIPs` in SpiderIPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main function is not like this. Field `excludeIPs` is more of a **syntax sugar**, so that users can more flexibly define the IP address ranges of the IPPool.
 
-For example, create a IPPool without using `excludeIPs`, which contains two IP ranges: `172.18.41.40-172.18.41.44` and `172.18.41.46-172.18.41.50`, we should define the `ips` as follows:
+For example, create a IPPool without using `excludeIPs`, which contains two IP ranges: `172.18.41.40-172.18.41.44` and `172.18.41.46-172.18.41.50`, you should define the `ips` as follows:
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1
@@ -43,9 +43,9 @@ Field `excludeIPs` will make sure that any Pod that allocates IP addresses from 
 
 Unlike configuring field `excluedIPs` in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderreservedip.md).
 
-### Setup Spiderpool
+### Set up Spiderpool
 
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and simply configure Spiderpool.
+If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
 
 ### Get Started
 
@@ -84,7 +84,7 @@ spec:
   - 172.18.42.41-172.18.42.50
 ```
 
-Then, run a Deployment with 3 replicas and have its Pods allocate IP addresses from the IPPool above.
+Then, create a Deployment with 3 replicas and allocate IP addresses to its Pods from the IPPool above.
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml
@@ -127,7 +127,7 @@ reservedip-deploy-6cf9858886-lb7cr   0/1     ContainerCreating   0          35s 
 reservedip-deploy-6cf9858886-pkcfl   1/1     Running             0          35s   172.18.42.50   spider-worker
 ```
 
-But when we delete this ReservedIP, everything will return to normal.
+But when you delete this ReservedIP, everything will return to normal.
 
 ```bash
 kubectl delete -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
@@ -139,7 +139,7 @@ Another interesting question is that what happens if an IP address to be reserve
 
 ### Clean up
 
-Clean the relevant resources so that we can run this tutorial again.
+Clean the relevant resources so that you can run this tutorial again.
 
 ```bash
 kubectl delete \

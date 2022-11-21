@@ -12,8 +12,7 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            "interface": "eth0",
-            "ipv4pools": ["default-ipv4-ippool", "backup-ipv4-ippool"]
+            "ipv4": ["default-ipv4-ippool", "backup-ipv4-ippool"]
           }
       labels:
         app: multi-ippool-deploy

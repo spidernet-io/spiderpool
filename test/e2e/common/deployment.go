@@ -171,16 +171,18 @@ func BatchCreateDeploymentUntilReady(ctx context.Context, frame *e2e.Framework, 
 			defer GinkgoRecover()
 			defer wg.Done()
 			deployName := "deploy-" + j + "-" + tools.RandomName()
-			lock.Lock()
-			deployNameList = append(deployNameList, deployName)
-			lock.Unlock()
 			deployObject = GenerateExampleDeploymentYaml(deployName, namespace, int32(replicas))
 			deployObject.Spec.Template.Annotations = annotationMap
 			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
 			_, err := frame.WaitDeploymentReady(deployName, namespace, ctx)
 			Expect(err).NotTo(HaveOccurred())
+
+			lock.Lock()
+			deployNameList = append(deployNameList, deployName)
+			lock.Unlock()
 		}()
 	}
 	wg.Wait()
+	Expect(len(deployNameList)).To(Equal(expectedNum))
 	return deployNameList
 }

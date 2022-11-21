@@ -211,6 +211,13 @@ func WaitValidateSubnetAllocatedIPCount(ctx context.Context, f *frame.Framework,
 			return frame.ErrTimeOut
 		default:
 			subnetObject := GetSubnetByName(f, subnetName)
+
+			// The informer of SpiderSubnet will delay synchronizing its own state information
+			// which may cause failure 'runtime error: invalid memory address or nil pointer dereference'
+			if subnetObject.Status.AllocatedIPCount == nil {
+				continue
+			}
+
 			if *subnetObject.Status.AllocatedIPCount == allocatedIPCount {
 				return nil
 			}

@@ -13,7 +13,7 @@ import (
 var AllocDurationConstruct = new(allocationDurationConstruct)
 
 // DeallocDurationConstruct is Singleton
-var DeallocDurationConstruct = new(deallocationDurationConstruct)
+var DeallocDurationConstruct = new(releaseDurationConstruct)
 
 type allocationDurationConstruct struct {
 	cacheLock lock.RWMutex
@@ -33,9 +33,7 @@ func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context
 
 	go func() {
 		// latest allocation duration
-		ipamAllocationLatestDurationSeconds.observerLock.Lock()
-		*ipamAllocationLatestDurationSeconds.observerValueToReport = allocationDuration
-		ipamAllocationLatestDurationSeconds.observerLock.Unlock()
+		ipamAllocationLatestDurationSeconds.Record(allocationDuration)
 
 		// allocation duration histogram
 		ipamAllocationDurationSeconds.Record(ctx, allocationDuration)
@@ -45,78 +43,64 @@ func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context
 		// IPAM average allocation duration
 		adc.allocationAvgDuration = (adc.allocationAvgDuration*float64(adc.allocationCounts) + allocationDuration) / float64(adc.allocationCounts+1)
 		adc.allocationCounts++
-		ipamAllocationAverageDurationSeconds.observerLock.Lock()
-		*ipamAllocationAverageDurationSeconds.observerValueToReport = adc.allocationAvgDuration
-		ipamAllocationAverageDurationSeconds.observerLock.Unlock()
+		ipamAllocationAverageDurationSeconds.Record(adc.allocationAvgDuration)
 
 		// IPAM maximum allocation duration
 		if allocationDuration > adc.maxAllocationDuration {
 			adc.maxAllocationDuration = allocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Lock()
-			*ipamAllocationMaxDurationSeconds.observerValueToReport = adc.maxAllocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Unlock()
+			ipamAllocationMaxDurationSeconds.Record(adc.maxAllocationDuration)
 		}
 
 		// IPAM minimum allocation duration
 		if adc.allocationCounts == 1 || allocationDuration < adc.minAllocationDuration {
 			adc.minAllocationDuration = allocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Lock()
-			*ipamAllocationMinDurationSeconds.observerValueToReport = adc.minAllocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Unlock()
+			ipamAllocationMinDurationSeconds.Record(adc.minAllocationDuration)
 		}
 
 		adc.cacheLock.Unlock()
 	}()
 }
 
-type deallocationDurationConstruct struct {
+type releaseDurationConstruct struct {
 	cacheLock lock.RWMutex
 
-	deallocationAvgDuration float64
-	maxDeallocationDuration float64
-	minDeallocationDuration float64
+	releaseAvgDuration float64
+	maxReleaseDuration float64
+	minReleaseDuration float64
 
-	deallocationCounts int
+	releaseCounts int
 }
 
-// RecordIPAMDeallocationDuration serves for spiderpool agent IPAM allocation.
-func (ddc *deallocationDurationConstruct) RecordIPAMDeallocationDuration(ctx context.Context, deallocationDuration float64) {
+// RecordIPAMReleaseDuration serves for spiderpool agent IPAM allocation.
+func (ddc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Context, releaseDuration float64) {
 	if !globalEnableMetric {
 		return
 	}
 
 	go func() {
-		// latest deallocation duration
-		ipamAllocationLatestDurationSeconds.observerLock.Lock()
-		*ipamAllocationLatestDurationSeconds.observerValueToReport = deallocationDuration
-		ipamAllocationLatestDurationSeconds.observerLock.Unlock()
+		// latest release duration
+		ipamReleaseLatestDurationSeconds.Record(releaseDuration)
 
-		// deallocation duration histogram
-		ipamAllocationDurationSeconds.Record(ctx, deallocationDuration)
+		// release duration histogram
+		ipamAllocationDurationSeconds.Record(ctx, releaseDuration)
 
 		ddc.cacheLock.Lock()
 
-		// IPAM average deallocation duration
-		ddc.deallocationAvgDuration = (ddc.deallocationAvgDuration*float64(ddc.deallocationCounts) + deallocationDuration) / float64(ddc.deallocationCounts+1)
-		ddc.deallocationCounts++
-		ipamAllocationAverageDurationSeconds.observerLock.Lock()
-		*ipamAllocationAverageDurationSeconds.observerValueToReport = ddc.deallocationAvgDuration
-		ipamAllocationAverageDurationSeconds.observerLock.Unlock()
+		// IPAM average release duration
+		ddc.releaseAvgDuration = (ddc.releaseAvgDuration*float64(ddc.releaseCounts) + releaseDuration) / float64(ddc.releaseCounts+1)
+		ddc.releaseCounts++
+		ipamReleaseAverageDurationSeconds.Record(ddc.releaseAvgDuration)
 
-		// IPAM maximum deallocation duration
-		if deallocationDuration > ddc.maxDeallocationDuration {
-			ddc.maxDeallocationDuration = deallocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Lock()
-			*ipamAllocationMaxDurationSeconds.observerValueToReport = ddc.maxDeallocationDuration
-			ipamAllocationMaxDurationSeconds.observerLock.Unlock()
+		// IPAM maximum release duration
+		if releaseDuration > ddc.maxReleaseDuration {
+			ddc.maxReleaseDuration = releaseDuration
+			ipamReleaseMaxDurationSeconds.Record(ddc.maxReleaseDuration)
 		}
 
-		// IPAM minimum deallocation duration
-		if ddc.deallocationCounts == 1 || deallocationDuration < ddc.minDeallocationDuration {
-			ddc.minDeallocationDuration = deallocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Lock()
-			*ipamAllocationMinDurationSeconds.observerValueToReport = ddc.minDeallocationDuration
-			ipamAllocationMinDurationSeconds.observerLock.Unlock()
+		// IPAM minimum release duration
+		if ddc.releaseCounts == 1 || releaseDuration < ddc.minReleaseDuration {
+			ddc.minReleaseDuration = releaseDuration
+			ipamReleaseMinDurationSeconds.Record(ddc.minReleaseDuration)
 		}
 
 		ddc.cacheLock.Unlock()

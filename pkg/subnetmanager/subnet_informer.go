@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 const (
@@ -264,6 +266,10 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	if err != nil {
 		return client.IgnoreNotFound(err)
 	}
+
+	// record subnet corresponding IPPools number metrics
+	subnetControlledPoolNum := int64(len(subnet.Status.ControlledIPPools))
+	metric.SubnetPoolCounts.Record(subnetControlledPoolNum, attribute.String(constant.SpiderSubnetKind, subnet.Name))
 
 	if err := sc.syncControllerSubnet(ctx, subnet); err != nil {
 		return fmt.Errorf("failed to sync reference for controller Subnet: %v", err)

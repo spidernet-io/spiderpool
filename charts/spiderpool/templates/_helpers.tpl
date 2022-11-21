@@ -202,3 +202,10 @@ generate the CA cert
     {{- $ca := genCA "spidernet.io" (.Values.spiderpoolController.tls.auto.caExpiration | int) -}}
     {{- $_ := set . "ca" $ca -}}
 {{- end }}
+
+{{/*
+insight labels
+*/}}
+{{- define "insight.labels" -}}
+operator.insight.io/managed-by: insight
+{{- end}}

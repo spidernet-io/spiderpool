@@ -19,25 +19,27 @@ func initAgentMetricsServer(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
-	metricsSrv := &http.Server{
-		Addr:    fmt.Sprintf(":%s", agentContext.Cfg.MetricHttpPort),
-		Handler: metricController,
-	}
-
-	go func() {
-		if err := metricsSrv.ListenAndServe(); nil != err {
-			if err == http.ErrServerClosed {
-				return
-			}
-
-			logger.Fatal(err.Error())
-		}
-	}()
-
-	agentContext.MetricsHttpServer = metricsSrv
-
 	err = metric.InitSpiderpoolAgentMetrics(ctx)
 	if nil != err {
 		logger.Fatal(err.Error())
+	}
+
+	if agentContext.Cfg.EnabledMetric {
+		metricsSrv := &http.Server{
+			Addr:    fmt.Sprintf(":%s", agentContext.Cfg.MetricHttpPort),
+			Handler: metricController,
+		}
+
+		go func() {
+			if err := metricsSrv.ListenAndServe(); nil != err {
+				if err == http.ErrServerClosed {
+					return
+				}
+
+				logger.Fatal(err.Error())
+			}
+		}()
+
+		agentContext.MetricsHttpServer = metricsSrv
 	}
 }

@@ -75,19 +75,19 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
 
 	// The total count of IP releasing.
-	metric.IpamDeallocationTotalCounts.Add(ctx, 1)
+	metric.IpamReleaseTotalCounts.Add(ctx, 1)
 
 	timeRecorder := metric.NewTimeRecorder()
 	defer func() {
 		// Time taken for once IP releasing.
-		deallocationDuration := timeRecorder.SinceInSeconds()
-		metric.DeallocDurationConstruct.RecordIPAMDeallocationDuration(ctx, deallocationDuration)
-		logger.Sugar().Infof("IPAM releasing duration: %v", deallocationDuration)
+		releaseDuration := timeRecorder.SinceInSeconds()
+		metric.DeallocDurationConstruct.RecordIPAMReleaseDuration(ctx, releaseDuration)
+		logger.Sugar().Infof("IPAM releasing duration: %v", releaseDuration)
 	}()
 
 	if err := agentContext.IPAM.Release(ctx, params.IpamDelArgs); err != nil {
 		// The count of failures in IP releasing.
-		metric.IpamDeallocationFailureCounts.Add(ctx, 1)
+		metric.IpamReleaseFailureCounts.Add(ctx, 1)
 		gatherIPAMReleasingErrMetric(ctx, err)
 		logger.Error(err.Error())
 		return daemonset.NewDeleteIpamIPFailure().WithPayload(models.Error(err.Error()))
@@ -141,11 +141,11 @@ func gatherIPAMAllocationErrMetric(ctx context.Context, err error) {
 func gatherIPAMReleasingErrMetric(ctx context.Context, err error) {
 	internal := true
 	if errors.Is(err, constant.ErrRetriesExhausted) {
-		metric.IpamReleasingErrRetriesExhaustedCounts.Add(ctx, 1)
+		metric.IpamReleaseErrRetriesExhaustedCounts.Add(ctx, 1)
 		internal = false
 	}
 
 	if internal {
-		metric.IpamReleasingErrInternalCounts.Add(ctx, 1)
+		metric.IpamReleaseErrInternalCounts.Add(ctx, 1)
 	}
 }

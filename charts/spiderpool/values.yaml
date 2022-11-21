@@ -271,6 +271,9 @@ spiderpoolAgent:
       ## @param spiderpoolAgent.prometheus.serviceMonitor.labels the additional label of spiderpoolAgent serviceMonitor
       labels: {}
 
+      ## @param spiderpoolAgent.prometheus.serviceMonitor.interval represents the interval of spiderpoolAgent serviceMonitor's scraping action
+      interval: "10s"
+
     prometheusRule:
       ## @param spiderpoolAgent.prometheus.prometheusRule.install install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available
       install: false
@@ -283,6 +286,21 @@ spiderpoolAgent:
 
       ## @param spiderpoolAgent.prometheus.prometheusRule.labels the additional label of spiderpoolAgent prometheusRule
       labels: {}
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMAllocationFailure the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMAllocationFailure: false
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMAllocationOverTime the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMAllocationOverTime: false
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMHighAllocationDurations the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMHighAllocationDurations: false
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMDeallocationFailure the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMDeallocationFailure: false
+
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMDeallocationOverTime the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMDeallocationOverTime: false
 
     grafanaDashboard:
       ## @param spiderpoolAgent.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available
@@ -486,6 +504,9 @@ spiderpoolController:
       ## @param spiderpoolController.prometheus.serviceMonitor.labels the additional label of spiderpoolController serviceMonitor
       labels: {}
 
+      ## @param spiderpoolController.prometheus.serviceMonitor.interval represents the interval of spiderpoolController serviceMonitor's scraping action
+      interval: "10s"
+
     prometheusRule:
       ## @param spiderpoolController.prometheus.prometheusRule.install install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available
       install: false
@@ -498,6 +519,9 @@ spiderpoolController:
 
       ## @param spiderpoolController.prometheus.prometheusRule.labels the additional label of spiderpoolController prometheusRule
       labels: {}
+
+      ## @param spiderpoolController.prometheus.prometheusRule.enableWarningIPGCFailureCounts the additional rule of spiderpoolController prometheusRule
+      enableWarningIPGCFailureCounts: false
 
     grafanaDashboard:
       ## @param spiderpoolController.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available

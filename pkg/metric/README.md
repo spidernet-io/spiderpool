@@ -26,38 +26,39 @@ For example, let's enable spiderpool agent metrics by running `helm upgrade --se
 
 ### Spiderpool Agent
 
-Spiderpool agent exports some metrics related with IPAM allocation and deallocation. Currently, those include:
+Spiderpool agent exports some metrics related with IPAM allocation and release. Currently, those include:
 
 
-| Name                                         | description                                                  |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| ipam_allocation_total_counts                 | Count of the number of the IPAM allocation requests that Spiderpool Agent received , prometheus type: counter |
-| ipam_allocation_failure_counts               | Number of Spiderpool Agent IPAM allocation failures, prometheus type: counter |
-| ipam_allocation_rollback_failure_counts      | Number of Spiderpool Agent IPAM allocation rollback failure, prometheus type: counter |
-| ipam_allocation_err_internal_counts          | Number of Spiderpool Agent IPAM allocation internal error, prometheus type: counter |
-| ipam_allocation_err_no_available_pool_counts | Number of Spiderpool Agent IPAM allocation no available IPPool error, prometheus type: counter |
-| ipam_allocation_err_retries_exhausted_counts | Number of Spiderpool Agent IPAM allocation retries exhausted error, prometheus type: counter |
-| ipam_allocation_err_ip_used_out_counts       | Number of Spiderpool Agent IPAM allocation IP addresses used out error, prometheus type: counter |
-| ipam_allocation_average_duration_seconds     | The average duration of all Spiderpool Agent allocation processes, prometheus type: gauge |
-| ipam_allocation_max_duration_seconds         | The maximum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge |
-| ipam_allocation_min_duration_seconds         | The minimum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge |
-| ipam_allocation_latest_duration_seconds      | The latest duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge |
+| Name                                         | description                                                                                                                 |
+|----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| ipam_allocation_total_counts                 | Count of the number of the IPAM allocation requests that Spiderpool Agent received , prometheus type: counter               |
+| ipam_allocation_failure_counts               | Number of Spiderpool Agent IPAM allocation failures, prometheus type: counter                                               |
+| ipam_allocation_rollback_failure_counts      | Number of Spiderpool Agent IPAM allocation rollback failure, prometheus type: counter                                       |
+| ipam_allocation_err_internal_counts          | Number of Spiderpool Agent IPAM allocation internal error, prometheus type: counter                                         |
+| ipam_allocation_err_no_available_pool_counts | Number of Spiderpool Agent IPAM allocation no available IPPool error, prometheus type: counter                              |
+| ipam_allocation_err_retries_exhausted_counts | Number of Spiderpool Agent IPAM allocation retries exhausted error, prometheus type: counter                                |
+| ipam_allocation_err_ip_used_out_counts       | Number of Spiderpool Agent IPAM allocation IP addresses used out error, prometheus type: counter                            |
+| ipam_allocation_average_duration_seconds     | The average duration of all Spiderpool Agent allocation processes, prometheus type: gauge                                   |
+| ipam_allocation_max_duration_seconds         | The maximum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge                           |
+| ipam_allocation_min_duration_seconds         | The minimum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge                           |
+| ipam_allocation_latest_duration_seconds      | The latest duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge                            |
 | ipam_allocation_duration_seconds             | Per Spiderpool Agent allocation process, it can be showed IPAM allocation duration distribution, prometheus type: histogram |
-| ipam_deallocation_total_counts               | Count of the number of Spiderpool Agent received the IPAM deallocation requests, prometheus type: counter |
-| ipam_deallocation_failure_counts             | Number of Spiderpool Agent IPAM deallocation failure, prometheus type: counter |
-| ipam_releasing_err_internal_counts           | Number of Spiderpool Agent IPAM releasing internal error, prometheus type: counter |
-| ipam_releasing_err_retries_exhausted_counts  | Number of Spiderpool Agent IPAM releasing retries exhausted error, prometheus type: counter |
-| ipam_deallocation_average_duration_seconds   | The average duration of all Spiderpool Agent deallocation processes, prometheus type: gauge |
-| ipam_deallocation_max_duration_seconds       | The maximum duration of Spiderpool Agent deallocation process (per-process), prometheus type: gauge |
-| ipam_deallocation_min_duration_seconds       | The minimum duration of Spiderpool Agent deallocation process (per-process), prometheus type: gauge |
-| ipam_deallocation_latest_duration_seconds    | The latest duration of Spiderpool Agent deallocation process (per-process), prometheus type: gauge |
-| ipam_deallocation_duration_seconds           | Per Spiderpool Agent deallocation process, it can be showed IPAM deallocation duration distribution, prometheus type: histogram |
+| ipam_release_total_counts                    | Count of the number of Spiderpool Agent received the IPAM release requests, prometheus type: counter                        |
+| ipam_release_failure_counts                  | Number of Spiderpool Agent IPAM release failure, prometheus type: counter                                                   |
+| ipam_release_err_internal_counts             | Number of Spiderpool Agent IPAM releasing internal error, prometheus type: counter                                          |
+| ipam_release_err_retries_exhausted_counts    | Number of Spiderpool Agent IPAM releasing retries exhausted error, prometheus type: counter                                 |
+| ipam_release_average_duration_seconds        | The average duration of all Spiderpool Agent release processes, prometheus type: gauge                                      |
+| ipam_release_max_duration_seconds            | The maximum duration of Spiderpool Agent release process (per-process), prometheus type: gauge                              |
+| ipam_release_min_duration_seconds            | The minimum duration of Spiderpool Agent release process (per-process), prometheus type: gauge                              |
+| ipam_release_latest_duration_seconds         | The latest duration of Spiderpool Agent release process (per-process), prometheus type: gauge                               |
+| ipam_release_duration_seconds                | Per Spiderpool Agent release process, it can be showed IPAM release duration distribution, prometheus type: histogram       |
 
 ### Spiderpool Controller
 
 Spiderpool controller exports some metrics related with SpiderIPPool IP garbage collection. Currently, those include:
 
-| Name                 | description                                                  |
-| -------------------- | ------------------------------------------------------------ |
-| ip_gc_total_counts   | Number of Spiderpool Controller IP garbage collection, prometheus type: counter |
+| Name                 | description                                                                              |
+|----------------------|------------------------------------------------------------------------------------------|
+| ip_gc_total_counts   | Number of Spiderpool Controller IP garbage collection, prometheus type: counter          |
 | ip_gc_failure_counts | Number of Spiderpool Controller IP garbage collection failures, prometheus type: counter |
+| subnet_ippool_counts | Number of SpiderSubnet corresponding IPPools number, prometheus type: gauge              |

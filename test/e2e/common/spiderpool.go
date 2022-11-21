@@ -671,39 +671,48 @@ func GetPoolNameListInSubnet(f *frame.Framework, subnetName string) ([]string, e
 	return poolNameList, nil
 }
 
-func CreateIppoolInSpiderSubnet(f *frame.Framework, subnetName string, pool *v1.SpiderIPPool, ipNum int) error {
+func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetName string, pool *v1.SpiderIPPool, ipNum int) error {
 	if f == nil || subnetName == "" || pool == nil || ipNum <= 0 {
 		return frame.ErrWrongInput
 	}
 
 	subnetObj := GetSubnetByName(f, subnetName)
 	if subnetObj == nil {
-		return fmt.Errorf("failed to get subnet %v", subnetName)
+		return fmt.Errorf("failed to get subnet '%v'. ", subnetName)
 	}
 
-	ips, err := GetAvailableIpsInSubnet(f, subnetName)
-	if err != nil {
-		return err
-	}
-	if len(ips) < ipNum {
-		return errors.New("insufficient subnet ip")
-	}
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("exhausted retries, failed to create ippool '%s' in subnet '%s'. ", pool.Name, subnetName)
+		default:
+			ips, err := GetAvailableIpsInSubnet(f, subnetName)
+			if err != nil {
+				return err
+			}
 
-	selectIPs := SelectIpFromIps(ips, ipNum)
-	if selectIPs == nil {
-		return errors.New("failed select ip from ips")
-	}
+			if len(ips) < ipNum {
+				f.Log("insufficient subnet ip, wait for a second and get a retry.")
+				time.Sleep(ForcedWaitingTime)
+				continue
+			}
 
-	selectIPsRange, err := ip.ConvertIPsToIPRanges(*subnetObj.Spec.IPVersion, selectIPs)
-	if err != nil {
-		return err
-	}
+			selectIpRanges, err := SelectIpFromIps(*subnetObj.Spec.IPVersion, ips, ipNum)
+			if selectIpRanges == nil || err != nil {
+				return err
+			}
 
-	pool.Spec.Subnet = subnetObj.Spec.Subnet
-	pool.Spec.IPs = selectIPsRange
-	err = CreateIppool(f, pool)
-	if err != nil {
-		return err
+			pool.Spec.Subnet = subnetObj.Spec.Subnet
+			pool.Spec.IPs = selectIpRanges
+			err = CreateIppool(f, pool)
+			if err != nil {
+				// The informer of SpiderSubnet will delay synchronizing its own state information,
+				// and build SpiderIPPool concurrently to add a retry mechanism to handle dirty reads.
+				f.Log("failed to create ippool '%s' in subnet '%s', wait for a second and get a retry.", pool.Name, subnetName)
+				time.Sleep(ForcedWaitingTime)
+				continue
+			}
+			return nil
+		}
 	}
-	return nil
 }

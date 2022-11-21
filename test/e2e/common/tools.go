@@ -18,6 +18,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 	frame "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -109,7 +110,7 @@ func ContrastIpv6ToIntValues(ip1, ip2 string) error {
 	return nil
 }
 
-func SelectIpFromIps(ips []net.IP, ipNum int) []net.IP {
+func SelectIpFromIps(version types.IPVersion, ips []net.IP, ipNum int) ([]string, error) {
 	var ipArray []net.IP
 
 	length := len(ips)
@@ -117,5 +118,10 @@ func SelectIpFromIps(ips []net.IP, ipNum int) []net.IP {
 	for i := 0; i < ipNum; i++ {
 		ipArray = []net.IP{ips[rand.Intn(length)]}
 	}
-	return ipArray
+
+	ipRanges, err := ip.ConvertIPsToIPRanges(version, ipArray)
+	if err != nil {
+		return nil, err
+	}
+	return ipRanges, nil
 }

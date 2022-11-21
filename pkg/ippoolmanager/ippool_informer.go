@@ -274,12 +274,12 @@ func (c *poolInformerController) Run(workers int, stopCh <-chan struct{}) error 
 		go wait.Until(c.runAllIPPoolWorker, time.Second, stopCh)
 	}
 
-	if enableV4 {
+	if c.poolMgr.config.EnableSpiderSubnet && enableV4 {
 		informerLogger.Debug("Staring IPv4 Auto-created IPPool processing worker")
 		defer c.poolMgr.v4AutoCreatedRateLimitQueue.ShutDown()
 		go wait.Until(c.runV4AutoCreatePoolWorker, time.Second, stopCh)
 	}
-	if enableV6 {
+	if c.poolMgr.config.EnableSpiderSubnet && enableV6 {
 		informerLogger.Debug("Staring IPv6 Auto-created IPPool processing worker")
 		defer c.poolMgr.v6AutoCreatedRateLimitQueue.ShutDown()
 		go wait.Until(c.runV6AutoCreatePoolWorker, time.Second, stopCh)

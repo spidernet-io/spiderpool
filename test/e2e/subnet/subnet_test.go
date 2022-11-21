@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	subnetmanager "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -420,6 +423,180 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx3, frame, v6SubnetName, int64(0))).NotTo(HaveOccurred())
 				Expect(common.WaitIppoolNumberInSubnet(ctx3, frame, v6SubnetName, 0)).NotTo(HaveOccurred())
 			}
+		})
+	})
+
+	Context("Validity of fields in subnet.spec", func() {
+		var deployName string = "deploy" + tools.RandomName()
+		var fixedIPNumber string = "2"
+		var deployOriginiaNum int32 = 1
+
+		BeforeEach(func() {
+			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(10)
+			Expect(v4SubnetObject).NotTo(BeNil())
+			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(10)
+			Expect(v6SubnetObject).NotTo(BeNil())
+
+			// Delete namespaces and delete subnets
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
+				if frame.Info.IpV4Enabled && v4SubnetName != "" {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled && v6SubnetName != "" {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+				}
+			})
+		})
+
+		It("valid fields succeed to create subnet. ", Label("I00001"), func() {
+			var v4Ipversion, v6Ipversion = new(types.IPVersion), new(types.IPVersion)
+			var ipv4Vlan, ipv6Vlan = new(types.Vlan), new(types.Vlan)
+			v4Dst := "0.0.0.0/0"
+			ipv4Gw := strings.Split(v4SubnetObject.Spec.Subnet, "0/")[0] + "1"
+			v6Dst := "::/0"
+			ipv6Gw := strings.Split(v6SubnetObject.Spec.Subnet, "/")[0] + "1"
+
+			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			if frame.Info.IpV4Enabled {
+				*v4Ipversion = int64(4)
+				if i, err := strconv.Atoi(common.GenerateRandomNumber(4095)); err != nil {
+					*ipv4Vlan = int64(i)
+				}
+				subnetAnno.IPv4 = []string{v4SubnetName}
+				subnetRouteValue := []spiderpool.Route{
+					{
+						Dst: v4Dst,
+						Gw:  ipv4Gw,
+					},
+				}
+				v4SubnetObject.Spec.Vlan = ipv4Vlan
+				v4SubnetObject.Spec.Routes = subnetRouteValue
+				err := common.CreateSubnet(frame, v4SubnetObject)
+				Expect(err).NotTo(HaveOccurred())
+				v4Object := common.GetSubnetByName(frame, v4SubnetName)
+				Expect(v4Object.Spec.IPVersion).To(Equal(v4Ipversion))
+				Expect(v4Object.Spec.Vlan).To(Equal(ipv4Vlan))
+				Expect(v4Object.Spec.Routes[0].Dst).To(Equal(v4Dst))
+				Expect(v4Object.Spec.Routes[0].Gw).To(Equal(ipv4Gw))
+
+			}
+			if frame.Info.IpV6Enabled {
+				*v6Ipversion = int64(6)
+				if i, err := strconv.Atoi(common.GenerateRandomNumber(4095)); err != nil {
+					*ipv6Vlan = int64(i)
+				}
+				subnetAnno.IPv6 = []string{v6SubnetName}
+				subnetRouteValue := []spiderpool.Route{
+					{
+						Dst: v6Dst,
+						Gw:  ipv6Gw,
+					},
+				}
+				v6SubnetObject.Spec.Vlan = ipv6Vlan
+				v6SubnetObject.Spec.Routes = subnetRouteValue
+				err := common.CreateSubnet(frame, v6SubnetObject)
+				Expect(err).NotTo(HaveOccurred())
+				v6bject := common.GetSubnetByName(frame, v6SubnetName)
+				Expect(v6bject.Spec.IPVersion).To(Equal(v6Ipversion))
+				Expect(v6bject.Spec.Vlan).To(Equal(ipv6Vlan))
+				Expect(v6bject.Spec.Routes[0].Dst).To(Equal(v6Dst))
+				Expect(v6bject.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
+			}
+			subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+			Expect(err).NotTo(HaveOccurred())
+			annotationMap := map[string]string{
+				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+				constant.AnnoSpiderSubnet:             string(subnetAnnoMarshal),
+			}
+			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, deployOriginiaNum)
+			deployYaml.Spec.Template.Annotations = annotationMap
+			Expect(deployYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("Tty to create deploy %v/%v \n", namespace, deployName)
+			Expect(frame.CreateDeployment(deployYaml)).To(Succeed())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(2))).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				v4poolList, err := common.GetIppoolsInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				for _, pool := range v4poolList.Items {
+					Expect(pool.Spec.Vlan).To(Equal(ipv4Vlan))
+					Expect(pool.Spec.Routes[0].Dst).To(Equal(v4Dst))
+					Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv4Gw))
+				}
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(2))).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				v6poolList, err := common.GetIppoolsInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				for _, pool := range v6poolList.Items {
+					Expect(pool.Spec.Vlan).To(Equal(ipv6Vlan))
+					Expect(pool.Spec.Routes[0].Dst).To(Equal(v6Dst))
+					Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
+				}
+			}
+		})
+
+		It("Automatically create multiple ippools that can not use the same network segment and use IPs other than excludeIPs. ", Label("I00004"), func() {
+
+			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			// ExcludeIPs cannot be used by ippools that are created automatically
+			if frame.Info.IpV4Enabled {
+				v4SubnetObject.Spec.ExcludeIPs = v4SubnetObject.Spec.IPs
+				subnetAnno.IPv4 = []string{v4SubnetName}
+				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetObject.Spec.ExcludeIPs = v6SubnetObject.Spec.IPs
+				subnetAnno.IPv6 = []string{v6SubnetName}
+				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			}
+			GinkgoWriter.Printf("succeed to create v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
+			subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+			Expect(err).NotTo(HaveOccurred())
+			annotationMap := map[string]string{
+				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+				constant.AnnoSpiderSubnet:             string(subnetAnnoMarshal),
+			}
+			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, deployOriginiaNum)
+			deployYaml.Spec.Template.Annotations = annotationMap
+			Expect(deployYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("Tty to create deploy %v/%v \n", namespace, deployName)
+			Expect(frame.CreateDeployment(deployYaml)).To(Succeed())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(0))).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 0)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(0))).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 0)).NotTo(HaveOccurred())
+			}
+
+			var podList *corev1.PodList
+			Eventually(func() bool {
+				podList, err = frame.GetPodListByLabel(deployYaml.Spec.Template.Labels)
+				if nil != err || len(podList.Items) == 0 {
+					return false
+				}
+				return true
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			ctx1, cancel1 := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel1()
+			for _, pod := range podList.Items {
+				Expect(frame.WaitExceptEventOccurred(ctx1, common.OwnerPod, pod.Name, namespace, common.CNIFailedToSetUpNetwork)).NotTo(HaveOccurred())
+			}
+
+			Expect(frame.DeleteDeployment(deployName, namespace)).NotTo(HaveOccurred())
 		})
 	})
 })

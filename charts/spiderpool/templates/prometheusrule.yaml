@@ -20,9 +20,10 @@ metadata:
   {{- end }}
 spec:
   groups:
+    {{- with .Values.spiderpoolAgent.prometheus.prometheusRule }}
     - name: ipam
       rules:
-        {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMAllocationFailure }}
+        {{- if .enableWarningIPAMAllocationFailure }}
         - alert: ipamAllocationFailure
           annotations:
             summary: the warning for ipam allocation failure counts increases rapidly
@@ -32,7 +33,7 @@ spec:
           labels:
             severity: warning
         {{- end }}
-        {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMAllocationOverTime }}
+        {{- if .enableWarningIPAMAllocationOverTime }}
         - alert: ipamAllocationOverTime
           annotations:
             summary: the warning for ipam average allocation duration increases rapidly
@@ -42,7 +43,7 @@ spec:
           labels:
             severity: warning
         {{- end }}
-        {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMHighAllocationDurations }}
+        {{- if .enableWarningIPAMHighAllocationDurations }}
         - alert: ipamHighAllocationDurations
           annotations:
             summary: ipam allocation durations are too high
@@ -52,26 +53,27 @@ spec:
           labels:
             severity: warning
         {{- end }}
-        {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMDeallocationFailure }}
-        - alert: ipamDeallocationFailure
+        {{- if .enableWarningIPAMReleaseFailure }}
+        - alert: ipamReleaseFailure
           annotations:
-            summary: the warning for ipam deallocation failure counts increases rapidly
+            summary: the warning for ipam release failure counts increases rapidly
           expr: |
-            rate(ipam_deallocation_failure_counts[30m]) > 5
+            rate(ipam_release_failure_counts[30m]) > 5
           for: 30m
           labels:
             severity: warning
         {{- end }}
-        {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMDeallocationOverTime }}
-        - alert: ipamDeallocationOverTime
+        {{- if .enableWarningIPAMReleaseOverTime }}
+        - alert: ipamReleaseOverTime
           annotations:
-            summary: the warning for ipam average deallocation duration increases rapidly
+            summary: the warning for ipam average release duration increases rapidly
           expr: |
-            rate(ipam_deallocation_average_duration_seconds[30m]) > 5
+            rate(ipam_release_average_duration_seconds[30m]) > 5
           for: 30m
           labels:
             severity: warning
         {{- end }}
+    {{- end }}
 {{- end }}
 ---
 {{- if .Values.spiderpoolController.prometheus.prometheusRule.install -}}
@@ -96,9 +98,10 @@ metadata:
   {{- end }}
 spec:
   groups:
+    {{- with .Values.spiderpoolController.prometheus.prometheusRule}}
     - name: gc
       rules:
-        {{- if .Values.spiderpoolController.prometheus.prometheusRule.enableWarningIPGCFailureCounts }}
+        {{- if .enableWarningIPGCFailureCounts }}
         - alert: ipGCFailureCounts
           annotations:
             summary: the warning for ip gc failure counts increases rapidly
@@ -108,4 +111,5 @@ spec:
           labels:
             severity: warning
         {{- end }}
+    {{- end }}
 {{- end }}

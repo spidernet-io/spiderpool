@@ -1,167 +1,186 @@
-# Install
+# Installation
 
-The spiderpool needs to install webhook of kube-apiserver, so the TLS certificates are required.
+*This guide shows how to install Spiderpool using [Helm](https://helm.sh/).* 
 
-There are two ways to install it, the one is with cert-manager, the other one is to generate self-signed certificates.
+## Generic
 
-## Install spiderpool
+Set up the Helm repository.
 
-### Install by self-signed certificates
-
-This way is simple without any dependency. The project provides a script to generate TLS certificates.
-
-The following is a IPv4-only example.
-
-```shell
+```bash
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-
-git clone https://github.com/spidernet-io/spiderpool.git
-cd spiderpool
-
-# generate the certificates
-tools/cert/generateCert.sh "/tmp/tls"
-CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
-SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
-SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
-
-# for default ipv4 ippool
-# CIDR
-Ipv4Subnet="172.20.0.0/16"
-# available IP resource
-Ipv4Range="172.20.0.10-172.20.0.200"
-Ipv4Gateway="172.20.0.1"
-
-# deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
-  --set spiderpoolController.tls.method=provided \
-  --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
-  --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
-  --set spiderpoolController.tls.provided.tlsCa="${CA}" \
-  --set feature.enableIPv4=true --set feature.enableIPv6=false \
-  --set clusterDefaultPool.installIPv4IPPool=true  \
-  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
-  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
 ```
 
-> NOTICE:
+Deploy Spiderpool using the default configuration options via Helm:
+
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system
+```
+
+More details about [Spiderpool charts parameters](https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters).
+
+>It should be noted that the Pods of the spiderpool-controller have to run in the hostnetwork mode, because there may be no other IPAM CNI in the cluster that can allocate some IP addresses to them.
 >
-> The spiderpool-controller pod is running in the hostnetwork mode, and it needs to take the host port.
-> It is set with `podAntiAffinity` to make sure that a node will only run a spiderpool-controller pod.
-> so, if you set the number of spiderpool-controller replicas to a value more than 2, make sure there are enough nodes.
+>In this regard, we used `podAntiAffinity` to ensure that different replicas of spiderpool-controller will not run on the same Node to avoid host port conflicts.
+>
+>The replicas of spiderpool-controller can be adjusted by setting parameter `spiderpoolController.replicas`, but please ensure that you have enough Nodes to run them.
 
-The following is a dual-stack example.
+## IP version
 
-```shell
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+Spiderpool can work in IPv4 only, IPv6 only or dual-stack case. For example, you can deploy Spiderpool in this way to enable dual stack:
 
-# generate the certificates
-tools/cert/generateCert.sh "/tmp/tls"
-CA=`cat /tmp/tls/ca.crt  | base64 -w0 | tr -d '\n' `
-SERVER_CERT=` cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n' `
-SERVER_KEY=` cat /tmp/tls/server.key | base64 -w0 | tr -d '\n' `
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+  --set feature.enableIPv4=true \
+  --set feature.enableIPv6=true
+```
 
-# for default ipv4 ippool
-# CIDR
-Ipv4Subnet="172.20.0.0/16"
-# available IP resource
-Ipv4Range="172.20.0.10-172.20.0.200"
-Ipv4Gateway="172.20.0.1"
+By default, `feature.enableIPv4` is enabled and `feature.enableIPv6` is not.
 
-# for default ipv6 ippool
-# CIDR
-Ipv6Subnet="fd00::/112"
-# available IP resource
-Ipv6Range="fd00::10-fd00::200"
-Ipv6Gateway="fd00::1"
+## Certificates
 
-# deploy the spiderpool
-helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
+Spiderpool-controller needs TLS certificates to run webhook server. You can configure it in several ways.
+
+### Auto
+
+Use Helm's template function [genSignedCert](https://helm.sh/docs/chart_template_guide/function_list/#gensignedcert) to generate TLS certificates. This is the simplest and most common way to configure:
+
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+  --set spiderpoolController.tls.method=auto
+```
+
+Note that the default value of parameter `spiderpoolController.tls.method` is `auto`.
+
+### Provided
+
+If you want to run spiderpool-controller with a self-signed certificate, `provided` would be a good choice. You can use OpenSSL to generate certificates, or run the following script:
+
+```bash
+wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/cert/generateCert.sh
+```
+
+Generate the certificates:
+
+```bash
+chmod +x generateCert.sh && generateCert.sh "/tmp/tls"
+
+CA=`cat /tmp/tls/ca.crt | base64 -w0 | tr -d '\n'`
+SERVER_CERT=`cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n'`
+SERVER_KEY=`cat /tmp/tls/server.key | base64 -w0 | tr -d '\n'`
+```
+
+Then, deploy Spiderpool in the `provided` mode:
+
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=provided \
-  --set spiderpoolController.tls.provided.tlsCert="${SERVER_CERT}" \
-  --set spiderpoolController.tls.provided.tlsKey="${SERVER_KEY}" \
-  --set spiderpoolController.tls.provided.tlsCa="${CA}" \
-  --set feature.enableIPv4=true --set feature.enableIPv6=true \
-  --set clusterDefaultPool.installIPv4IPPool=true  \
-  --set clusterDefaultPool.installIPv6IPPool=true  \
-  --set clusterDefaultPool.ipv4Subnet=${Ipv4Subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${Ipv4Range}} \
-  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway} \
-  --set clusterDefaultPool.ipv6Subnet=${Ipv6Subnet} \
-  --set clusterDefaultPool.ipv6IPRanges={${Ipv6Range}} \
-  --set clusterDefaultPool.ipv6Gateway=${Ipv6Gateway}
+  --set spiderpoolController.tls.provided.tlsCa=${CA} \
+  --set spiderpoolController.tls.provided.tlsCert=${SERVER_CERT} \
+  --set spiderpoolController.tls.provided.tlsKey=${SERVER_KEY}
 ```
 
-### Install by auto-signed certificates
+### Cert-manager
 
-The spiderpool automatically generates and maintains certificates.
+It is **not recommended to use this mode directly**, because the Spiderpool requires the TLS certificates provided by cert-manager, while the cert-manager requires the IP address provided by Spiderpool (cycle reference).
 
-```shell
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+Therefore, if possible, you must first [deploy cert-manager](https://cert-manager.io/docs/installation/) using other IPAM CNI in the cluster, and then deploy Spiderpool.
 
-# for default ipv4 ippool
-# CIDR
-ipv4_subnet="172.20.0.0/16"
-# available IP resource
-ipv4_range="172.20.0.10-172.20.0.200"
-Ipv4Gateway="172.20.0.1"
-
-helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
-  --set spiderpoolController.tls.method=auto \
-  --set feature.enableIPv4=true --set feature.enableIPv6=false \
-  --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false \
-  --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
-  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
-```
-
-### Install by cert-manager
-
-The way is not a common situation, because cert-manager requires CNI to create its pod,
-but as IPAM, spiderpool is still not installed to provide IP resources. It means cert-manager and spiderpool need each other to finish installation.
-
-Therefore, you can use this way on the following situations:
-
-- after spiderpool is installed by self-signed certificates, and the cert-manager is deployed, then it could change to cert-manager scheme
-- on cluster with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), the cert-manager pods are deployed by another CNI, then spiderpool could be deployed by cert-manager
-
-```shell
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-
-# for default ipv4 ippool
-# CIDR
-ipv4_subnet="172.20.0.0/16"
-# available IP resource
-ipv4_range="172.20.0.10-172.20.0.200"
-Ipv4Gateway="172.20.0.1"
-
-helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=certmanager \
-  --set spiderpoolController.tls.certmanager.issuerName=${CERT_MANAGER_ISSUER_NAME} \
-  --set feature.enableIPv4=true --set feature.enableIPv6=false \
-  --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false \
-  --set clusterDefaultPool.ipv4Subnet=${ipv4_subnet} \
-  --set clusterDefaultPool.ipv4IPRanges={${ipv4_range}} \
-  --set clusterDefaultPool.ipv4Gateway=${Ipv4Gateway}
+  --set spiderpoolController.tls.certmanager.issuerName=${CERT_MANAGER_ISSUER_NAME}
 ```
 
-## Configure CNI
+## Cluster default IPPool
 
-After installation of the spiderpool, please edit the CNI configuration file under `/etc/cni/net.d/`.
+The cluster default IPPool usually serves some components that need IP addresses when the Kubernetes cluster is initialized, such as CoreDNS.
 
-The following is an example for macvlan CNI.
+Prepare the IP address ranges you need to use next:
+
+```bash
+# "CIDR"
+IPV4_SUBNET_YOU_EXPECT="172.18.40.0/24"
+# "IP" or "IP-IP"
+IPV4_IPRANGES_YOU_EXPECT="172.18.40.40-172.20.40.200"
+```
+
+Let's create an IPv4 IPPool while deploying Spiderpool, and configure it as the cluster default IPPool in the [global Configmap configuration](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/config.md#configmap-configuration). 
+
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+  --set feature.enableIPv4=true \
+  --set clusterDefaultPool.installIPv4IPPool=true \
+  --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
+  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
+```
+
+IPv6 IPPool is similar:
+
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+  --set feature.enableIPv6=true \
+  --set clusterDefaultPool.installIPv6IPPool=true \
+  --set clusterDefaultPool.ipv6Subnet=${IPV6_SUBNET_YOU_EXPECT} \
+  --set clusterDefaultPool.ipv6IPRanges={${IPV6_IPRANGES_YOU_EXPECT}}
+```
+
+## Full example
+
+Here is a general deployment example, which satisfies the following conditions:
+
+- Dual stack.
+- Generate TLS certificates in `auto` mode.
+- Create and configure the cluster default IPv4/6 IPPool.
+
+```bash
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+  --set spiderpoolController.tls.method=auto \
+  --set feature.enableIPv4=true \
+  --set feature.enableIPv6=true \
+  --set clusterDefaultPool.installIPv4IPPool=true \
+  --set clusterDefaultPool.installIPv6IPPool=true \
+  --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
+  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}} \
+  --set clusterDefaultPool.ipv6Subnet=${IPV6_SUBNET_YOU_EXPECT} \
+  --set clusterDefaultPool.ipv6IPRanges={${IPV6_IPRANGES_YOU_EXPECT}}
+```
+
+## Update CNI network configuration
+
+Finally, you should edit the [CNI network configuration](https://www.cni.dev/docs/spec/#section-1-network-configuration-format) with the default path `/etc/cni/net.d` on the related Nodes so that the Main CNI can use Spiderpool IPAM CNI to allocate IP addresses. Replace the `ipam` object with the following:
 
 ```json
-{
-  "cniVersion": "0.3.1",
-  "type": "macvlan",
-  "mode": "bridge",
-  "master": "eth0",
-  "name": "macvlan-cni-default",
-  "ipam": {
-    "type": "spiderpool"
-  }
+"ipam":{
+    "type":"spiderpool"
 }
 ```
 
-Refer to [config](../concepts/config.md) for details about the IPAM configuration.
+The following is an example for macvlan CNI:
+
+```json
+{
+    "cniVersion":"0.4.0",
+    "type":"macvlan",
+    "mode":"bridge",
+    "master":"eth0",
+    "name":"macvlan",
+    "ipam":{
+        "type":"spiderpool"
+    }
+}
+```
+
+## Uninstall
+
+Generally, you can uninstall Spiderpool release in this way:
+
+```bash
+helm uninstall spiderpool -n kube-system
+```
+
+However, there are [finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) in some CRs of Spiderpool, the `helm uninstall` cmd may not clean up all relevant CRs. Get this cleanup script and execute it to ensure that unexpected errors will not occur when deploying Spiderpool next time.
+
+```bash
+wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+chmod +x cleanCRD.sh && cleanCRD.sh
+```

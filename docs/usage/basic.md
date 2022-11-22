@@ -42,7 +42,7 @@ Then, edit the [CNI network configuration](https://www.cni.dev/docs/spec/#sectio
 }
 ```
 
-Take a example of Macvlan + Spiderpool.
+The following is an example for macvlan CNI:
 
 ```json
 {
@@ -77,7 +77,7 @@ spec:
   - 172.18.41.40-172.18.41.50
 ```
 
-We can replace `spec.subnet` and `spec.ips` as needed, more details about [SpiderIPPool CRD](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md).
+You can replace `spec.subnet` and `spec.ips` as needed, more details about [SpiderIPPool CRD](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md).
 
 ## Run
 
@@ -97,7 +97,7 @@ my-dep-864946ffd8-kdl86   1/1     Running   0          3m10s   172.18.40.200   s
 my-dep-864946ffd8-vhnsj   1/1     Running   0          3m10s   172.18.40.38    spider-worker   <none>           <none>
 ```
 
-Of course, we can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation `ipam.spidernet.io/ippool`, more details about [pool selection rules](TODO).
+Of course, you can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation `ipam.spidernet.io/ippool`, more details about [pool selection rules](TODO).
 
 ```bash
 kubectl apply -f https://github.com/spidernet-io/spiderpool/blob/main/docs/example/basic/custom-ippool.deploy.yaml

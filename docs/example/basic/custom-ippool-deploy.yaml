@@ -12,7 +12,6 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            "interface": "eth0",
             "ipv4": ["custom-ipv4-ippool"]
           }
       labels:

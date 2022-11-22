@@ -33,7 +33,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ipPoolManager struct {
@@ -467,7 +466,7 @@ func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spider
 }
 
 // GetAutoPoolRateLimitQueue serves for auto-created IPPool
-func (im *ipPoolManager) GetAutoPoolRateLimitQueue(ipVersion spiderpooltypes.IPVersion) workqueue.RateLimitingInterface {
+func (im *ipPoolManager) GetAutoPoolRateLimitQueue(ipVersion types.IPVersion) workqueue.RateLimitingInterface {
 	if ipVersion == constant.IPv4 {
 		return im.v4AutoCreatedRateLimitQueue
 	}

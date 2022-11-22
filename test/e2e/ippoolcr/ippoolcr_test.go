@@ -168,7 +168,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		// The value of IPPool.Spec.disabled is "true" and the Scale deployment
 		ctx1, cancel1 := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 		defer cancel1()
-		pods, _, err := common.ScaleDeployUntilExpectedReplicas(frame, deploy, deployScaleupNum, ctx1)
+		pods, _, err := common.ScaleDeployUntilExpectedReplicas(ctx1, frame, deploy, deployScaleupNum, false)
 		Expect(err).NotTo(HaveOccurred(), "Failed to scale deployment")
 
 		// Failed to run pod and Get the Pod Scale failure Event

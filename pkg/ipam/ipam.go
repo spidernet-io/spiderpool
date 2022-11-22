@@ -150,6 +150,14 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic str
 	}
 
 	logger.Info("Retrieve the IP allocation of StatefulSet")
+
+	// validation
+	for _, allocation := range endpoint.Status.Current.IPs {
+		if i.config.EnableIPv4 && allocation.IPv4 == nil || i.config.EnableIPv6 && allocation.IPv6 == nil {
+			return nil, fmt.Errorf("StatefulSet pod has legacy failure allocation %v", allocation)
+		}
+	}
+
 	nicMatched := false
 	ips, routes := convertIPDetailsToIPConfigsAndAllRoutes(endpoint.Status.Current.IPs)
 	for _, c := range ips {
@@ -672,18 +680,6 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		return fmt.Errorf("failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 
-	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
-	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
-		isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, ownerControllerType)
-		if err != nil {
-			return err
-		}
-		if isValidStsPod {
-			logger.Info("No need to release the IP allocation of an StatefulSet whose scale is not reduced")
-			return nil
-		}
-	}
-
 	endpoint, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to get Endpoint %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
@@ -697,6 +693,20 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		logger.Warn("Request to release non current IP allocation, concurrency may exist between the same Pod")
 	}
 
+	// check whether the StatefulSet pod need to release
+	// ref: https://github.com/spidernet-io/spiderpool/issues/1045
+	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
+	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
+		shouldCleanSts, err := i.shouldReleaseStatefulSet(ctx, pod, allocation, currently)
+		if nil != err {
+			return err
+		}
+		if !shouldCleanSts {
+			logger.Info("No need to release the IP allocation of an StatefulSet whose scale is not reduced")
+			return nil
+		}
+	}
+
 	if err = i.release(ctx, allocation.ContainerID, allocation.IPs); err != nil {
 		return err
 	}
@@ -706,6 +716,36 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger.Sugar().Infof("Succeed to release: %+v", allocation.IPs)
 
 	return nil
+}
+
+// shouldReleaseStatefulSet checks whether the StatefulSet pod need to be released, if the StatefulSet object was deleted or decreased its replicas.
+// And we'll also check whether the StatefulSet pod's last ipam allocation is invalid or not,
+// if we set dual stack but only get one IP allocation, we should clean up it.
+func (i *ipam) shouldReleaseStatefulSet(ctx context.Context, pod *corev1.Pod, allocation *spiderpoolv1.PodIPAllocation, currently bool) (bool, error) {
+	log := logutils.FromContext(ctx)
+
+	isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, constant.OwnerStatefulSet)
+	if err != nil {
+		return false, err
+	}
+
+	// StatefulSet deleted or replicas decreased
+	if !isValidStsPod {
+		return true, nil
+	}
+
+	// the last allocation is failed, try to clean up all allocation and re-allocate in the next time
+	if currently {
+		for index := range allocation.IPs {
+			if i.config.EnableIPv4 && allocation.IPs[index].IPv4 == nil ||
+				i.config.EnableIPv6 && allocation.IPs[index].IPv6 == nil {
+				log.Sugar().Warnf("StatefulSet pod has legacy failure allocation %v", allocation.IPs[index])
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func (i *ipam) release(ctx context.Context, containerID string, details []spiderpoolv1.IPAllocationDetail) error {

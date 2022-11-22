@@ -288,19 +288,19 @@ spiderpoolAgent:
       labels: {}
 
       ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMAllocationFailure the additional rule of spiderpoolAgent prometheusRule
-      enableWarningIPAMAllocationFailure: false
+      enableWarningIPAMAllocationFailure: true
 
       ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMAllocationOverTime the additional rule of spiderpoolAgent prometheusRule
-      enableWarningIPAMAllocationOverTime: false
+      enableWarningIPAMAllocationOverTime: true
 
       ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMHighAllocationDurations the additional rule of spiderpoolAgent prometheusRule
-      enableWarningIPAMHighAllocationDurations: false
+      enableWarningIPAMHighAllocationDurations: true
 
-      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMDeallocationFailure the additional rule of spiderpoolAgent prometheusRule
-      enableWarningIPAMDeallocationFailure: false
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMReleaseFailure the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMReleaseFailure: true
 
-      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMDeallocationOverTime the additional rule of spiderpoolAgent prometheusRule
-      enableWarningIPAMDeallocationOverTime: false
+      ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMReleaseOverTime the additional rule of spiderpoolAgent prometheusRule
+      enableWarningIPAMReleaseOverTime: true
 
     grafanaDashboard:
       ## @param spiderpoolAgent.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available
@@ -521,7 +521,7 @@ spiderpoolController:
       labels: {}
 
       ## @param spiderpoolController.prometheus.prometheusRule.enableWarningIPGCFailureCounts the additional rule of spiderpoolController prometheusRule
-      enableWarningIPGCFailureCounts: false
+      enableWarningIPGCFailureCounts: true
 
     grafanaDashboard:
       ## @param spiderpoolController.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available

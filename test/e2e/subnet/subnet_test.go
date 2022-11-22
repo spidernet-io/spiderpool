@@ -234,15 +234,9 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			v4PoolNameList       []string
 			v6PoolNameList       []string
 			podList              *corev1.PodList
-			nodeList             *corev1.NodeList
-			err                  error
 		)
 
 		BeforeEach(func() {
-			nodeList, err = frame.GetNodeList()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(nodeList).NotTo(BeNil())
-
 			if frame.Info.IpV4Enabled {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetAvailableIpNum)
 				Expect(v4SubnetObject).NotTo(BeNil())
@@ -319,6 +313,18 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
+			// Check that the pod's ip is recorded in the ippool
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err || len(podList.Items) == 0 {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
 			// scaling up statefulset/replicaset
 			rsObj, err := frame.GetReplicaSet(rsName, namespace)
 			Expect(err).NotTo(HaveOccurred())
@@ -332,7 +338,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Check that the pod's ip is recorded in the ippool
 			podList, err = frame.GetPodList(client.InNamespace(namespace))
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 

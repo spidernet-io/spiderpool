@@ -57,7 +57,7 @@ jobs:
           #no need to check chart version, which will auto update to /VERSION by CI
 
       - name: Create branch
-        uses: peterjgrainger/action-create-branch@v2.2.0
+        uses: peterjgrainger/action-create-branch@v2.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

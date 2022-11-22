@@ -1,26 +1,26 @@
 # Multiple IPPool
 
-*Spiderpool can specify multiple alternative IP pools for an IPAM allocation.*
+*Spiderpool can specify multiple alternative IP pools for one IP allocation.*
 
-## Setup Spiderpool
+## Set up Spiderpool
 
-If you have not set up Spiderpool yet, follow the guide [Quick Installation](./install.md) for instructions on how to install and simply configure Spiderpool.
+If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
 
 ## Get Started
 
-First, we create two SpiderIPPools, and they both contain 2 IP addresses.
+First, create two IPPools each containing 2 IP addresses.
 
 ```bash
-kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
 ```
 
-Then, run a Pod and allocate one of these IP addresses.
+Create a Pod and allocate an IP address to it from these IPPools.
 
 ```bash
-kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/dummy-pod.yaml
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/dummy-pod.yaml
 ```
 
-As you can see, we still have 3 available IP addresses, one in SpiderIPPool `default-ipv4-ippool` and two in SpiderIPPool `backup-ipv4-ippool`.
+You will find that you still have 3 available IP addresses, one in IPPool `default-ipv4-ippool` and two in IPPool `backup-ipv4-ippool`.
 
 ```bash
 kubectl get sp -l case=backup
@@ -29,10 +29,10 @@ backup-ipv4-ippool    4         172.18.42.0/24   0                    2         
 default-ipv4-ippool   4         172.18.41.0/24   1                    2                false
 ```
 
-Now, run a Deployment with 2 replicas and let its Pods allocate IP addresses from the two SpiderIPPool above.
+Then, create a Deployment with 2 replicas and allocate IP addresses to its Pods from the two IPPools above.
 
 ```bash
-kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/multi-ippool-deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/multi-ippool-deploy.yaml
 ```
 
 ```yaml
@@ -50,8 +50,7 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            "interface": "eth0",
-            "ipv4pools": ["default-ipv4-ippool", "backup-ipv4-ippool"]
+            "ipv4": ["default-ipv4-ippool", "backup-ipv4-ippool"]
           }
       labels:
         app: multi-ippool-deploy
@@ -63,9 +62,9 @@ spec:
         command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
 ```
 
-Spiderpool will successively try to allocate IP addresses **in the order of** the elements in the "IP pool array" until the first allocation succeeds or all fail. Of course, you can specify the pool selection rules (that defines alternative IP pools) in [many ways](TODO). Here, we use `ipam.spidernet.io/ippool` Pod annotation to select IP pools.
+Spiderpool will successively try to allocate IP addresses **in the order of** the elements in the "IP pool array" until the first allocation succeeds or all fail. Of course, you can specify the [pool selection rules](TODO) (that defines alternative IP pools) in many ways, the Pod annotation `ipam.spidernet.io/ippool` is used here to select IP pools.
 
-Finally, we'll see that when IP addresses in SpiderIPPool `default-ipv4-ippool` use out, SpiderIPPool `backup-ipv4-ippool` takes over.
+Finally, when addresses in IPPool `default-ipv4-ippool` are used up, the IPPool `backup-ipv4-ippool` takes over.
 
 ```bash
 kubectl get se
@@ -77,8 +76,12 @@ multi-ippool-deploy-669bf7cf79-k7zkk   eth0        backup-ipv4-ippool    172.18.
 
 ## Clean up
 
-Let's clean the relevant resources so that we can run this tutorial again.
+Clean the relevant resources so that you can run this tutorial again.
 
 ```bash
-kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi --ignore-not-found=true
+kubectl delete \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/test-ipv4-ippools.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/dummy-pod.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/multi-ippool-deploy.yaml \
+--ignore-not-found=true
 ```

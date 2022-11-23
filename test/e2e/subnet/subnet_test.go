@@ -16,9 +16,11 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 	subnetmanager "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -112,7 +114,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				constant.AnnoSpiderSubnet:             string(subnetAnnoMarshal),
 			}
 			startT1 := time.Now()
-			ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+			ctx, cancel := context.WithTimeout(context.Background(), common.BatchCreateTimeout)
 			defer cancel()
 			deployNameList = common.BatchCreateDeploymentUntilReady(ctx, frame, deployOriginiaNum, int(deployReplicasOriginialNum), namespace, annotationMap)
 			GinkgoWriter.Printf("succeed to create deployments in %v:%v \n", namespace, deployNameList)
@@ -253,6 +255,16 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 			}
+
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
+				if frame.Info.IpV4Enabled && v4SubnetName != "" {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled && v6SubnetName != "" {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+				}
+			})
 		})
 
 		It("Automatic creation, extension and deletion of ippool by different controllers", Label("I00003"), func() {
@@ -265,6 +277,9 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				rsReplicasScaleupNum    int32  = 2
 				dsName                  string = "ds-" + tools.RandomName()
 				controllerNum           int    = 3
+				deployNum               int    = 10
+				deployReplicasNum       int32  = 1
+				deployPatchReplicasNum  int32  = 2
 			)
 
 			subnetAnno := subnetmanager.AnnoSubnetItems{}
@@ -303,21 +318,64 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			GinkgoWriter.Printf("Try to create replicaSet %v/%v \n", namespace, rsName)
 			Expect(frame.CreateReplicaSet(rsYaml)).To(Succeed())
 
+			// Generate example deplyment yaml and creating deploys in batches
+			lock := lock.Mutex{}
+			wg := sync.WaitGroup{}
+			wg.Add(deployNum)
+			var deployNameList []string
+			GinkgoWriter.Println("creating deploys in batches")
+			for i := 1; i <= deployNum; i++ {
+				var deployObject *appsv1.Deployment
+				j := strconv.Itoa(i)
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					deployName := "deploy-" + j + "-" + tools.RandomName()
+					deployObject = common.GenerateExampleDeploymentYaml(deployName, namespace, deployReplicasNum)
+					deployObject.Spec.Template.Annotations = annotationMap
+					Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+					// Update deploy to trigger add callback
+					desiredDeploy := common.GenerateExampleDeploymentYaml(deployName, namespace, deployPatchReplicasNum)
+					desiredDeploy.Spec.Template.Annotations = annotationMap
+					mergePatch := client.MergeFrom(deployObject)
+					Expect(frame.PatchResource(desiredDeploy, mergePatch)).NotTo(HaveOccurred())
+
+					lock.Lock()
+					deployNameList = append(deployNameList, deployName)
+					lock.Unlock()
+				}()
+			}
+			wg.Wait()
+			Expect(len(deployNameList)).To(Equal(deployNum))
+
 			// Check that the ip of the subnet record matches the record in ippool
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
 			if frame.Info.IpV4Enabled {
-				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, controllerNum)).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, (controllerNum + deployNum))).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, controllerNum)).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, (controllerNum + deployNum))).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
+
+			// Check that the pod's ip is recorded in the ippool
+			allPod := len(nodeList.Items) + int(stsReplicasOriginialNum) + int(rsReplicasOriginialNum) + (deployNum * int(deployPatchReplicasNum))
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err || len(podList.Items) != allPod {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
 
 			// scaling up statefulset/replicaset
 			rsObj, err := frame.GetReplicaSet(rsName, namespace)
@@ -332,7 +390,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Check that the pod's ip is recorded in the ippool
 			podList, err = frame.GetPodList(client.InNamespace(namespace))
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -387,6 +445,19 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			GinkgoWriter.Printf("delete replicaset %v/%v\n", namespace, rsName)
 			Expect(frame.DeleteReplicaSet(rsName, namespace)).To(Succeed())
+
+			// delete all deployment
+			wg = sync.WaitGroup{}
+			wg.Add(len(deployNameList))
+			for _, d := range deployNameList {
+				name := d
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					Expect(frame.DeleteDeployment(name, namespace)).NotTo(HaveOccurred())
+				}()
+			}
+			wg.Wait()
 
 			// Delete the resource and wait for the subnet to return to its original state
 			ctx3, cancel3 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
@@ -549,12 +620,12 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
 			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(0))).NotTo(HaveOccurred())
-				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 0)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(0))).NotTo(HaveOccurred())
-				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 0)).NotTo(HaveOccurred())
 			}
 
 			var podList *corev1.PodList

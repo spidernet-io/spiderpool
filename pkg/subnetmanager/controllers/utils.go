@@ -9,8 +9,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -99,9 +99,14 @@ func (in *PodSubnetsAnnoConfig) String() string {
 	return s
 }
 
-func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersion types.IPVersion) string {
-	return fmt.Sprintf("auto-%s-%s-%s-v%d-%d",
-		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, time.Now().Unix())
+func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersion types.IPVersion, controllerUID apitypes.UID) string {
+	// the format of uuid is "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+	// ref: https://github.com/google/uuid/blob/44b5fee7c49cf3bcdf723f106b36d56ef13ccc88/uuid.go#L185
+	splits := strings.Split(string(controllerUID), "-")
+	lastOne := splits[len(splits)-1]
+
+	return fmt.Sprintf("auto-%s-%s-%s-v%d-%s",
+		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, strings.ToLower(lastOne))
 }
 
 func AppLabelValue(appKind string, appNS, appName string) string {

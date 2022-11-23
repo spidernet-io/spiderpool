@@ -11,15 +11,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func (c *Controller) StartCronJobController(informer cache.SharedIndexInformer, stopper chan struct{}) {
-	controllersLogger.Info("Starting CronJob informer")
+func (c *Controller) AddCronJobHandler(informer cache.SharedIndexInformer) {
+	controllersLogger.Info("Setting up CronJob handlers")
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onCronJobAdd,
 		UpdateFunc: c.onCronJobUpdate,
 		DeleteFunc: c.onCronJobDelete,
 	})
-	informer.Run(stopper)
 }
 
 func (c *Controller) onCronJobAdd(obj interface{}) {

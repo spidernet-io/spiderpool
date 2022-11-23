@@ -18,6 +18,7 @@ type SubnetManagerConfig struct {
 	EnableSubnetDeleteStaleIPPool bool
 	LeaderRetryElectGap           time.Duration
 	ResyncPeriod                  time.Duration
+	RequeueDelayDuration          time.Duration
 
 	Workers            int
 	MaxWorkqueueLength int

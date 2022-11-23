@@ -11,15 +11,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func (c *Controller) StartDeploymentController(informer cache.SharedIndexInformer, stopper chan struct{}) {
-	controllersLogger.Info("Starting Deployment informer")
+func (c *Controller) AddDeploymentHandler(informer cache.SharedIndexInformer) {
+	controllersLogger.Info("Setting up Deployment handlers")
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onDeploymentAdd,
 		UpdateFunc: c.onDeploymentUpdate,
 		DeleteFunc: c.onDeploymentDelete,
 	})
-	informer.Run(stopper)
 }
 
 func (c *Controller) onDeploymentAdd(obj interface{}) {

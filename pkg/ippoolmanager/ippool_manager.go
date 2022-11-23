@@ -425,41 +425,23 @@ func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoo
 }
 
 func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error {
-	rand.Seed(time.Now().UnixNano())
+	pool, err := im.GetIPPoolByName(ctx, pool.Name)
+	if nil != err {
+		return err
+	}
 
-	var err error
-	for i := 0; i < im.config.MaxConflictRetries; i++ {
-		if i != 0 {
-			pool, err = im.GetIPPoolByName(ctx, pool.Name)
-			if nil != err {
-				return err
-			}
+	if pool.Status.AutoDesiredIPCount == nil {
+		pool.Status.AutoDesiredIPCount = new(int64)
+	} else {
+		if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
+			return nil
 		}
+	}
 
-		if pool.Status.AutoDesiredIPCount == nil {
-			pool.Status.AutoDesiredIPCount = new(int64)
-		} else {
-			if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
-				return nil
-			}
-		}
-
-		*pool.Status.AutoDesiredIPCount = int64(ipNum)
-		err = im.client.Status().Update(ctx, pool)
-		if nil != err {
-			if !apierrors.IsConflict(err) {
-				return fmt.Errorf("failed to update IPPool '%s' status DesiredIPNumber '%d', error: %v", pool.Name, ipNum, err)
-			}
-
-			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to update IPPool '%s' status DesiredIPNumber '%d'", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, pool.Name, ipNum)
-			}
-
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
-			continue
-		}
-
-		break
+	*pool.Status.AutoDesiredIPCount = int64(ipNum)
+	err = im.client.Status().Update(ctx, pool)
+	if nil != err {
+		return err
 	}
 
 	return nil

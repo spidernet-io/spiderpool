@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-macvlan-interfaces-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multi-macvlan-interfaces-deploy
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni-default
+        ipam.spidernet.io/ippools: |-
+          [{
+            "interface": "eth0",
+            "ipv4": ["eth0-ipv4-ippool"]
+          },{
+            "interface": "net1",
+            "ipv4": ["net1-ipv4-ippool"]
+          }]
+      labels:
+        app: multi-macvlan-interfaces-deploy
+    spec:
+      containers:
+        - name: multi-macvlan-interfaces-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

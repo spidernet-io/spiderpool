@@ -18,9 +18,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 
 More details about [Spiderpool charts parameters](https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters).
 
->It should be noted that the Pods of the spiderpool-controller have to run in the hostnetwork mode, because there may be no other IPAM CNI in the cluster that can allocate some IP addresses to them.
->
->In this regard, we used `podAntiAffinity` to ensure that different replicas of spiderpool-controller will not run on the same Node to avoid host port conflicts.
+>It should be noted that the Pods of the spiderpool-controller have to run in the hostnetwork mode, because there may be no other IPAM CNI in the Kubernetes cluster that can allocate some IP addresses to them. In this regard, we used `podAntiAffinity` to ensure that different replicas of spiderpool-controller will not run on the same Node to avoid host port conflicts.
 >
 >The replicas of spiderpool-controller can be adjusted by setting parameter `spiderpoolController.replicas`, but please ensure that you have enough Nodes to run them.
 
@@ -83,7 +81,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system \
 
 It is **not recommended to use this mode directly**, because the Spiderpool requires the TLS certificates provided by cert-manager, while the cert-manager requires the IP address provided by Spiderpool (cycle reference).
 
-Therefore, if possible, you must first [deploy cert-manager](https://cert-manager.io/docs/installation/) using other IPAM CNI in the cluster, and then deploy Spiderpool.
+Therefore, if possible, you must first [deploy cert-manager](https://cert-manager.io/docs/installation/) using other IPAM CNI in the Kubernetes cluster, and then deploy Spiderpool.
 
 ```bash
 helm install spiderpool spiderpool/spiderpool --namespace kube-system \
@@ -155,7 +153,7 @@ Finally, you should edit the [CNI network configuration](https://www.cni.dev/doc
 }
 ```
 
-The following is an example for macvlan CNI:
+The following is an example for [macvlan CNI](https://www.cni.dev/plugins/current/main/macvlan/):
 
 ```json
 {

@@ -4,12 +4,10 @@
 package ippoolmanager
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"reflect"
-	"sort"
 	"time"
 
 	"go.uber.org/zap"
@@ -456,10 +454,6 @@ func (c *poolInformerController) scaleIPPoolIfNeeded(ctx context.Context, pool *
 				return fmt.Errorf("%w: failed to parse IP ranges '%v', error: %v", constant.ErrWrongInput, allocatedIPRanges, err)
 			}
 			freeIPs := spiderpoolip.IPsDiffSet(totalIPs, allocatedIPs)
-			// sort freeIPs
-			sort.Slice(freeIPs, func(i, j int) bool {
-				return bytes.Compare(freeIPs[i].To16(), freeIPs[j].To16()) < 0
-			})
 			discardedIPs := freeIPs[:totalIPCount-desiredIPNum]
 			discardedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, discardedIPs)
 			if nil != err {

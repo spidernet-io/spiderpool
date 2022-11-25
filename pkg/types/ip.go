@@ -6,3 +6,8 @@ package types
 type IPVersion = int64
 
 type Vlan = int64
+
+type IPAndCID struct {
+	IP          string
+	ContainerID string
+}

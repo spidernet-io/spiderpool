@@ -11,15 +11,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func (c *Controller) StartDaemonSetController(informer cache.SharedIndexInformer, stopper chan struct{}) {
-	controllersLogger.Info("Starting DaemonSet informer")
+func (c *Controller) AddDaemonSetHandler(informer cache.SharedIndexInformer) {
+	controllersLogger.Info("Setting up DaemonSet handlers")
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onDaemonSetAdd,
 		UpdateFunc: c.onDaemonSetUpdate,
 		DeleteFunc: c.onDaemonSetDelete,
 	})
-	informer.Run(stopper)
 }
 
 func (c *Controller) onDaemonSetAdd(obj interface{}) {

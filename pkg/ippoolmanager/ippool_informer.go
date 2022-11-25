@@ -90,21 +90,18 @@ type poolInformerController struct {
 	poolSynced cache.InformerSynced
 
 	// serves for all IPPool status process
-	allPoolWorkQueue     workqueue.RateLimitingInterface
-	requeueDelayDuration time.Duration
-
-	v4GenIPsCursor bool
-	v6GenIPsCursor bool
+	allPoolWorkQueue workqueue.RateLimitingInterface
+	v4GenIPsCursor   bool
+	v6GenIPsCursor   bool
 }
 
 func newIPPoolInformerController(poolMgr *ipPoolManager, client crdclientset.Interface, poolInformer informers.SpiderIPPoolInformer) *poolInformerController {
 	c := &poolInformerController{
-		poolMgr:              poolMgr,
-		client:               client,
-		poolLister:           poolInformer.Lister(),
-		poolSynced:           poolInformer.Informer().HasSynced,
-		allPoolWorkQueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderIPPools"),
-		requeueDelayDuration: poolMgr.config.WorkQueueRequeueDelayDuration,
+		poolMgr:          poolMgr,
+		client:           client,
+		poolLister:       poolInformer.Lister(),
+		poolSynced:       poolInformer.Informer().HasSynced,
+		allPoolWorkQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderIPPools"),
 	}
 
 	// for all IPPool processing
@@ -356,7 +353,7 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 			// discard some wrong input items
 			if errors.Is(err, constant.ErrWrongInput) {
 				workQueue.Forget(obj)
-				return fmt.Errorf("failed to process IPPool '%s', error: %v", pool.Name, err)
+				return fmt.Errorf("failed to process IPPool '%s', error: %v, discarding it", pool.Name, err)
 			}
 
 			if apierrors.IsConflict(err) {
@@ -365,11 +362,11 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 				return nil
 			}
 
-			// if we set positive number for the requeue delay duration, we will requeue it. otherwise we will discard it.
-			if c.requeueDelayDuration >= 0 {
+			// if we set nonnegative number for the requeue delay duration, we will requeue it. otherwise we will discard it.
+			if c.poolMgr.config.WorkQueueRequeueDelayDuration >= 0 {
 				if workQueue.NumRequeues(obj) < c.poolMgr.config.WorkQueueMaxRetries {
-					log.Sugar().Warnf("encountered error '%v', requeue it after '%v'", err, c.requeueDelayDuration)
-					workQueue.AddAfter(poolName, c.requeueDelayDuration)
+					log.Sugar().Errorf("encountered error '%v', requeue it after '%v'", err, c.poolMgr.config.WorkQueueRequeueDelayDuration)
+					workQueue.AddAfter(poolName, c.poolMgr.config.WorkQueueRequeueDelayDuration)
 					return nil
 				}
 
@@ -377,7 +374,7 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 			}
 
 			workQueue.Forget(obj)
-			return fmt.Errorf("error syncing '%s': %s", poolName, err.Error())
+			return fmt.Errorf("error syncing '%s': %s, discarding it", poolName, err.Error())
 		}
 
 		workQueue.Forget(obj)
@@ -386,7 +383,6 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 
 	if err := process(obj); nil != err {
 		log.Error(err.Error())
-		return true
 	}
 
 	return true

@@ -289,7 +289,7 @@ func initControllerServiceManagers(ctx context.Context) {
 		MaxAllocatedIPs:               controllerContext.Cfg.IPPoolMaxAllocatedIPs,
 		LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 		MaxWorkQueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
-		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.IPPoolWorkQueueRequeueDelayDuration) * time.Second,
+		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 		WorkerNum:                     controllerContext.Cfg.IPPoolInformerWorkers,
 		WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
 	}, controllerContext.CRDManager, controllerContext.RIPManager)
@@ -322,6 +322,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			EnableSubnetDeleteStaleIPPool: controllerContext.Cfg.EnableSubnetDeleteStaleIPPool,
 			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			ResyncPeriod:                  time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
+			RequeueDelayDuration:          time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 			Workers:                       controllerContext.Cfg.SubnetInformerWorkers,
 			MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
 		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
@@ -414,7 +415,7 @@ func setupInformers() {
 			logger.Fatal(err.Error())
 		}
 
-		err = controllerContext.SubnetManager.SetupControllers(controllerContext.InnerCtx, controllerContext.ClientSet)
+		err = controllerContext.SubnetManager.SetupControllers(controllerContext.ClientSet)
 		if nil != err {
 			logger.Fatal(err.Error())
 		}

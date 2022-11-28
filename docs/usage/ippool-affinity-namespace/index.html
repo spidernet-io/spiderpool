@@ -9,18 +9,18 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
     
     
       
-        <title>SpiderIPPool namespace affinity - spiderpool</title>
+        <title>Namespace affinity of IPPool - spiderpool</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.472b142f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#spiderippool-namespace-affinity" class="md-skip">
+        <a href="#namespace-affinity-of-ippool" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SpiderIPPool namespace affinity
+              Namespace affinity of IPPool
             
           </span>
         </div>
@@ -240,7 +240,7 @@
   
     <li class="md-nav__item">
       <a href="../install/" class="md-nav__link">
-        Install
+        Installation
       </a>
     </li>
   
@@ -305,12 +305,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          SpiderIPPool namespace affinity
+          Namespace affinity of IPPool
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        SpiderIPPool namespace affinity
+        Namespace affinity of IPPool
       </a>
       
         
@@ -329,8 +329,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -365,7 +365,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        SpiderIPPool node affinity
+        Node affinity of IPPool
       </a>
     </li>
   
@@ -379,7 +379,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        Pod affinity of ippool
+        Pod affinity of IPPool
       </a>
     </li>
   
@@ -407,7 +407,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
-        Multi-Interfaces-Annotation
+        Pod annotation of multi-NIC
       </a>
     </li>
   
@@ -491,7 +491,7 @@
   
     <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
-        spiderpoolctl
+        Command line tool (spiderpoolctl)
       </a>
     </li>
   
@@ -871,8 +871,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -914,14 +914,69 @@
   </a>
 
 
-<h1 id="spiderippool-namespace-affinity">SpiderIPPool namespace affinity</h1>
-<p><em>Spiderpool supports multiple ways to select ippool. Pod will select a specific ippool to allocate IP according to the corresponding rules that with different priorities. Meanwhile, ippool can use selector to filter its user.</em></p>
-<h2 id="setup-spiderpool">Setup Spiderpool</h2>
-<p>If you have not set up Spiderpool yet, follow the guide <a href="../install/">Quick Installation</a> for instructions on how to install and simply configure Spiderpool.</p>
+<h1 id="namespace-affinity-of-ippool">Namespace affinity of IPPool</h1>
+<p><em>Spiderpool supports affinity between IP pools and Namespaces. It means only Pods running under these Namespaces can use the IP pools that have an affinity to these Namespaces.</em></p>
+<blockquote>
+<p><em>Namespace affinity should be regarded as a </em><em>filtering mechanism</em><em> rather than a <a href="TODO">pool selection rule</a>.</em></p>
+</blockquote>
+<h2 id="set-up-spiderpool">Set up Spiderpool</h2>
+<p>If you have not deployed Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for instructions on how to deploy and easily configure Spiderpool.</p>
 <h2 id="get-started">Get started</h2>
+<p>First, create a new Namespace <code>test-ns</code>.</p>
+<pre><code class="language-bash">kubectl create namespace test-ns
+</code></pre>
+<p>Create an IPPool that will be bound to it.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-namespace/test-ns-ipv4-ippool.yaml
+</code></pre>
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+kind: SpiderIPPool
+metadata:
+  name: test-ns-ipv4-ippool
+spec:
+  ipVersion: 4
+  subnet: 172.18.41.0/24
+  ips:
+  - 172.18.41.40-172.18.41.41
+  namespaceAffinity:
+    matchLabels:
+      kubernetes.io/metadata.name: test-ns
+</code></pre>
+<blockquote>
+<p>For convenience, this example uses a native Namespace label <code>kubernetes.io/metadata.name</code> as the matching condition of IPPool affinity. You can replace them with desired labels to match the corresponding Namespaces.</p>
+</blockquote>
+<p>Next, create two Deployments under <code>test-ns</code> and <code>default</code> Namespaces respectively, and configure the Pods therein to get IP addresses from the IPPool above.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-namespace/different-ns-deploys.yaml
+</code></pre>
+<p>You will find that the Deployment under Namespace <code>test-ns</code> is running.</p>
+<pre><code class="language-bash">kubectl get deploy -n test-ns
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+test-ns-deploy   1/1     1            1           35s
+</code></pre>
+<p>And its Pod has been assigned with an IP address from that IPPool.</p>
+<pre><code class="language-bash">kubectl get se -n test-ns
+NAME                             INTERFACE   IPV4POOL              IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
+test-ns-deploy-74c6784f9-dlkmx   eth0        test-ns-ipv4-ippool   172.18.41.41/24                     spider-worker   46s
+</code></pre>
+<p>However, the Deployment under Namespace <code>default</code> cannot work properly. You can troubleshoot with the Events of its Pod:</p>
+<pre><code class="language-bash">kubectl describe po default-ns-deploy-5587c7bd47-xbmj2 -n default
+...
+Events:
+  Type     Reason                  Age   From               Message
+  ----     ------                  ----  ----               -------
+  Normal   Scheduled               18s   default-scheduler  Successfully assigned default/default-ns-deploy-5587c7bd47-xbmj2 to spider-worker
+  Warning  FailedCreatePodSandBox  17s   kubelet            Failed to create pod sandbox: rpc error: code = Unknown desc = failed to setup network for sandbox &quot;97f18ae3ee315f58347f8936f819dd20b29c2d0a3d457fc6f0022282bf513e91&quot;: [default/default-ns-deploy-5587c7bd47-xbmj2:macvlan-cni-default]: error adding container to network &quot;macvlan-cni-default&quot;: spiderpool IP allocation error: [POST /ipam/ip][500] postIpamIpFailure  failed to allocate IP addresses in standard mode: no IPPool available, all IPv4 IPPools [test-ns-ipv4-ippool] of eth0 filtered out: unmatched Namespace affinity of IPPool test-ns-ipv4-ippool
+</code></pre>
+<p>Obviously, this Pod has no permission to get IP addresses from IPPool <code>test-ns-ipv4-ippool</code>.</p>
+<blockquote>
+<p>You can specify a <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-namespace.md">default IP pool for a Namespace</a> and set the corresponding <code>namespaceAffinity</code> for the IPPool to achieve the effect of "a Namespace static IP pool".</p>
+</blockquote>
 <h2 id="clean-up">Clean up</h2>
-<p>Let's clean the relevant resources so that we can run this tutorial again.</p>
-<pre><code class="language-bash">kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-affinity-namespace --ignore-not-found=true
+<p>Clean the relevant resources so that you can run this tutorial again.</p>
+<pre><code class="language-bash">kubectl delete ns test-ns
+kubectl delete \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-namespace/test-ns-ipv4-ippool.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-namespace/different-ns-deploys.yaml \
+--ignore-not-found=true
 </code></pre>
 
 
@@ -964,13 +1019,13 @@
       
       
         
-        <a href="../ippool-affinity-node/" class="md-footer__link md-footer__link--next" aria-label="Next: SpiderIPPool node affinity" rel="next">
+        <a href="../ippool-affinity-node/" class="md-footer__link md-footer__link--next" aria-label="Next: Node affinity of IPPool" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              SpiderIPPool node affinity
+              Node affinity of IPPool
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -1004,7 +1059,7 @@
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

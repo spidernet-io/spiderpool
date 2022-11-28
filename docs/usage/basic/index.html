@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
     
     
       
@@ -17,10 +17,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.472b142f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -240,7 +240,7 @@
   
     <li class="md-nav__item">
       <a href="../install/" class="md-nav__link">
-        Install
+        Installation
       </a>
     </li>
   
@@ -358,7 +358,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-namespace/" class="md-nav__link">
-        SpiderIPPool namespace affinity
+        Namespace affinity of IPPool
       </a>
     </li>
   
@@ -372,7 +372,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        SpiderIPPool node affinity
+        Node affinity of IPPool
       </a>
     </li>
   
@@ -386,7 +386,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        Pod affinity of ippool
+        Pod affinity of IPPool
       </a>
     </li>
   
@@ -414,7 +414,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
-        Multi-Interfaces-Annotation
+        Pod annotation of multi-NIC
       </a>
     </li>
   
@@ -498,7 +498,7 @@
   
     <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
-        spiderpoolctl
+        Command line tool (spiderpoolctl)
       </a>
     </li>
   
@@ -931,31 +931,32 @@
 <h1 id="quick-start">Quick start</h1>
 <p><em>Let's start some Pods with Spiderpool in approximately 5 minutes.</em></p>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
-<p>First, add the Spiderpool <code>helm</code> repository.</p>
+<p>First, setup the Helm repository.</p>
 <pre><code class="language-bash">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 </code></pre>
 <p>Set the IP addresses included in the cluster default IPv4 IPPool. The cluster default IPPool usually serves some components that need IP addresses when the Kubernetes cluster is initialized, such as CoreDNS.</p>
 <pre><code class="language-bash">IPV4_SUBNET_YOU_EXPECT=&quot;172.18.40.0/24&quot;
 IPV4_IPRANGES_YOU_EXPECT=&quot;172.18.40.40-172.20.40.200&quot;
 </code></pre>
-<p>Install Spiderpool by creating the necessary TLS certificates and custom resources.</p>
-<pre><code class="language-bash">helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
+<p>Deploy Spiderpool with the creation of necessary TLS certificates and custom resources, more details about <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a>.</p>
+<pre><code class="language-bash">helm install spiderpool spiderpool/spiderpool --namespace kube-system \
   --set spiderpoolController.tls.method=auto \
   --set feature.enableIPv4=true --set feature.enableIPv6=false \
   --set clusterDefaultPool.installIPv4IPPool=true  \
   --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
   --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
 </code></pre>
-<p>Here we use <code>--set feature.enableIPv6=false</code> to disable IPv6, more details of <a href="https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters">Spiderpool charts values</a>.</p>
+<p>Here we disable IPv6, but if you need Spiderpool to work under dual stacks, you can set <code>feature.enableIPv6=true</code>. Furthermore, if you also need to create a default IPv6 IPPool, set <code>clusterDefaultPool.installIPv6IPPool=true</code> and fill in the desired default IPv6 IPPool information in the <code>clusterDefaultPool.ipv6Subnet</code> and <code>clusterDefaultPool.ipv6IPRanges</code> parameters at the same time.</p>
+<p>More details about <a href="https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters">Spiderpool charts parameters</a>.</p>
 <h2 id="update-cni-network-configuration">Update CNI network configuration</h2>
 <p>Then, edit the <a href="https://www.cni.dev/docs/spec/#section-1-network-configuration-format">CNI network configuration</a> with the default path <code>/etc/cni/net.d</code> on the related Nodes so that the Main CNI can use Spiderpool IPAM CNI to allocate IP addresses. Replace the <code>ipam</code> object with the following:</p>
 <pre><code class="language-json">&quot;ipam&quot;:{
     &quot;type&quot;:&quot;spiderpool&quot;
 }
 </code></pre>
-<p>Take a example of Macvlan + Spiderpool.</p>
+<p>The following is an example for <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan CNI</a>:</p>
 <pre><code class="language-json">{
-    &quot;cniVersion&quot;:&quot;1.0.0&quot;,
+    &quot;cniVersion&quot;:&quot;0.4.0&quot;,
     &quot;type&quot;:&quot;macvlan&quot;,
     &quot;mode&quot;:&quot;bridge&quot;,
     &quot;master&quot;:&quot;eth0&quot;,
@@ -967,7 +968,7 @@ IPV4_IPRANGES_YOU_EXPECT=&quot;172.18.40.40-172.20.40.200&quot;
 </code></pre>
 <h2 id="create-an-ippool">Create an IPPool</h2>
 <p>Next, let's try to create an custom IPPool.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/blob/main/docs/example/basic/custom-ipv4-ippool.yaml
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml
 </code></pre>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
@@ -979,7 +980,7 @@ spec:
   ips:
   - 172.18.41.40-172.18.41.50
 </code></pre>
-<p>We can replace <code>spec.subnet</code> and <code>spec.ips</code> as needed, more details of <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md">SpiderIPPool CRD</a>.</p>
+<p>You can replace <code>spec.subnet</code> and <code>spec.ips</code> as needed, more details about <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md">SpiderIPPool CRD</a>.</p>
 <h2 id="run">Run</h2>
 <p>Finally, create a Deployment with 3 replicas.</p>
 <pre><code class="language-bash">kubectl create deployment my-dep --image=busybox --replicas=3 -- sleep infinity
@@ -991,8 +992,8 @@ my-dep-864946ffd8-h5z27   1/1     Running   0          3m10s   172.18.40.42    s
 my-dep-864946ffd8-kdl86   1/1     Running   0          3m10s   172.18.40.200   spider-worker   &lt;none&gt;           &lt;none&gt;
 my-dep-864946ffd8-vhnsj   1/1     Running   0          3m10s   172.18.40.38    spider-worker   &lt;none&gt;           &lt;none&gt;
 </code></pre>
-<p>Of course, we can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation <code>ipam.spidernet.io/ippool</code>, more details of <a href="TODO">pool selection rules</a>.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/blob/main/docs/example/basic/custom-ippool.deploy.yaml
+<p>Of course, you can also specify the custom IPPool just created above to allocate IP addresses through Pod annotation <code>ipam.spidernet.io/ippool</code>, more details about <a href="TODO">pool selection rules</a>.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ippool-deploy.yaml
 </code></pre>
 <pre><code class="language-yaml">apiVersion: apps/v1
 kind: Deployment
@@ -1008,8 +1009,7 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            &quot;interface&quot;: &quot;eth0&quot;,
-            &quot;ipv4pools&quot;: [&quot;custom-ipv4-ippool&quot;]
+            &quot;ipv4&quot;: [&quot;custom-ipv4-ippool&quot;]
           }
       labels:
         app: custom-ippool-deploy
@@ -1046,7 +1046,7 @@ spec:
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../install/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Install" rel="prev">
+        <a href="../install/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1055,7 +1055,7 @@ spec:
               <span class="md-footer__direction">
                 Previous
               </span>
-              Install
+              Installation
             </div>
           </div>
         </a>
@@ -1102,7 +1102,7 @@ spec:
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

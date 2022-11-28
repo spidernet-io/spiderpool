@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: node-affinity-deploy
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: node-affinity-deploy
@@ -12,12 +12,18 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            "interface": "eth0",
-            "ipv4pools": ["master-ipv4-ippool", "worker-ipv4-ippool"]
+            "ipv4": ["master-ipv4-ippool", "worker-ipv4-ippool"]
           }
       labels:
         app: node-affinity-deploy
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: node-affinity-deploy
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: node-affinity-deploy
           image: busybox

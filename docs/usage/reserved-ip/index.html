@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
     
     
       
@@ -17,10 +17,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.472b142f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -240,7 +240,7 @@
   
     <li class="md-nav__item">
       <a href="../install/" class="md-nav__link">
-        Install
+        Installation
       </a>
     </li>
   
@@ -296,7 +296,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-namespace/" class="md-nav__link">
-        SpiderIPPool namespace affinity
+        Namespace affinity of IPPool
       </a>
     </li>
   
@@ -310,7 +310,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        SpiderIPPool node affinity
+        Node affinity of IPPool
       </a>
     </li>
   
@@ -324,7 +324,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        Pod affinity of ippool
+        Pod affinity of IPPool
       </a>
     </li>
   
@@ -352,7 +352,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
-        Multi-Interfaces-Annotation
+        Pod annotation of multi-NIC
       </a>
     </li>
   
@@ -427,8 +427,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderippool-excludeips" class="md-nav__link">
-    SpiderIPPool excludeIPs
+  <a href="#ippool-excludeips" class="md-nav__link">
+    IPPool excludeIPs
   </a>
   
 </li>
@@ -442,8 +442,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -518,7 +518,7 @@
   
     <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
-        spiderpoolctl
+        Command line tool (spiderpoolctl)
       </a>
     </li>
   
@@ -898,8 +898,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderippool-excludeips" class="md-nav__link">
-    SpiderIPPool excludeIPs
+  <a href="#ippool-excludeips" class="md-nav__link">
+    IPPool excludeIPs
   </a>
   
 </li>
@@ -913,8 +913,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -969,10 +969,10 @@
 
 
 <h1 id="reserved-ip">Reserved IP</h1>
-<p><em>Spiderpool reserve some IP addresses for the whole cluster, which will not be used by any IPAM allocation. Usually, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).</em></p>
-<h2 id="spiderippool-excludeips">SpiderIPPool excludeIPs</h2>
-<p>First of all, you may have observed that there is an <code>excludeIPs</code> field in SpiderIPPool. To some extent, it is also a mechanism for reserving IP, but its main work is not so. Honestly, <code>excludeIPs</code> field is more of a <strong>syntax sugar</strong>, so that users can define their SpiderIPPool more flexibly.</p>
-<p>For example, now you want to create an SpiderIPPool, which contains two IP ranges: <code>172.18.41.40-172.18.41.44</code> and <code>172.18.41.46-172.18.41.50</code>. Without using <code>excludeIPs</code>, you should define the <code>ips</code> as follows:</p>
+<p><em>Spiderpool reserve some IP addresses for the whole Kubernetes cluster, which will not be used by any IPAM allocation results. Typically, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).</em></p>
+<h2 id="ippool-excludeips">IPPool excludeIPs</h2>
+<p>You may have observed that there is a field <code>excludeIPs</code> in SpiderIPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main function is not like this. Field <code>excludeIPs</code> is more of a <strong>syntax sugar</strong>, so that users can more flexibly define the IP address ranges of the IPPool.</p>
+<p>For example, create an IPPool without using <code>excludeIPs</code>, which contains two IP ranges: <code>172.18.41.40-172.18.41.44</code> and <code>172.18.41.46-172.18.41.50</code>, you should define the <code>ips</code> as follows:</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
@@ -984,7 +984,7 @@ spec:
   - 172.18.41.40-172.18.41.44
   - 172.18.41.46-172.18.41.50
 </code></pre>
-<p>But in fact, you can more concisely describe this semantics through <code>excludeIPs</code>:</p>
+<p>But in fact, this semantics can be more succinctly described through <code>excludeIPs</code>:</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
@@ -997,15 +997,14 @@ spec:
   excludeIPs:
   - 172.18.41.45
 </code></pre>
-<p><code>excludeIPs</code> also supports the format of IP range and you can define multiple <code>excludeIPs</code> records to segment a subnet in more detail.</p>
-<p><code>excludeIPs</code> will make sure that any Pod that allocates IP addresses from this SpiderIPPool will not use these excluded IP addresses. However, it should be noted that this mechanism only has an effect on the <strong>SpiderIPPool itself</strong> with <code>excludeIPs</code> defined.</p>
+<p>Field <code>excludeIPs</code> will make sure that any Pod that allocates IP addresses from this IPPool will not use these excluded IP addresses. However, it should be noted that this mechanism only has an effect on the <strong>IPPool itself</strong> with <code>excludeIPs</code> defined.</p>
 <h2 id="use-spiderreservedip">Use SpiderReservedIP</h2>
-<p>Unlike <code>excluedIPs</code> field in SpiderIPPool, SpiderReservedIP is actually used to define the global reserved IP address rules of a cluster. It ensures that no Pod in a cluster will use these IP addresses defined by itself, whether or not some SpiderIPPools have inadvertently defined the same IP addresses for Pods use. More details refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/reservedip.md">definition of SpiderReservedIP</a>.</p>
-<h3 id="setup-spiderpool">Setup Spiderpool</h3>
-<p>If you have not set up Spiderpool yet, follow the guide <a href="../install/">Quick Installation</a> for instructions on how to install and simply configure Spiderpool.</p>
+<p>Unlike configuring field <code>excluedIPs</code> in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a Kubernetes cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderreservedip.md">definition of SpiderReservedIP</a>.</p>
+<h3 id="set-up-spiderpool">Set up Spiderpool</h3>
+<p>If you have not deployed Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for instructions on how to deploy and easily configure Spiderpool.</p>
 <h3 id="get-started">Get Started</h3>
-<p>To understand how it works, let's do such a test. First, you should create an SpiderReservedIP which reserves 9 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.49</code>.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
+<p>To understand how it works, let's do such a test. First, create an ReservedIP which reserves 9 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.49</code>.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
 </code></pre>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderReservedIP
@@ -1016,8 +1015,8 @@ spec:
   ips:
   - 172.18.42.41-172.18.42.49
 </code></pre>
-<p>At the same time, create an SpiderIPPool with 10 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.50</code>. Yes, you deliberately make it hold one more IP address than the SpiderReservedIP above.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/test-ipv4-ippool.yaml
+<p>At the same time, create an IPPool with 10 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.50</code>. Yes, we deliberately make it hold one more IP address than the ReservedIP above.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml
 </code></pre>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
@@ -1029,8 +1028,8 @@ spec:
   ips:
   - 172.18.42.41-172.18.42.50
 </code></pre>
-<p>Then, run a Deployment with 3 replicas and let its Pods allocate IP addresses from the SpiderIPPool above.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/reservedip-deploy.yaml
+<p>Then, create a Deployment with 3 replicas and allocate IP addresses to its Pods from the IPPool above.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml
 </code></pre>
 <pre><code class="language-yaml">apiVersion: apps/v1
 kind: Deployment
@@ -1046,8 +1045,7 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            &quot;interface&quot;: &quot;eth0&quot;,
-            &quot;ipv4pools&quot;: [&quot;test-ipv4-ippool&quot;]
+            &quot;ipv4&quot;: [&quot;test-ipv4-ippool&quot;]
           }
       labels:
         app: reservedip-deploy
@@ -1065,16 +1063,23 @@ reservedip-deploy-6cf9858886-cm7bp   0/1     ContainerCreating   0          35s 
 reservedip-deploy-6cf9858886-lb7cr   0/1     ContainerCreating   0          35s   &lt;none&gt;         spider-worker
 reservedip-deploy-6cf9858886-pkcfl   1/1     Running             0          35s   172.18.42.50   spider-worker
 </code></pre>
-<p>But when we remove this SpiderReservedIP, everything will return to normal.</p>
-<pre><code class="language-bash">kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
+<p>But when you delete this ReservedIP, everything will return to normal.</p>
+<pre><code class="language-bash">kubectl delete -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
 </code></pre>
-<p>Another interesting question is that what happens if an IP address to be reserved has been allocated before SpiderReservedIP is created? Of course, we dare not stop this running Pod and recycle its IP addresses, but SpiderReservedIP will still ensure that no Pod can continue to use this IP address when this Pod releases these IP addresses. Therefore, SpiderReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.</p>
+<p>Another interesting question is that what happens if an IP address to be reserved has been allocated before ReservedIP is created? Of course, we dare not stop this running Pod and recycle its IP addresses, but ReservedIP will still ensure that when the Pod is terminated, no other Pods can continue to use the reserved IP address.</p>
+<blockquote>
+<p>Therefore, ReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.</p>
+</blockquote>
 <h3 id="clean-up">Clean up</h3>
 <p>Clean the relevant resources so that you can run this tutorial again.</p>
-<pre><code class="language-bash">kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/reserved-ip --ignore-not-found=true
+<pre><code class="language-bash">kubectl delete \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml \
+--ignore-not-found=true
 </code></pre>
 <h2 id="a-trap">A Trap</h2>
-<p>So, can you use SpiderIPPool's field <code>excludeIPs</code> to achieve the same effect as SpiderReservedIP? The answer is <strong>NO</strong>! Look at such a case, now you want to reserve an IP <code>172.18.43.31</code> for an external application of the cluster, which may be a Redis node. To achieve this, you created such an SpiderIPPool:</p>
+<p>So, can you use IPPool's field <code>excludeIPs</code> to achieve the same effect as ReservedIP? The answer is <strong>NO</strong>! Look at such a case, now you want to reserve an IP <code>172.18.43.31</code> for an external application of the Kubernetes cluster, which may be a Redis node. To achieve this, you created such an IPPool:</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
@@ -1087,7 +1092,7 @@ spec:
   excludeIPs:
   - 172.18.43.31
 </code></pre>
-<p>I believe that if there is only one SpiderIPPool under the subnet <code>172.18.43.0/24</code> network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an SpiderIPPool (Different SpiderIPPools allow to define the same <code>subnet</code>. More details refer to <a href="TODO">validation of SpiderIPPool</a>):</p>
+<p>I believe that if there is only one IPPool under the subnet <code>172.18.43.0/24</code> network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an IPPool:</p>
 <pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
@@ -1098,7 +1103,10 @@ spec:
   ips:
   - 172.18.43.31-172.18.43.50
 </code></pre>
-<p>After a period of time, a Pod may be allocated with IP <code>172.18.43.31</code> from the SpiderIPPool <code>created-by-someone-else</code>, and then it holds the same IP address as your Redis node. After that, your Redis may not work as well.</p>
+<blockquote>
+<p>Different IPPools allow to define the same field <code>subnet</code>, more details refer to <a href="TODO">validation of IPPool</a>.</p>
+</blockquote>
+<p>After a period of time, a Pod may be allocated with IP <code>172.18.43.31</code> from the IPPool <code>created-by-someone-else</code>, and then it holds the same IP address as your Redis node. After that, the Redis may not work as well.</p>
 <p>So, if you really want to reserve an IP address instead of excluding an IP address, SpiderReservedIP makes life better.</p>
 
 
@@ -1181,7 +1189,7 @@ spec:
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

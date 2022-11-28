@@ -1,13 +1,8 @@
 # Copyright 2022 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
 
-
 ARG BASE_IMAGE=ghcr.io/spidernet-io/spiderpool/spiderpool-base:1f8330482d25b58d2ae26bc6252e20384bac92ad
 ARG GOLANG_IMAGE=docker.io/library/golang:1.19@sha256:d72a2944621f0f4027983e094bdf9464d26459c17efe732320043b84c91e51e7
-
-# TARGETARCH is an automatic platform ARG enabled by Docker BuildKit.
-# like amd64 arm64
-ARG TARGETARCH
 
 #======= build bin ==========
 FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
@@ -43,7 +38,7 @@ RUN  make GOARCH=${TARGETARCH}   \
 
 #====== release image =======
 
-FROM ${BASE_IMAGE}
+FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE}
 
 LABEL maintainer="maintainer@spidernet-io"
 

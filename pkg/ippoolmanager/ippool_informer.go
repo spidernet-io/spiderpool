@@ -268,18 +268,18 @@ func (c *poolInformerController) Run(workers int, stopCh <-chan struct{}) error 
 
 	for i := 0; i < workers; i++ {
 		informerLogger.Sugar().Debugf("Starting All IPPool processing worker '%d'", i)
-		go wait.Until(c.runAllIPPoolWorker, time.Second, stopCh)
+		go wait.Until(c.runAllIPPoolWorker, 500*time.Millisecond, stopCh)
 	}
 
 	if c.poolMgr.config.EnableSpiderSubnet && enableV4 {
 		informerLogger.Debug("Staring IPv4 Auto-created IPPool processing worker")
 		defer c.poolMgr.v4AutoCreatedRateLimitQueue.ShutDown()
-		go wait.Until(c.runV4AutoCreatePoolWorker, time.Second, stopCh)
+		go wait.Until(c.runV4AutoCreatePoolWorker, 500*time.Millisecond, stopCh)
 	}
 	if c.poolMgr.config.EnableSpiderSubnet && enableV6 {
 		informerLogger.Debug("Staring IPv6 Auto-created IPPool processing worker")
 		defer c.poolMgr.v6AutoCreatedRateLimitQueue.ShutDown()
-		go wait.Until(c.runV6AutoCreatePoolWorker, time.Second, stopCh)
+		go wait.Until(c.runV6AutoCreatePoolWorker, 500*time.Millisecond, stopCh)
 	}
 
 	informerLogger.Info("IPPool controller workers started")
@@ -358,14 +358,14 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 
 			if apierrors.IsConflict(err) {
 				workQueue.AddRateLimited(poolName)
-				log.Sugar().Warnf("encountered update conflict '%v', retrying...", err)
+				log.Sugar().Warnf("encountered ippool informer update conflict '%v', retrying...", err)
 				return nil
 			}
 
 			// if we set nonnegative number for the requeue delay duration, we will requeue it. otherwise we will discard it.
 			if c.poolMgr.config.WorkQueueRequeueDelayDuration >= 0 {
 				if workQueue.NumRequeues(obj) < c.poolMgr.config.WorkQueueMaxRetries {
-					log.Sugar().Errorf("encountered error '%v', requeue it after '%v'", err, c.poolMgr.config.WorkQueueRequeueDelayDuration)
+					log.Sugar().Errorf("encountered ippool informer error '%v', requeue it after '%v'", err, c.poolMgr.config.WorkQueueRequeueDelayDuration)
 					workQueue.AddAfter(poolName, c.poolMgr.config.WorkQueueRequeueDelayDuration)
 					return nil
 				}

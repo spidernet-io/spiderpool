@@ -15,7 +15,7 @@ require (
 	github.com/go-openapi/validate v0.22.0
 	github.com/go-swagger/go-swagger v0.30.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/google/gops v0.3.25
+	github.com/google/gops v0.3.26
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo/v2 v2.5.1
 	github.com/onsi/gomega v1.24.1

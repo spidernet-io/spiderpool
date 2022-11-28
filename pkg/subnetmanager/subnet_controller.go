@@ -506,7 +506,8 @@ func (c *appController) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	for i := 0; i < workers; i++ {
-		go wait.Until(c.runWorker, time.Second, stopCh)
+		logger.Sugar().Debugf("Starting application controller processing worker '%d'", i)
+		go wait.Until(c.runWorker, 500*time.Millisecond, stopCh)
 	}
 
 	logger.Info("application controller workers started")
@@ -554,15 +555,16 @@ func (c *appController) processNextWorkItem() bool {
 			// requeue the conflict items
 			if apierrors.IsConflict(err) {
 				c.subnetMgr.workQueue.AddRateLimited(obj)
-				log.Sugar().Warnf("encountered conflict '%v', retrying...", err)
+				log.Sugar().Warnf("encountered app controller syncHandler conflict '%v', retrying...", err)
 				return nil
 			}
 
 			// if we set nonnegative number for the requeue delay duration, we will requeue it. otherwise we will discard it.
 			if c.subnetMgr.config.RequeueDelayDuration >= 0 {
 				if c.subnetMgr.workQueue.NumRequeues(obj) < c.subnetMgr.config.MaxWorkqueueLength {
+					log.Sugar().Errorf("encountered app controller syncHandler error '%v', requeue it after '%v'", err, c.subnetMgr.config.RequeueDelayDuration)
 					c.subnetMgr.workQueue.AddAfter(obj, c.subnetMgr.config.RequeueDelayDuration)
-					return fmt.Errorf("encountered error '%v', requeue it after '%v'", err, c.subnetMgr.config.RequeueDelayDuration)
+					return nil
 				}
 
 				log.Warn("out of work queue max retries, drop it")
@@ -598,7 +600,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 	switch appKey.AppKind {
 	case constant.OwnerDeployment:
 		deployment, err := c.deploymentsLister.Deployments(namespace).Get(name)
-		if client.IgnoreNotFound(err) != nil {
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Debugf("application in work queue no longer exists")
+				return nil
+			}
 			return err
 		}
 
@@ -609,7 +615,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 	case constant.OwnerReplicaSet:
 		replicaSet, err := c.replicaSetLister.ReplicaSets(namespace).Get(name)
-		if client.IgnoreNotFound(err) != nil {
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Debugf("application in work queue no longer exists")
+				return nil
+			}
 			return err
 		}
 
@@ -620,7 +630,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 	case constant.OwnerDaemonSet:
 		daemonSet, err := c.daemonSetLister.DaemonSets(namespace).Get(name)
-		if client.IgnoreNotFound(err) != nil {
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Debugf("application in work queue no longer exists")
+				return nil
+			}
 			return err
 		}
 
@@ -631,7 +645,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 	case constant.OwnerStatefulSet:
 		statefulSet, err := c.statefulSetLister.StatefulSets(namespace).Get(name)
-		if client.IgnoreNotFound(err) != nil {
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Debugf("application in work queue no longer exists")
+				return nil
+			}
 			return err
 		}
 
@@ -642,7 +660,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 	case constant.OwnerJob:
 		job, err := c.jobLister.Jobs(namespace).Get(name)
-		if client.IgnoreNotFound(err) != nil {
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Debugf("application in work queue no longer exists")
+				return nil
+			}
 			return err
 		}
 
@@ -653,7 +675,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 	case constant.OwnerCronJob:
 		cronJob, err := c.cronJobLister.CronJobs(namespace).Get(name)
-		if client.IgnoreNotFound(err) != nil {
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Debugf("application in work queue no longer exists")
+				return nil
+			}
 			return err
 		}
 

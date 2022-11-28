@@ -206,7 +206,7 @@ func (sc *SubnetController) Run(workers int, stopCh <-chan struct{}) error {
 
 	informerLogger.Info("Starting workers")
 	for i := 0; i < workers; i++ {
-		go wait.Until(sc.runWorker, time.Second, stopCh)
+		go wait.Until(sc.runWorker, 500*time.Millisecond, stopCh)
 	}
 
 	informerLogger.Info("Started workers")

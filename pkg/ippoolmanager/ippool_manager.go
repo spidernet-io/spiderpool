@@ -369,7 +369,6 @@ func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 // Notice: we shouldn't get retries in this method and the upper level calling function will requeue the workqueue once we return an error,
 func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ippoolmanagertypes.ScaleAction, desiredIPNum int) error {
 	log := logutils.FromContext(ctx)
-	rand.Seed(time.Now().UnixNano())
 
 	var err error
 
@@ -425,11 +424,6 @@ func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoo
 }
 
 func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error {
-	pool, err := im.GetIPPoolByName(ctx, pool.Name)
-	if nil != err {
-		return err
-	}
-
 	if pool.Status.AutoDesiredIPCount == nil {
 		pool.Status.AutoDesiredIPCount = new(int64)
 	} else {
@@ -439,7 +433,7 @@ func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spider
 	}
 
 	*pool.Status.AutoDesiredIPCount = int64(ipNum)
-	err = im.client.Status().Update(ctx, pool)
+	err := im.client.Status().Update(ctx, pool)
 	if nil != err {
 		return err
 	}

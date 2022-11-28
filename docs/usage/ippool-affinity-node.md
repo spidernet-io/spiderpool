@@ -1,6 +1,6 @@
-# IPPool node affinity
+# Node affinity of IPPool
 
-*Spiderpool supports affinity between IP pools and Nodes. It means only Pods running on this Node can use the IP pools that have an affinity to this Node.*
+*Spiderpool supports affinity between IP pools and Nodes. It means only Pods running on these Nodes can use the IP pools that have an affinity to these Nodes.*
 
 >*Node affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*
 

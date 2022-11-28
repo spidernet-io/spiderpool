@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: default-ns-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: default-ns-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["test-ns-ipv4-ippool"]
+          }
+      labels:
+        app: default-ns-deploy
+    spec:
+      containers:
+        - name: default-ns-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-ns-deploy
+  namespace: test-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-ns-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["test-ns-ipv4-ippool"]
+          }
+      labels:
+        app: test-ns-deploy
+    spec:
+      containers:
+        - name: test-ns-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

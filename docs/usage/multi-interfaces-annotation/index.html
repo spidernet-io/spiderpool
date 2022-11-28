@@ -9,18 +9,18 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
     
     
       
-        <title>Multi-Interfaces-Annotation - spiderpool</title>
+        <title>Pod annotation of multi-NIC - spiderpool</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.472b142f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#multi-interfaces-annotation" class="md-skip">
+        <a href="#pod-annotation-of-multi-nic" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Multi-Interfaces-Annotation
+              Pod annotation of multi-NIC
             
           </span>
         </div>
@@ -240,7 +240,7 @@
   
     <li class="md-nav__item">
       <a href="../install/" class="md-nav__link">
-        Install
+        Installation
       </a>
     </li>
   
@@ -296,7 +296,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-namespace/" class="md-nav__link">
-        SpiderIPPool namespace affinity
+        Namespace affinity of IPPool
       </a>
     </li>
   
@@ -310,7 +310,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        SpiderIPPool node affinity
+        Node affinity of IPPool
       </a>
     </li>
   
@@ -324,7 +324,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        Pod affinity of ippool
+        Pod affinity of IPPool
       </a>
     </li>
   
@@ -361,12 +361,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Multi-Interfaces-Annotation
+          Pod annotation of multi-NIC
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Multi-Interfaces-Annotation
+        Pod annotation of multi-NIC
       </a>
       
         
@@ -385,15 +385,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#setup-multus" class="md-nav__link">
-    Setup Multus
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -401,6 +394,13 @@
         <li class="md-nav__item">
   <a href="#get-started" class="md-nav__link">
     Get Started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
   </a>
   
 </li>
@@ -491,7 +491,7 @@
   
     <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
-        spiderpoolctl
+        Command line tool (spiderpoolctl)
       </a>
     </li>
   
@@ -871,15 +871,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#setup-multus" class="md-nav__link">
-    Setup Multus
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -887,6 +880,13 @@
         <li class="md-nav__item">
   <a href="#get-started" class="md-nav__link">
     Get Started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
   </a>
   
 </li>
@@ -914,16 +914,139 @@
   </a>
 
 
-<h1 id="multi-interfaces-annotation">Multi-Interfaces-Annotation</h1>
-<p>We can create multiple Interfaces with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>,
-and let's use Multus CRD to achieve it.</p>
-<h2 id="setup-spiderpool">Setup Spiderpool</h2>
-<p>If you have not set up Spiderpool yet, follow the guide <a href="../install/">Quick Installation</a> for instructions on how to install and simply configure Spiderpool.</p>
-<h2 id="setup-multus">Setup Multus</h2>
-<p>If you have not set up Multus yet, follow the guide <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#installation">Quick Installation</a> for instructions on how to install and simply configure Multus.</p>
+<h1 id="pod-annotation-of-multi-nic">Pod annotation of multi-NIC</h1>
+<p><em>Spiderpool supports specifying the IP pools for each interface by Pod annotation in multi-NIC scenario.</em></p>
+<blockquote>
+<p><em>Creating Pods with multiple interfaces depends on <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md">Multus CNI</a>. Before reading this guide, please ensure that you have <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#installation">installed Multus CNI</a> and can <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/how-to-use.md">use it</a> skillfully.</em></p>
+</blockquote>
+<h2 id="set-up-spiderpool">Set up Spiderpool</h2>
+<p>If you have not deployed Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for instructions on how to deploy and easily configure Spiderpool.</p>
 <h2 id="get-started">Get Started</h2>
-<p>Following the <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#storing-a-configuration-as-a-custom-resource">Multus CRD configuration</a> steps to implement multus CRD <code>NetworkAttachmentDefinition</code>,
-and create pod with multiple interfaces.</p>
+<p>First, let's take a look at the <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md">Multus CNI network configuration</a> used in this example:</p>
+<pre><code class="language-bash">cat /etc/cni/net.d/00-multus.conf
+{
+  &quot;cniVersion&quot;: &quot;0.3.1&quot;,
+  &quot;name&quot;: &quot;multus-cni-network&quot;,
+  &quot;type&quot;: &quot;multus&quot;,
+  &quot;confDir&quot;: &quot;/etc/cni/net.d/&quot; ,
+  &quot;capabilities&quot;: {
+    &quot;portMappings&quot;: true
+  },
+  &quot;clusterNetwork&quot;: &quot;macvlan-cni-default&quot;,
+  &quot;multusNamespace&quot;: &quot;kube-system&quot;,
+  &quot;kubeconfig&quot;: &quot;/etc/cni/net.d/multus.d/multus.kubeconfig&quot;
+}
+</code></pre>
+<p>We configure <code>macvlan-cni-default</code> as the default CNI network of the Kubernetes cluster, which is a combination of <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan CNI</a> and Spiderpool.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/macvlan-cni-default.yaml
+</code></pre>
+<pre><code class="language-yaml">apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-cni-default
+  namespace: kube-system
+spec:
+  config: '{
+      &quot;cniVersion&quot;: &quot;0.3.1&quot;,
+      &quot;type&quot;: &quot;macvlan&quot;,
+      &quot;mode&quot;: &quot;bridge&quot;,
+      &quot;master&quot;: &quot;eth0&quot;,
+      &quot;name&quot;: &quot;macvlan-cni-default&quot;,
+      &quot;ipam&quot;: {
+        &quot;type&quot;: &quot;spiderpool&quot;
+      }
+    }'
+</code></pre>
+<p>Create two IPPools to provide IP addresses for different interfaces.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml
+</code></pre>
+<pre><code class="language-bash">kubectl get sp
+NAME               VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+eth0-ipv4-ippool   4         172.18.41.0/24   0                    2                false
+net1-ipv4-ippool   4         172.18.42.0/24   0                    2                false
+</code></pre>
+<p>Then, create a Deployment whose Pod is <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#creating-a-pod-that-attaches-an-additional-interface">attached an additional interface</a> (macvlan) through the Multus annotation <code>k8s.v1.cni.cncf.io/networks</code>.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/multi-macvlan-interfaces-deploy.yaml
+</code></pre>
+<pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-macvlan-interfaces-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multi-macvlan-interfaces-deploy
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni-default
+        ipam.spidernet.io/ippools: |-
+          [{
+            &quot;interface&quot;: &quot;eth0&quot;,
+            &quot;ipv4&quot;: [&quot;eth0-ipv4-ippool&quot;]
+          },{
+            &quot;interface&quot;: &quot;net1&quot;,
+            &quot;ipv4&quot;: [&quot;net1-ipv4-ippool&quot;]
+          }]
+      labels:
+        app: multi-macvlan-interfaces-deploy
+    spec:
+      containers:
+      - name: multi-macvlan-interfaces-deploy
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
+</code></pre>
+<p>The Pod annotation <code>ipam.spidernet.io/ippools</code> specifies the <a href="TODO">pool selection rules</a> for each interfaces in the form of an array, which means that executing the <a href="https://www.cni.dev/docs/spec/#cni-operations">CNI ADD command</a> with the environment parameter <code>CNI_IFNAME</code> as <code>eth0</code> will get an IP allocation result from IPPool <code>eth0-ipv4-ippool</code>. The interface <code>net1</code> works in a similar way.</p>
+<blockquote>
+<p>As for the reason why the two interfaces are named <code>eth0</code> and <code>net1</code> respectively, it is because that is the convention of Multus CNI. Generally, the first interface (default interface) of a Pod will be named <code>eth0</code>, and the additional interfaces attached will be named <code>net1</code>, <code>net2</code>...</p>
+</blockquote>
+<p>Finally, you can check the details of the IP allocation result.</p>
+<pre><code class="language-bash">kubectl get se multi-macvlan-interfaces-deploy-b99b55bd7-gvvqt -o jsonpath='{.status.current}' | jq
+{
+  &quot;containerID&quot;: &quot;57e7a0a713bc16bfeb2390969a43daef99d1625c8bebc841646a90fa854900f3&quot;,
+  &quot;creationTime&quot;: &quot;2022-11-24T05:22:19Z&quot;,
+  &quot;ips&quot;: [
+    {
+      &quot;interface&quot;: &quot;eth0&quot;,
+      &quot;ipv4&quot;: &quot;172.18.41.41/24&quot;,
+      &quot;ipv4Pool&quot;: &quot;eth0-ipv4-ippool&quot;,
+      &quot;vlan&quot;: 0
+    },
+    {
+      &quot;interface&quot;: &quot;net1&quot;,
+      &quot;ipv4&quot;: &quot;172.18.42.40/24&quot;,
+      &quot;ipv4Pool&quot;: &quot;net1-ipv4-ippool&quot;,
+      &quot;vlan&quot;: 0
+    }
+  ],
+  &quot;node&quot;: &quot;spider-worker&quot;
+}
+</code></pre>
+<p>Inspect the container.</p>
+<pre><code class="language-bash">kubectl exec -it multi-macvlan-interfaces-deploy-b99b55bd7-gvvqt -- ip a
+...
+4: eth0@if13: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu 1500 qdisc noqueue 
+    link/ether 46:34:cc:2e:70:2c brd ff:ff:ff:ff:ff:ff
+    inet 172.18.41.41/24 brd 172.18.41.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::4434:ccff:fe2e:702c/64 scope link 
+       valid_lft forever preferred_lft forever
+5: net1@if13: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu 1500 qdisc noqueue 
+    link/ether aa:e3:32:27:75:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.18.42.40/24 brd 172.18.42.255 scope global net1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::a8e3:32ff:fe27:7501/64 scope link 
+       valid_lft forever preferred_lft forever
+</code></pre>
+<h2 id="clean-up">Clean up</h2>
+<p>Clean the relevant resources so that you can run this tutorial again.</p>
+<pre><code class="language-bash">kubectl delete \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/macvlan-cni-default.yaml \
+--ignore-not-found=true
+</code></pre>
 
 
 
@@ -1005,7 +1128,7 @@ and create pod with multiple interfaces.</p>
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

@@ -5,8 +5,7 @@ metadata:
   annotations:
     ipam.spidernet.io/ippool: |-
       {
-        "interface": "eth0",
-        "ipv4pools": ["default-ipv4-ippool"]
+        "ipv4": ["default-ipv4-ippool"]
       }
 spec:
   containers:

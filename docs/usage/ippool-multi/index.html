@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
     
     
       
@@ -17,10 +17,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.472b142f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -240,7 +240,7 @@
   
     <li class="md-nav__item">
       <a href="../install/" class="md-nav__link">
-        Install
+        Installation
       </a>
     </li>
   
@@ -301,8 +301,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -351,7 +351,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-namespace/" class="md-nav__link">
-        SpiderIPPool namespace affinity
+        Namespace affinity of IPPool
       </a>
     </li>
   
@@ -365,7 +365,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-node/" class="md-nav__link">
-        SpiderIPPool node affinity
+        Node affinity of IPPool
       </a>
     </li>
   
@@ -379,7 +379,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-affinity-pod/" class="md-nav__link">
-        Pod affinity of ippool
+        Pod affinity of IPPool
       </a>
     </li>
   
@@ -407,7 +407,7 @@
   
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
-        Multi-Interfaces-Annotation
+        Pod annotation of multi-NIC
       </a>
     </li>
   
@@ -491,7 +491,7 @@
   
     <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
-        spiderpoolctl
+        Command line tool (spiderpoolctl)
       </a>
     </li>
   
@@ -871,8 +871,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setup-spiderpool" class="md-nav__link">
-    Setup Spiderpool
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
@@ -915,24 +915,24 @@
 
 
 <h1 id="multiple-ippool">Multiple IPPool</h1>
-<p><em>Spiderpool can specify multiple alternative IP pools for an IPAM allocation.</em></p>
-<h2 id="setup-spiderpool">Setup Spiderpool</h2>
-<p>If you have not set up Spiderpool yet, follow the guide <a href="../install/">Quick Installation</a> for instructions on how to install and simply configure Spiderpool.</p>
+<p><em>Spiderpool can specify multiple alternative IP pools for one IP allocation.</em></p>
+<h2 id="set-up-spiderpool">Set up Spiderpool</h2>
+<p>If you have not deployed Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for instructions on how to deploy and easily configure Spiderpool.</p>
 <h2 id="get-started">Get Started</h2>
-<p>First, we create two SpiderIPPools, and they both contain 2 IP addresses.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
+<p>First, create two IPPools each containing 2 IP addresses.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
 </code></pre>
-<p>Then, run a Pod and allocate one of these IP addresses.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/dummy-pod.yaml
+<p>Create a Pod and allocate an IP address to it from these IPPools.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/dummy-pod.yaml
 </code></pre>
-<p>As you can see, we still have 3 available IP addresses, one in SpiderIPPool <code>default-ipv4-ippool</code> and two in SpiderIPPool <code>backup-ipv4-ippool</code>.</p>
+<p>You will find that you still have 3 available IP addresses, one in IPPool <code>default-ipv4-ippool</code> and two in IPPool <code>backup-ipv4-ippool</code>.</p>
 <pre><code class="language-bash">kubectl get sp -l case=backup
 NAME                  VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
 backup-ipv4-ippool    4         172.18.42.0/24   0                    2                false
 default-ipv4-ippool   4         172.18.41.0/24   1                    2                false
 </code></pre>
-<p>Now, run a Deployment with 2 replicas and let its Pods allocate IP addresses from the two SpiderIPPool above.</p>
-<pre><code class="language-bash">kubectl apply -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi/multi-ippool-deploy.yaml
+<p>Then, create a Deployment with 2 replicas and allocate IP addresses to its Pods from the two IPPools above.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/multi-ippool-deploy.yaml
 </code></pre>
 <pre><code class="language-yaml">apiVersion: apps/v1
 kind: Deployment
@@ -948,8 +948,7 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            &quot;interface&quot;: &quot;eth0&quot;,
-            &quot;ipv4pools&quot;: [&quot;default-ipv4-ippool&quot;, &quot;backup-ipv4-ippool&quot;]
+            &quot;ipv4&quot;: [&quot;default-ipv4-ippool&quot;, &quot;backup-ipv4-ippool&quot;]
           }
       labels:
         app: multi-ippool-deploy
@@ -960,8 +959,8 @@ spec:
         imagePullPolicy: IfNotPresent
         command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
 </code></pre>
-<p>Spiderpool will successively try to allocate IP addresses <strong>in the order of</strong> the elements in the "IP pool array" until the first allocation succeeds or all fail. Of course, you can specify the pool selection rules (that defines alternative IP pools) in <a href="TODO">many ways</a>. Here, we use <code>ipam.spidernet.io/ippool</code> Pod annotation to select IP pools.</p>
-<p>Finally, we'll see that when IP addresses in SpiderIPPool <code>default-ipv4-ippool</code> use out, SpiderIPPool <code>backup-ipv4-ippool</code> takes over.</p>
+<p>Spiderpool will successively try to allocate IP addresses <strong>in the order of</strong> the elements in the "IP pool array" until the first allocation succeeds or all fail. Of course, you can specify the <a href="TODO">pool selection rules</a> (that defines alternative IP pools) in many ways, the Pod annotation <code>ipam.spidernet.io/ippool</code> is used here to select IP pools.</p>
+<p>Finally, when addresses in IPPool <code>default-ipv4-ippool</code> are used up, the IPPool <code>backup-ipv4-ippool</code> takes over.</p>
 <pre><code class="language-bash">kubectl get se
 NAME                                   INTERFACE   IPV4POOL              IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
 dummy                                  eth0        default-ipv4-ippool   172.18.41.41/24                     spider-worker   1m20s
@@ -969,8 +968,12 @@ multi-ippool-deploy-669bf7cf79-4x88m   eth0        default-ipv4-ippool   172.18.
 multi-ippool-deploy-669bf7cf79-k7zkk   eth0        backup-ipv4-ippool    172.18.42.41/24                     spider-worker   2m31s
 </code></pre>
 <h2 id="clean-up">Clean up</h2>
-<p>Let's clean the relevant resources so that we can run this tutorial again.</p>
-<pre><code class="language-bash">kubectl delete -f https://github.com/spidernet-io/spiderpool/tree/main/docs/example/ippool-multi --ignore-not-found=true
+<p>Clean the relevant resources so that you can run this tutorial again.</p>
+<pre><code class="language-bash">kubectl delete \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/test-ipv4-ippools.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/dummy-pod.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/multi-ippool-deploy.yaml \
+--ignore-not-found=true
 </code></pre>
 
 
@@ -1053,7 +1056,7 @@ multi-ippool-deploy-669bf7cf79-k7zkk   eth0        backup-ipv4-ippool    172.18.
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

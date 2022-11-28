@@ -1,6 +1,6 @@
 # Reserved IP
 
-*Spiderpool reserve some IP addresses for the whole cluster, which will not be used by any IPAM allocation results. Typically, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).*
+*Spiderpool reserve some IP addresses for the whole Kubernetes cluster, which will not be used by any IPAM allocation results. Typically, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).*
 
 ## IPPool excludeIPs
 
@@ -41,7 +41,7 @@ Field `excludeIPs` will make sure that any Pod that allocates IP addresses from 
 
 ## Use SpiderReservedIP
 
-Unlike configuring field `excluedIPs` in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderreservedip.md).
+Unlike configuring field `excluedIPs` in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a Kubernetes cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderreservedip.md).
 
 ### Set up Spiderpool
 
@@ -151,7 +151,7 @@ kubectl delete \
 
 ## A Trap
 
-So, can you use IPPool's field `excludeIPs` to achieve the same effect as ReservedIP? The answer is **NO**! Look at such a case, now you want to reserve an IP `172.18.43.31` for an external application of the cluster, which may be a Redis node. To achieve this, you created such an IPPool:
+So, can you use IPPool's field `excludeIPs` to achieve the same effect as ReservedIP? The answer is **NO**! Look at such a case, now you want to reserve an IP `172.18.43.31` for an external application of the Kubernetes cluster, which may be a Redis node. To achieve this, you created such an IPPool:
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1

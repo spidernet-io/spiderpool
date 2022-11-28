@@ -588,6 +588,8 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
 				}
 			}
+
+			Expect(frame.DeleteDeployment(deployName, namespace)).NotTo(HaveOccurred())
 		})
 
 		It("Automatically create multiple ippools that can not use the same network segment and use IPs other than excludeIPs. ", Label("I00004"), func() {

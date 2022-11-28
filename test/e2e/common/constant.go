@@ -28,6 +28,7 @@ const (
 	ServiceAccountReadyTimeout = time.Second * 20
 	NodeReadyTimeout           = time.Minute
 	ResourceDeleteTimeout      = time.Minute * 2
+	BatchCreateTimeout         = time.Minute * 5
 )
 
 var ForcedWaitingTime = time.Second

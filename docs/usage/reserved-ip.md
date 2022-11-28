@@ -6,7 +6,7 @@
 
 You may have observed that there is a field `excludeIPs` in SpiderIPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main function is not like this. Field `excludeIPs` is more of a **syntax sugar**, so that users can more flexibly define the IP address ranges of the IPPool.
 
-For example, create a IPPool without using `excludeIPs`, which contains two IP ranges: `172.18.41.40-172.18.41.44` and `172.18.41.46-172.18.41.50`, you should define the `ips` as follows:
+For example, create an IPPool without using `excludeIPs`, which contains two IP ranges: `172.18.41.40-172.18.41.44` and `172.18.41.46-172.18.41.50`, you should define the `ips` as follows:
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v1

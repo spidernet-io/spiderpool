@@ -53,7 +53,7 @@ ns1-default-ippool-deploy-7cd5449c88-vjtdd   eth0        ns1-default-ipv4-ippool
 
 Of course, the Namespace annotation `ipam.spidernet.io/defaultv4ippool` also supports the syntax of [alternative IP pools](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-multi.md). You can specify multiple default IP pools for a certain Namespace at the same time. In addition, one IPPool can be specified as the default IP pool for different Namespaces.
 
->If you want to bind a IPPool to a specific Namespace in an **exclusive** way, it means that no Namespace other than this (or a group of Namespaces) has permission to use this IPPool, please refer to [SpiderIPPool namespace affinity](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-affinity-namespace.md).
+>If you want to bind an IPPool to a specific Namespace in an **exclusive** way, it means that no Namespace other than this (or a group of Namespaces) has permission to use this IPPool, please refer to [SpiderIPPool namespace affinity](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-affinity-namespace.md).
 
 ## Clean up
 

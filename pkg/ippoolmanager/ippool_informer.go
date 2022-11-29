@@ -254,7 +254,7 @@ func (c *poolInformerController) Run(workers int, stopCh <-chan struct{}) error 
 
 	for i := 0; i < workers; i++ {
 		informerLogger.Sugar().Debugf("Starting All IPPool processing worker '%d'", i)
-		go wait.Until(c.runAllIPPoolWorker, 500*time.Millisecond, stopCh)
+		go wait.Until(c.runAllIPPoolWorker, 1*time.Second, stopCh)
 	}
 
 	if c.poolMgr.config.EnableSpiderSubnet && enableV4 {
@@ -367,7 +367,8 @@ func (c *poolInformerController) processNextWorkItem(workQueue workqueue.RateLim
 		return nil
 	}
 
-	if err := process(obj); nil != err {
+	err := process(obj)
+	if nil != err {
 		log.Error(err.Error())
 	}
 

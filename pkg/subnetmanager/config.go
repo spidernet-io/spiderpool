@@ -20,6 +20,7 @@ type SubnetManagerConfig struct {
 	ResyncPeriod                  time.Duration
 	RequeueDelayDuration          time.Duration
 
-	Workers            int
-	MaxWorkqueueLength int
+	SubnetControllerWorkers int
+	AppControllerWorkers    int
+	MaxWorkqueueLength      int
 }

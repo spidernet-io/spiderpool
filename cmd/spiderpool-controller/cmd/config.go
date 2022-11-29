@@ -56,7 +56,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
-	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "5", false, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
+	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
+	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
 	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
 	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
 	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "300", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
@@ -82,8 +83,8 @@ var envInfo = []envConf{
 	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
 	{"SPIDERPOOL_ENABLE_SUBNET_DELETE_STALE_IPPOOL", "false", true, nil, &controllerContext.Cfg.EnableSubnetDeleteStaleIPPool, nil},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
-	{"SPIDERPOOL_AUTO_IPPOOL_SCALE_RETRY_DELAY_DURATION", "1", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
-	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
+	{"SPIDERPOOL_WORKQUEUE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
+	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
 	{"SPIDERPOOL_WORKQUEUE_MAX_RETRIES", "500", true, nil, nil, &controllerContext.Cfg.WorkQueueMaxRetries},
 }
 
@@ -118,6 +119,7 @@ type Config struct {
 	IPPoolMaxAllocatedIPs             int
 
 	SubnetResyncPeriod               int
+	SubnetAppControllerWorkers       int
 	SubnetInformerWorkers            int
 	SubnetInformerMaxWorkqueueLength int
 	WorkQueueMaxRetries              int

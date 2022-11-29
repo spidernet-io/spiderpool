@@ -71,7 +71,7 @@ func (sm *subnetManager) SetupControllers(client kubernetes.Interface) error {
 			}
 			kubeInformerFactory.Start(stopper)
 
-			err = c.Run(sm.config.Workers, stopper)
+			err = c.Run(sm.config.AppControllerWorkers, stopper)
 			if nil != err {
 				logger.Sugar().Errorf("failed to run application controller, error: %v", err)
 			}

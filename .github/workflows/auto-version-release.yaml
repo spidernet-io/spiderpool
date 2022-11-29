@@ -32,23 +32,33 @@ jobs:
         run: |
           if ${{ github.event_name == 'workflow_dispatch' }} ; then
             echo "call by self workflow_dispatch"
-            echo ::set-output name=tag::${{ github.event.inputs.tag }}
+            echo "RUN_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+            YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${{ github.event.inputs.tag }}" `
           elif ${{ github.event_name == 'push' }} ; then
             echo "call by push tag"
-            echo ::set-output name=tag::${GITHUB_REF##*/}
+            echo "RUN_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+            YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${GITHUB_REF##*/}" `
           else
             echo "unexpected event: ${{ github.event_name }}"
             exit 1
           fi
+          echo "YBranchName=${YBranchName}"
+          if [ -n "$YBranchName" ] ; then
+              echo "RUN_YBranchName=${YBranchName}" >> $GITHUB_ENV
+          else
+              echo "error, failed to find y branch"
+              exit 1
+          fi
+
 
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ steps.get_ref.outputs.tag }}
+          ref: ${{ env.RUN_TAG }}
 
       - name: Check Version
         run: |
-          TagVersion="${{ steps.get_ref.outputs.tag }}"
+          TagVersion="${{ env.RUN_TAG }}"
           RecordVersion=` cat VERSION  | tr -d ' ' | tr -d '\n' `
           if [ "$RecordVersion" != "$TagVersion" ] ; then
             echo "error, version $RecordVersion of '/VERSION' is different with Tag $TagVersion "
@@ -56,12 +66,21 @@ jobs:
           fi
           #no need to check chart version, which will auto update to /VERSION by CI
 
-      - name: Create branch
+      #- name: release Z branch
+      #  uses: peterjgrainger/action-create-branch@v2.3.0
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #  with:
+      #    branch: 'release-${{ env.RUN_TAG }}'
+      #    sha: '${{ github.sha }}'
+
+      # if branch exists, the action will no fail, and it output created=false
+      - name: release Y branch
         uses: peterjgrainger/action-create-branch@v2.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          branch: 'release-${{ steps.get_ref.outputs.tag }}'
+          branch: 'release-${{ env.RUN_YBranchName }}'
           sha: '${{ github.sha }}'
 
   build-release-image:

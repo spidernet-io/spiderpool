@@ -32,7 +32,7 @@ RUN  make GOARCH=${TARGETARCH}   \
 
 #====== release image =======
 
-FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE}
+FROM ${BASE_IMAGE}
 
 LABEL maintainer="maintainer@spidernet-io"
 

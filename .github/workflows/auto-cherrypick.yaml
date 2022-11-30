@@ -1,0 +1,165 @@
+name: Auto CherryPick PR
+
+permissions: write-all
+
+env:
+  PR_LABEL_PREFIX_CHERRYPICK: "cherrypick-"
+  CHERRYPICK_LABEL: "robot-cherrypick"
+  DEFAULT_REVIEWER: "weizhoublue"
+
+on:
+  push:
+    branches:
+      - 'release-*'
+      - 'main'
+
+jobs:
+  cherry_pick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: cherry pick
+        run: |
+          set -x
+          echo ${{ secrets.WELAN_PAT }} | gh auth login --with-token
+          DATA_FILE="/tmp/`date +%Y%m%d%H%M%S%N`"
+          echo '${{ toJSON(github) }}' > ${DATA_FILE}
+          echo "============ print var ======== "
+              grep -Eio "Merge pull request #[0-9]+ " < ${DATA_FILE}
+          PR_NUMBER=` cat ${DATA_FILE} | grep -Eio "Merge pull request #[0-9]+ " | grep -Eo "[0-9]+" | uniq `
+              [ -n "${PR_NUMBER}" ] || { echo "no PR number, ignore" ; }
+          PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
+          ACTION_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              grep '"username":'  < ${DATA_FILE}
+          PR_AUTHOR=` cat ${DATA_FILE} | grep '"username":'  | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
+              [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
+          gh pr view ${PR_NUMBER}
+          PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
+              [ -n "${PR_AUTHOR}" ] || { echo "no PR_LABEL, ignore" ; }
+          #
+              cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit"
+          PR_COMMITS=` cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
+              [ -n "${PR_COMMITS}" ] || { echo "no PR_COMMITS, ignore" ; }
+          #
+          echo "number: ${PR_NUMBER}"
+          echo "action url: ${ACTION_URL}"
+          echo "PR_COMMITS: ${PR_COMMITS}"
+          echo "author: ${PR_AUTHOR}"
+          echo "url: ${PR_URL}"
+          echo "PR_LABEL: ${PR_LABEL}"
+          #
+          #
+          echo "=============================== get dest branch from labels ======== "
+          WANT_MERGE_BRANCH_LIST=""
+          for LABEL in ${PR_LABEL} ; do
+              echo "checking label $LABEL "
+              PREFIX="${{ env.PR_LABEL_PREFIX_CHERRYPICK }}"
+              grep -E "^${PREFIX}" <<< "${LABEL}" &>/dev/null || continue
+              BRANCH_NAME=` sed 's?'"${PREFIX}"'??' <<< "$LABEL" `
+              WANT_MERGE_BRANCH_LIST+=" $BRANCH_NAME "
+          done
+          [ -z "$WANT_MERGE_BRANCH_LIST" ] && echo "no branch to cherry pick" && exit 0
+          echo "cherry pick to $WANT_MERGE_BRANCH_LIST "
+          #
+          #
+          echo "============ begin to cherry pick ============ "
+          FINAL_FAILURE=false
+          git branch
+          git config  user.email "robot@example.com"
+          git config  user.name "robot"
+          gh label create ${{ env.CHERRYPICK_LABEL }} || true
+          for BRANCH in $WANT_MERGE_BRANCH_LIST ; do
+              echo "************** cherry for branch ${BRANCH}"
+              if ! git ls-remote --exit-code --heads origin ${BRANCH} ; then
+                  # todo: create issue
+                  echo "error, branch $BRANCH does not exist"
+                  gh issue create  \
+                      --body "reason: the branch $BRANCH does not exist. PR <${PR_URL}> ,  action <${ACTION_URL}> " \
+                      --title "failed to auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
+                      --label "${{ env.CHERRYPICK_LABEL }}" \
+                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}"
+                  if (($?!=0)) ; then
+                      echo "!!!! error, failed to create issue"
+                      FINAL_FAILURE=true
+                  fi
+                  continue
+              fi
+              git fetch origin ${BRANCH}:${BRANCH} || true
+              if ! git checkout ${BRANCH} ; then
+                  echo "error, failed to checkout to branch $BRANCH"
+                  gh issue create  \
+                      --body "reason: failed to get the branch $BRANCH. PR <${PR_URL}> ,  action <${ACTION_URL}> " \
+                      --title "failed to auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
+                      --label "${{ env.CHERRYPICK_LABEL }}" \
+                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}"
+                  if (($?!=0)) ; then
+                      echo "!!!! error, failed to create issue"
+                      FINAL_FAILURE=true
+                  fi
+                  continue
+              fi
+              PR_BRANCH=robot/cherrypick/pr${PR_NUMBER}/${BRANCH}
+              git checkout -b ${PR_BRANCH}
+              git branch --show-current
+              FAIL=false
+              UPDATE=false
+              ERROR_MESSAGE=""
+              for COMMIT in $PR_COMMITS; do
+                    if ! ERROR_MESSAGE=`git cherry-pick $COMMIT 2>&1` ; then
+                          echo ">>>>>>>>>>>> fail when cherry pick $COMMIT to branch $BRANCH "
+                          echo "$ERROR_MESSAGE"
+                          echo "---- failuire detail"
+                          git status
+                          git diff
+                          echo "<<<<<<<<<<<<<"
+                          if git diff --exit-code --quiet ; then
+                              echo "no changes happen, ignore cherry pick $COMMIT "
+                              git cherry-pick --abort || true
+                              git reset --hard HEAD || true
+                              continue
+                          else
+                              FAIL=true
+                              echo "error, failed to cherry pick $COMMIT "
+                              git cherry-pick --abort || true
+                              git reset --hard HEAD || true
+                              break
+                          fi
+                    else
+                        UPDATE=true
+                        echo "succeed to cherry pick $COMMIT to branch $BRANCH "
+                    fi
+              done
+              if [ "$FAIL" == "true" ] ; then
+                  echo "failed to cherry pick to branch $BRANCH "
+                  FINAL_FAILURE=true
+                  echo -e "commits $PR_COMMITS conflict when merging to branch $BRANCH, please manually cherry pick it by yourself. \n PR <${PR_URL}> ,  action <${ACTION_URL}>  \n\n  \`\`\`\n${ERROR_MESSAGE}\n\`\`\` " | \
+                       gh issue create  \
+                        --title "failed to auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
+                        --label "${{ env.CHERRYPICK_LABEL }}" \
+                        --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
+                        --body-file -
+              fi
+              if [ "$UPDATE" == "true" ] ; then
+                  echo "succeeded to cherry pick to branch $BRANCH "
+                  # create a pr
+                  git push origin ${PR_BRANCH}:${PR_BRANCH} -f
+                  gh pr create --title "auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
+                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
+                      --label ${{ env.CHERRYPICK_LABEL }} \
+                      --body "robot cherry pick pr <${PR_URL}>,  action <${ACTION_URL}>  , commits $PR_COMMITS " \
+                      --base ${BRANCH}
+              else
+                  echo "no changes happened for commits $PR_COMMITS, ignore create pr"
+              fi
+          done
+          echo "=========== check result ============"
+          if [ "$FINAL_FAILURE" == "true" ] ; then
+              # if failed to create issue or pr, fails
+              echo "error, failuire happened"
+          else
+              echo "all done"
+          fi

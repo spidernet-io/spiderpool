@@ -66,14 +66,6 @@ jobs:
           fi
           #no need to check chart version, which will auto update to /VERSION by CI
 
-      #- name: release Z branch
-      #  uses: peterjgrainger/action-create-branch@v2.3.0
-      #  env:
-      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #  with:
-      #    branch: 'release-${{ env.RUN_TAG }}'
-      #    sha: '${{ github.sha }}'
-
       # if branch exists, the action will no fail, and it output created=false
       - name: release Y branch
         uses: peterjgrainger/action-create-branch@v2.3.0
@@ -82,6 +74,19 @@ jobs:
         with:
           branch: 'release-${{ env.RUN_YBranchName }}'
           sha: '${{ github.sha }}'
+
+      # for auto-cherrypick.yaml, create a label
+      - name: Create cherry-pick label
+        continue-on-error: true
+        run: |
+          echo ${{ secrets.WELAN_PAT }} | gh auth login --with-token
+          branchLabelName="${{ env.LABEL_PREFIX_CHERRYPICK }}release-${{ env.RUN_YBranchName }}"
+          mainLabelName="${{ env.LABEL_PREFIX_CHERRYPICK }}main"
+          echo "try to create label "
+          gh label create ${branchLabelName} --force
+          (( $? !=0 )) && echo "error, failed to create label ${branchLabelName}"
+          gh label create ${mainLabelName} --force
+          (( $? !=0 )) && echo "error, failed to create label ${mainLabelName}"
 
   build-release-image:
     needs: get-tag

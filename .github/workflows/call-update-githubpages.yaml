@@ -76,7 +76,7 @@ jobs:
           helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
           mv ./charts/index.yaml ./index.yaml
 
-      #========= finally, create PR
+      # ========= finally, create PR
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr

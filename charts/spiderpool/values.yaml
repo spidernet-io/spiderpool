@@ -219,7 +219,7 @@ spiderpoolAgent:
     ## @param spiderpoolAgent.resources.requests.cpu the cpu requests of spiderpoolAgent pod
     ## @param spiderpoolAgent.resources.requests.memory the memory requests of spiderpoolAgent pod
     limits:
-      cpu: 1000m
+      cpu: "2"
       memory: 1024Mi
     requests:
       cpu: 100m
@@ -443,7 +443,7 @@ spiderpoolController:
     ## @param spiderpoolController.resources.requests.cpu the cpu requests of spiderpoolController pod
     ## @param spiderpoolController.resources.requests.memory the memory requests of spiderpoolController pod
     limits:
-      cpu: 500m
+      cpu: "2"
       memory: 1024Mi
     requests:
       cpu: 100m

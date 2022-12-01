@@ -13,3 +13,7 @@ var (
 	ErrRetriesExhausted = errors.New("exhaust all retries")
 	ErrIPUsedOut        = errors.New("all IP addresses used out")
 )
+
+var ErrMissingRequiredParam = errors.New("must be specified")
+
+var ErrUnknown = errors.New("unknown")

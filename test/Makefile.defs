@@ -28,6 +28,8 @@ INSTALL_SPIDER ?= true
 
 INSTALL_MULTUS ?= true
 
+INSTALL_KRUISE ?= true
+
 CNI_PACKAGE_VERSION ?= v0.8.5
 
 #============ ginkgo-custom-flag ====================

@@ -25,6 +25,10 @@ else
 	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
 			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
+ifeq ($(INSTALL_KRUISE),true)
+	@echo -e "\033[35m [Step 5] Install third-party controllers: kurise \033[0m"
+	@ make setup_kurise
+endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
 	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
@@ -122,6 +126,13 @@ setup_kind:
 	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/master/deploy/manifests/latest/crds.yaml  ;} \
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/grafanadashboards.yaml
 
+
+.PHONY: setup_kurise
+setup_kurise:
+	@echo "add openkruise charts repository..." ; \
+		helm repo add openkruise https://openkruise.github.io/charts/
+		helm repo update
+		helm install kruise openkruise/kruise --kubeconfig $(E2E_KUBECONFIG)
 
 .PHONY: setup_spiderpool
 setup_spiderpool:

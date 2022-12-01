@@ -326,6 +326,15 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
+# github.com/openkruise/kruise-api v1.3.0
+## explicit; go 1.18
+github.com/openkruise/kruise-api
+github.com/openkruise/kruise-api/apps/pub
+github.com/openkruise/kruise-api/apps/v1alpha1
+github.com/openkruise/kruise-api/apps/v1beta1
+github.com/openkruise/kruise-api/policy/v1alpha1
+github.com/openkruise/kruise-api/rollouts/v1alpha1
+github.com/openkruise/kruise-api/utils/scheme
 # github.com/opentracing/opentracing-go v1.2.0
 ## explicit; go 1.14
 github.com/opentracing/opentracing-go

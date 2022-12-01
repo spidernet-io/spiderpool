@@ -267,3 +267,6 @@ Chart.yaml
 genSignedCert
 OpenSSL
 i.e
+kruise
+OpenKruise
+CloneSet

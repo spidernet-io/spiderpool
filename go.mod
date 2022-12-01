@@ -48,6 +48,7 @@ require (
 
 require (
 	github.com/agiledragon/gomonkey/v2 v2.9.0
+	github.com/openkruise/kruise-api v1.3.0
 	go.uber.org/multierr v1.8.0
 )
 

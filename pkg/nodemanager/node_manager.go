@@ -5,12 +5,14 @@ package nodemanager
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 type NodeManager interface {
@@ -25,8 +27,9 @@ type nodeManager struct {
 
 func NewNodeManager(client client.Client) (NodeManager, error) {
 	if client == nil {
-		return nil, errors.New("k8s client must be specified")
+		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
+
 	return &nodeManager{
 		client: client,
 	}, nil

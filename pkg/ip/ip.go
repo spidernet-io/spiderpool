@@ -4,11 +4,14 @@
 package ip
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"net"
+	"sort"
 
 	"github.com/asaskevich/govalidator"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -35,7 +38,12 @@ func ParseIP(version types.IPVersion, s string, isCIDR bool) (*net.IPNet, error)
 		if err := IsIP(version, s); err != nil {
 			return nil, err
 		}
-		return &net.IPNet{IP: net.ParseIP(s)}, nil
+
+		if version == constant.IPv4 {
+			return &net.IPNet{IP: net.ParseIP(s), Mask: net.CIDRMask(32, 32)}, nil
+		}
+
+		return &net.IPNet{IP: net.ParseIP(s), Mask: net.CIDRMask(128, 128)}, nil
 	}
 }
 
@@ -91,6 +99,10 @@ func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
 		ips = append(ips, net.ParseIP(k))
 	}
 
+	sort.Slice(ips, func(i, j int) bool {
+		return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+	})
+
 	return ips
 }
 
@@ -110,6 +122,10 @@ func IPsUnionSet(ips1, ips2 []net.IP) []net.IP {
 	for k := range marks {
 		ips = append(ips, net.ParseIP(k))
 	}
+
+	sort.Slice(ips, func(i, j int) bool {
+		return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+	})
 
 	return ips
 }
@@ -136,6 +152,10 @@ func IPsIntersectionSet(ips1, ips2 []net.IP) []net.IP {
 	for k := range marks {
 		ips = append(ips, net.ParseIP(k))
 	}
+
+	sort.Slice(ips, func(i, j int) bool {
+		return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+	})
 
 	return ips
 }
@@ -172,5 +192,5 @@ func ipToInt(ip net.IP) *big.Int {
 
 // intToIP converts big.Int to net.IP.
 func intToIP(i *big.Int) net.IP {
-	return net.IP(i.Bytes())
+	return net.IP(i.Bytes()).To16()
 }

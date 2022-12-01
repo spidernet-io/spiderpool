@@ -17,8 +17,8 @@ import (
 )
 
 // MergeIPRanges merges dispersed IP ranges.
-// For example, transport [192.168.0.1-192.168.0.3, 192.168.0.2-192.168.0.5]
-// to [192.168.0.1-192.168.0.5]. The overlapping part of two IP ranges will
+// For example, transport [172.18.40.1-172.18.40.3, 172.18.40.2-172.18.40.5]
+// to [172.18.40.1-172.18.40.5]. The overlapping part of two IP ranges will
 // be ignored.
 func MergeIPRanges(version types.IPVersion, ipRanges []string) ([]string, error) {
 	ips, err := ParseIPRanges(version, ipRanges)
@@ -166,14 +166,14 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 }
 
 // IsIPRange reports whether ipRange string is a valid IP range. An IP
-// range can be a single IP address in the style of '192.168.1.0', or
-// an address range in the form of '192.168.1.0-192.168.1.10'.
+// range can be a single IP address in the style of '172.18.40.0', or
+// an address range in the form of '172.18.40.0-172.18.40.10'.
 // The following formats are invalid:
-// "192.168.1.0 - 192.168.1.10": there can be no space between two IP
+// "172.18.40.0 - 172.18.40.10": there can be no space between two IP
 // addresses.
-// "192.168.1.1-2001:db8:a0b:12f0::1": invalid combination of IPv4 and
+// "172.18.40.1-2001:db8:a0b:12f0::1": invalid combination of IPv4 and
 // IPv6.
-// "192.168.1.10-192.168.1.1": the IP range must be ordered.
+// "172.18.40.10-172.18.40.1": the IP range must be ordered.
 func IsIPRange(version types.IPVersion, ipRange string) error {
 	if err := IsIPVersion(version); err != nil {
 		return err

@@ -9,12 +9,12 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func AssembleTotalIPs(ipVersion types.IPVersion, ipRanges, excludeIPRanges []string) ([]net.IP, error) {
+func AssembleTotalIPs(ipVersion types.IPVersion, ipRanges, excludedIPRanges []string) ([]net.IP, error) {
 	ips, err := ParseIPRanges(ipVersion, ipRanges)
 	if nil != err {
 		return nil, err
 	}
-	excludeIPs, err := ParseIPRanges(ipVersion, excludeIPRanges)
+	excludeIPs, err := ParseIPRanges(ipVersion, excludedIPRanges)
 	if nil != err {
 		return nil, err
 	}

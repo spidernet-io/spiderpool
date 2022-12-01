@@ -4,12 +4,10 @@
 package subnetmanager
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"net"
-	"sort"
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,9 +140,6 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 			} else if len(lastAllocatedIPs) > desiredIPNum-len(poolTotalIPs) {
 				// last allocated IPs is greater than the current allocation request,
 				// we will update the SpiderSubnet status correctly in next IPPool webhook SpiderSubnet update procession
-				sort.Slice(lastAllocatedIPs, func(i, j int) bool {
-					return bytes.Compare(lastAllocatedIPs[i].To16(), lastAllocatedIPs[j].To16()) < 0
-				})
 				return spiderpoolip.ConvertIPsToIPRanges(ipVersion, lastAllocatedIPs[:desiredIPNum-len(poolTotalIPs)])
 			} else {
 				// last allocated IPs less than the current allocation request,
@@ -188,11 +183,6 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 	if len(freeIPs) < ipNum {
 		return nil, fmt.Errorf("insufficient subnet FreeIPs, required '%d' but only left '%d'", ipNum, len(freeIPs))
 	}
-
-	// sort freeIPs
-	sort.Slice(freeIPs, func(i, j int) bool {
-		return bytes.Compare(freeIPs[i].To16(), freeIPs[j].To16()) < 0
-	})
 
 	allocateIPs := make([]net.IP, 0, ipNum)
 	if cursor {

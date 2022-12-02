@@ -270,30 +270,15 @@ func (im *ipPoolManager) CheckVlanSame(ctx context.Context, poolNameList []strin
 	return vlanToPools, true, nil
 }
 
-func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, poolName string) error {
-	rand.Seed(time.Now().UnixNano())
-	for i := 0; i <= im.config.MaxConflictRetries; i++ {
-		ipPool, err := im.GetIPPoolByName(ctx, poolName)
-		if err != nil {
-			return err
-		}
+func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+	if !controllerutil.ContainsFinalizer(pool, constant.SpiderFinalizer) {
+		return nil
+	}
 
-		if !controllerutil.ContainsFinalizer(ipPool, constant.SpiderFinalizer) {
-			return nil
-		}
-
-		controllerutil.RemoveFinalizer(ipPool, constant.SpiderFinalizer)
-		if err := im.client.Update(ctx, ipPool); err != nil {
-			if !apierrors.IsConflict(err) {
-				return err
-			}
-			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w, failed for %d times, failed to remove finalizer %s for IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, constant.SpiderFinalizer, poolName)
-			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
-			continue
-		}
-		break
+	controllerutil.RemoveFinalizer(pool, constant.SpiderFinalizer)
+	err := im.client.Update(ctx, pool)
+	if nil != err {
+		return err
 	}
 
 	return nil
@@ -358,8 +343,8 @@ func (im *ipPoolManager) CreateIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 
 func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	err := im.client.Delete(ctx, pool)
-	if nil != err {
-		return fmt.Errorf("failed to delete IPPool '%s', error: %v", pool.Name, err)
+	if client.IgnoreNotFound(err) != nil {
+		return err
 	}
 
 	return nil

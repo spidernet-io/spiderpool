@@ -109,8 +109,23 @@ func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersi
 		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, strings.ToLower(lastOne))
 }
 
+// AppLabelValue will joint the application type, namespace and name.
+// the format is "{appKind}-{appNS}-{appName}"
 func AppLabelValue(appKind string, appNS, appName string) string {
-	return fmt.Sprintf("%s-%s-%s", strings.ToLower(appKind), strings.ToLower(appNS), strings.ToLower(appName))
+	return fmt.Sprintf("%s-%s-%s", appKind, appNS, appName)
+}
+
+// ParseAppLabelValue will unpack the application label value, its corresponding function is AppLabelValue
+func ParseAppLabelValue(str string) (appKind, appNS, appName string, isFound bool) {
+	typeKind, after, found := strings.Cut(str, "-")
+	if found {
+		isFound = found
+		appKind = typeKind
+
+		appNS, appName, _ = strings.Cut(after, "-")
+	}
+
+	return
 }
 
 func GetAppReplicas(replicas *int32) int {

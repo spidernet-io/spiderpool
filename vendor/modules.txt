@@ -114,8 +114,8 @@ github.com/go-openapi/jsonreference/internal
 ## explicit; go 1.13
 github.com/go-openapi/loads
 github.com/go-openapi/loads/fmts
-# github.com/go-openapi/runtime v0.24.1
-## explicit; go 1.15
+# github.com/go-openapi/runtime v0.25.0
+## explicit; go 1.18
 github.com/go-openapi/runtime
 github.com/go-openapi/runtime/client
 github.com/go-openapi/runtime/flagext
@@ -455,7 +455,7 @@ go.opentelemetry.io/otel/metric/instrument/syncfloat64
 go.opentelemetry.io/otel/metric/instrument/syncint64
 go.opentelemetry.io/otel/metric/internal/global
 go.opentelemetry.io/otel/metric/unit
-# go.opentelemetry.io/otel/sdk v1.11.0
+# go.opentelemetry.io/otel/sdk v1.11.1
 ## explicit; go 1.18
 go.opentelemetry.io/otel/sdk/instrumentation
 go.opentelemetry.io/otel/sdk/resource

@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
@@ -715,4 +717,54 @@ func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetN
 			return nil
 		}
 	}
+}
+
+// BatchCreateIPPoolsInSpiderSubnet will create a set of identical versions of ippools for you under the desired subnet.
+// subnet and subnetIPRanges must belong to the same IP version.
+func BatchCreateIPPoolsInSpiderSubnet(f *frame.Framework, version types.IPVersion, subnet string, subnetIPRanges []string, poolNum, ipNum int) (poolNameList []string, err error) {
+	if f == nil || subnet == "" || poolNum <= 0 || ipNum <= 0 {
+		return nil, frame.ErrWrongInput
+	}
+
+	ipList, err := ip.ParseIPRanges(version, subnetIPRanges)
+	if err != nil {
+		return nil, errors.New("failed to parse ip")
+	}
+	if len(ipList) < (poolNum * ipNum) {
+		return nil, errors.New("insufficient ip in subnet")
+	}
+
+	var poolNames []string
+	lock := lock.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(poolNum)
+	for i := 1; i <= poolNum; i++ {
+		j := i
+		var poolObj *v1.SpiderIPPool
+		var poolName string
+
+		go func() {
+			defer GinkgoRecover()
+			defer wg.Done()
+			if version == constant.IPv4 {
+				poolName, poolObj = GenerateExampleIpv4poolObject(ipNum)
+			} else {
+				poolName, poolObj = GenerateExampleIpv6poolObject(ipNum)
+			}
+			Expect(poolObj.Spec.IPs).NotTo(BeNil())
+			ips, _ := ip.ConvertIPsToIPRanges(version, ipList[ipNum*(j-1):ipNum*j])
+			poolObj.Spec.Subnet = subnet
+			poolObj.Spec.IPs = ips
+			Expect(CreateIppool(f, poolObj)).NotTo(HaveOccurred())
+
+			lock.Lock()
+			poolNames = append(poolNames, poolName)
+			lock.Unlock()
+		}()
+	}
+	wg.Wait()
+	if len(poolNames) != poolNum {
+		return nil, errors.New("failed to generate the specified number of pools")
+	}
+	return poolNames, nil
 }

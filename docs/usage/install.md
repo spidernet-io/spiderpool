@@ -60,7 +60,7 @@ wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/cert/g
 Generate the certificates:
 
 ```bash
-chmod +x generateCert.sh && generateCert.sh "/tmp/tls"
+chmod +x generateCert.sh && ./generateCert.sh "/tmp/tls"
 
 CA=`cat /tmp/tls/ca.crt | base64 -w0 | tr -d '\n'`
 SERVER_CERT=`cat /tmp/tls/server.crt | base64 -w0 | tr -d '\n'`
@@ -180,5 +180,5 @@ However, there are [finalizers](https://kubernetes.io/docs/concepts/overview/wor
 
 ```bash
 wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-chmod +x cleanCRD.sh && cleanCRD.sh
+chmod +x cleanCRD.sh && ./cleanCRD.sh
 ```

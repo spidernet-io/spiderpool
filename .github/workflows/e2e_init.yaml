@@ -1,0 +1,178 @@
+name: call e2e
+
+env:
+  CLUSTER_NAME: spider
+  E2E_TIME_OUT: 60m
+  PERFORMANCESCRIPT: "./tools/scripts/e2eperformance.sh"
+
+on:
+  workflow_call:
+    inputs:
+      ip_family:
+        required: true
+        type: string
+      ref:
+        required: false
+        type: string
+      push:
+        required: false
+        type: boolean
+
+jobs:
+  call_e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        id: prepare
+        run: |
+          echo "ref: ${{ needs.get_ref.outputs.ref }} "
+          echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}"
+          echo "ipfamily_ipv4only_e2e: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e }}"
+          echo "ipfamily_ipv6only_e2e: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e }}"
+          echo "ipfamily_dual_e2e: ${{ needs.get_ref.outputs.ipfamily_dual_e2e }}"
+          echo "===== image "
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+          echo "===== chart "
+          echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
+          TMP=` date +%m%d%H%M%S `
+          E2E_CLUSTER_NAME="spiderpool${TMP}"
+          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ needs.get_ref.outputs.ref }}
+
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.0
+          id: go
+
+      # https://github.com/helm/kind-action
+      - name: Install Kind Bin
+        uses: helm/kind-action@v1.4.0
+        with:
+          install_only: true
+
+      - name: Install Tools
+        run: |
+          # install kind/p2ctl/helm/ginkgo
+          bash ./test/scripts/install-tools.sh
+
+      - name: Download spiderpool-agent image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-agent
+          path: test/.download
+
+      - name: Download spiderpool-controller image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-controller
+          path: test/.download
+
+      - name: Load And Scan Images
+        run: |
+          TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
+          for ITEM in $TAR_FILES ; do
+              IMAGE_NAME=${ITEM%*.tar}
+              cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+              echo "---------trivy checkout image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} --------------------"
+              make lint_image_trivy -e IMAGE_NAME=${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}  \
+                  || { echo "RUN_IMAGE_TRIVY_FAIL=true" >> $GITHUB_ENV ; echo "error, image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} is bad" ; }
+          done
+
+            # ------------- by default , dual stack
+      # test against commit version
+      - name: Setup Kind Cluster
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          shell: bash
+          command: |
+            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+                -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+                -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT=""
+
+      - name: Run e2e Test For Dual-stack
+        id: dualstack_e2e
+        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        continue-on-error: true
+        run: |
+          echo ${{ github.event.inputs.labels }}
+          RESULT=0
+          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+              -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
+              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
+              -e E2E_IP_FAMILY=${{ inputs.ip_family }} || RESULT=1
+          if ((RESULT==0)) ; then
+              echo ::set-output name=pass::true
+          else
+              echo ::set-output name=pass::false
+          fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo ::set-output name=updaloadlog::true
+          else
+              echo ::set-output name=updaloadlog::false
+          fi
+          if [ -f "./e2ereport.json" ] ; then
+              echo "error, did not find e2e report"
+              echo ::set-output name=upload::true
+          else
+              echo ::set-output name=upload::false
+          fi
+
+      - name: Upload e2e log For Dual-stack
+        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: ${{ inputs.ip_family }}-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 7
+
+      - name: Upload e2e report For Dual-stack
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: ${{ inputs.ip_family }}-e2ereport.json
+          path: e2ereport.json
+          retention-days: 1
+
+      - name: Show e2e Result For Dual-stack
+        run: |
+          if ${{ steps.dualstack_e2e.outputs.pass == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi
+
+      - name: Get the E2E Performance Result For Dual-stack
+        # run all e2e cases
+        id: get_performance
+        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        shell: bash
+        run: |
+          # sudo apt-get install -y jq
+          TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
+          TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
+          # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
+          echo ::set-output name=result::${TODO_STATUS}
+
+      - name: Update Badge For Dual-stack
+        if: ${{ steps.get_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.WELAN_PAT }}
+          gistID: 38d00a872e830eedb46870c886549561
+          filename: spiderpoolperformance.json
+          label: performance
+          message: ${{ steps.get_performance.outputs.result }}
+          color: lightgrey

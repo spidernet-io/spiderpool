@@ -195,332 +195,359 @@ jobs:
       submit: false
     secrets: inherit
 
-  e2e_against_commit:
-    runs-on: ubuntu-latest
+  call_e2e_dual:
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
-    steps:
-      - name: Prepare
-        id: prepare
-        run: |
-          echo "ref: ${{ needs.get_ref.outputs.ref }} "
-          echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}"
-          echo "ipfamily_ipv4only_e2e: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e }}"
-          echo "ipfamily_ipv6only_e2e: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e }}"
-          echo "ipfamily_dual_e2e: ${{ needs.get_ref.outputs.ipfamily_dual_e2e }}"
-          echo "===== image "
-          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
-          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
-          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
-          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
-          echo "===== chart "
-          echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
-          TMP=` date +%m%d%H%M%S `
-          E2E_CLUSTER_NAME="spiderpool${TMP}"
-          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
+    uses: ./.github/workflows/e2e-init.yaml
+    with:
+      ip_family: dual
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
 
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-          ref: ${{ needs.get_ref.outputs.ref }}
+  call_e2e_ipv4:
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+    uses: ./.github/workflows/e2e-init.yaml
+    with:
+      ip_family: ipv4
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
 
-      - name: Setup Golang
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19.0
-          id: go
+  call_e2e_ipv6:
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+    uses: ./.github/workflows/e2e-init.yaml
+    with:
+      ip_family: ipv6
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
 
-      # https://github.com/helm/kind-action
-      - name: Install Kind Bin
-        uses: helm/kind-action@v1.4.0
-        with:
-          install_only: true
+  # e2e_against_commit: 
+  #   runs-on: ubuntu-latest
+  #   needs: [call_build_ci_image, get_ref, call_release_chart]
+  #   if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+  #   steps:
+  #     - name: Prepare
+  #       id: prepare
+  #       run: |
+  #         echo "ref: ${{ needs.get_ref.outputs.ref }} "
+  #         echo "e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}"
+  #         echo "ipfamily_ipv4only_e2e: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e }}"
+  #         echo "ipfamily_ipv6only_e2e: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e }}"
+  #         echo "ipfamily_dual_e2e: ${{ needs.get_ref.outputs.ipfamily_dual_e2e }}"
+  #         echo "===== image "
+  #         echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+  #         echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+  #         echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+  #         echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+  #         echo "===== chart "
+  #         echo "chart package artifact: ${{ needs.call_release_chart.outputs.artifact }}"
+  #         TMP=` date +%m%d%H%M%S `
+  #         E2E_CLUSTER_NAME="spiderpool${TMP}"
+  #         echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
 
-      - name: Install Tools
-        run: |
-          # install kind/p2ctl/helm/ginkgo
-          bash ./test/scripts/install-tools.sh
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         persist-credentials: false
+  #         ref: ${{ needs.get_ref.outputs.ref }}
 
-      - name: Download spiderpool-agent image
-        uses: actions/download-artifact@v3
-        with:
-          name: image-tar-spiderpool-agent
-          path: test/.download
+  #     - name: Setup Golang
+  #       uses: actions/setup-go@v3
+  #       with:
+  #         go-version: 1.19.0
+  #         id: go
 
-      - name: Download spiderpool-controller image
-        uses: actions/download-artifact@v3
-        with:
-          name: image-tar-spiderpool-controller
-          path: test/.download
+  #     # https://github.com/helm/kind-action
+  #     - name: Install Kind Bin
+  #       uses: helm/kind-action@v1.4.0
+  #       with:
+  #         install_only: true
 
-      - name: Load And Scan Images
-        run: |
-          TAR_FILES=` ls test/.download `
-          echo $TAR_FILES
-          for ITEM in $TAR_FILES ; do
-              IMAGE_NAME=${ITEM%*.tar}
-              cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
-              echo "---------trivy checkout image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} --------------------"
-              make lint_image_trivy -e IMAGE_NAME=${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}  \
-                  || { echo "RUN_IMAGE_TRIVY_FAIL=true" >> $GITHUB_ENV ; echo "error, image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} is bad" ; }
-          done
+  #     - name: Install Tools
+  #       run: |
+  #         # install kind/p2ctl/helm/ginkgo
+  #         bash ./test/scripts/install-tools.sh
 
-      # ------------- by default , dual stack
-      # test against commit version
-      - name: Setup Kind Cluster For Dual-stack
-        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
-                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT=""
+  #     - name: Download spiderpool-agent image
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: image-tar-spiderpool-agent
+  #         path: test/.download
 
-      - name: Run e2e Test For Dual-stack
-        id: dualstack_e2e
-        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        continue-on-error: true
-        run: |
-          echo ${{ github.event.inputs.labels }}
-          RESULT=0
-          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
-              -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
-              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
-              -e E2E_IP_FAMILY=dual || RESULT=1
-          if ((RESULT==0)) ; then
-              echo ::set-output name=pass::true
-          else
-              echo ::set-output name=pass::false
-          fi
-          if [ -f "test/e2edebugLog" ] ; then
-              echo ::set-output name=updaloadlog::true
-          else
-              echo ::set-output name=updaloadlog::false
-          fi
-          if [ -f "./e2ereport.json" ] ; then
-              echo "error, did not find e2e report"
-              echo ::set-output name=upload::true
-          else
-              echo ::set-output name=upload::false
-          fi
+  #     - name: Download spiderpool-controller image
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: image-tar-spiderpool-controller
+  #         path: test/.download
 
-      - name: Upload e2e log For Dual-stack
-        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: dualstack-debuglog.txt
-          path: test/e2edebugLog.txt
-          retention-days: 7
+  #     - name: Load And Scan Images
+  #       run: |
+  #         TAR_FILES=` ls test/.download `
+  #         echo $TAR_FILES
+  #         for ITEM in $TAR_FILES ; do
+  #             IMAGE_NAME=${ITEM%*.tar}
+  #             cat test/.download/${ITEM} |  docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+  #             echo "---------trivy checkout image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} --------------------"
+  #             make lint_image_trivy -e IMAGE_NAME=${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}  \
+  #                 || { echo "RUN_IMAGE_TRIVY_FAIL=true" >> $GITHUB_ENV ; echo "error, image ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }} is bad" ; }
+  #         done
 
-      - name: Upload e2e report For Dual-stack
-        if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: dualstack-e2ereport.json
-          path: e2ereport.json
-          retention-days: 1
+      # # ------------- by default , dual stack
+      # # test against commit version
+      # - name: Setup Kind Cluster For Dual-stack
+      #   if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   uses: nick-invision/retry@v2
+      #   with:
+      #     timeout_minutes: 10
+      #     max_attempts: 3
+      #     shell: bash
+      #     command: |
+      #       make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+      #           -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+      #           -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+      #           -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+      #           -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT=""
 
-      - name: Show e2e Result For Dual-stack
-        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        run: |
-          if ${{ steps.dualstack_e2e.outputs.pass == 'true' }} ;then
-              exit 0
-          else
-              exit 1
-          fi
+      # - name: Run e2e Test For Dual-stack
+      #   id: dualstack_e2e
+      #   if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   continue-on-error: true
+      #   run: |
+      #     echo ${{ github.event.inputs.labels }}
+      #     RESULT=0
+      #     make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+      #         -e E2E_GINKGO_LABELS=${{ needs.get_ref.outputs.e2e_labels }} \
+      #         -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
+      #         -e E2E_IP_FAMILY=dual || RESULT=1
+      #     if ((RESULT==0)) ; then
+      #         echo ::set-output name=pass::true
+      #     else
+      #         echo ::set-output name=pass::false
+      #     fi
+      #     if [ -f "test/e2edebugLog" ] ; then
+      #         echo ::set-output name=updaloadlog::true
+      #     else
+      #         echo ::set-output name=updaloadlog::false
+      #     fi
+      #     if [ -f "./e2ereport.json" ] ; then
+      #         echo "error, did not find e2e report"
+      #         echo ::set-output name=upload::true
+      #     else
+      #         echo ::set-output name=upload::false
+      #     fi
 
-      - name: Get the E2E Performance Result For Dual-stack
-        # run all e2e cases
-        id: get_performance
-        if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        shell: bash
-        run: |
-          # sudo apt-get install -y jq
-          TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
-          TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
-          # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
-          echo ::set-output name=result::${TODO_STATUS}
+      # - name: Upload e2e log For Dual-stack
+      #   if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   uses: actions/upload-artifact@v3.1.1
+      #   with:
+      #     name: dualstack-debuglog.txt
+      #     path: test/e2edebugLog.txt
+      #     retention-days: 7
 
-      - name: Update Badge For Dual-stack
-        if: ${{ steps.get_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: schneegans/dynamic-badges-action@v1.6.0
-        with:
-          auth: ${{ secrets.WELAN_PAT }}
-          gistID: 38d00a872e830eedb46870c886549561
-          filename: spiderpoolperformance.json
-          label: performance
-          message: ${{ steps.get_performance.outputs.result }}
-          color: lightgrey
+      # - name: Upload e2e report For Dual-stack
+      #   if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   uses: actions/upload-artifact@v3.1.1
+      #   with:
+      #     name: dualstack-e2ereport.json
+      #     path: e2ereport.json
+      #     retention-days: 1
 
-      # ------------------ ipv4-only
-      # test against commit version
-      - name: Setup Kind Cluster For ipv4-only
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
-                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT=""
+      # - name: Show e2e Result For Dual-stack
+      #   if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   run: |
+      #     if ${{ steps.dualstack_e2e.outputs.pass == 'true' }} ;then
+      #         exit 0
+      #     else
+      #         exit 1
+      #     fi
 
-      - name: Run e2e Test For ipv4-only
-        id: ipv4only_e2e
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        continue-on-error: true
-        run: |
-          echo ${{ github.event.inputs.labels }}
-          LABELS=
-          if [ -n "${{ needs.get_ref.outputs.e2e_labels }}" ]; then
-              LABELS=" ${{ needs.get_ref.outputs.e2e_labels }}  && !performance "
-          else
-              LABELS=" !performance "
-          fi
-          if [ "${{ needs.get_ref.outputs.e2e_reliability_changed }}" != "true" ] ; then
-             # it is too time-cost
-             LABELS+=" && !reliability "
-          fi
-          RESULT=0
-          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
-              -e E2E_GINKGO_LABELS="${LABELS}" \
-              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
-              -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT="" || RESULT=1
-          if ((RESULT==0)) ; then
-              echo ::set-output name=pass::true
-          else
-              echo ::set-output name=pass::false
-          fi
-          if [ -f "test/e2edebugLog" ] ; then
-              echo ::set-output name=updaloadlog::true
-          else
-              echo ::set-output name=updaloadlog::false
-          fi
-          if [ -f "./e2ereport.json" ] ; then
-              echo "error, did not find e2e report"
-              echo ::set-output name=upload::true
-          else
-              echo ::set-output name=upload::false
-          fi
+      # - name: Get the E2E Performance Result For Dual-stack
+      #   # run all e2e cases
+      #   id: get_performance
+      #   if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   shell: bash
+      #   run: |
+      #     # sudo apt-get install -y jq
+      #     TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
+      #     TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
+      #     # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
+      #     echo ::set-output name=result::${TODO_STATUS}
 
-      - name: Upload e2e log For ipv4-only
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: ipv4Only-debuglog.txt
-          path: test/e2edebugLog.txt
-          retention-days: 7
+      # - name: Update Badge For Dual-stack
+      #   if: ${{ steps.get_performance.outputs.result != '' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+      #   uses: schneegans/dynamic-badges-action@v1.6.0
+      #   with:
+      #     auth: ${{ secrets.WELAN_PAT }}
+      #     gistID: 38d00a872e830eedb46870c886549561
+      #     filename: spiderpoolperformance.json
+      #     label: performance
+      #     message: ${{ steps.get_performance.outputs.result }}
+      #     color: lightgrey
 
-      - name: Upload e2e report For ipv4-only
-        if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: ipv4Only-e2ereport.json
-          path: e2ereport.json
-          retention-days: 1
+      # # ------------------ ipv4-only
+      # # test against commit version
+      # - name: Setup Kind Cluster For ipv4-only
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+      #   uses: nick-invision/retry@v2
+      #   with:
+      #     timeout_minutes: 10
+      #     max_attempts: 3
+      #     shell: bash
+      #     command: |
+      #       make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+      #           -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+      #           -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+      #           -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+      #           -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT=""
 
-      - name: Show e2e Result For ipv4-only
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        run: |
-          if ${{ steps.ipv4only_e2e.outputs.pass == 'true' }} ;then
-              exit 0
-          else
-              exit 1
-          fi
+      # - name: Run e2e Test For ipv4-only
+      #   id: ipv4only_e2e
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+      #   continue-on-error: true
+      #   run: |
+      #     echo ${{ github.event.inputs.labels }}
+      #     LABELS=
+      #     if [ -n "${{ needs.get_ref.outputs.e2e_labels }}" ]; then
+      #         LABELS=" ${{ needs.get_ref.outputs.e2e_labels }}  && !performance "
+      #     else
+      #         LABELS=" !performance "
+      #     fi
+      #     if [ "${{ needs.get_ref.outputs.e2e_reliability_changed }}" != "true" ] ; then
+      #        # it is too time-cost
+      #        LABELS+=" && !reliability "
+      #     fi
+      #     RESULT=0
+      #     make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+      #         -e E2E_GINKGO_LABELS="${LABELS}" \
+      #         -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
+      #         -e E2E_IP_FAMILY=ipv4 -e PYROSCOPE_LOCAL_PORT="" || RESULT=1
+      #     if ((RESULT==0)) ; then
+      #         echo ::set-output name=pass::true
+      #     else
+      #         echo ::set-output name=pass::false
+      #     fi
+      #     if [ -f "test/e2edebugLog" ] ; then
+      #         echo ::set-output name=updaloadlog::true
+      #     else
+      #         echo ::set-output name=updaloadlog::false
+      #     fi
+      #     if [ -f "./e2ereport.json" ] ; then
+      #         echo "error, did not find e2e report"
+      #         echo ::set-output name=upload::true
+      #     else
+      #         echo ::set-output name=upload::false
+      #     fi
 
-      # ------------------ ipv6-only
-      # test against commit version
-      - name: Setup Kind Cluster For ipv6-only
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
-                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e E2E_IP_FAMILY=ipv6 -e PYROSCOPE_LOCAL_PORT=""
+      # - name: Upload e2e log For ipv4-only
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+      #   uses: actions/upload-artifact@v3.1.1
+      #   with:
+      #     name: ipv4Only-debuglog.txt
+      #     path: test/e2edebugLog.txt
+      #     retention-days: 7
 
-      - name: Run e2e Test For ipv6-only
-        id: ipv6only_e2e
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        continue-on-error: true
-        run: |
-          echo ${{ github.event.inputs.labels }}
-          LABELS=
-          if [ -n "${{ needs.get_ref.outputs.e2e_labels }}" ]; then
-              LABELS=" ${{ needs.get_ref.outputs.e2e_labels }}  && !performance "
-          else
-              LABELS=" !performance "
-          fi
-          if [ "${{ needs.get_ref.outputs.e2e_reliability_changed }}" != "true" ] ; then
-             # it is too time-cost
-             LABELS+=" && !reliability "
-          fi
-          RESULT=0
-          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
-              -e E2E_GINKGO_LABELS="${LABELS}" \
-              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
-              -e E2E_IP_FAMILY=ipv6 -e PYROSCOPE_LOCAL_PORT="" || RESULT=1
-          if ((RESULT==0)) ; then
-              echo ::set-output name=pass::true
-          else
-              echo ::set-output name=pass::false
-          fi
-          if [ -f "test/e2edebugLog" ] ; then
-              echo ::set-output name=updaloadlog::true
-          else
-              echo ::set-output name=updaloadlog::false
-          fi
-          if [ -f "./e2ereport.json" ] ; then
-              echo "error, did not find e2e report"
-              echo ::set-output name=upload::true
-          else
-              echo ::set-output name=upload::false
-          fi
+      # - name: Upload e2e report For ipv4-only
+      #   if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+      #   uses: actions/upload-artifact@v3.1.1
+      #   with:
+      #     name: ipv4Only-e2ereport.json
+      #     path: e2ereport.json
+      #     retention-days: 1
 
-      - name: Upload e2e log For ipv6-only
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: ipv6Only-debuglog.txt
-          path: test/e2edebugLog.txt
-          retention-days: 7
+      # - name: Show e2e Result For ipv4-only
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
+      #   run: |
+      #     if ${{ steps.ipv4only_e2e.outputs.pass == 'true' }} ;then
+      #         exit 0
+      #     else
+      #         exit 1
+      #     fi
 
-      - name: Upload e2e report For ipv6-only
-        if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: ipv6Only-e2ereport.json
-          path: e2ereport.json
-          retention-days: 1
+      # # ------------------ ipv6-only
+      # # test against commit version
+      # - name: Setup Kind Cluster For ipv6-only
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+      #   uses: nick-invision/retry@v2
+      #   with:
+      #     timeout_minutes: 10
+      #     max_attempts: 3
+      #     shell: bash
+      #     command: |
+      #       make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+      #           -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+      #           -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+      #           -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+      #           -e E2E_IP_FAMILY=ipv6 -e PYROSCOPE_LOCAL_PORT=""
 
-      - name: Show e2e Result For ipv6-only
-        if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        run: |
-          if ${{ steps.ipv6only_e2e.outputs.pass == 'true' }} ;then
-              exit 0
-          else
-              exit 1
-          fi
+      # - name: Run e2e Test For ipv6-only
+      #   id: ipv6only_e2e
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+      #   continue-on-error: true
+      #   run: |
+      #     echo ${{ github.event.inputs.labels }}
+      #     LABELS=
+      #     if [ -n "${{ needs.get_ref.outputs.e2e_labels }}" ]; then
+      #         LABELS=" ${{ needs.get_ref.outputs.e2e_labels }}  && !performance "
+      #     else
+      #         LABELS=" !performance "
+      #     fi
+      #     if [ "${{ needs.get_ref.outputs.e2e_reliability_changed }}" != "true" ] ; then
+      #        # it is too time-cost
+      #        LABELS+=" && !reliability "
+      #     fi
+      #     RESULT=0
+      #     make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+      #         -e E2E_GINKGO_LABELS="${LABELS}" \
+      #         -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  \
+      #         -e E2E_IP_FAMILY=ipv6 -e PYROSCOPE_LOCAL_PORT="" || RESULT=1
+      #     if ((RESULT==0)) ; then
+      #         echo ::set-output name=pass::true
+      #     else
+      #         echo ::set-output name=pass::false
+      #     fi
+      #     if [ -f "test/e2edebugLog" ] ; then
+      #         echo ::set-output name=updaloadlog::true
+      #     else
+      #         echo ::set-output name=updaloadlog::false
+      #     fi
+      #     if [ -f "./e2ereport.json" ] ; then
+      #         echo "error, did not find e2e report"
+      #         echo ::set-output name=upload::true
+      #     else
+      #         echo ::set-output name=upload::false
+      #     fi
 
-      - name: Show Trivy Scan Report
-        run: |
-          if [ "${{ env.RUN_IMAGE_TRIVY_FAIL }}" == "true" ] ; then
-              echo "error, image is not secure, see detail on Step 'Load And Scan Images' "
-              exit 1
-          else
-              exit 0
-          fi
+      # - name: Upload e2e log For ipv6-only
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+      #   uses: actions/upload-artifact@v3.1.1
+      #   with:
+      #     name: ipv6Only-debuglog.txt
+      #     path: test/e2edebugLog.txt
+      #     retention-days: 7
+
+      # - name: Upload e2e report For ipv6-only
+      #   if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+      #   uses: actions/upload-artifact@v3.1.1
+      #   with:
+      #     name: ipv6Only-e2ereport.json
+      #     path: e2ereport.json
+      #     retention-days: 1
+
+      # - name: Show e2e Result For ipv6-only
+      #   if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
+      #   run: |
+      #     if ${{ steps.ipv6only_e2e.outputs.pass == 'true' }} ;then
+      #         exit 0
+      #     else
+      #         exit 1
+      #     fi
+
+      # - name: Show Trivy Scan Report
+      #   run: |
+      #     if [ "${{ env.RUN_IMAGE_TRIVY_FAIL }}" == "true" ] ; then
+      #         echo "error, image is not secure, see detail on Step 'Load And Scan Images' "
+      #         exit 1
+      #     else
+      #         exit 0
+      #     fi

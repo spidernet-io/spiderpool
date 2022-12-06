@@ -1,0 +1,58 @@
+name: Scan Image
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+      ref:
+        required: false
+        type: string
+      push:
+        required: false
+        type: boolean
+
+jobs:
+  trivy_scan_images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+
+      - name: Download spiderpool-agent image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-agent
+          path: test/.download
+
+      - name: Download spiderpool-controller image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-controller
+          path: test/.download
+
+      - name: Load And Scan Images
+        run: |
+          TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
+          for ITEM in $TAR_FILES ; do
+              IMAGE_NAME=${ITEM%*.tar}
+              echo ${IMAGE_NAME}
+              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ inputs.image_tag }}
+              echo "---------trivy checkout image ${IMAGE_NAME}:${{ inputs.image_tag }} --------------------"
+              make lint_image_trivy -e IMAGE_NAME=${IMAGE_NAME}:${{ inputs.image_tag }}  \
+                  || { echo "RUN_IMAGE_TRIVY_FAIL=true" >> $GITHUB_ENV ; echo "error, image ${IMAGE_NAME}:${{ inputs.image_tag }} is bad" ; }
+          done
+
+      - name: Show Trivy Scan Report
+        run: |
+          if [ "${{ env.RUN_IMAGE_TRIVY_FAIL }}" == "true" ] ; then
+              echo "error, image is not secure, see detail on Step 'Load And Scan Images' "
+              exit 1
+          else
+              exit 0
+          fi

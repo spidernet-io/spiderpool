@@ -3,7 +3,13 @@
 
 package workloadendpointmanager
 
-import spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+import (
+	"strings"
+
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/types"
+)
 
 func RetrieveIPAllocation(containerID, nic string, includeHistory bool, we *spiderpoolv1.SpiderEndpoint) (*spiderpoolv1.PodIPAllocation, bool) {
 	if we == nil || we.Status.Current == nil {
@@ -66,4 +72,46 @@ func mergeIPDetails(target, delta *spiderpoolv1.IPAllocationDetail) {
 	}
 
 	target.Routes = append(target.Routes, delta.Routes...)
+}
+
+// ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.
+func ListAllHistoricalIPs(se *spiderpoolv1.SpiderEndpoint) map[string][]types.IPAndCID {
+	// key: IPPool name
+	// value: usedIP and container ID
+	wepHistoryIPs := make(map[string][]types.IPAndCID)
+
+	recordHistoryIPs := func(poolName, ipAndCIDR *string, containerID string) {
+		if poolName != nil {
+			if ipAndCIDR == nil {
+				logutils.Logger.Sugar().Errorf("SpiderEndpoint data broken, pod '%s/%s' containerID '%s' used ippool '%s' with no ip",
+					se.Namespace, se.Name, containerID, *poolName)
+
+				return
+			}
+
+			ip, _, _ := strings.Cut(*ipAndCIDR, "/")
+
+			ips, ok := wepHistoryIPs[*poolName]
+			if !ok {
+				ips = []types.IPAndCID{{IP: ip, ContainerID: containerID}}
+			} else {
+				ips = append(ips, types.IPAndCID{IP: ip, ContainerID: containerID})
+			}
+			wepHistoryIPs[*poolName] = ips
+		}
+	}
+
+	// circle to traverse each allocation
+	for _, PodIPAllocation := range se.Status.History {
+		// circle to traverse each NIC
+		for _, ipAllocationDetail := range PodIPAllocation.IPs {
+			// collect IPv4
+			recordHistoryIPs(ipAllocationDetail.IPv4Pool, ipAllocationDetail.IPv4, PodIPAllocation.ContainerID)
+
+			// collect IPv6
+			recordHistoryIPs(ipAllocationDetail.IPv6Pool, ipAllocationDetail.IPv6, PodIPAllocation.ContainerID)
+		}
+	}
+
+	return wepHistoryIPs
 }

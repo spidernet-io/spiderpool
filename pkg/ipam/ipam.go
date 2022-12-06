@@ -675,11 +675,6 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to release")
 
-	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
-	if err != nil {
-		return fmt.Errorf("failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
-	}
-
 	endpoint, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to get Endpoint %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
@@ -695,9 +690,8 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 
 	// check whether the StatefulSet pod need to release
 	// ref: https://github.com/spidernet-io/spiderpool/issues/1045
-	ownerControllerType, _ := podmanager.GetOwnerControllerType(pod)
-	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
-		shouldCleanSts, err := i.shouldReleaseStatefulSet(ctx, pod, allocation, currently)
+	if i.config.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.OwnerStatefulSet {
+		shouldCleanSts, err := i.shouldReleaseStatefulSet(ctx, endpoint.Namespace, endpoint.Name, allocation, currently)
 		if nil != err {
 			return err
 		}
@@ -721,10 +715,10 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 // shouldReleaseStatefulSet checks whether the StatefulSet pod need to be released, if the StatefulSet object was deleted or decreased its replicas.
 // And we'll also check whether the StatefulSet pod's last ipam allocation is invalid or not,
 // if we set dual stack but only get one IP allocation, we should clean up it.
-func (i *ipam) shouldReleaseStatefulSet(ctx context.Context, pod *corev1.Pod, allocation *spiderpoolv1.PodIPAllocation, currently bool) (bool, error) {
+func (i *ipam) shouldReleaseStatefulSet(ctx context.Context, podNamespace, podName string, allocation *spiderpoolv1.PodIPAllocation, currently bool) (bool, error) {
 	log := logutils.FromContext(ctx)
 
-	isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, pod.Namespace, pod.Name, constant.OwnerStatefulSet)
+	isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, podNamespace, podName, constant.OwnerStatefulSet)
 	if err != nil {
 		return false, err
 	}

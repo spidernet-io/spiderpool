@@ -161,7 +161,7 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 		return nil, fmt.Errorf("failed to list reservedIPs, error: %v", err)
 	}
 
-	reservedIPs, err := reservedipmanager.GetReservedIPsByIPVersion(ipVersion, reservedIPList)
+	reservedIPs, err := reservedipmanager.AssembleReservedIPs(ipVersion, reservedIPList)
 	if nil != err {
 		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %v",
 			constant.ErrWrongInput, reservedIPs, ipVersion, err)

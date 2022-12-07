@@ -193,7 +193,7 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 	metrics.IPGCTotalCounts.Add(ctx, 1)
 	log.Sugar().Infof("release ip '%s' successfully", poolIP)
 
-	err = s.wepMgr.RemoveFinalizer(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+	err = s.wepMgr.RemoveFinalizer(ctx, nil, poolIPAllocation.Namespace, poolIPAllocation.Pod)
 	if nil != err {
 		if apierrors.IsNotFound(err) {
 			log.Sugar().Debugf("SpiderEndpoint '%s/%s' is already cleaned up", poolIPAllocation.Namespace, poolIPAllocation.Pod)

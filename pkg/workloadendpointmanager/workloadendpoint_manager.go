@@ -23,7 +23,6 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type WorkloadEndpointManager interface {
@@ -34,8 +33,7 @@ type WorkloadEndpointManager interface {
 	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error)
 	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) error
 	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error
-	RemoveFinalizer(ctx context.Context, namespace, podName string) error
-	ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]types.IPAndCID, error)
+	RemoveFinalizer(ctx context.Context, se *spiderpoolv1.SpiderEndpoint, namespace, podName string) error
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
 	CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error)
 	UpdateCurrentStatus(ctx context.Context, containerID string, pod *corev1.Pod) error
@@ -189,19 +187,22 @@ func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context,
 }
 
 // RemoveFinalizer removes a specific finalizer field in finalizers string array.
-func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
+func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, se *spiderpoolv1.SpiderEndpoint, namespace, podName string) error {
+	var err error
 	for i := 0; i <= em.config.MaxConflictRetries; i++ {
-		we, err := em.GetEndpointByName(ctx, namespace, podName)
-		if err != nil {
-			return err
+		if se == nil {
+			se, err = em.GetEndpointByName(ctx, namespace, podName)
+			if err != nil {
+				return err
+			}
 		}
 
-		if !controllerutil.ContainsFinalizer(we, constant.SpiderFinalizer) {
+		if !controllerutil.ContainsFinalizer(se, constant.SpiderFinalizer) {
 			return nil
 		}
 
-		controllerutil.RemoveFinalizer(we, constant.SpiderFinalizer)
-		if err := em.client.Update(ctx, we); err != nil {
+		controllerutil.RemoveFinalizer(se, constant.SpiderFinalizer)
+		if err := em.client.Update(ctx, se); err != nil {
 			if !apierrors.IsConflict(err) {
 				return err
 			}
@@ -215,49 +216,6 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 	}
 
 	return nil
-}
-
-// ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.
-func (em *workloadEndpointManager) ListAllHistoricalIPs(ctx context.Context, namespace, podName string) (map[string][]types.IPAndCID, error) {
-	wep, err := em.GetEndpointByName(ctx, namespace, podName)
-	if err != nil {
-		return nil, err
-	}
-
-	recordHistoryIPs := func(historyIPs map[string][]types.IPAndCID, poolName, ipAndCIDR *string, podName, podNS, containerID string) {
-		if poolName != nil {
-			if ipAndCIDR == nil {
-				logutils.Logger.Sugar().Errorf("WEP data broken, pod '%s/%s' containerID '%s' used ippool '%s' with no ip", podNS, podName, containerID, *poolName)
-				return
-			}
-
-			ip, _, _ := strings.Cut(*ipAndCIDR, "/")
-
-			ips, ok := historyIPs[*poolName]
-			if !ok {
-				ips = []types.IPAndCID{{IP: ip, ContainerID: containerID}}
-			} else {
-				ips = append(ips, types.IPAndCID{IP: ip, ContainerID: containerID})
-			}
-			historyIPs[*poolName] = ips
-		}
-	}
-
-	wepHistoryIPs := make(map[string][]types.IPAndCID)
-
-	// circle to traverse each allocation
-	for _, PodIPAllocation := range wep.Status.History {
-		// circle to traverse each NIC
-		for _, ipAllocationDetail := range PodIPAllocation.IPs {
-			// collect IPv4
-			recordHistoryIPs(wepHistoryIPs, ipAllocationDetail.IPv4Pool, ipAllocationDetail.IPv4, wep.Name, wep.Namespace, PodIPAllocation.ContainerID)
-
-			// collect IPv6
-			recordHistoryIPs(wepHistoryIPs, ipAllocationDetail.IPv6Pool, ipAllocationDetail.IPv6, wep.Name, wep.Namespace, PodIPAllocation.ContainerID)
-		}
-	}
-
-	return wepHistoryIPs, nil
 }
 
 // IsIPBelongWEPCurrent will check the given IP whether belong to the wep current IPs.

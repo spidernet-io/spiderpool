@@ -16,14 +16,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 )
 
-var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
+var _ = Describe("Limiter", Label("queue_test"), func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var config limiter.LimiterConfig
 	var queue limiter.Limiter
 
 	Describe("New", func() {
-		It("set default config", func() {
+		It("sets default config", func() {
 			queue := limiter.NewLimiter(limiter.LimiterConfig{})
 			Expect(queue).NotTo(BeNil())
 		})
@@ -40,7 +40,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 			}
 		})
 
-		It("forgot to start the limiter", func() {
+		It("forgets to start the limiter", func() {
 			queue := limiter.NewLimiter(config)
 			Expect(queue).NotTo(BeNil())
 
@@ -52,7 +52,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 		})
 	})
 
-	Describe("Use", func() {
+	Describe("General", func() {
 		var queuers int
 		var workHours time.Duration
 
@@ -67,7 +67,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 			}()
 		})
 
-		Context("General", func() {
+		Context("Use", func() {
 			BeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
 				DeferCleanup(cancel)
@@ -82,7 +82,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 				workHours = 1 * time.Second
 			})
 
-			It("acquire ticket", func() {
+			It("acquires tickets", func() {
 				ctx := context.TODO()
 				reason, err := queue.AcquireTicket(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -90,7 +90,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 				queue.ReleaseTicket(ctx)
 			})
 
-			It("acquire ticket timeout", func() {
+			It("acquires tickets but timeout", func() {
 				ctx := context.TODO()
 				reasonCh := make(chan limiter.Reason, queuers)
 				wg := sync.WaitGroup{}
@@ -113,7 +113,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 				Eventually(reasonCh).Should(Receive(Equal(limiter.CheckinTimeout)))
 			})
 
-			It("acquire ticket but queue is full", func() {
+			It("acquires tickets but queue is full", func() {
 				ctx := context.TODO()
 				wg := sync.WaitGroup{}
 				wg.Add(queuers + 2)
@@ -166,7 +166,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 				}
 			})
 
-			It("conflict rate when consumption is too slow", func() {
+			It("collects the conflict rate when consumption is too slow", func() {
 				ctx := context.TODO()
 				reasonCh := make(chan limiter.Reason, queuers)
 				wg := sync.WaitGroup{}
@@ -218,11 +218,11 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 				workHours = 1 * time.Second
 			})
 
-			It("empty queue", func() {
+			It("shutdowns the empty queue", func() {
 				cancel()
 			})
 
-			It("working queue", func() {
+			It("shutdowns the working queue", func() {
 				ctx := context.TODO()
 				wg := sync.WaitGroup{}
 				wg.Add(queuers)
@@ -243,7 +243,7 @@ var _ = Describe("Limiter", Label("unitest", "limiter_test"), func() {
 				wg.Wait()
 			})
 
-			It("acquire ticket but queue shutdown", func() {
+			It("acquires tickets but queue shutdown", func() {
 				ctx := context.TODO()
 				cancel()
 				time.Sleep(1 * time.Second)

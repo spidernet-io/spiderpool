@@ -18,7 +18,7 @@ import (
 
 func TestNodeManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "NodeManager Suite", Label("node_manager", "unitest"))
+	RunSpecs(t, "NodeManager Suite", Label("nodemanager", "unitest"))
 }
 
 var scheme *runtime.Scheme

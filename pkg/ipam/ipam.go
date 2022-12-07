@@ -539,7 +539,7 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 	if err != nil {
 		return nil, err
 	}
-	nsDefaultV4Pools, nsDefaultV6Pools, err := i.nsManager.GetNSDefaultPools(ctx, ns)
+	nsDefaultV4Pools, nsDefaultV6Pools, err := namespacemanager.GetNSDefaultPools(ns)
 	if err != nil {
 		return nil, err
 	}

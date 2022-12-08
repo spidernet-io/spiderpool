@@ -36,21 +36,22 @@ func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, p
 }
 
 func ShouldScaleIPPool(pool *spiderpoolv1.SpiderIPPool) bool {
-	// only the auto-created IPPool owns the label "ipam.spidernet.io/owner-application"
-	poolLabels := pool.GetLabels()
-	_, ok := poolLabels[constant.LabelIPPoolOwnerApplication]
-	if !ok {
-		return false
-	}
+	if IsAutoCreatedIPPool(pool) {
+		ips, _ := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 
-	//ips, _ := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-	ips, _ := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-
-	if pool.Status.AutoDesiredIPCount != nil {
-		if int64(len(ips)) != *pool.Status.AutoDesiredIPCount {
-			return true
+		if pool.Status.AutoDesiredIPCount != nil {
+			if int64(len(ips)) != *pool.Status.AutoDesiredIPCount {
+				return true
+			}
 		}
 	}
 
 	return false
+}
+
+func IsAutoCreatedIPPool(pool *spiderpoolv1.SpiderIPPool) bool {
+	// only the auto-created IPPool owns the label "ipam.spidernet.io/owner-application"
+	poolLabels := pool.GetLabels()
+	_, ok := poolLabels[constant.LabelIPPoolOwnerApplication]
+	return ok
 }

@@ -39,7 +39,7 @@ jobs:
               [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
           gh pr view ${PR_NUMBER}
           PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
-              [ -n "${PR_AUTHOR}" ] || { echo "no PR_LABEL, ignore" ; }
+              [ -n "${PR_LABEL}" ] || { echo "no PR_LABEL, ignore" ; }
           #
               cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit"
           PR_COMMITS=` cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `

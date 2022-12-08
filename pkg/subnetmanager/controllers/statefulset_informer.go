@@ -29,14 +29,14 @@ func (c *Controller) onStatefulSetAdd(obj interface{}) {
 }
 
 func (c *Controller) onStatefulSetUpdate(oldObj interface{}, newObj interface{}) {
-	err := c.reconcileFunc(context.TODO(), oldObj, newObj)
+	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onStatefulSetUpdate: %v", err)
 	}
 }
 
 func (c *Controller) onStatefulSetDelete(obj interface{}) {
-	err := c.cleanupFunc(context.TODO(), obj)
+	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onStatefulSetDelete: %v", err)
 	}

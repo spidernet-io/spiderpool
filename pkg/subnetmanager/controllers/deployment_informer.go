@@ -29,14 +29,14 @@ func (c *Controller) onDeploymentAdd(obj interface{}) {
 }
 
 func (c *Controller) onDeploymentUpdate(oldObj interface{}, newObj interface{}) {
-	err := c.reconcileFunc(context.TODO(), oldObj, newObj)
+	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onDeploymentUpdate: %v", err)
 	}
 }
 
 func (c *Controller) onDeploymentDelete(obj interface{}) {
-	err := c.cleanupFunc(context.TODO(), obj)
+	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onDeploymentDelete: %v", err)
 	}

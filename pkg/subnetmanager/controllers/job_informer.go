@@ -29,14 +29,14 @@ func (c *Controller) onJobAdd(obj interface{}) {
 }
 
 func (c *Controller) onJobUpdate(oldObj interface{}, newObj interface{}) {
-	err := c.reconcileFunc(context.TODO(), oldObj, newObj)
+	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onJobUpdate: %v", err)
 	}
 }
 
 func (c *Controller) onJobDelete(obj interface{}) {
-	err := c.cleanupFunc(context.TODO(), obj)
+	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onJobDelete: %v", err)
 	}

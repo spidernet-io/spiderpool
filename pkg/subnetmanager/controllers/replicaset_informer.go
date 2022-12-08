@@ -29,14 +29,14 @@ func (c *Controller) onReplicaSetAdd(obj interface{}) {
 }
 
 func (c *Controller) onReplicaSetUpdate(oldObj interface{}, newObj interface{}) {
-	err := c.reconcileFunc(context.TODO(), oldObj, newObj)
+	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onReplicaSetUpdate: %v", err)
 	}
 }
 
 func (c *Controller) onReplicaSetDelete(obj interface{}) {
-	err := c.cleanupFunc(context.TODO(), obj)
+	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onReplicaSetDelete: %v", err)
 	}

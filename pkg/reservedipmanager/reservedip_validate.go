@@ -21,9 +21,9 @@ var (
 	ipsField       *field.Path = field.NewPath("spec").Child("ips")
 )
 
-func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+func (rm *reservedIPManager) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
 	var errs field.ErrorList
-	if err := rw.validateReservedIPSpec(ctx, rIP); err != nil {
+	if err := rm.validateReservedIPSpec(ctx, rIP); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -34,13 +34,13 @@ func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *
 	return errs
 }
 
-func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+func (rm *reservedIPManager) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
 	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
 		return field.ErrorList{err}
 	}
 
 	var errs field.ErrorList
-	if err := rw.validateReservedIPSpec(ctx, newRIP); err != nil {
+	if err := rm.validateReservedIPSpec(ctx, newRIP); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -62,18 +62,18 @@ func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderRes
 	return nil
 }
 
-func (rw *ReservedIPWebhook) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if err := rw.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
+func (rm *reservedIPManager) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
+	if err := rm.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
 		return err
 	}
-	if err := rw.validateReservedIPAvailableIP(ctx, *rIP.Spec.IPVersion, rIP); err != nil {
+	if err := rm.validateReservedIPAvailableIP(ctx, *rIP.Spec.IPVersion, rIP); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersion) *field.Error {
+func (rm *reservedIPManager) validateReservedIPIPVersion(version *types.IPVersion) *field.Error {
 	if version == nil {
 		return field.Invalid(
 			ipVersionField,
@@ -92,14 +92,14 @@ func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersio
 		)
 	}
 
-	if *version == constant.IPv4 && !rw.EnableIPv4 {
+	if *version == constant.IPv4 && !rm.config.EnableIPv4 {
 		return field.Forbidden(
 			ipVersionField,
 			"IPv4 is disabled",
 		)
 	}
 
-	if *version == constant.IPv6 && !rw.EnableIPv6 {
+	if *version == constant.IPv6 && !rm.config.EnableIPv6 {
 		return field.Forbidden(
 			ipVersionField,
 			"IPv6 is disabled",
@@ -109,12 +109,12 @@ func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersio
 	return nil
 }
 
-func (rw *ReservedIPWebhook) validateReservedIPAvailableIP(ctx context.Context, version types.IPVersion, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
+func (rm *reservedIPManager) validateReservedIPAvailableIP(ctx context.Context, version types.IPVersion, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
 	if err := validateReservedIPIPs(version, rIP.Spec.IPs); err != nil {
 		return err
 	}
 
-	rIPList, err := rw.ListReservedIPs(ctx)
+	rIPList, err := rm.ListReservedIPs(ctx)
 	if err != nil {
 		return field.InternalError(ipsField, err)
 	}

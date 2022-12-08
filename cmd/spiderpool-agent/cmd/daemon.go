@@ -271,21 +271,24 @@ func initAgentServiceManagers(ctx context.Context) {
 	}
 	agentContext.WEManager = weManager
 
-	logger.Debug("Begin to initialize ReservedIP manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
+	logger.Debug("Begin to initialize ReservedIP Manager")
+	rIPManager, err := reservedipmanager.NewReservedIPManager(&reservedipmanager.ReservedIPManagerConfig{
+		EnableIPv4: agentContext.Cfg.EnableIPv4,
+		EnableIPv6: agentContext.Cfg.EnableIPv6,
+	}, agentContext.CRDManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.RIPManager = rIPManager
 
-	logger.Debug("Begin to initialize Node manager")
+	logger.Debug("Begin to initialize Node Manager")
 	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NodeManager = nodeManager
 
-	logger.Debug("Begin to initialize Namespace manager")
+	logger.Debug("Begin to initialize Namespace Manager")
 	nsManager, err := namespacemanager.NewNamespaceManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())

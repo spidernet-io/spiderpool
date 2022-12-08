@@ -8,10 +8,10 @@ import (
 
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"github.com/spidernet-io/spiderpool/pkg/types"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func AssembleReservedIPs(version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error) {
+func GetReservedIPsByIPVersion(version spiderpooltypes.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error) {
 	var ips []net.IP
 	for _, r := range rIPList.Items {
 		if *r.Spec.IPVersion != version {

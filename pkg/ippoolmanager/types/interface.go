@@ -36,7 +36,7 @@ type IPPoolManager interface {
 	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error
 	CheckVlanSame(ctx context.Context, poolNameList []string) (map[types.Vlan][]string, bool, error)
-	RemoveFinalizer(ctx context.Context, poolName string) error
+	RemoveFinalizer(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
 	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
 	CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
 	ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ScaleAction, desiredIPNum int) error

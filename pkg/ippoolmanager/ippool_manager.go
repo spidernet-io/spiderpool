@@ -178,7 +178,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 	if err != nil {
 		return nil, err
 	}
-	reservedIPs, err := reservedipmanager.GetReservedIPsByIPVersion(*ipPool.Spec.IPVersion, rIPList)
+	reservedIPs, err := reservedipmanager.AssembleReservedIPs(*ipPool.Spec.IPVersion, rIPList)
 	if err != nil {
 		return nil, err
 	}

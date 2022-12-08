@@ -37,11 +37,9 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 	if controllerLeader == nil {
 		return fmt.Errorf("failed to start SpiderIPPool informer, controller leader must be specified")
 	}
-
-	informerLogger = logutils.Logger.Named("SpiderIPPool-Informer")
-
 	im.leader = controllerLeader
 
+	informerLogger = logutils.Logger.Named("SpiderIPPool-Informer")
 	informerLogger.Info("try to register SpiderIPPool informer")
 	go func() {
 		for {
@@ -50,13 +48,13 @@ func (im *ipPoolManager) SetupInformer(client crdclientset.Interface, controller
 				continue
 			}
 
-			// stopper lifecycle is same with spiderIPPoolInformer
+			// stopper lifecycle is same with spiderIPPool Informer
 			stopper := make(chan struct{})
 
 			go func() {
 				for {
 					if !im.leader.IsElected() {
-						informerLogger.Warn("leader lost! stop SpiderIPPool informer!")
+						informerLogger.Error("leader lost! stop SpiderIPPool informer!")
 						close(stopper)
 						return
 					}

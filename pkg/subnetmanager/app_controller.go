@@ -35,22 +35,11 @@ import (
 )
 
 func (sm *subnetManager) SetupControllers(client kubernetes.Interface) error {
-	sm.workQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Application-Controllers")
-
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, 0)
-
-	c := newAppController(sm, kubeInformerFactory)
-	subnetController, err := controllers.NewSubnetController(c.ControllerAddOrUpdateHandler(), c.ControllerDeleteHandler(), logger.Named("Controllers"))
-	if nil != err {
-		return fmt.Errorf("failed to set up controllers informers, error: %v", err)
+	if sm.leader == nil {
+		return fmt.Errorf("failed to start applications controller, the subnet manager's leader is empty")
 	}
-	subnetController.AddDeploymentHandler(c.deploymentInformer)
-	subnetController.AddReplicaSetHandler(c.replicaSetInformer)
-	subnetController.AddDaemonSetHandler(c.daemonSetInformer)
-	subnetController.AddStatefulSetHandler(c.statefulSetInformer)
-	subnetController.AddJobController(c.jobInformer)
-	subnetController.AddCronJobHandler(c.cronJobInformer)
 
+	logger.Info("try to register applications controller")
 	go func() {
 		for {
 			if !sm.leader.IsElected() {
@@ -58,14 +47,13 @@ func (sm *subnetManager) SetupControllers(client kubernetes.Interface) error {
 				continue
 			}
 
+			// stopper lifecycle is same with applications Informer
 			stopper := make(chan struct{})
-
-			kubeInformerFactory.Start(stopper)
 
 			go func() {
 				for {
 					if !sm.leader.IsElected() {
-						logger.Warn("leader lost! stop subnet controllers!")
+						logger.Error("leader lost! stop application controllers!")
 						close(stopper)
 						return
 					}
@@ -74,12 +62,21 @@ func (sm *subnetManager) SetupControllers(client kubernetes.Interface) error {
 				}
 			}()
 
+			logger.Info("create applications informer")
+			kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, 0)
+			c, err := newAppController(sm, kubeInformerFactory)
+			if nil != err {
+				logger.Sugar().Errorf("failed to new application controller, error: %v", err)
+				return
+			}
+			kubeInformerFactory.Start(stopper)
+
 			err = c.Run(sm.config.Workers, stopper)
 			if nil != err {
 				logger.Sugar().Errorf("failed to run application controller, error: %v", err)
 			}
 
-			logger.Error("subnet manager controllers broken")
+			logger.Error("applications controller broken")
 		}
 	}()
 
@@ -429,7 +426,11 @@ type appController struct {
 	cronJobInformer cache.SharedIndexInformer
 }
 
-func newAppController(subnetMgr *subnetManager, factory kubeinformers.SharedInformerFactory) *appController {
+func newAppController(subnetMgr *subnetManager, factory kubeinformers.SharedInformerFactory) (*appController, error) {
+	// Once we lost the leader but get leader later, we have to use a new workqueue.
+	// Because the former workqueue was already shut down and wouldn't be re-start forever.
+	subnetMgr.workQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Application-Controllers")
+
 	c := &appController{
 		subnetMgr: subnetMgr,
 
@@ -452,7 +453,19 @@ func newAppController(subnetMgr *subnetManager, factory kubeinformers.SharedInfo
 		cronJobInformer: factory.Batch().V1().CronJobs().Informer(),
 	}
 
-	return c
+	subnetController, err := controllers.NewSubnetController(c.ControllerAddOrUpdateHandler(), c.ControllerDeleteHandler(), logger.Named("Controllers"))
+	if nil != err {
+		return nil, err
+	}
+
+	subnetController.AddDeploymentHandler(c.deploymentInformer)
+	subnetController.AddReplicaSetHandler(c.replicaSetInformer)
+	subnetController.AddDaemonSetHandler(c.daemonSetInformer)
+	subnetController.AddStatefulSetHandler(c.statefulSetInformer)
+	subnetController.AddJobController(c.jobInformer)
+	subnetController.AddCronJobHandler(c.cronJobInformer)
+
+	return c, nil
 }
 
 // appWorkQueueKey involves application object meta namespaceKey and application kind

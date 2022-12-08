@@ -51,16 +51,8 @@ func (sm *subnetManager) SetupInformer(ctx context.Context, client clientset.Int
 		return fmt.Errorf("failed to start Subnet informer, controller leader must be specified")
 	}
 
-	informerLogger = logutils.Logger.Named("Subnet-Informer")
 	sm.leader = controllerLeader
-
-	informerLogger.Info("Initialize Subnet informer")
-	informerFactory := externalversions.NewSharedInformerFactory(client, sm.config.ResyncPeriod)
-	subnetController := newSubnetController(
-		sm,
-		informerFactory.Spiderpool().V1().SpiderSubnets(),
-		informerFactory.Spiderpool().V1().SpiderIPPools(),
-	)
+	informerLogger = logutils.Logger.Named("Subnet-Informer")
 
 	go func() {
 		for {
@@ -68,6 +60,14 @@ func (sm *subnetManager) SetupInformer(ctx context.Context, client clientset.Int
 				time.Sleep(sm.config.LeaderRetryElectGap)
 				continue
 			}
+
+			informerLogger.Info("Initialize Subnet informer")
+			informerFactory := externalversions.NewSharedInformerFactory(client, sm.config.ResyncPeriod)
+			subnetController := newSubnetController(
+				sm,
+				informerFactory.Spiderpool().V1().SpiderSubnets(),
+				informerFactory.Spiderpool().V1().SpiderIPPools(),
+			)
 
 			subnetController.innerCtx, subnetController.innerCancel = context.WithCancel(ctx)
 			go func() {

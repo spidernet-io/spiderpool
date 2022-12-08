@@ -29,14 +29,14 @@ func (c *Controller) onCronJobAdd(obj interface{}) {
 }
 
 func (c *Controller) onCronJobUpdate(oldObj interface{}, newObj interface{}) {
-	err := c.reconcileFunc(context.TODO(), oldObj, newObj)
+	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onCronJobUpdate: %v", err)
 	}
 }
 
 func (c *Controller) onCronJobDelete(obj interface{}) {
-	err := c.cleanupFunc(context.TODO(), obj)
+	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
 		controllersLogger.Sugar().Errorf("onCronJobDelete: %v", err)
 	}

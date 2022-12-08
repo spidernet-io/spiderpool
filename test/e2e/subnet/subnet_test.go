@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	subnetmanager "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
@@ -573,6 +575,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(frame.CreateDeployment(deployYaml)).To(Succeed())
 
 			if frame.Info.IpV4Enabled {
+				GinkgoWriter.Println("=====Ipv4=====")
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
@@ -604,20 +607,54 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					},
 				}
 				v4SubnetObject = common.GetSubnetByName(frame, v4SubnetName)
-				v4Object = v4SubnetObject
+				*v4Object = *v4SubnetObject
 				v4Object.Spec.Routes = subnetRouteValue
 				v4Object.Spec.Gateway = &newIpv4Gw
+
+				GinkgoWriter.Println("Add an ip belonging to the CIDR to the subnet.")
+				oldIPs, err := ip.ParseIPRanges(*v4Object.Spec.IPVersion, v4Object.Spec.IPs)
+				Expect(err).NotTo(HaveOccurred())
+				nextIp := ip.NextIP(oldIPs[len(oldIPs)-1])
+				newIps := append(oldIPs, nextIp)
+				newIpRange, err := ip.ConvertIPsToIPRanges(*v4Object.Spec.IPVersion, newIps)
+				Expect(err).NotTo(HaveOccurred())
+				v4Object.Spec.IPs = newIpRange
 				Expect(common.PatchSpiderSubnet(frame, v4Object, v4SubnetObject)).NotTo(HaveOccurred())
 
-				// Subnet routing gateway updated successfully, manual pool creation does not change
+				GinkgoWriter.Println("Add an ip that is not part of the CIDR to the subnet.")
+				v4Object.Spec.IPs = []string{"0.0.0.0"}
+				Expect(common.PatchSpiderSubnet(frame, v4Object, v4SubnetObject)).To(HaveOccurred())
+
+				GinkgoWriter.Println("Check if the changes were successful.")
+				v4Object = common.GetSubnetByName(frame, v4SubnetName)
+				Expect(v4Object.Spec.Routes[0].Dst).To(Equal(newV4Dst))
+				Expect(v4Object.Spec.Routes[0].Gw).To(Equal(newIpv4Gw))
+				Expect(v4Object.Spec.Gateway).To(Equal(&newIpv4Gw))
+
+				// Delete an ip that is being used in the subnet
+				nextIpRange, err := ip.ConvertIPsToIPRanges(*v4Object.Spec.IPVersion, []net.IP{nextIp})
+				Expect(err).NotTo(HaveOccurred())
+				v4Object.Spec.IPs = nextIpRange
+				GinkgoWriter.Println("Failed to remove an ip in use. ")
+				Expect(common.PatchSpiderSubnet(frame, v4Object, v4SubnetObject)).To(HaveOccurred())
+
+				// Delete unused ip in the subnet
+				oldIpRange, err := ip.ConvertIPsToIPRanges(*v4Object.Spec.IPVersion, oldIPs)
+				Expect(err).NotTo(HaveOccurred())
+				v4Object = common.GetSubnetByName(frame, v4SubnetName)
+				v4Object.Spec.IPs = oldIpRange
+				GinkgoWriter.Println("Successfully deleted an unused IP.")
+				Expect(common.PatchSpiderSubnet(frame, v4Object, v4SubnetObject)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Println("Subnet routing gateway updated successfully, manual pool creation does not change.")
 				iPv4PoolObj = common.GetIppoolByName(frame, v4PoolName)
 				Expect(iPv4PoolObj.Spec.Routes[0].Dst).To(Equal(v4Dst))
 				Expect(iPv4PoolObj.Spec.Routes[0].Gw).To(Equal(ipv4Gw))
 				Expect(iPv4PoolObj.Spec.Gateway).To(Equal(&ipv4Gw))
 
-				// Older pools are not affected
 				v4poolList, err = common.GetIppoolsInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Println("Older pools are not affected.")
 				for _, pool := range v4poolList.Items {
 					if pool.Name != v4PoolName {
 						Expect(pool.Spec.Vlan).To(Equal(ipv4Vlan))
@@ -628,6 +665,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				}
 			}
 			if frame.Info.IpV6Enabled {
+				GinkgoWriter.Println("=====Ipv6=====")
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
@@ -650,7 +688,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 				GinkgoWriter.Println("Update gateways and routes. ")
 				newV6Dst := v6SubnetObject.Spec.Subnet
-				newIpv6Gw := strings.Split(v6SubnetObject.Spec.Subnet, "/")[0] + "255"
+				newIpv6Gw := strings.Split(v6SubnetObject.Spec.Subnet, "/")[0] + "fe"
 				subnetRouteValue := []spiderpool.Route{
 					{
 						Dst: newV6Dst,
@@ -658,20 +696,54 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					},
 				}
 				v6SubnetObject = common.GetSubnetByName(frame, v6SubnetName)
-				v6Object = v6SubnetObject
+				*v6Object = *v6SubnetObject
 				v6Object.Spec.Routes = subnetRouteValue
 				v6Object.Spec.Gateway = &newIpv6Gw
+
+				GinkgoWriter.Println("Add an v6 ip belonging to the CIDR to the v6 subnet.")
+				oldIPs, err := ip.ParseIPRanges(*v6Object.Spec.IPVersion, v6Object.Spec.IPs)
+				Expect(err).NotTo(HaveOccurred())
+				nextIp := ip.NextIP(oldIPs[len(oldIPs)-1])
+				newIps := append(oldIPs, nextIp)
+				newIpRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, newIps)
+				Expect(err).NotTo(HaveOccurred())
+				v6Object.Spec.IPs = newIpRange
 				Expect(common.PatchSpiderSubnet(frame, v6Object, v6SubnetObject)).NotTo(HaveOccurred())
 
-				// Subnet routing gateway updated successfully, manual pool creation does not change
+				GinkgoWriter.Println("Add an v6 ip that is not part of the CIDR to the v6 subnet.")
+				v6Object.Spec.IPs = []string{"::"}
+				Expect(common.PatchSpiderSubnet(frame, v6Object, v6SubnetObject)).To(HaveOccurred())
+
+				GinkgoWriter.Println("Check if the changes were successful.")
+				v6Object = common.GetSubnetByName(frame, v6SubnetName)
+				Expect(v6Object.Spec.Routes[0].Dst).To(Equal(newV6Dst))
+				Expect(v6Object.Spec.Routes[0].Gw).To(Equal(newIpv6Gw))
+				Expect(v6Object.Spec.Gateway).To(Equal(&newIpv6Gw))
+
+				// Delete an v6 ip that is being used in the v6 subnet
+				nextIpRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, []net.IP{nextIp})
+				Expect(err).NotTo(HaveOccurred())
+				v6Object.Spec.IPs = nextIpRange
+				GinkgoWriter.Println("Failed to remove an ip in use. ")
+				Expect(common.PatchSpiderSubnet(frame, v6Object, v6SubnetObject)).To(HaveOccurred())
+
+				// Delete unused v6 ip in the v6 subnet
+				oldIpRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, oldIPs)
+				Expect(err).NotTo(HaveOccurred())
+				v6Object = common.GetSubnetByName(frame, v6SubnetName)
+				v6Object.Spec.IPs = oldIpRange
+				GinkgoWriter.Println("Successfully deleted an unused IP.")
+				Expect(common.PatchSpiderSubnet(frame, v6Object, v6SubnetObject)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Println("Subnet routing gateway updated successfully, manual pool creation does not change.")
 				iPv6PoolObj = common.GetIppoolByName(frame, v6PoolName)
 				Expect(iPv6PoolObj.Spec.Routes[0].Dst).To(Equal(v6Dst))
 				Expect(iPv6PoolObj.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
 				Expect(iPv6PoolObj.Spec.Gateway).To(Equal(&ipv6Gw))
 
-				// Older pools are not affected
 				v6poolList, err = common.GetIppoolsInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Println("Older pools are not affected.")
 				for _, pool := range v6poolList.Items {
 					if pool.Name != v6PoolName {
 						Expect(pool.Spec.Vlan).To(Equal(ipv6Vlan))
@@ -704,12 +776,14 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj := common.GenerateExampleIpv4poolObject(5)
 				v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+				v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
 				Expect(common.CreateIppool(frame, v4PoolObj)).NotTo(Succeed())
 				GinkgoWriter.Printf("Failed to create an IPv4 IPPool %v. \n", v4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj := common.GenerateExampleIpv6poolObject(5)
 				v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+				v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
 				Expect(common.CreateIppool(frame, v6PoolObj)).NotTo(Succeed())
 				GinkgoWriter.Printf("Failed to create an IPv6 IPPool %v. \n", v6PoolName)
 			}
@@ -935,7 +1009,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		// Manual batch create of subnets and ippools and record time
 		// batch delete ippools under subnet and record time
 		// batch delete subnets and record time
-		PIt("the different spec is used to create the subnet/ippool and should all be successful.", Label("I00007", "D00008"), func() {
+		PIt("the different spec is used to create the subnet/ippool and should all be successful.", Label("I00007", "D00007"), func() {
 			var (
 				batchCreateSubnetNumber int = 20
 				batchCreateIPPoolNumber int = 10

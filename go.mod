@@ -46,7 +46,10 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
-require go.uber.org/multierr v1.8.0
+require (
+	github.com/agiledragon/gomonkey/v2 v2.9.0
+	go.uber.org/multierr v1.8.0
+)
 
 require (
 	cloud.google.com/go/compute v1.7.0 // indirect

@@ -77,16 +77,20 @@ const (
 )
 
 const (
-	Spiderpool             = "spiderpool"
-	SpiderpoolAgent        = "spiderpool-agent"
-	SpiderpoolController   = "spiderpool-controller"
-	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"
-	SpiderFinalizer        = SpiderpoolAPIGroup
-	SpiderpoolAPIVersionV1 = "v1"
-	SpiderIPPoolKind       = "SpiderIPPool"
-	SpiderEndpointKind     = "SpiderEndpoint"
-	SpiderReservedIPKind   = "SpiderReservedIP"
-	SpiderSubnetKind       = "SpiderSubnet"
+	Spiderpool               = "spiderpool"
+	SpiderpoolAgent          = "spiderpool-agent"
+	SpiderpoolController     = "spiderpool-controller"
+	SpiderpoolAPIGroup       = "spiderpool.spidernet.io"
+	SpiderFinalizer          = SpiderpoolAPIGroup
+	SpiderpoolAPIVersionV1   = "v1"
+	SpiderIPPoolKind         = "SpiderIPPool"
+	SpiderEndpointKind       = "SpiderEndpoint"
+	SpiderReservedIPKind     = "SpiderReservedIP"
+	SpiderSubnetKind         = "SpiderSubnet"
+	SpiderIPPoolListKind     = "SpiderIPPoolList"
+	SpiderEndpointListKind   = "SpiderEndpointList"
+	SpiderReservedIPListKind = "SpiderReservedIPList"
+	SpiderSubnetListKind     = "SpiderSubnetList"
 )
 
 const (

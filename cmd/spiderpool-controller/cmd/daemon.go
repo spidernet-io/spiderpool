@@ -234,30 +234,30 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to initialize ReservedIP Manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(&reservedipmanager.ReservedIPManagerConfig{
-		EnableIPv4: controllerContext.Cfg.EnableIPv4,
-		EnableIPv6: controllerContext.Cfg.EnableIPv6,
-	}, controllerContext.CRDManager)
+	logger.Debug("Begin to initialize ReservedIP manager")
+	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.RIPManager = rIPManager
 
-	logger.Info("Begin to set up ReservedIP webhook")
-	err = controllerContext.RIPManager.SetupWebhook()
-	if err != nil {
+	logger.Debug("Begin to set up ReservedIP webhook")
+	if err := (&reservedipmanager.ReservedIPWebhook{
+		ReservedIPManager: rIPManager,
+		EnableIPv4:        controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:        controllerContext.Cfg.EnableIPv6,
+	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to initialize Node Manager")
+	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NodeManager = nodeManager
 
-	logger.Info("Begin to initialize Namespace Manager")
+	logger.Debug("Begin to initialize Namespace manager")
 	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())

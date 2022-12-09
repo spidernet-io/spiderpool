@@ -16,7 +16,7 @@ import (
 var _ = Describe("IP", Label("ip_test"), func() {
 	Describe("Test IsIPVersion", func() {
 		It("inputs invalid IP version", func() {
-			err := spiderpoolip.IsIPVersion(invalidIPVersion)
+			err := spiderpoolip.IsIPVersion(constant.InvalidIPVersion)
 			Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 		})
 
@@ -33,24 +33,24 @@ var _ = Describe("IP", Label("ip_test"), func() {
 		Describe("IP format", func() {
 			When("Verifying", func() {
 				It("inputs invalid IP version", func() {
-					ip, err := spiderpoolip.ParseIP(invalidIPVersion, "172.18.40.40", false)
+					ip, err := spiderpoolip.ParseIP(constant.InvalidIPVersion, "172.18.40.10", false)
 					Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 					Expect(ip).To(BeNil())
 				})
 
 				It("inputs invalid IP address", func() {
-					ip, err := spiderpoolip.ParseIP(constant.IPv4, invalidIP, false)
+					ip, err := spiderpoolip.ParseIP(constant.IPv4, constant.InvalidIP, false)
 					Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPFormat))
 					Expect(ip).To(BeNil())
 				})
 			})
 
 			It("parses IPv4 IP address", func() {
-				ip, err := spiderpoolip.ParseIP(constant.IPv4, "172.18.40.40", false)
+				ip, err := spiderpoolip.ParseIP(constant.IPv4, "172.18.40.10", false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(ip).To(Equal(
 					&net.IPNet{
-						IP:   net.IPv4(172, 18, 40, 40),
+						IP:   net.IPv4(172, 18, 40, 10),
 						Mask: net.CIDRMask(32, 32),
 					},
 				))
@@ -71,24 +71,24 @@ var _ = Describe("IP", Label("ip_test"), func() {
 		Describe("CIDR format", func() {
 			When("Verifying", func() {
 				It("inputs invalid IP version", func() {
-					ip, err := spiderpoolip.ParseIP(invalidIPVersion, "172.18.40.40/24", true)
+					ip, err := spiderpoolip.ParseIP(constant.InvalidIPVersion, "172.18.40.10/24", true)
 					Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 					Expect(ip).To(BeNil())
 				})
 
 				It("inputs invalid CIDR address", func() {
-					ip, err := spiderpoolip.ParseIP(constant.IPv4, invalidCIDR, true)
+					ip, err := spiderpoolip.ParseIP(constant.IPv4, constant.InvalidCIDR, true)
 					Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 					Expect(ip).To(BeNil())
 				})
 			})
 
 			It("parses IPv4 CIDR address", func() {
-				ip, err := spiderpoolip.ParseIP(constant.IPv4, "172.18.40.40/24", true)
+				ip, err := spiderpoolip.ParseIP(constant.IPv4, "172.18.40.10/24", true)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(ip).To(Equal(
 					&net.IPNet{
-						IP:   net.IPv4(172, 18, 40, 40),
+						IP:   net.IPv4(172, 18, 40, 10),
 						Mask: net.CIDRMask(24, 32),
 					},
 				))
@@ -110,19 +110,19 @@ var _ = Describe("IP", Label("ip_test"), func() {
 	Describe("Test ContainsIP", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				contains, err := spiderpoolip.ContainsIP(invalidIPVersion, "172.18.40.0/24", "172.18.40.40")
+				contains, err := spiderpoolip.ContainsIP(constant.InvalidIPVersion, "172.18.40.0/24", "172.18.40.10")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(contains).To(BeFalse())
 			})
 
 			It("inputs invalid subnet", func() {
-				contains, err := spiderpoolip.ContainsIP(constant.IPv4, invalidCIDR, "172.18.40.40")
+				contains, err := spiderpoolip.ContainsIP(constant.IPv4, constant.InvalidCIDR, "172.18.40.10")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(contains).To(BeFalse())
 			})
 
 			It("inputs invalid IP address", func() {
-				contains, err := spiderpoolip.ContainsIP(constant.IPv4, "172.18.40.0/24", invalidIP)
+				contains, err := spiderpoolip.ContainsIP(constant.IPv4, "172.18.40.0/24", constant.InvalidIP)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPFormat))
 				Expect(contains).To(BeFalse())
 			})
@@ -130,13 +130,13 @@ var _ = Describe("IP", Label("ip_test"), func() {
 
 		When("IPv4", func() {
 			It("tests that a subnet contains the IP address", func() {
-				contains, err := spiderpoolip.ContainsIP(constant.IPv4, "172.18.40.0/24", "172.18.40.40")
+				contains, err := spiderpoolip.ContainsIP(constant.IPv4, "172.18.40.0/24", "172.18.40.10")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(contains).To(BeTrue())
 			})
 
 			It("test that a subnet does not contain the IP address", func() {
-				contains, err := spiderpoolip.ContainsIP(constant.IPv4, "172.18.41.0/24", "172.18.40.40")
+				contains, err := spiderpoolip.ContainsIP(constant.IPv4, "172.18.41.0/24", "172.18.40.10")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(contains).To(BeFalse())
 			})
@@ -160,18 +160,18 @@ var _ = Describe("IP", Label("ip_test"), func() {
 	Describe("Test IsIP", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				err := spiderpoolip.IsIP(invalidIPVersion, "172.18.40.40")
+				err := spiderpoolip.IsIP(constant.InvalidIPVersion, "172.18.40.10")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 			})
 
 			It("inputs invalid IP address", func() {
-				err := spiderpoolip.IsIP(constant.IPv4, invalidIP)
+				err := spiderpoolip.IsIP(constant.IPv4, constant.InvalidIP)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPFormat))
 			})
 		})
 
 		It("is IPv4 IP address", func() {
-			Expect(spiderpoolip.IsIP(constant.IPv4, "172.18.40.40")).To(Succeed())
+			Expect(spiderpoolip.IsIP(constant.IPv4, "172.18.40.10")).To(Succeed())
 		})
 
 		It("is IPv6 IP address", func() {

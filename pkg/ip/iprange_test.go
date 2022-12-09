@@ -17,13 +17,13 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test MergeIPRanges", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				ranges, err := spiderpoolip.MergeIPRanges(invalidIPVersion, []string{"172.18.40.10"})
+				ranges, err := spiderpoolip.MergeIPRanges(constant.InvalidIPVersion, []string{"172.18.40.10"})
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ranges).To(BeEmpty())
 			})
 
 			It("inputs invalid IP ranges", func() {
-				ranges, err := spiderpoolip.MergeIPRanges(constant.IPv4, invalidIPRanges)
+				ranges, err := spiderpoolip.MergeIPRanges(constant.IPv4, constant.InvalidIPRanges)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(ranges).To(BeEmpty())
 			})
@@ -33,14 +33,14 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 			ranges, err := spiderpoolip.MergeIPRanges(constant.IPv4,
 				[]string{
 					"172.18.40.10",
-					"172.18.40.1-172.18.40.3",
-					"172.18.40.2-172.18.40.5",
+					"172.18.40.1-172.18.40.2",
+					"172.18.40.2-172.18.40.3",
 				},
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ranges).To(Equal(
 				[]string{
-					"172.18.40.1-172.18.40.5",
+					"172.18.40.1-172.18.40.3",
 					"172.18.40.10",
 				},
 			))
@@ -50,14 +50,14 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 			ranges, err := spiderpoolip.MergeIPRanges(constant.IPv6,
 				[]string{
 					"abcd:1234::a",
-					"abcd:1234::1-abcd:1234::3",
-					"abcd:1234::2-abcd:1234::5",
+					"abcd:1234::1-abcd:1234::2",
+					"abcd:1234::2-abcd:1234::3",
 				},
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ranges).To(Equal(
 				[]string{
-					"abcd:1234::1-abcd:1234::5",
+					"abcd:1234::1-abcd:1234::3",
 					"abcd:1234::a",
 				},
 			))
@@ -67,13 +67,13 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test ParseIPRanges", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				ips, err := spiderpoolip.ParseIPRanges(invalidIPVersion, []string{"172.18.40.10"})
+				ips, err := spiderpoolip.ParseIPRanges(constant.InvalidIPVersion, []string{"172.18.40.10"})
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ips).To(BeEmpty())
 			})
 
 			It("inputs invalid IP ranges", func() {
-				ips, err := spiderpoolip.ParseIPRanges(constant.IPv4, invalidIPRanges)
+				ips, err := spiderpoolip.ParseIPRanges(constant.IPv4, constant.InvalidIPRanges)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(ips).To(BeEmpty())
 			})
@@ -125,13 +125,13 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test ParseIPRange", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				ips, err := spiderpoolip.ParseIPRange(invalidIPVersion, "172.18.40.10")
+				ips, err := spiderpoolip.ParseIPRange(constant.InvalidIPVersion, "172.18.40.10")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ips).To(BeEmpty())
 			})
 
 			It("inputs invalid IP ranges", func() {
-				ips, err := spiderpoolip.ParseIPRange(constant.IPv4, invalidIPRange)
+				ips, err := spiderpoolip.ParseIPRange(constant.IPv4, constant.InvalidIPRange)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(ips).To(BeEmpty())
 			})
@@ -171,7 +171,7 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test ConvertIPsToIPRanges", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				ranges, err := spiderpoolip.ConvertIPsToIPRanges(invalidIPVersion, []net.IP{net.IPv4(172, 18, 40, 10)})
+				ranges, err := spiderpoolip.ConvertIPsToIPRanges(constant.InvalidIPVersion, []net.IP{net.IPv4(172, 18, 40, 10)})
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ranges).To(BeEmpty())
 			})
@@ -229,19 +229,19 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test ContainsIPRange", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				contains, err := spiderpoolip.ContainsIPRange(invalidIPVersion, "172.18.40.0/24", "172.18.40.10")
+				contains, err := spiderpoolip.ContainsIPRange(constant.InvalidIPVersion, "172.18.40.0/24", "172.18.40.10")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(contains).To(BeFalse())
 			})
 
 			It("inputs invalid subnet", func() {
-				contains, err := spiderpoolip.ContainsIPRange(constant.IPv4, invalidCIDR, "172.18.40.10")
+				contains, err := spiderpoolip.ContainsIPRange(constant.IPv4, constant.InvalidCIDR, "172.18.40.10")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(contains).To(BeFalse())
 			})
 
 			It("inputs invalid IP range", func() {
-				contains, err := spiderpoolip.ContainsIPRange(constant.IPv4, "172.18.40.0/24", invalidIPRange)
+				contains, err := spiderpoolip.ContainsIPRange(constant.IPv4, "172.18.40.0/24", constant.InvalidIPRange)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(contains).To(BeFalse())
 			})
@@ -287,17 +287,17 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test IsIPRangeOverlap", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				overlap, err := spiderpoolip.IsIPRangeOverlap(invalidIPVersion, "172.18.40.1-172.18.40.2", "172.18.40.2-172.18.40.3")
+				overlap, err := spiderpoolip.IsIPRangeOverlap(constant.InvalidIPVersion, "172.18.40.1-172.18.40.2", "172.18.40.2-172.18.40.3")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(overlap).To(BeFalse())
 			})
 
 			It("inputs invalid IP range", func() {
-				overlap, err := spiderpoolip.IsIPRangeOverlap(constant.IPv4, invalidIPRange, "172.18.40.2-172.18.40.3")
+				overlap, err := spiderpoolip.IsIPRangeOverlap(constant.IPv4, constant.InvalidIPRange, "172.18.40.2-172.18.40.3")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(overlap).To(BeFalse())
 
-				overlap, err = spiderpoolip.IsIPRangeOverlap(constant.IPv4, "172.18.40.1-172.18.40.2", invalidIPRange)
+				overlap, err = spiderpoolip.IsIPRangeOverlap(constant.IPv4, "172.18.40.1-172.18.40.2", constant.InvalidIPRange)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(overlap).To(BeFalse())
 			})
@@ -335,12 +335,12 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 	Describe("Test IsIPRange", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				err := spiderpoolip.IsIPRange(invalidIPVersion, "172.18.40.1-172.18.40.2")
+				err := spiderpoolip.IsIPRange(constant.InvalidIPVersion, "172.18.40.1-172.18.40.2")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 			})
 
 			It("inputs invalid IP range", func() {
-				err := spiderpoolip.IsIPRange(constant.IPv4, invalidIPRange)
+				err := spiderpoolip.IsIPRange(constant.IPv4, constant.InvalidIPRange)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 			})
 		})
@@ -358,7 +358,7 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 
 	Describe("Test IsIPv4IPRange", func() {
 		It("tests whether it is an IPv4 IP range", func() {
-			Expect(spiderpoolip.IsIPv4IPRange(invalidIPRange)).To(BeFalse())
+			Expect(spiderpoolip.IsIPv4IPRange(constant.InvalidIPRange)).To(BeFalse())
 			Expect(spiderpoolip.IsIPv4IPRange("172.18.40.1-invalid IP range")).To(BeFalse())
 			Expect(spiderpoolip.IsIPv4IPRange("invalid IP range-172.18.40.2")).To(BeFalse())
 			Expect(spiderpoolip.IsIPv4IPRange("172.18.40.2-172.18.40.1")).To(BeFalse())
@@ -371,7 +371,7 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 
 	Describe("Test IsIPv6IPRange", func() {
 		It("tests whether it is an IPv6 IP range", func() {
-			Expect(spiderpoolip.IsIPv6IPRange(invalidIPRange)).To(BeFalse())
+			Expect(spiderpoolip.IsIPv6IPRange(constant.InvalidIPRange)).To(BeFalse())
 			Expect(spiderpoolip.IsIPv6IPRange("abcd:1234::1-invalid IP range")).To(BeFalse())
 			Expect(spiderpoolip.IsIPv6IPRange("invalid IP range-abcd:1234::2")).To(BeFalse())
 			Expect(spiderpoolip.IsIPv6IPRange("abcd:1234::2-abcd:1234::1")).To(BeFalse())

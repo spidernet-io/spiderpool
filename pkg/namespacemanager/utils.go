@@ -5,6 +5,7 @@ package namespacemanager
 
 import (
 	"encoding/json"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -13,6 +14,10 @@ import (
 )
 
 func GetNSDefaultPools(ns *corev1.Namespace) ([]string, []string, error) {
+	if ns == nil {
+		return nil, nil, fmt.Errorf("namespace %w", constant.ErrMissingRequiredParam)
+	}
+
 	var nsDefaultV4Pool types.AnnoNSDefautlV4PoolValue
 	var nsDefaultV6Pool types.AnnoNSDefautlV6PoolValue
 	if v, ok := ns.Annotations[constant.AnnoNSDefautlV4Pool]; ok {

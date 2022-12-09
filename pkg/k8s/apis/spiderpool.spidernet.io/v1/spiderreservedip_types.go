@@ -14,7 +14,7 @@ type ReservedIPSpec struct {
 	IPVersion *int64 `json:"ipVersion,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	IPs []string `json:"ips"`
+	IPs []string `json:"ips,omitempty"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderreservedips",scope="Cluster",shortName={sr},singular="spiderreservedip"

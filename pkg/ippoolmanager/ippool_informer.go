@@ -500,21 +500,22 @@ func (c *poolInformerController) cleanAutoIPPoolLegacy(ctx context.Context, pool
 		enableDelete := false
 
 		// check the IPPool's corresponding application whether is existed or not
+		informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%s/%s/%s'", pool.Name, kind, ns, name)
 		err = c.poolMgr.client.Get(ctx, apitypes.NamespacedName{Namespace: ns, Name: name}, object)
 		if nil != err {
 			// if the application is no longer exist, we should delete the IPPool
 			if apierrors.IsNotFound(err) {
-				informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%s' is no longer exist, try to gc IPPool", pool.Name, appLabelValue)
+				informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%s/%s/%s' is no longer exist, try to gc IPPool", pool.Name, kind, ns, name)
 				enableDelete = true
 			} else {
 				return false, err
 			}
-		}
-
-		// mismatch application UID
-		if string(object.GetUID()) != poolLabels[constant.LabelIPPoolOwnerApplicationUID] {
-			enableDelete = true
-			informerLogger.Sugar().Warnf("auto-created IPPool '%s' mismatches application '%s' UID, try to gc IPPool", pool.Name, appLabelValue)
+		} else {
+			// mismatch application UID
+			if string(object.GetUID()) != poolLabels[constant.LabelIPPoolOwnerApplicationUID] {
+				enableDelete = true
+				informerLogger.Sugar().Warnf("auto-created IPPool '%v' mismatches application '%s/%s/%s' UID '%s', try to gc IPPool", pool, kind, ns, name, object.GetUID())
+			}
 		}
 
 		if enableDelete {

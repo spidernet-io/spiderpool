@@ -22,10 +22,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # ${{ secrets.GITHUB_TOKEN }} is forbidden to create or approve pull requests
       - name: cherry pick
+        env:
+          GITHUB_TOKEN: ${{ secrets.WELAN_PAT}}
         run: |
           set -x
-          echo ${{ secrets.WELAN_PAT }} | gh auth login --with-token
           DATA_FILE="/tmp/`date +%Y%m%d%H%M%S%N`"
           echo '${{ toJSON(github) }}' > ${DATA_FILE}
           echo "============ print var ======== "

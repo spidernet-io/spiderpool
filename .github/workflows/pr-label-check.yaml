@@ -22,9 +22,10 @@ jobs:
 
       # must set one of required label, for release note generator
       - name: check label
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -x
-          echo ${{ secrets.WELAN_PAT }} | gh auth login --with-token
           PR_NUMBER="${{ github.event.number }}"
           [ -n "${PR_NUMBER}" ] || { echo "no PR number" ; exit 1 ; }
           gh pr view ${PR_NUMBER}

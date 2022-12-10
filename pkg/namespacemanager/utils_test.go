@@ -26,11 +26,22 @@ var _ = Describe("NamespaceManager utils", Label("namespace_manager_utils_test")
 			v6Pool1, v6Pool2 = "ns-default-ipv6-ippool1", "ns-default-ipv6-ippool2"
 
 			nsT = &corev1.Namespace{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Namespace",
+					APIVersion: "v1",
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "namespace",
 				},
 				Spec: corev1.NamespaceSpec{},
 			}
+		})
+
+		It("inputs nil Namespace", func() {
+			nsDefaultV4Pools, nsDefaultV6Pools, err := namespacemanager.GetNSDefaultPools(nil)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(nsDefaultV4Pools).To(BeEmpty())
+			Expect(nsDefaultV6Pools).To(BeEmpty())
 		})
 
 		It("inputs invalid annotation ipam.spidernet.io/default-ipv4-ippool", func() {

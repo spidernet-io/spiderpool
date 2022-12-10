@@ -17,19 +17,19 @@ var _ = Describe("IP utils", Label("ip_utils_test"), func() {
 	Describe("Test AssembleTotalIPs", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				ips, err := spiderpoolip.AssembleTotalIPs(invalidIPVersion, []string{"172.18.40.1-172.18.40.2"}, []string{"172.18.40.2"})
+				ips, err := spiderpoolip.AssembleTotalIPs(constant.InvalidIPVersion, []string{"172.18.40.1-172.18.40.2"}, []string{"172.18.40.2"})
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ips).To(BeEmpty())
 			})
 
 			It("inputs invalid IP ranges", func() {
-				ips, err := spiderpoolip.AssembleTotalIPs(constant.IPv4, invalidIPRanges, []string{"172.18.40.2"})
+				ips, err := spiderpoolip.AssembleTotalIPs(constant.IPv4, constant.InvalidIPRanges, []string{"172.18.40.2"})
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(ips).To(BeEmpty())
 			})
 
 			It("inputs invalid excluded IP ranges", func() {
-				ips, err := spiderpoolip.AssembleTotalIPs(constant.IPv4, []string{"172.18.40.1-172.18.40.2"}, invalidIPRanges)
+				ips, err := spiderpoolip.AssembleTotalIPs(constant.IPv4, []string{"172.18.40.1-172.18.40.2"}, constant.InvalidIPRanges)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
 				Expect(ips).To(BeEmpty())
 			})

@@ -17,13 +17,13 @@ var _ = Describe("CIDR", Label("cidr_test"), func() {
 	Describe("Test ParseCIDR", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				ip, err := spiderpoolip.ParseCIDR(invalidIPVersion, "172.18.40.40/24")
+				ip, err := spiderpoolip.ParseCIDR(constant.InvalidIPVersion, "172.18.40.40/24")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ip).To(BeNil())
 			})
 
 			It("inputs invalid CIDR address", func() {
-				ip, err := spiderpoolip.ParseCIDR(constant.IPv4, invalidCIDR)
+				ip, err := spiderpoolip.ParseCIDR(constant.IPv4, constant.InvalidCIDR)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(ip).To(BeNil())
 			})
@@ -55,17 +55,17 @@ var _ = Describe("CIDR", Label("cidr_test"), func() {
 	Describe("Test ContainsCIDR", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				contains, err := spiderpoolip.ContainsCIDR(invalidIPVersion, "172.18.40.0/24", "172.18.40.0/25")
+				contains, err := spiderpoolip.ContainsCIDR(constant.InvalidIPVersion, "172.18.40.0/24", "172.18.40.0/25")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(contains).To(BeFalse())
 			})
 
 			It("inputs invalid CIDR address", func() {
-				contains, err := spiderpoolip.ContainsCIDR(constant.IPv4, invalidCIDR, "172.18.40.0/25")
+				contains, err := spiderpoolip.ContainsCIDR(constant.IPv4, constant.InvalidCIDR, "172.18.40.0/25")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(contains).To(BeFalse())
 
-				contains, err = spiderpoolip.ContainsCIDR(constant.IPv4, "172.18.40.0/24", invalidCIDR)
+				contains, err = spiderpoolip.ContainsCIDR(constant.IPv4, "172.18.40.0/24", constant.InvalidCIDR)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(contains).To(BeFalse())
 			})
@@ -103,17 +103,17 @@ var _ = Describe("CIDR", Label("cidr_test"), func() {
 	Describe("Test IsCIDROverlap", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				overlap, err := spiderpoolip.IsCIDROverlap(invalidIPVersion, "172.18.40.0/24", "172.18.40.0/25")
+				overlap, err := spiderpoolip.IsCIDROverlap(constant.InvalidIPVersion, "172.18.40.0/24", "172.18.40.0/25")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(overlap).To(BeFalse())
 			})
 
 			It("inputs invalid CIDR address", func() {
-				overlap, err := spiderpoolip.IsCIDROverlap(constant.IPv4, invalidCIDR, "172.18.40.0/25")
+				overlap, err := spiderpoolip.IsCIDROverlap(constant.IPv4, constant.InvalidCIDR, "172.18.40.0/25")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(overlap).To(BeFalse())
 
-				overlap, err = spiderpoolip.IsCIDROverlap(constant.IPv4, "172.18.40.0/24", invalidCIDR)
+				overlap, err = spiderpoolip.IsCIDROverlap(constant.IPv4, "172.18.40.0/24", constant.InvalidCIDR)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 				Expect(overlap).To(BeFalse())
 			})
@@ -151,12 +151,12 @@ var _ = Describe("CIDR", Label("cidr_test"), func() {
 	Describe("Test IsCIDR", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {
-				err := spiderpoolip.IsCIDR(invalidIPVersion, "172.18.40.0/24")
+				err := spiderpoolip.IsCIDR(constant.InvalidIPVersion, "172.18.40.0/24")
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 			})
 
 			It("inputs invalid CIDR address", func() {
-				err := spiderpoolip.IsCIDR(constant.IPv4, invalidCIDR)
+				err := spiderpoolip.IsCIDR(constant.IPv4, constant.InvalidCIDR)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
 			})
 		})
@@ -172,14 +172,14 @@ var _ = Describe("CIDR", Label("cidr_test"), func() {
 
 	Describe("Test IsIPv4CIDR", func() {
 		It("tests whether it is an IPv4 CIDR address", func() {
-			Expect(spiderpoolip.IsIPv4CIDR(invalidCIDR)).To(BeFalse())
+			Expect(spiderpoolip.IsIPv4CIDR(constant.InvalidCIDR)).To(BeFalse())
 			Expect(spiderpoolip.IsIPv4CIDR("172.18.40.0/24")).To(BeTrue())
 		})
 	})
 
 	Describe("Test IsIPv6CIDR", func() {
 		It("tests whether it is an IPv6 CIDR address", func() {
-			Expect(spiderpoolip.IsIPv6CIDR(invalidCIDR)).To(BeFalse())
+			Expect(spiderpoolip.IsIPv6CIDR(constant.InvalidCIDR)).To(BeFalse())
 			Expect(spiderpoolip.IsIPv6CIDR("abcd:1234::/120")).To(BeTrue())
 		})
 	})

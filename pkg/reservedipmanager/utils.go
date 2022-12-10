@@ -4,14 +4,24 @@
 package reservedipmanager
 
 import (
+	"fmt"
 	"net"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func GetReservedIPsByIPVersion(version spiderpooltypes.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error) {
+func AssembleReservedIPs(version types.IPVersion, rIPList *spiderpoolv1.SpiderReservedIPList) ([]net.IP, error) {
+	if err := spiderpoolip.IsIPVersion(version); err != nil {
+		return nil, err
+	}
+
+	if rIPList == nil {
+		return nil, fmt.Errorf("reserved IP list %w", constant.ErrMissingRequiredParam)
+	}
+
 	var ips []net.IP
 	for _, r := range rIPList.Items {
 		if *r.Spec.IPVersion != version {

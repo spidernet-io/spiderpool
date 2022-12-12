@@ -11,5 +11,5 @@
 | A00007  | Spiderpool will successively try to allocate IPs in the order of the elements in the IPPool array until the first allocation succeeds or all fail | p1       | true  | done   |       |
 | A00008  | Successfully run an annotated multi-container pod                    | p2       |       | done   |       |
 | A00009  | Modify the annotated IPPool for a specified Deployment pod<br />Modify the annotated IPPool for a specified StatefulSet pod                 | p2       |       |  done   |       |
-| A00010  | Modify the annotated IPPool for a pod running on multiple NICs       | p3       |       |        |       |
+| A00010  | Modify the annotated IPPool for a pod running on multiple NICs       | p3       |       | done   |       |
 | A00011  | Use the ippool route with `cleanGateway=false` in the pod annotation as a default route | p3     |     |  done  |         |

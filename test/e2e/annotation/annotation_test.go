@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
@@ -626,6 +627,106 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		}
 		if frame.Info.IpV6Enabled {
 			GinkgoWriter.Printf("delete v6 ippool %v\n", v6PoolName)
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		}
+	})
+
+	It("Successfully run pods with multi-NIC ippools annotations", Label("A00010"), func() {
+		var v4PoolName, v6PoolName string
+		var v4Pool, v6Pool *spiderpool.SpiderIPPool
+		var err error
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+		if frame.Info.IpV4Enabled {
+			GinkgoWriter.Println("create v4 ippool")
+			v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
+			Expect(v4Pool).NotTo(BeNil())
+			if frame.Info.SpiderSubnetEnabled {
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, 1)
+			} else {
+				err = common.CreateIppool(frame, v4Pool)
+			}
+			Expect(err).To(Succeed(), "failed to create v4 ippool %v ,err is %v. \n", v4PoolName, err)
+		}
+		if frame.Info.IpV6Enabled {
+			GinkgoWriter.Println("create v6 ippool")
+			v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
+			Expect(v6Pool).NotTo(BeNil())
+			if frame.Info.SpiderSubnetEnabled {
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, 1)
+			} else {
+				err = common.CreateIppool(frame, v6Pool)
+			}
+			Expect(err).To(Succeed(), "failed to create v6 ippool %v ,err is %v. \n", v6PoolName, err)
+		}
+
+		// set pod annotation for nics
+		podIppoolsAnno := types.AnnoPodIPPoolsValue{
+			types.AnnoIPPoolItem{
+				NIC: common.NIC1,
+			}, {
+				NIC: common.NIC2,
+			},
+		}
+		if frame.Info.IpV4Enabled {
+			podIppoolsAnno[0].IPv4Pools = ClusterDefaultV4IppoolList
+			podIppoolsAnno[1].IPv4Pools = []string{v4PoolName}
+		}
+		if frame.Info.IpV6Enabled {
+			podIppoolsAnno[0].IPv6Pools = ClusterDefaultV6IppoolList
+			podIppoolsAnno[1].IPv6Pools = []string{v6PoolName}
+		}
+		podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+		Expect(err).NotTo(HaveOccurred())
+		annoPodIPPoolsStr := string(podIppoolsAnnoMarshal)
+		podYaml := common.GenerateExamplePodYaml(podName, nsName)
+		podYaml.Annotations = map[string]string{
+			pkgconstant.AnnoPodIPPools: annoPodIPPoolsStr,
+			common.MultusNetworks:      common.MacvlanCNIName,
+		}
+		Expect(podYaml).NotTo(BeNil())
+		GinkgoWriter.Printf("succeeded to generate pod yaml: %+v. \n", podYaml)
+
+		Expect(frame.CreatePod(podYaml)).To(Succeed())
+		ctx, cancel = context.WithTimeout(context.Background(), time.Minute*2)
+		defer cancel()
+		GinkgoWriter.Printf("create a pod %v/%v and wait for ready. \n", nsName, podName)
+		pod, err := frame.WaitPodStarted(podName, nsName, ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(pod).NotTo(BeNil())
+
+		GinkgoWriter.Println("Check if multiple NICs are valid.")
+		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IppoolList, ClusterDefaultV6IppoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
+		Expect(ok).NotTo(BeFalse())
+		Expect(err).NotTo(HaveOccurred())
+
+		GinkgoWriter.Println("Check for another NIC comment to take effect.")
+		if frame.Info.IpV4Enabled {
+			command := fmt.Sprintf("ip a | grep '%s' |grep '%s'", common.NIC2, v4Pool.Spec.IPs[0])
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v. \n", command)
+		}
+		if frame.Info.IpV6Enabled {
+			command := fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC2, v6Pool.Spec.IPs[0])
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v. \n", command)
+		}
+
+		GinkgoWriter.Printf("delete pod %v/%v. \n", nsName, podName)
+		Expect(frame.DeletePod(podName, nsName)).To(Succeed())
+
+		// Delete IPV4Pool and IPV6Pool
+		if frame.Info.IpV4Enabled {
+			GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
+			Expect(common.DeleteIPPoolByName(frame, v4PoolName)).To(Succeed())
+		}
+		if frame.Info.IpV6Enabled {
+			GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
 			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
 		}
 	})

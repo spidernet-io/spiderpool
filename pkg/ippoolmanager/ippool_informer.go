@@ -563,7 +563,7 @@ func (c *poolInformerController) syncHandleAllIPPool(ctx context.Context, pool *
 		}
 	} else {
 		// initial the original data
-		if pool.Status.AutoDesiredIPCount == nil {
+		if pool.Status.AllocatedIPCount == nil {
 			pool.Status.AllocatedIPCount = pointer.Int64(0)
 			informerLogger.Sugar().Infof("initial SpiderIPPool '%s' status AllocatedIPCount to 0", pool.Name)
 		}

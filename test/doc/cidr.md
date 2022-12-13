@@ -12,5 +12,5 @@
 | I00008  | Scale up and down the number of deployment several times to see if the state of the ippools is eventually stable                    |   p1     |       |  done  |       |
 | I00009  | Create 100 Subnets with the same `Subnet.spec` and see if only one succeeds in the end                                              |   p1     |       |  done  |       |
 | I00010  | Create 100 IPPools with the same `IPPool.spec` and see if only one succeeds in the end                                              |   p1     |       |  done  |       |
-| I00011  | In ippool it should consider reservedIPs when subnets are assigned                                                                  |   p1     |       |        |       |
+| I00011  | The subnet automatically creates an ippool and allocates IP, and should consider reservedIP                                         |   p1     |       |  done  |       |
 

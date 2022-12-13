@@ -40,6 +40,7 @@ type ipPoolManager struct {
 	freeIPsLimiter limiter.Limiter
 	client         client.Client
 	runtimeMgr     ctrl.Manager
+	podManager     podmanager.PodManager
 	rIPManager     reservedipmanager.ReservedIPManager
 	subnetManager  subnetmanagertypes.SubnetManager
 
@@ -53,12 +54,15 @@ type ipPoolManager struct {
 	v6AutoCreatedRateLimitQueue workqueue.RateLimitingInterface
 }
 
-func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
+func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podmanager.PodManager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
 	if c == nil {
 		return nil, errors.New("ippool manager config must be specified")
 	}
 	if mgr == nil {
 		return nil, errors.New("k8s manager must be specified")
+	}
+	if podManager == nil {
+		return nil, errors.New("pod manager must be specified")
 	}
 	if rIPManager == nil {
 		return nil, errors.New("reserved IP manager must be specified")
@@ -76,6 +80,7 @@ func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, rIPManager reser
 		freeIPsLimiter: freeIPsLimiter,
 		client:         mgr.GetClient(),
 		runtimeMgr:     mgr,
+		podManager:     podManager,
 		rIPManager:     rIPManager,
 	}
 
@@ -131,16 +136,22 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
 		}
 
-		ownerControllerType, ownerControllerName := podmanager.GetOwnerControllerType(pod)
-		ipPool.Status.AllocatedIPs[allocatedIP.String()] = spiderpoolv1.PoolIPAllocation{
+		ownerKind, owner, err := im.podManager.GetPodTopController(ctx, pod)
+		if err != nil {
+			return nil, nil, err
+		}
+		allocation := spiderpoolv1.PoolIPAllocation{
 			ContainerID:         containerID,
 			NIC:                 nic,
 			Node:                pod.Spec.NodeName,
 			Namespace:           pod.Namespace,
 			Pod:                 pod.Name,
-			OwnerControllerType: ownerControllerType,
-			OwnerControllerName: ownerControllerName,
+			OwnerControllerType: ownerKind,
 		}
+		if owner != nil {
+			allocation.OwnerControllerName = owner.GetName()
+		}
+		ipPool.Status.AllocatedIPs[allocatedIP.String()] = allocation
 
 		if ipPool.Status.AllocatedIPCount == nil {
 			ipPool.Status.AllocatedIPCount = new(int64)

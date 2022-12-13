@@ -3,8 +3,15 @@
 
 package podmanager
 
-import "github.com/spidernet-io/spiderpool/pkg/config"
+import (
+	"time"
+)
 
 type PodManagerConfig struct {
-	config.UpdateCRConfig
+	MaxConflictRetries    int
+	ConflictRetryUnitTime time.Duration
+}
+
+func setDefaultsForPodManagerConfig(config PodManagerConfig) PodManagerConfig {
+	return config
 }

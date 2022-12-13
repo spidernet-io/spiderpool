@@ -218,11 +218,42 @@ func initControllerServiceManagers(ctx context.Context) {
 	logger.Info("Begin to initialize spiderpool controller leader election")
 	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
+	logger.Debug("Begin to initialize Node manager")
+	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.NodeManager = nodeManager
+
+	logger.Debug("Begin to initialize Namespace manager")
+	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient())
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.NSManager = nsManager
+
+	logger.Debug("Begin to initialize Pod manager")
+	podManager, err := podmanager.NewPodManager(podmanager.PodManagerConfig{
+		MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+	}, controllerContext.CRDManager.GetClient())
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.PodManager = podManager
+
+	logger.Info("Begin to initialize StatefulSet Manager")
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.StsManager = statefulSetManager
+
 	logger.Info("Begin to initialize WorkloadEndpoint Manager")
 	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
 		UpdateCRConfig:    updateCRConfig,
 		MaxHistoryRecords: controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
-	}, controllerContext.CRDManager)
+	}, controllerContext.CRDManager, controllerContext.PodManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -250,36 +281,6 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Debug("Begin to initialize Node manager")
-	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	controllerContext.NodeManager = nodeManager
-
-	logger.Debug("Begin to initialize Namespace manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient())
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	controllerContext.NSManager = nsManager
-
-	logger.Info("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(&podmanager.PodManagerConfig{
-		UpdateCRConfig: updateCRConfig,
-	}, controllerContext.CRDManager.GetClient())
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	controllerContext.PodManager = podManager
-
-	logger.Info("Begin to initialize StatefulSet Manager")
-	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	controllerContext.StsManager = statefulSetManager
-
 	logger.Info("Begin to initialize IPPool Manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
 		EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
@@ -292,7 +293,7 @@ func initControllerServiceManagers(ctx context.Context) {
 		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 		WorkerNum:                     controllerContext.Cfg.IPPoolInformerWorkers,
 		WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
-	}, controllerContext.CRDManager, controllerContext.RIPManager)
+	}, controllerContext.CRDManager, controllerContext.PodManager, controllerContext.RIPManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

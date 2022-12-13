@@ -243,6 +243,25 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.ips'", func() {
+				It("inputs empty 'spec.ips'", func() {
+					ipVersion := constant.IPv4
+					rIPT.Spec.IPVersion = &ipVersion
+
+					ctx := context.TODO()
+					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("inputs invalid 'spec.ips'", func() {
+					ipVersion := constant.IPv4
+					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
+
+					ctx := context.TODO()
+					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					Expect(err).To(HaveOccurred())
+				})
+
 				It("failed to list ReservedIPs due to some unknown errors", func() {
 					mockRIPManager.EXPECT().
 						ListReservedIPs(gomock.All()).
@@ -257,25 +276,6 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
-					Expect(err).To(HaveOccurred())
-				})
-
-				It("inputs empty 'spec.ips'", func() {
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("inputs invalid 'spec.ips'", func() {
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateCreate(ctx, rIPT)
@@ -452,6 +452,18 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.ips'", func() {
+				It("appends an invalid IP range to 'spec.ips'", func() {
+					ipVersion := constant.IPv4
+					rIPT.Spec.IPVersion = &ipVersion
+
+					newRIPT := rIPT.DeepCopy()
+					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, constant.InvalidIPRange)
+
+					ctx := context.TODO()
+					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					Expect(err).To(HaveOccurred())
+				})
+
 				It("failed to list ReservedIPs due to some unknown errors", func() {
 					mockRIPManager.EXPECT().
 						ListReservedIPs(gomock.All()).
@@ -464,18 +476,6 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
-					Expect(err).To(HaveOccurred())
-				})
-
-				It("appends an invalid IP range to 'spec.ips'", func() {
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
-
-					newRIPT := rIPT.DeepCopy()
-					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, constant.InvalidIPRange)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)

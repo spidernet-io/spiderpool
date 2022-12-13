@@ -135,13 +135,14 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return nil, fmt.Errorf("currentPod must be specified")
 	}
 
-	ownerControllerType, _ := podmanager.GetOwnerControllerType(currentPod)
+	// TODO(Icarus9913): Replace with method GetPodTopController.
+	ownerRef := metav1.GetControllerOf(currentPod)
 
 	// deleted pod
 	if deleted {
 		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
-		if s.gcConfig.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
-			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerControllerType)
+		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.Kind == constant.OwnerStatefulSet {
+			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
 			if nil != err {
 				return nil, err
 			}
@@ -167,7 +168,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return podEntry, nil
 	} else {
 		// no need to trace Terminating StatefulSet pod.
-		if ownerControllerType == constant.OwnerStatefulSet {
+		if ownerRef != nil && ownerRef.Kind == constant.OwnerStatefulSet {
 			return nil, nil
 		}
 

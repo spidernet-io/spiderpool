@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -55,10 +56,9 @@ var _ = Describe("NodeManager", Label("node_manager_test"), func() {
 		var deleteOption *client.DeleteOptions
 
 		AfterEach(func() {
-			zero := int64(0)
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: &zero,
+				GracePeriodSeconds: pointer.Int64(0),
 				PropagationPolicy:  &policy,
 			}
 
@@ -161,19 +161,6 @@ var _ = Describe("NodeManager", Label("node_manager_test"), func() {
 		})
 
 		Describe("MatchLabelSelector", func() {
-			It("failed to list Nodes due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
-				defer patches.Reset()
-
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, nodeT)
-				Expect(err).NotTo(HaveOccurred())
-
-				match, err := nodeManager.MatchLabelSelector(ctx, nodeName, &metav1.LabelSelector{MatchLabels: labels})
-				Expect(err).To(MatchError(constant.ErrUnknown))
-				Expect(match).To(BeFalse())
-			})
-
 			It("checks non-existent Node", func() {
 				ctx := context.TODO()
 				match, err := nodeManager.MatchLabelSelector(ctx, nodeName, &metav1.LabelSelector{MatchLabels: labels})
@@ -193,6 +180,19 @@ var _ = Describe("NodeManager", Label("node_manager_test"), func() {
 				}
 				match, err := nodeManager.MatchLabelSelector(ctx, nodeName, invalidSelector)
 				Expect(err).To(HaveOccurred())
+				Expect(match).To(BeFalse())
+			})
+
+			It("failed to list Nodes due to some unknown errors", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				defer patches.Reset()
+
+				ctx := context.TODO()
+				err := fakeClient.Create(ctx, nodeT)
+				Expect(err).NotTo(HaveOccurred())
+
+				match, err := nodeManager.MatchLabelSelector(ctx, nodeName, &metav1.LabelSelector{MatchLabels: labels})
+				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(match).To(BeFalse())
 			})
 

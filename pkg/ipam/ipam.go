@@ -108,11 +108,14 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
 
-	ownerControllerType, ownerControllerName := podmanager.GetOwnerControllerType(pod)
-	if i.config.EnableStatefulSet && ownerControllerType == constant.OwnerStatefulSet {
+	ownerKind, owner, err := i.podManager.GetPodTopController(ctx, pod)
+	if err != nil {
+		return nil, err
+	}
+	if i.config.EnableStatefulSet && ownerKind == constant.OwnerStatefulSet {
 		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.ContainerID, *addArgs.IfName, pod, endpoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet %s/%s: %w", *addArgs.PodNamespace, ownerControllerName, err)
+			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet %s/%s: %w", *addArgs.PodNamespace, owner.GetName(), err)
 		}
 		if addResp != nil {
 			return addResp, nil

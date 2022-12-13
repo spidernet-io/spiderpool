@@ -75,7 +75,7 @@ metadata:
   labels:
     ipam.spidernet.io/ippool-reclaim: "true"
     ipam.spidernet.io/ippool-version: IPv4
-    ipam.spidernet.io/owner-application: deployment-default-demo-deploy-subnet
+    ipam.spidernet.io/owner-application: Deployment_default_demo-deploy-subnet
     ipam.spidernet.io/owner-application-uid: 94ceb817-8250-460e-b1af-69d041b98b41
     ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
   name: auto-deployment-default-demo-deploy-subnet-v4-1667358680
@@ -144,7 +144,7 @@ metadata:
   labels:
     ipam.spidernet.io/ippool-reclaim: "true"
     ipam.spidernet.io/ippool-version: IPv4
-    ipam.spidernet.io/owner-application: deployment-default-demo-deploy-subnet
+    ipam.spidernet.io/owner-application: Deployment_default_demo-deploy-subnet
     ipam.spidernet.io/owner-application-uid: 94ceb817-8250-460e-b1af-69d041b98b41
     ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
   name: auto-deployment-default-demo-deploy-subnet-v4-1667358680

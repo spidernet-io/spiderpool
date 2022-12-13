@@ -109,20 +109,23 @@ func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersi
 		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, strings.ToLower(lastOne))
 }
 
-// AppLabelValue will joint the application type, namespace and name.
-// the format is "{appKind}-{appNS}-{appName}"
+// AppLabelValue will joint the application type, namespace and name as a label value, then we need unpack it for tracing
+// [ns and object name constraint Ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
+// [label value ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+// Because the label value enable you to use '_', then we can use it as the slash.
+// So, for tracing it back, we set format is "{appKind}_{appNS}_{appName}"
 func AppLabelValue(appKind string, appNS, appName string) string {
-	return fmt.Sprintf("%s-%s-%s", appKind, appNS, appName)
+	return fmt.Sprintf("%s_%s_%s", appKind, appNS, appName)
 }
 
 // ParseAppLabelValue will unpack the application label value, its corresponding function is AppLabelValue
 func ParseAppLabelValue(str string) (appKind, appNS, appName string, isFound bool) {
-	typeKind, after, found := strings.Cut(str, "-")
+	typeKind, after, found := strings.Cut(str, "_")
 	if found {
 		isFound = found
 		appKind = typeKind
 
-		appNS, appName, _ = strings.Cut(after, "-")
+		appNS, appName, _ = strings.Cut(after, "_")
 	}
 
 	return

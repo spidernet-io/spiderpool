@@ -67,3 +67,4 @@ nav:
       - develop/swagger_openapi.md
       - develop/test.md
       - develop/changelog.md
+      - develop/upgrade.md

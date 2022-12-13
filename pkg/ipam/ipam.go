@@ -387,12 +387,15 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 
 func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool, pod *corev1.Pod) ([]*ToBeAllocated, error) {
 	// Select candidate IPPools through the Pod annotations "ipam.spidernet.io/subnets" or "ipam.spidernet.io/subnet"
-	fromSubnet, err := i.getPoolFromSubnet(ctx, pod, nic, cleanGateway)
-	if nil != err {
-		return nil, fmt.Errorf("failed to get IPPool from SpiderSubnet, error: %v", err)
-	}
-	if fromSubnet != nil {
-		return []*ToBeAllocated{fromSubnet}, nil
+	// if we enable to use SpiderSubnet feature
+	if i.config.EnableSpiderSubnet {
+		fromSubnet, err := i.getPoolFromSubnet(ctx, pod, nic, cleanGateway)
+		if nil != err {
+			return nil, fmt.Errorf("failed to get IPPool from SpiderSubnet, error: %v", err)
+		}
+		if fromSubnet != nil {
+			return []*ToBeAllocated{fromSubnet}, nil
+		}
 	}
 
 	// Select candidate IPPools through the Pod annotation "ipam.spidernet.io/ippools".
@@ -434,13 +437,18 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 }
 
 func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool) (*ToBeAllocated, error) {
-	subnetAnnoConfig, err := subnetmanagercontrollers.GetSubnetAnnoConfig(pod.Annotations)
+	logger := logutils.FromContext(ctx)
+
+	subnetAnnoConfig, err := subnetmanagercontrollers.GetSubnetAnnoConfig(pod.Annotations, logger)
 	if nil != err {
 		return nil, err
 	}
 
-	if subnetAnnoConfig == nil {
-		// default IPAM mode
+	// default IPAM mode case:
+	// 1. there's IPPool/IPPools annotation, then subnetAnnoConfig will be nil.
+	// 2. if there are no cluster default subnets specified in configmap, we should use the default IPAM mode.
+	if subnetAnnoConfig == nil ||
+		(len(subnetAnnoConfig.SubnetName.IPv6) == 0 && len(subnetAnnoConfig.SubnetName.IPv4) == 0) {
 		return nil, nil
 	}
 
@@ -458,8 +466,6 @@ func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic strin
 	if podTopControllerKind == constant.OwnerNone || podTopControllerKind == constant.OwnerUnknown {
 		return nil, fmt.Errorf("spider subnet doesn't support pod '%s/%s' owner controller", pod.Namespace, pod.Name)
 	}
-
-	logger := logutils.FromContext(ctx)
 
 	subnetName := subnetAnnoConfig.SubnetName
 	result := &ToBeAllocated{

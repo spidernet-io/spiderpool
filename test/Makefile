@@ -59,7 +59,7 @@ endif
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
 		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
-		scripts/installTestPod.sh $(E2E_KUBECONFIG)
+		scripts/installTestPod.sh $(E2E_KUBECONFIG) $(E2E_SPIDERPOOL_ENABLE_SUBNET)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"

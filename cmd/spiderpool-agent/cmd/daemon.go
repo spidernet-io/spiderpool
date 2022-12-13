@@ -27,6 +27,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
@@ -70,11 +71,20 @@ func DaemonMain() {
 	if nil != err {
 		logger.Fatal("Load configmap failed, " + err.Error())
 	}
+
+	// init singleton ClusterDefaultPool
+	logger.Sugar().Infof("Init Cluster default pool configurations")
+	singletons.InitClusterDefaultPool(agentContext.Cfg.ClusterDefaultIPv4IPPool, agentContext.Cfg.ClusterDefaultIPv6IPPool,
+		agentContext.Cfg.ClusterDefaultIPv4Subnet, agentContext.Cfg.ClusterDefaultIPv6Subnet,
+		agentContext.Cfg.ClusterDefaultSubnetFlexibleIPNum)
+
 	logger.With(zap.String("IpamUnixSocketPath", agentContext.Cfg.IpamUnixSocketPath),
 		zap.Bool("EnabledIPv4", agentContext.Cfg.EnableIPv4),
 		zap.Bool("EnabledIPv6", agentContext.Cfg.EnableIPv6),
 		zap.Strings("ClusterDefaultIPv4IPPool", agentContext.Cfg.ClusterDefaultIPv4IPPool),
 		zap.Strings("ClusterDefaultIPv6IPPool", agentContext.Cfg.ClusterDefaultIPv6IPPool),
+		zap.Strings("ClusterDefaultIPv4Subnet", agentContext.Cfg.ClusterDefaultIPv4Subnet),
+		zap.Strings("ClusterDefaultIPv6Subnet", agentContext.Cfg.ClusterDefaultIPv6Subnet),
 		zap.String("NetworkMode", agentContext.Cfg.NetworkMode)).
 		Info("Load configmap successfully")
 

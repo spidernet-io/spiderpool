@@ -269,11 +269,13 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					for _, pool := range v4PoolNameList {
 						Expect(common.DeleteIPPoolByName(frame, pool)).NotTo(HaveOccurred())
 					}
+					v4PoolNameList = []string{}
 				}
 				if frame.Info.IpV6Enabled {
 					for _, pool := range v6PoolNameList {
 						Expect(common.DeleteIPPoolByName(frame, pool)).NotTo(HaveOccurred())
 					}
+					v6PoolNameList = []string{}
 				}
 			})
 		})

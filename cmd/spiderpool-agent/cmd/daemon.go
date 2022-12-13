@@ -261,23 +261,6 @@ func initAgentServiceManagers(ctx context.Context) {
 		ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 	}
 
-	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
-	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
-		UpdateCRConfig:    updateCRConfig,
-		MaxHistoryRecords: agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
-	}, agentContext.CRDManager)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	agentContext.WEManager = weManager
-
-	logger.Debug("Begin to initialize ReservedIP manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	agentContext.RIPManager = rIPManager
-
 	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager.GetClient())
 	if err != nil {
@@ -292,26 +275,15 @@ func initAgentServiceManagers(ctx context.Context) {
 	}
 	agentContext.NSManager = nsManager
 
-	logger.Debug("Begin to initialize Pod Manager")
-	podManager, err := podmanager.NewPodManager(&podmanager.PodManagerConfig{
-		UpdateCRConfig: updateCRConfig,
+	logger.Debug("Begin to initialize Pod manager")
+	podManager, err := podmanager.NewPodManager(podmanager.PodManagerConfig{
+		MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
+		ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 	}, agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.PodManager = podManager
-
-	logger.Debug("Begin to initialize IPPool Manager")
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		EnableIPv4:      agentContext.Cfg.EnableIPv4,
-		EnableIPv6:      agentContext.Cfg.EnableIPv6,
-		UpdateCRConfig:  updateCRConfig,
-		MaxAllocatedIPs: agentContext.Cfg.IPPoolMaxAllocatedIPs,
-	}, agentContext.CRDManager, agentContext.RIPManager)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	agentContext.IPPoolManager = ipPoolManager
 
 	logger.Debug("Begin to initialize StatefulSet Manager")
 	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(agentContext.CRDManager)
@@ -319,6 +291,35 @@ func initAgentServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 	agentContext.StsManager = statefulSetManager
+
+	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
+	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
+		UpdateCRConfig:    updateCRConfig,
+		MaxHistoryRecords: agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
+	}, agentContext.CRDManager, agentContext.PodManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	agentContext.WEManager = weManager
+
+	logger.Debug("Begin to initialize ReservedIP manager")
+	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	agentContext.RIPManager = rIPManager
+
+	logger.Debug("Begin to initialize IPPool Manager")
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
+		EnableIPv4:      agentContext.Cfg.EnableIPv4,
+		EnableIPv6:      agentContext.Cfg.EnableIPv6,
+		UpdateCRConfig:  updateCRConfig,
+		MaxAllocatedIPs: agentContext.Cfg.IPPoolMaxAllocatedIPs,
+	}, agentContext.CRDManager, agentContext.PodManager, agentContext.RIPManager)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	agentContext.IPPoolManager = ipPoolManager
 
 	if agentContext.Cfg.EnableSpiderSubnet {
 		logger.Info("Begin to initialize Subnet Manager")

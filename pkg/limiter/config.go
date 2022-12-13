@@ -16,12 +16,13 @@ type LimiterConfig struct {
 }
 
 func setDefaultsForLimiterConfig(config LimiterConfig) LimiterConfig {
-	maxQueueSize, maxWaitTime := defaultMaxQueueSize, defaultMaxWaitTime
 	if config.MaxQueueSize == nil {
+		maxQueueSize := defaultMaxQueueSize
 		config.MaxQueueSize = &maxQueueSize
 	}
 
 	if config.MaxWaitTime == nil {
+		maxWaitTime := defaultMaxWaitTime
 		config.MaxWaitTime = &maxWaitTime
 	}
 

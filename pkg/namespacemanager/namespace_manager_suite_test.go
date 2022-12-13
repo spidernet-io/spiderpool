@@ -16,14 +16,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 )
 
+var scheme *runtime.Scheme
+var fakeClient client.Client
+var nsManager namespacemanager.NamespaceManager
+
 func TestNamespaceManager(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "NamespaceManager Suite", Label("namespacemanager", "unitest"))
 }
-
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var nsManager namespacemanager.NamespaceManager
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()

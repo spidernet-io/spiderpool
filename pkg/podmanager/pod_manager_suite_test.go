@@ -1,7 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package nodemanager_test
+package podmanager_test
 
 import (
 	"testing"
@@ -13,16 +13,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 )
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
-var nodeManager nodemanager.NodeManager
+var podManager podmanager.PodManager
 
-func TestNodeManager(t *testing.T) {
+func TestPodManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "NodeManager Suite", Label("nodemanager", "unitest"))
+	RunSpecs(t, "PodManager Suite", Label("podmanager", "unitest"))
 }
 
 var _ = BeforeSuite(func() {
@@ -34,6 +34,9 @@ var _ = BeforeSuite(func() {
 		WithScheme(scheme).
 		Build()
 
-	nodeManager, err = nodemanager.NewNodeManager(fakeClient)
+	podManager, err = podmanager.NewPodManager(
+		podmanager.PodManagerConfig{MaxConflictRetries: 1},
+		fakeClient,
+	)
 	Expect(err).NotTo(HaveOccurred())
 })

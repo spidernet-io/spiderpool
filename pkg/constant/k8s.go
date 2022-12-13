@@ -48,6 +48,7 @@ const (
 	PodFailed       types.PodStatus = "Failed"
 	PodEvicted      types.PodStatus = "Evicted"
 	PodDeleted      types.PodStatus = "Deleted"
+	PodUnknown      types.PodStatus = "Unknown"
 )
 
 const (

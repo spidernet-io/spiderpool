@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -55,10 +56,9 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 		var deleteOption *client.DeleteOptions
 
 		AfterEach(func() {
-			zero := int64(0)
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: &zero,
+				GracePeriodSeconds: pointer.Int64(0),
 				PropagationPolicy:  &policy,
 			}
 

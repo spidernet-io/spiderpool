@@ -31,6 +31,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
@@ -73,6 +74,12 @@ func DaemonMain() {
 	if nil != err {
 		logger.Sugar().Fatalf("failed to load configmap, error: %v", err)
 	}
+
+	// init singleton ClusterDefaultPool
+	logger.Sugar().Infof("Init Cluster default pool configurations")
+	singletons.InitClusterDefaultPool(controllerContext.Cfg.ClusterDefaultIPv4IPPool, controllerContext.Cfg.ClusterDefaultIPv6IPPool,
+		controllerContext.Cfg.ClusterDefaultIPv4Subnet, controllerContext.Cfg.ClusterDefaultIPv6Subnet,
+		controllerContext.Cfg.ClusterDefaultSubnetFlexibleIPNum)
 
 	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
 

@@ -114,14 +114,14 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
 				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil {
-				log.Debug("app will use default IPAM mode with no subnet annotation")
+			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
 				if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
@@ -139,7 +139,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			if oldObj != nil {
 				oldDeployment := oldObj.(*appsv1.Deployment)
 				oldAppReplicas = controllers.GetAppReplicas(oldDeployment.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDeployment.Spec.Template.Annotations)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDeployment.Spec.Template.Annotations, log)
 				if nil != err {
 					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
@@ -163,14 +163,14 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
 				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil {
-				log.Debug("app will use default IPAM mode with no subnet annotation")
+			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
 				if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
@@ -188,7 +188,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			if oldObj != nil {
 				oldReplicaSet := oldObj.(*appsv1.ReplicaSet)
 				oldAppReplicas = controllers.GetAppReplicas(oldReplicaSet.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldReplicaSet.Spec.Template.Annotations)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldReplicaSet.Spec.Template.Annotations, log)
 				if nil != err {
 					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
@@ -212,14 +212,14 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
 				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil {
-				log.Debug("app will use default IPAM mode with no subnet annotation")
+			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
 				if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
@@ -237,7 +237,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			if oldObj != nil {
 				oldStatefulSet := oldObj.(*appsv1.StatefulSet)
 				oldAppReplicas = controllers.GetAppReplicas(oldStatefulSet.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldStatefulSet.Spec.Template.Annotations)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldStatefulSet.Spec.Template.Annotations, log)
 				if nil != err {
 					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
@@ -261,14 +261,14 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			newAppReplicas = controllers.CalculateJobPodNum(newObject.Spec.Parallelism, newObject.Spec.Completions)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
 				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil {
-				log.Debug("app will use default IPAM mode with no subnet annotation")
+			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
 				if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
@@ -286,7 +286,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			if oldObj != nil {
 				oldJob := oldObj.(*batchv1.Job)
 				oldAppReplicas = controllers.CalculateJobPodNum(oldJob.Spec.Parallelism, oldJob.Spec.Completions)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldJob.Spec.Template.Annotations)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldJob.Spec.Template.Annotations, log)
 				if nil != err {
 					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
@@ -310,14 +310,14 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			newAppReplicas = controllers.CalculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations, log)
 			if nil != err {
 				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil {
-				log.Debug("app will use default IPAM mode with no subnet annotation")
+			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
 				if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
@@ -335,7 +335,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			if oldObj != nil {
 				oldCronJob := oldObj.(*batchv1.CronJob)
 				oldAppReplicas = controllers.CalculateJobPodNum(oldCronJob.Spec.JobTemplate.Spec.Parallelism, oldCronJob.Spec.JobTemplate.Spec.Completions)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations, log)
 				if nil != err {
 					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
@@ -359,14 +359,14 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			newAppReplicas = int(newObject.Status.DesiredNumberScheduled)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations)
+			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
 				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil {
-				log.Debug("app will use default IPAM mode with no subnet annotation")
+			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
 				if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
@@ -384,7 +384,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			if oldObj != nil {
 				oldDaemonSet := oldObj.(*appsv1.DaemonSet)
 				oldAppReplicas = int(oldDaemonSet.Status.DesiredNumberScheduled)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDaemonSet.Spec.Template.Annotations)
+				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDaemonSet.Spec.Template.Annotations, log)
 				if nil != err {
 					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
 				}
@@ -705,7 +705,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		return fmt.Errorf("%w: unexpected appWorkQueueKey in workQueue '%+v'", constant.ErrWrongInput, appKey)
 	}
 
-	subnetConfig, err = controllers.GetSubnetAnnoConfig(podAnno)
+	subnetConfig, err = controllers.GetSubnetAnnoConfig(podAnno, log)
 	if nil != err {
 		return fmt.Errorf("%w: failed to get pod annotation subnet config, error: %v", constant.ErrWrongInput, err)
 	}

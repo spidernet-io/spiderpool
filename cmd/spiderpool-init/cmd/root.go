@@ -154,9 +154,15 @@ func Execute() {
 			ObjectMeta: metav1.ObjectMeta{Name: Config.PoolV4Name},
 			Spec: spiderpoolv1.IPPoolSpec{
 				Subnet: Config.PoolV4Subnet,
-				IPs:    Config.PoolV4IPRanges,
 			},
 		}
+
+		// if we create SpiderSubnet CR object, we'll create an empty default IPPool.
+		// Otherwise, we'll create a truly useful default IPPool
+		if len(Config.SubnetV4Name) == 0 {
+			pool.Spec.IPs = Config.PoolV4IPRanges
+		}
+
 		if len(Config.PoolV4Gateway) > 0 {
 			pool.Spec.Gateway = &Config.PoolV4Gateway
 		}
@@ -198,9 +204,15 @@ func Execute() {
 			ObjectMeta: metav1.ObjectMeta{Name: Config.PoolV6Name},
 			Spec: spiderpoolv1.IPPoolSpec{
 				Subnet: Config.PoolV6Subnet,
-				IPs:    Config.PoolV6IPRanges,
 			},
 		}
+
+		// if we create SpiderSubnet CR object, we'll create an empty default IPPool.
+		// Otherwise, we'll create a truly useful default IPPool
+		if len(Config.SubnetV6Name) == 0 {
+			pool.Spec.IPs = Config.PoolV6IPRanges
+		}
+
 		if len(Config.PoolV6Gateway) > 0 {
 			pool.Spec.Gateway = &Config.PoolV6Gateway
 		}

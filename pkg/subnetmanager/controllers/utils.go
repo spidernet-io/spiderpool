@@ -10,12 +10,14 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -159,13 +161,15 @@ func GenSubnetFreeIPs(subnet *spiderpoolv1.SpiderSubnet) ([]net.IP, error) {
 }
 
 // GetSubnetAnnoConfig generates SpiderSubnet configuration from pod annotation,
-// if the pod doesn't have the related subnet annotation it will return nil
-func GetSubnetAnnoConfig(podAnnotations map[string]string) (*PodSubnetAnnoConfig, error) {
+// if the pod doesn't have the related subnet annotation but has IPPools/IPPool relative annotation it will return nil.
+// If the pod doesn't have any subnet/ippool annotations, it will use the cluster default subnet configuration.
+func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*PodSubnetAnnoConfig, error) {
 	var subnetAnnoConfig PodSubnetAnnoConfig
 
 	// annotation: ipam.spidernet.io/subnets
 	subnets, ok := podAnnotations[constant.AnnoSpiderSubnets]
 	if ok {
+		log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnets, subnets)
 		var subnetsItems []AnnoSubnetItems
 		err := json.Unmarshal([]byte(subnets), &subnetsItems)
 		if nil != err {
@@ -180,14 +184,27 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string) (*PodSubnetAnnoConfig
 		subnetAnnoConfig.SubnetName = firstSubnetItem
 	} else {
 		// annotation: ipam.spidernet.io/subnet
-		subnet, enableSubnet := podAnnotations[constant.AnnoSpiderSubnet]
-		if !enableSubnet {
+		subnet, ok := podAnnotations[constant.AnnoSpiderSubnet]
+		if !ok {
 			// default IPAM mode
-			return nil, nil
-		}
-		err := json.Unmarshal([]byte(subnet), &subnetAnnoConfig.SubnetName)
-		if nil != err {
-			return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %v", constant.AnnoSpiderSubnet, subnet, err)
+			_, useIPPools := podAnnotations[constant.AnnoPodIPPools]
+			_, useIPPool := podAnnotations[constant.AnnoPodIPPool]
+			if useIPPools || useIPPool {
+				log.Debug("no SpiderSubnet feature annotation found, use default IPAM mode")
+				return nil, nil
+			}
+
+			// default cluster subnet
+			log.Sugar().Infof("no IPPool or Subnet annotations found, use cluster default subnet IPv4: '%v', IPv6: '%v'",
+				singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet, singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet)
+			subnetAnnoConfig.SubnetName.IPv4 = singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet
+			subnetAnnoConfig.SubnetName.IPv6 = singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet
+		} else {
+			log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnet, subnets)
+			err := json.Unmarshal([]byte(subnet), &subnetAnnoConfig.SubnetName)
+			if nil != err {
+				return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %v", constant.AnnoSpiderSubnet, subnet, err)
+			}
 		}
 	}
 
@@ -203,9 +220,10 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string) (*PodSubnetAnnoConfig
 	var ipNum int
 	var err error
 
-	// annotation: ipam.spidernet.io/ippool-ip-number, (default: +0)
+	// annotation: ipam.spidernet.io/ippool-ip-number
 	poolIPNum, ok := podAnnotations[constant.AnnoSpiderSubnetPoolIPNumber]
 	if ok {
+		log.Sugar().Debugf("use IPPool IP number '%s'", poolIPNum)
 		isFlexible, ipNum, err = getPoolIPNumber(poolIPNum)
 		if nil != err {
 			return nil, fmt.Errorf("%w: %v", ErrorAnnoInput, err)
@@ -222,19 +240,23 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string) (*PodSubnetAnnoConfig
 			subnetAnnoConfig.AssignIPNum = ipNum
 		}
 	} else {
-		// no annotation "ipam.spidernet.io/ippool-ip-number", we just set the pool IP number `+0`
-		subnetAnnoConfig.FlexibleIPNum = pointer.Int(0)
+		// no annotation "ipam.spidernet.io/ippool-ip-number", we'll use the configmap clusterDefaultSubnetFlexibleIPNumber
+		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster default subnet flexible IP number: %d",
+			singletons.ClusterDefaultPool.ClusterDefaultSubnetFlexibleIPNumber)
+		subnetAnnoConfig.FlexibleIPNum = pointer.Int(singletons.ClusterDefaultPool.ClusterDefaultSubnetFlexibleIPNumber)
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)
 	reclaimPool, ok := podAnnotations[constant.AnnoSpiderSubnetReclaimIPPool]
 	if ok {
+		log.Sugar().Debugf("determine to reclaim IPPool '%s'", reclaimPool)
 		parseBool, err := strconv.ParseBool(reclaimPool)
 		if nil != err {
 			return nil, fmt.Errorf("%w: failed to parse spider subnet '%s', error: %v", ErrorAnnoInput, constant.AnnoSpiderSubnetReclaimIPPool, err)
 		}
 		subnetAnnoConfig.ReclaimIPPool = parseBool
 	} else {
+		log.Debug("no specified reclaim-IPPool, default to set it true")
 		subnetAnnoConfig.ReclaimIPPool = true
 	}
 

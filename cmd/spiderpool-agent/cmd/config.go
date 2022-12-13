@@ -94,14 +94,17 @@ type Config struct {
 	LimiterMaxWaitTime  int
 
 	// configmap
-	IpamUnixSocketPath       string   `yaml:"ipamUnixSocketPath"`
-	EnableIPv4               bool     `yaml:"enableIPv4"`
-	EnableIPv6               bool     `yaml:"enableIPv6"`
-	ClusterDefaultIPv4IPPool []string `yaml:"clusterDefaultIPv4IPPool"`
-	ClusterDefaultIPv6IPPool []string `yaml:"clusterDefaultIPv6IPPool"`
-	NetworkMode              string   `yaml:"networkMode"`
-	EnableStatefulSet        bool     `yaml:"enableStatefulSet"`
-	EnableSpiderSubnet       bool     `yaml:"enableSpiderSubnet"`
+	IpamUnixSocketPath                string   `yaml:"ipamUnixSocketPath"`
+	EnableIPv4                        bool     `yaml:"enableIPv4"`
+	EnableIPv6                        bool     `yaml:"enableIPv6"`
+	ClusterDefaultIPv4IPPool          []string `yaml:"clusterDefaultIPv4IPPool"`
+	ClusterDefaultIPv6IPPool          []string `yaml:"clusterDefaultIPv6IPPool"`
+	ClusterDefaultIPv4Subnet          []string `yaml:"clusterDefaultIPv4Subnet"`
+	ClusterDefaultIPv6Subnet          []string `yaml:"clusterDefaultIPv6Subnet"`
+	NetworkMode                       string   `yaml:"networkMode"`
+	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
+	EnableSpiderSubnet                bool     `yaml:"enableSpiderSubnet"`
+	ClusterDefaultSubnetFlexibleIPNum int      `yaml:"clusterDefaultSubnetFlexibleIPNumber"`
 
 	GoMaxProcs int
 }

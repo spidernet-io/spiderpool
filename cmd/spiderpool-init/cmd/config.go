@@ -30,10 +30,10 @@ const (
 )
 
 type _Config struct {
-	SubnetV4Name   string
-	PoolV4Name     string
-	PoolV4Subnet   string
-	PoolV4IPRanges []string
+	SubnetV4Name   string   // default-v4-subnet
+	PoolV4Name     string   // default-v4-ippool
+	PoolV4Subnet   string   // 172.18.0.0/16
+	PoolV4IPRanges []string // ["172.18.40.2-172.18.40.254"]
 	PoolV4Gateway  string
 
 	SubnetV6Name   string

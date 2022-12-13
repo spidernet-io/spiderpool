@@ -4,11 +4,13 @@
 # Copyright Authors of Spider
 
 E2E_KUBECONFIG="$1"
+E2E_SPIDERPOOL_ENABLE_SUBNET="$2"
 
 [ -z "$E2E_KUBECONFIG" ] && echo "error, miss E2E_KUBECONFIG " && exit 1
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
+[ -z "$E2E_SPIDERPOOL_ENABLE_SUBNET" ] && echo "not found E2E_SPIDERPOOL_ENABLE_SUBNET, default to set it false " &&  E2E_SPIDERPOOL_ENABLE_SUBNET=false
 
 NAME=test-pod
 cat <<EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
@@ -27,7 +29,9 @@ spec:
   template:
     metadata:
       annotations:
-        k8s.v1.cni.cncf.io/networks: ${MULTUS_CNI_NAMESPACE}/${MULTUS_ADDITIONAL_CNI_NAME}
+        $(if [[ "${E2E_SPIDERPOOL_ENABLE_SUBNET}" == "false" ]];then
+        echo "k8s.v1.cni.cncf.io/networks: ${MULTUS_CNI_NAMESPACE}/${MULTUS_ADDITIONAL_CNI_NAME}"
+        fi)
       name: $NAME
       labels:
         app: $NAME

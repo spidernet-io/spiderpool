@@ -233,35 +233,42 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod manager")
-	podManager, err := podmanager.NewPodManager(podmanager.PodManagerConfig{
-		MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-	}, controllerContext.CRDManager.GetClient())
+	podManager, err := podmanager.NewPodManager(
+		podmanager.PodManagerConfig{
+			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+		},
+		controllerContext.CRDManager.GetClient(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.PodManager = podManager
 
-	logger.Info("Begin to initialize StatefulSet Manager")
+	logger.Info("Begin to initialize StatefulSet manager")
 	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.StsManager = statefulSetManager
 
-	logger.Info("Begin to initialize WorkloadEndpoint Manager")
-	wepManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
-		UpdateCRConfig:    updateCRConfig,
-		MaxHistoryRecords: controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
-	}, controllerContext.CRDManager, controllerContext.PodManager)
+	logger.Debug("Begin to initialize Endpoint manager")
+	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(
+		workloadendpointmanager.EndpointManagerConfig{
+			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			MaxHistoryRecords:     &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
+		},
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.PodManager,
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	controllerContext.WEPManager = wepManager
+	controllerContext.EndpointManager = endpointManager
 
-	logger.Info("Begin to set up Endpoint webhook")
-	err = controllerContext.WEPManager.SetupWebhook()
-	if err != nil {
+	logger.Debug("Begin to set up Endpoint webhook")
+	if err := (&workloadendpointmanager.WorkloadEndpointWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
 
@@ -274,7 +281,7 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to set up ReservedIP webhook")
 	if err := (&reservedipmanager.ReservedIPWebhook{
-		ReservedIPManager: rIPManager,
+		ReservedIPManager: controllerContext.RIPManager,
 		EnableIPv4:        controllerContext.Cfg.EnableIPv4,
 		EnableIPv6:        controllerContext.Cfg.EnableIPv6,
 	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
@@ -347,7 +354,7 @@ func initGCManager(ctx context.Context) {
 	// EnableStatefulSet was determined by configmap
 	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
 
-	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.ClientSet, gcIPConfig, controllerContext.WEPManager,
+	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.ClientSet, gcIPConfig, controllerContext.EndpointManager,
 		controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.StsManager, controllerContext.Leader)
 	if nil != err {
 		logger.Fatal(err.Error())

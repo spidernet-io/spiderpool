@@ -15,24 +15,24 @@ import (
 )
 
 var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
+	var podT *corev1.Pod
+
+	BeforeEach(func() {
+		podT = &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Pod",
+				APIVersion: corev1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod",
+				Namespace: "default",
+			},
+			Spec:   corev1.PodSpec{},
+			Status: corev1.PodStatus{},
+		}
+	})
+
 	Describe("Test CheckPodStatus", func() {
-		var podT *corev1.Pod
-
-		BeforeEach(func() {
-			podT = &corev1.Pod{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Pod",
-					APIVersion: corev1.SchemeGroupVersion.String(),
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod",
-					Namespace: "default",
-				},
-				Spec:   corev1.PodSpec{},
-				Status: corev1.PodStatus{},
-			}
-		})
-
 		It("inputs nil Pod", func() {
 			status, allocatable := podmanager.CheckPodStatus(nil)
 			Expect(status).To(Equal(constant.PodUnknown))

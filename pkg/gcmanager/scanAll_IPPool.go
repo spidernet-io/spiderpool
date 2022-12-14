@@ -16,6 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -151,15 +152,15 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					}
 				}
 			} else {
-				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IP corresponding allocation containerID is different with wep current containerID
-				isCurrentContainerID, err := s.wepMgr.CheckCurrentContainerID(ctx, podYaml.Namespace, podYaml.Name, poolIPAllocation.ContainerID)
-				if nil != err {
-					scanAllLogger.Sugar().Errorf("failed to check IP '%s' allocation '%+v' containerID whether is same with wep '%s/%s' current containerID or not, error: %v",
-						poolIP, poolIPAllocation, podYaml.Namespace, podYaml.Name, err)
+				endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name)
+				if err != nil {
+					scanAllLogger.Sugar().Errorf("failed to get Endpoint '%s/%s': %v", podYaml.Namespace, podYaml.Name, err)
 					continue
 				}
 
-				if !isCurrentContainerID {
+				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IP corresponding allocation containerID is different with wep current containerID
+				allocation, _ := workloadendpointmanager.RetrieveIPAllocation(poolIPAllocation.ContainerID, poolIPAllocation.NIC, false, endpoint)
+				if allocation == nil {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation containerID is different with wep current containerID"))
 					// release IP but no need to remove wep finalizer
 					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndCID{{

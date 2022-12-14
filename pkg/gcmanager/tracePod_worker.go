@@ -118,14 +118,6 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 
 			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", *podCache)
 
-			// remove wep finalizer
-			err = s.wepMgr.RemoveFinalizer(ctx, podCache.Namespace, podCache.PodName)
-			if nil != err {
-				loggerReleaseIP.Sugar().Errorf("failed to remove wep '%s/%s' finalizer, error: '%v'",
-					podCache.Namespace, podCache.PodName, err)
-				continue
-			}
-
 			// delete StatefulSet wep (other controller wep has OwnerReference, its lifecycle is same with pod)
 			if wep.Status.OwnerControllerType == constant.OwnerStatefulSet {
 				err = s.wepMgr.Delete(ctx, wep)
@@ -136,7 +128,15 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				}
 			}
 
-			loggerReleaseIP.Sugar().Debugf("remove wep '%s/%s' finalizer '%s' successfully",
+			// remove wep finalizer
+			err = s.wepMgr.RemoveFinalizer(ctx, podCache.Namespace, podCache.PodName)
+			if nil != err {
+				loggerReleaseIP.Sugar().Errorf("failed to remove wep '%s/%s' finalizer, error: '%v'",
+					podCache.Namespace, podCache.PodName, err)
+				continue
+			}
+
+			loggerReleaseIP.Sugar().Infof("remove wep '%s/%s' finalizer '%s' successfully",
 				podCache.Namespace, podCache.PodName, constant.SpiderFinalizer)
 
 		case <-ctx.Done():

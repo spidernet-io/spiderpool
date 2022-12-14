@@ -129,11 +129,11 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo ""
     echo "=============== spiderpool crd spiderendpoint ============== "
     echo "-------- kubectl get spiderendpoint -o wide "
-    kubectl get spiderendpoint -o wide --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get spiderendpoint -A -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "-------- kubectl get spiderendpoint -o json "
-    kubectl get spiderendpoint -o json --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get spiderendpoint -A -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== spiderpool crd spiderreservedips ============== "

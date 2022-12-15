@@ -377,7 +377,7 @@ func GetWorkloadByName(f *frame.Framework, namespace, name string) (*v1.SpiderEn
 	existing := &v1.SpiderEndpoint{}
 	e := f.GetResource(v, existing)
 	if e != nil {
-		return nil, errors.New("workload not existed")
+		return nil, e
 	}
 	return existing, nil
 }
@@ -604,13 +604,13 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("time out to wait Workload delete until finish")
+			return fmt.Errorf("time out to wait workload %v/%v delete until finish", namespace, name)
 		default:
 			workload, err := GetWorkloadByName(f, namespace, name)
-			if err != nil {
-				return err
+			if api_errors.IsNotFound(err) {
+				return nil
 			}
-			if workload == nil || (workload.ObjectMeta.DeletionTimestamp != nil && workload.Status.Current == nil) {
+			if workload == nil {
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)

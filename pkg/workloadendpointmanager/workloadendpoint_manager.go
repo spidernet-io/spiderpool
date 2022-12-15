@@ -33,7 +33,7 @@ type WorkloadEndpointManager interface {
 	MarkIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) (*spiderpoolv1.SpiderEndpoint, error)
 	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, we *spiderpoolv1.SpiderEndpoint) error
 	ClearCurrentIPAllocation(ctx context.Context, containerID string, we *spiderpoolv1.SpiderEndpoint) error
-	RemoveFinalizer(ctx context.Context, se *spiderpoolv1.SpiderEndpoint, namespace, podName string) error
+	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	IsIPBelongWEPCurrent(ctx context.Context, namespace, podName, poolIP string) (bool, error)
 	CheckCurrentContainerID(ctx context.Context, namespace, podName, containerID string) (bool, error)
 	UpdateCurrentStatus(ctx context.Context, containerID string, pod *corev1.Pod) error
@@ -197,22 +197,19 @@ func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context,
 }
 
 // RemoveFinalizer removes a specific finalizer field in finalizers string array.
-func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, se *spiderpoolv1.SpiderEndpoint, namespace, podName string) error {
-	var err error
+func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
 	for i := 0; i <= em.config.MaxConflictRetries; i++ {
-		if se == nil {
-			se, err = em.GetEndpointByName(ctx, namespace, podName)
-			if err != nil {
-				return err
-			}
+		endpoint, err := em.GetEndpointByName(ctx, namespace, podName)
+		if err != nil {
+			return err
 		}
 
-		if !controllerutil.ContainsFinalizer(se, constant.SpiderFinalizer) {
+		if !controllerutil.ContainsFinalizer(endpoint, constant.SpiderFinalizer) {
 			return nil
 		}
 
-		controllerutil.RemoveFinalizer(se, constant.SpiderFinalizer)
-		if err := em.client.Update(ctx, se); err != nil {
+		controllerutil.RemoveFinalizer(endpoint, constant.SpiderFinalizer)
+		if err := em.client.Update(ctx, endpoint); err != nil {
 			if !apierrors.IsConflict(err) {
 				return err
 			}

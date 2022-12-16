@@ -42,6 +42,8 @@ jobs:
           gh pr view ${PR_NUMBER}
           PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
               [ -n "${PR_LABEL}" ] || { echo "no PR_LABEL, ignore" ; }
+          PR_TITLE=`gh pr view ${PR_NUMBER} | sed -n '1 p' | awk -F: '{print $2}' `
+               [ -n "${PR_TITLE}" ] || { echo "error, no PR_TITLE " ; exit 1 ; }
           #
               cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit"
           PR_COMMITS=` cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
@@ -53,6 +55,7 @@ jobs:
           echo "author: ${PR_AUTHOR}"
           echo "url: ${PR_URL}"
           echo "PR_LABEL: ${PR_LABEL}"
+          echo "PR_TITLE: ${PR_TITLE}"
           #
           #
           echo "=============================== get dest branch from labels ======== "
@@ -149,10 +152,10 @@ jobs:
                   echo "succeeded to cherry pick to branch $BRANCH "
                   # create a pr
                   git push origin ${PR_BRANCH}:${PR_BRANCH} -f
-                  gh pr create --title "auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
+                  gh pr create --title "${PR_TITLE}" \
                       --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
                       --label ${{ env.CHERRYPICK_LABEL }} \
-                      --body "robot cherry pick pr <${PR_URL}>,  action <${ACTION_URL}>  , commits $PR_COMMITS " \
+                      --body "robot cherry pick pr <${PR_URL}> to branch ${BRANCH},  action <${ACTION_URL}>  , commits $PR_COMMITS " \
                       --base ${BRANCH}
               else
                   echo "no changes happened for commits $PR_COMMITS, ignore create pr"

@@ -243,7 +243,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.PodManager = podManager
 
 	logger.Info("Begin to initialize StatefulSet Manager")
-	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager)
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

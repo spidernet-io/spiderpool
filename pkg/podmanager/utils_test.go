@@ -22,7 +22,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			podT = &corev1.Pod{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Pod",
-					APIVersion: "v1",
+					APIVersion: corev1.SchemeGroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod",

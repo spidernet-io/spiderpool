@@ -286,7 +286,7 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.PodManager = podManager
 
 	logger.Debug("Begin to initialize StatefulSet Manager")
-	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(agentContext.CRDManager)
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

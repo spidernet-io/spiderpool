@@ -43,7 +43,7 @@ var _ = Describe("NodeManager", Label("node_manager_test"), func() {
 			nodeT = &corev1.Node{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Node",
-					APIVersion: "v1",
+					APIVersion: corev1.SchemeGroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   nodeName,

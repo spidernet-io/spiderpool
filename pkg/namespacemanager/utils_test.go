@@ -28,7 +28,7 @@ var _ = Describe("NamespaceManager utils", Label("namespace_manager_utils_test")
 			nsT = &corev1.Namespace{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Namespace",
-					APIVersion: "v1",
+					APIVersion: corev1.SchemeGroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "namespace",

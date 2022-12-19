@@ -43,7 +43,7 @@ var _ = Describe("NamespaceManager", Label("namespace_manager_test"), func() {
 			nsT = &corev1.Namespace{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Namespace",
-					APIVersion: "v1",
+					APIVersion: corev1.SchemeGroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   nsName,

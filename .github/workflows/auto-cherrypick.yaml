@@ -42,7 +42,7 @@ jobs:
           gh pr view ${PR_NUMBER}
           PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
               [ -n "${PR_LABEL}" ] || { echo "no PR_LABEL, ignore" ; }
-          PR_TITLE=`gh pr view ${PR_NUMBER} | sed -n '1 p' | awk -F: '{print $2}' `
+          PR_TITLE=`gh pr view ${PR_NUMBER} | sed -n '1 p' `
                [ -n "${PR_TITLE}" ] || { echo "error, no PR_TITLE " ; exit 1 ; }
           #
               cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit"

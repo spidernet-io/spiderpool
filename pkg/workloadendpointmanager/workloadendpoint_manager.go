@@ -131,6 +131,20 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 		return newWE, nil
 	}
 
+	// Create -> Delete -> Create a Pod with the same namespace and name in
+	// a short time will cause some unexpected phenomena discussed in
+	// https://github.com/spidernet-io/spiderpool/issues/1187.
+	if we.DeletionTimestamp != nil {
+		// We can use GVK + Pod name (Same name as Endpoint) for more accurate
+		// judgment, but this is unnecessary at present, because Endpoint has
+		// only one Owner.
+		ownerPod := we.GetOwnerReferences()[0]
+		// Beware of deleting the normal Endpoint manually.
+		if ownerPod.UID != pod.GetUID() {
+			return nil, fmt.Errorf("currently, the IP addresses of the Pod %s/%s (uid: %s) is being recycled. You may create two Pods with the same namespace and name in a very short time", we.Namespace, ownerPod.Name, string(ownerPod.UID))
+		}
+	}
+
 	if we.Status.Current != nil && we.Status.Current.ContainerID == containerID {
 		return we, nil
 	}

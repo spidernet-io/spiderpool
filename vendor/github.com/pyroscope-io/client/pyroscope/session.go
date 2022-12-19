@@ -3,6 +3,7 @@ package pyroscope
 import (
 	"bytes"
 	"github.com/pyroscope-io/client/internal/alignedticker"
+	"github.com/pyroscope-io/client/internal/cumulativepprof"
 	"runtime"
 	"runtime/pprof"
 	"sync"
@@ -19,6 +20,7 @@ type Session struct {
 	profileTypes           []ProfileType
 	uploadRate             time.Duration
 	disableGCRuns          bool
+	disableCumulativeMerge bool
 	DisableAutomaticResets bool
 
 	logger    Logger
@@ -40,6 +42,8 @@ type Session struct {
 	lastGCGeneration uint32
 	appName          string
 	startTime        time.Time
+
+	mergers *cumulativepprof.Mergers
 }
 
 type SessionConfig struct {
@@ -50,6 +54,7 @@ type SessionConfig struct {
 	ProfilingTypes         []ProfileType
 	DisableGCRuns          bool
 	DisableAutomaticResets bool
+	DisableCumulativeMerge bool
 	SampleRate             uint32
 	UploadRate             time.Duration
 }
@@ -71,6 +76,7 @@ func NewSession(c SessionConfig) (*Session, error) {
 		profileTypes:           c.ProfilingTypes,
 		disableGCRuns:          c.DisableGCRuns,
 		DisableAutomaticResets: c.DisableAutomaticResets,
+		disableCumulativeMerge: c.DisableCumulativeMerge,
 		sampleRate:             c.SampleRate,
 		uploadRate:             c.UploadRate,
 		stopCh:                 make(chan struct{}),
@@ -81,8 +87,9 @@ func NewSession(c SessionConfig) (*Session, error) {
 		goroutinesBuf:          &bytes.Buffer{},
 		mutexBuf:               &bytes.Buffer{},
 		blockBuf:               &bytes.Buffer{},
-	}
 
+		mergers: cumulativepprof.NewMergers(),
+	}
 	return ps, nil
 }
 
@@ -265,7 +272,7 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 			curBlockBuf := copyBuf(ps.blockBuf.Bytes())
 			ps.blockBuf.Reset()
 			if ps.blockPrevBytes != nil {
-				ps.upstream.Upload(&upstream.UploadJob{
+				job := &upstream.UploadJob{
 					Name:        ps.appName,
 					StartTime:   startTime,
 					EndTime:     endTime,
@@ -285,7 +292,9 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 							Cumulative:  true,
 						},
 					},
-				})
+				}
+				ps.mergeCumulativeProfile(ps.mergers.Block, job)
+				ps.upstream.Upload(job)
 			}
 			ps.blockPrevBytes = curBlockBuf
 		}
@@ -297,7 +306,7 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 			curMutexBuf := copyBuf(ps.mutexBuf.Bytes())
 			ps.mutexBuf.Reset()
 			if ps.mutexPrevBytes != nil {
-				ps.upstream.Upload(&upstream.UploadJob{
+				job := &upstream.UploadJob{
 					Name:        ps.appName,
 					StartTime:   startTime,
 					EndTime:     endTime,
@@ -317,7 +326,9 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 							Cumulative:  true,
 						},
 					},
-				})
+				}
+				ps.mergeCumulativeProfile(ps.mergers.Mutex, job)
+				ps.upstream.Upload(job)
 			}
 			ps.mutexPrevBytes = curMutexBuf
 		}
@@ -336,8 +347,8 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 			pprof.WriteHeapProfile(ps.memBuf)
 			curMemBytes := copyBuf(ps.memBuf.Bytes())
 			ps.memBuf.Reset()
-			if ps.memPrevBytes != nil {
-				ps.upstream.Upload(&upstream.UploadJob{
+			if ps.memPrevBytes != nil { //todo does this if statement loose first 10s profile?
+				job := &upstream.UploadJob{
 					Name:        ps.appName,
 					StartTime:   startTime,
 					EndTime:     endTime,
@@ -346,12 +357,35 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 					Format:      upstream.FormatPprof,
 					Profile:     curMemBytes,
 					PrevProfile: ps.memPrevBytes,
-				})
+				}
+				ps.mergeCumulativeProfile(ps.mergers.Heap, job)
+				ps.upstream.Upload(job)
 			}
 			ps.memPrevBytes = curMemBytes
 			ps.lastGCGeneration = currentGCGeneration
 		}
 	}
+}
+
+func (ps *Session) mergeCumulativeProfile(m *cumulativepprof.Merger, job *upstream.UploadJob) {
+	// todo should we filter by enabled ps.profileTypes to reduce profile size ? maybe add a separate option ?
+	if ps.disableCumulativeMerge {
+		return
+	}
+	p, err := m.Merge(job.PrevProfile, job.Profile)
+	if err != nil {
+		ps.logger.Errorf("failed to merge %s profiles %v", m.Name, err)
+		return
+	}
+	var prof bytes.Buffer
+	err = p.Write(&prof)
+	if err != nil {
+		ps.logger.Errorf("failed to serialize merged %s profiles %v", m.Name, err)
+		return
+	}
+	job.PrevProfile = nil
+	job.Profile = prof.Bytes()
+	job.SampleTypeConfig = m.SampleTypeConfig
 }
 
 func (ps *Session) Stop() {

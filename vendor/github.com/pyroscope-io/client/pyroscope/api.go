@@ -20,6 +20,7 @@ type Config struct {
 	ProfileTypes           []ProfileType
 	DisableGCRuns          bool // this will disable automatic runtime.GC runs between getting the heap profiles
 	DisableAutomaticResets bool // disable automatic profiler reset every 10 seconds. Reset manually by calling Flush method
+	DisableCumulativeMerge bool // disable client side merging of cumulative profiles (alloc_objects, alloc_count, block_count, block_duration, mutex_count, mutex_duration) merging
 }
 
 type Profiler struct {
@@ -65,6 +66,7 @@ func Start(cfg Config) (*Profiler, error) {
 		ProfilingTypes:         cfg.ProfileTypes,
 		DisableGCRuns:          cfg.DisableGCRuns,
 		DisableAutomaticResets: cfg.DisableAutomaticResets,
+		DisableCumulativeMerge: cfg.DisableCumulativeMerge,
 		SampleRate:             cfg.SampleRate,
 		UploadRate:             10 * time.Second,
 	}

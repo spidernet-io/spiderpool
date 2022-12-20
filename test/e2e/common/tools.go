@@ -112,11 +112,17 @@ func ContrastIpv6ToIntValues(ip1, ip2 string) error {
 
 func SelectIpFromIps(version types.IPVersion, ips []net.IP, ipNum int) ([]string, error) {
 	var ipArray []net.IP
+	ipMap := make(map[string]bool)
 
 	length := len(ips)
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < ipNum; i++ {
-		ipArray = []net.IP{ips[rand.Intn(length)]}
+		v := ips[rand.Intn(length)]
+		if _, ok := ipMap[string(v)]; ok {
+			i--
+		}
+		ipMap[string(v)] = true
+		ipArray = append(ipArray, v)
 	}
 
 	ipRanges, err := ip.ConvertIPsToIPRanges(version, ipArray)

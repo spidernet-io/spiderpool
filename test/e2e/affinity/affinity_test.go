@@ -24,7 +24,6 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 	var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 
 	BeforeEach(func() {
-
 		if frame.Info.SpiderSubnetEnabled {
 			if frame.Info.IpV4Enabled {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(5)
@@ -352,9 +351,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 	})
 
 	Context("Support Statefulset pod who will be always assigned same IP addresses.", func() {
-		var v4PoolName, v6PoolName, statefulSetName string
-		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
+		var v4PoolName, v6PoolName, defaultV4PoolName, defaultV6PoolName, statefulSetName string
+		var v4PoolObj, v6PoolObj, defaultV4PoolObj, defaultV6PoolObj *spiderpoolv1.SpiderIPPool
 		var newPodList *corev1.PodList
+		var defaultV4PoolNameList, defaultV6PoolNameList []string
 		const stsOriginialNum = int(1)
 		statefulSetName = "sts" + tools.RandomName()
 
@@ -362,35 +362,49 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// Create IPv4 pools and IPv6 pools
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
+				defaultV4PoolName, defaultV4PoolObj = common.GenerateExampleIpv4poolObject(5)
 				if frame.Info.SpiderSubnetEnabled {
-					v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
-					v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4PoolObj, 2)).NotTo(HaveOccurred())
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, defaultV4PoolObj, 2)).NotTo(HaveOccurred())
+				} else {
+					Expect(common.CreateIppool(frame, v4PoolObj)).NotTo(HaveOccurred())
+					Expect(common.CreateIppool(frame, defaultV4PoolObj)).NotTo(HaveOccurred())
 				}
-				GinkgoWriter.Printf("try to create v6 ippool %v \n", v4PoolObj.Name)
-				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
+				defaultV4PoolNameList = append(defaultV4PoolNameList, defaultV4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
+				defaultV6PoolName, defaultV6PoolObj = common.GenerateExampleIpv6poolObject(5)
 				if frame.Info.SpiderSubnetEnabled {
-					v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
-					v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6PoolObj, 2)).NotTo(HaveOccurred())
+					Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, defaultV6PoolObj, 2)).NotTo(HaveOccurred())
+				} else {
+					GinkgoWriter.Printf("try to create v6 ippool %v \n", v6PoolObj.Name)
+					Expect(common.CreateIppool(frame, v6PoolObj)).NotTo(HaveOccurred())
+					Expect(common.CreateIppool(frame, defaultV6PoolObj)).NotTo(HaveOccurred())
 				}
-				GinkgoWriter.Printf("try to create v6 ippool %v \n", v6PoolObj.Name)
-				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
+				defaultV6PoolNameList = append(defaultV6PoolNameList, defaultV6PoolName)
 			}
 			DeferCleanup(func() {
 				if frame.Info.IpV4Enabled {
 					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+					Expect(common.DeleteIPPoolByName(frame, defaultV4PoolName)).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
 					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+					Expect(common.DeleteIPPoolByName(frame, defaultV6PoolName)).NotTo(HaveOccurred())
 				}
 			})
 		})
+
 		It("Successfully restarted statefulSet/pod with matching podSelector, ip remains the same", Label("L00008", "A00009"), func() {
 			// A00009:Modify the annotated IPPool for a specified StatefulSet pod
 			// Generate ippool annotation string
-			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList)
+			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, defaultV4PoolNameList, defaultV6PoolNameList)
 
 			stsObject := common.GenerateExampleStatefulSetYaml(statefulSetName, namespace, int32(stsOriginialNum))
 			stsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
@@ -408,7 +422,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			Expect(int32(len(podlist.Items))).Should(Equal(stsObject.Status.ReadyReplicas))
 
 			// check pod ip record in ippool
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist)
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, defaultV4PoolNameList, defaultV6PoolNameList, podlist)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ok).To(BeTrue())
 
@@ -512,7 +526,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// Delete Statefulset and Check if the Pod IP in IPPool reclaimed normally
 			err = frame.DeleteStatefulSet(statefulSetName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(common.WaitIPReclaimedFinish(frame, ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, podlist, common.IPReclaimTimeout)).To(Succeed())
+			Expect(common.WaitIPReclaimedFinish(frame, defaultV4PoolNameList, defaultV6PoolNameList, podlist, common.IPReclaimTimeout)).To(Succeed())
 
 			// Check workloadendpoint records are deleted
 			ctx4, cancel4 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
@@ -531,6 +545,9 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		nsName1 = "ns1" + tools.RandomName()
 
 		BeforeEach(func() {
+			if frame.Info.SpiderSubnetEnabled {
+				Skip("The subnet function is enabled, the namespace annotation has a lower priority than the default subnet")
+			}
 			// Create another namespace
 			GinkgoWriter.Printf("create another namespace %v \n", nsName1)
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName1, common.ServiceAccountReadyTimeout)

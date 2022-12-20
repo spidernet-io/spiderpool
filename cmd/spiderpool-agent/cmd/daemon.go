@@ -143,7 +143,7 @@ func DaemonMain() {
 		},
 		WaitSubnetPoolRetries: agentContext.Cfg.UpdateCRMaxRetries,
 		WaitSubnetPoolTime:    time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-	}, agentContext.IPPoolManager, agentContext.WEManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
+	}, agentContext.IPPoolManager, agentContext.EndpointManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
 	agentContext.IPAM = ipam
 
 	go func() {
@@ -276,31 +276,39 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod manager")
-	podManager, err := podmanager.NewPodManager(podmanager.PodManagerConfig{
-		MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
-		ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-	}, agentContext.CRDManager.GetClient())
+	podManager, err := podmanager.NewPodManager(
+		podmanager.PodManagerConfig{
+			MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+		},
+		agentContext.CRDManager.GetClient(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.PodManager = podManager
 
-	logger.Debug("Begin to initialize StatefulSet Manager")
+	logger.Debug("Begin to initialize StatefulSet manager")
 	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(agentContext.CRDManager.GetClient())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.StsManager = statefulSetManager
 
-	logger.Debug("Begin to initialize WorkloadEndpoint Manager")
-	weManager, err := workloadendpointmanager.NewWorkloadEndpointManager(&workloadendpointmanager.EndpointManagerConfig{
-		UpdateCRConfig:    updateCRConfig,
-		MaxHistoryRecords: agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
-	}, agentContext.CRDManager, agentContext.PodManager)
+	logger.Debug("Begin to initialize Endpoint manager")
+	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(
+		workloadendpointmanager.EndpointManagerConfig{
+			MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			MaxHistoryRecords:     &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
+		},
+		agentContext.CRDManager.GetClient(),
+		agentContext.PodManager,
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	agentContext.WEManager = weManager
+	agentContext.EndpointManager = endpointManager
 
 	logger.Debug("Begin to initialize ReservedIP manager")
 	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())

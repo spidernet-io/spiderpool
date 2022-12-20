@@ -20,7 +20,7 @@ func (rw *ReservedIPWebhook) mutateReservedIP(ctx context.Context, rIP *spiderpo
 	logger.Info("Start to mutate ReservedIP")
 
 	if rIP.DeletionTimestamp != nil {
-		logger.Info("Deleting ReservedIP, noting to mutate")
+		logger.Info("Terminating ReservedIP, noting to mutate")
 		return nil
 	}
 

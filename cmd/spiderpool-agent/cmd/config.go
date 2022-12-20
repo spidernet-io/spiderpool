@@ -115,16 +115,16 @@ type AgentContext struct {
 	InnerCancel context.CancelFunc
 
 	// manager
-	IPAM          ipam.IPAM
-	CRDManager    ctrl.Manager
-	IPPoolManager ippoolmanagertypes.IPPoolManager
-	WEManager     workloadendpointmanager.WorkloadEndpointManager
-	RIPManager    reservedipmanager.ReservedIPManager
-	NodeManager   nodemanager.NodeManager
-	NSManager     namespacemanager.NamespaceManager
-	PodManager    podmanager.PodManager
-	StsManager    statefulsetmanager.StatefulSetManager
-	SubnetManager subnetmanagertypes.SubnetManager
+	IPAM            ipam.IPAM
+	CRDManager      ctrl.Manager
+	IPPoolManager   ippoolmanagertypes.IPPoolManager
+	EndpointManager workloadendpointmanager.WorkloadEndpointManager
+	RIPManager      reservedipmanager.ReservedIPManager
+	NodeManager     nodemanager.NodeManager
+	NSManager       namespacemanager.NamespaceManager
+	PodManager      podmanager.PodManager
+	StsManager      statefulsetmanager.StatefulSetManager
+	SubnetManager   subnetmanagertypes.SubnetManager
 
 	// handler
 	HttpServer        *server.Server

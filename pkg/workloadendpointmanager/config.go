@@ -3,9 +3,35 @@
 
 package workloadendpointmanager
 
-import "github.com/spidernet-io/spiderpool/pkg/config"
+import (
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+)
+
+const (
+	defaultMaxHistoryRecords = 100
+)
 
 type EndpointManagerConfig struct {
-	config.UpdateCRConfig
-	MaxHistoryRecords int
+	MaxConflictRetries    int
+	ConflictRetryUnitTime time.Duration
+	scheme                *runtime.Scheme
+	MaxHistoryRecords     *int
+}
+
+func setDefaultsForPodManagerConfig(config EndpointManagerConfig) EndpointManagerConfig {
+	if config.scheme == nil {
+		config.scheme = runtime.NewScheme()
+		utilruntime.Must(corev1.AddToScheme(config.scheme))
+	}
+
+	if config.MaxHistoryRecords == nil {
+		maxHistoryRecords := defaultMaxHistoryRecords
+		config.MaxHistoryRecords = &maxHistoryRecords
+	}
+
+	return config
 }

@@ -320,8 +320,6 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 			})
 		})
 
-		PDescribe("GetPodTopController", func() {
-
-		})
+		PDescribe("GetPodTopController", func() {})
 	})
 })

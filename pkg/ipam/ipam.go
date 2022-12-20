@@ -177,7 +177,7 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID, nic str
 	}
 
 	// Refresh Endpoint current IP allocation.
-	if err := i.weManager.UpdateCurrentStatus(ctx, containerID, pod); err != nil {
+	if err := i.weManager.ReallocateCurrentIPAllocation(ctx, containerID, pod.Spec.NodeName, pod.Namespace, pod.Name); err != nil {
 		return nil, fmt.Errorf("failed to update the current IP allocation of StatefulSet: %w", err)
 	}
 
@@ -220,9 +220,15 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	}
 
 	// TODO(iiiceoo): Comment why containerID should be written first.
-	endpoint, err = i.weManager.MarkIPAllocation(ctx, *addArgs.ContainerID, endpoint, pod)
-	if err != nil {
-		return nil, fmt.Errorf("failed to mark IP allocation: %v", err)
+	if endpoint == nil {
+		endpoint, err = i.weManager.MarkIPAllocation(ctx, *addArgs.ContainerID, pod)
+		if err != nil {
+			return nil, fmt.Errorf("failed to mark IP allocation: %v", err)
+		}
+	} else {
+		if err := i.weManager.ReMarkIPAllocation(ctx, *addArgs.ContainerID, pod, endpoint); err != nil {
+			return nil, fmt.Errorf("failed to remark IP allocation: %v", err)
+		}
 	}
 
 	results, err := i.allocateForAllNICs(ctx, toBeAllocatedSet, *addArgs.ContainerID, endpoint, pod)
@@ -335,7 +341,7 @@ func (i *ipam) allocateForOneNIC(ctx context.Context, t *ToBeAllocated, containe
 			ContainerID: containerID,
 			IPs:         patch,
 		}, endpoint); err != nil {
-			return results, fmt.Errorf("failed to update IP allocation detail %+v of Endpoint %s/%s: %v", patch, endpoint.Namespace, endpoint.Name, err)
+			return results, fmt.Errorf("failed to patch IP allocation detail %+v to Endpoint %s/%s: %v", patch, endpoint.Namespace, endpoint.Name, err)
 		}
 	}
 

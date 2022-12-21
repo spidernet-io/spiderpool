@@ -111,6 +111,24 @@ func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersi
 		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, strings.ToLower(lastOne))
 }
 
+func SubnetPoolNameV2(controllerKind, controllerNS, controllerName string, ipVersion types.IPVersion, controllerUID apitypes.UID, ifName string) string {
+	// the format of uuid is "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+	// ref: https://github.com/google/uuid/blob/44b5fee7c49cf3bcdf723f106b36d56ef13ccc88/uuid.go#L185
+	splits := strings.Split(string(controllerUID), "-")
+	lastOne := splits[len(splits)-1]
+
+	// v1 version
+	poolName := fmt.Sprintf("auto-%s-%s-%s-v%d-%s",
+		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, strings.ToLower(lastOne))
+
+	// v2 version
+	if len(ifName) != 0 {
+		poolName = fmt.Sprintf("%s-%s", poolName, ifName)
+	}
+
+	return poolName
+}
+
 // AppLabelValue will joint the application type, namespace and name as a label value, then we need unpack it for tracing
 // [ns and object name constraint Ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 // [label value ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set

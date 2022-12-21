@@ -128,7 +128,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 ### clusterDefaultPool parameters
 
 | Name                                        | Description                                                                     | Value               |
-|---------------------------------------------|---------------------------------------------------------------------------------| ------------------- |
+| ------------------------------------------- | ------------------------------------------------------------------------------- | ------------------- |
 | `clusterDefaultPool.installIPv4IPPool`      | install ipv4 spiderpool instance. It is required to set feature.enableIPv4=true | `false`             |
 | `clusterDefaultPool.installIPv6IPPool`      | install ipv6 spiderpool instance. It is required to set feature.enableIPv6=true | `false`             |
 | `clusterDefaultPool.ipv4IPPoolName`         | the name of ipv4 spiderpool instance                                            | `default-v4-ippool` |

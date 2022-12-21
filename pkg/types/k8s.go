@@ -44,5 +44,20 @@ type ClusterDefaultPoolConfig struct {
 	ClusterDefaultIPv6IPPool             []string
 	ClusterDefaultIPv4Subnet             []string
 	ClusterDefaultIPv6Subnet             []string
-	ClusterDefaultSubnetFlexibleIPNumber int
+	ClusterSubnetDefaultFlexibleIPNumber int
+}
+
+type PodSubnetAnnoConfig struct {
+	MultipleSubnets []AnnoSubnetItem
+	SingleSubnet    *AnnoSubnetItem
+	FlexibleIPNum   *int
+	AssignIPNum     int
+	ReclaimIPPool   bool
+}
+
+// AnnoSubnetItem describes the SpiderSubnet CR names and NIC
+type AnnoSubnetItem struct {
+	Interface string   `json:"interface,omitempty"`
+	IPv4      []string `json:"ipv4,omitempty"`
+	IPv6      []string `json:"ipv6,omitempty"`
 }

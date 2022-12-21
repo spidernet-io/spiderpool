@@ -143,7 +143,7 @@ type Config struct {
 	ClusterDefaultIPv6IPPool          []string `yaml:"clusterDefaultIPv6IPPool"`
 	ClusterDefaultIPv4Subnet          []string `yaml:"clusterDefaultIPv4Subnet"`
 	ClusterDefaultIPv6Subnet          []string `yaml:"clusterDefaultIPv6Subnet"`
-	ClusterDefaultSubnetFlexibleIPNum int      `yaml:"clusterDefaultSubnetFlexibleIPNumber"`
+	ClusterSubnetDefaultFlexibleIPNum int      `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 
 	GoMaxProcs int
 }

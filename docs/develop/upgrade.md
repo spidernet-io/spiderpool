@@ -8,15 +8,15 @@ Please consult the segments from your current release until now before upgrading
 
 ### Description
 
-There's a design flaw for SpiderSubnet feature in auto-created IPPool label.
+1. There's a design flaw for SpiderSubnet feature in auto-created IPPool label.
 The previous label `ipam.spidernet.io/owner-application` corresponding value uses '-' as separative sign.
 For example, we have deployment `ns398-174835790/deploy398-82311862` and the corresponding label value is `Deployment-ns398-174835790-deploy398-82311862`.
-It's very hard to unpack it to trace back what the application namespace and name is.
-
+It's very hard to unpack it to trace back what the application namespace and name is.  
 Now, we use '_' rather than '-' as slash for SpiderSubnet feature label `ipam.spidernet.io/owner-application`, and the upper case
-will be like `Deployment_ns398-174835790_deploy398-82311862`
-
+will be like `Deployment_ns398-174835790_deploy398-82311862`.  
 Reference PR: [#1162](https://github.com/spidernet-io/spiderpool/pull/1162)
+2. In order to support multiple interfaces with SpiderSubnet feature, we also add one more label for auto-created IPPool.
+The key is `ipam.spidernet.io/interface`, and the value is the corresponding interface name.
 
 ### Operation steps
 
@@ -28,4 +28,10 @@ Reference PR: [#1162](https://github.com/spidernet-io/spiderpool/pull/1162)
     kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/owner-application": ${AppLabelValue}}}}'
    ```
 
-3. Update your Spiderpool components version and restart them all.
+3. Add one more label
+
+   ```shell
+    kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/interface": "eth0"}}}}'
+   ```
+
+4. Update your Spiderpool components version and restart them all.

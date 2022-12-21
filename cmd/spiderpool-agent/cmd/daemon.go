@@ -76,7 +76,7 @@ func DaemonMain() {
 	logger.Sugar().Infof("Init Cluster default pool configurations")
 	singletons.InitClusterDefaultPool(agentContext.Cfg.ClusterDefaultIPv4IPPool, agentContext.Cfg.ClusterDefaultIPv6IPPool,
 		agentContext.Cfg.ClusterDefaultIPv4Subnet, agentContext.Cfg.ClusterDefaultIPv6Subnet,
-		agentContext.Cfg.ClusterDefaultSubnetFlexibleIPNum)
+		agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
 
 	logger.With(zap.String("IpamUnixSocketPath", agentContext.Cfg.IpamUnixSocketPath),
 		zap.Bool("EnabledIPv4", agentContext.Cfg.EnableIPv4),

@@ -73,6 +73,7 @@ const (
 	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
 	LabelIPPoolVersion             = AnnotationPre + "/ippool-version"
 	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
+	LabelIPPoolInterface           = AnnotationPre + "/interface"
 	LabelIPPoolVersionV4           = "IPv4"
 	LabelIPPoolVersionV6           = "IPv6"
 )
@@ -109,3 +110,5 @@ const (
 	EventReasonDeleteIPPool = "DeleteIPPool"
 	EventReasonResyncSubnet = "ResyncSubnet"
 )
+
+const ClusterDefaultInterfaceName = "eth0"

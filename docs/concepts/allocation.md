@@ -6,9 +6,16 @@ When a pod is creating, it will follow steps below to get an IP.
 
     For which ippool is used by a pod, the following rules are listed from high to low priority.
 
+    * SpiderSubnet annotation. "ipam.spidernet.io/subnets" and "ipam.spidernet.io/subnet" will choose to use auto-created ippool if the SpiderSubnet feature is enabled. See [SpiderSubnet](../usage/spider-subnet.md) for detail.
+
     * Honor pod annotation. "ipam.spidernet.io/ippool" and "ipam.spidernet.io/ippools" could be used to specify an ippool. See [Pod Annotation](../usage/annotation.md) for detail.
 
     * Namespace annotation. "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool" could be used to specify an ippool. See [namespace annotation](../usage/annotation.md) for detail.
+
+    * CNI configuration file. It can be set to "default_ipv4_ippool" and "default_ipv6_ippool" in the CNI configuration file. See [configuration](../usage/config.md) for detail.
+
+    * Cluster default subnet.(you can do not specify any annotations and it will try to use cluster default subnet auto-created ippool if the SpiderSubnet feature it enabled)
+     It can be set to "clusterDefaultIPv4Subnet" and "clusterDefaultIPv6Subnet" in the "spiderpool-conf" ConfigMap. See [configuration](../usage/config.md) for detail.
 
     * Cluster default ippool.
       It can be set to "clusterDefaultIPv4IPPool" and "clusterDefaultIPv6IPPool" in the "spiderpool-conf" ConfigMap. See [configuration](../usage/config.md) for detail.

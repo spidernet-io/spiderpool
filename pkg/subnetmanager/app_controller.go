@@ -90,7 +90,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 		log := logutils.FromContext(ctx)
 
 		var err error
-		var oldSubnetConfig, newSubnetConfig *controllers.PodSubnetAnnoConfig
+		var oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig
 		var appKind string
 		var app metav1.Object
 		var oldAppReplicas, newAppReplicas int
@@ -120,7 +120,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
 				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
@@ -169,7 +169,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
 				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
@@ -218,7 +218,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
 				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
@@ -267,7 +267,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
 				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
@@ -316,7 +316,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
 				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
@@ -365,7 +365,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 			// default IPAM mode
-			if newSubnetConfig == nil || (len(newSubnetConfig.SubnetName.IPv4) == 0 && len(newSubnetConfig.SubnetName.IPv6) == 0) {
+			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
 				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
 
 				// if one application used to have subnet feature but discard it later, we should also clean up the legacy IPPools
@@ -606,7 +606,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 	}
 
 	var app metav1.Object
-	var subnetConfig *controllers.PodSubnetAnnoConfig
+	var subnetConfig *types.PodSubnetAnnoConfig
 	var podAnno, podSelector map[string]string
 	var appReplicas int
 
@@ -720,19 +720,12 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 }
 
 // createOrMarkIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
-func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig controllers.PodSubnetAnnoConfig, appKind string, app metav1.Object,
+func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig, appKind string, app metav1.Object,
 	podSelector map[string]string, appReplicas int) error {
-	if c.subnetMgr.config.EnableIPv4 && len(podSubnetConfig.SubnetName.IPv4) == 0 {
-		return fmt.Errorf("IPv4 SpiderSubnet not specified when configuration enableIPv4 is on")
-	}
-	if c.subnetMgr.config.EnableIPv6 && len(podSubnetConfig.SubnetName.IPv6) == 0 {
-		return fmt.Errorf("IPv6 SpiderSubnet not specified when configuration enableIPv6 is on")
-	}
-
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
-	f := func(ctx context.Context, poolList *spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion) (err error) {
+	fn := func(ctx context.Context, poolList *spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
 		var ipNum int
 		if podSubnetConfig.FlexibleIPNum != nil {
 			ipNum = appReplicas + *(podSubnetConfig.FlexibleIPNum)
@@ -745,7 +738,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s'", ipVersion, subnetName)
 			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
 			// and the IPPool informer will implement the scale action
-			err = c.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, appKind, app, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool)
+			err = c.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, appKind, app, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
 		} else if len(poolList.Items) == 1 {
 			pool := poolList.Items[0]
 			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)
@@ -757,53 +750,83 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 		return
 	}
 
-	var errV4, errV6 error
-	var wg sync.WaitGroup
-	if c.subnetMgr.config.EnableIPv4 && len(podSubnetConfig.SubnetName.IPv4) != 0 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	processNext := func(item types.AnnoSubnetItem) error {
+		if c.subnetMgr.config.EnableIPv4 && len(item.IPv4) == 0 {
+			return fmt.Errorf("IPv4 SpiderSubnet not specified when configuration enableIPv4 is on")
+		}
+		if c.subnetMgr.config.EnableIPv6 && len(item.IPv6) == 0 {
+			return fmt.Errorf("IPv6 SpiderSubnet not specified when configuration enableIPv6 is on")
+		}
 
-			var v4PoolList *spiderpoolv1.SpiderIPPoolList
-			v4PoolList, errV4 = c.subnetMgr.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
-				constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
-				constant.LabelIPPoolOwnerSpiderSubnet:   podSubnetConfig.SubnetName.IPv4[0],
-				constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
-			})
-			if nil != errV4 {
-				return
-			}
+		var errV4, errV6 error
+		var wg sync.WaitGroup
+		if c.subnetMgr.config.EnableIPv4 && len(item.IPv4) != 0 {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 
-			errV4 = f(ctx, v4PoolList, podSubnetConfig.SubnetName.IPv4[0], constant.IPv4)
-		}()
+				var v4PoolList *spiderpoolv1.SpiderIPPoolList
+				v4PoolList, errV4 = c.subnetMgr.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
+					constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv4[0],
+					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
+					constant.LabelIPPoolInterface:           item.Interface,
+				})
+				if nil != errV4 {
+					return
+				}
+
+				errV4 = fn(ctx, v4PoolList, item.IPv4[0], constant.IPv4, item.Interface)
+			}()
+		}
+
+		if c.subnetMgr.config.EnableIPv6 && len(item.IPv6) != 0 {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				var v6PoolList *spiderpoolv1.SpiderIPPoolList
+				v6PoolList, errV6 = c.subnetMgr.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
+					constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv6[0],
+					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
+					constant.LabelIPPoolInterface:           item.Interface,
+				})
+				if nil != errV6 {
+					return
+				}
+
+				errV6 = fn(ctx, v6PoolList, item.IPv6[0], constant.IPv6, item.Interface)
+			}()
+		}
+
+		wg.Wait()
+
+		if errV4 != nil || errV6 != nil {
+			// NewAggregate will check each the given error slice elements whether is nil or not
+			return multierr.Append(errV4, errV6)
+		}
+
+		return nil
 	}
 
-	if c.subnetMgr.config.EnableIPv6 && len(podSubnetConfig.SubnetName.IPv6) != 0 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			var v6PoolList *spiderpoolv1.SpiderIPPoolList
-			v6PoolList, errV6 = c.subnetMgr.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
-				constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
-				constant.LabelIPPoolOwnerSpiderSubnet:   podSubnetConfig.SubnetName.IPv6[0],
-				constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
-			})
-			if nil != errV6 {
-				return
+	if len(podSubnetConfig.MultipleSubnets) != 0 {
+		for index := range podSubnetConfig.MultipleSubnets {
+			err := processNext(podSubnetConfig.MultipleSubnets[index])
+			if nil != err {
+				return err
 			}
-
-			errV6 = f(ctx, v6PoolList, podSubnetConfig.SubnetName.IPv6[0], constant.IPv6)
-		}()
-	}
-
-	wg.Wait()
-
-	if errV4 != nil || errV6 != nil {
-		// NewAggregate will check each the given error slice elements whether is nil or not
-		return multierr.Append(errV4, errV6)
+		}
+	} else if podSubnetConfig.SingleSubnet != nil {
+		err := processNext(*podSubnetConfig.SingleSubnet)
+		if nil != err {
+			return err
+		}
+	} else {
+		return fmt.Errorf("%w: no subnets specified to create or mark auto-created IPPool for application '%s/%s/%s', the pod subnet configuration is %v",
+			constant.ErrWrongInput, appKind, app.GetNamespace(), app.GetName(), podSubnetConfig)
 	}
 
 	return nil
@@ -811,7 +834,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 
 // hasSubnetConfigChanged checks whether application subnet configuration changed and the application replicas changed or not.
 // The second parameter newSubnetConfig must not be nil.
-func (c *appController) hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *controllers.PodSubnetAnnoConfig,
+func (c *appController) hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig,
 	oldAppReplicas, newAppReplicas int, app metav1.Object) bool {
 	// go to reconcile directly with new application
 	if oldSubnetConfig == nil {
@@ -830,31 +853,31 @@ func (c *appController) hasSubnetConfigChanged(ctx context.Context, oldSubnetCon
 		isChanged = true
 		log.Sugar().Debugf("new application changed SpiderSubnet configuration, the old one is '%v' and the new one '%v'", oldSubnetConfig, newSubnetConfig)
 
-		if len(oldSubnetConfig.SubnetName.IPv4) != 0 && oldSubnetConfig.SubnetName.IPv4[0] != newSubnetConfig.SubnetName.IPv4[0] {
-			log.Sugar().Warnf("change SpiderSubnet IPv4 from '%s' to '%s'", oldSubnetConfig.SubnetName.IPv4[0], newSubnetConfig.SubnetName.IPv4[0])
+		/*		if len(oldSubnetConfig.SubnetName.IPv4) != 0 && oldSubnetConfig.SubnetName.IPv4[0] != newSubnetConfig.SubnetName.IPv4[0] {
+					log.Sugar().Warnf("change SpiderSubnet IPv4 from '%s' to '%s'", oldSubnetConfig.SubnetName.IPv4[0], newSubnetConfig.SubnetName.IPv4[0])
 
-			// we should clean up the legacy IPPools once changed the SpiderSubnet
-			if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
-				if err := c.tryToCleanUpLegacyIPPools(ctx, app, client.MatchingLabels{
-					constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetName.IPv4[0],
-				}); err != nil {
-					log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V4 IPPools, error: %v", oldSubnetConfig.SubnetName.IPv4[0], err)
+					// we should clean up the legacy IPPools once changed the SpiderSubnet
+					if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
+						if err := c.tryToCleanUpLegacyIPPools(ctx, app, client.MatchingLabels{
+							constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetName.IPv4[0],
+						}); err != nil {
+							log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V4 IPPools, error: %v", oldSubnetConfig.SubnetName.IPv4[0], err)
+						}
+					}
 				}
-			}
-		}
 
-		if len(oldSubnetConfig.SubnetName.IPv6) != 0 && oldSubnetConfig.SubnetName.IPv6[0] != newSubnetConfig.SubnetName.IPv6[0] {
-			log.Sugar().Warnf("change SpiderSubnet IPv6 from '%s' to '%s'", oldSubnetConfig.SubnetName.IPv6[0], newSubnetConfig.SubnetName.IPv6[0])
+				if len(oldSubnetConfig.SubnetName.IPv6) != 0 && oldSubnetConfig.SubnetName.IPv6[0] != newSubnetConfig.SubnetName.IPv6[0] {
+					log.Sugar().Warnf("change SpiderSubnet IPv6 from '%s' to '%s'", oldSubnetConfig.SubnetName.IPv6[0], newSubnetConfig.SubnetName.IPv6[0])
 
-			// we should clean up the legacy IPPools once changed the SpiderSubnet
-			if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
-				if err := c.tryToCleanUpLegacyIPPools(ctx, app, client.MatchingLabels{
-					constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetName.IPv6[0],
-				}); err != nil {
-					log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V6 IPPools, error: %v", oldSubnetConfig.SubnetName.IPv6[0], err)
-				}
-			}
-		}
+					// we should clean up the legacy IPPools once changed the SpiderSubnet
+					if c.subnetMgr.config.EnableSubnetDeleteStaleIPPool {
+						if err := c.tryToCleanUpLegacyIPPools(ctx, app, client.MatchingLabels{
+							constant.LabelIPPoolOwnerSpiderSubnet: oldSubnetConfig.SubnetName.IPv6[0],
+						}); err != nil {
+							log.Sugar().Errorf("failed to clean up SpiderSubnet '%s' legacy V6 IPPools, error: %v", oldSubnetConfig.SubnetName.IPv6[0], err)
+						}
+					}
+				}*/
 	}
 
 	return isChanged

@@ -104,7 +104,7 @@ type Config struct {
 	NetworkMode                       string   `yaml:"networkMode"`
 	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
 	EnableSpiderSubnet                bool     `yaml:"enableSpiderSubnet"`
-	ClusterDefaultSubnetFlexibleIPNum int      `yaml:"clusterDefaultSubnetFlexibleIPNumber"`
+	ClusterSubnetDefaultFlexibleIPNum int      `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 
 	GoMaxProcs int
 }

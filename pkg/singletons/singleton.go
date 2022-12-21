@@ -14,5 +14,5 @@ func InitClusterDefaultPool(clusterDefaultV4IPPool, clusterDefaultV6IPPool, clus
 	ClusterDefaultPool.ClusterDefaultIPv6IPPool = clusterDefaultV6IPPool
 	ClusterDefaultPool.ClusterDefaultIPv4Subnet = clusterDefaultV4Subnet
 	ClusterDefaultPool.ClusterDefaultIPv6Subnet = clusterDefaultV6Subnet
-	ClusterDefaultPool.ClusterDefaultSubnetFlexibleIPNumber = flexibleIPNumber
+	ClusterDefaultPool.ClusterSubnetDefaultFlexibleIPNumber = flexibleIPNumber
 }

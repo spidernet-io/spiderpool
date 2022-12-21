@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	subnetmanager "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -132,7 +132,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 
 			// I00011: The subnet automatically creates an ippool and allocates IP, and should consider reservedIP
 			if frame.Info.SpiderSubnetEnabled {
-				subnetAnno := subnetmanager.AnnoSubnetItems{}
+				subnetAnno := types.AnnoSubnetItem{}
 				if frame.Info.IpV4Enabled {
 					subnetAnno.IPv4 = []string{v4SubnetName}
 				}

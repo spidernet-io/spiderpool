@@ -79,7 +79,7 @@ func DaemonMain() {
 	logger.Sugar().Infof("Init Cluster default pool configurations")
 	singletons.InitClusterDefaultPool(controllerContext.Cfg.ClusterDefaultIPv4IPPool, controllerContext.Cfg.ClusterDefaultIPv6IPPool,
 		controllerContext.Cfg.ClusterDefaultIPv4Subnet, controllerContext.Cfg.ClusterDefaultIPv6Subnet,
-		controllerContext.Cfg.ClusterDefaultSubnetFlexibleIPNum)
+		controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
 
 	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
 

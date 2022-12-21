@@ -41,7 +41,7 @@ data:
     clusterDefaultIPv6Subnet: []
     {{- end }}
     {{- if .Values.feature.enableSpiderSubnet }}
-    clusterDefaultSubnetFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetFlexibleIPNumber }}
+    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetDefaultFlexibleIPNumber }}
     {{- else}}
-    clusterDefaultSubnetFlexibleIPNumber: 0
+    clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}

@@ -103,8 +103,8 @@ clusterDefaultPool:
   ## @param clusterDefaultPool.ipv6Gateway the gateway of ipv6 subnet
   ipv6Gateway: ""
 
-  ## @param clusterDefaultPool.subnetFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
-  subnetFlexibleIPNumber: 1
+  ## @param clusterDefaultPool.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
+  subnetDefaultFlexibleIPNumber: 1
 
 ## @section spiderpoolAgent parameters
 ##

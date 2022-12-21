@@ -24,15 +24,13 @@ func AssembleReservedIPs(version types.IPVersion, rIPList *spiderpoolv1.SpiderRe
 
 	var ips []net.IP
 	for _, r := range rIPList.Items {
-		if *r.Spec.IPVersion != version {
-			continue
+		if r.DeletionTimestamp == nil && *r.Spec.IPVersion == version {
+			rIPs, err := spiderpoolip.ParseIPRanges(version, r.Spec.IPs)
+			if err != nil {
+				return nil, err
+			}
+			ips = append(ips, rIPs...)
 		}
-
-		rIPs, err := spiderpoolip.ParseIPRanges(version, r.Spec.IPs)
-		if err != nil {
-			return nil, err
-		}
-		ips = append(ips, rIPs...)
 	}
 
 	return ips, nil

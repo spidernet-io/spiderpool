@@ -15,12 +15,14 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("ReservedIPManager utils", Label("reservedip_manager_utils_test"), func() {
 	Describe("Test AssembleReservedIPs", func() {
 		var v4RIPT spiderpoolv1.SpiderReservedIP
 		var v6RIPT spiderpoolv1.SpiderReservedIP
+		var terminatingV4RIPT spiderpoolv1.SpiderReservedIP
 		var rIPListT *spiderpoolv1.SpiderReservedIPList
 
 		BeforeEach(func() {
@@ -61,6 +63,25 @@ var _ = Describe("ReservedIPManager utils", Label("reservedip_manager_utils_test
 				},
 			}
 
+			now := metav1.Now()
+			terminatingV4RIPT = spiderpoolv1.SpiderReservedIP{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       constant.SpiderReservedIPKind,
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:                       "terminating-ipv4-reservedip",
+					DeletionTimestamp:          &now,
+					DeletionGracePeriodSeconds: pointer.Int64(30),
+				},
+				Spec: spiderpoolv1.ReservedIPSpec{
+					IPVersion: &ipv4,
+					IPs: []string{
+						"172.18.40.40",
+					},
+				},
+			}
+
 			rIPListT = &spiderpoolv1.SpiderReservedIPList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.SpiderReservedIPListKind,
@@ -92,7 +113,21 @@ var _ = Describe("ReservedIPManager utils", Label("reservedip_manager_utils_test
 			Expect(ips).To(BeEmpty())
 		})
 
-		It("assembles IPv4 reserved IP addresses", func() {
+		It("does not assemble terminating IPv4 reserved-IP addresses", func() {
+			rIPListT.Items = append(rIPListT.Items, v4RIPT, terminatingV4RIPT)
+
+			ips, err := reservedipmanager.AssembleReservedIPs(constant.IPv4, rIPListT)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ips).To(Equal(
+				[]net.IP{
+					net.IPv4(172, 18, 40, 1),
+					net.IPv4(172, 18, 40, 2),
+					net.IPv4(172, 18, 40, 10),
+				},
+			))
+		})
+
+		It("assembles IPv4 reserved-IP addresses", func() {
 			rIPListT.Items = append(rIPListT.Items, v4RIPT, v6RIPT)
 
 			ips, err := reservedipmanager.AssembleReservedIPs(constant.IPv4, rIPListT)
@@ -106,7 +141,7 @@ var _ = Describe("ReservedIPManager utils", Label("reservedip_manager_utils_test
 			))
 		})
 
-		It("assembles IPv6 reserved IP addresses", func() {
+		It("assembles IPv6 reserved-IP addresses", func() {
 			rIPListT.Items = append(rIPListT.Items, v4RIPT, v6RIPT)
 
 			ips, err := reservedipmanager.AssembleReservedIPs(constant.IPv6, rIPListT)

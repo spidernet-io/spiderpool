@@ -142,7 +142,11 @@ func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	logger.Sugar().Debugf("Request old Subnet: %+v", *oldSubnet)
 	logger.Sugar().Debugf("Request new Subnet: %+v", *newSubnet)
 
-	if newSubnet.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(newSubnet, constant.SpiderFinalizer) {
+	if newSubnet.DeletionTimestamp != nil {
+		if !controllerutil.ContainsFinalizer(newSubnet, constant.SpiderFinalizer) {
+			return nil
+		}
+
 		return apierrors.NewForbidden(
 			schema.GroupResource{},
 			"",

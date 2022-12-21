@@ -5,6 +5,7 @@ package reservedipmanager
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -95,6 +96,18 @@ func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj 
 	)
 	logger.Sugar().Debugf("Request old ReservedIP: %+v", *oldRIP)
 	logger.Sugar().Debugf("Request new ReservedIP: %+v", *newRIP)
+
+	if newRIP.DeletionTimestamp != nil {
+		if oldRIP.DeletionTimestamp == nil {
+			return nil
+		}
+
+		return apierrors.NewForbidden(
+			schema.GroupResource{},
+			"",
+			errors.New("cannot update a terminating ReservedIP"),
+		)
+	}
 
 	if errs := rw.validateUpdateReservedIP(logutils.IntoContext(ctx, logger), oldRIP, newRIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update ReservedIP: %v", errs.ToAggregate().Error())

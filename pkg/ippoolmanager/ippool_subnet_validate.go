@@ -8,9 +8,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
@@ -23,7 +21,7 @@ func (im *ipPoolManager) validateCreateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 		return nil
 	}
 
-	subnet, err := im.validateSubnetControllerExist(ctx, ipPool, false)
+	subnet, err := im.validateSubnetControllerExist(ctx, ipPool)
 	if err != nil {
 		return field.ErrorList{err}
 	}
@@ -42,11 +40,7 @@ func (im *ipPoolManager) validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 		return nil
 	}
 
-	if newIPPool.DeletionTimestamp != nil && !controllerutil.ContainsFinalizer(newIPPool, constant.SpiderFinalizer) {
-		return im.validateDeleteIPPoolAndUpdateSubnetFreeIPs(ctx, newIPPool)
-	}
-
-	subnet, err := im.validateSubnetControllerExist(ctx, newIPPool, false)
+	subnet, err := im.validateSubnetControllerExist(ctx, newIPPool)
 	if err != nil {
 		return field.ErrorList{err}
 	}
@@ -57,19 +51,7 @@ func (im *ipPoolManager) validateUpdateIPPoolAndUpdateSubnetFreeIPs(ctx context.
 	return nil
 }
 
-func (im *ipPoolManager) validateDeleteIPPoolAndUpdateSubnetFreeIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
-	subnet, err := im.validateSubnetControllerExist(ctx, ipPool, true)
-	if err != nil {
-		return field.ErrorList{err}
-	}
-	if subnet == nil {
-		return nil
-	}
-
-	return nil
-}
-
-func (im *ipPoolManager) validateSubnetControllerExist(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool, terminaing bool) (*spiderpoolv1.SpiderSubnet, *field.Error) {
+func (im *ipPoolManager) validateSubnetControllerExist(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) (*spiderpoolv1.SpiderSubnet, *field.Error) {
 	subnetList, err := im.subnetManager.ListSubnets(ctx)
 	if err != nil {
 		return nil, field.InternalError(subnetField, err)
@@ -77,7 +59,7 @@ func (im *ipPoolManager) validateSubnetControllerExist(ctx context.Context, ipPo
 
 	for _, subnet := range subnetList.Items {
 		if subnet.Spec.Subnet == ipPool.Spec.Subnet {
-			if !terminaing && subnet.DeletionTimestamp != nil {
+			if subnet.DeletionTimestamp != nil {
 				return nil, field.Forbidden(
 					subnetField,
 					fmt.Sprintf("cannot update IPPool that controlled by terminating Subnet %s", subnet.Name),
@@ -87,14 +69,10 @@ func (im *ipPoolManager) validateSubnetControllerExist(ctx context.Context, ipPo
 		}
 	}
 
-	if !terminaing {
-		return nil, field.Forbidden(
-			subnetField,
-			fmt.Sprintf("orphan IPPool, must be controlled by Subnet with the same 'spec.subnet' %s", ipPool.Spec.Subnet),
-		)
-	}
-
-	return nil, nil
+	return nil, field.Forbidden(
+		subnetField,
+		fmt.Sprintf("orphan IPPool, must be controlled by Subnet with the same 'spec.subnet' %s", ipPool.Spec.Subnet),
+	)
 }
 
 func validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {

@@ -41,8 +41,8 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 
 		It("checks terminated Pod", func() {
 			now := metav1.Now()
-			podT.DeletionTimestamp = &now
-			podT.DeletionGracePeriodSeconds = pointer.Int64(0)
+			podT.SetDeletionTimestamp(&now)
+			podT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
 
 			status, allocatable := podmanager.CheckPodStatus(podT)
 			Expect(status).To(Equal(constant.PodGraceTimeout))
@@ -51,8 +51,8 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 
 		It("checks terminating Pod", func() {
 			now := metav1.Now()
-			podT.DeletionTimestamp = &now
-			podT.DeletionGracePeriodSeconds = pointer.Int64(30)
+			podT.SetDeletionTimestamp(&now)
+			podT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
 
 			status, allocatable := podmanager.CheckPodStatus(podT)
 			Expect(status).To(Equal(constant.PodTerminating))

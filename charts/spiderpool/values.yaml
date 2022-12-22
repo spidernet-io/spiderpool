@@ -214,15 +214,15 @@ spiderpoolAgent:
   podLabels: {}
 
   resources:
-    ## @param spiderpoolAgent.resources.limits.cpu the cpu limit of spiderpoolAgent pod
-    ## @param spiderpoolAgent.resources.limits.memory the memory limit of spiderpoolAgent pod
-    ## @param spiderpoolAgent.resources.requests.cpu the cpu requests of spiderpoolAgent pod
-    ## @param spiderpoolAgent.resources.requests.memory the memory requests of spiderpoolAgent pod
     limits:
+      ## @param spiderpoolAgent.resources.limits.cpu the cpu limit of spiderpoolAgent pod
       cpu: 1000m
+      ## @param spiderpoolAgent.resources.limits.memory the memory limit of spiderpoolAgent pod
       memory: 1024Mi
     requests:
+      ## @param spiderpoolAgent.resources.requests.cpu the cpu requests of spiderpoolAgent pod
       cpu: 100m
+      ## @param spiderpoolAgent.resources.requests.memory the memory requests of spiderpoolAgent pod
       memory: 128Mi
 
   ## @param spiderpoolAgent.securityContext the security Context of spiderpoolAgent pod
@@ -438,15 +438,15 @@ spiderpoolController:
   # runAsUser: 0
 
   resources:
-    ## @param spiderpoolController.resources.limits.cpu the cpu limit of spiderpoolController pod
-    ## @param spiderpoolController.resources.limits.memory the memory limit of spiderpoolController pod
-    ## @param spiderpoolController.resources.requests.cpu the cpu requests of spiderpoolController pod
-    ## @param spiderpoolController.resources.requests.memory the memory requests of spiderpoolController pod
     limits:
+      ## @param spiderpoolController.resources.limits.cpu the cpu limit of spiderpoolController pod
       cpu: 500m
+      ## @param spiderpoolController.resources.limits.memory the memory limit of spiderpoolController pod
       memory: 1024Mi
     requests:
+      ## @param spiderpoolController.resources.requests.cpu the cpu requests of spiderpoolController pod
       cpu: 100m
+      ## @param spiderpoolController.resources.requests.memory the memory requests of spiderpoolController pod
       memory: 128Mi
 
   podDisruptionBudget:
@@ -671,15 +671,15 @@ spiderpoolInit:
   extraArgs: []
 
   resources:
-    ## @param spiderpoolInit.resources.limits.cpu the cpu limit of spiderpoolInit pod
-    ## @param spiderpoolInit.resources.limits.memory the memory limit of spiderpoolInit pod
-    ## @param spiderpoolInit.resources.requests.cpu the cpu requests of spiderpoolInit pod
-    ## @param spiderpoolInit.resources.requests.memory the memory requests of spiderpoolInit pod
     limits:
+      ## @param spiderpoolInit.resources.limits.cpu the cpu limit of spiderpoolInit pod
       cpu: 200m
+      ## @param spiderpoolInit.resources.limits.memory the memory limit of spiderpoolInit pod
       memory: 256Mi
     requests:
+      ## @param spiderpoolInit.resources.requests.cpu the cpu requests of spiderpoolInit pod
       cpu: 100m
+      ## @param spiderpoolInit.resources.requests.memory the memory requests of spiderpoolInit pod
       memory: 128Mi
 
   ## @param spiderpoolInit.extraEnv the additional environment variables of spiderpoolInit container

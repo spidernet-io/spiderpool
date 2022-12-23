@@ -331,7 +331,8 @@ func initControllerServiceManagers(ctx context.Context) {
 			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			ResyncPeriod:                  time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
 			RequeueDelayDuration:          time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
-			Workers:                       controllerContext.Cfg.SubnetInformerWorkers,
+			SubnetControllerWorkers:       controllerContext.Cfg.SubnetInformerWorkers,
+			AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
 			MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
 		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
 		if err != nil {

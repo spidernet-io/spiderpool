@@ -82,7 +82,7 @@ func (sm *subnetManager) SetupInformer(ctx context.Context, client clientset.Int
 			}()
 
 			informerFactory.Start(subnetController.innerCtx.Done())
-			if err := subnetController.Run(sm.config.Workers, subnetController.innerCtx.Done()); err != nil {
+			if err := subnetController.Run(sm.config.SubnetControllerWorkers, subnetController.innerCtx.Done()); err != nil {
 				subnetController.innerCancel()
 				informerLogger.Sugar().Errorf("Subnet informer down: %v", err)
 			}
@@ -206,7 +206,7 @@ func (sc *SubnetController) Run(workers int, stopCh <-chan struct{}) error {
 
 	informerLogger.Info("Starting workers")
 	for i := 0; i < workers; i++ {
-		go wait.Until(sc.runWorker, 500*time.Millisecond, stopCh)
+		go wait.Until(sc.runWorker, 1*time.Second, stopCh)
 	}
 
 	informerLogger.Info("Started workers")

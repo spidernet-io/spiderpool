@@ -16,7 +16,7 @@
 
     ```bash
     IPV4_SUBNET_YOU_EXPECT="172.18.40.0/24"
-    IPV4_IPRANGES_YOU_EXPECT="172.18.40.40-172.20.40.200"
+    IPV4_IPRANGES_YOU_EXPECT="172.18.40.40-172.18.40.200"
     ```
 
 3. Deploy Spiderpool with the following command.

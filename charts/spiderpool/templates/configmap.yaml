@@ -30,3 +30,18 @@ data:
     {{- else}}
     clusterDefaultIPv6IPPool: []
     {{- end }}
+    {{- if ( and .Values.feature.enableSpiderSubnet .Values.feature.enableIPv4 ) }}
+    clusterDefaultIPv4Subnet: [{{ .Values.clusterDefaultPool.ipv4SubnetName }}]
+    {{- else}}
+    clusterDefaultIPv4Subnet: []
+    {{- end}}
+    {{- if ( and .Values.feature.enableSpiderSubnet .Values.feature.enableIPv6 )}}
+    clusterDefaultIPv6Subnet: [{{ .Values.clusterDefaultPool.ipv6SubnetName }}]
+    {{- else}}
+    clusterDefaultIPv6Subnet: []
+    {{- end }}
+    {{- if .Values.feature.enableSpiderSubnet }}
+    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetDefaultFlexibleIPNumber }}
+    {{- else}}
+    clusterSubnetDefaultFlexibleIPNumber: 0
+    {{- end }}

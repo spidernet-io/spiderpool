@@ -19,7 +19,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
-	subnetmanager "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
@@ -102,7 +101,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		It("Validate competition for simultaneous creation, expansion, and deletion", Serial, Label("I00006", "I00008"), func() {
 			// Create deployments in bulk in a subnet
-			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			subnetAnno := types.AnnoSubnetItem{}
 			if frame.Info.IpV4Enabled {
 				subnetAnno.IPv4 = []string{v4SubnetName}
 			}
@@ -284,7 +283,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				deployPatchReplicasNum  int32  = 2
 			)
 
-			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			subnetAnno := types.AnnoSubnetItem{}
 			if frame.Info.IpV4Enabled {
 				subnetAnno.IPv4 = []string{v4SubnetName}
 			}
@@ -508,7 +507,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			ipv4Gw := strings.Split(v4SubnetObject.Spec.Subnet, "0/")[0] + "1"
 			v6Dst := "::/0"
 			ipv6Gw := strings.Split(v6SubnetObject.Spec.Subnet, "/")[0] + "1"
-			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			subnetAnno := types.AnnoSubnetItem{}
 			if frame.Info.IpV4Enabled {
 				*v4Ipversion = int64(4)
 				if i, err := strconv.Atoi(common.GenerateRandomNumber(4095)); err != nil {
@@ -758,7 +757,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		})
 
 		It("Automatically create multiple ippools that can not use the same network segment and use IPs other than excludeIPs. ", Label("I00004", "S00004"), func() {
-			subnetAnno := subnetmanager.AnnoSubnetItems{}
+			subnetAnno := types.AnnoSubnetItem{}
 			// ExcludeIPs cannot be used by ippools that are created automatically
 			if frame.Info.IpV4Enabled {
 				v4SubnetObject.Spec.ExcludeIPs = v4SubnetObject.Spec.IPs

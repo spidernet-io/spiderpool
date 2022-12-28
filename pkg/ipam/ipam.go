@@ -387,12 +387,15 @@ func (i *ipam) allocateIPFromPoolCandidates(ctx context.Context, c *PoolCandidat
 
 func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool, pod *corev1.Pod) ([]*ToBeAllocated, error) {
 	// Select candidate IPPools through the Pod annotations "ipam.spidernet.io/subnets" or "ipam.spidernet.io/subnet"
-	fromSubnet, err := i.getPoolFromSubnet(ctx, pod, nic, cleanGateway)
-	if nil != err {
-		return nil, fmt.Errorf("failed to get IPPool from SpiderSubnet, error: %v", err)
-	}
-	if fromSubnet != nil {
-		return []*ToBeAllocated{fromSubnet}, nil
+	// if we enable to use SpiderSubnet feature
+	if i.config.EnableSpiderSubnet {
+		fromSubnet, err := i.getPoolFromSubnet(ctx, pod, nic, cleanGateway)
+		if nil != err {
+			return nil, fmt.Errorf("failed to get IPPool from SpiderSubnet, error: %v", err)
+		}
+		if fromSubnet != nil {
+			return []*ToBeAllocated{fromSubnet}, nil
+		}
 	}
 
 	// Select candidate IPPools through the Pod annotation "ipam.spidernet.io/ippools".
@@ -434,20 +437,36 @@ func (i *ipam) getPoolCandidates(ctx context.Context, nic string, netConfV4Pool,
 }
 
 func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool) (*ToBeAllocated, error) {
-	subnetAnnoConfig, err := subnetmanagercontrollers.GetSubnetAnnoConfig(pod.Annotations)
+	logger := logutils.FromContext(ctx)
+
+	subnetAnnoConfig, err := subnetmanagercontrollers.GetSubnetAnnoConfig(pod.Annotations, logger)
 	if nil != err {
 		return nil, err
 	}
 
-	if subnetAnnoConfig == nil {
-		// default IPAM mode
+	// default IPPool mode
+	if subnetmanagercontrollers.IsDefaultIPPoolMode(subnetAnnoConfig) {
 		return nil, nil
 	}
 
-	if i.config.EnableIPv4 && len(subnetAnnoConfig.SubnetName.IPv4) == 0 {
+	var subnetItem types.AnnoSubnetItem
+	if len(subnetAnnoConfig.MultipleSubnets) != 0 {
+		for index := range subnetAnnoConfig.MultipleSubnets {
+			if subnetAnnoConfig.MultipleSubnets[index].Interface == nic {
+				subnetItem = subnetAnnoConfig.MultipleSubnets[index]
+				break
+			}
+		}
+	} else if subnetAnnoConfig.SingleSubnet != nil {
+		subnetItem = *subnetAnnoConfig.SingleSubnet
+	} else {
+		return nil, fmt.Errorf("there are no subnet specified: %v", subnetAnnoConfig)
+	}
+
+	if i.config.EnableIPv4 && len(subnetItem.IPv4) == 0 {
 		return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv4 SpiderSubnet")
 	}
-	if i.config.EnableIPv6 && len(subnetAnnoConfig.SubnetName.IPv6) == 0 {
+	if i.config.EnableIPv6 && len(subnetItem.IPv6) == 0 {
 		return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv6 SpiderSubnet")
 	}
 
@@ -459,9 +478,6 @@ func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic strin
 		return nil, fmt.Errorf("spider subnet doesn't support pod '%s/%s' owner controller", pod.Namespace, pod.Name)
 	}
 
-	logger := logutils.FromContext(ctx)
-
-	subnetName := subnetAnnoConfig.SubnetName
 	result := &ToBeAllocated{
 		NIC:          nic,
 		CleanGateway: cleanGateway,
@@ -501,12 +517,13 @@ func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic strin
 	}
 
 	// if enableIPv4 is off and get the specified SpiderSubnet IPv4 name, just filter it out
-	if i.config.EnableIPv4 && len(subnetName.IPv4) != 0 {
+	if i.config.EnableIPv4 && len(subnetItem.IPv4) != 0 {
 		v4PoolCandidate, err := findSubnetIPPool(ctx, client.MatchingLabels{
 			constant.LabelIPPoolOwnerApplicationUID: string(podTopController.GetUID()),
 			constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
-			constant.LabelIPPoolOwnerSpiderSubnet:   subnetName.IPv4[0],
+			constant.LabelIPPoolOwnerSpiderSubnet:   subnetItem.IPv4[0],
 			constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName()),
+			constant.LabelIPPoolInterface:           subnetItem.Interface,
 		})
 		if nil != err {
 			return nil, err
@@ -520,12 +537,13 @@ func (i *ipam) getPoolFromSubnet(ctx context.Context, pod *corev1.Pod, nic strin
 	}
 
 	// if enableIPv6 is off and get the specified SpiderSubnet IPv6 name, just filter it out
-	if i.config.EnableIPv6 && len(subnetName.IPv6) != 0 {
+	if i.config.EnableIPv6 && len(subnetItem.IPv6) != 0 {
 		v6PoolCandidate, err := findSubnetIPPool(ctx, client.MatchingLabels{
 			constant.LabelIPPoolOwnerApplicationUID: string(podTopController.GetUID()),
 			constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
-			constant.LabelIPPoolOwnerSpiderSubnet:   subnetName.IPv6[0],
+			constant.LabelIPPoolOwnerSpiderSubnet:   subnetItem.IPv6[0],
 			constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podTopControllerKind, podTopController.GetNamespace(), podTopController.GetName()),
+			constant.LabelIPPoolInterface:           subnetItem.Interface,
 		})
 		if nil != err {
 			return nil, err

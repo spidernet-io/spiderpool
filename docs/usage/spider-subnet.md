@@ -6,12 +6,12 @@ The spiderpool owns a CRD SpiderSubnet, it can help applications (such as: Deplo
 
 Here are some annotations that you should write down on the application template pod annotation:
 
-| annotation                         | description                                                                                               | example                                                                                       |
-|------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| ipam.spidernet.io/subnet           | choose one SpiderSubnet V4 and V6 CR to use                                                               | {"ipv4": ["subnet-demo-v4","good"], "ipv6": ["subnet-demo-v6"]}                               |
-| ipam.spidernet.io/subnets          | choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one) | [{"interface":"eth0", "ipv4":["v4-subnet1","v4-subnet2"],"ipv6":["v6-subnet1","v6-subnet2"]}] |
-| ipam.spidernet.io/ippool-ip-number | the IP numbers of the corresponding SpiderIPPool (fixed and flexible mode)                                | +2                                                                                            |
-| ipam.spidernet.io/ippool-reclaim   | specify the corresponding SpiderIPPool to delete or not once the application was deleted (default true)   | true                                                                                          |
+| annotation                         | description                                                                                               | example                                                             |
+|------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| ipam.spidernet.io/subnet           | choose one SpiderSubnet V4 and V6 CR to use                                                               | {"ipv4": ["subnet-demo-v4"], "ipv6": ["subnet-demo-v6"]}            |
+| ipam.spidernet.io/subnets          | choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one) | [{"interface":"eth0", "ipv4":["v4-subnet1"],"ipv6":["v6-subnet1"]}] |
+| ipam.spidernet.io/ippool-ip-number | the IP numbers of the corresponding SpiderIPPool (fixed and flexible mode)                                | +2                                                                  |
+| ipam.spidernet.io/ippool-reclaim   | specify the corresponding SpiderIPPool to delete or not once the application was deleted (default true)   | true                                                                |
 
 ### Notice
 
@@ -24,8 +24,6 @@ If you choose to use flexible mode, the auto-created IPPool IPs will expand or s
 
 3. The current version only supports to use one SpiderSubnet V4/V6 CR, you shouldn't specify 2 or more SpiderSubnet V4 CRs and the spiderpool-controller
 will choose the first one to use.
-
-4. It only supports single network interfaces to Pods in Kubernetes.
 
 ## Get Started
 
@@ -40,6 +38,15 @@ kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
 If you want to set it `true`, just execute `helm upgrade spiderpool spiderpool/spiderpool --set feature.enableSpiderSubnet=true -n kube-system`.
+
+### Set cluster Subnet DefaultFlexibleIPNumber
+
+In the upper operation you can also find property `clusterSubnetDefaultFlexibleIPNumber` in configmap `spiderpool-conf`, this is the cluster default flexible IP number.
+
+For example, if you set it `1` and it will be the same with `ipam.spidernet.io/ippool-ip-number: +1`. Furthermore, you could do not specify the annotation
+because it will use the `clusterSubnetDefaultFlexibleIPNumber` by default.
+
+If you want to change it, just execute `helm upgrade spiderpool spiderpool/spiderpool --set clusterDefaultPool.subnetFlexibleIPNumber=2 -n kube-system`
 
 ### Create a SpiderSubnet
 
@@ -60,34 +67,35 @@ subnet-demo-v4      4         172.16.0.0/16             3                    200
 subnet-demo-v6      6         fc00:f853:ccd:e790::/64   3                    200
 ------------------------------------------------------------------------------------------
 $ kubectl get sp
-NAME                                                       VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-auto-deployment-default-demo-deploy-subnet-v4-1667358680   4         172.16.0.0/16             1                    3                false
-auto-deployment-default-demo-deploy-subnet-v6-1667358681   6         fc00:f853:ccd:e790::/64   1                    3                false
+NAME                                                                           VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e                4         172.16.0.0/16             1                    3                false
+auto-deployment-default-demo-deploy-subnet-v6-eth0-6b26cd19032e                6         fc00:f853:ccd:e790::/64   1                    3                false
 ------------------------------------------------------------------------------------------
-$ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-1667358680 -o yaml
+$ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e -o yaml
 apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
-  creationTimestamp: "2022-11-02T03:11:20Z"
+  creationTimestamp: "2022-12-26T06:16:04Z"
   finalizers:
   - spiderpool.spidernet.io
   generation: 2
   labels:
+    ipam.spidernet.io/interface: eth0
     ipam.spidernet.io/ippool-reclaim: "true"
     ipam.spidernet.io/ippool-version: IPv4
     ipam.spidernet.io/owner-application: Deployment_default_demo-deploy-subnet
-    ipam.spidernet.io/owner-application-uid: 94ceb817-8250-460e-b1af-69d041b98b41
+    ipam.spidernet.io/owner-application-uid: 9608de8b-fe9b-4a20-9d7c-6b26cd19032e
     ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
-  name: auto-deployment-default-demo-deploy-subnet-v4-1667358680
+  name: auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e
   ownerReferences:
   - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderSubnet
     name: subnet-demo-v4
-    uid: 9ec4d464-2dd7-49d3-b394-d3e2eea5e907
-  resourceVersion: "117905"
-  uid: bd1c883d-e560-4215-aa60-58ea91d58922
+    uid: ac4ab322-ddde-4a6f-9290-bc795b60ca3f
+  resourceVersion: "1690"
+  uid: e09ae97c-9693-4d78-b49f-412573e1da95
 spec:
   disable: false
   ipVersion: 4
@@ -102,19 +110,19 @@ status:
   allocatedIPCount: 1
   allocatedIPs:
     172.16.41.2:
-      containerID: 3b944b1eb35e27030ef78139b3dcd4aa1c671cc2b9ecc56b7751ac51a78377c2
+      containerID: 9e5ccb7900f32c6dc76ed3fbd309724ca6eb0235d2a18b2e850c7c91fa28f91d
       interface: eth0
       namespace: default
       node: spider-worker
-      ownerControllerName: demo-deploy-subnet-774d69487d
-      ownerControllerType: ReplicaSet
-      pod: demo-deploy-subnet-774d69487d-z6f57
+      ownerControllerName: demo-deploy-subnet
+      ownerControllerType: Deployment
+      pod: demo-deploy-subnet-b454f5b69-vsc8d
   autoDesiredIPCount: 3
   totalIPCount: 3
 ------------------------------------------------------------------------------------------
 $ kubectl get po -o wide 
-NAME                                  READY   STATUS    RESTARTS   AGE   IP             NODE            NOMINATED NODE   READINESS GATES
-demo-deploy-subnet-774d69487d-z6f57   1/1     Running   0          71s   172.16.41.2    spider-worker   <none>           <none>
+NAME                                 READY   STATUS    RESTARTS   AGE    IP            NODE            NOMINATED NODE   READINESS GATES
+demo-deploy-subnet-b454f5b69-vsc8d   1/1     Running   0          67s    172.16.41.2   spider-worker   <none>           <none>
 ```
 
 Try to scale the deployment replicas and check the SpiderIPPool.
@@ -129,39 +137,41 @@ subnet-demo-v4      4         172.16.0.0/16             4                    200
 subnet-demo-v6      6         fc00:f853:ccd:e790::/64   4                    200
 ------------------------------------------------------------------------------------------
 $ kubectl get sp
-NAME                                                       VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-auto-deployment-default-demo-deploy-subnet-v4-1667358680   4         172.16.0.0/16             2                    4                false
-auto-deployment-default-demo-deploy-subnet-v6-1667358681   6         fc00:f853:ccd:e790::/64   2                    4                false
+NAME                                                                           VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e                4         172.16.0.0/16             2                    4                false
+auto-deployment-default-demo-deploy-subnet-v6-eth0-6b26cd19032e                6         fc00:f853:ccd:e790::/64   2                    4                false
 ------------------------------------------------------------------------------------------
-$ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-1667358680 -o yaml
+$ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e -o yaml
 apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
-  creationTimestamp: "2022-11-02T03:11:20Z"
+  creationTimestamp: "2022-12-26T06:16:04Z"
   finalizers:
   - spiderpool.spidernet.io
   generation: 3
   labels:
+    ipam.spidernet.io/interface: eth0
     ipam.spidernet.io/ippool-reclaim: "true"
     ipam.spidernet.io/ippool-version: IPv4
     ipam.spidernet.io/owner-application: Deployment_default_demo-deploy-subnet
-    ipam.spidernet.io/owner-application-uid: 94ceb817-8250-460e-b1af-69d041b98b41
+    ipam.spidernet.io/owner-application-uid: 9608de8b-fe9b-4a20-9d7c-6b26cd19032e
     ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
-  name: auto-deployment-default-demo-deploy-subnet-v4-1667358680
+  name: auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e
   ownerReferences:
   - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderSubnet
     name: subnet-demo-v4
-    uid: 9ec4d464-2dd7-49d3-b394-d3e2eea5e907
-  resourceVersion: "118455"
-  uid: bd1c883d-e560-4215-aa60-58ea91d58922
+    uid: ac4ab322-ddde-4a6f-9290-bc795b60ca3f
+  resourceVersion: "2009"
+  uid: e09ae97c-9693-4d78-b49f-412573e1da95
 spec:
   disable: false
   ipVersion: 4
   ips:
-  - 172.16.41.1-172.16.41.4
+  - 172.16.41.1-172.16.41.3
+  - 172.16.41.200
   podAffinity:
     matchLabels:
       app: demo-deploy-subnet
@@ -171,29 +181,73 @@ status:
   allocatedIPCount: 2
   allocatedIPs:
     172.16.41.2:
-      containerID: 3b944b1eb35e27030ef78139b3dcd4aa1c671cc2b9ecc56b7751ac51a78377c2
+      containerID: 9e5ccb7900f32c6dc76ed3fbd309724ca6eb0235d2a18b2e850c7c91fa28f91d
       interface: eth0
       namespace: default
       node: spider-worker
-      ownerControllerName: demo-deploy-subnet-774d69487d
-      ownerControllerType: ReplicaSet
-      pod: demo-deploy-subnet-774d69487d-z6f57
-    172.16.41.4:
-      containerID: 70b4ec8d730c72c3f892677112d4eb7bbcf863a641e196682e94e50b8975aa24
+      ownerControllerName: demo-deploy-subnet
+      ownerControllerType: Deployment
+      pod: demo-deploy-subnet-b454f5b69-vsc8d
+    172.16.41.3:
+      containerID: 3eea370feb7557749098f002a72e95377a369e9af53cc1af6dc9f21cbebec82c
       interface: eth0
       namespace: default
       node: spider-control-plane
-      ownerControllerName: demo-deploy-subnet-774d69487d
-      ownerControllerType: ReplicaSet
-      pod: demo-deploy-subnet-774d69487d-zqjr4
+      ownerControllerName: demo-deploy-subnet
+      ownerControllerType: Deployment
+      pod: demo-deploy-subnet-b454f5b69-687w4
   autoDesiredIPCount: 4
   totalIPCount: 4
 ------------------------------------------------------------------------------------------
 $ kubectl get po -o wide
-NAME                                  READY   STATUS    RESTARTS   AGE     IP             NODE                   NOMINATED NODE   READINESS GATES
-demo-deploy-subnet-774d69487d-z6f57   1/1     Running   0          9m18s   172.16.41.2    spider-worker          <none>           <none>
-demo-deploy-subnet-774d69487d-zqjr4   1/1     Running   0          4m30s   172.16.41.4    spider-control-plane   <none>           <none>
+NAME                                 READY   STATUS    RESTARTS   AGE     IP            NODE                   NOMINATED NODE   READINESS GATES
+demo-deploy-subnet-b454f5b69-687w4   1/1     Running   0          2m35s   172.16.41.3   spider-control-plane   <none>           <none>
+demo-deploy-subnet-b454f5b69-vsc8d   1/1     Running   0          4m38s   172.16.41.2   spider-worker          <none>           <none>
 ```
 
-As you can see, the SpiderSubnet object `subnet-demo-v4` allocates another IP to SpiderIPPool `auto-deployment-default-demo-deploy-subnet-v4-1667358680`
-and SpiderSubnet object `subnet-demo-v4` allocates another IP to SpiderIPPool `auto-deployment-default-demo-deploy-subnet-v6-1667358681`.
+As you can see, the SpiderSubnet object `subnet-demo-v4` allocates another IP to SpiderIPPool `auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e`
+and SpiderSubnet object `subnet-demo-v6` allocates another IP to SpiderIPPool `auto-deployment-default-demo-deploy-subnet-v6-eth0-6b26cd19032e`.
+
+### Cluster Default SpiderSubnet
+
+In order to simplify SpiderSubnet usage, we add ClusterDefaultSubnet support.
+Once we enable SpiderSubnet feature and have Cluster default subnet, we can create the application directly without any other annotations.
+
+#### Check ClusterDefaultSubnet 
+
+Firstly, let's check the configmap `clusterDefaultIPv4Subnet` and `clusterDefaultIPv6Subnet` properties. If there are no values, we can set it by ourselves.
+
+```shell
+kubectl -n kube-system get configmap spiderpool-conf -o yaml
+```
+
+#### Create Application
+
+Just create the deployment without any other subnet annotations.
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/cluster-default-subnet-deployment.yaml
+```
+
+#### Notice
+
+1. it will create the auto-create IPPool with the configmap `clusterSubnetDefaultFlexibleIPNumber` property.
+2. The ClusterDefaultSubnet function only supports single interface
+
+### SpiderSubnet with multiple interfaces
+
+Make sure the interface name and use `ipam.spidernet.io/subnets` annotation just like this:
+
+```text
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni2
+        ipam.spidernet.io/subnets: |-
+          [{"interface": "eth0", "ipv4": ["subnet-demo-v4-1"], "ipv6": ["subnet-demo-v6-1"]}, 
+           {"interface": "net2", "ipv4": ["subnet-demo-v4-2"], "ipv6": ["subnet-demo-v6-2"]}]
+```
+
+install the example:
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/multiple-interfaces.yaml
+```

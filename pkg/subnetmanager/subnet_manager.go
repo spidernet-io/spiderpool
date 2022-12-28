@@ -210,7 +210,7 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 // AllocateEmptyIPPool will create an empty IPPool and mark the status.AutoDesiredIPCount
 // notice: this function only serves for auto-created IPPool
 func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, appKind string, app metav1.Object, podSelector map[string]string,
-	ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error {
+	ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) error {
 	if len(subnetName) == 0 {
 		return fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
 	}
@@ -231,6 +231,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 		constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
 		constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
 		constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+		constant.LabelIPPoolInterface:           ifName,
 	}
 
 	if ipVersion == constant.IPv4 {
@@ -245,7 +246,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 
 	sp := &spiderpoolv1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   controllers.SubnetPoolName(appKind, app.GetNamespace(), app.GetName(), ipVersion, app.GetUID()),
+			Name:   controllers.SubnetPoolName(appKind, app.GetNamespace(), app.GetName(), ipVersion, ifName, app.GetUID()),
 			Labels: poolLabels,
 		},
 		Spec: spiderpoolv1.IPPoolSpec{

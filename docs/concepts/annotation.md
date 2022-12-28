@@ -2,6 +2,32 @@
 
 Spiderpool provides annotations for configuring custom ippools and routes.
 
+## Application annotations
+
+Once you set up SpiderSubnet feature, you can specify SpiderSubnet annotations for the application templates.
+For more details, please refer to [SpiderSubnet](../usage/spider-subnet.md)
+
+Notice: The current version only supports to use one SpiderSubnet V4/V6 CR for one interface, you shouldn't specify 2 or more SpiderSubnet V4 CRs,
+and it will choose the first one to use.
+
+### ipam.spidernet.io/subnets
+
+Here's an example for multiple interfaces to use SpiderSubnet.
+
+```yaml
+ipam.spidernet.io/subnets: |-
+  [{"interface": "eth0", "ipv4": ["subnet-demo-v4-1"], "ipv6": ["subnet-demo-v6-1"]},
+   {"interface": "net2", "ipv4": ["subnet-demo-v4-2"], "ipv6": ["subnet-demo-v6-2"]}]
+```
+
+### ipam.spidernet.io/subnet
+
+This is used for SpiderSubnet with single interface.
+
+```yaml
+ipam.spidernet.io/subnet: '{"ipv4": ["subnet-demo-v4"], "ipv6": ["subnet-demo-v6"]}'
+```
+
 ## Pod annotations
 
 For a pod, you can specify Spiderpool annotations for a special request.

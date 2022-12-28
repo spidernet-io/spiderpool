@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve
 title: 'software bug'
 labels: issue/bug, issue/not-assign
-assignees: 'weizhoublue'
+assignees: 'Icarus9913, iiiceoo'
 
 ---
 

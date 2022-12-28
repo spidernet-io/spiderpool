@@ -3,7 +3,7 @@ name: Feature request
 about: Suggest an idea for this project
 title: 'feature'
 labels: issue/feature, issue/not-assign
-assignees: 'weizhoublue'
+assignees: 'Icarus9913, iiiceoo'
 
 ---
 

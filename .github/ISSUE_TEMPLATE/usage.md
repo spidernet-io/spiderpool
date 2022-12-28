@@ -3,7 +3,7 @@ name: usage issue
 about: no idea how to use
 title: 'usage issue'
 labels: issue/usage, issue/not-assign
-assignees: 'weizhoublue'
+assignees: 'Icarus9913, iiiceoo'
 
 ---
 

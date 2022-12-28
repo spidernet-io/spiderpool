@@ -3,7 +3,7 @@ name: Documentation issue
 about: documentation is not right
 title: 'documentation issue'
 labels: issue/doc, issue/not-assign
-assignees: 'weizhoublue'
+assignees: 'Icarus9913, iiiceoo'
 
 ---
 

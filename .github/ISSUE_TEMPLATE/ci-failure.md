@@ -3,7 +3,7 @@ name: CI failure
 about: Create a report to help us improve
 title: 'CI failure'
 labels: issue/ci-fail, issue/not-assign
-assignees: 'weizhoublue'
+assignees: 'Icarus9913, iiiceoo'
 
 ---
 

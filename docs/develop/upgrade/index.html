@@ -441,20 +441,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/third-party-controller/" class="md-nav__link">
-        Spiderpool supports third-party controllers
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -959,17 +945,13 @@
 Please consult the segments from your current release until now before upgrading your spiderpool.</p>
 <h2 id="upgrade-to-036-from-035">Upgrade to 0.3.6 from (&lt;=0.3.5)</h2>
 <h3 id="description">Description</h3>
-<ol>
-<li>There's a design flaw for SpiderSubnet feature in auto-created IPPool label.
+<p>There's a design flaw for SpiderSubnet feature in auto-created IPPool label.
 The previous label <code>ipam.spidernet.io/owner-application</code> corresponding value uses '-' as separative sign.
 For example, we have deployment <code>ns398-174835790/deploy398-82311862</code> and the corresponding label value is <code>Deployment-ns398-174835790-deploy398-82311862</code>.
-It's very hard to unpack it to trace back what the application namespace and name is.<br />
-Now, we use '_' rather than '-' as slash for SpiderSubnet feature label <code>ipam.spidernet.io/owner-application</code>, and the upper case
-will be like <code>Deployment_ns398-174835790_deploy398-82311862</code>.<br />
-Reference PR: <a href="https://github.com/spidernet-io/spiderpool/pull/1162">#1162</a></li>
-<li>In order to support multiple interfaces with SpiderSubnet feature, we also add one more label for auto-created IPPool.
-The key is <code>ipam.spidernet.io/interface</code>, and the value is the corresponding interface name.</li>
-</ol>
+It's very hard to unpack it to trace back what the application namespace and name is.</p>
+<p>Now, we use '_' rather than '-' as slash for SpiderSubnet feature label <code>ipam.spidernet.io/owner-application</code>, and the upper case
+will be like <code>Deployment_ns398-174835790_deploy398-82311862</code></p>
+<p>Reference PR: <a href="https://github.com/spidernet-io/spiderpool/pull/1162">#1162</a></p>
 <h3 id="operation-steps">Operation steps</h3>
 <ol>
 <li>
@@ -981,11 +963,6 @@ The key is <code>ipam.spidernet.io/interface</code>, and the value is the corres
 </ol>
 <p><code>shell
     kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/owner-application": ${AppLabelValue}}}}'</code></p>
-<ol>
-<li>Add one more label</li>
-</ol>
-<p><code>shell
-    kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/interface": "eth0"}}}}'</code></p>
 <ol>
 <li>Update your Spiderpool components version and restart them all.</li>
 </ol>

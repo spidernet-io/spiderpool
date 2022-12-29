@@ -209,7 +209,7 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 
 // AllocateEmptyIPPool will create an empty IPPool and mark the status.AutoDesiredIPCount
 // notice: this function only serves for auto-created IPPool
-func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, appKind string, app metav1.Object, podSelector map[string]string,
+func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, appKind string, app metav1.Object,
 	ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) error {
 	if len(subnetName) == 0 {
 		return fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
@@ -254,9 +254,6 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 			Gateway: subnet.Spec.Gateway,
 			Vlan:    subnet.Spec.Vlan,
 			Routes:  subnet.Spec.Routes,
-			PodAffinity: &metav1.LabelSelector{
-				MatchLabels: podSelector,
-			},
 		},
 	}
 

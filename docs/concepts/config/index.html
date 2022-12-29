@@ -441,20 +441,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/third-party-controller/" class="md-nav__link">
-        Spiderpool supports third-party controllers
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -1003,18 +989,12 @@ metadata:
   name: spiderpool-conf
   namespace: kube-system
 data:
-  conf.yml: |
-    ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
-    networkMode: legacy
-    enableIPv4: true
-    enableIPv6: true
-    enableStatefulSet: true
-    enableSpiderSubnet: true
-    clusterDefaultIPv4IPPool: [default-v4-ippool]
-    clusterDefaultIPv6IPPool: [default-v6-ippool]
-    clusterDefaultIPv4Subnet: [default-v4-subnet]
-    clusterDefaultIPv6Subnet: [default-v6-subnet]
-    clusterSubnetDefaultFlexibleIPNumber: 1
+  ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
+  networkMode: legacy
+  enableIPv4: true
+  enableIPv6: true
+  clusterDefaultIPv4IPPool: [default-v4-ippool]
+  clusterDefaultIPv6IPPool: [default-v6-ippool]
 </code></pre>
 <ul>
 <li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.</li>
@@ -1026,17 +1006,8 @@ data:
 <li><code>enableIPv6</code> (bool):</li>
 <li><code>true</code>: Enable IPv6 IP allocation capability of Spiderpool.</li>
 <li><code>false</code>: Disable IPv6 IP allocation capability of Spiderpool.</li>
-<li><code>enableStatefulSet</code> (bool):</li>
-<li><code>true</code>: Enable StatefulSet capability of Spiderpool.</li>
-<li><code>false</code>: Disable StatefulSet capability of Spiderpool.</li>
-<li><code>enableSpiderSubnet</code> (bool):</li>
-<li><code>true</code>: Enable SpiderSubnet capability of Spiderpool.</li>
-<li><code>false</code>: Disable SpiderSubnet capability of Spiderpool.</li>
 <li><code>clusterDefaultIPv4IPPool</code> (array): Global default IPv4 ippools. It takes effect across the cluster.</li>
 <li><code>clusterDefaultIPv6IPPool</code> (array): Global default IPv6 ippools. It takes effect across the cluster.</li>
-<li><code>clusterDefaultIPv4Subnet</code> (array): Global default IPv4 subnets. It takes effect across the cluster.</li>
-<li><code>clusterDefaultIPv6Subnet</code> (array): Global default IPv6 subnets. It takes effect across the cluster.</li>
-<li><code>clusterSubnetDefaultFlexibleIPNumber</code> (int): Global SpiderSubnet default flexible IP number. It takes effect across the cluster.</li>
 </ul>
 <h2 id="spiderpool-agent-env">Spiderpool-agent env</h2>
 <table>

@@ -47,7 +47,6 @@ nav:
       - usage/cidrManager.md
       - usage/debug.md
       - usage/cli.md
-      - usage/third-party-controller.md
   - Concepts:
       - concepts/arch.md
       - concepts/allocation.md

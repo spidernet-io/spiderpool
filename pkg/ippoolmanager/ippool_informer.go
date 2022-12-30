@@ -482,20 +482,22 @@ func (c *poolInformerController) cleanAutoIPPoolLegacy(ctx context.Context, pool
 
 		var object client.Object
 		switch kind {
-		case constant.OwnerDeployment:
+		case constant.KindDeployment:
 			object = &appsv1.Deployment{}
-		case constant.OwnerReplicaSet:
+		case constant.KindReplicaSet:
 			object = &appsv1.ReplicaSet{}
-		case constant.OwnerDaemonSet:
+		case constant.KindDaemonSet:
 			object = &appsv1.DaemonSet{}
-		case constant.OwnerStatefulSet:
+		case constant.KindStatefulSet:
 			object = &appsv1.StatefulSet{}
-		case constant.OwnerJob:
+		case constant.KindJob:
 			object = &batchv1.Job{}
-		case constant.OwnerCronJob:
+		case constant.KindCronJob:
 			object = &batchv1.CronJob{}
 		default:
-			return false, fmt.Errorf("%w: unmatched application kind '%s'", constant.ErrWrongInput, kind)
+			// pod and other controllers will clean up legacy ippools in IPAM
+			return false, nil
+			//return false, fmt.Errorf("%w: unmatched application kind '%s'", constant.ErrWrongInput, kind)
 		}
 
 		enableDelete := false

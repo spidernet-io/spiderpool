@@ -97,7 +97,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 
 		switch newObject := newObj.(type) {
 		case *appsv1.Deployment:
-			appKind = constant.OwnerDeployment
+			appKind = constant.KindDeployment
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
@@ -146,7 +146,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 		case *appsv1.ReplicaSet:
-			appKind = constant.OwnerReplicaSet
+			appKind = constant.KindReplicaSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
@@ -195,7 +195,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 		case *appsv1.StatefulSet:
-			appKind = constant.OwnerStatefulSet
+			appKind = constant.KindStatefulSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
@@ -244,7 +244,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 		case *batchv1.Job:
-			appKind = constant.OwnerJob
+			appKind = constant.KindJob
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
@@ -293,7 +293,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 		case *batchv1.CronJob:
-			appKind = constant.OwnerCronJob
+			appKind = constant.KindCronJob
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
@@ -342,7 +342,7 @@ func (c *appController) ControllerAddOrUpdateHandler() controllers.AppInformersA
 			}
 
 		case *appsv1.DaemonSet:
-			appKind = constant.OwnerDaemonSet
+			appKind = constant.KindDaemonSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
 
 			// no need reconcile for HostNetwork application
@@ -612,7 +612,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 	var appReplicas int
 
 	switch appKey.AppKind {
-	case constant.OwnerDeployment:
+	case constant.KindDeployment:
 		deployment, err := c.deploymentsLister.Deployments(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -627,7 +627,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		appReplicas = controllers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
 
-	case constant.OwnerReplicaSet:
+	case constant.KindReplicaSet:
 		replicaSet, err := c.replicaSetLister.ReplicaSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -642,7 +642,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		appReplicas = controllers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
 
-	case constant.OwnerDaemonSet:
+	case constant.KindDaemonSet:
 		daemonSet, err := c.daemonSetLister.DaemonSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -657,7 +657,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
 		app = daemonSet.DeepCopy()
 
-	case constant.OwnerStatefulSet:
+	case constant.KindStatefulSet:
 		statefulSet, err := c.statefulSetLister.StatefulSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -672,7 +672,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		appReplicas = controllers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
 
-	case constant.OwnerJob:
+	case constant.KindJob:
 		job, err := c.jobLister.Jobs(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -687,7 +687,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		appReplicas = controllers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
 
-	case constant.OwnerCronJob:
+	case constant.KindCronJob:
 		cronJob, err := c.cronJobLister.CronJobs(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -712,7 +712,17 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 	}
 
 	log.Debug("Going to create IPPool or mark IPPool desired IP number")
-	err = c.createOrMarkIPPool(logutils.IntoContext(context.TODO(), log), *subnetConfig, appKey.AppKind, app, podSelector, appReplicas)
+	err = c.createOrMarkIPPool(logutils.IntoContext(context.TODO(), log),
+		*subnetConfig,
+		types.PodTopController{
+			Kind:      appKey.AppKind,
+			Namespace: app.GetNamespace(),
+			Name:      app.GetName(),
+			Uid:       app.GetUID(),
+			App:       app,
+		},
+		podSelector,
+		appReplicas)
 	if nil != err {
 		return fmt.Errorf("failed to create or scale IPPool, error: %w", err)
 	}
@@ -722,11 +732,11 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 // createOrMarkIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
 func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig,
-	appKind string, app metav1.Object, podSelector *metav1.LabelSelector, appReplicas int) error {
+	podController types.PodTopController, podSelector *metav1.LabelSelector, appReplicas int) error {
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
-	fn := func(ctx context.Context, poolList *spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
+	fn := func(poolList *spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
 		var ipNum int
 		if podSubnetConfig.FlexibleIPNum != nil {
 			ipNum = appReplicas + *(podSubnetConfig.FlexibleIPNum)
@@ -739,7 +749,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s'", ipVersion, subnetName)
 			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
 			// and the IPPool informer will implement the scale action
-			err = c.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, appKind, app, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
+			_, err = c.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
 		} else if len(poolList.Items) == 1 {
 			pool := poolList.Items[0]
 			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)
@@ -768,9 +778,9 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 
 				var v4PoolList *spiderpoolv1.SpiderIPPoolList
 				v4PoolList, errV4 = c.subnetMgr.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+					constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
 					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv4[0],
-					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
 					constant.LabelIPPoolInterface:           item.Interface,
 				})
@@ -778,7 +788,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 					return
 				}
 
-				errV4 = fn(ctx, v4PoolList, item.IPv4[0], constant.IPv4, item.Interface)
+				errV4 = fn(v4PoolList, item.IPv4[0], constant.IPv4, item.Interface)
 			}()
 		}
 
@@ -789,9 +799,9 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 
 				var v6PoolList *spiderpoolv1.SpiderIPPoolList
 				v6PoolList, errV6 = c.subnetMgr.ipPoolManager.ListIPPools(ctx, client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+					constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
 					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv6[0],
-					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
 					constant.LabelIPPoolInterface:           item.Interface,
 				})
@@ -799,7 +809,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 					return
 				}
 
-				errV6 = fn(ctx, v6PoolList, item.IPv6[0], constant.IPv6, item.Interface)
+				errV6 = fn(v6PoolList, item.IPv6[0], constant.IPv6, item.Interface)
 			}()
 		}
 
@@ -827,7 +837,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 		}
 	} else {
 		return fmt.Errorf("%w: no subnets specified to create or mark auto-created IPPool for application '%s/%s/%s', the pod subnet configuration is %v",
-			constant.ErrWrongInput, appKind, app.GetNamespace(), app.GetName(), podSubnetConfig)
+			constant.ErrWrongInput, podController.Kind, podController.Namespace, podController.Name, podSubnetConfig)
 	}
 
 	return nil
@@ -894,7 +904,7 @@ func (c *appController) ControllerDeleteHandler() controllers.APPInformersDelFun
 
 		switch object := obj.(type) {
 		case *appsv1.Deployment:
-			appKind = constant.OwnerDeployment
+			appKind = constant.KindDeployment
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
 
 			owner := metav1.GetControllerOf(object)
@@ -906,7 +916,7 @@ func (c *appController) ControllerDeleteHandler() controllers.APPInformersDelFun
 			app = object
 
 		case *appsv1.ReplicaSet:
-			appKind = constant.OwnerReplicaSet
+			appKind = constant.KindReplicaSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
 
 			owner := metav1.GetControllerOf(object)
@@ -918,7 +928,7 @@ func (c *appController) ControllerDeleteHandler() controllers.APPInformersDelFun
 			app = object
 
 		case *appsv1.StatefulSet:
-			appKind = constant.OwnerStatefulSet
+			appKind = constant.KindStatefulSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
 
 			owner := metav1.GetControllerOf(object)
@@ -930,7 +940,7 @@ func (c *appController) ControllerDeleteHandler() controllers.APPInformersDelFun
 			app = object
 
 		case *batchv1.Job:
-			appKind = constant.OwnerJob
+			appKind = constant.KindJob
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
 
 			owner := metav1.GetControllerOf(object)
@@ -942,7 +952,7 @@ func (c *appController) ControllerDeleteHandler() controllers.APPInformersDelFun
 			app = object
 
 		case *batchv1.CronJob:
-			appKind = constant.OwnerCronJob
+			appKind = constant.KindCronJob
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
 
 			owner := metav1.GetControllerOf(object)
@@ -954,7 +964,7 @@ func (c *appController) ControllerDeleteHandler() controllers.APPInformersDelFun
 			app = object
 
 		case *appsv1.DaemonSet:
-			appKind = constant.OwnerDaemonSet
+			appKind = constant.KindDaemonSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
 
 			owner := metav1.GetControllerOf(object)

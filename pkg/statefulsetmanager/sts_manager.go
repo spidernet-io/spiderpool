@@ -56,7 +56,7 @@ func (sm *statefulSetManager) ListStatefulSets(ctx context.Context, opts ...clie
 // Once the pod's controller StatefulSet was deleted, the pod's corresponding IPPool IP and Endpoint need to be cleaned up.
 // Or the pod's controller StatefulSet decreased its replicas and the pod's index is out of replicas, it needs to be cleaned up too.
 func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespace, podName, podControllerType string) (bool, error) {
-	if podControllerType != constant.OwnerStatefulSet {
+	if podControllerType != constant.KindStatefulSet {
 		return false, fmt.Errorf("pod '%s/%s' is controlled by '%s' instead of StatefulSet", namespace, podName, podControllerType)
 	}
 

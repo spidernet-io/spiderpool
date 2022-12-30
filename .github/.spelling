@@ -278,3 +278,6 @@ default_ipv4_ippool
 default_ipv6_ippool
 clusterDefaultIPv4Subnet
 clusterDefaultIPv6Subnet
+SpiderEndpoint.Status.OwnerControllerType
+OwnerControllerType
+subresource

@@ -151,8 +151,8 @@ func DaemonMain() {
 			MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize,
 			MaxWaitTime:  &limiterMaxWaitTime,
 		},
-		WaitSubnetPoolRetries: agentContext.Cfg.UpdateCRMaxRetries,
-		WaitSubnetPoolTime:    time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+		OperationRetries:     agentContext.Cfg.UpdateCRMaxRetries,
+		OperationGapDuration: time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 	}, agentContext.IPPoolManager, agentContext.EndpointManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
 	agentContext.IPAM = ipam
 

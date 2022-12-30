@@ -122,7 +122,7 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 		},
 	}
 
-	ownerKind, owner, err := em.podManager.GetPodTopController(ctx, pod)
+	podTopController, err := em.podManager.GetPodTopController(ctx, pod)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 	// controlled by StatefulSet. Once the Pod of StatefulSet is recreated,
 	// we can immediately retrieve the old IP allocation results from the
 	// Endpoint without worrying about the cascading deletion of the Endpoint.
-	if ownerKind != constant.OwnerStatefulSet {
+	if podTopController.Kind != constant.KindStatefulSet {
 		if err := controllerutil.SetOwnerReference(pod, endpoint, em.config.scheme); err != nil {
 			return nil, err
 		}
@@ -149,10 +149,9 @@ func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, contain
 
 	endpoint.Status.Current = allocation
 	endpoint.Status.History = []spiderpoolv1.PodIPAllocation{*allocation}
-	endpoint.Status.OwnerControllerType = ownerKind
-	if owner != nil {
-		endpoint.Status.OwnerControllerName = owner.GetName()
-	}
+	endpoint.Status.OwnerControllerType = podTopController.Kind
+	endpoint.Status.OwnerControllerName = podTopController.Name
+
 	if err := em.client.Status().Update(ctx, endpoint); err != nil {
 		return nil, err
 	}

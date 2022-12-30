@@ -196,14 +196,14 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 
 			It("is not a Pod controlled by StatefulSet", func() {
 				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, nonStsPodName, constant.OwnerUnknown)
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, nonStsPodName, constant.KindUnknown)
 				Expect(err).To(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 
 			It("is a Pod controlled by StatefulSet, but the Pod name is invalid", func() {
 				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, nonStsPodName, constant.OwnerStatefulSet)
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, nonStsPodName, constant.KindStatefulSet)
 				Expect(err).To(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
@@ -213,14 +213,14 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				defer patches.Reset()
 
 				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.OwnerStatefulSet)
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
 				Expect(err).To(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 
 			It("is a valid Pod controlled by StatefulSet, but the StatefulSet no longer exists", func() {
 				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.OwnerStatefulSet)
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
@@ -232,7 +232,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				err := fakeClient.Create(ctx, stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.OwnerStatefulSet)
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
@@ -245,7 +245,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				err := fakeClient.Create(ctx, stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.OwnerStatefulSet)
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeTrue())
 			})

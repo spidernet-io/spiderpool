@@ -35,3 +35,15 @@ The key is `ipam.spidernet.io/interface`, and the value is the corresponding int
    ```
 
 4. Update your Spiderpool components version and restart them all.
+
+## Upgrade to 0.4.0 from (<0.4.0)
+
+### Description
+
+Due to the architecture adjustment, the SpiderEndpoint.Status.OwnerControllerType property is changed from `None` to `Pod`.
+
+### Operation steps
+
+1. Find all SpiderEndpoint objects that their Status OwnerControllerType is `None`
+
+2. Replace the subresource SpiderEndpoint.Status.OwnerControllerType property from `None` to `Pod`

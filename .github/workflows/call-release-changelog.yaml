@@ -58,6 +58,9 @@ jobs:
                   exit 1
               fi
               echo ::set-output name=dest_tag::${dest_tag}
+              if ${{ inputs.begin_tag != '' }} ; then
+                echo ::set-output name=begin_tag::${{ inputs.begin_tag }}
+              fi
               exit 0
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "call by workflow_dispatch"
@@ -98,7 +101,7 @@ jobs:
       - name: Build Changelog With Specified Start
         id: create_changelog_by_manul_tag
         if: ${{ needs.get_ref.outputs.begin_tag != '' }}
-        uses: mikepenz/release-changelog-builder-action@v3
+        uses: mikepenz/release-changelog-builder-action@v3.5.0
         with:
           configuration: ${{ env.CHANGELOG_CONF }}
           outputFile: ${{ env.CHANGELOG_TMP_FILE }}
@@ -111,7 +114,7 @@ jobs:
       - name: Build Changelog By Auto Tag
         id: create_changelog_by_auto_tag
         if: ${{ needs.get_ref.outputs.begin_tag == '' }}
-        uses: mikepenz/release-changelog-builder-action@v3
+        uses: mikepenz/release-changelog-builder-action@v3.5.0
         with:
           configuration: ${{ env.CHANGELOG_CONF }}
           toTag: ${{ needs.get_ref.outputs.begin_tag }}

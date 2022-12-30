@@ -489,4 +489,4 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/bug"
-          assignees: "weizhoublue"
+          assignees: "iiiceoo,Icarus9913"

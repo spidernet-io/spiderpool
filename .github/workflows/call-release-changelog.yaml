@@ -1,8 +1,13 @@
 name: Call Release Changelog
 
-# auto generating changelog to directory /changelogs/*** of branch github_pages
-# auto generate changelog by the related-label history PR between tags,
-# commit changelog: changelogs/CHANGELOG-{begin_tag}-to-{end_tag}.md
+env:
+  SCRIPT_PATH: "./tools/scripts/changelog.sh"
+  LABEL_FEATURE: "pr/release/feature-new"
+  LABEL_BUG: "pr/release/bug"
+  DEST_BRANCH: github_pages
+  DEST_DIRECTORY: 'changelogs/'
+  PR_LABEL: pr/release/robot_update_githubpage
+  PR_REVIWER: weizhoublue
 
 on:
   workflow_call:
@@ -19,36 +24,32 @@ on:
       dest_tag:
         description: 'last commit based on which tag'
         required: true
-        default: v1.0.0
+        default: v0.2.0
       begin_tag:
         description: 'start commit based on which tag'
         required: false
-        default: v1.0.0
+        default: v0.1.0
 
 permissions: write-all
 
-env:
-  DEST_BRANCH: github_pages
-  DEST_DIRECTORY: 'changelogs/'
-  PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: weizhoublue
-  CHANGELOG_CONF: .github/changelog_builder_conf.json
 
 jobs:
-  get_ref:
+  generate_changelog:
     runs-on: ubuntu-latest
     outputs:
-      dest_tag: ${{ steps.get_ref.outputs.dest_tag }}
-      begin_tag: ${{ steps.get_ref.outputs.begin_tag }}
+      dest_tag: ${{ env.dest_tag }}
+      begin_tag: ${{ env.begin_tag }}
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Get Ref
-        id: get_ref
+      - name: Get Input Tags
         run: |
+          set -x
+          begin_tag=""
+          dest_tag=""
           if ${{ inputs.dest_tag != '' }} ; then
               echo "call by workflow_call"
               dest_tag=${{ inputs.dest_tag }}
@@ -57,8 +58,7 @@ jobs:
                   echo "error, does not exist dest_tag ${dest_tag} "
                   exit 1
               fi
-              echo ::set-output name=dest_tag::${dest_tag}
-              exit 0
+              begin_tag=${{ inputs.begin_tag }}
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "call by workflow_dispatch"
               dest_tag=${{ github.event.inputs.dest_tag }}
@@ -72,81 +72,46 @@ jobs:
                   echo "error, does not exist begin_tag ${begin_tag} "
                   exit 1
               fi
-              echo ::set-output name=dest_tag::${dest_tag}
-              [ -n "$begin_tag" ] && echo ::set-output name=begin_tag::${begin_tag}
-              exit 0
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
           fi
+          echo "RUN_dest_tag=${dest_tag}" >> $GITHUB_ENV
+          echo "RUN_begin_tag=${begin_tag}" >> $GITHUB_ENV
 
-  generate_changelog:
-    name: generate release changelog
-    needs: [get_ref]
-    runs-on: ubuntu-latest
-    outputs:
-      dest_tag: ${{ steps.generate_changelog_file.outputs.dest_tag }}
-      begin_tag: ${{ steps.generate_changelog_file.outputs.begin_tag }}
-    env:
-      CHANGELOG_TMP_FILE: './_temp_changelog'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Build Changelog With Specified Start
-        id: create_changelog_by_manul_tag
-        if: ${{ needs.get_ref.outputs.begin_tag != '' }}
-        uses: mikepenz/release-changelog-builder-action@v3
-        with:
-          configuration: ${{ env.CHANGELOG_CONF }}
-          outputFile: ${{ env.CHANGELOG_TMP_FILE }}
-          fromTag: ${{ needs.get_ref.outputs.begin_tag }}
-          toTag: ${{ needs.get_ref.outputs.to_tag }}
-          failOnError: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Changelog By Auto Tag
-        id: create_changelog_by_auto_tag
-        if: ${{ needs.get_ref.outputs.begin_tag == '' }}
-        uses: mikepenz/release-changelog-builder-action@v3
-        with:
-          configuration: ${{ env.CHANGELOG_CONF }}
-          toTag: ${{ needs.get_ref.outputs.begin_tag }}
-          outputFile: ${{ env.CHANGELOG_TMP_FILE }}
-          failOnError: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate Changelog File
-        id: generate_changelog_file
-        continue-on-error: false
-        if: steps.create_changelog_by_auto_tag.outputs.failed == 'false' ||  steps.create_changelog_by_manul_tag.outputs.failed == 'false'
+      - name: generate changelog
         run: |
-          if [ ! -f "${{ env.CHANGELOG_TMP_FILE }}" ] ; then
-               echo "failed to find auto-generated changelog result file $TEMP_FILE"
-               exit 1
-          fi
-          if ${{ steps.create_changelog_by_auto_tag.outputs.failed == 'false' }} ; then
-              CHANGELOG_FILE_NAME=${{ steps.create_changelog_by_auto_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_auto_tag.outputs.toTag }}.md
-              echo ::set-output name=dest_tag::${{ steps.create_changelog_by_auto_tag.outputs.toTag }}
-              echo ::set-output name=begin_tag::${{ steps.create_changelog_by_auto_tag.outputs.fromTag }}
+          set -x
+          export LABEL_FEATURE=${{ env.LABEL_FEATURE }}
+          export LABEL_BUG=${{ env.LABEL_BUG }}
+          export PROJECT_REPO=${{ github.repository }}
+          export GH_TOKEN=${{ github.token }}
+          mkdir changelog
+          if ${{ env.RUN_begin_tag == '' }} ; then
+              ${{ env.SCRIPT_PATH }} ./changelog ${{ env.RUN_dest_tag }} \
+                || { echo "error, failed to generate changelog " ; exit 1 ; }
           else
-              CHANGELOG_FILE_NAME=${{ steps.create_changelog_by_manul_tag.outputs.fromTag }}-to-${{ steps.create_changelog_by_manul_tag.outputs.toTag }}.md
-              echo ::set-output name=dest_tag::${{ steps.create_changelog_by_manul_tag.outputs.toTag }}
-              echo ::set-output name=begin_tag::${{ steps.create_changelog_by_manul_tag.outputs.fromTag }}
+              ${{ env.SCRIPT_PATH }} ./changelog ${{ env.RUN_dest_tag }} ${{ env.RUN_begin_tag }}  \
+                || { echo "error, failed to generate changelog " ; exit 1 ; }
           fi
-          echo ::set-output name=changelog_path::${CHANGELOG_FILE_NAME}
-          mv ${{ env.CHANGELOG_TMP_FILE }}  ${CHANGELOG_FILE_NAME}
-          cat ${CHANGELOG_FILE_NAME}
+          FILE_NAME=` ls changelog `
+          [ -n "$FILE_NAME" ] || { echo "error, failed to find changelog " ; exit 2 ; }
+          #
+          TMP=` echo ${FILE_NAME%.*}`
+          begin_tag=`awk -F'_' '{print $3}' <<< "${TMP}" `
+          dest_tag=`awk -F'_' '{print $5}' <<< "${TMP}" `
+          echo "dest_tag=${dest_tag}" >> $GITHUB_ENV
+          echo "begin_tag=${begin_tag}" >> $GITHUB_ENV
+          FILE_PATH=` echo ${PWD}/changelog/${FILE_NAME} `
+          echo "FILE_PATH=${FILE_PATH}" >> $GITHUB_ENV
+          echo "------------------------------------"
+          cat ${FILE_PATH}
 
       - name: Upload Changelog
         uses: actions/upload-artifact@v3.1.1
         with:
           name: changelog_artifact
-          path: ${{ steps.generate_changelog_file.outputs.changelog_path }}
+          path: ${{ env.FILE_PATH }}
           retention-days: 1
           if-no-files-found: error
 

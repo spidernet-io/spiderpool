@@ -22,6 +22,10 @@ var (
 )
 
 func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+	if err := rw.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
 	var errs field.ErrorList
 	if err := rw.validateReservedIPSpec(ctx, rIP); err != nil {
 		errs = append(errs, err)
@@ -35,12 +39,16 @@ func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *
 }
 
 func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
-	var errs field.ErrorList
-	if err := rw.validateReservedIPSpec(ctx, newRIP); err != nil {
+	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
 		return field.ErrorList{err}
 	}
 
-	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
+	if err := rw.validateReservedIPIPVersion(newRIP.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
+	var errs field.ErrorList
+	if err := rw.validateReservedIPSpec(ctx, newRIP); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -52,7 +60,8 @@ func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRI
 }
 
 func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if *newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
+	if newRIP.Spec.IPVersion != nil && oldRIP.Spec.IPVersion != nil &&
+		*newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",
@@ -63,10 +72,6 @@ func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderRes
 }
 
 func (rw *ReservedIPWebhook) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if err := rw.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
-		return err
-	}
-
 	return rw.validateReservedIPAvailableIP(ctx, *rIP.Spec.IPVersion, rIP)
 }
 
@@ -121,8 +126,8 @@ func (rw *ReservedIPWebhook) validateReservedIPAvailableIP(ctx context.Context, 
 		)
 	}
 
-	rIPList, err := rw.ListReservedIPs(ctx)
-	if err != nil {
+	var rIPList spiderpoolv1.SpiderReservedIPList
+	if err := rw.List(ctx, &rIPList); err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to list ReservedIPs: %v", err))
 	}
 

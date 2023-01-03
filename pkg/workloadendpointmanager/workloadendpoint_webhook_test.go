@@ -65,7 +65,7 @@ var _ = Describe("WorkloadEndpointWebhook", Label("workloadendpoint_webhook_test
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("sets finalizer", func() {
+			It("adds finalizer", func() {
 				ctx := context.TODO()
 				err := endpointWebhook.Default(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())

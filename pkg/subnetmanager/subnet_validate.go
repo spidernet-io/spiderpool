@@ -27,9 +27,17 @@ var (
 	controlledIPPoolsField *field.Path = field.NewPath("status").Child("controlledIPPools")
 )
 
-func (sm *subnetManager) validateCreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
+func (sw *SubnetWebhook) validateCreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
+	if err := sw.validateSubnetIPVersion(subnet.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
+	if err := sw.validateSubnetSubnet(ctx, subnet); err != nil {
+		return field.ErrorList{err}
+	}
+
 	var errs field.ErrorList
-	if err := sm.validateSubnetSpec(ctx, subnet); err != nil {
+	if err := sw.validateSubnetSpec(ctx, subnet); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -40,12 +48,16 @@ func (sm *subnetManager) validateCreateSubnet(ctx context.Context, subnet *spide
 	return errs
 }
 
-func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
+func (sw *SubnetWebhook) validateUpdateSubnet(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
 	if err := validateSubnetShouldNotBeChanged(oldSubnet, newSubnet); err != nil {
 		return field.ErrorList{err}
 	}
 
-	if err := sm.validateSubnetSpec(ctx, newSubnet); err != nil {
+	if err := sw.validateSubnetIPVersion(newSubnet.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
+	if err := sw.validateSubnetSpec(ctx, newSubnet); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -62,7 +74,8 @@ func (sm *subnetManager) validateUpdateSubnet(ctx context.Context, oldSubnet, ne
 }
 
 func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if *newSubnet.Spec.IPVersion != *oldSubnet.Spec.IPVersion {
+	if newSubnet.Spec.IPVersion != nil && oldSubnet.Spec.IPVersion != nil &&
+		*newSubnet.Spec.IPVersion != *oldSubnet.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",
@@ -79,13 +92,7 @@ func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv1.SpiderS
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetSpec(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
-	if err := sm.validateSubnetIPVersion(subnet.Spec.IPVersion); err != nil {
-		return err
-	}
-	if err := sm.validateSubnetSubnet(ctx, *subnet.Spec.IPVersion, subnet.Name, subnet.Spec.Subnet); err != nil {
-		return err
-	}
+func (sw *SubnetWebhook) validateSubnetSpec(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	if err := validateSubnetIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
 		return err
 	}
@@ -102,13 +109,13 @@ func (sm *subnetManager) validateSubnetSpec(ctx context.Context, subnet *spiderp
 func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, err)
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
 	}
 
 	for poolName, preAllocation := range subnet.Status.ControlledIPPools {
 		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
 		if err != nil {
-			return field.InternalError(controlledIPPoolsField, err)
+			return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse the pre-allocation of the IPPool %s: %v", poolName, err))
 		}
 		invalidIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, totalIPs)
 		if len(invalidIPs) > 0 {
@@ -123,7 +130,7 @@ func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetIPVersion(version *types.IPVersion) *field.Error {
+func (sw *SubnetWebhook) validateSubnetIPVersion(version *types.IPVersion) *field.Error {
 	if version == nil {
 		return field.Invalid(
 			ipVersionField,
@@ -142,14 +149,14 @@ func (sm *subnetManager) validateSubnetIPVersion(version *types.IPVersion) *fiel
 		)
 	}
 
-	if *version == constant.IPv4 && !sm.config.EnableIPv4 {
+	if *version == constant.IPv4 && !sw.EnableIPv4 {
 		return field.Forbidden(
 			ipVersionField,
 			"IPv4 is disabled",
 		)
 	}
 
-	if *version == constant.IPv6 && !sm.config.EnableIPv6 {
+	if *version == constant.IPv6 && !sw.EnableIPv6 {
 		return field.Forbidden(
 			ipVersionField,
 			"IPv6 is disabled",
@@ -159,32 +166,38 @@ func (sm *subnetManager) validateSubnetIPVersion(version *types.IPVersion) *fiel
 	return nil
 }
 
-func (sm *subnetManager) validateSubnetSubnet(ctx context.Context, version types.IPVersion, subnetName, subnet string) *field.Error {
-	subnetList, err := sm.ListSubnets(ctx)
-	if err != nil {
-		return field.InternalError(subnetField, err)
+func (sw *SubnetWebhook) validateSubnetSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+	if err := spiderpoolip.IsCIDR(*subnet.Spec.IPVersion, subnet.Spec.Subnet); err != nil {
+		return field.Invalid(
+			subnetField,
+			subnet.Spec.Subnet,
+			err.Error(),
+		)
+	}
+
+	subnetList := spiderpoolv1.SpiderSubnetList{}
+	if err := sw.List(ctx, &subnetList); err != nil {
+		return field.InternalError(subnetField, fmt.Errorf("failed to list Subnets: %v", err))
 	}
 
 	for _, s := range subnetList.Items {
-		if s.Name == subnetName || *s.Spec.IPVersion != version {
-			continue
-		}
+		if *s.Spec.IPVersion == *subnet.Spec.IPVersion {
+			if s.Name == subnet.Name {
+				return field.InternalError(subnetField, fmt.Errorf("subnet %s already exists", subnet.Name))
+			}
 
-		overlap, err := spiderpoolip.IsCIDROverlap(version, subnet, s.Spec.Subnet)
-		if err != nil {
-			return field.Invalid(
-				subnetField,
-				subnet,
-				err.Error(),
-			)
-		}
+			overlap, err := spiderpoolip.IsCIDROverlap(*subnet.Spec.IPVersion, subnet.Spec.Subnet, s.Spec.Subnet)
+			if err != nil {
+				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps: %v", err))
+			}
 
-		if overlap {
-			return field.Invalid(
-				subnetField,
-				subnet,
-				fmt.Sprintf("overlap with Subnet %s which 'spec.subnet' is %s", s.Name, s.Spec.Subnet),
-			)
+			if overlap {
+				return field.Invalid(
+					subnetField,
+					subnet.Spec.Subnet,
+					fmt.Sprintf("overlap with Subnet %s which 'spec.subnet' is %s", s.Name, s.Spec.Subnet),
+				)
+			}
 		}
 	}
 
@@ -192,8 +205,7 @@ func (sm *subnetManager) validateSubnetSubnet(ctx context.Context, version types
 }
 
 func validateSubnetIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
-	n := len(ips)
-	if n == 0 {
+	if len(ips) == 0 {
 		return field.Required(
 			ipsField,
 			"requires at least one item",

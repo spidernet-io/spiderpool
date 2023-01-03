@@ -6,15 +6,16 @@ package reservedipmanager_test
 import (
 	"context"
 	"fmt"
-	"time"
+	"sync/atomic"
 
-	"github.com/golang/mock/gomock"
+	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -40,35 +41,62 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 	})
 
 	Describe("Test ReservedIPWebhook's method", func() {
-		var rIPT *spiderpoolv1.SpiderReservedIP
-		var rIPListT *spiderpoolv1.SpiderReservedIPList
+		var count uint64
+		var rIPName, existRIPName string
+		var rIPT, existRIPT *spiderpoolv1.SpiderReservedIP
 
 		BeforeEach(func() {
 			reservedipmanager.WebhookLogger = logutils.Logger.Named("ReservedIP-Webhook")
+			rIPWebhook.EnableIPv4 = true
+			rIPWebhook.EnableIPv6 = true
+
+			atomic.AddUint64(&count, 1)
+			rIPName = fmt.Sprintf("reservedip-%v", count)
 			rIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.SpiderReservedIPKind,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "reservedip",
+					Name: rIPName,
 				},
 				Spec: spiderpoolv1.ReservedIPSpec{},
 			}
 
-			rIPListT = &spiderpoolv1.SpiderReservedIPList{
+			existRIPName = fmt.Sprintf("z-exist-reservedip-%v", count)
+			existRIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPListKind,
+					Kind:       constant.SpiderReservedIPKind,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
-				ListMeta: metav1.ListMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: existRIPName,
+				},
+				Spec: spiderpoolv1.ReservedIPSpec{},
 			}
+		})
+
+		var deleteOption *client.DeleteOptions
+
+		AfterEach(func() {
+			policy := metav1.DeletePropagationForeground
+			deleteOption = &client.DeleteOptions{
+				GracePeriodSeconds: pointer.Int64(0),
+				PropagationPolicy:  &policy,
+			}
+
+			ctx := context.TODO()
+			err := fakeClient.Delete(ctx, rIPT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = fakeClient.Delete(ctx, existRIPT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("Default", func() {
 			It("avoids modifying the terminating ReservedIP", func() {
-				deletionTimestamp := metav1.NewTime(time.Now().Add(30 * time.Second))
-				rIPT.SetDeletionTimestamp(&deletionTimestamp)
+				now := metav1.Now()
+				rIPT.SetDeletionTimestamp(&now)
 
 				ctx := context.TODO()
 				err := rIPWebhook.Default(ctx, rIPT)
@@ -109,8 +137,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ipVersion'", func() {
-				ipVersion := constant.InvalidIPVersion
-				rIPT.Spec.IPVersion = &ipVersion
+				rIPT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
@@ -132,8 +159,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ips'", func() {
-				ipv4 := constant.IPv4
-				rIPT.Spec.IPVersion = &ipv4
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						constant.InvalidIPRange,
@@ -157,8 +183,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("merges IPv4 'spec.ips'", func() {
-				ipv4 := constant.IPv4
-				rIPT.Spec.IPVersion = &ipv4
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
@@ -179,8 +204,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("merges IPv6 'spec.ips'", func() {
-				ipv6 := constant.IPv6
-				rIPT.Spec.IPVersion = &ipv6
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"abcd:1234::a",
@@ -202,11 +226,6 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 		})
 
 		Describe("ValidateCreate", func() {
-			BeforeEach(func() {
-				rIPWebhook.EnableIPv4 = true
-				rIPWebhook.EnableIPv6 = true
-			})
-
 			When("Validating 'spec.ipVersion'", func() {
 				It("inputs nil 'spec.ipVersion'", func() {
 					ctx := context.TODO()
@@ -215,8 +234,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("inputs invalid 'spec.ipVersion'", func() {
-					ipVersion := constant.InvalidIPVersion
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateCreate(ctx, rIPT)
@@ -225,8 +243,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("creates IPv4 ReservedIP but IPv4 is disbale'", func() {
 					rIPWebhook.EnableIPv4 = false
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateCreate(ctx, rIPT)
@@ -235,8 +252,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("creates IPv6 ReservedIP but IPv6 is disbale'", func() {
 					rIPWebhook.EnableIPv6 = false
-					ipVersion := constant.IPv6
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateCreate(ctx, rIPT)
@@ -246,8 +262,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("inputs empty 'spec.ips'", func() {
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateCreate(ctx, rIPT)
@@ -255,8 +270,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("inputs invalid 'spec.ips'", func() {
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
 					ctx := context.TODO()
@@ -265,13 +279,10 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("failed to list ReservedIPs due to some unknown errors", func() {
-					mockRIPManager.EXPECT().
-						ListReservedIPs(gomock.All()).
-						Return(nil, constant.ErrUnknown).
-						Times(1)
+					patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+					defer patches.Reset()
 
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 						[]string{
 							"172.18.40.1-172.18.40.2",
@@ -285,19 +296,14 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("exists invalid ReservedIPs in the cluster", func() {
-					existRIPT := rIPT.DeepCopy()
-					existRIPT.Name = "exist-reservedip"
-					ipVersion := constant.IPv4
-					existRIPT.Spec.IPVersion = &ipVersion
+					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, constant.InvalidIPRange)
-					rIPListT.Items = append(rIPListT.Items, *existRIPT)
 
-					mockRIPManager.EXPECT().
-						ListReservedIPs(gomock.All()).
-						Return(rIPListT, nil).
-						Times(1)
+					ctx := context.TODO()
+					err := fakeClient.Create(ctx, existRIPT)
+					Expect(err).NotTo(HaveOccurred())
 
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 						[]string{
 							"172.18.40.1-172.18.40.2",
@@ -305,25 +311,19 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					err = rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
-				It("overlaps with the existing ReservedIP", func() {
-					existRIPT := rIPT.DeepCopy()
-					existRIPT.Name = "exist-reservedip"
-					ipVersion := constant.IPv4
-					existRIPT.Spec.IPVersion = &ipVersion
+				It("overlaps with existing ReservedIP", func() {
+					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, "172.18.40.10")
-					rIPListT.Items = append(rIPListT.Items, *existRIPT)
 
-					mockRIPManager.EXPECT().
-						ListReservedIPs(gomock.All()).
-						Return(rIPListT, nil).
-						Times(1)
+					ctx := context.TODO()
+					err := fakeClient.Create(ctx, existRIPT)
+					Expect(err).NotTo(HaveOccurred())
 
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 						[]string{
 							"172.18.40.1-172.18.40.2",
@@ -331,20 +331,13 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					err = rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 			})
 
 			It("creates IPv4 ReservedIP with all fields valid", func() {
-				mockRIPManager.EXPECT().
-					ListReservedIPs(gomock.All()).
-					Return(rIPListT, nil).
-					Times(1)
-
-				ipVersion := constant.IPv4
-				rIPT.Spec.IPVersion = &ipVersion
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.1-172.18.40.2",
@@ -358,13 +351,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("creates IPv6 ReservedIP with all fields valid", func() {
-				mockRIPManager.EXPECT().
-					ListReservedIPs(gomock.All()).
-					Return(rIPListT, nil).
-					Times(1)
-
-				ipVersion := constant.IPv6
-				rIPT.Spec.IPVersion = &ipVersion
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"abcd:1234::1-abcd:1234::2",
@@ -379,16 +366,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 		})
 
 		Describe("ValidateUpdate", func() {
-			BeforeEach(func() {
-				rIPWebhook.EnableIPv4 = true
-				rIPWebhook.EnableIPv6 = true
-			})
-
 			When("Validating 'spec.ipVersion'", func() {
 				It("updates 'spec.ipVersion' to nil", func() {
-					rIPWebhook.EnableIPv4 = false
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPVersion = nil
@@ -398,28 +378,11 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
-				It("updates 'spec.ipVersion' to invalid IP version", func() {
-					rIPWebhook.EnableIPv4 = false
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
-
-					newRIPT := rIPT.DeepCopy()
-					invalidIPVersion := constant.InvalidIPVersion
-					newRIPT.Spec.IPVersion = &invalidIPVersion
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
 				It("changes 'spec.ipVersion'", func() {
-					rIPWebhook.EnableIPv4 = false
-					ipv4 := constant.IPv4
-					rIPT.Spec.IPVersion = &ipv4
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
-					ipv6 := constant.IPv6
-					newRIPT.Spec.IPVersion = &ipv6
+					newRIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
@@ -428,8 +391,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("updates IPv4 ReservedIP but IPv4 is disbale'", func() {
 					rIPWebhook.EnableIPv4 = false
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
@@ -441,8 +403,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("updates IPv6 ReservedIP but IPv6 is disbale'", func() {
 					rIPWebhook.EnableIPv6 = false
-					ipVersion := constant.IPv6
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "adbc:1234::a")
@@ -454,9 +415,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.ips'", func() {
-				It("appends an invalid IP range to 'spec.ips'", func() {
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+				It("appends invalid IP range to 'spec.ips'", func() {
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, constant.InvalidIPRange)
@@ -467,13 +427,10 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("failed to list ReservedIPs due to some unknown errors", func() {
-					mockRIPManager.EXPECT().
-						ListReservedIPs(gomock.All()).
-						Return(nil, constant.ErrUnknown).
-						Times(1)
+					patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+					defer patches.Reset()
 
-					ipVersion := constant.IPv4
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					newRIPT := rIPT.DeepCopy()
@@ -485,50 +442,42 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("exists invalid ReservedIPs in the cluster", func() {
-					existRIPT := rIPT.DeepCopy()
-					existRIPT.Name = "exist-reservedip"
-					ipVersion := constant.IPv4
-					existRIPT.Spec.IPVersion = &ipVersion
+					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, constant.InvalidIPRange)
-					rIPListT.Items = append(rIPListT.Items, *existRIPT)
 
-					mockRIPManager.EXPECT().
-						ListReservedIPs(gomock.All()).
-						Return(rIPListT, nil).
-						Times(1)
+					ctx := context.TODO()
+					err := fakeClient.Create(ctx, existRIPT)
+					Expect(err).NotTo(HaveOccurred())
 
-					rIPT.Spec.IPVersion = &ipVersion
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
+					err = fakeClient.Create(ctx, rIPT)
+					Expect(err).NotTo(HaveOccurred())
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
 
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					err = rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
-				It("overlaps with the existing ReservedIP", func() {
-					existRIPT := rIPT.DeepCopy()
-					existRIPT.Name = "exist-reservedip"
-					ipVersion := constant.IPv4
-					existRIPT.Spec.IPVersion = &ipVersion
+				It("overlaps with existing ReservedIP", func() {
+					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, "172.18.40.10")
 
-					rIPT.Spec.IPVersion = &ipVersion
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
-					rIPListT.Items = append(rIPListT.Items, *rIPT, *existRIPT)
+					ctx := context.TODO()
+					err := fakeClient.Create(ctx, existRIPT)
+					Expect(err).NotTo(HaveOccurred())
 
-					mockRIPManager.EXPECT().
-						ListReservedIPs(gomock.All()).
-						Return(rIPListT, nil).
-						Times(1)
+					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
+					err = fakeClient.Create(ctx, rIPT)
+					Expect(err).NotTo(HaveOccurred())
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
 
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					err = rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 			})
@@ -556,13 +505,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("updates IPv4 ReservedIP with all fields valid", func() {
-				mockRIPManager.EXPECT().
-					ListReservedIPs(gomock.All()).
-					Return(rIPListT, nil).
-					Times(1)
-
-				ipVersion := constant.IPv4
-				rIPT.Spec.IPVersion = &ipVersion
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 				newRIPT := rIPT.DeepCopy()
@@ -574,13 +517,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("updates IPv6 ReservedIP with all fields valid", func() {
-				mockRIPManager.EXPECT().
-					ListReservedIPs(gomock.All()).
-					Return(rIPListT, nil).
-					Times(1)
-
-				ipVersion := constant.IPv6
-				rIPT.Spec.IPVersion = &ipVersion
+				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs, "abcd:1234::1-abcd:1234::2")
 
 				newRIPT := rIPT.DeepCopy()

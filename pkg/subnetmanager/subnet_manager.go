@@ -77,12 +77,12 @@ func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string)
 }
 
 func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
-	subnetList := &spiderpoolv1.SpiderSubnetList{}
-	if err := sm.client.List(ctx, subnetList, opts...); err != nil {
+	var subnetList spiderpoolv1.SpiderSubnetList
+	if err := sm.client.List(ctx, &subnetList, opts...); err != nil {
 		return nil, err
 	}
 
-	return subnetList, nil
+	return &subnetList, nil
 }
 
 func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool, cursor bool) ([]string, error) {

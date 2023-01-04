@@ -238,6 +238,12 @@ func PatchSpiderSubnet(f *frame.Framework, desiredSubnet, originalSubnet *v1.Spi
 	}
 
 	mergePatch := client.MergeFrom(originalSubnet)
+	d, err := mergePatch.Data(desiredSubnet)
+	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
+	if err != nil {
+		return fmt.Errorf("failed to generate patch, err is %v", err)
+	}
+
 	return f.PatchResource(desiredSubnet, mergePatch, opts...)
 }
 

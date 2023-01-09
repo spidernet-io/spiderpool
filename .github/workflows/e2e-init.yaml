@@ -130,7 +130,7 @@ jobs:
           fi
 
       - name: Upload e2e log
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: ${{ inputs.ip_family }}-debuglog.txt
           path: test/e2edebugLog.txt
@@ -138,7 +138,7 @@ jobs:
 
       - name: Upload e2e report
         if: ${{ steps.run_e2e.outputs.upload == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: ${{ inputs.ip_family }}-e2ereport.json
           path: e2ereport.json

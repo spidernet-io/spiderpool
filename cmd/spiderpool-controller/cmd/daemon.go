@@ -322,8 +322,13 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	// set up spiderpool controller IPPool webhook
 	logger.Debug("Begin to set up IPPool webhook")
-	err = controllerContext.IPPoolManager.SetupWebhook()
-	if err != nil {
+	if err := (&ippoolmanager.IPPoolWebhook{
+		Client:             controllerContext.CRDManager.GetClient(),
+		Scheme:             controllerContext.CRDManager.GetScheme(),
+		EnableIPv4:         controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:         controllerContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
+	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
 

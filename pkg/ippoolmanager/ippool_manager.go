@@ -109,12 +109,12 @@ func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string) (
 }
 
 func (im *ipPoolManager) ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error) {
-	ipPoolList := &spiderpoolv1.SpiderIPPoolList{}
-	if err := im.client.List(ctx, ipPoolList, opts...); err != nil {
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
+	if err := im.client.List(ctx, &ipPoolList, opts...); err != nil {
 		return nil, err
 	}
 
-	return ipPoolList, nil
+	return &ipPoolList, nil
 }
 
 func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error) {

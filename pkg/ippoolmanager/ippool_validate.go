@@ -25,9 +25,17 @@ var (
 	routesField     *field.Path = field.NewPath("spec").Child("routes")
 )
 
-func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
+	if err := iw.validateIPPoolIPVersion(ipPool.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
+	if err := iw.validateIPPoolSubnet(ctx, ipPool); err != nil {
+		return field.ErrorList{err}
+	}
+
 	var errs field.ErrorList
-	if err := im.validateIPPoolSpec(ctx, ipPool); err != nil {
+	if err := iw.validateIPPoolSpec(ctx, ipPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -38,17 +46,21 @@ func (im *ipPoolManager) validateCreateIPPool(ctx context.Context, ipPool *spide
 	return errs
 }
 
-func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	if err := validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool); err != nil {
 		return field.ErrorList{err}
 	}
 
-	if err := im.validateIPPoolSpec(ctx, newIPPool); err != nil {
+	if err := iw.validateIPPoolIPVersion(newIPPool.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
+	if err := iw.validateIPPoolSpec(ctx, newIPPool); err != nil {
 		return field.ErrorList{err}
 	}
 
 	var errs field.ErrorList
-	if err := validateIPPoolIPInUse(newIPPool, im.config.EnableSpiderSubnet); err != nil {
+	if err := validateIPPoolIPInUse(newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -60,7 +72,8 @@ func (im *ipPoolManager) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 }
 
 func validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if *newIPPool.Spec.IPVersion != *oldIPPool.Spec.IPVersion {
+	if newIPPool.Spec.IPVersion != nil && oldIPPool.Spec.IPVersion != nil &&
+		*newIPPool.Spec.IPVersion != *oldIPPool.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",
@@ -77,14 +90,8 @@ func validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool *spiderpoolv1.SpiderI
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if err := im.validateIPPoolIPVersion(ipPool.Spec.IPVersion); err != nil {
-		return err
-	}
-	if err := im.validateIPPoolSubnet(ctx, *ipPool.Spec.IPVersion, ipPool.Name, ipPool.Spec.Subnet); err != nil {
-		return err
-	}
-	if err := im.validateIPPoolAvailableIPs(ctx, ipPool); err != nil {
+func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if err := iw.validateIPPoolAvailableIPs(ctx, ipPool); err != nil {
 		return err
 	}
 	if err := validateIPPoolGateway(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Gateway); err != nil {
@@ -94,10 +101,10 @@ func (im *ipPoolManager) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	return validateIPPoolRoutes(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Routes)
 }
 
-func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool, enableSubnet bool) *field.Error {
+func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, err)
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
 	}
 
 	totalIPsMap := map[string]bool{}
@@ -117,7 +124,7 @@ func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool, enableSubnet bool)
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolIPVersion(version *types.IPVersion) *field.Error {
+func (iw *IPPoolWebhook) validateIPPoolIPVersion(version *types.IPVersion) *field.Error {
 	if version == nil {
 		return field.Invalid(
 			ipVersionField,
@@ -136,14 +143,14 @@ func (im *ipPoolManager) validateIPPoolIPVersion(version *types.IPVersion) *fiel
 		)
 	}
 
-	if *version == constant.IPv4 && !im.config.EnableIPv4 {
+	if *version == constant.IPv4 && !iw.EnableIPv4 {
 		return field.Forbidden(
 			ipVersionField,
 			"IPv4 is disabled",
 		)
 	}
 
-	if *version == constant.IPv6 && !im.config.EnableIPv6 {
+	if *version == constant.IPv6 && !iw.EnableIPv6 {
 		return field.Forbidden(
 			ipVersionField,
 			"IPv6 is disabled",
@@ -153,86 +160,90 @@ func (im *ipPoolManager) validateIPPoolIPVersion(version *types.IPVersion) *fiel
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolSubnet(ctx context.Context, version types.IPVersion, poolName, subnet string) *field.Error {
-	ipPoolList, err := im.ListIPPools(ctx)
-	if err != nil {
-		return field.InternalError(subnetField, err)
+func (iw *IPPoolWebhook) validateIPPoolSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if err := spiderpoolip.IsCIDR(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet); err != nil {
+		return field.Invalid(
+			subnetField,
+			ipPool.Spec.Subnet,
+			err.Error(),
+		)
+	}
+
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
+	if err := iw.Client.List(ctx, &ipPoolList); err != nil {
+		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
 	}
 
 	for _, pool := range ipPoolList.Items {
-		if pool.Name == poolName || *pool.Spec.IPVersion != version {
-			continue
-		}
+		if *pool.Spec.IPVersion == *ipPool.Spec.IPVersion {
+			if pool.Name == ipPool.Name {
+				return field.InternalError(subnetField, fmt.Errorf("IPPool %s already exists", ipPool.Name))
+			}
 
-		if pool.Spec.Subnet == subnet {
-			continue
-		}
+			if pool.Spec.Subnet == ipPool.Spec.Subnet {
+				continue
+			}
 
-		overlap, err := spiderpoolip.IsCIDROverlap(version, subnet, pool.Spec.Subnet)
-		if err != nil {
-			return field.Invalid(
-				subnetField,
-				subnet,
-				err.Error(),
-			)
-		}
+			overlap, err := spiderpoolip.IsCIDROverlap(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, pool.Spec.Subnet)
+			if err != nil {
+				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps: %v", err))
+			}
 
-		if overlap {
-			return field.Invalid(
-				subnetField,
-				subnet,
-				fmt.Sprintf("overlap with IPPool %s which 'spec.subnet' is %s", pool.Name, pool.Spec.Subnet),
-			)
+			if overlap {
+				return field.Invalid(
+					subnetField,
+					ipPool.Spec.Subnet,
+					fmt.Sprintf("overlap with IPPool %s which 'spec.subnet' is %s", pool.Name, pool.Spec.Subnet),
+				)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (im *ipPoolManager) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
-	if err := validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs, im.config.EnableSpiderSubnet); err != nil {
+func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if err := iw.validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
 		return err
 	}
 	if err := validateIPPoolExcludeIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.ExcludeIPs); err != nil {
 		return err
 	}
 
-	ipPoolList, err := im.ListIPPools(ctx)
-	if err != nil {
-		return field.InternalError(ipsField, err)
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
+	if err := iw.Client.List(ctx, &ipPoolList); err != nil {
+		return field.InternalError(ipsField, fmt.Errorf("failed to list IPPools: %v", err))
 	}
 
 	newIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, err)
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
 	}
 
 	for _, pool := range ipPoolList.Items {
-		if pool.Name == ipPool.Name || pool.Spec.Subnet != ipPool.Spec.Subnet {
-			continue
-		}
+		if pool.Spec.Subnet == ipPool.Spec.Subnet && pool.Name != ipPool.Name {
+			existIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+			if err != nil {
+				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the existing IPPool %s: %v", pool.Name, err))
+			}
 
-		existIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-		if err != nil {
-			return field.InternalError(ipsField, err)
-		}
-
-		overlapIPs := spiderpoolip.IPsIntersectionSet(newIPs, existIPs)
-		if len(overlapIPs) > 0 {
-			overlapRanges, _ := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, overlapIPs)
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("overlap with IPPool %s in IP ranges %v, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name, overlapRanges),
-			)
+			overlapIPs := spiderpoolip.IPsIntersectionSet(newIPs, existIPs)
+			if len(overlapIPs) > 0 {
+				overlapRanges, _ := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, overlapIPs)
+				return field.Forbidden(
+					ipsField,
+					fmt.Sprintf("overlap with IPPool %s in IP ranges %v, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name, overlapRanges),
+				)
+			}
 		}
 	}
 
 	return nil
 }
 
-func validateIPPoolIPs(version types.IPVersion, subnet string, ips []string, enableSubnet bool) *field.Error {
+func (iw *IPPoolWebhook) validateIPPoolIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
 	if len(ips) == 0 {
-		if enableSubnet {
+		if iw.EnableSpiderSubnet {
 			return nil
 		}
 

@@ -608,6 +608,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 	var app metav1.Object
 	var subnetConfig *types.PodSubnetAnnoConfig
 	var podAnno map[string]string
+	var podSelector *metav1.LabelSelector
 	var appReplicas int
 
 	switch appKey.AppKind {
@@ -622,6 +623,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = deployment.Spec.Template.Annotations
+		podSelector = deployment.Spec.Selector
 		appReplicas = controllers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
 
@@ -636,6 +638,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = replicaSet.Spec.Template.Annotations
+		podSelector = replicaSet.Spec.Selector
 		appReplicas = controllers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
 
@@ -650,6 +653,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = daemonSet.Spec.Template.Annotations
+		podSelector = daemonSet.Spec.Selector
 		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
 		app = daemonSet.DeepCopy()
 
@@ -664,6 +668,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = statefulSet.Spec.Template.Annotations
+		podSelector = statefulSet.Spec.Selector
 		appReplicas = controllers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
 
@@ -678,6 +683,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = job.Spec.Template.Annotations
+		podSelector = job.Spec.Selector
 		appReplicas = controllers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
 
@@ -692,6 +698,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = cronJob.Spec.JobTemplate.Spec.Template.Annotations
+		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
 		appReplicas = controllers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
 		app = cronJob.DeepCopy()
 
@@ -705,7 +712,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 	}
 
 	log.Debug("Going to create IPPool or mark IPPool desired IP number")
-	err = c.createOrMarkIPPool(logutils.IntoContext(context.TODO(), log), *subnetConfig, appKey.AppKind, app, appReplicas)
+	err = c.createOrMarkIPPool(logutils.IntoContext(context.TODO(), log), *subnetConfig, appKey.AppKind, app, podSelector, appReplicas)
 	if nil != err {
 		return fmt.Errorf("failed to create or scale IPPool, error: %w", err)
 	}
@@ -715,7 +722,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 // createOrMarkIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
 func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig,
-	appKind string, app metav1.Object, appReplicas int) error {
+	appKind string, app metav1.Object, podSelector *metav1.LabelSelector, appReplicas int) error {
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
@@ -732,7 +739,7 @@ func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig 
 			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s'", ipVersion, subnetName)
 			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
 			// and the IPPool informer will implement the scale action
-			err = c.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, appKind, app, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
+			err = c.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, appKind, app, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
 		} else if len(poolList.Items) == 1 {
 			pool := poolList.Items[0]
 			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)

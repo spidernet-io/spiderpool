@@ -288,14 +288,14 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to set up ReservedIP webhook")
 	if err := (&reservedipmanager.ReservedIPWebhook{
-		ReservedIPManager: controllerContext.RIPManager,
-		EnableIPv4:        controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:        controllerContext.Cfg.EnableIPv6,
+		Client:     controllerContext.CRDManager.GetClient(),
+		EnableIPv4: controllerContext.Cfg.EnableIPv4,
+		EnableIPv6: controllerContext.Cfg.EnableIPv6,
 	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to initialize IPPool Manager")
+	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
 		EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
 		EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
@@ -314,21 +314,21 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.IPPoolManager = ipPoolManager
 
 	go func() {
-		logger.Debug("Starting IPPool Manager")
+		logger.Debug("Starting IPPool manager")
 		if err := ipPoolManager.Start(controllerContext.InnerCtx); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}()
 
 	// set up spiderpool controller IPPool webhook
-	logger.Info("Begin to set up SpiderIPPool webhook")
+	logger.Debug("Begin to set up IPPool webhook")
 	err = controllerContext.IPPoolManager.SetupWebhook()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
-		logger.Info("Begin to initialize Subnet Manager")
+		logger.Debug("Begin to initialize Subnet manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
 			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
 			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
@@ -348,9 +348,12 @@ func initControllerServiceManagers(ctx context.Context) {
 		controllerContext.SubnetManager = subnetManager
 		ipPoolManager.InjectSubnetManager(controllerContext.SubnetManager)
 
-		logger.Info("Begin to set up Subnet webhook")
-		err = controllerContext.SubnetManager.SetupWebhook()
-		if err != nil {
+		logger.Debug("Begin to set up Subnet webhook")
+		if err := (&subnetmanager.SubnetWebhook{
+			Client:     controllerContext.CRDManager.GetClient(),
+			EnableIPv4: controllerContext.Cfg.EnableIPv4,
+			EnableIPv6: controllerContext.Cfg.EnableIPv6,
+		}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}
 	} else {

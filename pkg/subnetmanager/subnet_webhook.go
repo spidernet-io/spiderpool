@@ -6,116 +6,74 @@ package subnetmanager
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-var webhookLogger *zap.Logger
+var WebhookLogger *zap.Logger
 
-func (sm *subnetManager) SetupWebhook() error {
-	webhookLogger = logutils.Logger.Named("Subnet-Webhook")
+type SubnetWebhook struct {
+	client.Client
 
-	return ctrl.NewWebhookManagedBy(sm.runtimeMgr).
+	EnableIPv4 bool
+	EnableIPv6 bool
+}
+
+func (sw *SubnetWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	if WebhookLogger == nil {
+		WebhookLogger = logutils.Logger.Named("Subnet-Webhook")
+	}
+
+	return ctrl.NewWebhookManagedBy(mgr).
 		For(&spiderpoolv1.SpiderSubnet{}).
-		WithDefaulter(sm).
-		WithValidator(sm).
+		WithDefaulter(sw).
+		WithValidator(sw).
 		Complete()
 }
 
-var _ webhook.CustomDefaulter = (*subnetManager)(nil)
+var _ webhook.CustomDefaulter = (*SubnetWebhook)(nil)
 
-// Default implements webhook.CustomDefaulter so a webhook will be registered for the type
-func (sm *subnetManager) Default(ctx context.Context, obj runtime.Object) error {
-	subnet, ok := obj.(*spiderpoolv1.SpiderSubnet)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("mutating webhook of Subnet got an object with mismatched GVK: %+v", obj.GetObjectKind().GroupVersionKind()))
-	}
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
+func (sw *SubnetWebhook) Default(ctx context.Context, obj runtime.Object) error {
+	subnet := obj.(*spiderpoolv1.SpiderSubnet)
 
-	logger := webhookLogger.Named("Mutating").With(
+	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("SubnetName", subnet.Name),
 		zap.String("Operation", "DEFAULT"),
 	)
-	logger.Info("Start to mutate Subnet")
 	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
 
-	if subnet.DeletionTimestamp != nil {
-		logger.Info("Deleting Subnet, noting to mutate")
-		return nil
-	}
-
-	if !controllerutil.ContainsFinalizer(subnet, constant.SpiderFinalizer) {
-		controllerutil.AddFinalizer(subnet, constant.SpiderFinalizer)
-		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
-	}
-
-	if subnet.Spec.IPVersion == nil {
-		var version types.IPVersion
-		if spiderpoolip.IsIPv4CIDR(subnet.Spec.Subnet) {
-			version = constant.IPv4
-		} else if spiderpoolip.IsIPv6CIDR(subnet.Spec.Subnet) {
-			version = constant.IPv6
-		} else {
-			logger.Error("Invalid 'spec.ipVersion', noting to mutate")
-			return nil
-		}
-
-		subnet.Spec.IPVersion = new(types.IPVersion)
-		*subnet.Spec.IPVersion = version
-		logger.Sugar().Infof("Set 'spec.ipVersion' to %d", version)
-	}
-
-	if len(subnet.Spec.IPs) > 1 {
-		mergedIPs, err := spiderpoolip.MergeIPRanges(*subnet.Spec.IPVersion, subnet.Spec.IPs)
-		if err != nil {
-			logger.Sugar().Errorf("Failed to merge 'spec.ips': %v", err)
-		} else {
-			subnet.Spec.IPs = mergedIPs
-			logger.Sugar().Debugf("Merge 'spec.ips':\n%v\n\nto:\n\n%v", subnet.Spec.IPs, mergedIPs)
-		}
-	}
-
-	if len(subnet.Spec.ExcludeIPs) > 1 {
-		mergedExcludeIPs, err := spiderpoolip.MergeIPRanges(*subnet.Spec.IPVersion, subnet.Spec.ExcludeIPs)
-		if err != nil {
-			logger.Sugar().Errorf("Failed to merge 'spec.excludeIPs': %v", err)
-		} else {
-			subnet.Spec.ExcludeIPs = mergedExcludeIPs
-			logger.Sugar().Debugf("Merge 'spec.excludeIPs':\n%v\n\nto:\n\n%v", subnet.Spec.ExcludeIPs, mergedExcludeIPs)
-		}
+	if err := sw.mutateSubnet(logutils.IntoContext(ctx, logger), subnet); err != nil {
+		logger.Sugar().Errorf("Failed to mutate Subnet: %v", err)
 	}
 
 	return nil
 }
 
-var _ webhook.CustomValidator = (*subnetManager)(nil)
+var _ webhook.CustomValidator = (*SubnetWebhook)(nil)
 
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type
-func (sm *subnetManager) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-	subnet, ok := obj.(*spiderpoolv1.SpiderSubnet)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of Subnet got an object with mismatched GVK: %+v", obj.GetObjectKind().GroupVersionKind()))
-	}
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+	subnet := obj.(*spiderpoolv1.SpiderSubnet)
 
-	logger := webhookLogger.Named("Validating").With(
+	logger := WebhookLogger.Named("Validating").With(
 		zap.String("SubnetName", subnet.Name),
 		zap.String("Operation", "CREATE"),
 	)
 	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
 
-	if errs := sm.validateCreateSubnet(logutils.IntoContext(ctx, logger), subnet); len(errs) != 0 {
+	if errs := sw.validateCreateSubnet(logutils.IntoContext(ctx, logger), subnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},
@@ -127,15 +85,12 @@ func (sm *subnetManager) ValidateCreate(ctx context.Context, obj runtime.Object)
 	return nil
 }
 
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type
-func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
-	oldSubnet, _ := oldObj.(*spiderpoolv1.SpiderSubnet)
-	newSubnet, ok := newObj.(*spiderpoolv1.SpiderSubnet)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("validating webhook of Subnet got an object with mismatched GVK: %+v", newObj.GetObjectKind().GroupVersionKind()))
-	}
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+	oldSubnet := oldObj.(*spiderpoolv1.SpiderSubnet)
+	newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
 
-	logger := webhookLogger.Named("Validating").With(
+	logger := WebhookLogger.Named("Validating").With(
 		zap.String("SubnetName", newSubnet.Name),
 		zap.String("Operation", "UPDATE"),
 	)
@@ -154,7 +109,7 @@ func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 		)
 	}
 
-	if errs := sm.validateUpdateSubnet(logutils.IntoContext(ctx, logger), oldSubnet, newSubnet); len(errs) != 0 {
+	if errs := sw.validateUpdateSubnet(logutils.IntoContext(ctx, logger), oldSubnet, newSubnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},
@@ -166,7 +121,7 @@ func (sm *subnetManager) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	return nil
 }
 
-// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type
-func (sm *subnetManager) ValidateDelete(ctx context.Context, obj runtime.Object) error {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
+func (sw *SubnetWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	return nil
 }

@@ -50,7 +50,7 @@ func NewWorkloadEndpointManager(config EndpointManagerConfig, client client.Clie
 	}
 
 	return &workloadEndpointManager{
-		config:     setDefaultsForPodManagerConfig(config),
+		config:     setDefaultsForEndpointManagerConfig(config),
 		client:     client,
 		podManager: podManager,
 	}, nil

@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -22,21 +23,21 @@ import (
 var WebhookLogger *zap.Logger
 
 type ReservedIPWebhook struct {
-	ReservedIPManager
+	client.Client
 
 	EnableIPv4 bool
 	EnableIPv6 bool
 }
 
-func (rm *ReservedIPWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (rw *ReservedIPWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	if WebhookLogger == nil {
 		WebhookLogger = logutils.Logger.Named("ReservedIP-Webhook")
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&spiderpoolv1.SpiderReservedIP{}).
-		WithDefaulter(rm).
-		WithValidator(rm).
+		WithDefaulter(rw).
+		WithValidator(rw).
 		Complete()
 }
 

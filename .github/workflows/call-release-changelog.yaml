@@ -108,7 +108,7 @@ jobs:
           cat ${FILE_PATH}
 
       - name: Upload Changelog
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: changelog_artifact
           path: ${{ env.FILE_PATH }}

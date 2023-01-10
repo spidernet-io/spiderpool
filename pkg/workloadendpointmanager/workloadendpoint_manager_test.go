@@ -27,6 +27,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -327,7 +328,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("failed to get the top controller of Pod due to some unknown errors", func() {
 				mockPodManager.EXPECT().
 					GetPodTopController(gomock.All(), gomock.All()).
-					Return("", nil, constant.ErrUnknown).
+					Return(spiderpooltypes.PodTopController{}, constant.ErrUnknown).
 					Times(1)
 
 				ctx := context.TODO()
@@ -339,7 +340,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("failed to set ownerReference to Pod due to some unknown errors", func() {
 				mockPodManager.EXPECT().
 					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
+					Return(spiderpooltypes.PodTopController{
+						Kind:      constant.KindPod,
+						Namespace: podT.Namespace,
+						Name:      podT.Name,
+						Uid:       podT.UID,
+						App:       podT,
+					}, nil).
 					Times(1)
 
 				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
@@ -354,7 +361,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("failed to create Endpoint due to some unknown errors", func() {
 				mockPodManager.EXPECT().
 					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
+					Return(spiderpooltypes.PodTopController{
+						Kind:      constant.KindPod,
+						Namespace: podT.Namespace,
+						Name:      podT.Name,
+						Uid:       podT.UID,
+						App:       podT,
+					}, nil).
 					Times(1)
 
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
@@ -369,7 +382,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("failed to update the status of Endpoint due to some unknown errors", func() {
 				mockPodManager.EXPECT().
 					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
+					Return(spiderpooltypes.PodTopController{
+						Kind:      constant.KindPod,
+						Namespace: podT.Namespace,
+						Name:      podT.Name,
+						Uid:       podT.UID,
+						App:       podT,
+					}, nil).
 					Times(1)
 
 				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
@@ -384,7 +403,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("marks the IP allocation for orphan Pod", func() {
 				mockPodManager.EXPECT().
 					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
+					Return(spiderpooltypes.PodTopController{
+						Kind:      constant.KindPod,
+						Namespace: podT.Namespace,
+						Name:      podT.Name,
+						Uid:       podT.UID,
+						App:       podT,
+					}, nil).
 					Times(1)
 
 				ctx := context.TODO()
@@ -396,20 +421,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("marks the IP allocation for StatefulSet's Pod", func() {
 				mockPodManager.EXPECT().
 					GetPodTopController(gomock.All(), gomock.All()).
-					Return(
-						constant.OwnerStatefulSet,
-						&appsv1.StatefulSet{
-							TypeMeta: metav1.TypeMeta{
-								Kind:       "StatefulSet",
-								APIVersion: appsv1.SchemeGroupVersion.String(),
-							},
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "statefulset",
-								Namespace: namespace,
-							},
-						},
-						nil,
-					).
+					Return(spiderpooltypes.PodTopController{
+						Kind:      constant.KindStatefulSet,
+						Namespace: namespace,
+						Name:      fmt.Sprintf("%s-sts", endpointName),
+						Uid:       uuid.NewUUID(),
+						App:       &appsv1.StatefulSet{},
+					}, nil).
 					Times(1)
 
 				ctx := context.TODO()

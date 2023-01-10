@@ -209,28 +209,28 @@ func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context,
 
 // AllocateEmptyIPPool will create an empty IPPool and mark the status.AutoDesiredIPCount
 // notice: this function only serves for auto-created IPPool
-func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, appKind string, app metav1.Object,
-	podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) error {
+func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, podController types.PodTopController,
+	podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error) {
 	if len(subnetName) == 0 {
-		return fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
+		return nil, fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
 	}
 	if ipNum < 0 {
-		return fmt.Errorf("%w: the required IP numbers '%d' is invalid", constant.ErrWrongInput, ipNum)
+		return nil, fmt.Errorf("%w: the required IP numbers '%d' is invalid", constant.ErrWrongInput, ipNum)
 	}
 
 	subnet, err := sm.GetSubnetByName(ctx, subnetName)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	if subnet.DeletionTimestamp != nil {
-		return fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't create a corresponding IPPool", constant.ErrWrongInput, subnet.Name)
+		return nil, fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't create a corresponding IPPool", constant.ErrWrongInput, subnet.Name)
 	}
 
 	poolLabels := map[string]string{
 		constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
-		constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-		constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+		constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
+		constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
 		constant.LabelIPPoolInterface:           ifName,
 	}
 
@@ -246,7 +246,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 
 	sp := &spiderpoolv1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   controllers.SubnetPoolName(appKind, app.GetNamespace(), app.GetName(), ipVersion, ifName, app.GetUID()),
+			Name:   controllers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, ipVersion, ifName, podController.Uid),
 			Labels: poolLabels,
 		},
 		Spec: spiderpoolv1.IPPoolSpec{
@@ -261,16 +261,16 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 	logger.Sugar().Infof("try to create IPPool '%v'", sp)
 	err = sm.ipPoolManager.CreateIPPool(ctx, sp)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	logger.Sugar().Infof("try to update IPPool '%v' status DesiredIPNumber '%d'", sp, ipNum)
 	err = sm.ipPoolManager.UpdateDesiredIPNumber(ctx, sp, ipNum)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return sp, nil
 }
 
 // CheckScaleIPPool will fetch some IPs from the specified subnet manager to expand the pool IPs

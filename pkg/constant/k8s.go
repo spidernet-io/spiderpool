@@ -30,14 +30,14 @@ const (
 )
 
 const (
-	OwnerNone        string = "None"
-	OwnerDeployment  string = "Deployment"
-	OwnerStatefulSet string = "StatefulSet"
-	OwnerDaemonSet   string = "DaemonSet"
-	OwnerUnknown     string = "Unknown"
-	OwnerReplicaSet  string = "ReplicaSet"
-	OwnerJob         string = "Job"
-	OwnerCronJob     string = "CronJob"
+	KindPod         string = "Pod"
+	KindDeployment  string = "Deployment"
+	KindStatefulSet string = "StatefulSet"
+	KindDaemonSet   string = "DaemonSet"
+	KindUnknown     string = "Unknown"
+	KindReplicaSet  string = "ReplicaSet"
+	KindJob         string = "Job"
+	KindCronJob     string = "CronJob"
 )
 
 const (

@@ -93,7 +93,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
 				if apierrors.IsNotFound(err) {
 					// check StatefulSet pod whether need to clean up its IP and Endpoint or not
-					if s.gcConfig.EnableStatefulSet && poolIPAllocation.OwnerControllerType == constant.OwnerStatefulSet {
+					if s.gcConfig.EnableStatefulSet && poolIPAllocation.OwnerControllerType == constant.KindStatefulSet {
 						isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod, poolIPAllocation.OwnerControllerType)
 						if nil != err {
 							scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod '%s/%s' IP '%s' should be cleaned or not, error: %v",

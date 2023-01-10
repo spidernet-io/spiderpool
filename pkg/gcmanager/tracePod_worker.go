@@ -103,7 +103,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", *podCache)
 
 			// delete StatefulSet wep (other controller wep has OwnerReference, its lifecycle is same with pod)
-			if endpoint.Status.OwnerControllerType == constant.OwnerStatefulSet {
+			if endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
 				err = s.wepMgr.DeleteEndpoint(ctx, endpoint)
 				if nil != err {
 					loggerReleaseIP.Sugar().Errorf("failed to delete StatefulSet wep '%s/%s', error: '%v'",

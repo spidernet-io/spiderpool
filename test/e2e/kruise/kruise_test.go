@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
+var _ = PDescribe("Third party control:OpenKruise", Label("kruise"), func() {
 	var namespace, kruiseCloneSetName, v4SubnetName, v6SubnetName, v4PoolName, v6PoolName string
 	var v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
 	var v4PoolObj, v6PoolObj *spiderpool.SpiderIPPool

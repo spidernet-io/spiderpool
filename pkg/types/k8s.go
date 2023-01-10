@@ -3,6 +3,11 @@
 
 package types
 
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
+)
+
 type PodStatus string
 
 type AnnoPodIPPoolValue struct {
@@ -60,4 +65,12 @@ type AnnoSubnetItem struct {
 	Interface string   `json:"interface,omitempty"`
 	IPv4      []string `json:"ipv4,omitempty"`
 	IPv6      []string `json:"ipv6,omitempty"`
+}
+
+type PodTopController struct {
+	Kind      string
+	Namespace string
+	Name      string
+	Uid       apitypes.UID
+	App       metav1.Object
 }

@@ -24,9 +24,9 @@ type IPAMConfig struct {
 	EnableSpiderSubnet bool
 	EnableStatefulSet  bool
 
-	WaitSubnetPoolRetries int
-	WaitSubnetPoolTime    time.Duration
-	LimiterConfig         limiter.LimiterConfig
+	OperationRetries     int
+	OperationGapDuration time.Duration
+	LimiterConfig        limiter.LimiterConfig
 }
 
 func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {

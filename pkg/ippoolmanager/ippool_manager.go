@@ -136,7 +136,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
 		}
 
-		ownerKind, owner, err := im.podManager.GetPodTopController(ctx, pod)
+		podTopController, err := im.podManager.GetPodTopController(ctx, pod)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -146,11 +146,10 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			Node:                pod.Spec.NodeName,
 			Namespace:           pod.Namespace,
 			Pod:                 pod.Name,
-			OwnerControllerType: ownerKind,
+			OwnerControllerType: podTopController.Kind,
 		}
-		if owner != nil {
-			allocation.OwnerControllerName = owner.GetName()
-		}
+		allocation.OwnerControllerName = podTopController.Name
+
 		ipPool.Status.AllocatedIPs[allocatedIP.String()] = allocation
 
 		if ipPool.Status.AllocatedIPCount == nil {
@@ -319,7 +318,7 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID str
 			Node:                pod.Spec.NodeName,
 			Namespace:           pod.Namespace,
 			Pod:                 pod.Name,
-			OwnerControllerType: constant.OwnerStatefulSet,
+			OwnerControllerType: constant.KindStatefulSet,
 		}
 
 		err = im.client.Status().Update(ctx, pool)
@@ -431,7 +430,7 @@ func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spider
 	*pool.Status.AutoDesiredIPCount = int64(ipNum)
 	err := im.client.Status().Update(ctx, pool)
 	if nil != err {
-		return err
+		return fmt.Errorf("failed to update IPPool '%s' auto desired IP count to %d : %v", pool.Name, ipNum, err)
 	}
 
 	return nil

@@ -720,7 +720,7 @@ func (i *ipam) findOrApplyClusterSubnetDefaultIPPool(ctx context.Context, podCon
 		} else if len(poolList.Items) == 1 {
 			pool := poolList.Items[0].DeepCopy()
 			log.Sugar().Debugf("found cluster default SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)
-			err = i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
+			err := i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
 			if nil != err {
 				return "", err
 			}

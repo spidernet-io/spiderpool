@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -24,9 +23,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
-	"github.com/spidernet-io/spiderpool/pkg/event"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
@@ -287,11 +284,6 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 		return nil
 	}
 
-	if err := sc.notifySubnetIPPool(ctx, subnet); err != nil {
-		return fmt.Errorf("failed to notify the IPPools that did not reach the expected state: %v", err)
-	}
-	event.EventRecorder.Event(subnet, corev1.EventTypeNormal, constant.EventReasonResyncSubnet, "Resynced successfully")
-
 	return nil
 }
 
@@ -404,47 +396,6 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 		return err
 	}
 	logger.Sugar().Debugf("Remove finalizer %s", constant.SpiderFinalizer)
-
-	return nil
-}
-
-// notifySubnetIPPool will list the subnet's corresponding auto-created IPPools,
-// it will insert the IPPools name to IPPool informer work queue if the IPPool need to be scaled.
-func (sc *SubnetController) notifySubnetIPPool(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	logger := logutils.FromContext(ctx)
-
-	if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue(*subnet.Spec.IPVersion) == nil {
-		logger.Warn("IPPool manager doesn't have IPPool informer rate limit workqueue!")
-		return nil
-	}
-
-	selector := labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector()
-	ipPools, err := sc.ipPoolsLister.List(selector)
-	if err != nil {
-		return err
-	}
-
-	if len(ipPools) == 0 {
-		return nil
-	}
-
-	maxQueueLength := sc.subnetManager.ipPoolManager.GetAutoPoolMaxWorkQueueLength()
-	for _, pool := range ipPools {
-		if pool.DeletionTimestamp != nil {
-			logger.Sugar().Warnf("IPPool '%s' is terminating, no need to scale it!", pool.Name)
-			continue
-		}
-
-		if ippoolmanager.ShouldScaleIPPool(pool) {
-			if sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue(*subnet.Spec.IPVersion).Len() >= maxQueueLength {
-				logger.Sugar().Errorf("The IPPool workqueue is out of capacity, discard enqueue auto-created IPPool '%s'", pool.Name)
-				return nil
-			}
-
-			sc.subnetManager.ipPoolManager.GetAutoPoolRateLimitQueue(*subnet.Spec.IPVersion).AddRateLimited(pool.Name)
-			logger.Sugar().Debugf("added '%s' to IPPool workqueue", pool.Name)
-		}
-	}
 
 	return nil
 }

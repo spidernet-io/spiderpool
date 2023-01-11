@@ -607,7 +607,8 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 	var app metav1.Object
 	var subnetConfig *controllers.PodSubnetAnnoConfig
-	var podAnno, podSelector map[string]string
+	var podAnno map[string]string
+	var podSelector *metav1.LabelSelector
 	var appReplicas int
 
 	switch appKey.AppKind {
@@ -622,7 +623,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = deployment.Spec.Template.Annotations
-		podSelector = deployment.Spec.Selector.MatchLabels
+		podSelector = deployment.Spec.Selector
 		appReplicas = controllers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
 
@@ -637,7 +638,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = replicaSet.Spec.Template.Annotations
-		podSelector = replicaSet.Spec.Selector.MatchLabels
+		podSelector = replicaSet.Spec.Selector
 		appReplicas = controllers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
 
@@ -652,7 +653,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = daemonSet.Spec.Template.Annotations
-		podSelector = daemonSet.Spec.Selector.MatchLabels
+		podSelector = daemonSet.Spec.Selector
 		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
 		app = daemonSet.DeepCopy()
 
@@ -667,7 +668,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = statefulSet.Spec.Template.Annotations
-		podSelector = statefulSet.Spec.Selector.MatchLabels
+		podSelector = statefulSet.Spec.Selector
 		appReplicas = controllers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
 
@@ -682,7 +683,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = job.Spec.Template.Annotations
-		podSelector = job.Spec.Selector.MatchLabels
+		podSelector = job.Spec.Selector
 		appReplicas = controllers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
 
@@ -697,7 +698,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 		}
 
 		podAnno = cronJob.Spec.JobTemplate.Spec.Template.Annotations
-		podSelector = cronJob.Spec.JobTemplate.Spec.Selector.MatchLabels
+		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
 		appReplicas = controllers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
 		app = cronJob.DeepCopy()
 
@@ -721,7 +722,7 @@ func (c *appController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (er
 
 // createOrMarkIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
 func (c *appController) createOrMarkIPPool(ctx context.Context, podSubnetConfig controllers.PodSubnetAnnoConfig, appKind string, app metav1.Object,
-	podSelector map[string]string, appReplicas int) error {
+	podSelector *metav1.LabelSelector, appReplicas int) error {
 	if c.subnetMgr.config.EnableIPv4 && len(podSubnetConfig.SubnetName.IPv4) == 0 {
 		return fmt.Errorf("IPv4 SpiderSubnet not specified when configuration enableIPv4 is on")
 	}

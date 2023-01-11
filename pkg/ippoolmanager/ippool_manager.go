@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -46,12 +45,6 @@ type ipPoolManager struct {
 
 	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
 	leader election.SpiderLeaseElector
-
-	// v4AutoCreatedRateLimitQueue serves for IPPool informer
-	v4AutoCreatedRateLimitQueue workqueue.RateLimitingInterface
-
-	// v6AutoCreatedRateLimitQueue serves for IPPool informer
-	v6AutoCreatedRateLimitQueue workqueue.RateLimitingInterface
 }
 
 func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podmanager.PodManager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
@@ -434,18 +427,4 @@ func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spider
 	}
 
 	return nil
-}
-
-// GetAutoPoolRateLimitQueue serves for auto-created IPPool
-func (im *ipPoolManager) GetAutoPoolRateLimitQueue(ipVersion types.IPVersion) workqueue.RateLimitingInterface {
-	if ipVersion == constant.IPv4 {
-		return im.v4AutoCreatedRateLimitQueue
-	}
-
-	return im.v6AutoCreatedRateLimitQueue
-}
-
-// GetAutoPoolMaxWorkQueueLength serves for auto-created IPPool
-func (im *ipPoolManager) GetAutoPoolMaxWorkQueueLength() int {
-	return im.config.MaxWorkQueueLength
 }

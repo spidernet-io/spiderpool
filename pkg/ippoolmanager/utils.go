@@ -36,13 +36,11 @@ func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, p
 }
 
 func ShouldScaleIPPool(pool *spiderpoolv1.SpiderIPPool) bool {
-	if IsAutoCreatedIPPool(pool) {
-		ips, _ := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	ips, _ := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 
-		if pool.Status.AutoDesiredIPCount != nil {
-			if int64(len(ips)) != *pool.Status.AutoDesiredIPCount {
-				return true
-			}
+	if pool.Status.AutoDesiredIPCount != nil {
+		if int64(len(ips)) != *pool.Status.AutoDesiredIPCount {
+			return true
 		}
 	}
 

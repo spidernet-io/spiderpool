@@ -22,7 +22,7 @@ type SubnetManager interface {
 	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
 	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
 	SetupControllers(client kubernetes.Interface) error
-	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podSelector map[string]string, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error
+	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, appKind string, app metav1.Object, podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool) error
 	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
 	GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool, cursor bool) ([]string, error)
 }

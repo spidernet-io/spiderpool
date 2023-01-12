@@ -16,7 +16,6 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
-	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -64,31 +63,10 @@ func DaemonMain() {
 		logger.Sugar().Infof("AppVersion: %v \n", agentContext.Cfg.AppVersion)
 	}
 
-	logger.Sugar().Infof("config: %+v \n", agentContext.Cfg)
-
-	// load Configmap
-	err = agentContext.LoadConfigmap()
-	if nil != err {
-		logger.Fatal("Load configmap failed, " + err.Error())
+	if err := agentContext.LoadConfigmap(); err != nil {
+		logger.Sugar().Fatal("failed to load Configmap: %v", err)
 	}
-
-	// init singleton ClusterDefaultPool
-	logger.Sugar().Infof("Init Cluster default pool configurations")
-	singletons.InitClusterDefaultPool(agentContext.Cfg.ClusterDefaultIPv4IPPool, agentContext.Cfg.ClusterDefaultIPv6IPPool,
-		agentContext.Cfg.ClusterDefaultIPv4Subnet, agentContext.Cfg.ClusterDefaultIPv6Subnet,
-		agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
-
-	logger.With(zap.String("IpamUnixSocketPath", agentContext.Cfg.IpamUnixSocketPath),
-		zap.Bool("EnabledIPv4", agentContext.Cfg.EnableIPv4),
-		zap.Bool("EnabledIPv6", agentContext.Cfg.EnableIPv6),
-		zap.Strings("ClusterDefaultIPv4IPPool", agentContext.Cfg.ClusterDefaultIPv4IPPool),
-		zap.Strings("ClusterDefaultIPv6IPPool", agentContext.Cfg.ClusterDefaultIPv6IPPool),
-		zap.Strings("ClusterDefaultIPv4Subnet", agentContext.Cfg.ClusterDefaultIPv4Subnet),
-		zap.Strings("ClusterDefaultIPv6Subnet", agentContext.Cfg.ClusterDefaultIPv6Subnet),
-		zap.String("NetworkMode", agentContext.Cfg.NetworkMode)).
-		Info("Load configmap successfully")
-
-	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
+	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 
 	if agentContext.Cfg.GopsListenPort != "" {
 		address := "127.0.0.1:" + agentContext.Cfg.GopsListenPort
@@ -128,7 +106,17 @@ func DaemonMain() {
 		}
 	}
 
-	logger.Info("Begin to initialize spiderpool-agent CRD Manager")
+	logger.Sugar().Infof("Begin to initialize cluster default pool configuration")
+	singletons.InitClusterDefaultPool(
+		agentContext.Cfg.ClusterDefaultIPv4IPPool,
+		agentContext.Cfg.ClusterDefaultIPv6IPPool,
+		agentContext.Cfg.ClusterDefaultIPv4Subnet,
+		agentContext.Cfg.ClusterDefaultIPv6Subnet,
+		agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum,
+	)
+
+	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
+	logger.Info("Begin to initialize spiderpool-agent runtime manager")
 	mgr, err := newCRDManager()
 	if nil != err {
 		logger.Fatal(err.Error())
@@ -164,23 +152,21 @@ func DaemonMain() {
 	}()
 
 	go func() {
-		logger.Info("Starting spiderpool-agent CRD Manager")
+		logger.Info("Starting spiderpool-agent runtime manager")
 		if err := mgr.Start(agentContext.InnerCtx); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}()
 
-	// new agent http server
-	logger.Info("Begin to initialize spiderpool-agent openapi http server")
+	logger.Info("Begin to initialize spiderpool-agent OpenAPI HTTP server")
 	srv, err := newAgentOpenAPIHttpServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	agentContext.HttpServer = srv
 
-	// serve agent http
 	go func() {
-		logger.Info("Starting spiderpool-agent openapi http server")
+		logger.Info("Starting spiderpool-agent OpenAPI HTTP server")
 		if err = srv.Serve(); nil != err {
 			if err == http.ErrServerClosed {
 				return
@@ -189,12 +175,10 @@ func DaemonMain() {
 		}
 	}()
 
-	// new agent unix server
-	logger.Info("Begin to initialize spiderpool-agent openapi unix server")
+	logger.Info("Begin to initialize spiderpool-agent OpenAPI UNIX server")
 	// clean up unix socket path legacy, it won't return an error if it doesn't exist
-	err = os.RemoveAll(agentContext.Cfg.IpamUnixSocketPath)
-	if nil != err {
-		logger.Sugar().Fatalf("Error: clean up socket legacy '%s' failed: %v", agentContext.Cfg.IpamUnixSocketPath, err)
+	if err := os.RemoveAll(agentContext.Cfg.IpamUnixSocketPath); err != nil {
+		logger.Sugar().Fatalf("Failed to clean up socket %s: %v", agentContext.Cfg.IpamUnixSocketPath, err)
 	}
 	unixServer, err := NewAgentOpenAPIUnixServer()
 	if nil != err {
@@ -202,9 +186,8 @@ func DaemonMain() {
 	}
 	agentContext.UnixServer = unixServer
 
-	// serve agent unix
 	go func() {
-		logger.Info("Starting spiderpool-agent openapi unix server")
+		logger.Info("Starting spiderpool-agent OpenAPI UNIX server")
 		if err = unixServer.Serve(); nil != err {
 			if err == net.ErrClosed {
 				return
@@ -213,21 +196,19 @@ func DaemonMain() {
 		}
 	}()
 
-	logger.Info("Begin to initialize spiderpool-agent metrics http server")
-	initAgentMetricsServer(agentContext.InnerCtx)
-
-	// new unix client
 	spiderpoolAgentAPI, err := NewAgentOpenAPIUnixClient(agentContext.Cfg.IpamUnixSocketPath)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
+	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
+	initAgentMetricsServer(agentContext.InnerCtx)
+
 	// TODO (Icarus9913): improve k8s StartupProbe
-	logger.Info("Set spiderpool-agent Startup probe ready")
+	logger.Info("Set spiderpool-agent startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
 
-	// start notifying signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	WatchSignal(sigCh)
@@ -241,7 +222,7 @@ func WatchSignal(sigCh chan os.Signal) {
 		// TODO (Icarus9913): filter some signals
 
 		// Cancel the internal context of spiderpool-agent.
-		// This stops things like the CRD Manager, GC, etc.
+		// This stops things like the runtime manager, GC, etc.
 		if agentContext.InnerCancel != nil {
 			agentContext.InnerCancel()
 		}
@@ -249,14 +230,14 @@ func WatchSignal(sigCh chan os.Signal) {
 		// shut down agent http server
 		if nil != agentContext.HttpServer {
 			if err := agentContext.HttpServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("Shutting down agent http server failed: %s", err)
+				logger.Sugar().Errorf("Failed to shutdown spiderpool-agent HTTP server: %v", err)
 			}
 		}
 
 		// shut down agent unix server
 		if nil != agentContext.UnixServer {
 			if err := agentContext.UnixServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("Shutting down agent unix server failed: %s", err)
+				logger.Sugar().Errorf("Failed to shut down spiderpool-agent UNIX server: %v", err)
 			}
 		}
 
@@ -327,7 +308,7 @@ func initAgentServiceManagers(ctx context.Context) {
 	}
 	agentContext.RIPManager = rIPManager
 
-	logger.Debug("Begin to initialize IPPool Manager")
+	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
 		EnableIPv4:      agentContext.Cfg.EnableIPv4,
 		EnableIPv6:      agentContext.Cfg.EnableIPv6,
@@ -340,10 +321,9 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.IPPoolManager = ipPoolManager
 
 	if agentContext.Cfg.EnableSpiderSubnet {
-		logger.Info("Begin to initialize Subnet Manager")
+		logger.Debug("Begin to initialize Subnet manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			UpdateCRConfig:     updateCRConfig,
-			EnableSpiderSubnet: agentContext.Cfg.EnableSpiderSubnet,
+			UpdateCRConfig: updateCRConfig,
 		}, agentContext.CRDManager, agentContext.IPPoolManager, agentContext.RIPManager)
 		if err != nil {
 			logger.Fatal(err.Error())

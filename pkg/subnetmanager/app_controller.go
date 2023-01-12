@@ -28,21 +28,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func (sm *subnetManager) SetupControllers(client kubernetes.Interface) error {
-	if sm.leader == nil {
-		return fmt.Errorf("failed to start applications controller, the subnet manager's leader is empty")
+func (sm *subnetManager) SetupControllers(client kubernetes.Interface, leader election.SpiderLeaseElector) error {
+	if client == nil {
+		return fmt.Errorf("k8s clientset must be specified")
+	}
+	if leader == nil {
+		return fmt.Errorf("controller leader must be specified")
 	}
 
 	logger.Info("try to register applications controller")
 	go func() {
 		for {
-			if !sm.leader.IsElected() {
+			if !leader.IsElected() {
 				time.Sleep(sm.config.LeaderRetryElectGap)
 				continue
 			}
@@ -52,7 +56,7 @@ func (sm *subnetManager) SetupControllers(client kubernetes.Interface) error {
 
 			go func() {
 				for {
-					if !sm.leader.IsElected() {
+					if !leader.IsElected() {
 						logger.Error("leader lost! stop application controllers!")
 						close(stopper)
 						return

@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -36,8 +35,6 @@ type subnetManager struct {
 	runtimeMgr    ctrl.Manager
 	ipPoolManager ippoolmanagertypes.IPPoolManager
 	reservedMgr   reservedipmanager.ReservedIPManager
-
-	leader election.SpiderLeaseElector
 
 	workQueue workqueue.RateLimitingInterface
 }

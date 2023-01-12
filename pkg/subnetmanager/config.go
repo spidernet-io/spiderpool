@@ -14,13 +14,9 @@ type SubnetManagerConfig struct {
 	EnableIPv6 bool
 
 	config.UpdateCRConfig
-	EnableSpiderSubnet            bool
 	EnableSubnetDeleteStaleIPPool bool
 	LeaderRetryElectGap           time.Duration
-	ResyncPeriod                  time.Duration
 	RequeueDelayDuration          time.Duration
-
-	SubnetControllerWorkers int
-	AppControllerWorkers    int
-	MaxWorkqueueLength      int
+	AppControllerWorkers          int
+	MaxWorkqueueLength            int
 }

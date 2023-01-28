@@ -83,50 +83,32 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 		})
 
 		It("inputs nil Endpoint", func() {
-			allocation, currently := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, true, nil)
+			allocation := workloadendpointmanager.RetrieveCIDIPAllocation(containerID, nic2, nil)
 			Expect(allocation).To(BeNil())
-			Expect(currently).To(BeFalse())
 		})
 
 		It("retrieves the IP allocation but the current record is nil", func() {
-			allocation, currently := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, true, endpointT)
+			allocation := workloadendpointmanager.RetrieveCIDIPAllocation(containerID, nic2, endpointT)
 			Expect(allocation).To(BeNil())
-			Expect(currently).To(BeFalse())
 		})
 
-		It("retrieves non-existent current IP allocation", func() {
+		It("retrieves non-existent containerID IP allocation", func() {
 			endpointT.Status.Current = allocationT
 			endpointT.Status.History = append(endpointT.Status.History, *allocationT, *historyAllocationT)
 
-			allocation, currently := workloadendpointmanager.RetrieveIPAllocation(stringid.GenerateRandomID(), nic2, true, endpointT)
+			allocation := workloadendpointmanager.RetrieveCIDIPAllocation(stringid.GenerateRandomID(), nic2, endpointT)
 			Expect(allocation).To(BeNil())
-			Expect(currently).To(BeFalse())
 		})
 
-		It("retrieves the current IP allocation", func() {
+		It("retrieves the IP allocation with the specified containerID", func() {
 			endpointT.Status.Current = allocationT
 			endpointT.Status.History = append(endpointT.Status.History, *allocationT, *historyAllocationT)
 
-			allocation, currently := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, false, endpointT)
+			allocation := workloadendpointmanager.RetrieveCIDIPAllocation(containerID, nic2, endpointT)
 			Expect(allocation).To(Equal(allocationT))
-			Expect(currently).To(BeTrue())
 
-			allocation, currently = workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, true, endpointT)
-			Expect(allocation).To(Equal(allocationT))
-			Expect(currently).To(BeTrue())
-		})
-
-		It("retrieves the historical IP allocation", func() {
-			endpointT.Status.Current = allocationT
-			endpointT.Status.History = append(endpointT.Status.History, *allocationT, *historyAllocationT)
-
-			allocation, currently := workloadendpointmanager.RetrieveIPAllocation(historyContainerID, nic2, false, endpointT)
-			Expect(allocation).To(BeNil())
-			Expect(currently).To(BeFalse())
-
-			allocation, currently = workloadendpointmanager.RetrieveIPAllocation(historyContainerID, nic2, true, endpointT)
-			Expect(allocation).To(Equal(historyAllocationT))
-			Expect(currently).To(BeFalse())
+			historyAllocation := workloadendpointmanager.RetrieveCIDIPAllocation(historyContainerID, nic2, endpointT)
+			Expect(historyAllocation).To(Equal(historyAllocationT))
 		})
 	})
 

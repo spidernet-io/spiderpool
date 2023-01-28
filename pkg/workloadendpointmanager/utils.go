@@ -11,37 +11,33 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func RetrieveIPAllocation(containerID, nic string, includeHistory bool, endpoint *spiderpoolv1.SpiderEndpoint) (allocation *spiderpoolv1.PodIPAllocation, currently bool) {
+func RetrieveCIDIPAllocation(containerID, nic string, endpoint *spiderpoolv1.SpiderEndpoint) *spiderpoolv1.PodIPAllocation {
 	if endpoint == nil {
-		return nil, false
+		return nil
 	}
 	if endpoint.Status.Current == nil {
-		return nil, false
+		return nil
 	}
 
 	if endpoint.Status.Current.ContainerID == containerID {
 		for _, d := range endpoint.Status.Current.IPs {
 			if d.NIC == nic {
-				return endpoint.Status.Current, true
+				return endpoint.Status.Current
 			}
 		}
 	}
 
-	if !includeHistory || len(endpoint.Status.History) <= 1 {
-		return nil, false
-	}
-
-	for _, a := range endpoint.Status.History[1:] {
+	for _, a := range endpoint.Status.History {
 		if a.ContainerID == containerID {
 			for _, d := range a.IPs {
 				if d.NIC == nic {
-					return &a, false
+					return &a
 				}
 			}
 		}
 	}
 
-	return nil, false
+	return nil
 }
 
 // ListAllHistoricalIPs collect wep history IPs and classify them with each pool name.

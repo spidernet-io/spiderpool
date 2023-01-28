@@ -75,6 +75,10 @@ func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...cl
 }
 
 func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error {
+	if endpoint.DeletionTimestamp != nil {
+		return nil
+	}
+
 	if err := em.client.Delete(ctx, endpoint); err != nil {
 		return client.IgnoreNotFound(err)
 	}

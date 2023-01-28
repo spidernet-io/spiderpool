@@ -199,7 +199,7 @@ func (i *ipam) retrieveMultiNICIPAllocation(ctx context.Context, containerID, ni
 	logger := logutils.FromContext(ctx)
 	logger.Debug("Try to retrieve the existing IP allocation in multi-NIC mode")
 
-	allocation, _ := workloadendpointmanager.RetrieveIPAllocation(containerID, nic, false, endpoint)
+	allocation := workloadendpointmanager.RetrieveCIDIPAllocation(containerID, nic, endpoint)
 	if allocation == nil {
 		logger.Debug("Nothing retrieved to allocate")
 		return nil, nil
@@ -930,45 +930,108 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger.Info("Start to release")
 
 	endpoint, err := i.weManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
-	if client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to get Endpoint %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Infof("SpiderEndpoint %s/%s not found, it was maybe already cleaned up", *delArgs.PodNamespace, *delArgs.PodName)
+			return nil
+		}
+		logger.Sugar().Errorf("Failed to get SpiderEndpoint %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+		return err
+		//return nil
 	}
-	allocation, currently := workloadendpointmanager.RetrieveIPAllocation(*delArgs.ContainerID, *delArgs.IfName, true, endpoint)
-	if allocation == nil {
-		logger.Info("Nothing retrieved for releasing")
-	} else {
-		if !currently {
-			logger.Warn("Request to release non current IP allocation, concurrency may exist between the same Pod")
-		}
 
-		// check whether the StatefulSet pod need to release
-		// ref: https://github.com/spidernet-io/spiderpool/issues/1045
-		if i.config.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
-			shouldCleanSts, err := i.shouldReleaseStatefulSet(ctx, endpoint.Namespace, endpoint.Name, allocation, currently)
-			if nil != err {
-				return err
-			}
-			if !shouldCleanSts {
-				logger.Info("No need to release the IP allocation of an StatefulSet whose scale is not reduced")
-				return nil
-			}
-		}
+	cidIPAllocation := workloadendpointmanager.RetrieveCIDIPAllocation(*delArgs.ContainerID, *delArgs.IfName, endpoint)
+	logger.Sugar().Debugf("Retrived current IP allocation %v", cidIPAllocation)
 
-		if err = i.release(ctx, allocation.ContainerID, allocation.IPs); err != nil {
+	var isPodDead bool
+	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Debug("Pod was deleted")
+			isPodDead = true
+		} else {
+			logger.Sugar().Errorf("Failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
 			return err
+			//return nil
 		}
-		if err := i.weManager.ClearCurrentIPAllocation(ctx, *delArgs.ContainerID, endpoint); err != nil {
-			return fmt.Errorf("failed to clear current IP allocation: %v", err)
+	} else {
+		if pod.DeletionTimestamp != nil {
+			logger.Debug("Pod is terminating")
+			isPodDead = true
 		}
-		logger.Sugar().Infof("Succeed to release: %+v", allocation.IPs)
+	}
+
+	// check whether the StatefulSet pod need to release
+	// ref: https://github.com/spidernet-io/spiderpool/issues/1045
+	if i.config.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
+		logger.Debug("Try to check whether the StatefulSet Pod IPs need to be released")
+		shouldCleanSts, err := i.shouldReleaseStatefulSet(ctx, endpoint.Namespace, endpoint.Name, cidIPAllocation)
+		if nil != err {
+			logger.Error(err.Error())
+			return err
+			//return nil
+		}
+		if !shouldCleanSts {
+			logger.Info("No need to release the IP allocation of an StatefulSet whose scale is not reduced")
+			return nil
+		}
+	}
+
+	if isPodDead {
+		logger.Info("Try to clean up all IP allocations")
+		historicalIPs := workloadendpointmanager.ListAllHistoricalIPs(endpoint)
+		for poolName, ips := range historicalIPs {
+			err = i.ipPoolManager.ReleaseIP(ctx, poolName, ips)
+			if nil != err {
+				logger.Sugar().Errorf("Failed to release IPPool %s IPs %v, error: %v", poolName, ips, err)
+				return err
+				//return nil
+			}
+		}
+
+		logger.Sugar().Infof("Try to delete SpiderEndpoint %s/%s", endpoint.Namespace, endpoint.Name)
+		err = i.weManager.DeleteEndpoint(ctx, endpoint)
+		if nil != err {
+			logger.Sugar().Errorf("Failed to Delete SpiderEndpoint %s/%s: %v", endpoint.Namespace, endpoint.Name, err)
+			return err
+			//return nil
+		}
+
+		logger.Sugar().Infof("Try to remove finalizer for SpiderEndpoint %s/%s", endpoint.Namespace, endpoint.Name)
+		err = i.weManager.RemoveFinalizer(ctx, endpoint.Namespace, endpoint.Name)
+		if nil != err {
+			logger.Sugar().Errorf("Failed to remove SpiderEndpoint %s/%s finalizer: %v", endpoint.Namespace, endpoint.Name, err)
+			return err
+			//return nil
+		}
+	} else {
+		// clean up same container ID IPs
+		logger.Info("Try to clean up current IP allocation")
+		if cidIPAllocation != nil {
+			err = i.release(ctx, cidIPAllocation.ContainerID, cidIPAllocation.IPs)
+			if nil != err {
+				logger.Error(err.Error())
+				return err
+				//return nil
+			}
+		}
+
+		err = i.weManager.ClearCurrentIPAllocation(ctx, *delArgs.ContainerID, endpoint)
+		if nil != err {
+			logger.Sugar().Errorf("Failed to clean up SpiderEndpoint current IP allocation: %v", err)
+			return err
+			//return nil
+		}
 	}
 
 	// this serves for orphan pod if SpiderSubnet feature is enabled
-	if i.config.EnableSpiderSubnet {
-		logger.Info("try to check whether need to delete dead orphan pod's auto-created IPPool")
+	if i.config.EnableSpiderSubnet && endpoint.Status.OwnerControllerType == constant.KindPod && isPodDead {
+		logger.Info("Try to check whether need to delete dead orphan pod's auto-created IPPool")
 		err = i.deleteDeadOrphanPodAutoIPPool(ctx, *delArgs.PodNamespace, *delArgs.PodName, *delArgs.IfName)
 		if nil != err {
-			return fmt.Errorf("failed to delete dead orphan pod auto-created IPPool: %v", err)
+			logger.Sugar().Errorf("Failed to delete dead orphan pod auto-created IPPool: %v", err)
+			return err
+			//return nil
 		}
 	}
 
@@ -978,7 +1041,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 // shouldReleaseStatefulSet checks whether the StatefulSet pod need to be released, if the StatefulSet object was deleted or decreased its replicas.
 // And we'll also check whether the StatefulSet pod's last ipam allocation is invalid or not,
 // if we set dual stack but only get one IP allocation, we should clean up it.
-func (i *ipam) shouldReleaseStatefulSet(ctx context.Context, podNamespace, podName string, allocation *spiderpoolv1.PodIPAllocation, currently bool) (bool, error) {
+func (i *ipam) shouldReleaseStatefulSet(ctx context.Context, podNamespace, podName string, allocation *spiderpoolv1.PodIPAllocation) (bool, error) {
 	log := logutils.FromContext(ctx)
 
 	isValidStsPod, err := i.stsManager.IsValidStatefulSetPod(ctx, podNamespace, podName, constant.KindStatefulSet)
@@ -992,7 +1055,7 @@ func (i *ipam) shouldReleaseStatefulSet(ctx context.Context, podNamespace, podNa
 	}
 
 	// the last allocation is failed, try to clean up all allocation and re-allocate in the next time
-	if currently {
+	if allocation != nil {
 		for index := range allocation.IPs {
 			if i.config.EnableIPv4 && allocation.IPs[index].IPv4 == nil ||
 				i.config.EnableIPv6 && allocation.IPs[index].IPv6 == nil {
@@ -1054,45 +1117,32 @@ func (i *ipam) Start(ctx context.Context) error {
 	return i.ipamLimiter.Start(ctx)
 }
 
-// deleteDeadOrphanPodAutoIPPool will delete orphan pod corresponding IPPools
+// deleteDeadOrphanPodAutoIPPool will delete orphan pod corresponding IPPools once the SpiderSubnet feature enabled.
 func (i *ipam) deleteDeadOrphanPodAutoIPPool(ctx context.Context, podNS, podName, ifName string) error {
 	log := logutils.FromContext(ctx)
 
-	isAlive := true
-	pod, err := i.podManager.GetPodByName(ctx, podNS, podName)
+	matchLabels := client.MatchingLabels{
+		// this label make it sure to find orphan pod corresponding IPPool
+		constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
+		// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?
+		constant.LabelIPPoolInterface:     ifName,
+		constant.LabelIPPoolReclaimIPPool: constant.True,
+	}
+	log.Sugar().Debugf("Try to fetch IPPoolList with match labels %v", matchLabels)
+	poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
 	if nil != err {
-		if apierrors.IsNotFound(err) {
-			isAlive = false
-			log.Debug("pod is already deleted, try to delete its auto-created IPPool")
-		} else {
-			return fmt.Errorf("failed to get pod: %v", err)
-		}
-	} else {
-		if pod.DeletionTimestamp != nil {
-			isAlive = false
-			log.Debug("pod is terminating, try to delete its auto-created IPPool")
-		}
+		return fmt.Errorf("failed to get IPPoolList with the given label '%v', error: %v", matchLabels, err)
+	}
+	if poolList == nil || len(poolList.Items) == 0 {
+		log.Debug("No orphan Pod corresponding IPPools found, ignore it")
+		return nil
 	}
 
-	if !isAlive {
-		matchLabels := client.MatchingLabels{
-			// this label make it sure to find orphan pod corresponding IPPool
-			constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
-			// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?
-			constant.LabelIPPoolInterface:     ifName,
-			constant.LabelIPPoolReclaimIPPool: constant.True,
-		}
-		poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
+	log.Sugar().Infof("Found orphan pod corresponding IPPool list: %v, try to delete them", poolList.Items)
+	for index := range poolList.Items {
+		err = i.ipPoolManager.DeleteIPPool(ctx, &poolList.Items[index])
 		if nil != err {
-			return fmt.Errorf("failed to get IPPoolList with the given label '%v', error: %v", matchLabels, err)
-		}
-
-		log.Sugar().Infof("found orphan pod corresponding IPPool list: %v, try to delete them", poolList.Items)
-		for index := range poolList.Items {
-			err = i.ipPoolManager.DeleteIPPool(ctx, &poolList.Items[index])
-			if nil != err {
-				return err
-			}
+			return err
 		}
 	}
 

@@ -12,55 +12,75 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package syncint64 provides synchronous instruments that accept int64
-// measurments.
-//
-// Deprecated: Use the instruments provided by
-// go.opentelemetry.io/otel/metric/instrument instead.
-package syncint64 // import "go.opentelemetry.io/otel/metric/instrument/syncint64"
+package instrument // import "go.opentelemetry.io/otel/metric/instrument"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric/unit"
 )
 
-// Counter is an instrument that records increasing values.
+// Int64Counter is an instrument that records increasing int64 values.
 //
 // Warning: methods may be added to this interface in minor releases.
-//
-// Deprecated: Use the Int64Counter in
-// go.opentelemetry.io/otel/metric/instrument instead.
-type Counter interface {
+type Int64Counter interface {
 	// Add records a change to the counter.
 	Add(ctx context.Context, incr int64, attrs ...attribute.KeyValue)
 
-	instrument.Synchronous
+	Synchronous
 }
 
-// UpDownCounter is an instrument that records increasing or decreasing values.
+// Int64UpDownCounter is an instrument that records increasing or decreasing
+// int64 values.
 //
 // Warning: methods may be added to this interface in minor releases.
-//
-// Deprecated: Use the Int64UpDownCounter in
-// go.opentelemetry.io/otel/metric/instrument instead.
-type UpDownCounter interface {
+type Int64UpDownCounter interface {
 	// Add records a change to the counter.
 	Add(ctx context.Context, incr int64, attrs ...attribute.KeyValue)
 
-	instrument.Synchronous
+	Synchronous
 }
 
-// Histogram is an instrument that records a distribution of values.
+// Int64Histogram is an instrument that records a distribution of int64
+// values.
 //
 // Warning: methods may be added to this interface in minor releases.
-//
-// Deprecated: Use the Int64Histogram in
-// go.opentelemetry.io/otel/metric/instrument instead.
-type Histogram interface {
+type Int64Histogram interface {
 	// Record adds an additional value to the distribution.
 	Record(ctx context.Context, incr int64, attrs ...attribute.KeyValue)
 
-	instrument.Synchronous
+	Synchronous
+}
+
+// Int64Config contains options for Synchronous instruments that record int64
+// values.
+type Int64Config struct {
+	description string
+	unit        unit.Unit
+}
+
+// NewInt64Config returns a new Int64Config with all opts
+// applied.
+func NewInt64Config(opts ...Int64Option) Int64Config {
+	var config Int64Config
+	for _, o := range opts {
+		config = o.applyInt64(config)
+	}
+	return config
+}
+
+// Description returns the Config description.
+func (c Int64Config) Description() string {
+	return c.description
+}
+
+// Unit returns the Config unit.
+func (c Int64Config) Unit() unit.Unit {
+	return c.unit
+}
+
+// Int64Option applies options to synchronous int64 instruments.
+type Int64Option interface {
+	applyInt64(Int64Config) Int64Config
 }

@@ -132,31 +132,31 @@ func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.Dele
 	return f.DeleteResource(pool, opts...)
 }
 
-func GetIppoolByName(f *frame.Framework, poolName string) *v1.SpiderIPPool {
+func GetIppoolByName(f *frame.Framework, poolName string) (*v1.SpiderIPPool, error) {
 	if poolName == "" || f == nil {
-		return nil
+		return nil, errors.New("wrong input")
 	}
 
 	v := apitypes.NamespacedName{Name: poolName}
 	existing := &v1.SpiderIPPool{}
 	e := f.GetResource(v, existing)
 	if e != nil {
-		return nil
+		return nil, e
 	}
-	return existing
+	return existing, nil
 }
 
-func GetAllIppool(f *frame.Framework, opts ...client.ListOption) *v1.SpiderIPPoolList {
+func GetAllIppool(f *frame.Framework, opts ...client.ListOption) (*v1.SpiderIPPoolList, error) {
 	if f == nil {
-		return nil
+		return nil, errors.New("wrong input")
 	}
 
 	v := &v1.SpiderIPPoolList{}
 	e := f.ListResource(v, opts...)
 	if e != nil {
-		return nil
+		return nil, e
 	}
-	return v
+	return v, nil
 }
 
 func CheckIppoolForUsedIP(f *frame.Framework, ippool *v1.SpiderIPPool, PodName, PodNamespace string, ipAddrress *corev1.PodIP) (bool, error) {
@@ -206,10 +206,9 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 	var v4ippoolList, v6ippoolList []*v1.SpiderIPPool
 	if len(v4IppoolNameList) != 0 {
 		for _, v := range v4IppoolNameList {
-			v4ippool := GetIppoolByName(f, v)
-			if v4ippool == nil {
-				f.Log("v4 pool %v not existed \n", v)
-				return false, false, false, errors.New("v4 pool not existed")
+			v4ippool, err := GetIppoolByName(f, v)
+			if err != nil {
+				return false, false, false, err
 			}
 			v4ippoolList = append(v4ippoolList, v4ippool)
 		}
@@ -218,10 +217,9 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 
 	if len(v6IppoolNameList) != 0 {
 		for _, v := range v6IppoolNameList {
-			v6ippool := GetIppoolByName(f, v)
-			if v6ippool == nil {
-				f.Log("v6 pool %v not existed \n", v)
-				return false, false, false, errors.New("v6 pool not existed")
+			v6ippool, err := GetIppoolByName(f, v)
+			if err != nil {
+				return false, false, false, err
 			}
 			v6ippoolList = append(v6ippoolList, v6ippool)
 		}
@@ -501,8 +499,9 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			pool := GetIppoolByName(f, poolName)
-			if pool == nil {
+			_, err := GetIppoolByName(f, poolName)
+			if err != nil {
+				GinkgoWriter.Printf("IPPool '%s' has been removed，error: %v", poolName, err)
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)
@@ -581,7 +580,11 @@ func WaitIppoolStatusConditionByAllocatedIPs(ctx context.Context, f *frame.Frame
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			poolObj := GetIppoolByName(f, poolName)
+			poolObj, err := GetIppoolByName(f, poolName)
+			if err != nil {
+				return err
+			}
+
 			_, ok := poolObj.Status.AllocatedIPs[checkIPs]
 			if isRecord && ok {
 				GinkgoWriter.Printf("the IP %v recorded in IPPool %v \n", checkIPs, poolName)
@@ -606,11 +609,9 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 		case <-ctx.Done():
 			return fmt.Errorf("time out to wait workload %v/%v delete until finish", namespace, name)
 		default:
-			workload, err := GetWorkloadByName(f, namespace, name)
-			if api_errors.IsNotFound(err) {
-				return nil
-			}
-			if workload == nil {
+			_, err := GetWorkloadByName(f, namespace, name)
+			if !api_errors.IsNotFound(err) {
+				GinkgoWriter.Printf("workload '%s/%s' has been removed，error: %v", namespace, name, err)
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)
@@ -618,13 +619,13 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 	}
 }
 
-func CheckUniqueUuidInSpiderPool(f *frame.Framework, poolName string, podList *corev1.PodList) error {
-	if f == nil || poolName == "" || len(podList.Items) == 0 {
+func CheckUniqueUuidInSpiderPool(f *frame.Framework, poolName string) error {
+	if f == nil || poolName == "" {
 		return frame.ErrWrongInput
 	}
-	ippool := GetIppoolByName(f, poolName)
-	if ippool == nil {
-		return fmt.Errorf("failed get pool %v", poolName)
+	ippool, err := GetIppoolByName(f, poolName)
+	if err != nil {
+		return err
 	}
 	ipAndUuidMap := map[string]string{}
 	for _, v := range ippool.Status.AllocatedIPs {
@@ -649,9 +650,9 @@ func GetIppoolsInSubnet(f *frame.Framework, subnetName string) (*v1.SpiderIPPool
 		},
 	}
 
-	poolList := GetAllIppool(f, opt...)
-	if poolList == nil {
-		return nil, errors.New("failed to get ippool in subnet")
+	poolList, err := GetAllIppool(f, opt...)
+	if poolList == nil || err != nil {
+		return nil, err
 	}
 
 	return poolList, nil
@@ -678,11 +679,10 @@ func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetN
 		return frame.ErrWrongInput
 	}
 
-	subnetObj := GetSubnetByName(f, subnetName)
-	if subnetObj == nil {
-		return fmt.Errorf("failed to get subnet '%v'. ", subnetName)
+	subnetObj, err := GetSubnetByName(f, subnetName)
+	if err != nil {
+		return fmt.Errorf("failed to get subnet '%s', error: '%v' ", subnetName, err)
 	}
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -710,7 +710,7 @@ func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetN
 			if err != nil {
 				// The informer of SpiderSubnet will delay synchronizing its own state information,
 				// and build SpiderIPPool concurrently to add a retry mechanism to handle dirty reads.
-				f.Log("failed to create ippool '%s' in subnet '%s', wait for a second and get a retry.", pool.Name, subnetName)
+				f.Log("failed to create ippool '%s' in subnet '%s', wait for a second and get a retry, error: %v", pool.Name, subnetName, err)
 				time.Sleep(ForcedWaitingTime)
 				continue
 			}
@@ -775,12 +775,14 @@ when the application has multiple IPs, but only one is displayed in the applicat
 it is necessary to get the one from the ippool to compare with the actual one.
 */
 func GetPodIPAddressFromIppool(f *frame.Framework, poolName, namespace, name string) (string, error) {
-	poolObj := GetIppoolByName(f, poolName)
-	Expect(poolObj).NotTo(BeNil())
+	poolObj, err := GetIppoolByName(f, poolName)
+	if err != nil {
+		return "", err
+	}
 
-	for k, v := range poolObj.Status.AllocatedIPs {
+	for ip, v := range poolObj.Status.AllocatedIPs {
 		if v.Pod == name && v.Namespace == namespace {
-			return k, nil
+			return ip, nil
 		}
 	}
 	return "", fmt.Errorf(" '%s/%s' does not exist in the pool '%s'", namespace, name, poolName)

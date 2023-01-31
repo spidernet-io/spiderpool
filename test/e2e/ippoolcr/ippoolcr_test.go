@@ -51,23 +51,30 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV4Enabled {
 			v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
 			Expect(v4PoolObj.Spec.IPs).NotTo(BeNil())
-			if frame.Info.SpiderSubnetEnabled {
-				v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
-				v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
-			}
-			Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
 			GinkgoWriter.Printf("Succeeded to create ippool %v \n", v4PoolObj.Name)
+			if frame.Info.SpiderSubnetEnabled {
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4PoolObj, 5)
+				Expect(err).NotTo(HaveOccurred())
+			} else {
+				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
+			}
 			v4PoolNameList = append(v4PoolNameList, v4PoolName)
 		}
 		if frame.Info.IpV6Enabled {
 			v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(5)
 			Expect(v6PoolObj.Spec.IPs).NotTo(BeNil())
-			if frame.Info.SpiderSubnetEnabled {
-				v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
-				v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
-			}
-			Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
 			GinkgoWriter.Printf("Succeeded to create ippool %v \n", v6PoolObj.Name)
+			if frame.Info.SpiderSubnetEnabled {
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6PoolObj, 5)
+				Expect(err).NotTo(HaveOccurred())
+			} else {
+				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
+			}
+
 			v6PoolNameList = append(v6PoolNameList, v6PoolName)
 		}
 
@@ -151,16 +158,18 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		// D00005: A "true" value of IPPool.Spec.disabled should forbid IP allocation, but still allow ip de-allocation
 		// Set the value of IPPool.Spec.disabled to "true"
 		if frame.Info.IpV4Enabled {
-			desiredV4PoolObj := common.GetIppoolByName(frame, v4PoolName)
+			desiredV4PoolObj, err := common.GetIppoolByName(frame, v4PoolName)
+			Expect(err).NotTo(HaveOccurred())
 			desiredV4PoolObj.Spec.Disable = disable
 			err = common.PatchIppool(frame, desiredV4PoolObj, v4PoolObj)
 			Expect(err).NotTo(HaveOccurred(), "Failed to update %v.Spec.Disable form `false` to `true` for v4 pool", v4PoolName)
 			GinkgoWriter.Printf("Succeeded to update %v.Spec.Disable form `false` to `true` for v4 pool \n", v4PoolName)
 		}
 		if frame.Info.IpV6Enabled {
-			desiredV6PoolObj := common.GetIppoolByName(frame, v6PoolName)
+			desiredV6PoolObj, err := common.GetIppoolByName(frame, v6PoolName)
+			Expect(err).NotTo(HaveOccurred())
 			desiredV6PoolObj.Spec.Disable = disable
-			err := common.PatchIppool(frame, desiredV6PoolObj, v6PoolObj)
+			err = common.PatchIppool(frame, desiredV6PoolObj, v6PoolObj)
 			Expect(err).NotTo(HaveOccurred(), "Failed to update %v.Spec.Disable form `false` to `true` for v6 pool", v6PoolName)
 			GinkgoWriter.Println("Succeeded to update %v.Spec.Disable form `false` to `true` for v6 pool \n", v6PoolName)
 		}
@@ -219,9 +228,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV4Enabled {
 			By("update v4 pool: invalid `gateway` and valid `route`")
 			// Get the IPv4 pool, use a invalid "gateway" and valid "route" to update the IPv4 ippool and expect the update to fails.
-			originalV4Pool := common.GetIppoolByName(frame, v4PoolName)
-			v4Pool = common.GetIppoolByName(frame, v4PoolName)
-			Expect(v4Pool).NotTo(BeNil())
+			originalV4Pool, err := common.GetIppoolByName(frame, v4PoolName)
+			Expect(err).NotTo(HaveOccurred())
+			v4Pool, err = common.GetIppoolByName(frame, v4PoolName)
+			Expect(err).NotTo(HaveOccurred())
 
 			v4Pool.Spec.Gateway = &v4InvalidGateway
 			route := spiderpoolv1.Route{
@@ -233,8 +243,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			By("update v4 pool: valid `gateway` and invalid `route`")
 			// Get the IPv4 pool, use a valid "gateway" and invalid "route" to update the IPv4 ippool and expect the update to fails.
-			v4Pool = common.GetIppoolByName(frame, v4PoolName)
-			Expect(v4Pool).NotTo(BeNil())
+			v4Pool, err = common.GetIppoolByName(frame, v4PoolName)
+			Expect(err).NotTo(HaveOccurred())
 
 			v4Pool.Spec.Gateway = &v4Gateway
 			route = spiderpoolv1.Route{
@@ -246,8 +256,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			By("update v4 pool: valid `gateway` and `route`")
 			// Get the IPv4 pool, use a valid "gateway" and "route" to update the IPv4 ippool and expect the update to succeed.
-			v4Pool = common.GetIppoolByName(frame, v4PoolName)
-			Expect(v4Pool).NotTo(BeNil())
+			v4Pool, err = common.GetIppoolByName(frame, v4PoolName)
+			Expect(err).NotTo(HaveOccurred())
 
 			v4Pool.Spec.Gateway = &v4Gateway
 			route = spiderpoolv1.Route{
@@ -260,9 +270,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV6Enabled {
 			By("update v6 pool: invalid `gateway` and valid `route`")
 			// Get the IPv6 pool, use a invalid "gateway" and valid "route" to update the IPv6 ippool and expect the update to fails.
-			originalV6Pool := common.GetIppoolByName(frame, v6PoolName)
-			v6Pool = common.GetIppoolByName(frame, v6PoolName)
-			Expect(v6Pool).NotTo(BeNil())
+			originalV6Pool, err := common.GetIppoolByName(frame, v6PoolName)
+			Expect(err).NotTo(HaveOccurred())
+			v6Pool, err = common.GetIppoolByName(frame, v6PoolName)
+			Expect(err).NotTo(HaveOccurred())
 
 			v6Pool.Spec.Gateway = &v6InvalidGateway
 			route := spiderpoolv1.Route{
@@ -274,8 +285,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			By("update v6 pool: valid `gateway` and invalid `route`")
 			// Get the IPv6 pool, use a valid "gateway" and invalid "route" to update the IPv6 ippool and expect the update to fails.
-			v6Pool = common.GetIppoolByName(frame, v6PoolName)
-			Expect(v6Pool).NotTo(BeNil())
+			v6Pool, err = common.GetIppoolByName(frame, v6PoolName)
+			Expect(err).NotTo(HaveOccurred())
 
 			v6Pool.Spec.Gateway = &v6Gateway
 			route = spiderpoolv1.Route{
@@ -287,8 +298,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			By("update v6 pool: valid `gateway` and `route`")
 			// Get the IPv6 pool, use a valid "gateway" and "route" to update the IPv6 ippool and expect the update to succeed.
-			v6Pool = common.GetIppoolByName(frame, v6PoolName)
-			Expect(v6Pool).NotTo(BeNil())
+			v6Pool, err = common.GetIppoolByName(frame, v6PoolName)
+			Expect(err).NotTo(HaveOccurred())
 
 			v6Pool.Spec.Gateway = &v6Gateway
 			route = spiderpoolv1.Route{
@@ -316,7 +327,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		}
 
 		// Check whether the route information is effective
-		GinkgoWriter.Println("check whether the route information is effective")
+		GinkgoWriter.Println("check whether the route information is effective.")
 		if frame.Info.IpV4Enabled {
 			for k := range podNameCleanGatewayMap {
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)

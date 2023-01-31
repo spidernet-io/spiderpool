@@ -152,8 +152,11 @@ func WaitCreateSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnet
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnet := GetSubnetByName(f, subnet.ObjectMeta.Name)
-			if subnet != nil {
+			newSubnetObj, err := GetSubnetByName(f, subnet.ObjectMeta.Name)
+			if err != nil {
+				return err
+			}
+			if newSubnetObj.Name == subnet.Name {
 				return nil
 			}
 			time.Sleep(time.Second)
@@ -173,17 +176,17 @@ func DeleteSubnetByName(f *frame.Framework, subnetName string, opts ...client.De
 	return f.DeleteResource(subnetObj, opts...)
 }
 
-func GetSubnetByName(f *frame.Framework, subnetName string) *spiderpool.SpiderSubnet {
+func GetSubnetByName(f *frame.Framework, subnetName string) (*spiderpool.SpiderSubnet, error) {
 	if subnetName == "" || f == nil {
-		return nil
+		return nil, errors.New("wrong input")
 	}
 	key := apitypes.NamespacedName{Name: subnetName}
 	subnetObj := &spiderpool.SpiderSubnet{}
 	e := f.GetResource(key, subnetObj)
 	if e != nil {
-		return nil
+		return nil, e
 	}
-	return subnetObj
+	return subnetObj, e
 }
 
 func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName string, opts ...client.DeleteOption) error {
@@ -199,8 +202,9 @@ func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnet := GetSubnetByName(f, subnetName)
-			if subnet != nil {
+			_, err := GetSubnetByName(f, subnetName)
+			if err != nil {
+				GinkgoWriter.Printf("Subnet '%s' has been removed，error: %v", subnetName, err)
 				return nil
 			}
 			time.Sleep(time.Second)
@@ -218,7 +222,10 @@ func WaitValidateSubnetAllocatedIPCount(ctx context.Context, f *frame.Framework,
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnetObject := GetSubnetByName(f, subnetName)
+			subnetObject, err := GetSubnetByName(f, subnetName)
+			if err != nil {
+				return err
+			}
 
 			// The informer of SpiderSubnet will delay synchronizing its own state information
 			// which may cause failure 'runtime error: invalid memory address or nil pointer dereference'
@@ -278,9 +285,9 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 		return nil, frame.ErrWrongInput
 	}
 
-	subnetObj := GetSubnetByName(f, subnetName)
-	if subnetObj == nil {
-		return nil, fmt.Errorf("failed to get subnet %v", subnetName)
+	subnetObj, err := GetSubnetByName(f, subnetName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subnet '%s', error:'%v' ", subnetName, err)
 	}
 
 	ips1, err := ip.ParseIPRanges(*subnetObj.Spec.IPVersion, subnetObj.Spec.IPs)
@@ -318,9 +325,9 @@ LOOP:
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnetObject := GetSubnetByName(f, subnetName)
-			if subnetObject == nil {
-				return fmt.Errorf("failed to get subnet %v object", subnetName)
+			subnetObject, err := GetSubnetByName(f, subnetName)
+			if err != nil {
+				return fmt.Errorf("failed to get subnet '%s', error:'%v' ", subnetName, err)
 			}
 
 			poolList, err := GetIppoolsInSubnet(f, subnetName)

@@ -12,18 +12,20 @@ import (
 	"reflect"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
-
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
+	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
+	agentcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
@@ -32,6 +34,7 @@ const ifname string = "eth0"
 const nspath string = "/some/where"
 const containerID string = "dummy"
 const CNITimeoutSec = 220
+const CNILogFilePath = "/tmp/spiderpool.log"
 
 const (
 	healthCheckRoute = "/v1/ipam/healthy"
@@ -60,7 +63,6 @@ type ConfigWorkableSets struct {
 }
 
 var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func() {
-
 	BeforeEach(func() {
 		// generate one temp unix file.
 		tempDir := GinkgoT().TempDir()
@@ -69,6 +71,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		// cleanup the temp unix file at the end.
 		DeferCleanup(func() {
 			err := os.RemoveAll(sockPath)
+			Expect(err).NotTo(HaveOccurred())
+			err = os.RemoveAll(CNILogFilePath)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -84,13 +88,13 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 			CNIVersion: cniVersion,
 			IPAM: cmd.IPAMConfig{
 				LogLevel:           constant.LogDebugLevelStr,
+				LogFilePath:        CNILogFilePath,
 				IpamUnixSocketPath: sockPath,
 			},
 		}
 
 		addChan = make(chan struct{})
 		delChan = make(chan struct{})
-
 	})
 
 	Context("mock ipam plugin interacts with agent through unix socket", func() {
@@ -198,33 +202,32 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					},
 					Ips: []*models.IPConfig{
 						{
-							Address: new(string),
+							Address: pointer.String("10.1.0.5/24"),
 							Gateway: "10.1.0.1",
-							Nic:     new(string),
-							Version: new(int64),
+							Nic:     pointer.String("eth1"),
+							Version: pointer.Int64(constant.IPv4),
 						},
 						{
-							Address: new(string),
+							Address: pointer.String("fc00:f853:ccd:e793:f::6/64"),
+							Gateway: "fc00:f853:ccd:e793:f::2",
+							Nic:     pointer.String("eth1"),
+							Version: pointer.Int64(constant.IPv6),
+						},
+						{
+							Address: pointer.String("1.2.3.30/24"),
 							Gateway: "1.2.3.1",
-							Nic:     new(string),
-							Version: new(int64),
+							Nic:     pointer.String("eth0"),
+							Version: pointer.Int64(constant.IPv4),
+						},
+						{
+							Address: pointer.String("fc00:f853:ccd:e793:f::fc/64"),
+							Gateway: "fc00:f853:ccd:e793:f::2",
+							Nic:     pointer.String("eth0"),
+							Version: pointer.Int64(constant.IPv6),
 						},
 					},
-					Routes: []*models.Route{{IfName: new(string), Dst: new(string), Gw: new(string)}},
+					Routes: []*models.Route{{IfName: pointer.String("eth0"), Dst: pointer.String("15.5.6.0/24"), Gw: pointer.String("1.2.3.2")}},
 				}
-				// Routes
-				*ipamAddResp.Routes[0].IfName = "eth0"
-				*ipamAddResp.Routes[0].Dst = "15.5.6.0/24"
-				*ipamAddResp.Routes[0].Gw = "1.2.3.2"
-
-				// multi nic, ip responses
-				*ipamAddResp.Ips[0].Address = "10.1.0.5/24"
-				*ipamAddResp.Ips[0].Nic = "eth1"
-				*ipamAddResp.Ips[0].Version = constant.IPv4
-
-				*ipamAddResp.Ips[1].Address = "1.2.3.30/24"
-				*ipamAddResp.Ips[1].Nic = "eth0"
-				*ipamAddResp.Ips[1].Version = constant.IPv4
 
 				return ipamAddResp
 			}, func() *current.Result {
@@ -239,15 +242,20 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					Options:     []string{"somedomain.com"},
 				}
 				// IPs
-				expectResult.IPs = []*current.IPConfig{{Interface: new(int)}}
-				*expectResult.IPs[0].Interface = 0
+				expectResult.IPs = []*current.IPConfig{
+					{Interface: pointer.Int(0)},
+					{Interface: pointer.Int(1)},
+				}
 				expectResult.IPs[0].Gateway = net.ParseIP("1.2.3.1")
 				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("1.2.3.30"), Mask: net.CIDRMask(24, 32)}
+				expectResult.IPs[1].Gateway = net.ParseIP("fc00:f853:ccd:e793:f::2")
+				expectResult.IPs[1].Address = net.IPNet{IP: net.ParseIP("fc00:f853:ccd:e793:f::fc"), Mask: net.CIDRMask(64, 128)}
+
 				// Routes
 				_, ipNet, _ := net.ParseCIDR("15.5.6.0/24")
 				expectResult.Routes = []*types.Route{{Dst: *ipNet, GW: net.ParseIP("1.2.3.2")}}
 				//Interfaces
-				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}}
+				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}, {Name: "eth0"}}
 				return expectResult
 			}),
 			Entry(fmt.Sprintf("support CNI version '%s'", cmd.CniVersion030), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
@@ -266,17 +274,13 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					},
 					Ips: []*models.IPConfig{
 						{
-							Address: new(string),
+							Address: pointer.String("10.1.0.6/24"),
 							Gateway: "10.1.0.2",
-							Nic:     new(string),
-							Version: new(int64),
+							Nic:     pointer.String(ifname),
+							Version: pointer.Int64(constant.IPv4),
 						},
 					},
 				}
-
-				*ipamAddResp.Ips[0].Address = "10.1.0.6/24"
-				*ipamAddResp.Ips[0].Nic = ifname
-				*ipamAddResp.Ips[0].Version = constant.IPv4
 
 				return ipamAddResp
 			}, func() *current.Result {
@@ -291,8 +295,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					Options:     []string{"domain.com"},
 				}
 				// IPs
-				expectResult.IPs = []*current.IPConfig{{Interface: new(int)}}
-				*expectResult.IPs[0].Interface = 0
+				expectResult.IPs = []*current.IPConfig{{Interface: pointer.Int(0)}}
 				expectResult.IPs[0].Gateway = net.ParseIP("10.1.0.2")
 				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("10.1.0.6"), Mask: net.CIDRMask(24, 32)}
 				//Interfaces
@@ -310,16 +313,12 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					DNS: &models.DNS{},
 					Ips: []*models.IPConfig{
 						{
-							Address: new(string),
-							Nic:     new(string),
-							Version: new(int64),
+							Address: pointer.String("10.1.0.7/24"),
+							Nic:     pointer.String(ifname),
+							Version: pointer.Int64(constant.IPv4),
 						},
 					},
 				}
-
-				*ipamAddResp.Ips[0].Address = "10.1.0.7/24"
-				*ipamAddResp.Ips[0].Nic = ifname
-				*ipamAddResp.Ips[0].Version = constant.IPv4
 
 				return ipamAddResp
 			}, func() *current.Result {
@@ -329,8 +328,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				// DNS
 				expectResult.DNS = types.DNS{}
 				// IPs
-				expectResult.IPs = []*current.IPConfig{{Interface: new(int)}}
-				*expectResult.IPs[0].Interface = 0
+				expectResult.IPs = []*current.IPConfig{{Interface: pointer.Int(0)}}
 				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("10.1.0.7"), Mask: net.CIDRMask(24, 32)}
 				//Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: ifname}}
@@ -493,6 +491,82 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 
 			Expect(conf.IPAM.LogLevel).Should(Equal(cmd.DefaultLogLevelStr))
 			Expect(conf.IPAM.IpamUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
+		})
+
+		It("Failed to load args with cmdAdd and cmdDel", func() {
+			patches := gomonkey.ApplyFuncSeq(types.LoadArgs, []gomonkey.OutputCell{
+				{Values: gomonkey.Params{constant.ErrUnknown}},
+				{Values: gomonkey.Params{constant.ErrUnknown}},
+			})
+			defer patches.Reset()
+
+			confBytes, err := json.Marshal(netConf)
+			Expect(err).NotTo(HaveOccurred())
+			args.StdinData = confBytes
+
+			// Allocate the IP
+			go func() {
+				defer GinkgoRecover()
+
+				_, _, err := testutils.CmdAddWithArgs(args, func() error {
+					return cmd.CmdAdd(args)
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(constant.ErrUnknown))
+				close(addChan)
+			}()
+			Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+
+			// Release the IP
+			go func() {
+				defer GinkgoRecover()
+
+				err = testutils.CmdDelWithArgs(args, func() error {
+					return cmd.CmdDel(args)
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(constant.ErrUnknown))
+				close(delChan)
+			}()
+			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+		})
+
+		It("Failed to new agent openAPI unix client with cmdAdd and cmdDel", func() {
+			patches := gomonkey.ApplyFuncSeq(agentcmd.NewAgentOpenAPIUnixClient, []gomonkey.OutputCell{
+				{Values: gomonkey.Params{nil, constant.ErrUnknown}},
+				{Values: gomonkey.Params{nil, constant.ErrUnknown}},
+			})
+			defer patches.Reset()
+
+			confBytes, err := json.Marshal(netConf)
+			Expect(err).NotTo(HaveOccurred())
+			args.StdinData = confBytes
+
+			// Allocate the IP
+			go func() {
+				defer GinkgoRecover()
+
+				_, _, err := testutils.CmdAddWithArgs(args, func() error {
+					return cmd.CmdAdd(args)
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(constant.ErrUnknown))
+				close(addChan)
+			}()
+			Eventually(addChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
+
+			// Release the IP
+			go func() {
+				defer GinkgoRecover()
+
+				err = testutils.CmdDelWithArgs(args, func() error {
+					return cmd.CmdDel(args)
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(constant.ErrUnknown))
+				close(delChan)
+			}()
+			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
 		})
 	})
 

@@ -313,11 +313,9 @@ func initAgentServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		EnableIPv4:      agentContext.Cfg.EnableIPv4,
-		EnableIPv6:      agentContext.Cfg.EnableIPv6,
 		UpdateCRConfig:  updateCRConfig,
 		MaxAllocatedIPs: agentContext.Cfg.IPPoolMaxAllocatedIPs,
-	}, agentContext.CRDManager, agentContext.PodManager, agentContext.RIPManager)
+	}, agentContext.CRDManager, agentContext.PodManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -332,7 +330,6 @@ func initAgentServiceManagers(ctx context.Context) {
 			logger.Fatal(err.Error())
 		}
 		agentContext.SubnetManager = subnetManager
-		ipPoolManager.InjectSubnetManager(agentContext.SubnetManager)
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}

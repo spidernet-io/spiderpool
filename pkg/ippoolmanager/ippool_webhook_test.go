@@ -212,6 +212,12 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				controlled := metav1.IsControlledBy(ipPoolT, subnetT)
+
+				// TODO(Icarus9913): maybe fail
+				ownerReference := metav1.GetControllerOf(ipPoolT)
+				fmt.Printf("The SpiderIPPool '%+v' corresponding owner reference: '%+v'", ipPoolT, ownerReference)
+				fmt.Printf("Print SpiderSubnet details: '%+v'", subnetT)
+
 				Expect(controlled).To(BeTrue())
 
 				v, ok := ipPoolT.Labels[constant.LabelIPPoolOwnerSpiderSubnet]

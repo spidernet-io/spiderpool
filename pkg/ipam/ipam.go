@@ -488,17 +488,19 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv6 SpiderSubnet")
 	}
 
-	// TODO(Icarus9913): add third party controller support
-	if podController.Kind == constant.KindUnknown {
-		return nil, fmt.Errorf("spider subnet doesn't support pod '%s/%s' owner controller", pod.Namespace, pod.Name)
-	}
-
 	result := &ToBeAllocated{
 		NIC:          nic,
 		CleanGateway: cleanGateway,
 	}
 
-	// this function will find the IPPool with the given match labels.
+	// This only serves for orphan pod or third party controller application, because we'll create or scale the auto-created IPPool here.
+	// For those kubernetes applications(such as deployment and replicaset), the spiderpool-controller will create or scale the auto-created IPPool asynchronously.
+	poolIPNum, podSelector, err := getAutoPoolIPNumberAndSelector(pod, podController)
+	if nil != err {
+		return nil, err
+	}
+
+	// This function will find the IPPool with the given match labels.
 	// The first return parameter represents the IPPool name, and the second parameter represents whether you need to create IPPool for orphan pod.
 	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
 	findSubnetIPPool := func(matchLabels client.MatchingLabels) (string, bool, error) {
@@ -513,7 +515,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 			// validation
 			if poolList == nil || len(poolList.Items) == 0 {
 				// the orphan pod should create its auto IPPool immediately if no IPPool found
-				if podController.Kind == constant.KindPod {
+				if podController.Kind == constant.KindPod || podController.Kind == constant.KindUnknown {
 					return "", true, nil
 				}
 
@@ -522,11 +524,11 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 				time.Sleep(i.config.OperationGapDuration)
 				continue
 			} else if len(poolList.Items) == 1 {
-				// check whether the auto IPPool need to scale it desiredIPNumber or not for orphan pod
-				if podController.Kind == constant.KindPod {
-					pool := poolList.Items[0]
+				// check whether the auto IPPool need to scale it desiredIPNumber or not for orphan pod and third party controller application
+				if podController.Kind == constant.KindPod || podController.Kind == constant.KindUnknown {
+					pool := poolList.Items[0].DeepCopy()
 					logger.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)
-					err = i.subnetManager.CheckScaleIPPool(ctx, &pool, subnetName, 1)
+					err := i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
 					if nil != err {
 						return "", false, fmt.Errorf("failed to check IPPool %s whether need to be scaled: %v", pool.Name, err)
 					}
@@ -546,7 +548,8 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	}
 
 	var v4PoolCandidate, v6PoolCandidate string
-	var shouldCreateForOrphanPodV4, shouldCreateForOrphanPodV6 bool
+	// we create auto-created IPPool for orphan pod or third party controller application here
+	var shouldCreateV4Pool, shouldCreateV6Pool bool
 	var errV4, errV6 error
 	var wg sync.WaitGroup
 
@@ -555,6 +558,10 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	if nil != err {
 		return nil, err
 	}
+	// we don't support reclaim IPPool for third party controller application
+	if podController.Kind == constant.KindUnknown {
+		reclaimIPPool = false
+	}
 
 	// if enableIPv4 is off and get the specified SpiderSubnet IPv4 name, just filter it out
 	if i.config.EnableIPv4 && len(subnetItem.IPv4) != 0 {
@@ -562,7 +569,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		go func() {
 			defer wg.Done()
 
-			v4PoolCandidate, shouldCreateForOrphanPodV4, errV4 = findSubnetIPPool(client.MatchingLabels{
+			v4PoolCandidate, shouldCreateV4Pool, errV4 = findSubnetIPPool(client.MatchingLabels{
 				constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
 				constant.LabelIPPoolOwnerSpiderSubnet:   subnetItem.IPv4[0],
@@ -573,9 +580,8 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 				return
 			}
 
-			if shouldCreateForOrphanPodV4 {
-				podSelector := &metav1.LabelSelector{MatchLabels: pod.Labels}
-				v4Pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetItem.IPv4[0], podController, podSelector, 1, constant.IPv4, reclaimIPPool, nic)
+			if shouldCreateV4Pool {
+				v4Pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetItem.IPv4[0], podController, podSelector, poolIPNum, constant.IPv4, reclaimIPPool, nic)
 				if nil != err {
 					errV4 = err
 					return
@@ -593,7 +599,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		go func() {
 			defer wg.Done()
 
-			v6PoolCandidate, shouldCreateForOrphanPodV6, errV6 = findSubnetIPPool(client.MatchingLabels{
+			v6PoolCandidate, shouldCreateV6Pool, errV6 = findSubnetIPPool(client.MatchingLabels{
 				constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
 				constant.LabelIPPoolOwnerSpiderSubnet:   subnetItem.IPv6[0],
@@ -604,9 +610,8 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 				return
 			}
 
-			if shouldCreateForOrphanPodV6 {
-				podSelector := &metav1.LabelSelector{MatchLabels: pod.Labels}
-				v6Pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetItem.IPv6[0], podController, podSelector, 1, constant.IPv6, reclaimIPPool, nic)
+			if shouldCreateV6Pool {
+				v6Pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetItem.IPv6[0], podController, podSelector, poolIPNum, constant.IPv6, reclaimIPPool, nic)
 				if nil != err {
 					errV6 = err
 					return

@@ -13,4 +13,7 @@
 | I00009  | Create 100 Subnets with the same `Subnet.spec` and see if only one succeeds in the end                                              |   p1     |       |  done  |       |
 | I00010  | Create 100 IPPools with the same `IPPool.spec` and see if only one succeeds in the end                                              |   p1     |       |  done  |       |
 | I00011  | The subnet automatically creates an ippool and allocates IP, and should consider reservedIP                                         |   p1     |       |  done  |       |
+| I00012  | SpiderSubnet supports multiple interfaces                                                                                           |   p1     |       |  done  |       |
+| I00013  | SpiderSubnet supports automatic IP assignment for Pods                                                                              |   p2     |       |  done  |       |
+| I00014  | The default subnet should support different controller types                                                                        |   p2     |       |  done  |       |
 

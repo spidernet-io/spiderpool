@@ -768,3 +768,20 @@ func BatchCreateIPPoolsInSpiderSubnet(f *frame.Framework, version types.IPVersio
 	}
 	return poolNames, nil
 }
+
+/*
+GetPodIPAddressFromIppool is to get the IP from the ippool by name and namespace.
+when the application has multiple IPs, but only one is displayed in the application's status,
+it is necessary to get the one from the ippool to compare with the actual one.
+*/
+func GetPodIPAddressFromIppool(f *frame.Framework, poolName, namespace, name string) (string, error) {
+	poolObj := GetIppoolByName(f, poolName)
+	Expect(poolObj).NotTo(BeNil())
+
+	for k, v := range poolObj.Status.AllocatedIPs {
+		if v.Pod == name && v.Namespace == namespace {
+			return k, nil
+		}
+	}
+	return "", fmt.Errorf(" '%s/%s' does not exist in the pool '%s'", namespace, name, poolName)
+}

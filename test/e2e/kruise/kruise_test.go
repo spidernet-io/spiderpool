@@ -3,11 +3,13 @@
 package kruise_test
 
 import (
+	"context"
 	"encoding/json"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -23,8 +25,9 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 	var v4PoolNameList, v6PoolNameList []string
 	var (
 		podList                   *corev1.PodList
-		kruiseCloneSetReplicasNum int32 = 2
-		IpNum                     int   = 5
+		kruiseCloneSetReplicasNum int32  = 2
+		IpNum                     int    = 5
+		fixedIPNumber             string = "2"
 	)
 
 	BeforeEach(func() {
@@ -49,6 +52,9 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 		}
 
 		DeferCleanup(func() {
+			GinkgoWriter.Printf("delete namespace %v. \n", namespace)
+			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+
 			if frame.Info.SpiderSubnetEnabled {
 				GinkgoWriter.Printf("delete v4subnet %v, v6subnet %v. \n", v4SubnetName, v6SubnetName)
 				if frame.Info.IpV4Enabled {
@@ -58,11 +64,6 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
 				}
 			}
-			GinkgoWriter.Printf("delete kruise cloneSet %v. \n", kruiseCloneSetName)
-			Expect(common.DeleteKruiseCloneSetByName(frame, kruiseCloneSetName, namespace)).NotTo(HaveOccurred())
-
-			GinkgoWriter.Printf("delete namespace %v. \n", namespace)
-			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
 		})
 	})
 
@@ -112,5 +113,90 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 		Expect(ok).NotTo(BeFalse())
 		Expect(err).NotTo(HaveOccurred())
+
+		GinkgoWriter.Printf("delete kruise cloneSet %v. \n", kruiseCloneSetName)
+		Expect(common.DeleteKruiseCloneSetByName(frame, kruiseCloneSetName, namespace)).NotTo(HaveOccurred())
+	})
+
+	It("SpiderSubnet feature supports third party controllers.", Label("kruise", "E00010"), func() {
+		if !frame.Info.SpiderSubnetEnabled {
+			Skip("Test conditions `enableSpiderSubnet:true` not met")
+		}
+
+		GinkgoWriter.Println("Generate annotations for subnets Marshal")
+		subnetAnno := types.AnnoSubnetItem{}
+		if frame.Info.IpV4Enabled {
+			subnetAnno.IPv4 = []string{v4SubnetName}
+		}
+		if frame.Info.IpV6Enabled {
+			subnetAnno.IPv6 = []string{v6SubnetName}
+		}
+		subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+		Expect(err).NotTo(HaveOccurred())
+
+		GinkgoWriter.Println("Generate annotations for third party control objects.")
+		kruiseCloneSetObject := common.GenerateExampleKruiseCloneSetYaml(kruiseCloneSetName, namespace, kruiseCloneSetReplicasNum)
+		kruiseCloneSetObject.Spec.Template.Annotations = map[string]string{
+			constant.AnnoSpiderSubnet: string(subnetAnnoMarshal),
+			/*
+				Notice
+					You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet feature.
+					Here's an example ipam.spidernet.io/ippool-ip-number: "5".
+			*/
+			constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+		}
+
+		GinkgoWriter.Printf("create CloneSet %v/%v. \n", namespace, kruiseCloneSetName)
+		Expect(common.CreateKruiseCloneSet(frame, kruiseCloneSetObject)).NotTo(HaveOccurred())
+
+		GinkgoWriter.Printf("Wait for the CloneSet Pod running %v/%v. \n", namespace, kruiseCloneSetName)
+		Eventually(func() bool {
+			podList, err = frame.GetPodList(client.InNamespace(namespace))
+			if nil != err || len(podList.Items) != int(kruiseCloneSetReplicasNum) {
+				return false
+			}
+			return frame.CheckPodListRunning(podList)
+		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+		GinkgoWriter.Printf("Check that the IP record for the pool is consistent with the subnet")
+		v4PoolNameList = []string{}
+		v6PoolNameList = []string{}
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+		if frame.Info.IpV4Enabled {
+			Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
+			Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+			v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+			Expect(err).NotTo(HaveOccurred())
+		}
+		if frame.Info.IpV6Enabled {
+			Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
+			Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+			v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+			Expect(err).NotTo(HaveOccurred())
+		}
+		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+		Expect(ok).NotTo(BeFalse())
+		Expect(err).NotTo(HaveOccurred())
+
+		GinkgoWriter.Printf("delete kruise cloneSet %v. \n", kruiseCloneSetName)
+		Expect(common.DeleteKruiseCloneSetByName(frame, kruiseCloneSetName, namespace)).NotTo(HaveOccurred())
+
+		/*
+			Notice:
+				IPPool reclaim for third party controllers is not currently supported.
+				So, setting the annotation ipam.spidernet.io/ippool-reclaim: "true" does not take effect.
+				And you need to delete the corresponding auto-created IPPool by yourself once you clean up the third-party controller application.
+
+				Refer https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/third-party-controller.md for details.
+		*/
+		// TODO(tao.yang, Missing check for ippool to be automatically recycled)
+		GinkgoWriter.Println("delete ippool.")
+		if frame.Info.IpV4Enabled {
+			Expect(common.DeleteIPPoolByName(frame, v4PoolNameList[0])).NotTo(HaveOccurred())
+		}
+		if frame.Info.IpV6Enabled {
+			Expect(common.DeleteIPPoolByName(frame, v6PoolNameList[0])).NotTo(HaveOccurred())
+		}
 	})
 })

@@ -24,6 +24,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -570,7 +571,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, deployOriginiaNum)
 			deployYaml.Spec.Template.Annotations = annotationMap
 			Expect(deployYaml).NotTo(BeNil())
-			GinkgoWriter.Printf("Tty to create deploy %v/%v \n", namespace, deployName)
+			GinkgoWriter.Printf("Try to create deploy %v/%v \n", namespace, deployName)
 			Expect(frame.CreateDeployment(deployYaml)).To(Succeed())
 
 			if frame.Info.IpV4Enabled {
@@ -805,7 +806,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, deployOriginiaNum)
 			deployYaml.Spec.Template.Annotations = annotationMap
 			Expect(deployYaml).NotTo(BeNil())
-			GinkgoWriter.Printf("Tty to create deploy %v/%v \n", namespace, deployName)
+			GinkgoWriter.Printf("Try to create deploy %v/%v \n", namespace, deployName)
 			Expect(frame.CreateDeployment(deployYaml)).To(Succeed())
 
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -1114,6 +1115,333 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			wg.Wait()
 			endT3 := time.Since(startT3)
 			GinkgoWriter.Printf("Time cost to delete %v subnet is %v \n", batchCreateSubnetNumber, endT3)
+		})
+	})
+
+	Context("SpiderSubnet supports multiple interfaces", func() {
+		var v4SubnetName1, v6SubnetName1, v4SubnetName2, v6SubnetName2 string
+		var v4SubnetObject1, v6SubnetObject1, v4SubnetObject2, v6SubnetObject2 *spiderpool.SpiderSubnet
+		var deployName string
+
+		BeforeEach(func() {
+			// Create multiple subnets
+			if frame.Info.IpV4Enabled {
+				v4SubnetName1, v4SubnetObject1 = common.GenerateExampleV4SubnetObject(10)
+				Expect(v4SubnetObject1).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject1)).NotTo(HaveOccurred())
+
+				v4SubnetName2, v4SubnetObject2 = common.GenerateExampleV4SubnetObject(10)
+				Expect(v4SubnetObject2).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject2)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetName1, v6SubnetObject1 = common.GenerateExampleV6SubnetObject(10)
+				Expect(v6SubnetObject1).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject1)).NotTo(HaveOccurred())
+
+				v6SubnetName2, v6SubnetObject2 = common.GenerateExampleV6SubnetObject(10)
+				Expect(v6SubnetObject2).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject2)).NotTo(HaveOccurred())
+			}
+
+			DeferCleanup(func() {
+				if frame.Info.IpV4Enabled {
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName1)).NotTo(HaveOccurred())
+					Expect(common.DeleteSubnetByName(frame, v4SubnetName2)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName1)).NotTo(HaveOccurred())
+					Expect(common.DeleteSubnetByName(frame, v6SubnetName2)).NotTo(HaveOccurred())
+				}
+			})
+		})
+
+		It("SpiderSubnet supports multiple interfaces", Label("I00012"), func() {
+			var v4PoolNameList1, v4PoolNameList2, v6PoolNameList1, v6PoolNameList2 []string
+			var v4IPAddress1, v4IPAddress2, v6IPAddress1, v6IPAddress2 string
+
+			/*
+				To construct multiple interfaces annotations which looks like this:
+
+				annotations:
+					k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni2
+					ipam.spidernet.io/subnets: |-
+						[{"interface": "eth0", "ipv4": ["subnet-demo-v4-1"], "ipv6": ["subnet-demo-v6-1"]},
+						 {"interface": "net2", "ipv4": ["subnet-demo-v4-2"], "ipv6": ["subnet-demo-v6-2"]}]
+			*/
+			GinkgoWriter.Println("Generate annotations for subnets multiple interfaces Marshal")
+			type AnnoSubnetsItem []types.AnnoSubnetItem
+			subnetsAnno := AnnoSubnetsItem{
+				types.AnnoSubnetItem{
+					Interface: common.NIC1,
+				}, {
+					Interface: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				subnetsAnno[0].IPv4 = []string{v4SubnetName1}
+				subnetsAnno[1].IPv4 = []string{v4SubnetName2}
+			}
+			if frame.Info.IpV6Enabled {
+				subnetsAnno[0].IPv6 = []string{v6SubnetName1}
+				subnetsAnno[1].IPv6 = []string{v6SubnetName2}
+			}
+			subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Generate example deploy yaml and create deploy
+			deployName = "deploy-" + tools.RandomName()
+			deployObj := common.GenerateExampleDeploymentYaml(deployName, namespace, 1)
+			deployObj.Spec.Template.Annotations = map[string]string{
+				common.MultusNetworks: common.MacvlanCNIName,
+				// second Interface
+				constant.AnnoSpiderSubnets: string(subnetsAnnoMarshal),
+			}
+			Expect(deployObj).NotTo(BeNil())
+			GinkgoWriter.Printf("Try to create deploy %v/%v \n", namespace, deployName)
+			Expect(frame.CreateDeployment(deployObj)).To(Succeed())
+
+			// Checking the pod run status should all be running.
+			var podList *corev1.PodList
+			Eventually(func() bool {
+				podList, err = frame.GetPodListByLabel(deployObj.Spec.Template.Labels)
+				if nil != err || len(podList.Items) == 0 {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Check that the corresponding ippool is created under each subnet.
+			// Get the application IP in IPPool
+			GinkgoWriter.Println("Get the IPs assigned by multiple NICs")
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName1, 1)).NotTo(HaveOccurred())
+				v4PoolNameList1, err = common.GetPoolNameListInSubnet(frame, v4SubnetName1)
+				Expect(err).NotTo(HaveOccurred())
+				v4IPAddress1, err = common.GetPodIPAddressFromIppool(frame, v4PoolNameList1[0], podList.Items[0].Namespace, podList.Items[0].Name)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName2, 1)).NotTo(HaveOccurred())
+				v4PoolNameList2, err = common.GetPoolNameListInSubnet(frame, v4SubnetName2)
+				Expect(err).NotTo(HaveOccurred())
+				v4IPAddress2, err = common.GetPodIPAddressFromIppool(frame, v4PoolNameList2[0], podList.Items[0].Namespace, podList.Items[0].Name)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName1, 1)).NotTo(HaveOccurred())
+				v6PoolNameList1, err = common.GetPoolNameListInSubnet(frame, v6SubnetName1)
+				Expect(err).NotTo(HaveOccurred())
+				v6IPAddress1, err = common.GetPodIPAddressFromIppool(frame, v6PoolNameList1[0], podList.Items[0].Namespace, podList.Items[0].Name)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName2, 1)).NotTo(HaveOccurred())
+				v6PoolNameList2, err = common.GetPoolNameListInSubnet(frame, v6SubnetName2)
+				Expect(err).NotTo(HaveOccurred())
+				v6IPAddress2, err = common.GetPodIPAddressFromIppool(frame, v6PoolNameList2[0], podList.Items[0].Namespace, podList.Items[0].Name)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// multiple interfaces are in effect and Pods are getting IPs from each NIC
+			GinkgoWriter.Println("Check that the subnet multiple interfaces are in effect.")
+			ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				command := fmt.Sprintf("ip a | grep '%s' |grep '%s'", common.NIC1, v4IPAddress1)
+				_, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, command, ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				command = fmt.Sprintf("ip a | grep '%s' |grep '%s'", common.NIC2, v4IPAddress2)
+				_, err = frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, command, ctx)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				command := fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC1, v6IPAddress1)
+				_, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, command, ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				command = fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC2, v6IPAddress2)
+				_, err = frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, command, ctx)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// delete deploy
+			Expect(frame.DeleteDeployment(deployName, namespace)).NotTo(HaveOccurred())
+			ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName1, 0)).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName2, 0)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName1, 0)).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName2, 0)).NotTo(HaveOccurred())
+			}
+		})
+	})
+
+	Context("The default subnet should support different controller types.", func() {
+		var ClusterDefaultV4SubnetList, ClusterDefaultV6SubnetList []string
+		var v4PoolNameList, v6PoolNameList []string
+		var err error
+		var replicasNum int32 = 1
+		var controllerNum int = 4
+		var controllerNameList []string
+		var podName, deployName, stsName, dsName, jobName string
+
+		BeforeEach(func() {
+			// Get the default subnet
+			// and verify that the default subnet functions properly
+			By("get cluster default subnet")
+			ClusterDefaultV4SubnetList, ClusterDefaultV6SubnetList, err = common.GetClusterDefaultSubnet(frame)
+			Expect(err).NotTo(HaveOccurred())
+			if frame.Info.IpV4Enabled && len(ClusterDefaultV4SubnetList) == 0 {
+				Skip("v4 Default Subnet function is not enabled")
+			}
+			if frame.Info.IpV6Enabled && len(ClusterDefaultV6SubnetList) == 0 {
+				Skip("v6 Default Subnet function is not enabled")
+			}
+
+			By("Generate data for test.")
+			podName = "pod-" + tools.RandomName()
+			controllerNameList = append(controllerNameList, podName)
+			deployName = "deploy-" + tools.RandomName()
+			controllerNameList = append(controllerNameList, deployName)
+			stsName = "sts-" + tools.RandomName()
+			controllerNameList = append(controllerNameList, stsName)
+			dsName = "ds-" + tools.RandomName()
+			controllerNameList = append(controllerNameList, dsName)
+			jobName = "job-" + tools.RandomName()
+			controllerNameList = append(controllerNameList, jobName)
+		})
+
+		It("The default subnet should support different controller types.", Label("I00013", "I00014"), func() {
+			// The default subnet should support different controller types.
+			By("Creating different controllers")
+			podObj := common.GenerateExamplePodYaml(podName, namespace)
+			Expect(podObj).NotTo(BeNil())
+			Expect(frame.CreatePod(podObj)).To(Succeed())
+
+			deployObject := common.GenerateExampleDeploymentYaml(deployName, namespace, replicasNum)
+			Expect(deployObject).NotTo(BeNil())
+			Expect(frame.CreateDeployment(deployObject)).To(Succeed())
+
+			stsObject := common.GenerateExampleStatefulSetYaml(stsName, namespace, replicasNum)
+			Expect(stsObject).NotTo(BeNil())
+			Expect(frame.CreateStatefulSet(stsObject)).To(Succeed())
+
+			dsObject := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+			Expect(dsObject).NotTo(BeNil())
+			Expect(frame.CreateDaemonSet(dsObject)).To(Succeed())
+
+			jobObject := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, pointer.Int32Ptr(replicasNum))
+			Expect(jobObject).NotTo(BeNil())
+			Expect(frame.CreateJob(jobObject)).To(Succeed())
+
+			GinkgoWriter.Println("Wait until all pods should be running.")
+			var podList *corev1.PodList
+			// this serves for daemonset object to make sure its corresponding pods number
+			nodeList, err := frame.GetNodeList()
+			Expect(err).NotTo(HaveOccurred())
+			allPodNumber := len(nodeList.Items) + controllerNum
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err || len(podList.Items) != int(allPodNumber) {
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// The default subnet automatically creates an ippool for each controller (containing Pod).
+			By("Check that the record Ippool in the status of the subnet is correct.")
+			var v4PoolInSubnetNameList, v6PoolInSubnetNameList []string
+			v4PoolInSubnetNameList = []string{}
+			v6PoolInSubnetNameList = []string{}
+			for _, name := range controllerNameList {
+				if frame.Info.IpV4Enabled {
+					bingo := 0
+					v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV4SubnetList[0])
+					Expect(err).NotTo(HaveOccurred())
+					for _, poolName := range v4PoolNameList {
+						// Get the ippool automatically created by the default subnet and check its uniqueness
+						if ok := strings.Contains(poolName, name); ok {
+							v4PoolInSubnetNameList = append(v4PoolInSubnetNameList, poolName)
+							bingo++
+						}
+					}
+					Expect(bingo).To(Equal(1))
+				}
+				if frame.Info.IpV6Enabled {
+					bingo := 0
+					v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV6SubnetList[0])
+					Expect(err).NotTo(HaveOccurred())
+					for _, poolName := range v6PoolNameList {
+						if ok := strings.Contains(poolName, name); ok {
+							v6PoolInSubnetNameList = append(v6PoolInSubnetNameList, poolName)
+							bingo++
+						}
+					}
+					Expect(bingo).To(Equal(1))
+				}
+			}
+
+			// Delete all resources by deleting namespace,
+			// expecting all ip's and ippool's to be reclaimed
+			By("Delete all resources.")
+			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err || len(podList.Items) != 0 {
+					return false
+				}
+				return true
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// After deleting a resource, the ippool should be automatically reclaimed
+			// and the ippool recorded in the subnet will also be reclaimed
+			By("Checking resource release.")
+			Eventually(func() bool {
+				if frame.Info.IpV4Enabled {
+					GinkgoWriter.Println("Check that the v4 IPPool has been recycled.")
+					for _, poolName := range v4PoolInSubnetNameList {
+						existing := common.GetIppoolByName(frame, poolName)
+						if existing != nil {
+							return false
+						}
+					}
+					for _, controllerName := range controllerNameList {
+						GinkgoWriter.Println("The v4 ippool in the subnet has been reclaimed.")
+						v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV4SubnetList[0])
+						Expect(err).NotTo(HaveOccurred())
+						for _, v := range v4PoolNameList {
+							if ok := strings.Contains(v, controllerName); ok {
+								return false
+							}
+						}
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					GinkgoWriter.Println("Check that the v6 IPPool has been recycled.")
+					for _, poolName := range v6PoolInSubnetNameList {
+						existing := common.GetIppoolByName(frame, poolName)
+						if existing != nil {
+							return false
+						}
+					}
+					for _, controllerName := range controllerNameList {
+						GinkgoWriter.Println("The v6 ippool in the subnet has been reclaimed.")
+						v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV6SubnetList[0])
+						Expect(err).NotTo(HaveOccurred())
+						for _, v := range v6PoolNameList {
+							if ok := strings.Contains(v, controllerName); ok {
+								return false
+							}
+						}
+					}
+				}
+				return true
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 	})
 })

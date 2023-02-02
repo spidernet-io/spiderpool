@@ -164,9 +164,13 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		func(replicas int32) {
 			daemonSetName := "ds" + tools.RandomName()
 
-			// Genarte Deployment Yaml
+			// Generate Deployment Yaml
 			GinkgoWriter.Printf("Create Deployment %v/%v \n", namespace, podName)
 			dep := common.GenerateExampleDeploymentYaml(podName, namespace, replicas)
+
+			// add deploy annotations about ippool
+			annoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IppoolList, globalDefaultV6IppoolList)
+			dep.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: annoStr}
 
 			// In a `kind` cluster, restarting the master node will cause the cluster to become unavailable.
 			nodeList, err := frame.GetNodeList()
@@ -184,8 +188,9 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 			// Check if the IP exists in the IPPool before restarting the node
 			isRecord1, _, _, err2 := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList)
+			Expect(err2).ShouldNot(HaveOccurred(), "failed to check pod ip recorded in ippool: %v", err)
 			Expect(isRecord1).Should(BeTrue())
-			Expect(err2).ShouldNot(HaveOccurred())
+
 			GinkgoWriter.Printf("Pod IP recorded in IPPool %v,%v \n", globalDefaultV4IppoolList, globalDefaultV6IppoolList)
 
 			// Send a cmd to restart the node and check the cluster until it is ready

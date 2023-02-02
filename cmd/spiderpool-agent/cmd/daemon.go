@@ -142,6 +142,9 @@ func DaemonMain() {
 		OperationRetries:     agentContext.Cfg.UpdateCRMaxRetries,
 		OperationGapDuration: time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 	}, agentContext.IPPoolManager, agentContext.EndpointManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
 	agentContext.IPAM = ipam
 
 	go func() {

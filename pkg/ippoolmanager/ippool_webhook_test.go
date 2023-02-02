@@ -193,11 +193,11 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
 				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-				subnetT.Spec.Subnet = "172.18.40.0/24"
+				subnetT.Spec.Subnet = "172.18.50.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
-						"172.18.40.1-172.18.40.2",
-						"172.18.40.10",
+						"172.18.50.1-172.18.50.2",
+						"172.18.50.10",
 					}...,
 				)
 
@@ -206,7 +206,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-				ipPoolT.Spec.Subnet = "172.18.40.0/24"
+				ipPoolT.Spec.Subnet = "172.18.50.0/24"
 
 				err = ipPoolWebhook.Default(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())

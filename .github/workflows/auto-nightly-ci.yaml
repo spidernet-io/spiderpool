@@ -472,8 +472,8 @@ jobs:
 
   creat_issue:
     runs-on: ubuntu-latest
-    needs: [e2e_against_commit]
-    if: ${{ always() && needs.e2e_against_commit.result == 'failure' }}
+    needs: [e2e_against_commit, call_unitest, lint_chart_against_release_image]
+    if: ${{ always() && needs.e2e_against_commit.result == 'failure' || needs.call_unitest.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' }}
     steps:
       - name: echo
         run: |

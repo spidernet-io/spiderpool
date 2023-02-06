@@ -81,7 +81,6 @@ var envInfo = []envConf{
 	{"GIT_COMMIT_VERSION", "", false, &controllerContext.Cfg.CommitVersion, nil, nil},
 	{"GIT_COMMIT_TIME", "", false, &controllerContext.Cfg.CommitTime, nil, nil},
 	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
-	{"SPIDERPOOL_ENABLE_SUBNET_DELETE_STALE_IPPOOL", "false", true, nil, &controllerContext.Cfg.EnableSubnetDeleteStaleIPPool, nil},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
 	{"SPIDERPOOL_WORKQUEUE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
@@ -102,9 +101,8 @@ type Config struct {
 	TlsServerKeyPath  string
 
 	// env
-	LogLevel                      string
-	EnabledMetric                 bool
-	EnableSubnetDeleteStaleIPPool bool
+	LogLevel      string
+	EnabledMetric bool
 
 	HttpPort       string
 	MetricHttpPort string

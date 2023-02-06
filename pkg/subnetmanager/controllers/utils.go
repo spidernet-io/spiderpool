@@ -319,7 +319,7 @@ func containsDuplicate(arr []string) bool {
 	return false
 }
 
-// ShouldReclaimIPPool
+// ShouldReclaimIPPool will check pod annotation "ipam.spidernet.io/ippool-reclaim"
 func ShouldReclaimIPPool(anno map[string]string) (bool, error) {
 	reclaimPool, ok := anno[constant.AnnoSpiderSubnetReclaimIPPool]
 	if ok {

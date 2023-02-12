@@ -32,7 +32,7 @@ Most overlay CNIs, like
 and [Calico](https://github.com/projectcalico/calico),
 have a good implementation of IPAM, so the Spiderpool is not intentionally designed for these cases, but maybe integrated with them.
 
-The Spiderpool is intentionally designed to use with underlay network, where administrators can accurately manage each IP. And is strongly support to assing static IP for deployment and statefulset, operator. The administrator could get rid of writing annotation for IP like Calico or kube-ovn.
+The Spiderpool is intentionally designed to use with underlay network, where administrators can accurately manage each IP. And it strongly support to assign static IP for deployment, job, pod, statefulset, operator. The administrator could get rid of writing annotation for IP like Calico or kube-ovn.
 
 Currently, in the community, the IPAM plugins such as [whereabout](https://github.com/k8snetworkplumbingwg/whereabouts), [kube-ipam](https://github.com/cloudnativer/kube-ipam),
 [static](https://github.com/containernetworking/plugins/tree/main/plugins/ipam/static),

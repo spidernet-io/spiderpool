@@ -13,15 +13,9 @@
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json)
 
-## Status
-
-Currently, the Spiderpool is under beta stage, not ready for production environment yet.
-
 ## Introduction
 
-The Spiderpool is an IP Address Management (IPAM) CNI plugin that assigns IP addresses for kubernetes clusters.
-
-Currently, it is under developing stage, not ready for production environment yet.
+The Spiderpool is an IP Address Management (IPAM) CNI plugin that assigns IP addresses for kubernetes clusters. It is designed to be a static IP solution to integrate with underlay network, it is exciting to support automatically scale up or down the static IP number by watching the application. It offloads lots of administrator workload.
 
 Any Container Network Interface (CNI) plugin supporting third-party IPAM plugins can use the Spiderpool,
 such as [MacVLAN CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
@@ -38,7 +32,7 @@ Most overlay CNIs, like
 and [Calico](https://github.com/projectcalico/calico),
 have a good implementation of IPAM, so the Spiderpool is not intentionally designed for these cases, but maybe integrated with them.
 
-The Spiderpool is intentionally designed to use with underlay network, where administrators can accurately manage each IP.
+The Spiderpool is intentionally designed to use with underlay network, where administrators can accurately manage each IP. And is strongly support to assing static IP for deployment and statefulset, operator. The administrator could get rid of writing annotation for IP like Calico or kube-ovn.
 
 Currently, in the community, the IPAM plugins such as [whereabout](https://github.com/k8snetworkplumbingwg/whereabouts), [kube-ipam](https://github.com/cloudnativer/kube-ipam),
 [static](https://github.com/containernetworking/plugins/tree/main/plugins/ipam/static),
@@ -51,6 +45,8 @@ But the Spiderpool provides lots of different features, you could see [Features]
 ## Features
 
 The Spiderpool provides a large number of different features as follows.
+
+* By SpiderSubnet feature, it could automatically create new ippool for application who needs fixed IP address, and retrieve the ippool when application is deleted. Especially, the created ippool could automatically scale up or down the IP number when the replica number of application changes. That could reduce the administrator workload.
 
 * Support ranges of CNI plugin who supports third-party IPAM plugins. Especially, the Spiderpool could help much for CNI like [spiderflat](https://github.com/spidernet-io/spiderflat),
   [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
@@ -78,8 +74,6 @@ The Spiderpool provides a large number of different features as follows.
   different subnets.
 
 * Collect resources in real time, especially for solving IP leakage or slow collection, which may make new pod fail to assign IP addresses.
-
-* By SpiderSubnet feature, it could automatically create new ippool for application who needs fixed IP address, and retrieve the ippool when application is deleted. Especially, the created ippool could automatically scale up or down the IP number when the replica number of application changes. That could reduce the administrator workload.
 
 * Support to reserve IP who will not be assigned to any pod.
 

@@ -4,13 +4,12 @@
 package cmd
 
 import (
+	"strconv"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -33,23 +32,19 @@ func newCRDManager() (ctrl.Manager, error) {
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
 		ClientDisableCacheFor: []client.Object{
-			&corev1.Node{},
-			&corev1.Namespace{},
-			&corev1.Pod{},
-			&appsv1.Deployment{},
-			&appsv1.StatefulSet{},
-			&appsv1.ReplicaSet{},
-			&appsv1.DaemonSet{},
-			&batchv1.Job{},
-			&batchv1.CronJob{},
+			&spiderpoolv1.SpiderSubnet{},
 			&spiderpoolv1.SpiderIPPool{},
 			&spiderpoolv1.SpiderEndpoint{},
-			&spiderpoolv1.SpiderReservedIP{},
-			&spiderpoolv1.SpiderSubnet{},
 		},
 	})
-
 	if err != nil {
+		return nil, err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+		reservedIP := raw.(*spiderpoolv1.SpiderReservedIP)
+		return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
+	}); err != nil {
 		return nil, err
 	}
 

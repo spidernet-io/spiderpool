@@ -688,8 +688,8 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 			Kind:      appKey.AppKind,
 			Namespace: app.GetNamespace(),
 			Name:      app.GetName(),
-			Uid:       app.GetUID(),
-			App:       app,
+			UID:       app.GetUID(),
+			APP:       app,
 		},
 		podSelector,
 		appReplicas)
@@ -748,7 +748,7 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 
 				var v4PoolList spiderpoolv1.SpiderIPPoolList
 				errV4 = sac.client.List(ctx, &v4PoolList, client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
+					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv4[0],
 					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
@@ -769,7 +769,7 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 
 				var v6PoolList spiderpoolv1.SpiderIPPoolList
 				errV6 = sac.client.List(ctx, &v6PoolList, client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
+					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv6[0],
 					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,

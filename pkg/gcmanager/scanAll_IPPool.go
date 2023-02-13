@@ -159,7 +159,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				}
 
 				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IP corresponding allocation containerID is different with wep current containerID
-				allocation, _ := workloadendpointmanager.RetrieveIPAllocation(poolIPAllocation.ContainerID, poolIPAllocation.NIC, false, endpoint)
+				allocation := workloadendpointmanager.RetrieveIPAllocation(poolIPAllocation.ContainerID, poolIPAllocation.NIC, endpoint)
 				if allocation == nil {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation containerID is different with wep current containerID"))
 					// release IP but no need to remove wep finalizer

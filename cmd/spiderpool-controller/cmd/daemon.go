@@ -18,7 +18,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
@@ -211,11 +210,6 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initControllerServiceManagers(ctx context.Context) {
-	updateCRConfig := config.UpdateCRConfig{
-		MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-	}
-
 	logger.Debug("Begin to initialize spiderpool-controller leader election")
 	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
@@ -261,17 +255,11 @@ func initControllerServiceManagers(ctx context.Context) {
 			MaxHistoryRecords:     &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
 		},
 		controllerContext.CRDManager.GetClient(),
-		controllerContext.PodManager,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.EndpointManager = endpointManager
-
-	logger.Debug("Begin to set up Endpoint webhook")
-	if err := (&workloadendpointmanager.WorkloadEndpointWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
-		logger.Fatal(err.Error())
-	}
 
 	logger.Debug("Begin to initialize ReservedIP manager")
 	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
@@ -290,21 +278,19 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 
 	logger.Debug("Begin to initialize IPPool manager")
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		UpdateCRConfig:  updateCRConfig,
-		MaxAllocatedIPs: controllerContext.Cfg.IPPoolMaxAllocatedIPs,
-	}, controllerContext.CRDManager, controllerContext.PodManager)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
+		ippoolmanager.IPPoolManagerConfig{
+			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			MaxAllocatedIPs:       &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+		},
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.RIPManager,
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.IPPoolManager = ipPoolManager
-
-	go func() {
-		logger.Debug("Starting IPPool manager")
-		if err := ipPoolManager.Start(controllerContext.InnerCtx); err != nil {
-			logger.Fatal(err.Error())
-		}
-	}()
 
 	logger.Debug("Begin to set up IPPool webhook")
 	if err := (&ippoolmanager.IPPoolWebhook{
@@ -319,9 +305,14 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Debug("Begin to initialize Subnet manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			UpdateCRConfig: updateCRConfig,
-		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
+		subnetManager, err := subnetmanager.NewSubnetManager(
+			subnetmanager.SubnetManagerConfig{
+				MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+				ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			},
+			controllerContext.CRDManager.GetClient(),
+			controllerContext.IPPoolManager,
+		)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -409,7 +400,7 @@ func setupInformers() {
 	}
 
 	logger.Info("Begin to set up IPPool informer")
-	ipPoolController := ippoolmanager.NewIPPoolController(controllerContext.CRDManager.GetClient(),
+	ipPoolController := ippoolmanager.NewIPPoolController(
 		ippoolmanager.IPPoolControllerConfig{
 			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
 			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
@@ -420,6 +411,8 @@ func setupInformers() {
 			WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 			WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
 		},
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.RIPManager,
 	)
 	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
 	if nil != err {

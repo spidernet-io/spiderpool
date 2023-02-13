@@ -6,17 +6,22 @@ package reservedipmanager
 import (
 	"context"
 	"fmt"
+	"net"
+	"strconv"
 
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ReservedIPManager interface {
 	GetReservedIPByName(ctx context.Context, rIPName string) (*spiderpoolv1.SpiderReservedIP, error)
 	ListReservedIPs(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error)
+	AssembleReservedIPs(ctx context.Context, version types.IPVersion) ([]net.IP, error)
 }
 
 type reservedIPManager struct {
@@ -49,4 +54,29 @@ func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, opts ...client
 	}
 
 	return &rIPList, nil
+}
+
+func (rm *reservedIPManager) AssembleReservedIPs(ctx context.Context, version types.IPVersion) ([]net.IP, error) {
+	if err := spiderpoolip.IsIPVersion(version); err != nil {
+		return nil, err
+	}
+
+	rIPList, err := rm.ListReservedIPs(ctx, client.MatchingFields{"spec.ipVersion": strconv.FormatInt(version, 10)})
+	if err != nil {
+		return nil, err
+	}
+
+	var ranges []string
+	for _, r := range rIPList.Items {
+		if r.DeletionTimestamp == nil {
+			ranges = append(ranges, r.Spec.IPs...)
+		}
+	}
+
+	ips, err := spiderpoolip.ParseIPRanges(version, ranges)
+	if err != nil {
+		return nil, err
+	}
+
+	return ips, nil
 }

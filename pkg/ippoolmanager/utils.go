@@ -12,27 +12,24 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
-func genResIPConfig(allocateIP net.IP, poolSpec *spiderpoolv1.IPPoolSpec, nic, poolName string) (*models.IPConfig, error) {
-	ipNet, err := spiderpoolip.ParseIP(*poolSpec.IPVersion, poolSpec.Subnet, true)
-	if err != nil {
-		return nil, err
-	}
+func genResIPConfig(allocateIP net.IP, nic string, ipPool *spiderpoolv1.SpiderIPPool) *models.IPConfig {
+	ipNet, _ := spiderpoolip.ParseIP(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, true)
 	ipNet.IP = allocateIP
 	address := ipNet.String()
 
 	var gateway string
-	if poolSpec.Gateway != nil {
-		gateway = *poolSpec.Gateway
+	if ipPool.Spec.Gateway != nil {
+		gateway = *ipPool.Spec.Gateway
 	}
 
 	return &models.IPConfig{
 		Address: &address,
 		Gateway: gateway,
-		IPPool:  poolName,
+		IPPool:  ipPool.Name,
 		Nic:     &nic,
-		Version: poolSpec.IPVersion,
-		Vlan:    *poolSpec.Vlan,
-	}, nil
+		Version: ipPool.Spec.IPVersion,
+		Vlan:    *ipPool.Spec.Vlan,
+	}
 }
 
 func ShouldScaleIPPool(pool *spiderpoolv1.SpiderIPPool) bool {

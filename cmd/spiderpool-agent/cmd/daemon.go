@@ -17,7 +17,6 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
 
-	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
@@ -127,21 +126,26 @@ func DaemonMain() {
 	initAgentServiceManagers(agentContext.InnerCtx)
 
 	logger.Info("Begin to initialize IPAM")
-	limiterMaxWaitTime := time.Duration(agentContext.Cfg.LimiterMaxWaitTime) * time.Second
-	ipam, err := ipam.NewIPAM(&ipam.IPAMConfig{
-		EnableIPv4:               agentContext.Cfg.EnableIPv4,
-		EnableIPv6:               agentContext.Cfg.EnableIPv6,
-		ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
-		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
-		EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
-		EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
-		LimiterConfig: limiter.LimiterConfig{
-			MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize,
-			MaxWaitTime:  &limiterMaxWaitTime,
+	ipam, err := ipam.NewIPAM(
+		ipam.IPAMConfig{
+			EnableIPv4:               agentContext.Cfg.EnableIPv4,
+			EnableIPv6:               agentContext.Cfg.EnableIPv6,
+			ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
+			ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
+			EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
+			EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
+			OperationRetries:         agentContext.Cfg.UpdateCRMaxRetries,
+			OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+			LimiterConfig:            limiter.LimiterConfig{MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize},
 		},
-		OperationRetries:     agentContext.Cfg.UpdateCRMaxRetries,
-		OperationGapDuration: time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-	}, agentContext.IPPoolManager, agentContext.EndpointManager, agentContext.NodeManager, agentContext.NSManager, agentContext.PodManager, agentContext.StsManager, agentContext.SubnetManager)
+		agentContext.IPPoolManager,
+		agentContext.EndpointManager,
+		agentContext.NodeManager,
+		agentContext.NSManager,
+		agentContext.PodManager,
+		agentContext.StsManager,
+		agentContext.SubnetManager,
+	)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -250,11 +254,6 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initAgentServiceManagers(ctx context.Context) {
-	updateCRConfig := config.UpdateCRConfig{
-		MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
-		ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-	}
-
 	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager.GetClient())
 	if err != nil {
@@ -297,7 +296,6 @@ func initAgentServiceManagers(ctx context.Context) {
 			MaxHistoryRecords:     &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
 		},
 		agentContext.CRDManager.GetClient(),
-		agentContext.PodManager,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -312,10 +310,15 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.RIPManager = rIPManager
 
 	logger.Debug("Begin to initialize IPPool manager")
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		UpdateCRConfig:  updateCRConfig,
-		MaxAllocatedIPs: agentContext.Cfg.IPPoolMaxAllocatedIPs,
-	}, agentContext.CRDManager, agentContext.PodManager)
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
+		ippoolmanager.IPPoolManagerConfig{
+			MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			MaxAllocatedIPs:       &agentContext.Cfg.IPPoolMaxAllocatedIPs,
+		},
+		agentContext.CRDManager.GetClient(),
+		agentContext.RIPManager,
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -323,9 +326,14 @@ func initAgentServiceManagers(ctx context.Context) {
 
 	if agentContext.Cfg.EnableSpiderSubnet {
 		logger.Debug("Begin to initialize Subnet manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			UpdateCRConfig: updateCRConfig,
-		}, agentContext.CRDManager, agentContext.IPPoolManager, agentContext.RIPManager)
+		subnetManager, err := subnetmanager.NewSubnetManager(
+			subnetmanager.SubnetManagerConfig{
+				MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
+				ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			},
+			agentContext.CRDManager.GetClient(),
+			agentContext.IPPoolManager,
+		)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}

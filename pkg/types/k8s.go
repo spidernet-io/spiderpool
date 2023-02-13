@@ -4,11 +4,24 @@
 package types
 
 import (
+	"fmt"
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+
+	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
 )
 
 type PodStatus string
+
+type PodTopController struct {
+	Kind      string
+	Namespace string
+	Name      string
+	UID       apitypes.UID
+	APP       metav1.Object
+}
 
 type AnnoPodIPPoolValue struct {
 	IPv4Pools []string `json:"ipv4,omitempty"`
@@ -31,15 +44,6 @@ type AnnoRouteItem struct {
 	Gw  string `json:"gw"`
 }
 
-type AnnoPodAssignedEthxValue struct {
-	NIC      string `json:"interface"`
-	IPv4Pool string `json:"ipv4pool"`
-	IPv6Pool string `json:"ipv6pool"`
-	IPv4     string `json:"ipv4"`
-	IPv6     string `json:"ipv6"`
-	Vlan     int64  `json:"vlan"`
-}
-
 type AnnoNSDefautlV4PoolValue []string
 
 type AnnoNSDefautlV6PoolValue []string
@@ -60,6 +64,22 @@ type PodSubnetAnnoConfig struct {
 	ReclaimIPPool   bool
 }
 
+func (in *PodSubnetAnnoConfig) String() string {
+	if in == nil {
+		return "nil"
+	}
+
+	s := strings.Join([]string{`&PodSubnetAnnoConfig{`,
+		`MultipleSubnets` + fmt.Sprintf("%v", in.MultipleSubnets),
+		`SingleSubnet:` + strings.Replace(strings.Replace(in.SingleSubnet.String(), "AnnoSubnetItem", "", 1), `&`, ``, 1) + `,`,
+		`FlexibleIPNum:` + stringutil.ValueToStringGenerated(in.FlexibleIPNum) + `,`,
+		`AssignIPNumber:` + fmt.Sprintf("%v", in.AssignIPNum) + `,`,
+		`ReclaimIPPool:` + fmt.Sprintf("%v", in.ReclaimIPPool),
+		`}`,
+	}, "")
+	return s
+}
+
 // AnnoSubnetItem describes the SpiderSubnet CR names and NIC
 type AnnoSubnetItem struct {
 	Interface string   `json:"interface,omitempty"`
@@ -67,10 +87,16 @@ type AnnoSubnetItem struct {
 	IPv6      []string `json:"ipv6,omitempty"`
 }
 
-type PodTopController struct {
-	Kind      string
-	Namespace string
-	Name      string
-	Uid       apitypes.UID
-	App       metav1.Object
+func (in *AnnoSubnetItem) String() string {
+	if in == nil {
+		return "nil"
+	}
+
+	s := strings.Join([]string{`&AnnoSubnetItem{`,
+		`Interface:` + fmt.Sprintf("%v", in.Interface) + `,`,
+		`IPv4:` + fmt.Sprintf("%v", in.IPv4) + `,`,
+		`IPv6:` + fmt.Sprintf("%v", in.IPv6),
+		`}`,
+	}, "")
+	return s
 }

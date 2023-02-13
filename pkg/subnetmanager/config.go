@@ -4,9 +4,14 @@
 package subnetmanager
 
 import (
-	"github.com/spidernet-io/spiderpool/pkg/config"
+	"time"
 )
 
 type SubnetManagerConfig struct {
-	config.UpdateCRConfig
+	MaxConflictRetries    int
+	ConflictRetryUnitTime time.Duration
+}
+
+func setDefaultsForSubnetManagerConfig(config SubnetManagerConfig) SubnetManagerConfig {
+	return config
 }

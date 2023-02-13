@@ -3,11 +3,23 @@
 
 package ippoolmanager
 
-import (
-	"github.com/spidernet-io/spiderpool/pkg/config"
+import "time"
+
+const (
+	defaultMaxAllocatedIPs = 5000
 )
 
 type IPPoolManagerConfig struct {
-	config.UpdateCRConfig
-	MaxAllocatedIPs int
+	MaxConflictRetries    int
+	ConflictRetryUnitTime time.Duration
+	MaxAllocatedIPs       *int
+}
+
+func setDefaultsForIPPoolManagerConfig(config IPPoolManagerConfig) IPPoolManagerConfig {
+	if config.MaxAllocatedIPs == nil {
+		maxAllocatedIPs := defaultMaxAllocatedIPs
+		config.MaxAllocatedIPs = &maxAllocatedIPs
+	}
+
+	return config
 }

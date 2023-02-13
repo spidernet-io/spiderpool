@@ -72,7 +72,7 @@ type releaseDurationConstruct struct {
 }
 
 // RecordIPAMReleaseDuration serves for spiderpool agent IPAM allocation.
-func (ddc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Context, releaseDuration float64) {
+func (rdc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Context, releaseDuration float64) {
 	if !globalEnableMetric {
 		return
 	}
@@ -84,25 +84,25 @@ func (ddc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Conte
 		// release duration histogram
 		ipamAllocationDurationSeconds.Record(ctx, releaseDuration)
 
-		ddc.cacheLock.Lock()
+		rdc.cacheLock.Lock()
 
 		// IPAM average release duration
-		ddc.releaseAvgDuration = (ddc.releaseAvgDuration*float64(ddc.releaseCounts) + releaseDuration) / float64(ddc.releaseCounts+1)
-		ddc.releaseCounts++
-		ipamReleaseAverageDurationSeconds.Record(ddc.releaseAvgDuration)
+		rdc.releaseAvgDuration = (rdc.releaseAvgDuration*float64(rdc.releaseCounts) + releaseDuration) / float64(rdc.releaseCounts+1)
+		rdc.releaseCounts++
+		ipamReleaseAverageDurationSeconds.Record(rdc.releaseAvgDuration)
 
 		// IPAM maximum release duration
-		if releaseDuration > ddc.maxReleaseDuration {
-			ddc.maxReleaseDuration = releaseDuration
-			ipamReleaseMaxDurationSeconds.Record(ddc.maxReleaseDuration)
+		if releaseDuration > rdc.maxReleaseDuration {
+			rdc.maxReleaseDuration = releaseDuration
+			ipamReleaseMaxDurationSeconds.Record(rdc.maxReleaseDuration)
 		}
 
 		// IPAM minimum release duration
-		if ddc.releaseCounts == 1 || releaseDuration < ddc.minReleaseDuration {
-			ddc.minReleaseDuration = releaseDuration
-			ipamReleaseMinDurationSeconds.Record(ddc.minReleaseDuration)
+		if rdc.releaseCounts == 1 || releaseDuration < rdc.minReleaseDuration {
+			rdc.minReleaseDuration = releaseDuration
+			ipamReleaseMinDurationSeconds.Record(rdc.minReleaseDuration)
 		}
 
-		ddc.cacheLock.Unlock()
+		rdc.cacheLock.Unlock()
 	}()
 }

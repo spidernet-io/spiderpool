@@ -20,7 +20,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -30,8 +30,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
-	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
@@ -45,17 +45,17 @@ type IPAM interface {
 type ipam struct {
 	config        *IPAMConfig
 	ipamLimiter   limiter.Limiter
-	ipPoolManager ippoolmanagertypes.IPPoolManager
+	ipPoolManager ippoolmanager.IPPoolManager
 	weManager     workloadendpointmanager.WorkloadEndpointManager
 	nodeManager   nodemanager.NodeManager
 	nsManager     namespacemanager.NamespaceManager
 	podManager    podmanager.PodManager
 	stsManager    statefulsetmanager.StatefulSetManager
-	subnetManager subnetmanagertypes.SubnetManager
+	subnetManager subnetmanager.SubnetManager
 }
 
-func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanagertypes.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager, nodeManager nodemanager.NodeManager,
-	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager, subnetMgr subnetmanagertypes.SubnetManager) (IPAM, error) {
+func NewIPAM(c *IPAMConfig, ipPoolManager ippoolmanager.IPPoolManager, weManager workloadendpointmanager.WorkloadEndpointManager, nodeManager nodemanager.NodeManager,
+	nsManager namespacemanager.NamespaceManager, podManager podmanager.PodManager, stsManager statefulsetmanager.StatefulSetManager, subnetMgr subnetmanager.SubnetManager) (IPAM, error) {
 	if c == nil {
 		return nil, errors.New("ipam config must be specified")
 	}

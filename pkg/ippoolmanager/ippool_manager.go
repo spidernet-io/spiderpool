@@ -12,27 +12,34 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
-	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
+
+type IPPoolManager interface {
+	Start(ctx context.Context) error
+	GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error)
+	ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
+	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod) (*models.IPConfig, *spiderpoolv1.SpiderIPPool, error)
+	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error
+	CheckVlanSame(ctx context.Context, poolNameList []string) (map[types.Vlan][]string, bool, error)
+	UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error
+	CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
+	DeleteIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error
+	UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error
+}
 
 type ipPoolManager struct {
 	config         *IPPoolManagerConfig
@@ -40,14 +47,9 @@ type ipPoolManager struct {
 	client         client.Client
 	runtimeMgr     ctrl.Manager
 	podManager     podmanager.PodManager
-	rIPManager     reservedipmanager.ReservedIPManager
-	subnetManager  subnetmanagertypes.SubnetManager
-
-	// leader only serves for Spiderpool controller SpiderIPPool informer, it will be set by SetupInformer
-	leader election.SpiderLeaseElector
 }
 
-func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podmanager.PodManager, rIPManager reservedipmanager.ReservedIPManager) (ippoolmanagertypes.IPPoolManager, error) {
+func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podmanager.PodManager) (IPPoolManager, error) {
 	if c == nil {
 		return nil, errors.New("ippool manager config must be specified")
 	}
@@ -56,9 +58,6 @@ func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podma
 	}
 	if podManager == nil {
 		return nil, errors.New("pod manager must be specified")
-	}
-	if rIPManager == nil {
-		return nil, errors.New("reserved IP manager must be specified")
 	}
 
 	maxQueueSize := 1000
@@ -74,7 +73,6 @@ func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podma
 		client:         mgr.GetClient(),
 		runtimeMgr:     mgr,
 		podManager:     podManager,
-		rIPManager:     rIPManager,
 	}
 
 	return poolMgr, nil
@@ -82,14 +80,6 @@ func NewIPPoolManager(c *IPPoolManagerConfig, mgr ctrl.Manager, podManager podma
 
 func (im *ipPoolManager) Start(ctx context.Context) error {
 	return im.freeIPsLimiter.Start(ctx)
-}
-
-func (im *ipPoolManager) InjectSubnetManager(subnetManager subnetmanagertypes.SubnetManager) {
-	if subnetManager == nil {
-		return
-	}
-
-	im.subnetManager = subnetManager
 }
 
 func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error) {
@@ -177,11 +167,12 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 }
 
 func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) (net.IP, error) {
-	rIPList, err := im.rIPManager.ListReservedIPs(ctx)
-	if err != nil {
+	var rIPList spiderpoolv1.SpiderReservedIPList
+	if err := im.client.List(ctx, &rIPList); err != nil {
 		return nil, err
 	}
-	reservedIPs, err := reservedipmanager.AssembleReservedIPs(*ipPool.Spec.IPVersion, rIPList)
+
+	reservedIPs, err := reservedipmanager.AssembleReservedIPs(*ipPool.Spec.IPVersion, &rIPList)
 	if err != nil {
 		return nil, err
 	}
@@ -273,20 +264,6 @@ func (im *ipPoolManager) CheckVlanSame(ctx context.Context, poolNameList []strin
 	return vlanToPools, true, nil
 }
 
-func (im *ipPoolManager) RemoveFinalizer(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
-	if !controllerutil.ContainsFinalizer(pool, constant.SpiderFinalizer) {
-		return nil
-	}
-
-	controllerutil.RemoveFinalizer(pool, constant.SpiderFinalizer)
-	err := im.client.Update(ctx, pool)
-	if nil != err {
-		return err
-	}
-
-	return nil
-}
-
 // UpdateAllocatedIPs serves for StatefulSet pod re-create
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, containerID string, pod *corev1.Pod, oldIPConfig models.IPConfig) error {
 	rand.Seed(time.Now().UnixNano())
@@ -348,64 +325,6 @@ func (im *ipPoolManager) DeleteIPPool(ctx context.Context, pool *spiderpoolv1.Sp
 	err := im.client.Delete(ctx, pool)
 	if client.IgnoreNotFound(err) != nil {
 		return err
-	}
-
-	return nil
-}
-
-// ScaleIPPoolWithIPs will expand or shrink the IPPool with the given action.
-// Notice: we shouldn't get retries in this method and the upper level calling function will requeue the workqueue once we return an error,
-func (im *ipPoolManager) ScaleIPPoolWithIPs(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipRanges []string, action ippoolmanagertypes.ScaleAction, desiredIPNum int) error {
-	log := logutils.FromContext(ctx)
-
-	var err error
-
-	// filter out exclude IPs.
-	currentIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-	if nil != err {
-		return fmt.Errorf("failed to assemble Total IP addresses: %v", err)
-	}
-
-	if len(currentIPs) == desiredIPNum {
-		log.Sugar().Debugf("IPPool '%s' already has desired IP number '%d' IPs, non need to scale it", pool.Name, desiredIPNum)
-		return nil
-	}
-
-	if action == ippoolmanagertypes.ScaleUpIP {
-		pool.Spec.IPs = append(pool.Spec.IPs, ipRanges...)
-		sortedIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-		if nil != err {
-			return fmt.Errorf("failed to merge IP ranges '%v', error: %v", pool.Spec.IPs, err)
-		}
-
-		log.With(zap.String("ScaleUpIP", fmt.Sprintf("add IPs '%v'", ipRanges))).
-			Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
-		pool.Spec.IPs = sortedIPRanges
-	} else {
-		discardedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, ipRanges)
-		if nil != err {
-			return fmt.Errorf("failed to parse IP ranges '%v', error: %v", ipRanges, err)
-		}
-
-		// the original IPPool.Spec.IPs
-		totalIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
-		if nil != err {
-			return fmt.Errorf("failed to parse IP ranges '%v', error: %v", pool.Spec.IPs, err)
-		}
-
-		sortedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, spiderpoolip.IPsDiffSet(totalIPs, discardedIPs))
-		if nil != err {
-			return fmt.Errorf("failed to convert IPs '%v' to IP ranges, error: %v", ipRanges, err)
-		}
-
-		log.With(zap.String("ScaleDownIP", fmt.Sprintf("discard IPs '%v'", ipRanges))).
-			Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
-		pool.Spec.IPs = sortedIPRanges
-	}
-
-	err = im.client.Update(ctx, pool)
-	if nil != err {
-		return fmt.Errorf("failed to update IPPool '%s', error: %w", pool.Name, err)
 	}
 
 	return nil

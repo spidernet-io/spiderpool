@@ -36,7 +36,7 @@ func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context
 		ipamAllocationLatestDurationSeconds.Record(allocationDuration)
 
 		// allocation duration histogram
-		ipamAllocationDurationSeconds.Record(ctx, allocationDuration)
+		ipamAllocationDurationSecondsHistogram.Record(ctx, allocationDuration)
 
 		adc.cacheLock.Lock()
 
@@ -82,7 +82,7 @@ func (rdc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Conte
 		ipamReleaseLatestDurationSeconds.Record(releaseDuration)
 
 		// release duration histogram
-		ipamAllocationDurationSeconds.Record(ctx, releaseDuration)
+		ipamReleaseDurationSecondsHistogram.Record(ctx, releaseDuration)
 
 		rdc.cacheLock.Lock()
 

@@ -24,11 +24,11 @@ const (
 	ipam_allocation_err_retries_exhausted_counts = "ipam_allocation_err_retries_exhausted_counts"
 	ipam_allocation_err_ip_used_out_counts       = "ipam_allocation_err_ip_used_out_counts"
 
-	ipam_allocation_average_duration_seconds = "ipam_allocation_average_duration_seconds"
-	ipam_allocation_max_duration_seconds     = "ipam_allocation_max_duration_seconds"
-	ipam_allocation_min_duration_seconds     = "ipam_allocation_min_duration_seconds"
-	ipam_allocation_latest_duration_seconds  = "ipam_allocation_latest_duration_seconds"
-	ipam_allocation_duration_seconds         = "ipam_allocation_duration_seconds_histogram"
+	ipam_allocation_average_duration_seconds   = "ipam_allocation_average_duration_seconds"
+	ipam_allocation_max_duration_seconds       = "ipam_allocation_max_duration_seconds"
+	ipam_allocation_min_duration_seconds       = "ipam_allocation_min_duration_seconds"
+	ipam_allocation_latest_duration_seconds    = "ipam_allocation_latest_duration_seconds"
+	ipam_allocation_duration_seconds_histogram = "ipam_allocation_duration_seconds_histogram"
 
 	// spiderpool agent ipam release metrics name
 	ipam_release_total_counts                 = "ipam_release_total_counts"
@@ -36,11 +36,11 @@ const (
 	ipam_release_err_internal_counts          = "ipam_release_err_internal_counts"
 	ipam_release_err_retries_exhausted_counts = "ipam_release_err_retries_exhausted_counts"
 
-	ipam_release_average_duration_seconds = "ipam_release_average_duration_seconds"
-	ipam_release_max_duration_seconds     = "ipam_release_max_duration_seconds"
-	ipam_release_min_duration_seconds     = "ipam_release_min_duration_seconds"
-	ipam_release_latest_duration_seconds  = "ipam_release_latest_duration_seconds"
-	ipam_release_duration_seconds         = "ipam_release_duration_seconds_histogram"
+	ipam_release_average_duration_seconds   = "ipam_release_average_duration_seconds"
+	ipam_release_max_duration_seconds       = "ipam_release_max_duration_seconds"
+	ipam_release_min_duration_seconds       = "ipam_release_min_duration_seconds"
+	ipam_release_latest_duration_seconds    = "ipam_release_latest_duration_seconds"
+	ipam_release_duration_seconds_histogram = "ipam_release_duration_seconds_histogram"
 
 	// spiderpool controller IP GC metrics name
 	ip_gc_total_counts   = "ip_gc_total_counts"
@@ -49,8 +49,19 @@ const (
 	subnet_ippool_counts = "subnet_ippool_counts"
 
 	// spiderpool controller SpiderSubnet feature
-	auto_ippool_create_or_mark_conflict_counts = "auto_ippool_create_or_mark_conflict_counts"
-	ippool_informer_conflict_counts            = "ippool_informer_conflict_counts"
+	auto_ippool_create_or_mark_conflict_counts    = "auto_ippool_create_or_mark_conflict_counts"
+	ippool_informer_conflict_counts               = "ippool_informer_conflict_counts"
+	auto_pool_creation_average_duration           = "auto_pool_creation_average_duration"
+	auto_pool_creation_max_duration_seconds       = "auto_pool_creation_max_duration_seconds"
+	auto_pool_creation_min_duration_seconds       = "auto_pool_creation_min_duration_seconds"
+	auto_pool_creation_latest_duration_seconds    = "auto_pool_creation_latest_duration_seconds"
+	auto_pool_creation_duration_seconds_histogram = "auto_pool_creation_duration_seconds_histogram"
+	auto_pool_scale_average_duration              = "auto_pool_scale_average_duration"
+	auto_pool_scale_max_duration_seconds          = "auto_pool_scale_max_duration_seconds"
+	auto_pool_scale_min_duration_seconds          = "auto_pool_scale_min_duration_seconds"
+	auto_pool_scale_latest_duration_seconds       = "auto_pool_scale_latest_duration_seconds"
+	auto_pool_scale_duration_seconds_histogram    = "auto_pool_scale_duration_seconds_histogram"
+	auto_pool_scale_conflict_counts               = "auto_pool_scale_conflict_counts"
 )
 
 var (
@@ -62,24 +73,22 @@ var (
 	IpamAllocationErrNoAvailablePoolCounts  instrument.Int64Counter
 	IpamAllocationErrRetriesExhaustedCounts instrument.Int64Counter
 	IpamAllocationErrIPUsedOutCounts        instrument.Int64Counter
-
-	ipamAllocationAverageDurationSeconds = new(asyncFloat64Gauge)
-	ipamAllocationMaxDurationSeconds     = new(asyncFloat64Gauge)
-	ipamAllocationMinDurationSeconds     = new(asyncFloat64Gauge)
-	ipamAllocationLatestDurationSeconds  = new(asyncFloat64Gauge)
-	ipamAllocationDurationSeconds        instrument.Float64Histogram
+	ipamAllocationAverageDurationSeconds    = new(asyncFloat64Gauge)
+	ipamAllocationMaxDurationSeconds        = new(asyncFloat64Gauge)
+	ipamAllocationMinDurationSeconds        = new(asyncFloat64Gauge)
+	ipamAllocationLatestDurationSeconds     = new(asyncFloat64Gauge)
+	ipamAllocationDurationSecondsHistogram  instrument.Float64Histogram
 
 	// spiderpool agent ipam release metrics
 	IpamReleaseTotalCounts               instrument.Int64Counter
 	IpamReleaseFailureCounts             instrument.Int64Counter
 	IpamReleaseErrInternalCounts         instrument.Int64Counter
 	IpamReleaseErrRetriesExhaustedCounts instrument.Int64Counter
-
-	ipamReleaseAverageDurationSeconds = new(asyncFloat64Gauge)
-	ipamReleaseMaxDurationSeconds     = new(asyncFloat64Gauge)
-	ipamReleaseMinDurationSeconds     = new(asyncFloat64Gauge)
-	ipamReleaseLatestDurationSeconds  = new(asyncFloat64Gauge)
-	ipamReleaseDurationSeconds        instrument.Float64Histogram
+	ipamReleaseAverageDurationSeconds    = new(asyncFloat64Gauge)
+	ipamReleaseMaxDurationSeconds        = new(asyncFloat64Gauge)
+	ipamReleaseMinDurationSeconds        = new(asyncFloat64Gauge)
+	ipamReleaseLatestDurationSeconds     = new(asyncFloat64Gauge)
+	ipamReleaseDurationSecondsHistogram  instrument.Float64Histogram
 
 	// spiderpool controller IP GC metrics
 	IPGCTotalCounts   instrument.Int64Counter
@@ -87,9 +96,20 @@ var (
 
 	SubnetPoolCounts = new(asyncInt64Gauge)
 
-	// spiderpool controller SpiderSubnet feature
-	AutoPoolCreateOrMarkConflictCounts instrument.Int64Counter
-	IPPoolInformerConflictCounts       instrument.Int64Counter
+	// SpiderSubnet feature
+	AutoPoolCreateOrMarkConflictCounts       instrument.Int64Counter
+	IPPoolInformerConflictCounts             instrument.Int64Counter
+	autoPoolCreationAverageDurationSeconds   = new(asyncFloat64Gauge)
+	autoPoolCreationMaxDurationSeconds       = new(asyncFloat64Gauge)
+	autoPoolCreationMinDurationSeconds       = new(asyncFloat64Gauge)
+	autoPoolCreationLatestDurationSeconds    = new(asyncFloat64Gauge)
+	autoPoolCreationDurationSecondsHistogram instrument.Float64Histogram
+	autoPoolScaleAverageDurationSeconds      = new(asyncFloat64Gauge)
+	autoPoolScaleMaxDurationSeconds          = new(asyncFloat64Gauge)
+	autoPoolScaleMinDurationSeconds          = new(asyncFloat64Gauge)
+	autoPoolScaleLatestDurationSeconds       = new(asyncFloat64Gauge)
+	autoPoolScaleDurationSecondsHistogram    instrument.Float64Histogram
+	AutoPoolScaleConflictCounts              instrument.Int64Counter
 )
 
 // asyncFloat64Gauge is custom otel float64 gauge
@@ -186,9 +206,48 @@ func InitSpiderpoolAgentMetrics(ctx context.Context) error {
 		return err
 	}
 
+	err = initAutoPoolCreationMetrics(ctx)
+	if nil != err {
+		return err
+	}
+
 	return nil
 }
 
+// InitSpiderpoolControllerMetrics serves for spiderpool-controller metrics initialization
+func InitSpiderpoolControllerMetrics(ctx context.Context) error {
+	err := initSpiderpoolControllerGCMetrics(ctx)
+	if nil != err {
+		return err
+	}
+
+	err = initAutoPoolCreationMetrics(ctx)
+	if nil != err {
+		return err
+	}
+
+	err = initAutoPoolScaleMetrics(ctx)
+	if nil != err {
+		return err
+	}
+
+	err = SubnetPoolCounts.initGauge(subnet_ippool_counts, "spider subnet corresponding ippools counts")
+	if nil != err {
+		return err
+	}
+
+	poolInformerConflictCounts, err := NewMetricInt64Counter(ippool_informer_conflict_counts, "ippool informer operation conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_informer_conflict_counts, err)
+	}
+	IPPoolInformerConflictCounts = poolInformerConflictCounts
+
+	IPPoolInformerConflictCounts.Add(ctx, 0)
+
+	return nil
+}
+
+// initSpiderpoolAgentAllocationMetrics will init spiderpool-agent IPAM allocation metrics
 func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	// spiderpool agent ipam allocation total counts, metric type "int64 counter"
 	allocationTotalCounts, err := NewMetricInt64Counter(ipam_allocation_total_counts, "spiderpool agent ipam allocation total counts")
@@ -264,22 +323,23 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	}
 
 	// spiderpool agent ipam allocation duration bucket, metric type "float64 histogram"
-	allocationHistogram, err := NewMetricFloat64Histogram(ipam_allocation_duration_seconds, "spiderpool agent ipam allocation duration bucket")
+	allocationHistogram, err := NewMetricFloat64Histogram(ipam_allocation_duration_seconds_histogram, "spiderpool agent ipam allocation duration bucket")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_duration_seconds_histogram, err)
 	}
-	ipamAllocationDurationSeconds = allocationHistogram
+	ipamAllocationDurationSecondsHistogram = allocationHistogram
 
 	// set the spiderpool agent ipam allocation total counts initial data
 	IpamAllocationTotalCounts.Add(ctx, 0)
 	IpamAllocationFailureCounts.Add(ctx, 0)
 
 	// set the spiderpool agent ipam allocation duration bucket initial data
-	ipamAllocationDurationSeconds.Record(ctx, 0)
+	ipamAllocationDurationSecondsHistogram.Record(ctx, 0)
 
 	return nil
 }
 
+// initSpiderpoolAgentReleaseMetrics will init spiderpool-agent IPAM release metrics
 func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 	// spiderpool agent ipam release total counts, metric type "int64 counter"
 	releaseTotalCounts, err := NewMetricInt64Counter(ipam_release_total_counts, "spiderpool agent ipam release total counts")
@@ -334,24 +394,24 @@ func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 	}
 
 	// spiderpool agent ipam allocation duration bucket, metric type "float64 histogram"
-	releaseHistogram, err := NewMetricFloat64Histogram(ipam_release_duration_seconds, "spiderpool agent ipam release duration bucket")
+	releaseHistogram, err := NewMetricFloat64Histogram(ipam_release_duration_seconds_histogram, "spiderpool agent ipam release duration bucket")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_duration_seconds_histogram, err)
 	}
-	ipamReleaseDurationSeconds = releaseHistogram
+	ipamReleaseDurationSecondsHistogram = releaseHistogram
 
 	// set the spiderpool agent ipam allocation total counts initial data
 	IpamReleaseTotalCounts.Add(ctx, 0)
 	IpamReleaseFailureCounts.Add(ctx, 0)
 
 	// set the spiderpool agent ipam allocation duration bucket initial data
-	ipamReleaseDurationSeconds.Record(ctx, 0)
+	ipamReleaseDurationSecondsHistogram.Record(ctx, 0)
 
 	return nil
 }
 
-// InitSpiderpoolControllerMetrics serves for spiderpool controller metrics initialization
-func InitSpiderpoolControllerMetrics(ctx context.Context) error {
+// initSpiderpoolControllerGCMetrics will init spiderpool-controller IP gc metrics
+func initSpiderpoolControllerGCMetrics(ctx context.Context) error {
 	ipGCTotalCounts, err := NewMetricInt64Counter(ip_gc_total_counts, "spiderpool controller ip gc total counts")
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ip_gc_total_counts, err)
@@ -364,27 +424,89 @@ func InitSpiderpoolControllerMetrics(ctx context.Context) error {
 	}
 	IPGCFailureCounts = ipGCFailureCounts
 
-	err = SubnetPoolCounts.initGauge(subnet_ippool_counts, "spider subnet corresponding ippools counts")
-	if nil != err {
-		return err
-	}
+	IPGCTotalCounts.Add(ctx, 0)
+	IPGCFailureCounts.Add(ctx, 0)
 
+	return nil
+}
+
+// initAutoPoolCreationMetrics will init auto-created IPPool creation metrics
+// Notice: this metrics serve for both Spiderpool-agent and Spiderpool-controller components
+func initAutoPoolCreationMetrics(ctx context.Context) error {
 	autoPoolCreateOrMarkConflictCounts, err := NewMetricInt64Counter(auto_ippool_create_or_mark_conflict_counts, "create or mark auto-created IPPool conflict counts")
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", auto_ippool_create_or_mark_conflict_counts, err)
 	}
 	AutoPoolCreateOrMarkConflictCounts = autoPoolCreateOrMarkConflictCounts
 
-	poolInformerConflictCounts, err := NewMetricInt64Counter(ippool_informer_conflict_counts, "ippool informer operation conflict counts")
+	err = autoPoolCreationAverageDurationSeconds.initGauge(auto_pool_creation_average_duration, "auto-created IPPool creation average duration")
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_informer_conflict_counts, err)
+		return err
 	}
-	IPPoolInformerConflictCounts = poolInformerConflictCounts
 
-	IPGCTotalCounts.Add(ctx, 0)
-	IPGCFailureCounts.Add(ctx, 0)
+	err = autoPoolCreationMaxDurationSeconds.initGauge(auto_pool_creation_max_duration_seconds, "auto-created IPPool creation max duration")
+	if nil != err {
+		return err
+	}
+
+	err = autoPoolCreationMinDurationSeconds.initGauge(auto_pool_creation_min_duration_seconds, "auto-created IPPool creation min duration")
+	if nil != err {
+		return err
+	}
+
+	err = autoPoolCreationLatestDurationSeconds.initGauge(auto_pool_creation_latest_duration_seconds, "auto-created IPPool creation latest duration")
+	if nil != err {
+		return err
+	}
+
+	autoPoolCreationHistogram, err := NewMetricFloat64Histogram(auto_pool_creation_duration_seconds_histogram, "auto-created IPPool creation duration histogram")
+	if nil != err {
+		return err
+	}
+	autoPoolCreationDurationSecondsHistogram = autoPoolCreationHistogram
+
 	AutoPoolCreateOrMarkConflictCounts.Add(ctx, 0)
-	IPPoolInformerConflictCounts.Add(ctx, 0)
+	autoPoolCreationDurationSecondsHistogram.Record(ctx, 0)
+
+	return nil
+}
+
+// initAutoPoolScaleMetrics will init spiderpool-controller IPPool informer auto-created IPPool scale metrics
+func initAutoPoolScaleMetrics(ctx context.Context) error {
+	err := autoPoolScaleAverageDurationSeconds.initGauge(auto_pool_scale_average_duration, "auto-created IPPool scale average duration")
+	if nil != err {
+		return err
+	}
+
+	err = autoPoolScaleMaxDurationSeconds.initGauge(auto_pool_scale_max_duration_seconds, "auto-created IPPool scale max duration")
+	if nil != err {
+		return err
+	}
+
+	err = autoPoolScaleMinDurationSeconds.initGauge(auto_pool_scale_min_duration_seconds, "auto-created IPPool scale min duration")
+	if nil != err {
+		return err
+	}
+
+	err = autoPoolScaleLatestDurationSeconds.initGauge(auto_pool_scale_latest_duration_seconds, "auto-created IPPool scale latest duration")
+	if nil != err {
+		return err
+	}
+
+	autoPoolScaleHistogram, err := NewMetricFloat64Histogram(auto_pool_scale_duration_seconds_histogram, "auto-created IPPool scale duration histogram")
+	if nil != err {
+		return fmt.Errorf("")
+	}
+	autoPoolScaleDurationSecondsHistogram = autoPoolScaleHistogram
+
+	autoPoolScaleConflictCounts, err := NewMetricInt64Counter(auto_pool_scale_conflict_counts, "scale auto-created IPPool conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", auto_pool_scale_conflict_counts, err)
+	}
+	AutoPoolScaleConflictCounts = autoPoolScaleConflictCounts
+
+	AutoPoolScaleConflictCounts.Add(ctx, 0)
+	autoPoolScaleDurationSecondsHistogram.Record(ctx, 0)
 
 	return nil
 }

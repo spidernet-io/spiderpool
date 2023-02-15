@@ -21,13 +21,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
-	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -161,8 +161,8 @@ type ControllerContext struct {
 
 	// manager
 	CRDManager      ctrl.Manager
-	SubnetManager   subnetmanagertypes.SubnetManager
-	IPPoolManager   ippoolmanagertypes.IPPoolManager
+	SubnetManager   subnetmanager.SubnetManager
+	IPPoolManager   ippoolmanager.IPPoolManager
 	EndpointManager workloadendpointmanager.WorkloadEndpointManager
 	RIPManager      reservedipmanager.ReservedIPManager
 	NodeManager     nodemanager.NodeManager

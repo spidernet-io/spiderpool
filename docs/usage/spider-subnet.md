@@ -1,26 +1,24 @@
 # SpiderSubnet
 
-## Description
-
-The spiderpool owns a CRD SpiderSubnet, it can help applications (such as: Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet.) to create a corresponding SpiderIPPool.
+The Spiderpool owns a CRD SpiderSubnet, which can help applications (such as Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet) to create a corresponding SpiderIPPool.
 
 Here are some annotations that you should write down on the application template pod annotation:
 
-| annotation                         | description                                                                                               | example                                                             |
+| Annotation                         | Description                                                                                               | Example                                                             |
 |------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| ipam.spidernet.io/subnet           | choose one SpiderSubnet V4 and V6 CR to use                                                               | {"ipv4": ["subnet-demo-v4"], "ipv6": ["subnet-demo-v6"]}            |
-| ipam.spidernet.io/subnets          | choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one) | [{"interface":"eth0", "ipv4":["v4-subnet1"],"ipv6":["v6-subnet1"]}] |
-| ipam.spidernet.io/ippool-ip-number | the IP numbers of the corresponding SpiderIPPool (fixed and flexible mode)                                | +2                                                                  |
-| ipam.spidernet.io/ippool-reclaim   | specify the corresponding SpiderIPPool to delete or not once the application was deleted (default true)   | true                                                                |
+| ipam.spidernet.io/subnet           | Choose one SpiderSubnet V4 and V6 CR to use                                                               | {"ipv4": ["subnet-demo-v4"], "ipv6": ["subnet-demo-v6"]}            |
+| ipam.spidernet.io/subnets          | Choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one) | [{"interface":"eth0", "ipv4":["v4-subnet1"],"ipv6":["v6-subnet1"]}] |
+| ipam.spidernet.io/ippool-ip-number | The IP numbers of the corresponding SpiderIPPool (fixed and flexible mode)                                | +2                                                                  |
+| ipam.spidernet.io/ippool-reclaim   | Specify the corresponding SpiderIPPool to delete or not once the application was deleted (default true)   | true                                                                |
 
-### Notice
+## Notice
 
 1. The annotation `ipam.spidernet.io/subnets` has higher priority over `ipam.spidernet.io/subnet`.
-If you specify both of them two, it only uses `ipam.spidernet.io/subnets` mode.
+   If you specify both of them two, it only uses `ipam.spidernet.io/subnets` mode.
 
 2. For annotation `ipam.spidernet.io/ippool-ip-number`, you can use '2' for fixed IP number or '+2' for flexible mode.
-The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas.
-If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas.
+   The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas.
+   If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas.
 
 3. The current version only supports to use one SpiderSubnet V4/V6 CR, you shouldn't specify 2 or more SpiderSubnet V4 CRs and the spiderpool-controller
 will choose the first one to use.
@@ -29,7 +27,7 @@ will choose the first one to use.
 
 ### Enable SpiderSubnet feature
 
-Firstly, please ensure you have installed the spiderpool and configure the CNI file, refer [install](./install.md) for details.
+Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer [install](./install.md) for details.
 
 Check configmap `spiderpool-conf` property `enableSpiderSubnet` whether is already set to `true` or not.
 
@@ -50,7 +48,7 @@ If you want to change it, just execute `helm upgrade spiderpool spiderpool/spide
 
 ### Create a SpiderSubnet
 
-install a SpiderSubnet example
+Install a SpiderSubnet example:
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/subnet-demo.yaml
@@ -59,7 +57,7 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 
 ### Check the related CR data
 
-Here's the SpiderSubnet, SpiderIPPool, Pod information
+Here's the SpiderSubnet, SpiderIPPool, and Pod information.
 
 ```text
 NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
@@ -213,7 +211,7 @@ and SpiderSubnet object `subnet-demo-v6` allocates another IP to SpiderIPPool `a
 In order to simplify SpiderSubnet usage, we add ClusterDefaultSubnet support.
 Once we enable SpiderSubnet feature and have Cluster default subnet, we can create the application directly without any other annotations.
 
-#### Check ClusterDefaultSubnet 
+#### Check ClusterDefaultSubnet
 
 Firstly, let's check the configmap `clusterDefaultIPv4Subnet` and `clusterDefaultIPv6Subnet` properties. If there are no values, we can set it by ourselves.
 
@@ -246,7 +244,7 @@ Make sure the interface name and use `ipam.spidernet.io/subnets` annotation just
            {"interface": "net2", "ipv4": ["subnet-demo-v4-2"], "ipv6": ["subnet-demo-v6-2"]}]
 ```
 
-install the example:
+Install the example:
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/multiple-interfaces.yaml

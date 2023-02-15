@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/spidernet-io/spiderpool/pkg/election"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
@@ -61,7 +61,7 @@ type SpiderGC struct {
 	gcIPPoolIPSignal chan *PodEntry
 
 	wepMgr    workloadendpointmanager.WorkloadEndpointManager
-	ippoolMgr ippoolmanagertypes.IPPoolManager
+	ippoolMgr ippoolmanager.IPPoolManager
 	podMgr    podmanager.PodManager
 	stsMgr    statefulsetmanager.StatefulSetManager
 
@@ -70,7 +70,7 @@ type SpiderGC struct {
 
 func NewGCManager(ctx context.Context, clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
 	wepManager workloadendpointmanager.WorkloadEndpointManager,
-	ippoolManager ippoolmanagertypes.IPPoolManager,
+	ippoolManager ippoolmanager.IPPoolManager,
 	podManager podmanager.PodManager,
 	stsManager statefulsetmanager.StatefulSetManager,
 	spiderControllerLeader election.SpiderLeaseElector) (GCManager, error) {

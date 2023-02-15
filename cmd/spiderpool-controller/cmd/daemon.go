@@ -291,17 +291,9 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
-		UpdateCRConfig:                updateCRConfig,
-		EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
-		MaxAllocatedIPs:               controllerContext.Cfg.IPPoolMaxAllocatedIPs,
-		LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-		MaxWorkQueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
-		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
-		WorkerNum:                     controllerContext.Cfg.IPPoolInformerWorkers,
-		WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
-	}, controllerContext.CRDManager, controllerContext.PodManager, controllerContext.RIPManager)
+		UpdateCRConfig:  updateCRConfig,
+		MaxAllocatedIPs: controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+	}, controllerContext.CRDManager, controllerContext.PodManager)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -341,7 +333,6 @@ func initControllerServiceManagers(ctx context.Context) {
 			logger.Fatal(err.Error())
 		}
 		controllerContext.SubnetManager = subnetManager
-		ipPoolManager.InjectSubnetManager(controllerContext.SubnetManager)
 
 		logger.Debug("Begin to set up Subnet webhook")
 		if err := (&subnetmanager.SubnetWebhook{
@@ -425,8 +416,20 @@ func setupInformers() {
 	}
 
 	logger.Info("Begin to set up IPPool informer")
-	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader)
-	if err != nil {
+	ipPoolController := ippoolmanager.NewIPPoolController(controllerContext.CRDManager.GetClient(),
+		ippoolmanager.IPPoolControllerConfig{
+			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+			IPPoolControllerWorkers:       controllerContext.Cfg.IPPoolInformerWorkers,
+			EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
+			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			MaxWorkqueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
+			WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
+			WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
+		},
+	)
+	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
+	if nil != err {
 		logger.Fatal(err.Error())
 	}
 

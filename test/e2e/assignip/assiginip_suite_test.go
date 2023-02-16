@@ -3,13 +3,13 @@
 package assignip_test
 
 import (
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"testing"
+
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -19,7 +19,6 @@ func TestAssignIP(t *testing.T) {
 }
 
 var frame *e2e.Framework
-var ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList []string
 
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
@@ -27,12 +26,4 @@ var _ = BeforeSuite(func() {
 	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
 
-	ClusterDefaultV4IpoolList, ClusterDefaultV6IpoolList, e = common.GetClusterDefaultIppool(frame)
-	Expect(e).NotTo(HaveOccurred())
-	if frame.Info.IpV4Enabled && len(ClusterDefaultV4IpoolList) == 0 {
-		Fail("failed to find cluster ipv4 ippool")
-	}
-	if frame.Info.IpV6Enabled && len(ClusterDefaultV6IpoolList) == 0 {
-		Fail("failed to find cluster ipv6 ippool")
-	}
 })

@@ -3,6 +3,7 @@
 package performance_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -78,24 +79,30 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				}
 			}
 			// Generate Pod.IPPool annotations string and create IPv4Pool and IPV6Pool
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
 			if frame.Info.IpV4Enabled {
+				GinkgoWriter.Printf("try to create IPv4pool: %v \n", v4PoolName)
 				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(int(replicas))
 				if frame.Info.SpiderSubnetEnabled {
-					iPv4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
-					iPv4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, int(replicas))
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(common.CreateIppool(frame, iPv4PoolObj)).NotTo(HaveOccurred())
 				}
-				GinkgoWriter.Printf("try to create IPv4pool: %v \n", v4PoolName)
-				Expect(common.CreateIppool(frame, iPv4PoolObj)).NotTo(HaveOccurred())
+
 				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
+				GinkgoWriter.Printf("try to create IPv6pool: %v \n", v6PoolName)
 				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(int(replicas))
 				if frame.Info.SpiderSubnetEnabled {
-					iPv6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
-					iPv6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, int(replicas))
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(common.CreateIppool(frame, iPv6PoolObj)).NotTo(HaveOccurred())
 				}
-				GinkgoWriter.Printf("try to create IPv6pool: %v \n", v6PoolName)
-				Expect(common.CreateIppool(frame, iPv6PoolObj)).NotTo(HaveOccurred())
+
 				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 			}
 			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
@@ -122,10 +129,10 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 
 			// check uuid in ippool
 			if frame.Info.IpV4Enabled {
-				Expect(common.CheckUniqueUuidInSpiderPool(frame, v4PoolName, podlist)).NotTo(HaveOccurred())
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v4PoolName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.CheckUniqueUuidInSpiderPool(frame, v6PoolName, podlist)).NotTo(HaveOccurred())
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v6PoolName)).NotTo(HaveOccurred())
 			}
 			endT1 := time.Since(startT1)
 
@@ -141,10 +148,10 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 
 			// check uuid in ippool
 			if frame.Info.IpV4Enabled {
-				Expect(common.CheckUniqueUuidInSpiderPool(frame, v4PoolName, podlist)).NotTo(HaveOccurred())
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v4PoolName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.CheckUniqueUuidInSpiderPool(frame, v6PoolName, podlist)).NotTo(HaveOccurred())
+				Expect(common.CheckUniqueUuidInSpiderPool(frame, v6PoolName)).NotTo(HaveOccurred())
 			}
 			endT2 := time.Since(startT2)
 

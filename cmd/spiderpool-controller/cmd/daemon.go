@@ -320,14 +320,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Debug("Begin to initialize Subnet manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
-			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
-			UpdateCRConfig:                updateCRConfig,
-			EnableSubnetDeleteStaleIPPool: controllerContext.Cfg.EnableSubnetDeleteStaleIPPool,
-			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-			RequeueDelayDuration:          time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
-			AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
-			MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
+			UpdateCRConfig: updateCRConfig,
 		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -447,7 +440,22 @@ func setupInformers() {
 		}
 
 		logger.Info("Begin to set up auto-created IPPool controller")
-		err = controllerContext.SubnetManager.SetupControllers(controllerContext.ClientSet, controllerContext.Leader)
+		subnetAppController, err := subnetmanager.NewSubnetAppController(
+			controllerContext.CRDManager.GetClient(),
+			controllerContext.SubnetManager,
+			subnetmanager.SubnetAppControllerConfig{
+				EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+				EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+				AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
+				MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
+				WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
+				LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			})
+		if nil != err {
+			logger.Fatal(err.Error())
+		}
+
+		err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet, controllerContext.Leader)
 		if nil != err {
 			logger.Fatal(err.Error())
 		}

@@ -11,13 +11,10 @@ import (
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -29,7 +26,6 @@ import (
 type SubnetManager interface {
 	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
 	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
-	SetupControllers(client kubernetes.Interface, leader election.SpiderLeaseElector) error
 	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, podController types.PodTopController, podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error)
 	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
 }
@@ -42,8 +38,6 @@ type subnetManager struct {
 	runtimeMgr    ctrl.Manager
 	ipPoolManager ippoolmanager.IPPoolManager
 	reservedMgr   reservedipmanager.ReservedIPManager
-
-	workQueue workqueue.RateLimitingInterface
 }
 
 func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ippoolmanager.IPPoolManager, reservedIPMgr reservedipmanager.ReservedIPManager) (SubnetManager, error) {
@@ -151,6 +145,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 	if nil != err {
 		return nil, err
 	}
+	logger.Sugar().Infof("create and mark IPPool '%v' successfully", sp)
 
 	return sp, nil
 }

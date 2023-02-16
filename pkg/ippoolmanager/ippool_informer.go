@@ -36,6 +36,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -401,6 +402,7 @@ func (ic *IPPoolController) processNextWorkItem(workQueue workqueue.RateLimiting
 			}
 
 			if apierrors.IsConflict(err) {
+				metrics.IPPoolInformerConflictCounts.Add(context.TODO(), 1)
 				workQueue.AddRateLimited(poolName)
 				log.Sugar().Warnf("encountered ippool informer update conflict '%v', retrying...", err)
 				return nil
@@ -480,7 +482,7 @@ func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spide
 		// the IPPool webhook will automatically assign the scaled IP from SpiderSubnet
 		err = ic.scaleIPPoolWithIPs(ctx, pool, ipsFromSubnet, true, desiredIPNum)
 		if nil != err {
-			return fmt.Errorf("failed to expand IPPool '%s' with IPs '%v', error: %w", pool.Name, ipsFromSubnet, err)
+			return fmt.Errorf("failed to expand IPPool '%s' with IPs '%v': %w", pool.Name, ipsFromSubnet, err)
 		}
 	} else {
 		// shrink: free IP number >= return IP Num
@@ -506,7 +508,7 @@ func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spide
 			// the IPPool webhook will automatically return the released IP back to SpiderSubnet
 			err = ic.scaleIPPoolWithIPs(logutils.IntoContext(ctx, informerLogger), pool, discardedIPRanges, false, desiredIPNum)
 			if nil != err {
-				return fmt.Errorf("failed to shrink IPPool '%s' with IPs '%v', error: %w", pool.Name, discardedIPs, err)
+				return fmt.Errorf("failed to shrink IPPool '%s' with IPs '%v': %w", pool.Name, discardedIPs, err)
 			}
 		}
 	}
@@ -707,14 +709,14 @@ func (ic *IPPoolController) scaleIPPoolWithIPs(ctx context.Context, pool *spider
 	}
 
 	if isScaleUp {
-		pool.Spec.IPs = append(pool.Spec.IPs, ipRanges...)
-		sortedIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, pool.Spec.IPs)
+		tmpIPs := append(pool.Spec.IPs, ipRanges...)
+		sortedIPRanges, err := spiderpoolip.MergeIPRanges(*pool.Spec.IPVersion, tmpIPs)
 		if nil != err {
 			return fmt.Errorf("failed to merge IP ranges '%v', error: %v", pool.Spec.IPs, err)
 		}
 
-		log.With(zap.String("ScaleUpIP", fmt.Sprintf("add IPs '%v'", ipRanges))).
-			Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
+		log = log.With(zap.String("ScaleUpIP", fmt.Sprintf("add IPs '%v'", ipRanges)))
+		log.Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
 		pool.Spec.IPs = sortedIPRanges
 	} else {
 		discardedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, ipRanges)
@@ -733,15 +735,16 @@ func (ic *IPPoolController) scaleIPPoolWithIPs(ctx context.Context, pool *spider
 			return fmt.Errorf("failed to convert IPs '%v' to IP ranges, error: %v", ipRanges, err)
 		}
 
-		log.With(zap.String("ScaleDownIP", fmt.Sprintf("discard IPs '%v'", ipRanges))).
-			Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
+		log = log.With(zap.String("ScaleDownIP", fmt.Sprintf("discard IPs '%v'", ipRanges)))
+		log.Sugar().Infof("update IPPool '%s' IPs from '%v' to '%v'", pool.Name, pool.Spec.IPs, sortedIPRanges)
 		pool.Spec.IPs = sortedIPRanges
 	}
 
 	err = ic.client.Update(ctx, pool)
 	if nil != err {
-		return fmt.Errorf("failed to update IPPool '%s', error: %w", pool.Name, err)
+		return fmt.Errorf("failed to update IPPool '%s': %w", pool.Name, err)
 	}
+	log.Sugar().Infof("scaled IPPool '%v' successfully", pool)
 
 	return nil
 }

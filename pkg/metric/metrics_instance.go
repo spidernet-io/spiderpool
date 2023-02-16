@@ -47,6 +47,10 @@ const (
 	ip_gc_failure_counts = "ip_gc_failure_counts"
 
 	subnet_ippool_counts = "subnet_ippool_counts"
+
+	// spiderpool controller SpiderSubnet feature
+	auto_ippool_create_or_mark_conflict_counts = "auto_ippool_create_or_mark_conflict_counts"
+	ippool_informer_conflict_counts            = "ippool_informer_conflict_counts"
 )
 
 var (
@@ -82,6 +86,10 @@ var (
 	IPGCFailureCounts instrument.Int64Counter
 
 	SubnetPoolCounts = new(asyncInt64Gauge)
+
+	// spiderpool controller SpiderSubnet feature
+	AutoPoolCreateOrMarkConflictCounts instrument.Int64Counter
+	IPPoolInformerConflictCounts       instrument.Int64Counter
 )
 
 // asyncFloat64Gauge is custom otel float64 gauge
@@ -361,8 +369,22 @@ func InitSpiderpoolControllerMetrics(ctx context.Context) error {
 		return err
 	}
 
+	autoPoolCreateOrMarkConflictCounts, err := NewMetricInt64Counter(auto_ippool_create_or_mark_conflict_counts, "create or mark auto-created IPPool conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", auto_ippool_create_or_mark_conflict_counts, err)
+	}
+	AutoPoolCreateOrMarkConflictCounts = autoPoolCreateOrMarkConflictCounts
+
+	poolInformerConflictCounts, err := NewMetricInt64Counter(ippool_informer_conflict_counts, "ippool informer operation conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_informer_conflict_counts, err)
+	}
+	IPPoolInformerConflictCounts = poolInformerConflictCounts
+
 	IPGCTotalCounts.Add(ctx, 0)
 	IPGCFailureCounts.Add(ctx, 0)
+	AutoPoolCreateOrMarkConflictCounts.Add(ctx, 0)
+	IPPoolInformerConflictCounts.Add(ctx, 0)
 
 	return nil
 }

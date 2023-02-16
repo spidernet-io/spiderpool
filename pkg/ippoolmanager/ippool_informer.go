@@ -45,7 +45,10 @@ import (
 var informerLogger *zap.Logger
 
 type IPPoolController struct {
-	client client.Client
+	IPPoolControllerConfig
+
+	client     client.Client
+	rIPManager reservedipmanager.ReservedIPManager
 
 	poolLister    listers.SpiderIPPoolLister
 	poolSynced    cache.InformerSynced
@@ -62,8 +65,6 @@ type IPPoolController struct {
 	// v6AutoCreatedRateLimitQueue serves for IPPool informer
 	v6AutoCreatedRateLimitQueue workqueue.RateLimitingInterface
 	v6GenIPsCursor              bool
-
-	IPPoolControllerConfig
 }
 
 type IPPoolControllerConfig struct {
@@ -77,10 +78,11 @@ type IPPoolControllerConfig struct {
 	WorkQueueMaxRetries           int
 }
 
-func NewIPPoolController(client client.Client, poolControllerConfig IPPoolControllerConfig) *IPPoolController {
+func NewIPPoolController(poolControllerConfig IPPoolControllerConfig, client client.Client, rIPManager reservedipmanager.ReservedIPManager) *IPPoolController {
 	c := &IPPoolController{
-		client:                 client,
 		IPPoolControllerConfig: poolControllerConfig,
+		client:                 client,
+		rIPManager:             rIPManager,
 	}
 
 	return c
@@ -820,13 +822,8 @@ func (ic *IPPoolController) generateIPsFromSubnetWhenScaleUpIP(ctx context.Conte
 	}
 
 	// filter reserved IPs
-	var reservedIPList spiderpoolv1.SpiderReservedIPList
-	if err := ic.client.List(ctx, &reservedIPList); err != nil {
-		return nil, fmt.Errorf("failed to list reservedIPs, error: %v", err)
-	}
-
-	reservedIPs, err := reservedipmanager.AssembleReservedIPs(ipVersion, &reservedIPList)
-	if nil != err {
+	reservedIPs, err := ic.rIPManager.AssembleReservedIPs(ctx, ipVersion)
+	if err != nil {
 		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %v",
 			constant.ErrWrongInput, reservedIPs, ipVersion, err)
 	}

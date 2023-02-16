@@ -5,8 +5,6 @@ package limiter_test
 
 import (
 	"context"
-	"math/rand"
-	"strconv"
 	"sync"
 	"time"
 
@@ -34,10 +32,7 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			DeferCleanup(cancel)
 
-			maxWaitTime := 0 * time.Second
-			config = limiter.LimiterConfig{
-				MaxWaitTime: &maxWaitTime,
-			}
+			config = limiter.LimiterConfig{}
 		})
 
 		It("forgets to start the limiter", func() {
@@ -45,10 +40,28 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 			Expect(queue).NotTo(BeNil())
 
 			ctx := context.TODO()
-			reason, err := queue.AcquireTicket(ctx)
-			Expect(err).To(MatchError(limiter.ErrUnexpectedBlocking))
-			Expect(reason).To(Equal(limiter.UnexpectedBlocking))
+			err := queue.AcquireTicket(ctx)
+			Expect(err).To(MatchError(limiter.ErrShutdownQueue))
 			queue.ReleaseTicket(ctx)
+		})
+
+		It("repeatedly starts the limiter", func() {
+			queue := limiter.NewLimiter(config)
+			Expect(queue).NotTo(BeNil())
+
+			ctx, cancel = context.WithCancel(context.Background())
+			defer cancel()
+
+			go func() {
+				defer GinkgoRecover()
+				err := queue.Start(ctx)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			Eventually(queue.Started).Should(BeTrue())
+
+			err := queue.Start(ctx)
+			Expect(err).To(MatchError(limiter.ErrStartLimiteRrepeatedly))
 		})
 	})
 
@@ -65,6 +78,8 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				err := queue.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
+
+			Eventually(queue.Started).Should(BeTrue())
 		})
 
 		Context("Use", func() {
@@ -73,10 +88,8 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				DeferCleanup(cancel)
 
 				maxQueueSize := 3
-				maxWaitTime := 2 * time.Second
 				config = limiter.LimiterConfig{
 					MaxQueueSize: &maxQueueSize,
-					MaxWaitTime:  &maxWaitTime,
 				}
 				queuers = 3
 				workHours = 1 * time.Second
@@ -84,33 +97,9 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 
 			It("acquires tickets", func() {
 				ctx := context.TODO()
-				reason, err := queue.AcquireTicket(ctx)
+				err := queue.AcquireTicket(ctx)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(reason).To(Equal(limiter.Checkin))
 				queue.ReleaseTicket(ctx)
-			})
-
-			It("acquires tickets but timeout", func() {
-				ctx := context.TODO()
-				reasonCh := make(chan limiter.Reason, queuers)
-				wg := sync.WaitGroup{}
-				wg.Add(queuers)
-				for i := 0; i < queuers; i++ {
-					go func() {
-						defer GinkgoRecover()
-						defer wg.Done()
-
-						reason, err := queue.AcquireTicket(ctx)
-						Expect(err).NotTo(HaveOccurred())
-						reasonCh <- reason
-
-						time.Sleep(workHours)
-						queue.ReleaseTicket(ctx)
-					}()
-				}
-				wg.Wait()
-				// Eventually some queuers will wait timeout due to slow consumption.
-				Eventually(reasonCh).Should(Receive(Equal(limiter.CheckinTimeout)))
 			})
 
 			It("acquires tickets but queue is full", func() {
@@ -122,7 +111,7 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 						defer GinkgoRecover()
 						defer wg.Done()
 
-						_, err := queue.AcquireTicket(ctx)
+						err := queue.AcquireTicket(ctx)
 						if err != nil {
 							Expect(err).To(MatchError(limiter.ErrFullQueue))
 							return
@@ -137,69 +126,16 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 		})
 
 		Context("Concurrency", func() {
-			var ticketSize int
-			var randomTicket func(int) []string
-
 			BeforeEach(func() {
 				ctx, cancel = context.WithCancel(context.Background())
 				DeferCleanup(cancel)
 
 				maxQueueSize := 200
-				maxWaitTime := 5 * time.Second
 				config = limiter.LimiterConfig{
 					MaxQueueSize: &maxQueueSize,
-					MaxWaitTime:  &maxWaitTime,
 				}
 				queuers = 200
 				workHours = 50 * time.Millisecond
-
-				ticketSize = 3
-				randomTicket = func(ticketSize int) []string {
-					var tickets []string
-					rand.Seed(time.Now().UnixNano())
-					n := rand.Intn(ticketSize) + 1
-					for i := 0; i < n; i++ {
-						tickets = append(tickets, "t"+strconv.Itoa(rand.Intn(ticketSize)+1))
-					}
-
-					return tickets
-				}
-			})
-
-			It("collects the conflict rate when consumption is too slow", func() {
-				ctx := context.TODO()
-				reasonCh := make(chan limiter.Reason, queuers)
-				wg := sync.WaitGroup{}
-				wg.Add(queuers)
-				for i := 0; i < queuers; i++ {
-					go func() {
-						defer GinkgoRecover()
-						defer wg.Done()
-
-						tickets := randomTicket(ticketSize)
-						reason, err := queue.AcquireTicket(ctx, tickets...)
-						Expect(err).NotTo(HaveOccurred())
-						reasonCh <- reason
-
-						time.Sleep(workHours)
-						queue.ReleaseTicket(ctx, tickets...)
-					}()
-				}
-				wg.Wait()
-				close(reasonCh)
-
-				var checkin, checkinTimeout int
-				for r := range reasonCh {
-					if r == limiter.Checkin {
-						checkin++
-					} else if r == limiter.CheckinTimeout {
-						checkinTimeout++
-					}
-				}
-
-				GinkgoWriter.Printf("%d queuers who take %v to work queue in a queue with a maximum waiting time %v\n", queuers, workHours, config.MaxWaitTime)
-				GinkgoWriter.Printf("%d queuers completed their work without conflict\n", checkin)
-				GinkgoWriter.Printf("%d queuers work concurrently due to waiting timeout\n", checkinTimeout)
 			})
 		})
 
@@ -209,10 +145,8 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				DeferCleanup(cancel)
 
 				maxQueueSize := 3
-				maxWaitTime := 2 * time.Second
 				config = limiter.LimiterConfig{
 					MaxQueueSize: &maxQueueSize,
-					MaxWaitTime:  &maxWaitTime,
 				}
 				queuers = 3
 				workHours = 1 * time.Second
@@ -231,7 +165,7 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 						defer GinkgoRecover()
 						defer wg.Done()
 
-						_, err := queue.AcquireTicket(ctx)
+						err := queue.AcquireTicket(ctx)
 						Expect(err).NotTo(HaveOccurred())
 
 						time.Sleep(workHours)
@@ -248,7 +182,7 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				cancel()
 				time.Sleep(1 * time.Second)
 
-				_, err := queue.AcquireTicket(ctx)
+				err := queue.AcquireTicket(ctx)
 				Expect(err).To(MatchError(limiter.ErrShutdownQueue))
 			})
 		})

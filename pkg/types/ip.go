@@ -10,4 +10,5 @@ type Vlan = int64
 type IPAndCID struct {
 	IP          string
 	ContainerID string
+	Node        string
 }

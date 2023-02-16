@@ -180,6 +180,9 @@ spec:
                 type: string
               ownerControllerType:
                 type: string
+            required:
+            - ownerControllerName
+            - ownerControllerType
             type: object
         type: object
     served: true

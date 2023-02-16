@@ -4,7 +4,6 @@
 package ipam
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -207,67 +206,24 @@ func convertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Rout
 	return routes
 }
 
-func genIPAssignmentAnnotation(ips []*models.IPConfig) (map[string]string, error) {
-	nicToValue := map[string]*types.AnnoPodAssignedEthxValue{}
-	for _, ip := range ips {
-		if v, ok := nicToValue[*ip.Nic]; ok {
-			if *ip.Version == constant.IPv4 {
-				v.IPv4 = *ip.Address
-				v.IPv4Pool = ip.IPPool
-				v.Vlan = ip.Vlan
-			} else {
-				v.IPv6 = *ip.Address
-				v.IPv6Pool = ip.IPPool
-				v.Vlan = ip.Vlan
-			}
-			continue
-		}
-
-		if *ip.Version == constant.IPv4 {
-			nicToValue[*ip.Nic] = &types.AnnoPodAssignedEthxValue{
-				NIC:      *ip.Nic,
-				IPv4:     *ip.Address,
-				IPv4Pool: ip.IPPool,
-				Vlan:     ip.Vlan,
-			}
-		} else {
-			nicToValue[*ip.Nic] = &types.AnnoPodAssignedEthxValue{
-				NIC:      *ip.Nic,
-				IPv6:     *ip.Address,
-				IPv6Pool: ip.IPPool,
-				Vlan:     ip.Vlan,
-			}
-		}
-	}
-
-	podAnnotations := map[string]string{}
-	for nic, anno := range nicToValue {
-		b, err := json.Marshal(anno)
-		if err != nil {
-			return nil, err
-		}
-		podAnnotations[constant.AnnotationPre+"/assigned-"+nic] = string(b)
-	}
-
-	return podAnnotations, nil
-}
-
-func GroupIPDetails(containerID string, details []spiderpoolv1.IPAllocationDetail) map[string][]types.IPAndCID {
-	poolToIPAndCIDs := map[string][]types.IPAndCID{}
+func GroupIPDetails(containerID, nodeName string, details []spiderpoolv1.IPAllocationDetail) PoolNameToIPAndCIDs {
+	pics := PoolNameToIPAndCIDs{}
 	for _, d := range details {
 		if d.IPv4 != nil {
-			poolToIPAndCIDs[*d.IPv4Pool] = append(poolToIPAndCIDs[*d.IPv4Pool], types.IPAndCID{
+			pics[*d.IPv4Pool] = append(pics[*d.IPv4Pool], types.IPAndCID{
 				IP:          strings.Split(*d.IPv4, "/")[0],
 				ContainerID: containerID,
+				Node:        nodeName,
 			})
 		}
 		if d.IPv6 != nil {
-			poolToIPAndCIDs[*d.IPv6Pool] = append(poolToIPAndCIDs[*d.IPv6Pool], types.IPAndCID{
+			pics[*d.IPv6Pool] = append(pics[*d.IPv6Pool], types.IPAndCID{
 				IP:          strings.Split(*d.IPv6, "/")[0],
 				ContainerID: containerID,
+				Node:        nodeName,
 			})
 		}
 	}
 
-	return poolToIPAndCIDs
+	return pics
 }

@@ -1,6 +1,6 @@
 module github.com/spidernet-io/spiderpool
 
-go 1.19
+go 1.20
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -48,7 +48,6 @@ require (
 
 require (
 	github.com/agiledragon/gomonkey/v2 v2.9.0
-	github.com/golang/mock v1.6.0
 	github.com/moby/moby v23.0.1+incompatible
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus/client_golang v1.14.0

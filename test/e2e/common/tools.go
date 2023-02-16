@@ -22,6 +22,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func GenerateString(lenNum int, isHex bool) string {
 	var chars []string
 	chars = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
@@ -30,17 +32,14 @@ func GenerateString(lenNum int, isHex bool) string {
 	}
 	str := strings.Builder{}
 	length := len(chars)
-	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < lenNum; i++ {
-		str.WriteString(chars[rand.Intn(length)])
+		str.WriteString(chars[r.Intn(length)])
 	}
 	return str.String()
 }
 
 func GenerateRandomNumber(max int) string {
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(max)
-	return strconv.Itoa(randomNumber)
+	return strconv.Itoa(r.Intn(max))
 }
 
 func CheckPodListInclude(list *corev1.PodList, pod *corev1.Pod) bool {
@@ -115,9 +114,8 @@ func SelectIpFromIps(version types.IPVersion, ips []net.IP, ipNum int) ([]string
 	ipMap := make(map[string]bool)
 
 	length := len(ips)
-	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < ipNum; i++ {
-		v := ips[rand.Intn(length)]
+		v := ips[r.Intn(length)]
 		if _, ok := ipMap[string(v)]; ok {
 			i--
 		}

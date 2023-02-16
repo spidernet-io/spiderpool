@@ -29,12 +29,16 @@ type IPAMConfig struct {
 	LimiterConfig        limiter.LimiterConfig
 }
 
-func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {
-	logger := logutils.FromContext(ctx)
+func setDefaultsForIPAMConfig(config IPAMConfig) IPAMConfig {
+	return config
+}
 
+func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {
 	if len(c.ClusterDefaultIPv4IPPool) == 0 && len(c.ClusterDefaultIPv6IPPool) == 0 {
 		return nil, fmt.Errorf("%w, no pool selection rules of any type are specified", constant.ErrNoAvailablePool)
 	}
+
+	logger := logutils.FromContext(ctx)
 	logger.Info("Use IPPools from cluster default pools")
 
 	t := &ToBeAllocated{
@@ -57,7 +61,7 @@ func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, clea
 	return t, nil
 }
 
-func (c *IPAMConfig) checkIPVersionEnable(ctx context.Context, tt []*ToBeAllocated) error {
+func (c *IPAMConfig) checkIPVersionEnable(ctx context.Context, tt ToBeAllocateds) error {
 	logger := logutils.FromContext(ctx)
 
 	if c.EnableIPv4 && !c.EnableIPv6 {
@@ -96,7 +100,7 @@ func (c *IPAMConfig) filterPoolMisspecified(ctx context.Context, t *ToBeAllocate
 			v6Count++
 			invalidPoolCandidates = append(invalidPoolCandidates, pc)
 		} else {
-			logger.Sugar().Warnf("IPv%d is disabled, ignoring to allocate IPv4 IP to NIC %s from IPPool %v", pc.IPVersion, t.NIC, pc.Pools)
+			logger.Sugar().Debugf("IPv%d is disabled, ignoring to allocate IPv%d IP to NIC %s from IPPool %v", pc.IPVersion, pc.IPVersion, t.NIC, pc.Pools)
 		}
 	}
 	t.PoolCandidates = invalidPoolCandidates

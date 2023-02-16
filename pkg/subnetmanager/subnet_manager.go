@@ -5,20 +5,17 @@ package subnetmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -33,35 +30,25 @@ type SubnetManager interface {
 var logger *zap.Logger
 
 type subnetManager struct {
-	config        *SubnetManagerConfig
+	config        SubnetManagerConfig
 	client        client.Client
-	runtimeMgr    ctrl.Manager
 	ipPoolManager ippoolmanager.IPPoolManager
-	reservedMgr   reservedipmanager.ReservedIPManager
 }
 
-func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ippoolmanager.IPPoolManager, reservedIPMgr reservedipmanager.ReservedIPManager) (SubnetManager, error) {
-	if c == nil {
-		return nil, errors.New("subnet manager config must be specified")
-	}
-	if mgr == nil {
-		return nil, errors.New("k8s manager must be specified")
+func NewSubnetManager(config SubnetManagerConfig, client client.Client, ipPoolManager ippoolmanager.IPPoolManager) (SubnetManager, error) {
+	if client == nil {
+		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
 	if ipPoolManager == nil {
-		return nil, errors.New("ippool manager must be specified")
-	}
-	if reservedIPMgr == nil {
-		return nil, errors.New("reserved IP manager must be specified")
+		return nil, fmt.Errorf("ippool manager %w", constant.ErrMissingRequiredParam)
 	}
 
 	logger = logutils.Logger.Named("Subnet-Manager")
 
 	return &subnetManager{
-		config:        c,
-		client:        mgr.GetClient(),
-		runtimeMgr:    mgr,
+		config:        setDefaultsForSubnetManagerConfig(config),
+		client:        client,
 		ipPoolManager: ipPoolManager,
-		reservedMgr:   reservedIPMgr,
 	}, nil
 }
 
@@ -106,7 +93,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 	poolLabels := map[string]string{
 		constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
 		constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-		constant.LabelIPPoolOwnerApplicationUID: string(podController.Uid),
+		constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 		constant.LabelIPPoolInterface:           ifName,
 	}
 
@@ -122,7 +109,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 
 	sp := &spiderpoolv1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   controllers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, ipVersion, ifName, podController.Uid),
+			Name:   controllers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, ipVersion, ifName, podController.UID),
 			Labels: poolLabels,
 		},
 		Spec: spiderpoolv1.IPPoolSpec{

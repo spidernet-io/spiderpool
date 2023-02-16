@@ -70,7 +70,7 @@ func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespa
 		return false, client.IgnoreNotFound(err)
 	}
 
-	// Pod controlled by StatefulSet is created or recreated.
+	// The Pod controlled by StatefulSet is created or re-created.
 	if replicas <= int(*sts.Spec.Replicas)-1 {
 		return true, nil
 	}

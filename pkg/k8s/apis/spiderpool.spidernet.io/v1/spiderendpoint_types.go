@@ -15,11 +15,11 @@ type WorkloadEndpointStatus struct {
 	// +kubebuilder:validation:Optional
 	History []PodIPAllocation `json:"history,omitempty"`
 
-	// +kubebuilder:validation:Optional
-	OwnerControllerType string `json:"ownerControllerType,omitempty"`
+	// +kubebuilder:validation:Required
+	OwnerControllerType string `json:"ownerControllerType"`
 
-	// +kubebuilder:validation:Optional
-	OwnerControllerName string `json:"ownerControllerName,omitempty"`
+	// +kubebuilder:validation:Required
+	OwnerControllerName string `json:"ownerControllerName"`
 }
 
 type PodIPAllocation struct {

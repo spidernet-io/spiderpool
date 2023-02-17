@@ -65,4 +65,32 @@ var _ = Describe("IP utils", Label("ip_utils_test"), func() {
 			Expect(ips).To(Equal([]net.IP{net.ParseIP("abcd:1234::1")}))
 		})
 	})
+
+	Describe("Test CIDRToLabelValue", func() {
+		When("Verifying", func() {
+			It("inputs invalid IP version", func() {
+				cidr, err := spiderpoolip.CIDRToLabelValue(constant.InvalidIPVersion, "172.18.40.0/24")
+				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
+				Expect(cidr).To(BeEmpty())
+			})
+
+			It("inputs invalid CIDR address", func() {
+				cidr, err := spiderpoolip.CIDRToLabelValue(constant.IPv4, constant.InvalidCIDR)
+				Expect(err).To(MatchError(spiderpoolip.ErrInvalidCIDRFormat))
+				Expect(cidr).To(BeEmpty())
+			})
+		})
+
+		It("parses IPv4 CIDR address", func() {
+			cidr, err := spiderpoolip.CIDRToLabelValue(constant.IPv4, "172.18.40.0/24")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cidr).To(Equal("172-18-40-0-24"))
+		})
+
+		It("parses IPv6 CIDR address", func() {
+			cidr, err := spiderpoolip.CIDRToLabelValue(constant.IPv6, "abcd:1234::/120")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cidr).To(Equal("abcd-1234---120"))
+		})
+	})
 })

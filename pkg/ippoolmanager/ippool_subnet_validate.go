@@ -66,10 +66,6 @@ func (iw *IPPoolWebhook) validateSubnetControllerExist(ctx context.Context, ipPo
 		return nil, field.InternalError(subnetField, fmt.Errorf("failed to get controller Subnet %s: %v", owner.Name, err))
 	}
 
-	if subnet.Spec.Subnet != ipPool.Spec.Subnet {
-		return nil, field.InternalError(subnetField, fmt.Errorf("invalid controller Subnet %s with different 'spec.subnet' %s", owner.Name, subnet.Spec.Subnet))
-	}
-
 	if subnet.DeletionTimestamp != nil {
 		return nil, field.Forbidden(
 			subnetField,

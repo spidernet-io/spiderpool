@@ -16,8 +16,7 @@ type SubnetSpec struct {
 	// +kubebuilder:validation:Required
 	Subnet string `json:"subnet"`
 
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	IPs []string `json:"ips"`
 
 	// +kubebuilder:validation:Optional

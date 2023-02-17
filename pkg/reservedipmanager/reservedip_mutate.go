@@ -35,7 +35,7 @@ func (rw *ReservedIPWebhook) mutateReservedIP(ctx context.Context, rIP *spiderpo
 		} else if spiderpoolip.IsIPv6IPRange(rIP.Spec.IPs[0]) {
 			version = constant.IPv6
 		} else {
-			return errors.New("invalid 'spec.ipVersion', noting to mutate")
+			return fmt.Errorf("failed to generate 'spec.ipVersion' from 'spec.ips[0]' %s, nothing to mutate", rIP.Spec.IPs[0])
 		}
 
 		rIP.Spec.IPVersion = new(types.IPVersion)

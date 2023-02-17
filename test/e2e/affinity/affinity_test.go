@@ -524,7 +524,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// Delete Statefulset and Check if the Pod IP in IPPool reclaimed normally
 			err = frame.DeleteStatefulSet(statefulSetName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(common.WaitIPReclaimedFinish(frame, defaultV4PoolNameList, defaultV6PoolNameList, podlist, common.IPReclaimTimeout)).To(Succeed())
+			Expect(common.WaitIPReclaimedFinish(frame, defaultV4PoolNameList, defaultV6PoolNameList, newPodList, common.IPReclaimTimeout)).To(Succeed())
 
 			// Check workloadendpoint records are deleted
 			ctx4, cancel4 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)

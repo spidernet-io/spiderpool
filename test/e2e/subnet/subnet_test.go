@@ -1396,29 +1396,27 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					bingo := 0
 					v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV4SubnetList[0])
 					Expect(err).NotTo(HaveOccurred())
-					var poolName string
 					for _, poolName := range v4PoolNameList {
 						// Get the ippool automatically created by the default subnet and check its uniqueness
 						if ok := strings.Contains(poolName, name); ok {
+							GinkgoWriter.Printf("The default v4 subnet automatically creates an IPPool '%s' and Pod '%s' running. \n", poolName, name)
 							v4PoolInSubnetNameList = append(v4PoolInSubnetNameList, poolName)
 							bingo++
 						}
 					}
-					GinkgoWriter.Printf("The default v4 subnet automatically creates an IPPool '%s' and Pod '%s' running. \n", poolName, name)
 					Expect(bingo).To(Equal(1))
 				}
 				if frame.Info.IpV6Enabled {
 					bingo := 0
 					v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV6SubnetList[0])
 					Expect(err).NotTo(HaveOccurred())
-					var poolName string
 					for _, poolName := range v6PoolNameList {
 						if ok := strings.Contains(poolName, name); ok {
+							GinkgoWriter.Printf("The default v6 subnet automatically creates an IPPool '%s' and Pod '%s' running. \n", poolName, name)
 							v6PoolInSubnetNameList = append(v6PoolInSubnetNameList, poolName)
 							bingo++
 						}
 					}
-					GinkgoWriter.Printf("The default v6 subnet automatically creates an IPPool '%s' and Pod '%s' running. \n", poolName, name)
 					Expect(bingo).To(Equal(1))
 				}
 			}
@@ -1441,40 +1439,40 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			By("Checking resource release.")
 			Eventually(func() bool {
 				if frame.Info.IpV4Enabled {
-					GinkgoWriter.Println("Check that the v4 IPPool has been recycled.")
 					for _, poolName := range v4PoolInSubnetNameList {
 						_, err := common.GetIppoolByName(frame, poolName)
 						if err == nil {
 							GinkgoWriter.Printf("v4 pool '%s' still exists, please wait for deletion to complete.\n", poolName)
 							return false
 						}
+						GinkgoWriter.Printf("The v4 ippool %v has been reclaimed. \n", poolName)
 					}
 					for _, controllerName := range controllerNameList {
-						GinkgoWriter.Println("The v4 ippool in the subnet has been reclaimed.")
 						v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV4SubnetList[0])
 						Expect(err).NotTo(HaveOccurred())
 						for _, v := range v4PoolNameList {
 							if ok := strings.Contains(v, controllerName); ok {
+								GinkgoWriter.Printf("The v4 ippool %v in the subnet has been reclaimed. \n", v)
 								return false
 							}
 						}
 					}
 				}
 				if frame.Info.IpV6Enabled {
-					GinkgoWriter.Println("Check that the v6 IPPool has been recycled.")
 					for _, poolName := range v6PoolInSubnetNameList {
 						_, err := common.GetIppoolByName(frame, poolName)
 						if err == nil {
 							GinkgoWriter.Printf("v6 pool '%s' still exists, please wait for deletion to complete.\n", poolName)
 							return false
 						}
+						GinkgoWriter.Printf("The v6 ippool %v has been reclaimed. \n", poolName)
 					}
 					for _, controllerName := range controllerNameList {
-						GinkgoWriter.Println("The v6 ippool in the subnet has been reclaimed.")
 						v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, ClusterDefaultV6SubnetList[0])
 						Expect(err).NotTo(HaveOccurred())
 						for _, v := range v6PoolNameList {
 							if ok := strings.Contains(v, controllerName); ok {
+								GinkgoWriter.Printf("The v6 ippool %v in the subnet has been reclaimed. \n", v)
 								return false
 							}
 						}

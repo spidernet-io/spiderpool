@@ -610,9 +610,12 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 			return fmt.Errorf("time out to wait workload %v/%v delete until finish", namespace, name)
 		default:
 			_, err := GetWorkloadByName(f, namespace, name)
-			if !api_errors.IsNotFound(err) {
-				GinkgoWriter.Printf("workload '%s/%s' has been removed，error: %v", namespace, name, err)
-				return nil
+			if err != nil {
+				if api_errors.IsNotFound(err) {
+					GinkgoWriter.Printf("workload '%s/%s' has been removed，error: %v", namespace, name, err)
+					return nil
+				}
+				return err
 			}
 			time.Sleep(ForcedWaitingTime)
 		}

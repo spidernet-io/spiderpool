@@ -1217,24 +1217,16 @@ func (i *ipam) deleteDeadOrphanPodAutoIPPool(ctx context.Context, podNS, podName
 	}
 
 	if !isAlive {
-		matchLabels := client.MatchingLabels{
+		log.Sugar().Infof("orphan pod dead, try to delete corresponding IPPool list that already exist")
+		err := i.ipPoolManager.DeleteAllIPPools(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
 			// this label make it sure to find orphan pod corresponding IPPool
 			constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
 			// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?
 			constant.LabelIPPoolInterface:     ifName,
 			constant.LabelIPPoolReclaimIPPool: constant.True,
-		}
-		poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
+		})
 		if nil != err {
-			return fmt.Errorf("failed to get IPPoolList with the given label '%v', error: %v", matchLabels, err)
-		}
-
-		log.Sugar().Infof("found orphan pod corresponding IPPool list: %v, try to delete them", poolList.Items)
-		for index := range poolList.Items {
-			err = i.ipPoolManager.DeleteIPPool(ctx, &poolList.Items[index])
-			if nil != err {
-				return err
-			}
+			return err
 		}
 	}
 

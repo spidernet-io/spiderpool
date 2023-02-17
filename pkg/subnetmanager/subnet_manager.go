@@ -122,7 +122,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 	}
 
 	logger.Sugar().Infof("try to create IPPool '%v'", sp)
-	err = sm.ipPoolManager.CreateIPPool(ctx, sp)
+	err = sm.client.Create(ctx, sp)
 	if nil != err {
 		return nil, err
 	}

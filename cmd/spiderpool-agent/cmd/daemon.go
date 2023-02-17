@@ -105,6 +105,9 @@ func DaemonMain() {
 		}
 	}
 
+	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
+	initAgentMetricsServer(context.TODO())
+
 	logger.Sugar().Infof("Begin to initialize cluster default pool configuration")
 	singletons.InitClusterDefaultPool(
 		agentContext.Cfg.ClusterDefaultIPv4IPPool,
@@ -208,9 +211,6 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
-
-	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
-	initAgentMetricsServer(agentContext.InnerCtx)
 
 	// TODO (Icarus9913): improve k8s StartupProbe
 	logger.Info("Set spiderpool-agent startup probe ready")
@@ -333,6 +333,7 @@ func initAgentServiceManagers(ctx context.Context) {
 			},
 			agentContext.CRDManager.GetClient(),
 			agentContext.IPPoolManager,
+			agentContext.CRDManager.GetScheme(),
 		)
 		if err != nil {
 			logger.Fatal(err.Error())

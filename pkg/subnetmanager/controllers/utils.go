@@ -103,7 +103,7 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 		// annotation: ipam.spidernet.io/subnet
 		subnet, ok := podAnnotations[constant.AnnoSpiderSubnet]
 		if ok {
-			log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnet, subnets)
+			log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnet, subnet)
 			subnetAnnoConfig.SingleSubnet = new(types.AnnoSubnetItem)
 			err := json.Unmarshal([]byte(subnet), &subnetAnnoConfig.SingleSubnet)
 			if nil != err {

@@ -36,6 +36,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+var informerLogger *zap.Logger
+
 type SubnetAppController struct {
 	client        client.Client
 	subnetMgr     SubnetManager
@@ -77,7 +79,7 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 		return fmt.Errorf("failed to start SpiderSubnet App informer, controller leader must be specified")
 	}
 
-	logger.Info("try to register SpiderSubnet App informer")
+	informerLogger.Info("try to register SpiderSubnet App informer")
 	go func() {
 		for {
 			select {
@@ -101,7 +103,7 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 					}
 
 					if !controllerLeader.IsElected() {
-						logger.Warn("Leader lost, stop Subnet App informer")
+						informerLogger.Warn("Leader lost, stop Subnet App informer")
 						innerCancel()
 						return
 					}
@@ -109,15 +111,15 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 				}
 			}()
 
-			logger.Info("create SpiderSubnet App informer")
+			informerLogger.Info("create SpiderSubnet App informer")
 			factory := kubeinformers.NewSharedInformerFactory(client, 0)
 			sac.addEventHandlers(factory)
 			factory.Start(innerCtx.Done())
 			err := sac.Run(innerCtx.Done())
 			if nil != err {
-				logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
+				informerLogger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
 			}
-			logger.Error("SpiderSubnet App informer broken")
+			informerLogger.Error("SpiderSubnet App informer broken")
 		}
 	}()
 
@@ -393,13 +395,15 @@ func (sac *SubnetAppController) ControllerAddOrUpdateHandler() controllers.AppIn
 }
 
 func NewSubnetAppController(client client.Client, subnetMgr SubnetManager, subnetAppControllerConfig SubnetAppControllerConfig) (*SubnetAppController, error) {
+	informerLogger = logutils.Logger.Named("SpiderSubnet-Application-Controllers")
+
 	c := &SubnetAppController{
 		client:                    client,
 		subnetMgr:                 subnetMgr,
 		SubnetAppControllerConfig: subnetAppControllerConfig,
 	}
 
-	appController, err := controllers.NewApplicationController(c.ControllerAddOrUpdateHandler(), c.ControllerDeleteHandler(), logger.Named("Controllers"))
+	appController, err := controllers.NewApplicationController(c.ControllerAddOrUpdateHandler(), c.ControllerDeleteHandler(), informerLogger)
 	if nil != err {
 		return nil, err
 	}
@@ -474,7 +478,7 @@ func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer sac.workQueue.ShutDown()
 
-	logger.Debug("Waiting for application informers caches to sync")
+	informerLogger.Debug("Waiting for application informers caches to sync")
 	ok := cache.WaitForCacheSync(stopCh,
 		sac.deploymentInformer.HasSynced,
 		sac.replicaSetInformer.HasSynced,
@@ -488,14 +492,14 @@ func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
 	}
 
 	for i := 0; i < sac.AppControllerWorkers; i++ {
-		logger.Sugar().Debugf("Starting application controller processing worker '%d'", i)
-		go wait.Until(sac.runWorker, 500*time.Millisecond, stopCh)
+		informerLogger.Sugar().Debugf("Starting application controller processing worker '%d'", i)
+		go wait.Until(sac.runWorker, 1*time.Second, stopCh)
 	}
 
-	logger.Info("application controller workers started")
+	informerLogger.Info("application controller workers started")
 
 	<-stopCh
-	logger.Error("Shutting down application controller workers")
+	informerLogger.Error("Shutting down application controller workers")
 	return nil
 }
 
@@ -507,7 +511,7 @@ func (sac *SubnetAppController) runWorker() {
 func (sac *SubnetAppController) processNextWorkItem() bool {
 	obj, shutdown := sac.workQueue.Get()
 	if shutdown {
-		logger.Error("application controller workqueue is already shutdown!")
+		informerLogger.Error("application controller workqueue is already shutdown!")
 		return false
 	}
 
@@ -521,7 +525,7 @@ func (sac *SubnetAppController) processNextWorkItem() bool {
 			return fmt.Errorf("expected appWorkQueueKey in workQueue but got '%+v'", obj)
 		}
 
-		log = logger.With(
+		log = informerLogger.With(
 			zap.String("OPERATION", "process_app_items"),
 			zap.String("Application", fmt.Sprintf("%s/%s", key.AppKind, key.MetaNamespaceKey)),
 		)
@@ -706,7 +710,7 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
-	fn := func(poolList spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
+	fn := func(poolList spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string, matchLabel client.MatchingLabels) (err error) {
 		var ipNum int
 		if podSubnetConfig.FlexibleIPNum != nil {
 			ipNum = appReplicas + *(podSubnetConfig.FlexibleIPNum)
@@ -716,16 +720,17 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 
 		// verify whether the pool IPs need to be expanded or not
 		if len(poolList.Items) == 0 {
-			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s'", ipVersion, subnetName)
+			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s' with matchLabel '%v'", ipVersion, subnetName, matchLabel)
 			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
 			// and the IPPool informer will implement the scale action
 			_, err = sac.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
 		} else if len(poolList.Items) == 1 {
 			pool := poolList.Items[0]
-			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)
-			err = sac.subnetMgr.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
+			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' with matchLabel '%v', check it whether need to be scaled", subnetName, pool.Name, matchLabel)
+			_, err = sac.subnetMgr.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
 		} else {
-			err = fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple IPPools '%v' for one specify application", constant.ErrWrongInput, subnetName, poolList.Items)
+			err = fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
+				constant.ErrWrongInput, subnetName, matchLabel, poolList.Items)
 		}
 
 		return
@@ -747,18 +752,19 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 				defer wg.Done()
 
 				var v4PoolList spiderpoolv1.SpiderIPPoolList
-				errV4 = sac.client.List(ctx, &v4PoolList, client.MatchingLabels{
+				matchLabel := client.MatchingLabels{
 					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv4[0],
 					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
 					constant.LabelIPPoolInterface:           item.Interface,
-				})
+				}
+				errV4 = sac.client.List(ctx, &v4PoolList, matchLabel)
 				if nil != errV4 {
 					return
 				}
 
-				errV4 = fn(v4PoolList, item.IPv4[0], constant.IPv4, item.Interface)
+				errV4 = fn(v4PoolList, item.IPv4[0], constant.IPv4, item.Interface, matchLabel)
 			}()
 		}
 
@@ -768,18 +774,19 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 				defer wg.Done()
 
 				var v6PoolList spiderpoolv1.SpiderIPPoolList
-				errV6 = sac.client.List(ctx, &v6PoolList, client.MatchingLabels{
+				matchLabel := client.MatchingLabels{
 					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv6[0],
 					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
 					constant.LabelIPPoolInterface:           item.Interface,
-				})
+				}
+				errV6 = sac.client.List(ctx, &v6PoolList, matchLabel)
 				if nil != errV6 {
 					return
 				}
 
-				errV6 = fn(v6PoolList, item.IPv6[0], constant.IPv6, item.Interface)
+				errV6 = fn(v6PoolList, item.IPv6[0], constant.IPv6, item.Interface, matchLabel)
 			}()
 		}
 

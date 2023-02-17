@@ -109,6 +109,9 @@ func DaemonMain() {
 		}
 	}
 
+	logger.Info("Begin to initialize spiderpool-controller metrics HTTP server")
+	initControllerMetricsServer(context.TODO())
+
 	logger.Sugar().Infof("Begin to initialize cluster default pool configuration")
 	singletons.InitClusterDefaultPool(
 		controllerContext.Cfg.ClusterDefaultIPv4IPPool,
@@ -161,9 +164,6 @@ func DaemonMain() {
 			logger.Fatal(err.Error())
 		}
 	}()
-
-	logger.Info("Begin to initialize spiderpool-controller metrics HTTP server")
-	initControllerMetricsServer(controllerContext.InnerCtx)
 
 	logger.Info("Begin to initialize IP GC Manager")
 	initGCManager(controllerContext.InnerCtx)
@@ -312,6 +312,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			},
 			controllerContext.CRDManager.GetClient(),
 			controllerContext.IPPoolManager,
+			controllerContext.CRDManager.GetScheme(),
 		)
 		if err != nil {
 			logger.Fatal(err.Error())

@@ -13,7 +13,7 @@
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json)
 
-[**English**](./README-en.md) | **简体中文**
+[**English**](./README.md) | **简体中文**
 
 
 ## Spiderpool 介绍

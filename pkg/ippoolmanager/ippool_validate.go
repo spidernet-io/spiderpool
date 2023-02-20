@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
@@ -30,7 +31,7 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 		return field.ErrorList{err}
 	}
 
-	if err := iw.validateIPPoolSubnet(ctx, ipPool); err != nil {
+	if err := iw.validateIPPoolCIDR(ctx, ipPool); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -160,7 +161,7 @@ func (iw *IPPoolWebhook) validateIPPoolIPVersion(version *types.IPVersion) *fiel
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateIPPoolSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if err := spiderpoolip.IsCIDR(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet); err != nil {
 		return field.Invalid(
 			subnetField,
@@ -169,6 +170,11 @@ func (iw *IPPoolWebhook) validateIPPoolSubnet(ctx context.Context, ipPool *spide
 		)
 	}
 
+	if iw.EnableSpiderSubnet {
+		return nil
+	}
+
+	// TODO(iiiceoo): Use label selector.
 	var ipPoolList spiderpoolv1.SpiderIPPoolList
 	if err := iw.Client.List(ctx, &ipPoolList); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
@@ -210,8 +216,18 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		return err
 	}
 
+	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
+	if err != nil {
+		return field.InternalError(ipsField, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err))
+	}
+
+	// TODO(iiiceoo): The list in validateIPPoolCIDR should be reused.
 	var ipPoolList spiderpoolv1.SpiderIPPoolList
-	if err := iw.Client.List(ctx, &ipPoolList); err != nil {
+	if err := iw.Client.List(
+		ctx,
+		&ipPoolList,
+		client.MatchingLabels{constant.LabelIPPoolCIDR: cidr},
+	); err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to list IPPools: %v", err))
 	}
 
@@ -221,7 +237,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 	}
 
 	for _, pool := range ipPoolList.Items {
-		if pool.Spec.Subnet == ipPool.Spec.Subnet && pool.Name != ipPool.Name {
+		if pool.Name != ipPool.Name {
 			existIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 			if err != nil {
 				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the existing IPPool %s: %v", pool.Name, err))
@@ -242,17 +258,6 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 }
 
 func (iw *IPPoolWebhook) validateIPPoolIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
-	if len(ips) == 0 {
-		if iw.EnableSpiderSubnet {
-			return nil
-		}
-
-		return field.Required(
-			ipsField,
-			"requires at least one item",
-		)
-	}
-
 	for i, r := range ips {
 		if err := ValidateContainsIPRange(ipsField.Index(i), version, subnet, r); err != nil {
 			return err

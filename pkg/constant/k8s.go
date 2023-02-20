@@ -72,10 +72,13 @@ const (
 	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"
 	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
 	LabelIPPoolVersion             = AnnotationPre + "/ippool-version"
-	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
-	LabelIPPoolInterface           = AnnotationPre + "/interface"
 	LabelIPPoolVersionV4           = "IPv4"
 	LabelIPPoolVersionV6           = "IPv6"
+	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
+	LabelIPPoolInterface           = AnnotationPre + "/interface"
+
+	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
+	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"
 )
 
 const (

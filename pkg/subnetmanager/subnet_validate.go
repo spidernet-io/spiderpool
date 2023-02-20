@@ -32,7 +32,7 @@ func (sw *SubnetWebhook) validateCreateSubnet(ctx context.Context, subnet *spide
 		return field.ErrorList{err}
 	}
 
-	if err := sw.validateSubnetSubnet(ctx, subnet); err != nil {
+	if err := sw.validateSubnetCIDR(ctx, subnet); err != nil {
 		return field.ErrorList{err}
 	}
 
@@ -166,7 +166,7 @@ func (sw *SubnetWebhook) validateSubnetIPVersion(version *types.IPVersion) *fiel
 	return nil
 }
 
-func (sw *SubnetWebhook) validateSubnetSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	if err := spiderpoolip.IsCIDR(*subnet.Spec.IPVersion, subnet.Spec.Subnet); err != nil {
 		return field.Invalid(
 			subnetField,
@@ -175,6 +175,7 @@ func (sw *SubnetWebhook) validateSubnetSubnet(ctx context.Context, subnet *spide
 		)
 	}
 
+	// TODO(iiiceoo): Use label selector.
 	subnetList := spiderpoolv1.SpiderSubnetList{}
 	if err := sw.List(ctx, &subnetList); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to list Subnets: %v", err))
@@ -205,13 +206,6 @@ func (sw *SubnetWebhook) validateSubnetSubnet(ctx context.Context, subnet *spide
 }
 
 func validateSubnetIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
-	if len(ips) == 0 {
-		return field.Required(
-			ipsField,
-			"requires at least one item",
-		)
-	}
-
 	for i, r := range ips {
 		if err := ippoolmanager.ValidateContainsIPRange(ipsField.Index(i), version, subnet, r); err != nil {
 			return err

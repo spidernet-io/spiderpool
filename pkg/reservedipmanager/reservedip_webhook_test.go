@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -42,8 +41,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 	Describe("Test ReservedIPWebhook's method", func() {
 		var count uint64
-		var rIPName, existRIPName string
-		var rIPT, existRIPT *spiderpoolv1.SpiderReservedIP
+		var rIPName string
+		var rIPT *spiderpoolv1.SpiderReservedIP
 
 		BeforeEach(func() {
 			reservedipmanager.WebhookLogger = logutils.Logger.Named("ReservedIP-Webhook")
@@ -62,18 +61,6 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				},
 				Spec: spiderpoolv1.ReservedIPSpec{},
 			}
-
-			existRIPName = fmt.Sprintf("z-exist-reservedip-%v", count)
-			existRIPT = &spiderpoolv1.SpiderReservedIP{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPKind,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: existRIPName,
-				},
-				Spec: spiderpoolv1.ReservedIPSpec{},
-			}
 		})
 
 		var deleteOption *client.DeleteOptions
@@ -87,9 +74,6 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, rIPT, deleteOption)
-			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
-
-			err = fakeClient.Delete(ctx, existRIPT, deleteOption)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
@@ -261,77 +245,12 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.ips'", func() {
-				It("inputs empty 'spec.ips'", func() {
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
-					Expect(err).NotTo(HaveOccurred())
-				})
-
 				It("inputs invalid 'spec.ips'", func() {
 					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateCreate(ctx, rIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
-				It("failed to list ReservedIPs due to some unknown errors", func() {
-					patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
-					defer patches.Reset()
-
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs,
-						[]string{
-							"172.18.40.1-172.18.40.2",
-							"172.18.40.10",
-						}...,
-					)
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
-				It("exists invalid ReservedIPs in the cluster", func() {
-					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, constant.InvalidIPRange)
-
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, existRIPT)
-					Expect(err).NotTo(HaveOccurred())
-
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs,
-						[]string{
-							"172.18.40.1-172.18.40.2",
-							"172.18.40.10",
-						}...,
-					)
-
-					err = rIPWebhook.ValidateCreate(ctx, rIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
-				It("overlaps with existing ReservedIP", func() {
-					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, "172.18.40.10")
-
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, existRIPT)
-					Expect(err).NotTo(HaveOccurred())
-
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs,
-						[]string{
-							"172.18.40.1-172.18.40.2",
-							"172.18.40.10",
-						}...,
-					)
-
-					err = rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 			})
@@ -423,61 +342,6 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 					ctx := context.TODO()
 					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
-				It("failed to list ReservedIPs due to some unknown errors", func() {
-					patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
-					defer patches.Reset()
-
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
-
-					newRIPT := rIPT.DeepCopy()
-					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
-
-					ctx := context.TODO()
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
-				It("exists invalid ReservedIPs in the cluster", func() {
-					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, constant.InvalidIPRange)
-
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, existRIPT)
-					Expect(err).NotTo(HaveOccurred())
-
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
-					err = fakeClient.Create(ctx, rIPT)
-					Expect(err).NotTo(HaveOccurred())
-
-					newRIPT := rIPT.DeepCopy()
-					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
-
-					err = rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
-				It("overlaps with existing ReservedIP", func() {
-					existRIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					existRIPT.Spec.IPs = append(existRIPT.Spec.IPs, "172.18.40.10")
-
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, existRIPT)
-					Expect(err).NotTo(HaveOccurred())
-
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
-					err = fakeClient.Create(ctx, rIPT)
-					Expect(err).NotTo(HaveOccurred())
-
-					newRIPT := rIPT.DeepCopy()
-					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
-
-					err = rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 			})

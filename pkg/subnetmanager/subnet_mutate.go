@@ -5,7 +5,6 @@ package subnetmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -38,12 +37,25 @@ func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv1.
 		} else if spiderpoolip.IsIPv6CIDR(subnet.Spec.Subnet) {
 			version = constant.IPv6
 		} else {
-			return errors.New("invalid 'spec.ipVersion', noting to mutate")
+			return fmt.Errorf("failed to generate 'spec.ipVersion' from 'spec.subnet' %s, nothing to mutate", subnet.Spec.Subnet)
 		}
 
 		subnet.Spec.IPVersion = new(types.IPVersion)
 		*subnet.Spec.IPVersion = version
 		logger.Sugar().Infof("Set 'spec.ipVersion' to %d", version)
+	}
+
+	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
+	if err != nil {
+		return fmt.Errorf("failed to parse 'spec.subnet' %s as a valid label value: %v", subnet.Spec.Subnet, err)
+	}
+
+	if v, ok := subnet.Labels[constant.LabelSubnetCIDR]; !ok || v != cidr {
+		if subnet.Labels == nil {
+			subnet.Labels = make(map[string]string)
+		}
+		subnet.Labels[constant.LabelSubnetCIDR] = cidr
+		logger.Sugar().Infof("Set label %s: %s", constant.LabelSubnetCIDR, cidr)
 	}
 
 	if len(subnet.Spec.IPs) > 1 {

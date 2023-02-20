@@ -5,7 +5,6 @@ package reservedipmanager
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -72,7 +71,7 @@ func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderRes
 }
 
 func (rw *ReservedIPWebhook) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	return rw.validateReservedIPAvailableIP(ctx, *rIP.Spec.IPVersion, rIP)
+	return rw.validateReservedIPs(ctx, *rIP.Spec.IPVersion, rIP.Spec.IPs)
 }
 
 func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersion) *field.Error {
@@ -112,38 +111,13 @@ func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersio
 	return nil
 }
 
-func (rw *ReservedIPWebhook) validateReservedIPAvailableIP(ctx context.Context, version types.IPVersion, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if len(rIP.Spec.IPs) == 0 {
-		return nil
-	}
-
-	newReservedIPs, err := spiderpoolip.ParseIPRanges(version, rIP.Spec.IPs)
-	if err != nil {
-		return field.Invalid(
-			ipsField,
-			rIP.Spec.IPs,
-			err.Error(),
-		)
-	}
-
-	var rIPList spiderpoolv1.SpiderReservedIPList
-	if err := rw.List(ctx, &rIPList); err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to list ReservedIPs: %v", err))
-	}
-
-	for _, r := range rIPList.Items {
-		if r.Name == rIP.Name || *r.Spec.IPVersion != version {
-			continue
-		}
-
-		existReservedIPs, err := spiderpoolip.ParseIPRanges(version, r.Spec.IPs)
-		if err != nil {
-			return field.InternalError(ipsField, fmt.Errorf("failed to parse 'spec.ips':\n%v\n of the existing ReservedIP %s: %v", r.Spec.IPs, r.Name, err))
-		}
-		if len(spiderpoolip.IPsIntersectionSet(newReservedIPs, existReservedIPs)) > 0 {
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("overlaps with the existing ReservedIP %s", r.Name),
+func (rw *ReservedIPWebhook) validateReservedIPs(ctx context.Context, version types.IPVersion, ips []string) *field.Error {
+	for i, r := range ips {
+		if err := spiderpoolip.IsIPRange(version, r); err != nil {
+			return field.Invalid(
+				ipsField.Index(i),
+				ips[i],
+				err.Error(),
 			)
 		}
 	}

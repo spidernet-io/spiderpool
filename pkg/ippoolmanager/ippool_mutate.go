@@ -5,12 +5,12 @@ package ippoolmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -29,12 +29,6 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv1.
 		return nil
 	}
 
-	if iw.EnableSpiderSubnet {
-		if err := iw.setControllerSubnet(ctx, ipPool); err != nil {
-			return apierrors.NewInternalError(fmt.Errorf("failed to set the reference of the controller Subnet: %v", err))
-		}
-	}
-
 	if !controllerutil.ContainsFinalizer(ipPool, constant.SpiderFinalizer) {
 		controllerutil.AddFinalizer(ipPool, constant.SpiderFinalizer)
 		logger.Sugar().Infof("Add finalizer %s", constant.SpiderFinalizer)
@@ -47,12 +41,31 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv1.
 		} else if spiderpoolip.IsIPv6CIDR(ipPool.Spec.Subnet) {
 			version = constant.IPv6
 		} else {
-			return errors.New("invalid 'spec.ipVersion', noting to mutate")
+			return fmt.Errorf("failed to generate 'spec.ipVersion' from 'spec.subnet' %s, nothing to mutate", ipPool.Spec.Subnet)
 		}
 
 		ipPool.Spec.IPVersion = new(types.IPVersion)
 		*ipPool.Spec.IPVersion = version
 		logger.Sugar().Infof("Set 'spec.ipVersion' to %d", version)
+	}
+
+	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
+	if err != nil {
+		return fmt.Errorf("failed to parse 'spec.subnet' %s as a valid label value: %v", ipPool.Spec.Subnet, err)
+	}
+
+	if v, ok := ipPool.Labels[constant.LabelIPPoolCIDR]; !ok || v != cidr {
+		if ipPool.Labels == nil {
+			ipPool.Labels = make(map[string]string)
+		}
+		ipPool.Labels[constant.LabelIPPoolCIDR] = cidr
+		logger.Sugar().Infof("Set label %s: %s", constant.LabelIPPoolCIDR, cidr)
+	}
+
+	if iw.EnableSpiderSubnet {
+		if err := iw.setControllerSubnet(ctx, ipPool); err != nil {
+			return apierrors.NewInternalError(fmt.Errorf("failed to set the reference of the controller Subnet: %v", err))
+		}
 	}
 
 	if len(ipPool.Spec.IPs) > 1 {
@@ -87,29 +100,35 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 		return nil
 	}
 
+	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
+	if err != nil {
+		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err)
+	}
+
 	var subnetList spiderpoolv1.SpiderSubnetList
-	if err := iw.Client.List(ctx, &subnetList); err != nil {
+	if err := iw.Client.List(
+		ctx,
+		&subnetList,
+		client.MatchingLabels{constant.LabelSubnetCIDR: cidr},
+	); err != nil {
 		return fmt.Errorf("failed to list Subnets: %v", err)
 	}
 
-	for _, subnet := range subnetList.Items {
-		if subnet.Spec.Subnet == ipPool.Spec.Subnet {
-			if !metav1.IsControlledBy(ipPool, &subnet) {
-				if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Scheme); err != nil {
-					return fmt.Errorf("failed to set owner reference: %v", err)
-				}
-				logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
-			}
+	if len(subnetList.Items) == 0 {
+		return nil
+	}
 
-			if ipPool.Labels == nil {
-				ipPool.Labels = make(map[string]string)
-			}
-			if v, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
-				ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
-				logger.Sugar().Infof("Set label %s: %s", constant.LabelIPPoolOwnerSpiderSubnet, subnet.Name)
-			}
-			break
+	subnet := subnetList.Items[0]
+	if !metav1.IsControlledBy(ipPool, &subnet) {
+		if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Scheme); err != nil {
+			return fmt.Errorf("failed to set owner reference: %v", err)
 		}
+		logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
+	}
+
+	if v, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
+		ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
+		logger.Sugar().Infof("Set label %s: %s", constant.LabelIPPoolOwnerSpiderSubnet, subnet.Name)
 	}
 
 	return nil

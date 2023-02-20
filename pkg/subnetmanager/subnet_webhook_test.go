@@ -106,7 +106,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("adds finalizer", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 
 				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
@@ -114,6 +114,36 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 				contains := controllerutil.ContainsFinalizer(subnetT, constant.SpiderFinalizer)
 				Expect(contains).To(BeTrue())
+			})
+
+			It("failed to parse 'spec.subnet' as a valid label value", func() {
+				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
+
+				ctx := context.TODO()
+				err := subnetWebhook.Default(ctx, subnetT)
+				Expect(err).NotTo(HaveOccurred())
+
+				v, ok := subnetT.Labels[constant.LabelSubnetCIDR]
+				Expect(ok).To(BeFalse())
+				Expect(v).To(BeEmpty())
+			})
+
+			It("sets CIDR label", func() {
+				subnet := "172.18.40.0/24"
+				subnetT.Spec.Subnet = subnet
+
+				ctx := context.TODO()
+				err := subnetWebhook.Default(ctx, subnetT)
+				Expect(err).NotTo(HaveOccurred())
+
+				cidr, err := spiderpoolip.CIDRToLabelValue(*subnetT.Spec.IPVersion, subnet)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cidr).NotTo(BeEmpty())
+
+				v, ok := subnetT.Labels[constant.LabelSubnetCIDR]
+				Expect(ok).To(BeTrue())
+				Expect(v).To(Equal(cidr))
 			})
 
 			It("failed to set 'spec.ipVersion' due to the invalid 'spec.subnet'", func() {
@@ -145,6 +175,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ipVersion'", func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
@@ -167,6 +198,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ips'", func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
 						constant.InvalidIPRange,
@@ -190,7 +222,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("merges IPv4 'spec.ips'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
@@ -211,7 +243,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("merges IPv6 'spec.ips'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
 						"abcd:1234::a",
@@ -233,6 +265,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			It("failed to merge 'spec.excludeIPs' due to the invalid 'spec.ipVersion'", func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs,
 					[]string{
 						"172.18.40.10",
@@ -255,6 +288,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			It("failed to merge 'spec.excludeIPs' due to the invalid 'spec.ips'", func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs,
 					[]string{
 						constant.InvalidIPRange,
@@ -278,7 +312,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("merges IPv4 'spec.excludeIPs'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs,
 					[]string{
 						"172.18.40.10",
@@ -299,7 +333,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("merges IPv6 'spec.excludeIPs'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs,
 					[]string{
 						"abcd:1234::a",
@@ -482,15 +516,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.ips'", func() {
-				It("inputs empty 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					subnetT.Spec.Subnet = "172.18.40.0/24"
-
-					ctx := context.TODO()
-					err := subnetWebhook.ValidateCreate(ctx, subnetT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
 				It("inputs invalid 'spec.ips'", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
@@ -787,24 +812,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.ips'", func() {
-				It("removes all 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					subnetT.Spec.Subnet = "172.18.40.0/24"
-					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
-						[]string{
-							"172.18.40.1-172.18.40.2",
-							"172.18.40.10",
-						}...,
-					)
-
-					newSubnetT := subnetT.DeepCopy()
-					newSubnetT.Spec.IPs = nil
-
-					ctx := context.TODO()
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
 				It("appends invalid IP range to 'spec.ips'", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"

@@ -5,6 +5,7 @@ package ip
 
 import (
 	"net"
+	"strings"
 
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -21,4 +22,16 @@ func AssembleTotalIPs(ipVersion types.IPVersion, ipRanges, excludedIPRanges []st
 	totalIPs := IPsDiffSet(ips, excludeIPs)
 
 	return totalIPs, nil
+}
+
+func CIDRToLabelValue(ipVersion types.IPVersion, subnet string) (string, error) {
+	if err := IsCIDR(ipVersion, subnet); err != nil {
+		return "", err
+	}
+
+	value := strings.Replace(subnet, ".", "-", 3)
+	value = strings.Replace(value, ":", "-", 7)
+	value = strings.Replace(value, "/", "-", 1)
+
+	return value, nil
 }

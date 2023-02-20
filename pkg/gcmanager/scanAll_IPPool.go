@@ -16,7 +16,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -159,8 +158,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				}
 
 				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IP corresponding allocation containerID is different with wep current containerID
-				allocation := workloadendpointmanager.RetrieveIPAllocation(poolIPAllocation.ContainerID, poolIPAllocation.NIC, endpoint)
-				if allocation == nil {
+				if endpoint.Status.Current != nil && endpoint.Status.Current.ContainerID != poolIPAllocation.ContainerID {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation containerID is different with wep current containerID"))
 					// release IP but no need to remove wep finalizer
 					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndCID{{

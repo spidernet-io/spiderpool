@@ -24,3 +24,4 @@
 /.licenserc.yaml @weizhoublue
 /codecov.yml @weizhoublue
 /.golangci.yaml @weizhoublue
+/MAINTAINERS.md @weizhoublue

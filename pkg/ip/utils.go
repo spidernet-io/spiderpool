@@ -19,7 +19,7 @@ func AssembleTotalIPs(ipVersion types.IPVersion, ipRanges, excludedIPRanges []st
 	if nil != err {
 		return nil, err
 	}
-	totalIPs := IPsDiffSet(ips, excludeIPs)
+	totalIPs := IPsDiffSet(ips, excludeIPs, false)
 
 	return totalIPs, nil
 }

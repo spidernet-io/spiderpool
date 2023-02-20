@@ -163,7 +163,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 		return nil, err
 	}
 
-	availableIPs := spiderpoolip.IPsDiffSet(totalIPs, append(reservedIPs, usedIPs...))
+	availableIPs := spiderpoolip.IPsDiffSet(totalIPs, append(reservedIPs, usedIPs...), false)
 	if len(availableIPs) == 0 {
 		return nil, constant.ErrIPUsedOut
 	}

@@ -338,7 +338,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			return err
 		}
 
-		validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs)
+		validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs, false)
 		tmpCount += len(validIPs)
 
 		ranges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, validIPs)

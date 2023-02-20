@@ -310,7 +310,7 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 		return nil, err
 	}
 
-	ips := ip.IPsDiffSet(ips1, ips2)
+	ips := ip.IPsDiffSet(ips1, ips2, false)
 	return ips, nil
 }
 
@@ -358,7 +358,7 @@ LOOP:
 							return err
 						}
 
-						diffIps := ip.IPsDiffSet(ips1, ips2)
+						diffIps := ip.IPsDiffSet(ips1, ips2, false)
 						if diffIps != nil {
 							GinkgoWriter.Printf("inconsistent ip records in subnet %v/%v and pool %v/%v \n", subnetName, ips2, pool.Name, ips1)
 							continue LOOP

@@ -86,7 +86,7 @@ func validateSubnetTotalIPsContainsIPPoolTotalIPs(subnet *spiderpoolv1.SpiderSub
 		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
 	}
 
-	outIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, subnetTotalIPs)
+	outIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, subnetTotalIPs, false)
 	if len(outIPs) > 0 {
 		ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*ipPool.Spec.IPVersion, outIPs)
 		return field.Forbidden(

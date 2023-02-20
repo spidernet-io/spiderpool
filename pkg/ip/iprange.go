@@ -158,7 +158,7 @@ func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool,
 	// verified in IsIPRange above.
 	ips1, _ := ParseIPRange(version, ipRange1)
 	ips2, _ := ParseIPRange(version, ipRange2)
-	if len(ips1) > len(IPsDiffSet(ips1, ips2)) {
+	if len(ips1) > len(IPsDiffSet(ips1, ips2, false)) {
 		return true, nil
 	}
 

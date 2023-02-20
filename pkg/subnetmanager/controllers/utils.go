@@ -80,7 +80,7 @@ func GenSubnetFreeIPs(subnet *spiderpoolv1.SpiderSubnet) ([]net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-	freeIPs := spiderpoolip.IPsDiffSet(totalIPs, usedIPs)
+	freeIPs := spiderpoolip.IPsDiffSet(totalIPs, usedIPs, true)
 
 	return freeIPs, nil
 }

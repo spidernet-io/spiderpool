@@ -354,9 +354,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		var newPodList *corev1.PodList
 		var defaultV4PoolNameList, defaultV6PoolNameList []string
 		const stsOriginialNum = int(1)
-		statefulSetName = "sts" + tools.RandomName()
 
 		BeforeEach(func() {
+			// test statefulSet name
+			statefulSetName = "sts" + tools.RandomName()
+
 			// Create IPv4 pools and IPv6 pools
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)

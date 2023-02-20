@@ -476,16 +476,16 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 	})
 
 	Context("Validity of fields in subnet.spec", func() {
-		var deployName string = "deploy" + tools.RandomName()
 		var fixedIPNumber string = "+0"
 		var deployOriginiaNum int32 = 1
+		var deployName string
 
 		BeforeEach(func() {
+			deployName = "deploy" + tools.RandomName()
 			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(10)
 			Expect(v4SubnetObject).NotTo(BeNil())
 			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(10)
 			Expect(v6SubnetObject).NotTo(BeNil())
-
 			// Delete namespaces and delete subnets
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("delete v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
@@ -835,28 +835,21 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Eventually(func() bool {
 				podList, err = frame.GetPodListByLabel(deployYaml.Spec.Template.Labels)
 				if nil != err {
-					GinkgoWriter.Printf("failed to get pod list %v", err)
+					GinkgoWriter.Printf("failed to get pod list %v \n", err)
 					return false
 				}
-				if len(podList.Items) == 0 {
+				// Compare Pod List numbers
+				if len(podList.Items) != int(deployOriginiaNum) {
 					return false
-				}
-				for _, pod := range podList.Items {
-					ctx, cancel = context.WithTimeout(context.Background(), common.EventOccurTimeout)
-					defer cancel()
-					err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, namespace, common.CNIFailedToSetUpNetwork)
-					if err != nil {
-						GinkgoWriter.Printf("failed to get event %v", err)
-						// https://github.com/spidernet-io/spiderpool/issues/1329
-						// Probable failure to fetch event or event is swiped and never fetched,
-						// restart the pod and let it fetch again
-						Expect(frame.DeletePod(pod.Name, namespace)).NotTo(HaveOccurred())
-						return false
-					}
 				}
 				return true
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
+			ctx, cancel = context.WithTimeout(context.Background(), common.EventOccurTimeout)
+			defer cancel()
+			for _, pod := range podList.Items {
+				err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, namespace, common.CNIFailedToSetUpNetwork)
+			}
 			Expect(frame.DeleteDeployment(deployName, namespace)).NotTo(HaveOccurred())
 		})
 	})

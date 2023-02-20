@@ -453,13 +453,14 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	Context("Spiderpool will successively try to allocate IP in the order of the elements in the IPPool array until the first allocation succeeds or all fail", func() {
 		var v4PoolNameList1, v6PoolNameList1, v4PoolNameList2, v6PoolNameList2 []string
 		var err error
-		var deployName = "deploy" + tools.RandomName()
+		var deployName string
 		var (
 			podOriginialNum int = 1
 			podScaleupNum   int = 2
 			ippoolIpNum     int = 1
 		)
 		BeforeEach(func() {
+			deployName = "deploy" + tools.RandomName()
 			// Create one ippool to be used as backup ippool
 			if frame.Info.IpV4Enabled {
 				if frame.Info.SpiderSubnetEnabled {

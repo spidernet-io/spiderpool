@@ -190,6 +190,7 @@ var _ = Describe("IP", Label("ip_test"), func() {
 					net.IPv4(172, 18, 40, 2),
 					net.IPv4(172, 18, 40, 3),
 				},
+				true,
 			)
 			Expect(ips).To(Equal([]net.IP{net.IPv4(172, 18, 40, 1)}))
 		})
@@ -204,6 +205,7 @@ var _ = Describe("IP", Label("ip_test"), func() {
 					net.ParseIP("abcd:1234::2"),
 					net.ParseIP("abcd:1234::3"),
 				},
+				true,
 			)
 			Expect(ips).To(Equal([]net.IP{net.ParseIP("abcd:1234::1")}))
 		})
@@ -220,6 +222,7 @@ var _ = Describe("IP", Label("ip_test"), func() {
 					net.IPv4(172, 18, 40, 2),
 					net.IPv4(172, 18, 40, 3),
 				},
+				true,
 			)
 			Expect(ips).To(Equal(
 				[]net.IP{
@@ -240,6 +243,7 @@ var _ = Describe("IP", Label("ip_test"), func() {
 					net.ParseIP("abcd:1234::2"),
 					net.ParseIP("abcd:1234::3"),
 				},
+				true,
 			)
 			Expect(ips).To(Equal(
 				[]net.IP{
@@ -262,6 +266,7 @@ var _ = Describe("IP", Label("ip_test"), func() {
 					net.IPv4(172, 18, 40, 2),
 					net.IPv4(172, 18, 40, 3),
 				},
+				true,
 			)
 			Expect(ips).To(Equal([]net.IP{net.IPv4(172, 18, 40, 2)}))
 		})
@@ -276,6 +281,7 @@ var _ = Describe("IP", Label("ip_test"), func() {
 					net.ParseIP("abcd:1234::2"),
 					net.ParseIP("abcd:1234::3"),
 				},
+				true,
 			)
 			Expect(ips).To(Equal([]net.IP{net.ParseIP("abcd:1234::2")}))
 		})

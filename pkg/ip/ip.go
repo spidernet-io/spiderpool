@@ -80,7 +80,9 @@ func IsIP(version types.IPVersion, s string) error {
 // IPsDiffSet calculates the difference set of two IP address slices.
 // For example, the difference set between [172.18.40.1 172.18.40.2] and
 // [172.18.40.2 172.18.40.3] is [172.18.40.1].
-func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
+//
+// If sorted is true, the result set of IP addresses will be sorted.
+func IPsDiffSet(ips1, ips2 []net.IP, sorted bool) []net.IP {
 	var ips []net.IP
 	marks := make(map[string]bool)
 	for _, ip := range ips1 {
@@ -99,9 +101,11 @@ func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
 		ips = append(ips, net.ParseIP(k))
 	}
 
-	sort.Slice(ips, func(i, j int) bool {
-		return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
-	})
+	if sorted {
+		sort.Slice(ips, func(i, j int) bool {
+			return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+		})
+	}
 
 	return ips
 }
@@ -109,7 +113,9 @@ func IPsDiffSet(ips1, ips2 []net.IP) []net.IP {
 // IPsUnionSet calculates the union set of two IP address slices.
 // For example, the union set between [172.18.40.1 172.18.40.2] and
 // [172.18.40.2 172.18.40.3] is [172.18.40.1 172.18.40.2 172.18.40.3].
-func IPsUnionSet(ips1, ips2 []net.IP) []net.IP {
+//
+// If sorted is true, the result set of IP addresses will be sorted.
+func IPsUnionSet(ips1, ips2 []net.IP, sorted bool) []net.IP {
 	var ips []net.IP
 	marks := make(map[string]bool)
 	ips1 = append(ips1, ips2...)
@@ -123,9 +129,11 @@ func IPsUnionSet(ips1, ips2 []net.IP) []net.IP {
 		ips = append(ips, net.ParseIP(k))
 	}
 
-	sort.Slice(ips, func(i, j int) bool {
-		return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
-	})
+	if sorted {
+		sort.Slice(ips, func(i, j int) bool {
+			return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+		})
+	}
 
 	return ips
 }
@@ -133,7 +141,9 @@ func IPsUnionSet(ips1, ips2 []net.IP) []net.IP {
 // IPsIntersectionSet calculates the intersection set of two IP address
 // slices. For example, the intersection set between [172.18.40.1 172.18.40.2]
 // and [172.18.40.2 172.18.40.3] is [172.18.40.2].
-func IPsIntersectionSet(ips1, ips2 []net.IP) []net.IP {
+//
+// If sorted is true, the result set of IP addresses will be sorted.
+func IPsIntersectionSet(ips1, ips2 []net.IP, sorted bool) []net.IP {
 	var ips []net.IP
 	set := make(map[string]bool)
 	for _, ip := range ips1 {
@@ -153,9 +163,11 @@ func IPsIntersectionSet(ips1, ips2 []net.IP) []net.IP {
 		ips = append(ips, net.ParseIP(k))
 	}
 
-	sort.Slice(ips, func(i, j int) bool {
-		return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
-	})
+	if sorted {
+		sort.Slice(ips, func(i, j int) bool {
+			return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+		})
+	}
 
 	return ips
 }

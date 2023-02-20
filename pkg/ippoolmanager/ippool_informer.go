@@ -497,7 +497,7 @@ func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spide
 			if nil != err {
 				return fmt.Errorf("%w: failed to parse IP ranges '%v', error: %v", constant.ErrWrongInput, allocatedIPRanges, err)
 			}
-			freeIPs := spiderpoolip.IPsDiffSet(totalIPs, allocatedIPs)
+			freeIPs := spiderpoolip.IPsDiffSet(totalIPs, allocatedIPs, true)
 			discardedIPs := freeIPs[:totalIPCount-desiredIPNum]
 			discardedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, discardedIPs)
 			if nil != err {
@@ -756,7 +756,7 @@ func (ic *IPPoolController) scaleIPPoolWithIPs(ctx context.Context, pool *spider
 			return fmt.Errorf("failed to parse IP ranges '%v', error: %v", pool.Spec.IPs, err)
 		}
 
-		sortedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, spiderpoolip.IPsDiffSet(totalIPs, discardedIPs))
+		sortedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, spiderpoolip.IPsDiffSet(totalIPs, discardedIPs, false))
 		if nil != err {
 			return fmt.Errorf("failed to convert IPs '%v' to IP ranges, error: %v", ipRanges, err)
 		}
@@ -822,7 +822,7 @@ func (ic *IPPoolController) generateIPsFromSubnetWhenScaleUpIP(ctx context.Conte
 		// the subnetPoolAllocatedIPs is greater than pool total IP counts indicates that
 		// the SpiderSubnet updated successfully but the IPPool failed to update in the last procession
 		if len(subnetPoolAllocatedIPs) > len(poolTotalIPs) {
-			lastAllocatedIPs := spiderpoolip.IPsDiffSet(subnetPoolAllocatedIPs, poolTotalIPs)
+			lastAllocatedIPs := spiderpoolip.IPsDiffSet(subnetPoolAllocatedIPs, poolTotalIPs, false)
 			log.Sugar().Warnf("SpiderSubnet '%s' Status ControlledIPPool '%s' has the allocated IPs '%v', try to re-use it!", subnetName, pool.Name, lastAllocatedIPs)
 			if len(lastAllocatedIPs) == desiredIPNum-len(poolTotalIPs) {
 				// last allocated IPs is same with the current allocation request
@@ -853,7 +853,7 @@ func (ic *IPPoolController) generateIPsFromSubnetWhenScaleUpIP(ctx context.Conte
 	}
 
 	if len(reservedIPs) != 0 {
-		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, reservedIPs)
+		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, reservedIPs, true)
 	}
 
 	if len(pool.Spec.ExcludeIPs) != 0 {
@@ -861,7 +861,7 @@ func (ic *IPPoolController) generateIPsFromSubnetWhenScaleUpIP(ctx context.Conte
 		if nil != err {
 			return nil, fmt.Errorf("failed to parse exclude IP ranges '%v', error: %v", pool.Spec.ExcludeIPs, err)
 		}
-		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, excludeIPs)
+		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, excludeIPs, true)
 	}
 
 	// check the filtered subnet free IP number is enough or not

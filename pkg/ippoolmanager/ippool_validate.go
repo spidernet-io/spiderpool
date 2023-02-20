@@ -243,7 +243,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the existing IPPool %s: %v", pool.Name, err))
 			}
 
-			overlapIPs := spiderpoolip.IPsIntersectionSet(newIPs, existIPs)
+			overlapIPs := spiderpoolip.IPsIntersectionSet(newIPs, existIPs, false)
 			if len(overlapIPs) > 0 {
 				overlapRanges, _ := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, overlapIPs)
 				return field.Forbidden(

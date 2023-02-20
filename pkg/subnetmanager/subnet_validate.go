@@ -117,7 +117,7 @@ func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 		if err != nil {
 			return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse the pre-allocation of the IPPool %s: %v", poolName, err))
 		}
-		invalidIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, totalIPs)
+		invalidIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, totalIPs, false)
 		if len(invalidIPs) > 0 {
 			ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*subnet.Spec.IPVersion, invalidIPs)
 			return field.Forbidden(

@@ -137,7 +137,7 @@ func DaemonMain() {
 			ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
 			EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
 			EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
-			OperationRetries:         agentContext.Cfg.UpdateCRMaxRetries,
+			OperationRetries:         agentContext.Cfg.WaitSubnetPoolMaxRetries,
 			OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 			LimiterConfig:            limiter.LimiterConfig{MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize},
 		},

@@ -573,70 +573,6 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		return nil, err
 	}
 
-	// This function will find the IPPool with the given match labels.
-	// The first return parameter represents the IPPool name, and the second parameter represents whether you need to create IPPool for orphan pod.
-	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
-	findSubnetIPPool := func(matchLabels client.MatchingLabels) (*spiderpoolv1.SpiderIPPool, bool, error) {
-		var pool *spiderpoolv1.SpiderIPPool
-		subnetName := matchLabels[constant.LabelIPPoolOwnerSpiderSubnet]
-		for j := 1; j <= i.config.OperationRetries; j++ {
-			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
-			if nil != err {
-				return nil, false, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabels, err)
-			}
-
-			// validation
-			if poolList == nil || len(poolList.Items) == 0 {
-				// the orphan pod should create its auto IPPool immediately if no IPPool found
-				if podController.Kind == constant.KindPod || podController.Kind == constant.KindUnknown {
-					return nil, true, nil
-				}
-
-				logger.Sugar().Errorf("fetch SubnetIPPool %d times: no '%s' IPPool retrieved from SpiderSubnet '%s' with matchLabel '%v', wait for a second and get a retry",
-					j, matchLabels[constant.LabelIPPoolVersion], subnetName, matchLabels)
-				time.Sleep(i.config.OperationGapDuration)
-				continue
-			} else if len(poolList.Items) == 1 {
-				pool = poolList.Items[0].DeepCopy()
-
-				// check whether the auto IPPool need to scale it desiredIPNumber or not for orphan pod and third party controller application
-				if podController.Kind == constant.KindPod || podController.Kind == constant.KindUnknown {
-					logger.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' and check it whether need to be scaled", subnetName, pool.Name)
-					enableScaled, err := i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
-					if nil != err {
-						return nil, false, fmt.Errorf("failed to check IPPool %s whether need to be scaled: %v", pool.Name, err)
-					}
-					if enableScaled {
-						// wait for a while and let ippool informer to scale the IPPool's IPs
-						time.Sleep(i.config.OperationGapDuration)
-					}
-				}
-
-				// we fetched Auto-created IPPool but it doesn't have any IPs, just wait for a while and let the IPPool informer to allocate IPs for it
-				if len(pool.Spec.IPs) == 0 {
-					logger.Sugar().Errorf("fetch SubnetIPPool %d times: retrieved IPPool '%s' but no IPs, wait for a second and get a retry", j, pool.Name)
-					time.Sleep(i.config.OperationGapDuration)
-					continue
-				}
-			} else {
-				return nil, false, fmt.Errorf("it's invalid for '%s/%s/%s' corresponding SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
-					podController.Kind, podController.Namespace, podController.Name, subnetName, matchLabels, poolList.Items)
-			}
-
-			break
-		}
-		if pool == nil {
-			return nil, false, fmt.Errorf("no matching IPPool candidate with labels '%v'", matchLabels)
-		}
-		return pool, false, nil
-	}
-
-	var v4PoolCandidate, v6PoolCandidate *spiderpoolv1.SpiderIPPool
-	// we create auto-created IPPool for orphan pod or third party controller application here
-	var shouldCreateV4Pool, shouldCreateV6Pool bool
-	var errV4, errV6 error
-	var wg sync.WaitGroup
-
 	// get pod annotation "ipam.spidernet.io/reclaim-ippool"
 	reclaimIPPool, err := subnetmanagercontrollers.ShouldReclaimIPPool(pod.Annotations)
 	if nil != err {
@@ -647,32 +583,87 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		reclaimIPPool = false
 	}
 
+	// This function will find the IPPool with the given match labels.
+	// The first return parameter represents the IPPool name, and the second parameter represents whether you need to create IPPool for orphan pod.
+	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
+	findSubnetIPPool := func(subnetName string, matchLabels client.MatchingLabels, ipVersion types.IPVersion) (*spiderpoolv1.SpiderIPPool, error) {
+		var pool *spiderpoolv1.SpiderIPPool
+		for j := 1; j <= i.config.OperationRetries; j++ {
+			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
+			if nil != err {
+				return nil, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabels, err)
+			}
+
+			// validation
+			if len(poolList.Items) == 0 {
+				// the orphan pod should create its auto IPPool immediately if no IPPool found
+				if podController.Kind == constant.KindPod || podController.Kind == constant.KindUnknown {
+					logger.Sugar().Infof("operation %d times: pod top controller is %s, try to create an Auto-created IPPool", j, podController.Kind)
+					_, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, poolIPNum, ipVersion, reclaimIPPool, nic)
+					if nil != err {
+						return nil, err
+					}
+				} else {
+					logger.Sugar().Warnf("fetch SubnetIPPool %d times: no '%s' IPPool retrieved from SpiderSubnet '%s' with matchLabel '%v', wait for a second and get a retry",
+						j, matchLabels[constant.LabelIPPoolVersion], subnetName, matchLabels)
+				}
+
+				time.Sleep(i.config.OperationGapDuration)
+				continue
+			} else if len(poolList.Items) == 1 {
+				pool = poolList.Items[0].DeepCopy()
+				logger.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' with matchLabel '%v'", subnetName, matchLabels)
+
+				// check whether the auto IPPool need to scale its desiredIPNumber or not, this serves for orphan pod and third party controller application
+				if podController.Kind == constant.KindPod || podController.Kind == constant.KindUnknown {
+					err := i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
+					if nil != err {
+						if apierrors.IsConflict(err) {
+							logger.Sugar().Warnf("update IPPool '%s' status DesiredIPNumber conflict: %v", pool.Name, err)
+							continue
+						}
+						return nil, fmt.Errorf("failed to check IPPool %s whether need to be scaled: %v", pool.Name, err)
+					}
+				}
+
+				// we fetched Auto-created IPPool but it doesn't have any IPs, just wait for a while and let the IPPool informer to allocate IPs for it
+				if !isPoolIPsDesired(pool) {
+					logger.Sugar().Warnf("fetch SubnetIPPool %d times: retrieved IPPool '%s' but no IPs, wait for a second and get a retry", j, pool.Name)
+					time.Sleep(i.config.OperationGapDuration)
+					continue
+				}
+			} else {
+				return nil, fmt.Errorf("it's invalid for '%s/%s/%s' corresponding SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
+					podController.Kind, podController.Namespace, podController.Name, subnetName, matchLabels, poolList.Items)
+			}
+
+			break
+		}
+		if pool == nil {
+			return nil, fmt.Errorf("no matching IPPool candidate with labels '%v'", matchLabels)
+		}
+		return pool, nil
+	}
+
+	var v4PoolCandidate, v6PoolCandidate *spiderpoolv1.SpiderIPPool
+	var errV4, errV6 error
+	var wg sync.WaitGroup
+
 	// if enableIPv4 is off and get the specified SpiderSubnet IPv4 name, just filter it out
 	if i.config.EnableIPv4 && len(subnetItem.IPv4) != 0 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			v4PoolCandidate, shouldCreateV4Pool, errV4 = findSubnetIPPool(client.MatchingLabels{
+			v4PoolCandidate, errV4 = findSubnetIPPool(subnetItem.IPv4[0], client.MatchingLabels{
 				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
 				constant.LabelIPPoolOwnerSpiderSubnet:   subnetItem.IPv4[0],
 				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 				constant.LabelIPPoolInterface:           subnetItem.Interface,
-			})
+			}, constant.IPv4)
 			if nil != errV4 {
 				return
-			}
-
-			if shouldCreateV4Pool {
-				v4Pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetItem.IPv4[0], podController, podSelector, poolIPNum, constant.IPv4, reclaimIPPool, nic)
-				if nil != err {
-					errV4 = err
-					return
-				}
-				v4PoolCandidate = v4Pool
-				// wait for a second to make the spiderpool-controller allocates IP for the IPPool from SpiderSubnet
-				time.Sleep(i.config.OperationGapDuration)
 			}
 		}()
 	}
@@ -683,26 +674,15 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		go func() {
 			defer wg.Done()
 
-			v6PoolCandidate, shouldCreateV6Pool, errV6 = findSubnetIPPool(client.MatchingLabels{
+			v6PoolCandidate, errV6 = findSubnetIPPool(subnetItem.IPv6[0], client.MatchingLabels{
 				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
 				constant.LabelIPPoolOwnerSpiderSubnet:   subnetItem.IPv6[0],
 				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 				constant.LabelIPPoolInterface:           subnetItem.Interface,
-			})
+			}, constant.IPv6)
 			if nil != errV6 {
 				return
-			}
-
-			if shouldCreateV6Pool {
-				v6Pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetItem.IPv6[0], podController, podSelector, poolIPNum, constant.IPv6, reclaimIPPool, nic)
-				if nil != err {
-					errV6 = err
-					return
-				}
-				v6PoolCandidate = v6Pool
-				// wait for a second to make the spiderpool-controller allocates IP for the IPPool from SpiderSubnet
-				time.Sleep(i.config.OperationGapDuration)
 			}
 		}()
 	}
@@ -734,8 +714,6 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 }
 
 func (i *ipam) getPoolFromClusterDefaultSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool, podController types.PodTopController) (*ToBeAllocated, error) {
-	log := logutils.FromContext(ctx)
-
 	poolIPNum, podSelector, err := getAutoPoolIPNumberAndSelector(pod, podController)
 	if nil != err {
 		return nil, err
@@ -747,18 +725,9 @@ func (i *ipam) getPoolFromClusterDefaultSubnet(ctx context.Context, pod *corev1.
 		return nil, err
 	}
 
-	var v4Pool, v6Pool *spiderpoolv1.SpiderIPPool
-	for j := 0; j <= i.config.OperationRetries; j++ {
-		v4Pool, v6Pool, err = i.findOrApplyClusterSubnetDefaultIPPool(ctx, podController, podSelector, nic, poolIPNum, reclaimIPPool)
-		if nil != err {
-			if j == i.config.OperationRetries {
-				return nil, fmt.Errorf("exhaust all retries to find or apply auto-created IPPool: %v", err)
-			}
-			log.Sugar().Errorf("failed to find or apply auto-created IPPool with %d times: %v", j, err)
-			time.Sleep(i.config.OperationGapDuration)
-			continue
-		}
-		break
+	v4Pool, v6Pool, err := i.findOrApplyClusterDefaultSubnetIPPool(ctx, podController, podSelector, nic, poolIPNum, reclaimIPPool)
+	if nil != err {
+		return nil, fmt.Errorf("failed to find or apply auto-created IPPool: %v", err)
 	}
 
 	// no cluster default subnets
@@ -790,9 +759,9 @@ func (i *ipam) getPoolFromClusterDefaultSubnet(ctx context.Context, pod *corev1.
 	return result, nil
 }
 
-// findOrApplyClusterSubnetDefaultIPPool serves for cluster default subnet usage.
+// findOrApplyClusterDefaultSubnetIPPool serves for cluster default subnet usage.
 // This will create auto-created IPPool or update auto-created IPPool desired IP number
-func (i *ipam) findOrApplyClusterSubnetDefaultIPPool(ctx context.Context, podController types.PodTopController, podSelector *metav1.LabelSelector,
+func (i *ipam) findOrApplyClusterDefaultSubnetIPPool(ctx context.Context, podController types.PodTopController, podSelector *metav1.LabelSelector,
 	ifName string, poolIPNum int, reclaimIPPool bool) (v4Pool, v6Pool *spiderpoolv1.SpiderIPPool, err error) {
 	log := logutils.FromContext(ctx)
 
@@ -809,32 +778,58 @@ func (i *ipam) findOrApplyClusterSubnetDefaultIPPool(ctx context.Context, podCon
 		return nil, nil, nil
 	}
 
-	fn := func(poolList *spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, matchLabel client.MatchingLabels) (*spiderpoolv1.SpiderIPPool, error) {
-		if poolList == nil || len(poolList.Items) == 0 {
-			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from cluster default SpiderSubent '%s' with matchLabel '%v'",
-				ipVersion, subnetName, matchLabel)
-			pool, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, poolIPNum, ipVersion, reclaimIPPool, ifName)
+	fn := func(subnetName string, ipVersion types.IPVersion, matchLabel client.MatchingLabels) (*spiderpoolv1.SpiderIPPool, error) {
+		var pool *spiderpoolv1.SpiderIPPool
+		for j := 1; j <= i.config.OperationRetries; j++ {
+			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabel)
 			if nil != err {
-				return nil, err
+				return nil, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabel, err)
 			}
-			return pool, nil
-		} else if len(poolList.Items) == 1 {
-			pool := poolList.Items[0].DeepCopy()
-			log.Sugar().Debugf("found cluster default SpiderSubnet '%s' IPPool '%s' with matchLabel '%v', check it whether need to be scaled",
-				subnetName, pool.Name, matchLabel)
-			enableScaled, err := i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
-			if nil != err {
-				return nil, err
-			}
-			if enableScaled {
-				// wait for a while and let ippool informer to scale the IPPool's IPs
+
+			if len(poolList.Items) == 0 {
+				log.Sugar().Infof("operation %d times: there's no 'IPv%d' IPPoolList retrieved from cluster default SpiderSubnet '%s' with matchLabel '%v', try to create one",
+					j, ipVersion, subnetName, matchLabel)
+				_, err := i.subnetManager.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, poolIPNum, ipVersion, reclaimIPPool, ifName)
+				if nil != err {
+					if apierrors.IsAlreadyExists(err) || apierrors.IsConflict(err) {
+						log.Sugar().Infof("operation %d times: create cluster default SpiderSubnet Auto-created IPPool conflict: %v", j, err)
+						continue
+					}
+					return nil, err
+				}
+				// no IPs right now, wait for a while and let ippool informer to scale the IPPool's IPs
 				time.Sleep(i.config.OperationGapDuration)
+				continue
+			} else if len(poolList.Items) == 1 {
+				pool = poolList.Items[0].DeepCopy()
+				log.Sugar().Debugf("found cluster default SpiderSubnet '%s' IPPool '%s' with matchLabel '%v'",
+					subnetName, pool.Name, matchLabel)
+				err := i.subnetManager.CheckScaleIPPool(ctx, pool, subnetName, poolIPNum)
+				if nil != err {
+					if apierrors.IsConflict(err) {
+						log.Sugar().Warnf("update cluster default SpiderSubnet IPPool '%s' status DesiredIPNumber conflict: %v", pool.Name, err)
+						continue
+					}
+					return nil, err
+				}
+				// we fetched Auto-created IPPool but it doesn't match the desiredIPNumber,
+				// just wait for a while and let the IPPool informer to allocate IPs for it
+				if !isPoolIPsDesired(pool) {
+					log.Sugar().Warnf("fetch SubnetIPPool %d times: retrieved IPPool '%s' doesn't match desired IP number, wait for a second and get a retry", j, pool.Name)
+					time.Sleep(i.config.OperationGapDuration)
+					continue
+				}
+			} else {
+				return nil, fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
+					constant.ErrWrongInput, subnetName, matchLabel, poolList.Items)
 			}
-			return pool, nil
-		} else {
-			return nil, fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
-				constant.ErrWrongInput, subnetName, matchLabel, poolList.Items)
+
+			break
 		}
+		if pool == nil {
+			return nil, fmt.Errorf("no matching cluster default subnet IPPool with labels '%v'", matchLabel)
+		}
+		return pool, nil
 	}
 
 	var errV4, errV6 error
@@ -845,20 +840,13 @@ func (i *ipam) findOrApplyClusterSubnetDefaultIPPool(ctx context.Context, podCon
 		go func() {
 			defer wg.Done()
 
-			matchLabels := client.MatchingLabels{
+			v4Pool, errV4 = fn(clusterDefaultV4Subnet, constant.IPv4, client.MatchingLabels{
 				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 				constant.LabelIPPoolOwnerSpiderSubnet:   clusterDefaultV4Subnet,
 				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
 				constant.LabelIPPoolInterface:           ifName,
-			}
-			v4PoolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
-			if nil != err {
-				errV4 = fmt.Errorf("failed to get IPv4 IPPoolList with labels '%v', error: %v", matchLabels, err)
-				return
-			}
-
-			v4Pool, errV4 = fn(v4PoolList.DeepCopy(), clusterDefaultV4Subnet, constant.IPv4, matchLabels)
+			})
 		}()
 	}
 
@@ -867,20 +855,13 @@ func (i *ipam) findOrApplyClusterSubnetDefaultIPPool(ctx context.Context, podCon
 		go func() {
 			defer wg.Done()
 
-			matchLabels := client.MatchingLabels{
+			v6Pool, errV6 = fn(clusterDefaultV6Subnet, constant.IPv6, client.MatchingLabels{
 				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
 				constant.LabelIPPoolOwnerSpiderSubnet:   clusterDefaultV6Subnet,
 				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
 				constant.LabelIPPoolInterface:           ifName,
-			}
-			v6PoolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
-			if nil != err {
-				errV6 = fmt.Errorf("failed to get IPv6 IPPoolList with labels '%v', error: %v", matchLabels, err)
-				return
-			}
-
-			v6Pool, errV6 = fn(v6PoolList.DeepCopy(), clusterDefaultV6Subnet, constant.IPv6, matchLabels)
+			})
 		}()
 	}
 

@@ -36,7 +36,10 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	config.QPS = 50
+	config.Burst = 100
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		Port:                   port,
 		CertDir:                path.Dir(controllerContext.Cfg.TlsServerCertPath),

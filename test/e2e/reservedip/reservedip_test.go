@@ -5,6 +5,7 @@ package reservedip_test
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -169,7 +170,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			}
 
 			// Get the Pod creation failure Event
-			ctx, cancel := context.WithTimeout(context.Background(), common.EventOccurTimeout)
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 			for _, pod := range podlist.Items {
 				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())

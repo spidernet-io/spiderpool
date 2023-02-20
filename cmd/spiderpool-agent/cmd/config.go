@@ -59,7 +59,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
 	{"SPIDERPOOL_LIMITER_MAX_QUEUE_SIZE", "1000", true, nil, nil, &agentContext.Cfg.LimiterMaxQueueSize},
 	{"SPIDERPOOL_ENABLED_STATEFULSET", "true", true, nil, &agentContext.Cfg.EnableStatefulSet, nil},
-	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "2", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
+	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "1", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
+	{"SPIDERPOOL_WAIT_SUBNET_POOL_MAX_RETRIES", "50", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolMaxRetries},
 	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &agentContext.Cfg.GoMaxProcs},
 	{"GIT_COMMIT_VERSION", "", false, &agentContext.Cfg.CommitVersion, nil, nil},
 	{"GIT_COMMIT_TIME", "", false, &agentContext.Cfg.CommitTime, nil, nil},
@@ -88,6 +89,7 @@ type Config struct {
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
 	WaitSubnetPoolTime                int
+	WaitSubnetPoolMaxRetries          int
 
 	LimiterMaxQueueSize int
 

@@ -727,7 +727,7 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 		} else if len(poolList.Items) == 1 {
 			pool := poolList.Items[0]
 			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' with matchLabel '%v', check it whether need to be scaled", subnetName, pool.Name, matchLabel)
-			_, err = sac.subnetMgr.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
+			err = sac.subnetMgr.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
 		} else {
 			err = fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
 				constant.ErrWrongInput, subnetName, matchLabel, poolList.Items)

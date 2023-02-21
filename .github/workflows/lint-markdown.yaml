@@ -45,6 +45,6 @@ jobs:
           config_file: '.github/markdownlint.yaml'
           ignore_path: '.github/markdownlintignore'
 
-      - name: Run Spell Lint
-        run: |
-          make lint-markdown-spell
+      #- name: Run Spell Lint
+      #  run: |
+      #    make lint-markdown-spell

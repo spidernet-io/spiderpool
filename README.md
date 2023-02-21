@@ -12,6 +12,10 @@
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/e1d3c092d1b9f61f1c8e36f09d2809cb/raw/spiderpoole2e.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json)
+***
+
+**English** | [**简体中文**](./README-zh_CN.md)
+
 
 ## Status
 
@@ -20,8 +24,6 @@ Currently, the Spiderpool is under beta stage, not ready for production environm
 ## Introduction
 
 The Spiderpool is an IP Address Management (IPAM) CNI plugin that assigns IP addresses for kubernetes clusters.
-
-Currently, it is under developing stage, not ready for production environment yet.
 
 Any Container Network Interface (CNI) plugin supporting third-party IPAM plugins can use the Spiderpool,
 such as [MacVLAN CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
@@ -99,6 +101,7 @@ Refer to [architecture](docs/concepts/arch.md) for components.
 
 ## Installation
 
+
 Refer to [installation](./docs/usage/install.md).
 
 ## Quick Start
@@ -106,6 +109,7 @@ Refer to [installation](./docs/usage/install.md).
 Refer to [demo](./docs/usage/basic.md).
 
 ## Development
+
 
 [Development guide](docs/develop/pullrequest.md) is a reference point for development helper commands.
 

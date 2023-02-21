@@ -1,3 +1,37 @@
+## 2.8.3
+
+Released to fix security issue in golang.org/x/net dependency
+
+### Maintenance
+
+- Bump golang.org/x/net from 0.6.0 to 0.7.0 (#1141) [fc1a02e]
+- remove tools.go hack from documentation [0718693]
+
+## 2.8.2
+
+Ginkgo now includes a `tools.go` file in the root directory of the `ginkgo` package.  This should allow modules that simply `go get github.com/onsi/ginkgo/v2` to also pull in the CLI dependencies.  This obviates the need for consumers of Ginkgo to have their own `tools.go` file and makes it simpler to ensure that the version of the `ginkgo` CLI being used matches the version of the library.  You can simply run `go run github.com/onsi/ginkgo/v2/ginkgo` to run the version of the cli associated with your package go.mod.
+
+### Maintenance
+
+- Bump github.com/onsi/gomega from 1.26.0 to 1.27.0 (#1139) [5767b0a]
+- Fix minor typos (#1138) [e1e9723]
+- Fix link in V2 Migration Guide (#1137) [a588f60]
+
+## 2.8.1
+
+### Fixes
+- lock around default report output to avoid triggering the race detector when calling By from goroutines [2d5075a]
+- don't run ReportEntries through sprintf [febbe38]
+
+### Maintenance
+- Bump golang.org/x/tools from 0.5.0 to 0.6.0 (#1135) [11a4860]
+- test: update matrix for Go 1.20 (#1130) [4890a62]
+- Bump golang.org/x/sys from 0.4.0 to 0.5.0 (#1133) [a774638]
+- Bump github.com/onsi/gomega from 1.25.0 to 1.26.0 (#1120) [3f233bd]
+- Bump github-pages from 227 to 228 in /docs (#1131) [f9b8649]
+- Bump activesupport from 6.0.6 to 6.0.6.1 in /docs (#1127) [6f8c042]
+- Update index.md with instructions on how to upgrade Ginkgo [833a75e]
+
 ## 2.8.0
 
 ### Features
@@ -149,7 +183,7 @@ to build tooling on top of as it has stronger guarantees to be stable from versi
 
 ### Fixes
 - correcting some typos (#1064) [1403d3c]
-- fix flaky internal_integration interupt specs [2105ba3]
+- fix flaky internal_integration interrupt specs [2105ba3]
 - Correct busted link in README [be6b5b9]
 
 ### Maintenance

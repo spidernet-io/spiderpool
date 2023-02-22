@@ -258,14 +258,15 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 		return client.IgnoreNotFound(err)
 	}
 
-	// Record the metric of how many IPPools the Subnet has.
-	metric.SubnetPoolCounts.Record(int64(len(subnet.Status.ControlledIPPools)), attribute.String(constant.SpiderSubnetKind, subnet.Name))
+	subnetCopy := subnet.DeepCopy()
+	if err := sc.syncMetadate(ctx, subnetCopy); err != nil {
+		return fmt.Errorf("failed to sync metadate of Subnet: %v", err)
+	}
 
-	if err := sc.syncControllerSubnet(ctx, subnet); err != nil {
+	if err := sc.syncControllerSubnet(ctx, subnetCopy); err != nil {
 		return fmt.Errorf("failed to sync reference for controller Subnet: %v", err)
 	}
 
-	subnetCopy := subnet.DeepCopy()
 	if err := sc.syncControlledIPPoolIPs(ctx, subnetCopy); err != nil {
 		return fmt.Errorf("failed to sync the IP ranges of controlled IPPools of Subnet: %v", err)
 	}
@@ -273,6 +274,30 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	if subnet.DeletionTimestamp != nil {
 		if err := sc.removeFinalizer(ctx, subnetCopy); err != nil {
 			return fmt.Errorf("failed to remove finalizer: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (sc *SubnetController) syncMetadate(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
+	if err != nil {
+		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", subnet.Spec.Subnet, err)
+	}
+
+	sync := false
+	if v, ok := subnet.Labels[constant.LabelSubnetCIDR]; !ok || v != cidr {
+		if subnet.Labels == nil {
+			subnet.Labels = make(map[string]string)
+		}
+		subnet.Labels[constant.LabelSubnetCIDR] = cidr
+		sync = true
+	}
+
+	if sync {
+		if err := sc.Update(ctx, subnet); err != nil {
+			return err
 		}
 	}
 
@@ -290,8 +315,8 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 			continue
 		}
 
-		poolCopy := pool.DeepCopy()
 		orphan := false
+		poolCopy := pool.DeepCopy()
 		if !metav1.IsControlledBy(poolCopy, subnet) {
 			if err := ctrl.SetControllerReference(subnet, poolCopy, sc.Scheme); err != nil {
 				return err
@@ -299,10 +324,10 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 			orphan = true
 		}
 
-		if poolCopy.Labels == nil {
-			poolCopy.Labels = make(map[string]string)
-		}
 		if v, ok := poolCopy.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; !ok || v != subnet.Name {
+			if poolCopy.Labels == nil {
+				poolCopy.Labels = make(map[string]string)
+			}
 			poolCopy.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnet.Name
 			orphan = true
 		}
@@ -318,13 +343,13 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 }
 
 func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	selector := labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector()
+	ipPools, err := sc.IPPoolsLister.List(selector)
 	if err != nil {
 		return err
 	}
 
-	selector := labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector()
-	ipPools, err := sc.IPPoolsLister.List(selector)
+	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
 		return err
 	}
@@ -357,7 +382,14 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	allocatedIPCount := int64(tmpCount)
 	subnet.Status.AllocatedIPCount = &allocatedIPCount
 
-	return sc.Status().Update(ctx, subnet)
+	if err := sc.Status().Update(ctx, subnet); err != nil {
+		return err
+	}
+
+	// Record the metric of how many IPPools the Subnet has.
+	metric.SubnetPoolCounts.Record(int64(len(subnet.Status.ControlledIPPools)), attribute.String(constant.SpiderSubnetKind, subnet.Name))
+
+	return nil
 }
 
 func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {

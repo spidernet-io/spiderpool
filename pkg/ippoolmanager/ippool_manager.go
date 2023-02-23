@@ -269,19 +269,6 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 	return nil
 }
 
-func (im *ipPoolManager) CreateIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
-	err := im.client.Create(ctx, pool)
-	if nil != err {
-		if apierrors.IsAlreadyExists(err) {
-			return nil
-		}
-
-		return fmt.Errorf("failed to create IPPool '%s', error: %v", pool.Name, err)
-	}
-
-	return nil
-}
-
 func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
 	err := im.client.DeleteAllOf(ctx, pool, opts...)
 	if client.IgnoreNotFound(err) != nil {

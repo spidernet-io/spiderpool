@@ -411,6 +411,7 @@ func setupInformers() {
 			MaxWorkqueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
 			WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 			WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
+			ResyncPeriod:                  time.Duration(controllerContext.Cfg.IPPoolInformerResyncPeriod) * time.Second,
 		},
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.RIPManager,

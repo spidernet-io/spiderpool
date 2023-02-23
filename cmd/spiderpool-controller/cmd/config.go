@@ -85,6 +85,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WORKQUEUE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
 	{"SPIDERPOOL_WORKQUEUE_MAX_RETRIES", "500", true, nil, nil, &controllerContext.Cfg.WorkQueueMaxRetries},
+	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 }
 
 type Config struct {
@@ -124,6 +125,7 @@ type Config struct {
 	// if IPPoolWorkQueueRequeueDelayDuration is negative number, we would not requeue it
 	WorkQueueRequeueDelayDuration int
 
+	IPPoolInformerResyncPeriod       int
 	IPPoolInformerWorkers            int
 	IPPoolInformerMaxWorkQueueLength int
 

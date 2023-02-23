@@ -76,6 +76,7 @@ type IPPoolControllerConfig struct {
 	MaxWorkqueueLength            int
 	WorkQueueRequeueDelayDuration time.Duration
 	WorkQueueMaxRetries           int
+	ResyncPeriod                  time.Duration
 }
 
 func NewIPPoolController(poolControllerConfig IPPoolControllerConfig, client client.Client, rIPManager reservedipmanager.ReservedIPManager) *IPPoolController {
@@ -128,7 +129,7 @@ func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclients
 			}()
 
 			informerLogger.Info("create SpiderIPPool informer")
-			factory := externalversions.NewSharedInformerFactory(client, 0)
+			factory := externalversions.NewSharedInformerFactory(client, ic.ResyncPeriod)
 			ic.addEventHandlers(
 				factory.Spiderpool().V1().SpiderIPPools(),
 				factory.Spiderpool().V1().SpiderSubnets(),
@@ -169,7 +170,23 @@ func (ic *IPPoolController) addEventHandlers(poolInformer informers.SpiderIPPool
 		subnetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: ic.syncSubnetIPPools,
 			UpdateFunc: func(oldObj, newObj interface{}) {
-				ic.syncSubnetIPPools(newObj)
+				enableSync := false
+				oldSubnet := oldObj.(*spiderpoolv1.SpiderSubnet)
+				newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
+				if oldSubnet.Status.TotalIPCount != nil && newSubnet.Status.TotalIPCount != nil {
+					if *oldSubnet.Status.TotalIPCount != *newSubnet.Status.TotalIPCount {
+						enableSync = true
+					}
+				}
+				if oldSubnet.Status.AllocatedIPCount != nil && newSubnet.Status.AllocatedIPCount != nil {
+					// free IPs is much more
+					if *newSubnet.Status.AllocatedIPCount < *oldSubnet.Status.AllocatedIPCount {
+						enableSync = true
+					}
+				}
+				if enableSync {
+					ic.syncSubnetIPPools(newObj)
+				}
 			},
 			DeleteFunc: nil,
 		})

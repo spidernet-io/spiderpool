@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -27,7 +28,7 @@ type SubnetManager interface {
 	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
 	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
 	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, podController types.PodTopController, podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error)
-	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) (bool, error)
+	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
 }
 
 type subnetManager struct {
@@ -124,6 +125,12 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 		poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV6
 	}
 
+	cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*sp.Spec.IPVersion, sp.Spec.Subnet)
+	if nil != err {
+		return nil, fmt.Errorf("failed to parse '%s' when allocating empty Auto-created IPPool '%v'", sp.Spec.Subnet, sp)
+	}
+	poolLabels[constant.LabelIPPoolCIDR] = cidrLabelValue
+
 	if reclaimIPPool {
 		poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
 	}
@@ -158,12 +165,12 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 }
 
 // CheckScaleIPPool will fetch some IPs from the specified subnet manager to expand the pool IPs
-func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetName string, ipNum int) (bool, error) {
+func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetName string, ipNum int) error {
 	if pool == nil {
-		return false, fmt.Errorf("%w: IPPool must be specified", constant.ErrWrongInput)
+		return fmt.Errorf("%w: IPPool must be specified", constant.ErrWrongInput)
 	}
 	if ipNum <= 0 {
-		return false, fmt.Errorf("%w: assign IP number '%d' is invalid", constant.ErrWrongInput, ipNum)
+		return fmt.Errorf("%w: assign IP number '%d' is invalid", constant.ErrWrongInput, ipNum)
 	}
 
 	log := logutils.FromContext(ctx)
@@ -175,7 +182,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 		// ignore it if they are equal
 		if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
 			log.Sugar().Debugf("no need to scale subnet '%s' IPPool '%s'", subnetName, pool.Name)
-			return false, nil
+			return nil
 		}
 
 		// not equal
@@ -186,9 +193,9 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 		log.Sugar().Infof("try to update IPPool '%s' status DesiredIPNumber to '%d'", pool.Name, ipNum)
 		err := sm.ipPoolManager.UpdateDesiredIPNumber(ctx, pool, ipNum)
 		if nil != err {
-			return true, err
+			return err
 		}
 	}
 
-	return false, nil
+	return nil
 }

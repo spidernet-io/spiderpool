@@ -143,7 +143,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Different replicas of applications can be assigned IP addresses of different subnets. See [example](./docs/usage/ippool-affinity-node.md) for details
 
-* An application can have spare IP resources by setting multiple IP pools. See [example](./docs/usage/ippool-multi.md) for details
+* Multiple IP pools can be set in an application for backup IP resources. See [example](./docs/usage/ippool-multi.md) for details
 
 * Set global reserved IPs that will not be allocated, which can avoid IP conflicts with IPs outside the cluster. See [example](./docs/usage/reserved-ip.md) for details
 
@@ -153,7 +153,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * IP pools can be shared globally or bound to a specified tenant. See [example](./docs/usage/ippool-affinity-namespace.md) for details
 
-* Provide a sound IP recycling mechanism maximize the usage of IP resources. See [example](./docs/usage/????) for details
+* Provide a sound IP recycling mechanism to maximize the usage of IP resources. See [example](./docs/usage/????) for details
 
 * All the above features can work in ipv4-only, ipv6-only, and dual-stack scenarios
 

@@ -17,7 +17,6 @@
 /go.mod @weizhoublue
 /LICENSE @weizhoublue
 /Makefile* @weizhoublue
-/README.md @weizhoublue
 /README-en.md @weizhoublue @Jeanine-tw
 /README-zh_CN.md @weizhoublue
 /go.sum @weizhoublue

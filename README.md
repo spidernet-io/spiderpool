@@ -16,9 +16,6 @@
 
 **English** | [**简体中文**](./README-zh_CN.md)
 
-
-**English** | [**简体中文**](./README-zh_CN.md)
-
 ## Introduction
 
 Spiderpool is a Kubernetes IP Address Management (IPAM) CNI plugin designed to provide the ability of IP address management for underlay networks. Spiderpool can work well with any CNI project that is compatible with third-party IPAM plugins.

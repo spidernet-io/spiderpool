@@ -42,7 +42,7 @@ The characteristics of these IPAM solutions for overlay networks:
 
     This means:
     First, since the IPAM plugin on each node only needs to allocate and release IP addresses in the local IP block, there is no IP allocation conflict with IPAM on other nodes, and achieve more efficient allocation.
-    Second, a specific IP address follows a IP block and is allocated within a node all the time, and cannot be scheduled with the POD.
+    Second, a specific IP address follows an IP block and is allocated within a node all the time, and cannot be scheduled with the POD.
 
 2. Sufficient IP address resources
 
@@ -139,11 +139,11 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
     For stateful applications, IP addresses can be automatically fixed for each POD, and the overall IP scaling range can be fixed as well. See [example](./docs/usage/????) for more details.
 
-* Applications not requiring static IP addresses can share a IP pool. See [example](./docs/usage/????) for details
+* Applications not requiring static IP addresses can share an IP pool. See [example](./docs/usage/????) for details
 
-* Different replicas of applications deployed across subnets can be assigned IP addresses of different subnets. See [example](./docs/usage/ippool-affinity-node.md) for details
+* Different replicas of applications can be assigned IP addresses of different subnets. See [example](./docs/usage/ippool-affinity-node.md) for details
 
-* The application can have spare IP resources by setting multiple IP pools. See [example](./docs/usage/ippool-multi.md) for details
+* Multiple IP pools can be set in an application for backup IP resources. See [example](./docs/usage/ippool-multi.md) for details
 
 * Set global reserved IPs that will not be allocated, which can avoid IP conflicts with IPs outside the cluster. See [example](./docs/usage/reserved-ip.md) for details
 
@@ -153,7 +153,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * IP pools can be shared globally or bound to a specified tenant. See [example](./docs/usage/ippool-affinity-namespace.md) for details
 
-* Provide a sound IP recycling mechanism maxmize the usage of IP resources. See [example](./docs/usage/????) for details
+* Provide a sound IP recycling mechanism to maximize the usage of IP resources. See [example](./docs/usage/????) for details
 
 * All the above features can work in ipv4-only, ipv6-only, and dual-stack scenarios
 

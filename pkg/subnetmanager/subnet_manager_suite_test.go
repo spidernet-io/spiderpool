@@ -16,10 +16,12 @@ import (
 	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	subnetmanagermock "github.com/spidernet-io/spiderpool/pkg/subnetmanager/mock"
 )
 
 var mockCtrl *gomock.Controller
 var mockLeaderElector *electionmock.MockSpiderLeaseElector
+var mockSubnetMgr *subnetmanagermock.MockSubnetManager
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
@@ -47,4 +49,5 @@ var _ = BeforeSuite(func() {
 	}
 
 	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
+	mockSubnetMgr = subnetmanagermock.NewMockSubnetManager(mockCtrl)
 })

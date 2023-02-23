@@ -44,7 +44,7 @@ type SubnetAppController struct {
 	appController *controllers.Controller
 
 	deploymentsLister  appslisters.DeploymentLister
-	deploymentInformer cache.SharedIndexInformer
+	DeploymentInformer cache.SharedIndexInformer
 
 	replicaSetLister   appslisters.ReplicaSetLister
 	replicaSetInformer cache.SharedIndexInformer
@@ -114,7 +114,7 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 			factory := kubeinformers.NewSharedInformerFactory(client, 0)
 			sac.addEventHandlers(factory)
 			factory.Start(innerCtx.Done())
-			err := sac.Run(innerCtx.Done())
+			err := sac.run(innerCtx.Done())
 			if nil != err {
 				informerLogger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
 			}
@@ -413,8 +413,8 @@ func NewSubnetAppController(client client.Client, subnetMgr SubnetManager, subne
 
 func (sac *SubnetAppController) addEventHandlers(factory kubeinformers.SharedInformerFactory) {
 	sac.deploymentsLister = factory.Apps().V1().Deployments().Lister()
-	sac.deploymentInformer = factory.Apps().V1().Deployments().Informer()
-	sac.appController.AddDeploymentHandler(sac.deploymentInformer)
+	sac.DeploymentInformer = factory.Apps().V1().Deployments().Informer()
+	sac.appController.AddDeploymentHandler(sac.DeploymentInformer)
 
 	sac.replicaSetLister = factory.Apps().V1().ReplicaSets().Lister()
 	sac.replicaSetInformer = factory.Apps().V1().ReplicaSets().Informer()
@@ -473,13 +473,13 @@ func (sac *SubnetAppController) enqueueApp(ctx context.Context, obj interface{},
 	log.Sugar().Debugf("added '%v' to application controller workequeue", appKey)
 }
 
-func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
+func (sac *SubnetAppController) run(stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer sac.workQueue.ShutDown()
 
 	informerLogger.Debug("Waiting for application informers caches to sync")
 	ok := cache.WaitForCacheSync(stopCh,
-		sac.deploymentInformer.HasSynced,
+		sac.DeploymentInformer.HasSynced,
 		sac.replicaSetInformer.HasSynced,
 		sac.daemonSetInformer.HasSynced,
 		sac.statefulSetInformer.HasSynced,

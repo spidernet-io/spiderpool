@@ -31,7 +31,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	metrics "github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -540,7 +539,6 @@ func (sac *SubnetAppController) processNextWorkItem() bool {
 
 			// requeue the conflict items
 			if apierrors.IsConflict(err) {
-				metrics.AutoPoolCreateOrMarkConflictCounts.Add(context.TODO(), 1)
 				sac.workQueue.AddRateLimited(obj)
 				log.Sugar().Warnf("encountered app controller syncHandler conflict '%v', retrying...", err)
 				return nil

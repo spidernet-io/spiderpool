@@ -25,6 +25,7 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -587,8 +588,18 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	// The first return parameter represents the IPPool name, and the second parameter represents whether you need to create IPPool for orphan pod.
 	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
 	findSubnetIPPool := func(subnetName string, matchLabels client.MatchingLabels, ipVersion types.IPVersion) (*spiderpoolv1.SpiderIPPool, error) {
+		isRetried := false
+		defer func() {
+			if isRetried {
+				metric.AutoPoolWaitedForAvailableCounts.Add(ctx, 1)
+			}
+		}()
+
 		var pool *spiderpoolv1.SpiderIPPool
 		for j := 1; j <= i.config.OperationRetries; j++ {
+			if j > 1 {
+				isRetried = true
+			}
 			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
 			if nil != err {
 				return nil, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabels, err)
@@ -779,8 +790,19 @@ func (i *ipam) findOrApplyClusterDefaultSubnetIPPool(ctx context.Context, podCon
 	}
 
 	fn := func(subnetName string, ipVersion types.IPVersion, matchLabel client.MatchingLabels) (*spiderpoolv1.SpiderIPPool, error) {
+		isRetried := false
+		defer func() {
+			if isRetried {
+				metric.AutoPoolWaitedForAvailableCounts.Add(ctx, 1)
+			}
+		}()
+
 		var pool *spiderpoolv1.SpiderIPPool
 		for j := 1; j <= i.config.OperationRetries; j++ {
+			if j > 1 {
+				isRetried = true
+			}
+
 			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabel)
 			if nil != err {
 				return nil, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabel, err)

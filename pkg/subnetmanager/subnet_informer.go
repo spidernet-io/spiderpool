@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -47,6 +48,9 @@ type SubnetController struct {
 
 	SubnetsLister listers.SpiderSubnetLister
 	IPPoolsLister listers.SpiderIPPoolLister
+
+	SubnetIndexer cache.Indexer
+	IPPoolIndexer cache.Indexer
 
 	SubnetsSynced cache.InformerSynced
 	IPPoolsSynced cache.InformerSynced
@@ -122,6 +126,8 @@ func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.
 func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubnetInformer, ipPoolInformer informers.SpiderIPPoolInformer) {
 	sc.SubnetsLister = subnetInformer.Lister()
 	sc.IPPoolsLister = ipPoolInformer.Lister()
+	sc.SubnetIndexer = subnetInformer.Informer().GetIndexer()
+	sc.IPPoolIndexer = ipPoolInformer.Informer().GetIndexer()
 	sc.SubnetsSynced = subnetInformer.Informer().HasSynced
 	sc.IPPoolsSynced = ipPoolInformer.Informer().HasSynced
 	sc.Workqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), constant.SpiderSubnetKind)
@@ -259,8 +265,8 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	}
 
 	subnetCopy := subnet.DeepCopy()
-	if err := sc.syncMetadate(ctx, subnetCopy); err != nil {
-		return fmt.Errorf("failed to sync metadate of Subnet: %v", err)
+	if err := sc.syncMetadata(ctx, subnetCopy); err != nil {
+		return fmt.Errorf("failed to sync metadata of Subnet: %v", err)
 	}
 
 	if err := sc.syncControllerSubnet(ctx, subnetCopy); err != nil {
@@ -280,7 +286,7 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	return nil
 }
 
-func (sc *SubnetController) syncMetadate(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
 	if err != nil {
 		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", subnet.Spec.Subnet, err)
@@ -362,6 +368,9 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 		if err != nil {
 			return err
 		}
+		if len(poolTotalIPs) == 0 {
+			continue
+		}
 
 		validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs, false)
 		tmpCount += len(validIPs)
@@ -372,22 +381,30 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 		}
 		controlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
 	}
-	subnet.Status.ControlledIPPools = controlledIPPools
+
+	sync := false
+	if !reflect.DeepEqual(controlledIPPools, subnet.Status.ControlledIPPools) {
+		allocatedIPCount := int64(tmpCount)
+		subnet.Status.AllocatedIPCount = &allocatedIPCount
+		subnet.Status.ControlledIPPools = controlledIPPools
+		sync = true
+	}
 
 	// Update the count of total IP addresses.
 	totalIPCount := int64(len(subnetTotalIPs))
-	subnet.Status.TotalIPCount = &totalIPCount
-
-	// Update the count of pre-allocated IP addresses.
-	allocatedIPCount := int64(tmpCount)
-	subnet.Status.AllocatedIPCount = &allocatedIPCount
-
-	if err := sc.Status().Update(ctx, subnet); err != nil {
-		return err
+	if !reflect.DeepEqual(&totalIPCount, subnet.Status.TotalIPCount) {
+		subnet.Status.TotalIPCount = &totalIPCount
+		sync = true
 	}
 
-	// Record the metric of how many IPPools the Subnet has.
-	metric.SubnetPoolCounts.Record(int64(len(subnet.Status.ControlledIPPools)), attribute.String(constant.SpiderSubnetKind, subnet.Name))
+	if sync {
+		if err := sc.Status().Update(ctx, subnet); err != nil {
+			return err
+		}
+
+		// Record the metric of how many IPPools the Subnet has.
+		metric.SubnetPoolCounts.Record(int64(len(subnet.Status.ControlledIPPools)), attribute.String(constant.SpiderSubnetKind, subnet.Name))
+	}
 
 	return nil
 }
@@ -401,6 +418,10 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 			subnet,
 			client.PropagationPolicy(metav1.DeletePropagationForeground),
 		); err != nil {
+			return err
+		}
+
+		if err := sc.Get(ctx, types.NamespacedName{Name: subnet.Name}, subnet); err != nil {
 			return err
 		}
 	}

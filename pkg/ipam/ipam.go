@@ -218,10 +218,14 @@ func (i *ipam) reallocateIPPoolIPRecords(ctx context.Context, containerID, nodeN
 
 	pics := GroupIPDetails(containerID, nodeName, endpoint.Status.Current.IPs)
 	tickets := pics.Pools()
+	timeRecorder := metric.NewTimeRecorder()
 	if err := i.ipamLimiter.AcquireTicket(ctx, tickets...); err != nil {
 		return fmt.Errorf("failed to queue correctly: %v", err)
 	}
 	defer i.ipamLimiter.ReleaseTicket(ctx, tickets...)
+
+	// Record the metric of queuing time for allocating.
+	metric.IPAMDurationConstruct.RecordIPAMAllocationLimitDuration(ctx, timeRecorder.SinceInSeconds())
 
 	errCh := make(chan error, len(pics))
 	wg := sync.WaitGroup{}
@@ -381,10 +385,14 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	logger := logutils.FromContext(ctx)
 
 	tickets := tt.Pools()
+	timeRecorder := metric.NewTimeRecorder()
 	if err := i.ipamLimiter.AcquireTicket(ctx, tickets...); err != nil {
 		return nil, fmt.Errorf("failed to queue correctly: %v", err)
 	}
 	defer i.ipamLimiter.ReleaseTicket(ctx, tickets...)
+
+	// Record the metric of queuing time for allocating.
+	metric.IPAMDurationConstruct.RecordIPAMAllocationLimitDuration(ctx, timeRecorder.SinceInSeconds())
 
 	n := len(tt.Candidates())
 	resultCh := make(chan *AllocationResult, n)
@@ -1111,6 +1119,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, containerID, nic string, e
 		logger.Sugar().Infof("Roll back IP allocation details: %+v", details)
 
 		if err := i.release(ctx, containerID, details); err != nil {
+			metric.IpamAllocationRollbackFailureCounts.Add(ctx, 1)
 			return fmt.Errorf("failed to roll back the allocated IP addresses: %v", err)
 		}
 		i.removeRollback(containerID)
@@ -1192,10 +1201,14 @@ func (i *ipam) release(ctx context.Context, containerID string, details []spider
 	logger := logutils.FromContext(ctx)
 	pics := GroupIPDetails(containerID, "", details)
 	tickets := pics.Pools()
+	timeRecorder := metric.NewTimeRecorder()
 	if err := i.ipamLimiter.AcquireTicket(ctx, tickets...); err != nil {
 		return fmt.Errorf("failed to queue correctly: %v", err)
 	}
 	defer i.ipamLimiter.ReleaseTicket(ctx, tickets...)
+
+	// Record the metric of queuing time for release.
+	metric.IPAMDurationConstruct.RecordIPAMReleaseLimitDuration(ctx, timeRecorder.SinceInSeconds())
 
 	errCh := make(chan error, len(pics))
 	wg := sync.WaitGroup{}

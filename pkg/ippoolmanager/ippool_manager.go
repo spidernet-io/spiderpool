@@ -21,6 +21,7 @@ import (
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -125,6 +126,8 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 			if !apierrors.IsConflict(err) {
 				return nil, err
 			}
+
+			metric.IpamAllocationUpdateIPPoolConflictCounts.Add(ctx, 1)
 			if i == im.config.MaxConflictRetries {
 				return nil, fmt.Errorf("%w (%d times), failed to allocate IP from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipPool.Name)
 			}
@@ -211,6 +214,8 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 			if !apierrors.IsConflict(err) {
 				return err
 			}
+
+			metric.IpamReleaseUpdateIPPoolConflictCounts.Add(ctx, 1)
 			if i == im.config.MaxConflictRetries {
 				return fmt.Errorf("%w (%d times), failed to release IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
 			}
@@ -256,6 +261,8 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 			if !apierrors.IsConflict(err) {
 				return err
 			}
+
+			metric.IpamAllocationUpdateIPPoolConflictCounts.Add(ctx, 1)
 			if i == im.config.MaxConflictRetries {
 				return fmt.Errorf("%w (%d times), failed to re-allocate the IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
 			}

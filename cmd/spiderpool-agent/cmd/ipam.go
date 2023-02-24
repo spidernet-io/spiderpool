@@ -29,7 +29,8 @@ type _unixPostAgentIpamIp struct{}
 
 // Handle handles POST requests for /ipam/ip.
 func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
-	logger := logutils.Logger.Named("IPAM").With(zap.String("CNICommand", "ADD"),
+	logger := logutils.Logger.Named("IPAM").With(
+		zap.String("CNICommand", "ADD"),
 		zap.String("ContainerID", *params.IpamAddArgs.ContainerID),
 		zap.String("IfName", *params.IpamAddArgs.IfName),
 		zap.String("NetNamespace", *params.IpamAddArgs.NetNamespace),
@@ -45,7 +46,7 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 	defer func() {
 		// Time taken for once IP allocation.
 		allocationDuration := timeRecorder.SinceInSeconds()
-		metric.AllocDurationConstruct.RecordIPAMAllocationDuration(ctx, allocationDuration)
+		metric.IPAMDurationConstruct.RecordIPAMAllocationDuration(ctx, allocationDuration)
 		logger.Sugar().Infof("IPAM allocation duration: %v", allocationDuration)
 	}()
 
@@ -55,6 +56,7 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 		metric.IpamAllocationFailureCounts.Add(ctx, 1)
 		gatherIPAMAllocationErrMetric(ctx, err)
 		logger.Error(err.Error())
+
 		return daemonset.NewPostIpamIPFailure().WithPayload(models.Error(err.Error()))
 	}
 
@@ -65,7 +67,8 @@ type _unixDeleteAgentIpamIp struct{}
 
 // Handle handles DELETE requests for /ipam/ip.
 func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
-	logger := logutils.Logger.Named("IPAM").With(zap.String("CNICommand", "DEL"),
+	logger := logutils.Logger.Named("IPAM").With(
+		zap.String("CNICommand", "DEL"),
 		zap.String("ContainerID", *params.IpamDelArgs.ContainerID),
 		zap.String("IfName", *params.IpamDelArgs.IfName),
 		zap.String("NetNamespace", params.IpamDelArgs.NetNamespace),
@@ -81,7 +84,7 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 	defer func() {
 		// Time taken for once IP releasing.
 		releaseDuration := timeRecorder.SinceInSeconds()
-		metric.DeallocDurationConstruct.RecordIPAMReleaseDuration(ctx, releaseDuration)
+		metric.IPAMDurationConstruct.RecordIPAMReleaseDuration(ctx, releaseDuration)
 		logger.Sugar().Infof("IPAM releasing duration: %v", releaseDuration)
 	}()
 
@@ -90,6 +93,7 @@ func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) mid
 		metric.IpamReleaseFailureCounts.Add(ctx, 1)
 		gatherIPAMReleasingErrMetric(ctx, err)
 		logger.Error(err.Error())
+
 		return daemonset.NewDeleteIpamIPFailure().WithPayload(models.Error(err.Error()))
 	}
 

@@ -52,7 +52,10 @@ func InitMetricController(ctx context.Context, meterName string, enableMetric bo
 		sdkmetric.WithReader(exporter),
 		sdkmetric.WithResource(otelResource),
 		sdkmetric.WithView(sdkmetric.NewView(
-			sdkmetric.Instrument{Name: "*_histogram"},
+			sdkmetric.Instrument{
+				Name: fmt.Sprintf(MetricPrefix + "*"),
+				Kind: sdkmetric.InstrumentKindHistogram,
+			},
 			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
 				Boundaries: []float64{0.1, 0.3, 0.5, 1, 3, 5, 7, 10, 15},
 			}},

@@ -22,7 +22,7 @@ type EndpointManagerConfig struct {
 	MaxHistoryRecords     *int
 }
 
-func setDefaultsForPodManagerConfig(config EndpointManagerConfig) EndpointManagerConfig {
+func setDefaultsForEndpointManagerConfig(config EndpointManagerConfig) EndpointManagerConfig {
 	if config.scheme == nil {
 		config.scheme = runtime.NewScheme()
 		utilruntime.Must(corev1.AddToScheme(config.scheme))

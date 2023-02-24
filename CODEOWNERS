@@ -18,9 +18,11 @@
 /LICENSE @weizhoublue
 /Makefile* @weizhoublue
 /README.md @weizhoublue
+/README-zh_CN.md @weizhoublue
 /go.sum @weizhoublue
 /VERSION @weizhoublue
 /AUTHORS @weizhoublue
 /.licenserc.yaml @weizhoublue
 /codecov.yml @weizhoublue
 /.golangci.yaml @weizhoublue
+/MAINTAINERS.md @weizhoublue

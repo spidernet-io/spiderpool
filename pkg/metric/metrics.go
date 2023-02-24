@@ -9,28 +9,22 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric"
+	api "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
-	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
-	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 var (
 	// meter is a global creator of metric instruments.
-	meter metric.Meter
+	meter api.Meter
 	// globalEnableMetric determines whether to use metric or not
 	globalEnableMetric bool
 )
@@ -42,10 +36,6 @@ func InitMetricController(ctx context.Context, meterName string, enableMetric bo
 		return nil, fmt.Errorf("failed to init metric controller, meter name is asked to be set")
 	}
 
-	config := prometheus.Config{
-		DefaultHistogramBoundaries: []float64{0.1, 0.3, 0.5, 1, 3, 5, 7, 10, 15},
-	}
-
 	otelResource, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(constant.SpiderpoolAPIGroup),
@@ -54,67 +44,73 @@ func InitMetricController(ctx context.Context, meterName string, enableMetric bo
 		return nil, err
 	}
 
-	c := controller.New(
-		processor.NewFactory(
-			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries)),
-			aggregation.CumulativeTemporalitySelector(),
-			processor.WithMemory(true),
-		),
-		controller.WithResource(otelResource),
-	)
-	exporter, err := prometheus.New(config, c)
+	exporter, err := prometheus.New()
 	if nil != err {
 		return nil, err
 	}
-	global.SetMeterProvider(exporter.MeterProvider())
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(exporter),
+		sdkmetric.WithResource(otelResource),
+		sdkmetric.WithView(sdkmetric.NewView(
+			sdkmetric.Instrument{
+				Name: fmt.Sprintf(MetricPrefix + "*"),
+				Kind: sdkmetric.InstrumentKindHistogram,
+			},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{0.1, 0.3, 0.5, 1, 3, 5, 7, 10, 15},
+			}},
+		)),
+	)
+	global.SetMeterProvider(provider)
 
 	globalEnableMetric = enableMetric
 	if globalEnableMetric {
 		meter = global.Meter(meterName)
 	} else {
-		meter = metric.NewNoopMeterProvider().Meter(meterName)
+		meter = api.NewNoopMeterProvider().Meter(meterName)
 	}
 
-	return exporter, nil
+	return promhttp.Handler(), nil
 }
 
 // NewMetricInt64Counter will create otel Int64Counter metric.
 // The first param metricName is required and the second param is optional.
-func NewMetricInt64Counter(metricName string, description string) (syncint64.Counter, error) {
+func NewMetricInt64Counter(metricName string, description string) (instrument.Int64Counter, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Int64Counter, metric name is asked to be set")
 	}
-	return meter.SyncInt64().Counter(metricName, instrument.WithDescription(description))
+	return meter.Int64Counter(metricName, instrument.WithDescription(description))
 }
 
 // NewMetricFloat64Histogram will create otel Float64Histogram metric.
 // The first param metricName is required and the second param is optional.
-func NewMetricFloat64Histogram(metricName string, description string) (syncfloat64.Histogram, error) {
+// Notice: if you want to match the quantile {0.1, 0.3, 0.5, 1, 3, 5, 7, 10, 15}, please let the metric name match regex "*_histogram",
+// otherwise it will match the  otel default quantile.
+func NewMetricFloat64Histogram(metricName string, description string) (instrument.Float64Histogram, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Histogram, metric name is asked to be set")
 	}
-	return meter.SyncFloat64().Histogram(metricName, instrument.WithDescription(description))
+	return meter.Float64Histogram(metricName, instrument.WithDescription(description))
 }
 
 // NewMetricFloat64Gauge will create otel Float64Gauge metric.
 // The first param metricName is required and the second param is optional.
-func NewMetricFloat64Gauge(metricName string, description string) (asyncfloat64.Gauge, error) {
+func NewMetricFloat64Gauge(metricName string, description string) (instrument.Float64ObservableGauge, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Guage, metric name is asked to be set")
 	}
 
-	return meter.AsyncFloat64().Gauge(metricName, instrument.WithDescription(description))
+	return meter.Float64ObservableGauge(metricName, instrument.WithDescription(description))
 }
 
 // NewMetricInt64Gauge will create otel Int64Gauge metric.
 // The first param metricName is required and the second param is optional.
-func NewMetricInt64Gauge(metricName string, description string) (asyncint64.Gauge, error) {
+func NewMetricInt64Gauge(metricName string, description string) (instrument.Int64ObservableGauge, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Guage, metric name is asked to be set")
 	}
 
-	return meter.AsyncInt64().Gauge(metricName, instrument.WithDescription(description))
+	return meter.Int64ObservableGauge(metricName, instrument.WithDescription(description))
 }
 
 var _ TimeRecorder = &timeRecorder{}

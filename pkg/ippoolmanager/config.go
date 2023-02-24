@@ -3,22 +3,23 @@
 
 package ippoolmanager
 
-import (
-	"time"
+import "time"
 
-	"github.com/spidernet-io/spiderpool/pkg/config"
+const (
+	defaultMaxAllocatedIPs = 5000
 )
 
 type IPPoolManagerConfig struct {
-	EnableIPv4 bool
-	EnableIPv6 bool
+	MaxConflictRetries    int
+	ConflictRetryUnitTime time.Duration
+	MaxAllocatedIPs       *int
+}
 
-	config.UpdateCRConfig
-	EnableSpiderSubnet            bool
-	MaxAllocatedIPs               int
-	LeaderRetryElectGap           time.Duration
-	MaxWorkQueueLength            int
-	WorkQueueRequeueDelayDuration time.Duration
-	WorkerNum                     int
-	WorkQueueMaxRetries           int
+func setDefaultsForIPPoolManagerConfig(config IPPoolManagerConfig) IPPoolManagerConfig {
+	if config.MaxAllocatedIPs == nil {
+		maxAllocatedIPs := defaultMaxAllocatedIPs
+		config.MaxAllocatedIPs = &maxAllocatedIPs
+	}
+
+	return config
 }

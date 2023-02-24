@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.2.1
+        uses: docker/setup-buildx-action@v2.4.1
 
       - name: Inspect builder
         run: |
@@ -106,7 +106,7 @@ jobs:
 
       - name: Release build ${{ env.IMAGE_NAME }}
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v4.0.0
         continue-on-error: false
         id: docker_build_release
         with:
@@ -130,7 +130,7 @@ jobs:
 
       - name: Upload artifact digests
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: image-digest ${{ env.IMAGE_NAME }}
           path: image-digest

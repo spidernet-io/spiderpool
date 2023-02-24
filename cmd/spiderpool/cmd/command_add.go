@@ -4,11 +4,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -115,7 +117,10 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		CleanGateway:      conf.IPAM.CleanGateway,
 	}
 
-	params := daemonset.NewPostIpamIPParams()
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	params := daemonset.NewPostIpamIPParamsWithContext(ctx)
 	params.SetIpamAddArgs(ipamAddArgs)
 	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
 	if nil != err {

@@ -12,8 +12,10 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"gopkg.in/yaml.v3"
 
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -150,8 +152,11 @@ func WaitCreateSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnet
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnet := GetSubnetByName(f, subnet.ObjectMeta.Name)
-			if subnet != nil {
+			newSubnetObj, err := GetSubnetByName(f, subnet.ObjectMeta.Name)
+			if err != nil {
+				return err
+			}
+			if newSubnetObj.Name == subnet.Name {
 				return nil
 			}
 			time.Sleep(time.Second)
@@ -171,17 +176,17 @@ func DeleteSubnetByName(f *frame.Framework, subnetName string, opts ...client.De
 	return f.DeleteResource(subnetObj, opts...)
 }
 
-func GetSubnetByName(f *frame.Framework, subnetName string) *spiderpool.SpiderSubnet {
+func GetSubnetByName(f *frame.Framework, subnetName string) (*spiderpool.SpiderSubnet, error) {
 	if subnetName == "" || f == nil {
-		return nil
+		return nil, errors.New("wrong input")
 	}
 	key := apitypes.NamespacedName{Name: subnetName}
 	subnetObj := &spiderpool.SpiderSubnet{}
 	e := f.GetResource(key, subnetObj)
 	if e != nil {
-		return nil
+		return nil, e
 	}
-	return subnetObj
+	return subnetObj, e
 }
 
 func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName string, opts ...client.DeleteOption) error {
@@ -197,8 +202,9 @@ func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnet := GetSubnetByName(f, subnetName)
-			if subnet != nil {
+			_, err := GetSubnetByName(f, subnetName)
+			if err != nil {
+				GinkgoWriter.Printf("Subnet '%s' has been removed，error: %v", subnetName, err)
 				return nil
 			}
 			time.Sleep(time.Second)
@@ -216,7 +222,10 @@ func WaitValidateSubnetAllocatedIPCount(ctx context.Context, f *frame.Framework,
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnetObject := GetSubnetByName(f, subnetName)
+			subnetObject, err := GetSubnetByName(f, subnetName)
+			if err != nil {
+				return err
+			}
 
 			// The informer of SpiderSubnet will delay synchronizing its own state information
 			// which may cause failure 'runtime error: invalid memory address or nil pointer dereference'
@@ -238,6 +247,12 @@ func PatchSpiderSubnet(f *frame.Framework, desiredSubnet, originalSubnet *v1.Spi
 	}
 
 	mergePatch := client.MergeFrom(originalSubnet)
+	d, err := mergePatch.Data(desiredSubnet)
+	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
+	if err != nil {
+		return fmt.Errorf("failed to generate patch, err is %v", err)
+	}
+
 	return f.PatchResource(desiredSubnet, mergePatch, opts...)
 }
 
@@ -270,9 +285,9 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 		return nil, frame.ErrWrongInput
 	}
 
-	subnetObj := GetSubnetByName(f, subnetName)
-	if subnetObj == nil {
-		return nil, fmt.Errorf("failed to get subnet %v", subnetName)
+	subnetObj, err := GetSubnetByName(f, subnetName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subnet '%s', error:'%v' ", subnetName, err)
 	}
 
 	ips1, err := ip.ParseIPRanges(*subnetObj.Spec.IPVersion, subnetObj.Spec.IPs)
@@ -295,7 +310,7 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 		return nil, err
 	}
 
-	ips := ip.IPsDiffSet(ips1, ips2)
+	ips := ip.IPsDiffSet(ips1, ips2, false)
 	return ips, nil
 }
 
@@ -310,9 +325,9 @@ LOOP:
 		case <-ctx.Done():
 			return frame.ErrTimeOut
 		default:
-			subnetObject := GetSubnetByName(f, subnetName)
-			if subnetObject == nil {
-				return fmt.Errorf("failed to get subnet %v object", subnetName)
+			subnetObject, err := GetSubnetByName(f, subnetName)
+			if err != nil {
+				return fmt.Errorf("failed to get subnet '%s', error:'%v' ", subnetName, err)
 			}
 
 			poolList, err := GetIppoolsInSubnet(f, subnetName)
@@ -343,7 +358,7 @@ LOOP:
 							return err
 						}
 
-						diffIps := ip.IPsDiffSet(ips1, ips2)
+						diffIps := ip.IPsDiffSet(ips1, ips2, false)
 						if diffIps != nil {
 							GinkgoWriter.Printf("inconsistent ip records in subnet %v/%v and pool %v/%v \n", subnetName, ips2, pool.Name, ips1)
 							continue LOOP
@@ -406,4 +421,37 @@ OUTER_FOR:
 	wg.Wait()
 	Expect(len(subnetNameList)).To(Equal(subnetNums))
 	return subnetNameList, nil
+}
+
+func GetClusterDefaultSubnet(f *frame.Framework) (v4SubnetList, v6SubnetList []string, e error) {
+	if f == nil {
+		return nil, nil, errors.New("wrong input")
+	}
+
+	configMap, e := f.GetConfigmap(SpiderPoolConfigmapName, SpiderPoolConfigmapNameSpace)
+	if e != nil {
+		return nil, nil, e
+	}
+	GinkgoWriter.Printf("configmap: %+v \n", configMap.Data)
+
+	data, ok := configMap.Data["conf.yml"]
+	if !ok || len(data) == 0 {
+		return nil, nil, errors.New("failed to find cluster default subnet")
+	}
+
+	conf := cmd.Config{}
+	if err := yaml.Unmarshal([]byte(data), &conf); nil != err {
+		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
+		return nil, nil, errors.New("failed to find cluster default subnet")
+	}
+	GinkgoWriter.Printf("yaml config: %v \n", conf)
+
+	if conf.EnableIPv4 && len(conf.ClusterDefaultIPv4Subnet) != 0 {
+		v4SubnetList = conf.ClusterDefaultIPv4Subnet
+	}
+	if conf.EnableIPv6 && len(conf.ClusterDefaultIPv6Subnet) != 0 {
+		v6SubnetList = conf.ClusterDefaultIPv6Subnet
+	}
+
+	return v4SubnetList, v6SubnetList, nil
 }

@@ -3,13 +3,62 @@ package pyroscope
 import (
 	"bytes"
 	"github.com/pyroscope-io/client/internal/alignedticker"
+	"github.com/pyroscope-io/godeltaprof"
 	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"sync"
 	"time"
 
 	"github.com/pyroscope-io/client/internal/flameql"
 	"github.com/pyroscope-io/client/upstream"
+)
+
+var (
+	sampleTypeConfigHeap = map[string]*upstream.SampleType{
+		"alloc_objects": {
+			Units:      "objects",
+			Cumulative: false,
+		},
+		"alloc_space": {
+			Units:      "bytes",
+			Cumulative: false,
+		},
+		"inuse_space": {
+			Units:       "bytes",
+			Aggregation: "average",
+			Cumulative:  false,
+		},
+		"inuse_objects": {
+			Units:       "objects",
+			Aggregation: "average",
+			Cumulative:  false,
+		},
+	}
+	sampleTypeConfigMutex = map[string]*upstream.SampleType{
+		"contentions": {
+			DisplayName: "mutex_count",
+			Units:       "lock_samples",
+			Cumulative:  false,
+		},
+		"delay": {
+			DisplayName: "mutex_duration",
+			Units:       "lock_nanoseconds",
+			Cumulative:  false,
+		},
+	}
+	sampleTypeConfigBlock = map[string]*upstream.SampleType{
+		"contentions": {
+			DisplayName: "block_count",
+			Units:       "lock_samples",
+			Cumulative:  false,
+		},
+		"delay": {
+			DisplayName: "block_duration",
+			Units:       "lock_nanoseconds",
+			Cumulative:  false,
+		},
+	}
 )
 
 type Session struct {
@@ -28,18 +77,20 @@ type Session struct {
 	trieMutex sync.Mutex
 
 	// these things do change:
-	cpuBuf         *bytes.Buffer
-	memBuf         *bytes.Buffer
-	memPrevBytes   []byte
-	goroutinesBuf  *bytes.Buffer
-	mutexBuf       *bytes.Buffer
-	mutexPrevBytes []byte
-	blockBuf       *bytes.Buffer
-	blockPrevBytes []byte
+	cpuBuf *bytes.Buffer
+	memBuf *bytes.Buffer
+
+	goroutinesBuf *bytes.Buffer
+	mutexBuf      *bytes.Buffer
+	blockBuf      *bytes.Buffer
 
 	lastGCGeneration uint32
 	appName          string
 	startTime        time.Time
+
+	deltaBlock *godeltaprof.BlockProfiler
+	deltaMutex *godeltaprof.BlockProfiler
+	deltaHeap  *godeltaprof.HeapProfiler
 }
 
 type SessionConfig struct {
@@ -50,6 +101,8 @@ type SessionConfig struct {
 	ProfilingTypes         []ProfileType
 	DisableGCRuns          bool
 	DisableAutomaticResets bool
+	// Deprecated: the field is ignored and does nothing
+	DisableCumulativeMerge bool
 	SampleRate             uint32
 	UploadRate             time.Duration
 }
@@ -81,8 +134,11 @@ func NewSession(c SessionConfig) (*Session, error) {
 		goroutinesBuf:          &bytes.Buffer{},
 		mutexBuf:               &bytes.Buffer{},
 		blockBuf:               &bytes.Buffer{},
-	}
 
+		deltaBlock: godeltaprof.NewBlockProfiler(),
+		deltaMutex: godeltaprof.NewMutexProfiler(),
+		deltaHeap:  godeltaprof.NewHeapProfiler(),
+	}
 	return ps, nil
 }
 
@@ -259,100 +315,95 @@ func (ps *Session) uploadData(startTime, endTime time.Time) {
 	}
 
 	if ps.isBlockEnabled() {
-		p := pprof.Lookup("block")
-		if p != nil {
-			p.WriteTo(ps.blockBuf, 0)
-			curBlockBuf := copyBuf(ps.blockBuf.Bytes())
-			ps.blockBuf.Reset()
-			if ps.blockPrevBytes != nil {
-				ps.upstream.Upload(&upstream.UploadJob{
-					Name:        ps.appName,
-					StartTime:   startTime,
-					EndTime:     endTime,
-					SpyName:     "gospy",
-					Format:      upstream.FormatPprof,
-					Profile:     curBlockBuf,
-					PrevProfile: ps.blockPrevBytes,
-					SampleTypeConfig: map[string]*upstream.SampleType{
-						"contentions": {
-							DisplayName: "block_count",
-							Units:       "lock_samples",
-							Cumulative:  true,
-						},
-						"delay": {
-							DisplayName: "block_duration",
-							Units:       "lock_nanoseconds",
-							Cumulative:  true,
-						},
-					},
-				})
-			}
-			ps.blockPrevBytes = curBlockBuf
-		}
+		ps.dumpBlockProfile(startTime, endTime)
 	}
 	if ps.isMutexEnabled() {
-		p := pprof.Lookup("mutex")
-		if p != nil {
-			p.WriteTo(ps.mutexBuf, 0)
-			curMutexBuf := copyBuf(ps.mutexBuf.Bytes())
-			ps.mutexBuf.Reset()
-			if ps.mutexPrevBytes != nil {
-				ps.upstream.Upload(&upstream.UploadJob{
-					Name:        ps.appName,
-					StartTime:   startTime,
-					EndTime:     endTime,
-					SpyName:     "gospy",
-					Format:      upstream.FormatPprof,
-					Profile:     curMutexBuf,
-					PrevProfile: ps.mutexPrevBytes,
-					SampleTypeConfig: map[string]*upstream.SampleType{
-						"contentions": {
-							DisplayName: "mutex_count",
-							Units:       "lock_samples",
-							Cumulative:  true,
-						},
-						"delay": {
-							DisplayName: "mutex_duration",
-							Units:       "lock_nanoseconds",
-							Cumulative:  true,
-						},
-					},
-				})
-			}
-			ps.mutexPrevBytes = curMutexBuf
-		}
+		ps.dumpMutexProfile(startTime, endTime)
 	}
-
 	if ps.isMemEnabled() {
-		currentGCGeneration := numGC()
-		// sometimes GC doesn't run within 10 seconds
-		//   in such cases we force a GC run
-		//   users can disable it with disableGCRuns option
-		if currentGCGeneration == ps.lastGCGeneration && !ps.disableGCRuns {
-			runtime.GC()
-			currentGCGeneration = numGC()
-		}
-		if currentGCGeneration != ps.lastGCGeneration {
-			pprof.WriteHeapProfile(ps.memBuf)
-			curMemBytes := copyBuf(ps.memBuf.Bytes())
-			ps.memBuf.Reset()
-			if ps.memPrevBytes != nil {
-				ps.upstream.Upload(&upstream.UploadJob{
-					Name:        ps.appName,
-					StartTime:   startTime,
-					EndTime:     endTime,
-					SpyName:     "gospy",
-					SampleRate:  100,
-					Format:      upstream.FormatPprof,
-					Profile:     curMemBytes,
-					PrevProfile: ps.memPrevBytes,
-				})
-			}
-			ps.memPrevBytes = curMemBytes
-			ps.lastGCGeneration = currentGCGeneration
-		}
+		ps.dumpHeapProfile(startTime, endTime)
 	}
 }
+
+func (ps *Session) dumpHeapProfile(startTime time.Time, endTime time.Time) {
+	defer func() {
+		if r := recover(); r != nil {
+			ps.logger.Errorf("dump heap profiler panic %s", string(debug.Stack()))
+		}
+	}()
+	currentGCGeneration := numGC()
+	// sometimes GC doesn't run within 10 seconds
+	//   in such cases we force a GC run
+	//   users can disable it with disableGCRuns option
+	if currentGCGeneration == ps.lastGCGeneration && !ps.disableGCRuns {
+		runtime.GC()
+		currentGCGeneration = numGC()
+	}
+	if currentGCGeneration != ps.lastGCGeneration {
+		ps.memBuf.Reset()
+		err := ps.deltaHeap.Profile(ps.memBuf)
+		if err != nil {
+			ps.logger.Errorf("failed to dump heap profile: %s", err)
+			return
+		}
+		curMemBytes := copyBuf(ps.memBuf.Bytes())
+		job := &upstream.UploadJob{
+			Name:             ps.appName,
+			StartTime:        startTime,
+			EndTime:          endTime,
+			SpyName:          "gospy",
+			SampleRate:       100,
+			Format:           upstream.FormatPprof,
+			Profile:          curMemBytes,
+			SampleTypeConfig: sampleTypeConfigHeap,
+		}
+		ps.upstream.Upload(job)
+		ps.lastGCGeneration = currentGCGeneration
+	}
+}
+
+func (ps *Session) dumpMutexProfile(startTime time.Time, endTime time.Time) {
+	defer func() {
+		if r := recover(); r != nil {
+			ps.logger.Errorf("dump mutex profiler panic %s", string(debug.Stack()))
+		}
+	}()
+	ps.mutexBuf.Reset()
+	ps.deltaMutex.Profile(ps.mutexBuf)
+	curMutexBuf := copyBuf(ps.mutexBuf.Bytes())
+	job := &upstream.UploadJob{
+		Name:             ps.appName,
+		StartTime:        startTime,
+		EndTime:          endTime,
+		SpyName:          "gospy",
+		Format:           upstream.FormatPprof,
+		Profile:          curMutexBuf,
+		SampleTypeConfig: sampleTypeConfigMutex,
+	}
+	ps.upstream.Upload(job)
+}
+
+func (ps *Session) dumpBlockProfile(startTime time.Time, endTime time.Time) {
+	defer func() {
+		if r := recover(); r != nil {
+			ps.logger.Errorf("dump block profiler panic %s", string(debug.Stack()))
+		}
+	}()
+	ps.blockBuf.Reset()
+	ps.deltaBlock.Profile(ps.blockBuf)
+	curBlockBuf := copyBuf(ps.blockBuf.Bytes())
+	job := &upstream.UploadJob{
+		Name:             ps.appName,
+		StartTime:        startTime,
+		EndTime:          endTime,
+		SpyName:          "gospy",
+		Format:           upstream.FormatPprof,
+		Profile:          curBlockBuf,
+		SampleTypeConfig: sampleTypeConfigBlock,
+	}
+	ps.upstream.Upload(job)
+}
+
 
 func (ps *Session) Stop() {
 	ps.trieMutex.Lock()

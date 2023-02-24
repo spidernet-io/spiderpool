@@ -55,16 +55,17 @@ func NewPodDBer(maxDatabaseCap int) PodDBer {
 
 func (p *PodDatabase) DeletePodEntry(namespace, podName string) {
 	p.Lock()
-	defer p.Unlock()
 
 	_, ok := p.pods[ktypes.NamespacedName{Namespace: namespace, Name: podName}]
 	if !ok {
 		// already deleted
+		p.Unlock()
 		logger.Sugar().Debugf("PodDatabase already deleted %s", podName)
 		return
 	}
 
 	delete(p.pods, ktypes.NamespacedName{Namespace: namespace, Name: podName})
+	p.Unlock()
 	logger.Sugar().Debugf("delete %s pod cache successfully", podName)
 }
 
@@ -90,43 +91,34 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 	}
 
 	p.Lock()
-	defer p.Unlock()
-
 	podCache, ok := p.pods[ktypes.NamespacedName{Namespace: podEntry.Namespace, Name: podEntry.PodName}]
-
 	if !ok {
 		if len(p.pods) == p.maxCap {
 			// TODO (Icarus9913): add otel metric
-			logger.Sugar().Warnf("podEntry database is out of capacity, discard podEntry '%+v'", *podEntry)
-			return fmt.Errorf("podEntry database is out of capacity")
+			p.Unlock()
+			return fmt.Errorf("podEntry database is out of capacity, discard podEntry '%+v'", *podEntry)
 		}
 
 		p.pods[ktypes.NamespacedName{Namespace: podEntry.Namespace, Name: podEntry.PodName}] = *podEntry
+		p.Unlock()
 		logger.Sugar().Debugf("create pod entry '%+v'", *podEntry)
 		return nil
 	}
 
-	if diffPodEntries(&podCache, podEntry) {
+	// diff and fresh the DB
+	if podCache.TracingStartTime != podEntry.TracingStartTime ||
+		podCache.TracingGracefulTime != podEntry.TracingGracefulTime ||
+		podCache.TracingStopTime != podEntry.TracingStopTime ||
+		podCache.PodTracingReason != podEntry.PodTracingReason {
 		p.pods[ktypes.NamespacedName{Namespace: podCache.Namespace, Name: podCache.PodName}] = *podEntry
-	}
-
-	return nil
-}
-
-func diffPodEntries(oldOne, newOne *PodEntry) bool {
-	var isDifferent bool
-
-	if oldOne.TracingStartTime != newOne.TracingStartTime ||
-		oldOne.TracingGracefulTime != newOne.TracingGracefulTime ||
-		oldOne.TracingStopTime != newOne.TracingStopTime ||
-		oldOne.PodTracingReason != newOne.PodTracingReason {
-		isDifferent = true
-
+		p.Unlock()
 		logger.Sugar().Debugf("podEntry '%s/%s' has changed, the old '%+v' and the new is '%+v'",
-			oldOne.Namespace, oldOne.PodName, *oldOne, *newOne)
+			podCache.Namespace, podCache.PodName, podCache, *podEntry)
+		return nil
 	}
 
-	return isDifferent
+	p.Unlock()
+	return nil
 }
 
 // buildPodEntry will build PodEntry with the given args, it serves for Pod Informer event hooks
@@ -141,7 +133,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	// deleted pod
 	if deleted {
 		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
-		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.Kind == constant.OwnerStatefulSet {
+		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
 			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
 			if nil != err {
 				return nil, err
@@ -168,7 +160,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return podEntry, nil
 	} else {
 		// no need to trace Terminating StatefulSet pod.
-		if ownerRef != nil && ownerRef.Kind == constant.OwnerStatefulSet {
+		if ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
 			return nil, nil
 		}
 

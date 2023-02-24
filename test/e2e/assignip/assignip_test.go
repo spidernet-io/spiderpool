@@ -58,9 +58,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 					v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
 				}
 				v4PoolObj.Spec.ExcludeIPs = strings.Split(v4PoolObj.Spec.IPs[0], "-")[:1]
-				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
 				GinkgoWriter.Printf("Succeeded to create ippool %v \n", v4PoolObj.Name)
+				v4PoolNameList = append(v4PoolNameList, v4PoolName)
 			}
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(ippoolIpNum)
@@ -70,9 +70,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 					v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
 				}
 				v6PoolObj.Spec.ExcludeIPs = strings.Split(v6PoolObj.Spec.IPs[0], "-")[:1]
-				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
 				GinkgoWriter.Printf("Succeeded to create ippool %v \n", v6PoolObj.Name)
+				v6PoolNameList = append(v6PoolNameList, v6PoolName)
 			}
 
 			DeferCleanup(func() {
@@ -119,19 +119,20 @@ var _ = Describe("test pod", Label("assignip"), func() {
 
 				// IPs removed from IPPool.Spec.excludeIPs can be assigned to Pods.
 				if frame.Info.IpV4Enabled {
-					originalV4Pool := common.GetIppoolByName(frame, v4PoolName)
-					// originalV4Pool := v4PoolObject
-					Expect(originalV4Pool).NotTo(BeNil())
+					originalV4Pool, err := common.GetIppoolByName(frame, v4PoolName)
+					Expect(err).NotTo(HaveOccurred())
 					// Remove IPs from IPPool.Spec.excludeIPs
-					v4PoolObject := common.GetIppoolByName(frame, v4PoolName)
+					v4PoolObject, err := common.GetIppoolByName(frame, v4PoolName)
+					Expect(err).NotTo(HaveOccurred())
 					v4PoolObject.Spec.ExcludeIPs = []string{}
 					Expect(common.PatchIppool(frame, v4PoolObject, originalV4Pool)).To(Succeed(), "failed to update v4 ippool: %v ", v4PoolName)
 				}
 				if frame.Info.IpV6Enabled {
-					originalV6Pool := common.GetIppoolByName(frame, v6PoolName)
-					Expect(originalV6Pool).NotTo(BeNil())
+					originalV6Pool, err := common.GetIppoolByName(frame, v6PoolName)
+					Expect(err).NotTo(HaveOccurred())
 					// Remove IPs from IPPool.Spec.excludeIPs
-					v6PoolObject := common.GetIppoolByName(frame, v6PoolName)
+					v6PoolObject, err := common.GetIppoolByName(frame, v6PoolName)
+					Expect(err).NotTo(HaveOccurred())
 					v6PoolObject.Spec.ExcludeIPs = []string{}
 					Expect(common.PatchIppool(frame, v6PoolObject, originalV6Pool)).To(Succeed(), "failed to update v6 ippool: %v ", v6PoolName)
 				}

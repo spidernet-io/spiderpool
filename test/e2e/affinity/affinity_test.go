@@ -64,13 +64,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			matchedPodName, matchedNamespace     string
 			unmatchedPodName, unmatchedNamespace string
 			matchedNode, unMatchedNode           *corev1.Node
-		)
-		var (
-			v4PoolName                     string
-			v6PoolName                     string
-			v4Pool                         *spiderpoolv1.SpiderIPPool
-			v6Pool                         *spiderpoolv1.SpiderIPPool
-			v4PoolNameList, v6PoolNameList []string
+			v4PoolName                           string
+			v6PoolName                           string
+			v4Pool                               *spiderpoolv1.SpiderIPPool
+			v6Pool                               *spiderpoolv1.SpiderIPPool
+			v4PoolNameList, v6PoolNameList       []string
 		)
 
 		BeforeEach(func() {
@@ -356,9 +354,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		var newPodList *corev1.PodList
 		var defaultV4PoolNameList, defaultV6PoolNameList []string
 		const stsOriginialNum = int(1)
-		statefulSetName = "sts" + tools.RandomName()
 
 		BeforeEach(func() {
+			// test statefulSet name
+			statefulSetName = "sts" + tools.RandomName()
+
 			// Create IPv4 pools and IPv6 pools
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(5)
@@ -526,7 +526,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// Delete Statefulset and Check if the Pod IP in IPPool reclaimed normally
 			err = frame.DeleteStatefulSet(statefulSetName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(common.WaitIPReclaimedFinish(frame, defaultV4PoolNameList, defaultV6PoolNameList, podlist, common.IPReclaimTimeout)).To(Succeed())
+			Expect(common.WaitIPReclaimedFinish(frame, defaultV4PoolNameList, defaultV6PoolNameList, newPodList, common.IPReclaimTimeout)).To(Succeed())
 
 			// Check workloadendpoint records are deleted
 			ctx4, cancel4 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
@@ -621,13 +621,15 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 
 			// set ippool label selector to ns1 and ns2
 			if frame.Info.IpV4Enabled {
-				v4PoolObject := common.GetIppoolByName(frame, v4PoolName)
+				v4PoolObject, err := common.GetIppoolByName(frame, v4PoolName)
+				Expect(err).NotTo(HaveOccurred())
 				v4PoolObject.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v4PoolObject.Spec.NamespaceAffinity.MatchLabels = nsLabel
 				Expect(common.PatchIppool(frame, v4PoolObject, v4PoolObj)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6PoolObject := common.GetIppoolByName(frame, v6PoolName)
+				v6PoolObject, err := common.GetIppoolByName(frame, v6PoolName)
+				Expect(err).NotTo(HaveOccurred())
 				v6PoolObject.Spec.NamespaceAffinity = new(v1.LabelSelector)
 				v6PoolObject.Spec.NamespaceAffinity.MatchLabels = nsLabel
 				Expect(common.PatchIppool(frame, v6PoolObject, v6PoolObj)).NotTo(HaveOccurred())

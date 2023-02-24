@@ -21,13 +21,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
-	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -57,10 +57,10 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
 	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
-	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
+	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
 	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
-	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "300", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "4", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "50", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
 	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCForTerminatingPod, nil},
 	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &gcIPConfig.ReleaseIPWorkerNum},
@@ -81,11 +81,11 @@ var envInfo = []envConf{
 	{"GIT_COMMIT_VERSION", "", false, &controllerContext.Cfg.CommitVersion, nil, nil},
 	{"GIT_COMMIT_TIME", "", false, &controllerContext.Cfg.CommitTime, nil, nil},
 	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
-	{"SPIDERPOOL_ENABLE_SUBNET_DELETE_STALE_IPPOOL", "false", true, nil, &controllerContext.Cfg.EnableSubnetDeleteStaleIPPool, nil},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
 	{"SPIDERPOOL_WORKQUEUE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
 	{"SPIDERPOOL_WORKQUEUE_MAX_RETRIES", "500", true, nil, nil, &controllerContext.Cfg.WorkQueueMaxRetries},
+	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 }
 
 type Config struct {
@@ -102,9 +102,8 @@ type Config struct {
 	TlsServerKeyPath  string
 
 	// env
-	LogLevel                      string
-	EnabledMetric                 bool
-	EnableSubnetDeleteStaleIPPool bool
+	LogLevel      string
+	EnabledMetric bool
 
 	HttpPort       string
 	MetricHttpPort string
@@ -126,6 +125,7 @@ type Config struct {
 	// if IPPoolWorkQueueRequeueDelayDuration is negative number, we would not requeue it
 	WorkQueueRequeueDelayDuration int
 
+	IPPoolInformerResyncPeriod       int
 	IPPoolInformerWorkers            int
 	IPPoolInformerMaxWorkQueueLength int
 
@@ -161,8 +161,8 @@ type ControllerContext struct {
 
 	// manager
 	CRDManager      ctrl.Manager
-	SubnetManager   subnetmanagertypes.SubnetManager
-	IPPoolManager   ippoolmanagertypes.IPPoolManager
+	SubnetManager   subnetmanager.SubnetManager
+	IPPoolManager   ippoolmanager.IPPoolManager
 	EndpointManager workloadendpointmanager.WorkloadEndpointManager
 	RIPManager      reservedipmanager.ReservedIPManager
 	NodeManager     nodemanager.NodeManager

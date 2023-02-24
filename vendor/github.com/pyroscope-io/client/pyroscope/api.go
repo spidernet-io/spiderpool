@@ -20,6 +20,8 @@ type Config struct {
 	ProfileTypes           []ProfileType
 	DisableGCRuns          bool // this will disable automatic runtime.GC runs between getting the heap profiles
 	DisableAutomaticResets bool // disable automatic profiler reset every 10 seconds. Reset manually by calling Flush method
+	// Deprecated: the field is ignored and does nothing
+	DisableCumulativeMerge bool
 }
 
 type Profiler struct {

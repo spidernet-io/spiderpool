@@ -205,7 +205,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.0
+          go-version: 1.20.0
           id: go
 
       # https://github.com/helm/kind-action
@@ -286,7 +286,7 @@ jobs:
 
       - name: Upload e2e log For Dual-stack
         if: ${{ needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: dualstack-debuglog.txt
           path: test/e2edebugLog.txt
@@ -294,7 +294,7 @@ jobs:
 
       - name: Upload e2e report For Dual-stack
         if: ${{ steps.dualstack_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: dualstack-e2ereport.json
           path: e2ereport.json
@@ -378,7 +378,7 @@ jobs:
 
       - name: Upload e2e log For ipv4-only
         if: ${{ needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: ipv4Only-debuglog.txt
           path: test/e2edebugLog.txt
@@ -386,7 +386,7 @@ jobs:
 
       - name: Upload e2e report For ipv4-only
         if: ${{ steps.ipv4only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: ipv4Only-e2ereport.json
           path: e2ereport.json
@@ -447,7 +447,7 @@ jobs:
 
       - name: Upload e2e log For ipv6-only
         if: ${{ needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: ipv6Only-debuglog.txt
           path: test/e2edebugLog.txt
@@ -455,7 +455,7 @@ jobs:
 
       - name: Upload e2e report For ipv6-only
         if: ${{ steps.ipv6only_e2e.outputs.upload == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: ipv6Only-e2ereport.json
           path: e2ereport.json
@@ -472,8 +472,8 @@ jobs:
 
   creat_issue:
     runs-on: ubuntu-latest
-    needs: [e2e_against_commit]
-    if: ${{ always() && needs.e2e_against_commit.result == 'failure' }}
+    needs: [e2e_against_commit, call_unitest, lint_chart_against_release_image]
+    if: ${{ always() && needs.e2e_against_commit.result == 'failure' || needs.call_unitest.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' }}
     steps:
       - name: echo
         run: |
@@ -489,4 +489,4 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/bug"
-          assignees: "weizhoublue"
+          assignees: "iiiceoo,Icarus9913"

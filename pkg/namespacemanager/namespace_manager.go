@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,7 +17,6 @@ import (
 type NamespaceManager interface {
 	GetNamespaceByName(ctx context.Context, nsName string) (*corev1.Namespace, error)
 	ListNamespaces(ctx context.Context, opts ...client.ListOption) (*corev1.NamespaceList, error)
-	MatchLabelSelector(ctx context.Context, nsName string, labelSelector *metav1.LabelSelector) (bool, error)
 }
 
 type namespaceManager struct {
@@ -51,26 +49,4 @@ func (nm *namespaceManager) ListNamespaces(ctx context.Context, opts ...client.L
 	}
 
 	return &nsList, nil
-}
-
-func (nm *namespaceManager) MatchLabelSelector(ctx context.Context, nsName string, labelSelector *metav1.LabelSelector) (bool, error) {
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return false, err
-	}
-
-	nsList, err := nm.ListNamespaces(
-		ctx,
-		client.MatchingLabelsSelector{Selector: selector},
-		client.MatchingFields{metav1.ObjectNameField: nsName},
-	)
-	if err != nil {
-		return false, err
-	}
-
-	if len(nsList.Items) == 0 {
-		return false, nil
-	}
-
-	return true, nil
 }

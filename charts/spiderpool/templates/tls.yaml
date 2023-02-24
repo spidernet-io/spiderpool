@@ -88,32 +88,6 @@ webhooks:
     resources:
     - spiderreservedips
   sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-      namespace: {{ .Release.Namespace }}
-      path: /mutate-spiderpool-spidernet-io-v1-spiderendpoint
-      port: {{ .Values.spiderpoolController.webhookPort }}
-    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
-    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
-    {{- else if (eq .Values.spiderpoolController.tls.method "auto") }}
-    caBundle: {{ .ca.Cert | b64enc }}
-    {{- end }}
-  failurePolicy: Fail
-  name: spiderendpoint.spiderpool.spidernet.io
-  rules:
-  - apiGroups:
-    - spiderpool.spidernet.io
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - spiderendpoints
-  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration

@@ -20,13 +20,13 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
-	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -51,16 +51,16 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric, nil},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &agentContext.Cfg.UpdateCRMaxRetries},
-	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "300", false, nil, nil, &agentContext.Cfg.UpdateCRRetryUnitTime},
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "4", false, nil, nil, &agentContext.Cfg.UpdateCRMaxRetries},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "50", false, nil, nil, &agentContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", true, nil, nil, &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", true, nil, nil, &agentContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
 	{"SPIDERPOOL_LIMITER_MAX_QUEUE_SIZE", "1000", true, nil, nil, &agentContext.Cfg.LimiterMaxQueueSize},
-	{"SPIDERPOOL_LIMITER_MAX_WAIT_TIME", "15", true, nil, nil, &agentContext.Cfg.LimiterMaxWaitTime},
 	{"SPIDERPOOL_ENABLED_STATEFULSET", "true", true, nil, &agentContext.Cfg.EnableStatefulSet, nil},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "1", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
+	{"SPIDERPOOL_WAIT_SUBNET_POOL_MAX_RETRIES", "50", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolMaxRetries},
 	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &agentContext.Cfg.GoMaxProcs},
 	{"GIT_COMMIT_VERSION", "", false, &agentContext.Cfg.CommitVersion, nil, nil},
 	{"GIT_COMMIT_TIME", "", false, &agentContext.Cfg.CommitTime, nil, nil},
@@ -89,9 +89,9 @@ type Config struct {
 	WorkloadEndpointMaxHistoryRecords int
 	IPPoolMaxAllocatedIPs             int
 	WaitSubnetPoolTime                int
+	WaitSubnetPoolMaxRetries          int
 
 	LimiterMaxQueueSize int
-	LimiterMaxWaitTime  int
 
 	// configmap
 	IpamUnixSocketPath                string   `yaml:"ipamUnixSocketPath"`
@@ -120,14 +120,14 @@ type AgentContext struct {
 	// manager
 	IPAM            ipam.IPAM
 	CRDManager      ctrl.Manager
-	IPPoolManager   ippoolmanagertypes.IPPoolManager
+	IPPoolManager   ippoolmanager.IPPoolManager
 	EndpointManager workloadendpointmanager.WorkloadEndpointManager
 	RIPManager      reservedipmanager.ReservedIPManager
 	NodeManager     nodemanager.NodeManager
 	NSManager       namespacemanager.NamespaceManager
 	PodManager      podmanager.PodManager
 	StsManager      statefulsetmanager.StatefulSetManager
-	SubnetManager   subnetmanagertypes.SubnetManager
+	SubnetManager   subnetmanager.SubnetManager
 
 	// handler
 	HttpServer        *server.Server

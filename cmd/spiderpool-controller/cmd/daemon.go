@@ -16,10 +16,8 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/spidernet-io/spiderpool/pkg/config"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
@@ -67,21 +65,11 @@ func DaemonMain() {
 	if len(controllerContext.Cfg.AppVersion) > 0 {
 		logger.Sugar().Infof("AppVersion: %v \n", controllerContext.Cfg.AppVersion)
 	}
-	logger.Sugar().Infof("config: %+v \n", controllerContext.Cfg)
 
-	// load Configmap
-	err = controllerContext.LoadConfigmap()
-	if nil != err {
-		logger.Sugar().Fatalf("failed to load configmap, error: %v", err)
+	if err := controllerContext.LoadConfigmap(); err != nil {
+		logger.Sugar().Fatal("failed to load Configmap: %v", err)
 	}
-
-	// init singleton ClusterDefaultPool
-	logger.Sugar().Infof("Init Cluster default pool configurations")
-	singletons.InitClusterDefaultPool(controllerContext.Cfg.ClusterDefaultIPv4IPPool, controllerContext.Cfg.ClusterDefaultIPv6IPPool,
-		controllerContext.Cfg.ClusterDefaultIPv4Subnet, controllerContext.Cfg.ClusterDefaultIPv6Subnet,
-		controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
-
-	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
+	logger.Sugar().Infof("Spiderpool-controller config: %+v", controllerContext.Cfg)
 
 	if controllerContext.Cfg.GopsListenPort != "" {
 		address := "127.0.0.1:" + controllerContext.Cfg.GopsListenPort
@@ -121,42 +109,53 @@ func DaemonMain() {
 		}
 	}
 
-	logger.Info("Begin to initialize spiderpool-controller CRD Manager")
+	logger.Info("Begin to initialize spiderpool-controller metrics HTTP server")
+	initControllerMetricsServer(context.TODO())
+
+	logger.Sugar().Infof("Begin to initialize cluster default pool configuration")
+	singletons.InitClusterDefaultPool(
+		controllerContext.Cfg.ClusterDefaultIPv4IPPool,
+		controllerContext.Cfg.ClusterDefaultIPv6IPPool,
+		controllerContext.Cfg.ClusterDefaultIPv4Subnet,
+		controllerContext.Cfg.ClusterDefaultIPv6Subnet,
+		controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum,
+	)
+
+	controllerContext.InnerCtx, controllerContext.InnerCancel = context.WithCancel(context.Background())
+	logger.Info("Begin to initialize spiderpool-controller runtime manager")
 	mgr, err := newCRDManager()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.CRDManager = mgr
 
-	logger.Info("Begin to initialize k8s Clientset")
+	logger.Debug("Begin to initialize K8s clientset")
 	clientSet, err := initK8sClientSet()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.ClientSet = clientSet
 
-	logger.Info("Begin to initialize K8s event recorder")
+	logger.Debug("Begin to initialize K8s event recorder")
 	event.InitEventRecorder(controllerContext.ClientSet, mgr.GetScheme(), constant.Spiderpool)
 
 	// init managers...
 	initControllerServiceManagers(controllerContext.InnerCtx)
 
 	go func() {
-		logger.Info("Starting spiderpool-controller CRD Manager")
+		logger.Info("Starting spiderpool-controller runtime manager")
 		if err := mgr.Start(controllerContext.InnerCtx); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}()
 
-	logger.Info("Begin to initialize http server")
-	// new controller http server
+	logger.Info("Begin to initialize OpenAPI HTTP server")
 	srv, err := newControllerOpenAPIServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.HttpServer = srv
 
-	// serve controller http
 	go func() {
 		if err = srv.Serve(); nil != err {
 			if err == http.ErrServerClosed {
@@ -166,10 +165,6 @@ func DaemonMain() {
 		}
 	}()
 
-	logger.Info("Begin to initialize spiderpool-controller metrics http server")
-	initControllerMetricsServer(controllerContext.InnerCtx)
-
-	// init IP GC manager
 	logger.Info("Begin to initialize IP GC Manager")
 	initGCManager(controllerContext.InnerCtx)
 
@@ -177,14 +172,13 @@ func DaemonMain() {
 	logger.Info("Set spiderpool-controller Startup probe ready")
 	controllerContext.IsStartupProbe.Store(true)
 
-	// the webhook must be ready or we can't work
-	controllerContext.webhookClient = newWebhookHealthCheckClient()
+	// The CRD webhook of Spiderpool must be started before informer, so that
+	// informer can normally request to some CRs in the cluster without being
+	// disturbed by an abnormal webhook.
 	checkWebhookReady()
 
-	// set up informers
 	setupInformers()
 
-	// start notifying signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	WatchSignal(sigCh)
@@ -198,7 +192,7 @@ func WatchSignal(sigCh chan os.Signal) {
 		// TODO (Icarus9913):  filter some signals
 
 		// Cancel the internal context of spiderpool-controller.
-		// This stops things like the CRD Manager, GC, etc.
+		// This stops things like the runtime manager, GC, etc.
 		if controllerContext.InnerCancel != nil {
 			controllerContext.InnerCancel()
 		}
@@ -206,7 +200,7 @@ func WatchSignal(sigCh chan os.Signal) {
 		// shut down http server
 		if nil != controllerContext.HttpServer {
 			if err := controllerContext.HttpServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("shutting down controller server failed: %s", err)
+				logger.Sugar().Errorf("Failed to shutdown spiderpool-controller HTTP server: %v", err)
 			}
 		}
 
@@ -216,13 +210,7 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initControllerServiceManagers(ctx context.Context) {
-	updateCRConfig := config.UpdateCRConfig{
-		MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-		ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-	}
-
-	// init spiderpool controller leader election
-	logger.Info("Begin to initialize spiderpool controller leader election")
+	logger.Debug("Begin to initialize spiderpool-controller leader election")
 	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
 	logger.Debug("Begin to initialize Node manager")
@@ -267,17 +255,11 @@ func initControllerServiceManagers(ctx context.Context) {
 			MaxHistoryRecords:     &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
 		},
 		controllerContext.CRDManager.GetClient(),
-		controllerContext.PodManager,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.EndpointManager = endpointManager
-
-	logger.Debug("Begin to set up Endpoint webhook")
-	if err := (&workloadendpointmanager.WorkloadEndpointWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
-		logger.Fatal(err.Error())
-	}
 
 	logger.Debug("Begin to initialize ReservedIP manager")
 	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
@@ -288,69 +270,61 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to set up ReservedIP webhook")
 	if err := (&reservedipmanager.ReservedIPWebhook{
-		ReservedIPManager: controllerContext.RIPManager,
-		EnableIPv4:        controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:        controllerContext.Cfg.EnableIPv6,
+		Client:     controllerContext.CRDManager.GetClient(),
+		EnableIPv4: controllerContext.Cfg.EnableIPv4,
+		EnableIPv6: controllerContext.Cfg.EnableIPv6,
 	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to initialize IPPool Manager")
-	ipPoolManager, err := ippoolmanager.NewIPPoolManager(&ippoolmanager.IPPoolManagerConfig{
-		EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
-		UpdateCRConfig:                updateCRConfig,
-		EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
-		MaxAllocatedIPs:               controllerContext.Cfg.IPPoolMaxAllocatedIPs,
-		LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-		MaxWorkQueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
-		WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
-		WorkerNum:                     controllerContext.Cfg.IPPoolInformerWorkers,
-		WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
-	}, controllerContext.CRDManager, controllerContext.PodManager, controllerContext.RIPManager)
+	logger.Debug("Begin to initialize IPPool manager")
+	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
+		ippoolmanager.IPPoolManagerConfig{
+			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			MaxAllocatedIPs:       &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+		},
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.RIPManager,
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.IPPoolManager = ipPoolManager
 
-	go func() {
-		logger.Debug("Starting IPPool Manager")
-		if err := ipPoolManager.Start(controllerContext.InnerCtx); err != nil {
-			logger.Fatal(err.Error())
-		}
-	}()
-
-	// set up spiderpool controller IPPool webhook
-	logger.Info("Begin to set up SpiderIPPool webhook")
-	err = controllerContext.IPPoolManager.SetupWebhook()
-	if err != nil {
+	logger.Debug("Begin to set up IPPool webhook")
+	if err := (&ippoolmanager.IPPoolWebhook{
+		Client:             controllerContext.CRDManager.GetClient(),
+		Scheme:             controllerContext.CRDManager.GetScheme(),
+		EnableIPv4:         controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:         controllerContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
+	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
-		logger.Info("Begin to initialize Subnet Manager")
-		subnetManager, err := subnetmanager.NewSubnetManager(&subnetmanager.SubnetManagerConfig{
-			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
-			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
-			UpdateCRConfig:                updateCRConfig,
-			EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
-			EnableSubnetDeleteStaleIPPool: controllerContext.Cfg.EnableSubnetDeleteStaleIPPool,
-			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-			ResyncPeriod:                  time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
-			RequeueDelayDuration:          time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
-			SubnetControllerWorkers:       controllerContext.Cfg.SubnetInformerWorkers,
-			AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
-			MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
-		}, controllerContext.CRDManager, controllerContext.IPPoolManager, controllerContext.RIPManager)
+		logger.Debug("Begin to initialize Subnet manager")
+		subnetManager, err := subnetmanager.NewSubnetManager(
+			subnetmanager.SubnetManagerConfig{
+				MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
+				ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
+			},
+			controllerContext.CRDManager.GetClient(),
+			controllerContext.IPPoolManager,
+			controllerContext.CRDManager.GetScheme(),
+		)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 		controllerContext.SubnetManager = subnetManager
-		ipPoolManager.InjectSubnetManager(controllerContext.SubnetManager)
 
-		logger.Info("Begin to set up Subnet webhook")
-		err = controllerContext.SubnetManager.SetupWebhook()
-		if err != nil {
+		logger.Debug("Begin to set up Subnet webhook")
+		if err := (&subnetmanager.SubnetWebhook{
+			Client:     controllerContext.CRDManager.GetClient(),
+			EnableIPv4: controllerContext.Cfg.EnableIPv4,
+			EnableIPv6: controllerContext.Cfg.EnableIPv6,
+		}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}
 	} else {
@@ -359,20 +333,25 @@ func initControllerServiceManagers(ctx context.Context) {
 }
 
 func initGCManager(ctx context.Context) {
-	// EnableStatefulSet was determined by configmap
+	// EnableStatefulSet was determined by Configmap.
 	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
-
-	gcManager, err := gcmanager.NewGCManager(ctx, controllerContext.ClientSet, gcIPConfig, controllerContext.EndpointManager,
-		controllerContext.IPPoolManager, controllerContext.PodManager, controllerContext.StsManager, controllerContext.Leader)
+	gcManager, err := gcmanager.NewGCManager(
+		ctx,
+		controllerContext.ClientSet,
+		gcIPConfig,
+		controllerContext.EndpointManager,
+		controllerContext.IPPoolManager,
+		controllerContext.PodManager,
+		controllerContext.StsManager,
+		controllerContext.Leader,
+	)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-
 	controllerContext.GCManager = gcManager
 
-	err = controllerContext.GCManager.Start(ctx)
-	if nil != err {
-		logger.Fatal(fmt.Sprintf("start gc manager failed, err: '%v'", err))
+	if err := controllerContext.GCManager.Start(ctx); err != nil {
+		logger.Fatal(err.Error())
 	}
 }
 
@@ -381,8 +360,16 @@ func initSpiderControllerLeaderElect(ctx context.Context) {
 	renewDeadline := time.Duration(controllerContext.Cfg.LeaseRenewDeadline) * time.Second
 	leaseRetryPeriod := time.Duration(controllerContext.Cfg.LeaseRetryPeriod) * time.Second
 	leaderRetryElectGap := time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
-	leaderElector, err := election.NewLeaseElector(controllerContext.Cfg.ControllerPodNamespace, constant.SpiderControllerElectorLockName,
-		controllerContext.Cfg.ControllerPodName, &leaseDuration, &renewDeadline, &leaseRetryPeriod, &leaderRetryElectGap)
+
+	leaderElector, err := election.NewLeaseElector(
+		controllerContext.Cfg.ControllerPodNamespace,
+		constant.SpiderControllerElectorLockName,
+		controllerContext.Cfg.ControllerPodName,
+		&leaseDuration,
+		&renewDeadline,
+		&leaseRetryPeriod,
+		&leaderRetryElectGap,
+	)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -391,19 +378,14 @@ func initSpiderControllerLeaderElect(ctx context.Context) {
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-
 	controllerContext.Leader = leaderElector
 }
 
 // initK8sClientSet will new kubernetes Clientset
 func initK8sClientSet() (*kubernetes.Clientset, error) {
-	k8sConfig, err := rest.InClusterConfig()
+	clientSet, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
 	if nil != err {
-		return nil, fmt.Errorf("failed to get k8s cluster config")
-	}
-	clientSet, err := kubernetes.NewForConfig(k8sConfig)
-	if nil != err {
-		return nil, fmt.Errorf("failed to new k8s ClientSet")
+		return nil, fmt.Errorf("failed to init K8s clientset: %v", err)
 	}
 
 	return clientSet, nil
@@ -418,20 +400,57 @@ func setupInformers() {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to set up SpiderIPPool informer")
-	err = controllerContext.IPPoolManager.SetupInformer(crdClient, controllerContext.Leader)
-	if err != nil {
+	logger.Info("Begin to set up IPPool informer")
+	ipPoolController := ippoolmanager.NewIPPoolController(
+		ippoolmanager.IPPoolControllerConfig{
+			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+			IPPoolControllerWorkers:       controllerContext.Cfg.IPPoolInformerWorkers,
+			EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
+			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			MaxWorkqueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
+			WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
+			WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
+			ResyncPeriod:                  time.Duration(controllerContext.Cfg.IPPoolInformerResyncPeriod) * time.Second,
+		},
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.RIPManager,
+	)
+	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
+	if nil != err {
 		logger.Fatal(err.Error())
 	}
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
-		logger.Info("Begin to set up SpiderSubnet informer")
-		err = controllerContext.SubnetManager.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
-		if err != nil {
+		logger.Info("Begin to set up Subnet informer")
+		if err := (&subnetmanager.SubnetController{
+			Client:                  controllerContext.CRDManager.GetClient(),
+			Scheme:                  controllerContext.CRDManager.GetScheme(),
+			LeaderRetryElectGap:     time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			ResyncPeriod:            time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
+			SubnetControllerWorkers: controllerContext.Cfg.SubnetInformerWorkers,
+			MaxWorkqueueLength:      controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
+		}).SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader); err != nil {
 			logger.Fatal(err.Error())
 		}
 
-		err = controllerContext.SubnetManager.SetupControllers(controllerContext.ClientSet)
+		logger.Info("Begin to set up auto-created IPPool controller")
+		subnetAppController, err := subnetmanager.NewSubnetAppController(
+			controllerContext.CRDManager.GetClient(),
+			controllerContext.SubnetManager,
+			subnetmanager.SubnetAppControllerConfig{
+				EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+				EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+				AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
+				MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
+				WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
+				LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			})
+		if nil != err {
+			logger.Fatal(err.Error())
+		}
+
+		err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet, controllerContext.Leader)
 		if nil != err {
 			logger.Fatal(err.Error())
 		}
@@ -439,6 +458,8 @@ func setupInformers() {
 }
 
 func checkWebhookReady() {
+	controllerContext.webhookClient = newWebhookHealthCheckClient()
+
 	// TODO(Icarus9913): [Refactor] give a variable rather than hard code 100
 	for i := 1; i <= 100; i++ {
 		if i == 100 {

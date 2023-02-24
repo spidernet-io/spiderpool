@@ -20,7 +20,7 @@ type Controller struct {
 	cleanupFunc   APPInformersDelFunc
 }
 
-func NewSubnetController(reconcile AppInformersAddOrUpdateFunc, cleanup APPInformersDelFunc, logger *zap.Logger) (*Controller, error) {
+func NewApplicationController(reconcile AppInformersAddOrUpdateFunc, cleanup APPInformersDelFunc, logger *zap.Logger) (*Controller, error) {
 	if reconcile == nil {
 		return nil, fmt.Errorf("the controllers informers reconcile function must be specified")
 	}

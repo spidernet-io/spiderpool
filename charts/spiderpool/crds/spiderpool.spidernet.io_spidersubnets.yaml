@@ -71,7 +71,6 @@ spec:
               ips:
                 items:
                   type: string
-                minItems: 1
                 type: array
               routes:
                 items:
@@ -94,7 +93,6 @@ spec:
                 minimum: 0
                 type: integer
             required:
-            - ips
             - subnet
             type: object
           status:
@@ -115,6 +113,9 @@ spec:
                 description: PoolIPPreAllocations is a map of pool IP pre-allocation
                   details indexed by pool name.
                 type: object
+              default:
+                default: false
+                type: boolean
               totalIPCount:
                 format: int64
                 minimum: 0

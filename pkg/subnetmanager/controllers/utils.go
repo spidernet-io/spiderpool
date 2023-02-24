@@ -80,7 +80,7 @@ func GenSubnetFreeIPs(subnet *spiderpoolv1.SpiderSubnet) ([]net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-	freeIPs := spiderpoolip.IPsDiffSet(totalIPs, usedIPs)
+	freeIPs := spiderpoolip.IPsDiffSet(totalIPs, usedIPs, true)
 
 	return freeIPs, nil
 }
@@ -101,29 +101,17 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 		}
 	} else {
 		// annotation: ipam.spidernet.io/subnet
-		subnetAnnoConfig.SingleSubnet = new(types.AnnoSubnetItem)
 		subnet, ok := podAnnotations[constant.AnnoSpiderSubnet]
-		if !ok {
-			// default IPAM mode
-			_, useIPPools := podAnnotations[constant.AnnoPodIPPools]
-			_, useIPPool := podAnnotations[constant.AnnoPodIPPool]
-			if useIPPools || useIPPool {
-				log.Debug("no SpiderSubnet feature annotation found, use default IPAM mode")
-				return nil, nil
-			}
-
-			// default cluster subnet
-			log.Sugar().Infof("no IPPool or Subnet annotations found, use cluster default subnet IPv4: '%v', IPv6: '%v'",
-				singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet, singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet)
-
-			subnetAnnoConfig.SingleSubnet.IPv4 = singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet
-			subnetAnnoConfig.SingleSubnet.IPv6 = singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet
-		} else {
-			log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnet, subnets)
+		if ok {
+			log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnet, subnet)
+			subnetAnnoConfig.SingleSubnet = new(types.AnnoSubnetItem)
 			err := json.Unmarshal([]byte(subnet), &subnetAnnoConfig.SingleSubnet)
 			if nil != err {
 				return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %v", constant.AnnoSpiderSubnet, subnet, err)
 			}
+		} else {
+			log.Debug("no SpiderSubnet feature annotation found, use default IPAM mode")
+			return nil, nil
 		}
 	}
 
@@ -135,7 +123,7 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 	poolIPNum, ok := podAnnotations[constant.AnnoSpiderSubnetPoolIPNumber]
 	if ok {
 		log.Sugar().Debugf("use IPPool IP number '%s'", poolIPNum)
-		isFlexible, ipNum, err = getPoolIPNumber(poolIPNum)
+		isFlexible, ipNum, err = GetPoolIPNumber(poolIPNum)
 		if nil != err {
 			return nil, err
 		}
@@ -158,18 +146,11 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)
-	reclaimPool, ok := podAnnotations[constant.AnnoSpiderSubnetReclaimIPPool]
-	if ok {
-		log.Sugar().Debugf("determine to reclaim IPPool '%s'", reclaimPool)
-		parseBool, err := strconv.ParseBool(reclaimPool)
-		if nil != err {
-			return nil, fmt.Errorf("failed to parse spider subnet '%s', error: %v", constant.AnnoSpiderSubnetReclaimIPPool, err)
-		}
-		subnetAnnoConfig.ReclaimIPPool = parseBool
-	} else {
-		log.Debug("no specified reclaim-IPPool, default to set it true")
-		subnetAnnoConfig.ReclaimIPPool = true
+	reclaimPool, err := ShouldReclaimIPPool(podAnnotations)
+	if nil != err {
+		return nil, err
 	}
+	subnetAnnoConfig.ReclaimIPPool = reclaimPool
 
 	err = mutateAndValidateSubnetAnno(&subnetAnnoConfig)
 	if nil != err {
@@ -188,6 +169,8 @@ func mutateAndValidateSubnetAnno(subnetConfig *types.PodSubnetAnnoConfig) error 
 		var ifNameArray []string
 
 		for index := range subnetConfig.MultipleSubnets {
+			ifNameArray = append(ifNameArray, subnetConfig.MultipleSubnets[index].Interface)
+
 			if len(subnetConfig.MultipleSubnets[index].IPv4) != 0 {
 				subnetConfig.MultipleSubnets[index].IPv4 = []string{subnetConfig.MultipleSubnets[index].IPv4[0]}
 				if subnetConfig.MultipleSubnets[index].IPv4[0] == "" {
@@ -203,7 +186,10 @@ func mutateAndValidateSubnetAnno(subnetConfig *types.PodSubnetAnnoConfig) error 
 				v6SubnetsArray = append(v6SubnetsArray, subnetConfig.MultipleSubnets[index].IPv6[0])
 			}
 
-			ifNameArray = append(ifNameArray, subnetConfig.MultipleSubnets[index].Interface)
+			// all none
+			if len(subnetConfig.MultipleSubnets[index].IPv4) == 0 && len(subnetConfig.MultipleSubnets[index].IPv6) == 0 {
+				return fmt.Errorf("it's invalid to set dual empty subnet with multiple interfaces: %v", subnetConfig)
+			}
 		}
 
 		// validate duplicate subnet
@@ -219,14 +205,19 @@ func mutateAndValidateSubnetAnno(subnetConfig *types.PodSubnetAnnoConfig) error 
 		if len(subnetConfig.SingleSubnet.IPv4) != 0 {
 			subnetConfig.SingleSubnet.IPv4 = []string{subnetConfig.SingleSubnet.IPv4[0]}
 			if subnetConfig.SingleSubnet.IPv4[0] == "" {
-				return fmt.Errorf("it's invalid to set an empty IPv4 subnet with single interface")
+				return fmt.Errorf("it's invalid to set an empty IPv4 subnet with single interface: %v", subnetConfig)
 			}
 		}
 		if len(subnetConfig.SingleSubnet.IPv6) != 0 {
 			subnetConfig.SingleSubnet.IPv6 = []string{subnetConfig.SingleSubnet.IPv6[0]}
 			if subnetConfig.SingleSubnet.IPv6[0] == "" {
-				return fmt.Errorf("it's invalid to set an empty IPv6 subnet with single interface")
+				return fmt.Errorf("it's invalid to set an empty IPv6 subnet with single interface: %v", subnetConfig)
 			}
+		}
+
+		// all none
+		if len(subnetConfig.SingleSubnet.IPv4) == 0 && len(subnetConfig.SingleSubnet.IPv6) == 0 {
+			return fmt.Errorf("it's invalid to set dual empty subnet with single interface: %v", subnetConfig)
 		}
 		// specify 'eth0' as the default single interface if it's none.
 		if subnetConfig.SingleSubnet.Interface == "" {
@@ -239,8 +230,8 @@ func mutateAndValidateSubnetAnno(subnetConfig *types.PodSubnetAnnoConfig) error 
 	return nil
 }
 
-// getPoolIPNumber judges the given parameter is fixed or flexible
-func getPoolIPNumber(str string) (isFlexible bool, ipNum int, err error) {
+// GetPoolIPNumber judges the given parameter is fixed or flexible
+func GetPoolIPNumber(str string) (isFlexible bool, ipNum int, err error) {
 	tmp := str
 
 	// the '+' sign counts must be '0' or '1'
@@ -304,15 +295,14 @@ func IsDefaultIPPoolMode(subnetConfig *types.PodSubnetAnnoConfig) bool {
 		return true
 	}
 
+	// SpiderSubnet with multiple interfaces
 	if len(subnetConfig.MultipleSubnets) != 0 {
 		return false
 	}
 
-	// if we do not set the cluster default SpiderSubnet, the dual stack subnets configuration will be empty
+	// SpiderSubnet with single interface
 	if subnetConfig.SingleSubnet != nil {
-		if len(subnetConfig.SingleSubnet.IPv4) == 0 && len(subnetConfig.SingleSubnet.IPv6) == 0 {
-			return true
-		}
+		return false
 	}
 
 	return false
@@ -327,4 +317,19 @@ func containsDuplicate(arr []string) bool {
 		}
 	}
 	return false
+}
+
+// ShouldReclaimIPPool will check pod annotation "ipam.spidernet.io/ippool-reclaim"
+func ShouldReclaimIPPool(anno map[string]string) (bool, error) {
+	reclaimPool, ok := anno[constant.AnnoSpiderSubnetReclaimIPPool]
+	if ok {
+		parseBool, err := strconv.ParseBool(reclaimPool)
+		if nil != err {
+			return false, fmt.Errorf("failed to parse spider subnet '%s', error: %v", constant.AnnoSpiderSubnetReclaimIPPool, err)
+		}
+		return parseBool, nil
+	}
+
+	// no specified reclaim-IPPool, default to set it true
+	return true, nil
 }

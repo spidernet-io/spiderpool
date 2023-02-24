@@ -10,23 +10,27 @@ import (
 )
 
 // AllocDurationConstruct is Singleton
-var AllocDurationConstruct = new(allocationDurationConstruct)
+var IPAMDurationConstruct = new(ipamDurationConstruct)
 
-// DeallocDurationConstruct is Singleton
-var DeallocDurationConstruct = new(releaseDurationConstruct)
+type ipamDurationConstruct struct {
+	allocate      durationConstruct
+	release       durationConstruct
+	allocateLimit durationConstruct
+	releaseLimit  durationConstruct
+}
 
-type allocationDurationConstruct struct {
+type durationConstruct struct {
 	cacheLock lock.RWMutex
 
-	allocationAvgDuration float64
-	maxAllocationDuration float64
-	minAllocationDuration float64
+	avgDuration float64
+	maxDuration float64
+	minDuration float64
 
-	allocationCounts int
+	counts int
 }
 
 // RecordIPAMAllocationDuration serves for spiderpool agent IPAM allocation.
-func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context.Context, allocationDuration float64) {
+func (idc *ipamDurationConstruct) RecordIPAMAllocationDuration(ctx context.Context, allocationDuration float64) {
 	if !globalEnableMetric {
 		return
 	}
@@ -36,43 +40,33 @@ func (adc *allocationDurationConstruct) RecordIPAMAllocationDuration(ctx context
 		ipamAllocationLatestDurationSeconds.Record(allocationDuration)
 
 		// allocation duration histogram
-		ipamAllocationDurationSeconds.Record(ctx, allocationDuration)
+		ipamAllocationDurationSecondsHistogram.Record(ctx, allocationDuration)
 
-		adc.cacheLock.Lock()
+		idc.allocate.cacheLock.Lock()
 
 		// IPAM average allocation duration
-		adc.allocationAvgDuration = (adc.allocationAvgDuration*float64(adc.allocationCounts) + allocationDuration) / float64(adc.allocationCounts+1)
-		adc.allocationCounts++
-		ipamAllocationAverageDurationSeconds.Record(adc.allocationAvgDuration)
+		idc.allocate.avgDuration = (idc.allocate.avgDuration*float64(idc.allocate.counts) + allocationDuration) / float64(idc.allocate.counts+1)
+		idc.allocate.counts++
+		ipamAllocationAverageDurationSeconds.Record(idc.allocate.avgDuration)
 
 		// IPAM maximum allocation duration
-		if allocationDuration > adc.maxAllocationDuration {
-			adc.maxAllocationDuration = allocationDuration
-			ipamAllocationMaxDurationSeconds.Record(adc.maxAllocationDuration)
+		if allocationDuration > idc.allocate.maxDuration {
+			idc.allocate.maxDuration = allocationDuration
+			ipamAllocationMaxDurationSeconds.Record(idc.allocate.maxDuration)
 		}
 
 		// IPAM minimum allocation duration
-		if adc.allocationCounts == 1 || allocationDuration < adc.minAllocationDuration {
-			adc.minAllocationDuration = allocationDuration
-			ipamAllocationMinDurationSeconds.Record(adc.minAllocationDuration)
+		if idc.allocate.counts == 1 || allocationDuration < idc.allocate.minDuration {
+			idc.allocate.minDuration = allocationDuration
+			ipamAllocationMinDurationSeconds.Record(idc.allocate.minDuration)
 		}
 
-		adc.cacheLock.Unlock()
+		idc.allocate.cacheLock.Unlock()
 	}()
 }
 
-type releaseDurationConstruct struct {
-	cacheLock lock.RWMutex
-
-	releaseAvgDuration float64
-	maxReleaseDuration float64
-	minReleaseDuration float64
-
-	releaseCounts int
-}
-
 // RecordIPAMReleaseDuration serves for spiderpool agent IPAM allocation.
-func (ddc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Context, releaseDuration float64) {
+func (idc *ipamDurationConstruct) RecordIPAMReleaseDuration(ctx context.Context, releaseDuration float64) {
 	if !globalEnableMetric {
 		return
 	}
@@ -82,27 +76,83 @@ func (ddc *releaseDurationConstruct) RecordIPAMReleaseDuration(ctx context.Conte
 		ipamReleaseLatestDurationSeconds.Record(releaseDuration)
 
 		// release duration histogram
-		ipamAllocationDurationSeconds.Record(ctx, releaseDuration)
+		ipamReleaseDurationSecondsHistogram.Record(ctx, releaseDuration)
 
-		ddc.cacheLock.Lock()
+		idc.release.cacheLock.Lock()
 
 		// IPAM average release duration
-		ddc.releaseAvgDuration = (ddc.releaseAvgDuration*float64(ddc.releaseCounts) + releaseDuration) / float64(ddc.releaseCounts+1)
-		ddc.releaseCounts++
-		ipamReleaseAverageDurationSeconds.Record(ddc.releaseAvgDuration)
+		idc.release.avgDuration = (idc.release.avgDuration*float64(idc.release.counts) + releaseDuration) / float64(idc.release.counts+1)
+		idc.release.counts++
+		ipamReleaseAverageDurationSeconds.Record(idc.release.avgDuration)
 
 		// IPAM maximum release duration
-		if releaseDuration > ddc.maxReleaseDuration {
-			ddc.maxReleaseDuration = releaseDuration
-			ipamReleaseMaxDurationSeconds.Record(ddc.maxReleaseDuration)
+		if releaseDuration > idc.release.maxDuration {
+			idc.release.maxDuration = releaseDuration
+			ipamReleaseMaxDurationSeconds.Record(idc.release.maxDuration)
 		}
 
 		// IPAM minimum release duration
-		if ddc.releaseCounts == 1 || releaseDuration < ddc.minReleaseDuration {
-			ddc.minReleaseDuration = releaseDuration
-			ipamReleaseMinDurationSeconds.Record(ddc.minReleaseDuration)
+		if idc.release.counts == 1 || releaseDuration < idc.release.minDuration {
+			idc.release.minDuration = releaseDuration
+			ipamReleaseMinDurationSeconds.Record(idc.release.minDuration)
 		}
 
-		ddc.cacheLock.Unlock()
+		idc.release.cacheLock.Unlock()
+	}()
+}
+
+func (idc *ipamDurationConstruct) RecordIPAMAllocationLimitDuration(ctx context.Context, limitDuration float64) {
+	if !globalEnableMetric {
+		return
+	}
+
+	go func() {
+		ipamAllocationLatestLimitDurationSeconds.Record(limitDuration)
+		ipamAllocationLimitDurationSecondsHistogram.Record(ctx, limitDuration)
+
+		idc.allocateLimit.cacheLock.Lock()
+		defer idc.allocateLimit.cacheLock.Unlock()
+
+		idc.allocateLimit.avgDuration = (idc.allocateLimit.avgDuration*float64(idc.allocateLimit.counts) + limitDuration) / float64(idc.allocateLimit.counts+1)
+		idc.allocateLimit.counts++
+		ipamAllocationAverageLimitDurationSeconds.Record(idc.allocateLimit.avgDuration)
+
+		if limitDuration > idc.allocateLimit.maxDuration {
+			idc.allocateLimit.maxDuration = limitDuration
+			ipamAllocationMaxLimitDurationSeconds.Record(idc.allocateLimit.maxDuration)
+		}
+
+		if idc.allocateLimit.counts == 1 || limitDuration < idc.allocateLimit.minDuration {
+			idc.allocateLimit.minDuration = limitDuration
+			ipamAllocationMinLimitDurationSeconds.Record(idc.allocateLimit.minDuration)
+		}
+	}()
+}
+
+func (idc *ipamDurationConstruct) RecordIPAMReleaseLimitDuration(ctx context.Context, limitDuration float64) {
+	if !globalEnableMetric {
+		return
+	}
+
+	go func() {
+		ipamReleaseLatestLimitDurationSeconds.Record(limitDuration)
+		ipamReleaseLimitDurationSecondsHistogram.Record(ctx, limitDuration)
+
+		idc.releaseLimit.cacheLock.Lock()
+		defer idc.releaseLimit.cacheLock.Unlock()
+
+		idc.releaseLimit.avgDuration = (idc.releaseLimit.avgDuration*float64(idc.releaseLimit.counts) + limitDuration) / float64(idc.releaseLimit.counts+1)
+		idc.releaseLimit.counts++
+		ipamReleaseAverageLimitDurationSeconds.Record(idc.releaseLimit.avgDuration)
+
+		if limitDuration > idc.releaseLimit.maxDuration {
+			idc.releaseLimit.maxDuration = limitDuration
+			ipamReleaseMaxLimitDurationSeconds.Record(idc.releaseLimit.maxDuration)
+		}
+
+		if idc.releaseLimit.counts == 1 || limitDuration < idc.releaseLimit.minDuration {
+			idc.releaseLimit.minDuration = limitDuration
+			ipamReleaseMinLimitDurationSeconds.Record(idc.releaseLimit.minDuration)
+		}
 	}()
 }

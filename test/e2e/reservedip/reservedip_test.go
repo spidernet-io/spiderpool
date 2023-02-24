@@ -5,6 +5,7 @@ package reservedip_test
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +45,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 		// Init namespace name and create
 		nsName = "ns" + tools.RandomName()
 		GinkgoWriter.Printf("Try to create namespace %v \n", nsName)
-		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
+		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace %v", nsName)
 
 		// Init test Deployment/Pod name
@@ -55,24 +56,22 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 		if frame.Info.IpV4Enabled {
 			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
 			if frame.Info.SpiderSubnetEnabled {
-				iPv4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
-				iPv4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, 1)
+			} else {
+				err = common.CreateIppool(frame, iPv4PoolObj)
 			}
-			err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, 1)
 			Expect(err).NotTo(HaveOccurred(), "Failed to create v4 Pool %v \n", v4PoolName)
-			GinkgoWriter.Printf("Successfully created v4 Pool: %v \n", v4PoolName)
 			v4PoolNameList = append(v4PoolNameList, v4PoolName)
 		}
 
 		if frame.Info.IpV6Enabled {
 			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(1)
 			if frame.Info.SpiderSubnetEnabled {
-				iPv6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
-				iPv6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, 1)
+			} else {
+				err = common.CreateIppool(frame, iPv6PoolObj)
 			}
-			err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, 1)
 			Expect(err).NotTo(HaveOccurred(), "Failed to create v6 Pool %v \n", v6PoolName)
-			GinkgoWriter.Printf("Successfully created v6 Pool: %v \n", v6PoolName)
 			v6PoolNameList = append(v6PoolNameList, v6PoolName)
 		}
 
@@ -171,7 +170,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			}
 
 			// Get the Pod creation failure Event
-			ctx, cancel := context.WithTimeout(context.Background(), common.EventOccurTimeout)
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 			for _, pod := range podlist.Items {
 				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
@@ -223,16 +222,20 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			// S00003: Failed to set same IP in excludeIPs when an IP is assigned to a Pod
 			if frame.Info.IpV4Enabled {
 				GinkgoWriter.Printf("Update the v4 IPPool and set the IP %v used by the Pod in the excludeIPs. \n", iPv4PoolObj.Spec.IPs)
-				desiredV4PoolObj := common.GetIppoolByName(frame, v4PoolName)
+				desiredV4PoolObj, err := common.GetIppoolByName(frame, v4PoolName)
+				Expect(err).NotTo(HaveOccurred())
 				desiredV4PoolObj.Spec.ExcludeIPs = desiredV4PoolObj.Spec.IPs
-				Expect(common.PatchIppool(frame, desiredV4PoolObj, iPv4PoolObj)).NotTo(Succeed())
+				err = common.PatchIppool(frame, desiredV4PoolObj, iPv4PoolObj)
+				Expect(err).To(HaveOccurred())
 				GinkgoWriter.Printf("Failed to update v4 IPPool %v when setting the IP %v used by the Pod in the IPPool's excludeIPs \n", v4PoolName, iPv4PoolObj.Spec.IPs)
 			}
 			if frame.Info.IpV6Enabled {
 				GinkgoWriter.Printf("Update the v6 IPPool and set the IP %v used by the Pod in the excludeIPs. \n", iPv6PoolObj.Spec.IPs)
-				desiredV6PoolObj := common.GetIppoolByName(frame, v6PoolName)
+				desiredV6PoolObj, err := common.GetIppoolByName(frame, v6PoolName)
+				Expect(err).NotTo(HaveOccurred())
 				desiredV6PoolObj.Spec.ExcludeIPs = desiredV6PoolObj.Spec.IPs
-				Expect(common.PatchIppool(frame, desiredV6PoolObj, iPv6PoolObj)).NotTo(Succeed())
+				err = common.PatchIppool(frame, desiredV6PoolObj, iPv6PoolObj)
+				Expect(err).To(HaveOccurred())
 				GinkgoWriter.Printf("Failed to update v6 IPPool %v when setting the IP %v used by the Pod in the IPPool's excludeIPs \n", v6PoolName, iPv6PoolObj.Spec.IPs)
 			}
 

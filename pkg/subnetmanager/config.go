@@ -5,22 +5,13 @@ package subnetmanager
 
 import (
 	"time"
-
-	"github.com/spidernet-io/spiderpool/pkg/config"
 )
 
 type SubnetManagerConfig struct {
-	EnableIPv4 bool
-	EnableIPv6 bool
+	MaxConflictRetries    int
+	ConflictRetryUnitTime time.Duration
+}
 
-	config.UpdateCRConfig
-	EnableSpiderSubnet            bool
-	EnableSubnetDeleteStaleIPPool bool
-	LeaderRetryElectGap           time.Duration
-	ResyncPeriod                  time.Duration
-	RequeueDelayDuration          time.Duration
-
-	SubnetControllerWorkers int
-	AppControllerWorkers    int
-	MaxWorkqueueLength      int
+func setDefaultsForSubnetManagerConfig(config SubnetManagerConfig) SubnetManagerConfig {
+	return config
 }

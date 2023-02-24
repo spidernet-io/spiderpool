@@ -5,7 +5,6 @@ package reservedipmanager
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -22,6 +21,10 @@ var (
 )
 
 func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+	if err := rw.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
 	var errs field.ErrorList
 	if err := rw.validateReservedIPSpec(ctx, rIP); err != nil {
 		errs = append(errs, err)
@@ -35,12 +38,16 @@ func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *
 }
 
 func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
-	var errs field.ErrorList
-	if err := rw.validateReservedIPSpec(ctx, newRIP); err != nil {
+	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
 		return field.ErrorList{err}
 	}
 
-	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
+	if err := rw.validateReservedIPIPVersion(newRIP.Spec.IPVersion); err != nil {
+		return field.ErrorList{err}
+	}
+
+	var errs field.ErrorList
+	if err := rw.validateReservedIPSpec(ctx, newRIP); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -52,7 +59,8 @@ func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRI
 }
 
 func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if *newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
+	if newRIP.Spec.IPVersion != nil && oldRIP.Spec.IPVersion != nil &&
+		*newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
 		return field.Forbidden(
 			ipVersionField,
 			"is not changeable",
@@ -63,11 +71,7 @@ func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderRes
 }
 
 func (rw *ReservedIPWebhook) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if err := rw.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
-		return err
-	}
-
-	return rw.validateReservedIPAvailableIP(ctx, *rIP.Spec.IPVersion, rIP)
+	return rw.validateReservedIPs(ctx, *rIP.Spec.IPVersion, rIP.Spec.IPs)
 }
 
 func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersion) *field.Error {
@@ -107,38 +111,13 @@ func (rw *ReservedIPWebhook) validateReservedIPIPVersion(version *types.IPVersio
 	return nil
 }
 
-func (rw *ReservedIPWebhook) validateReservedIPAvailableIP(ctx context.Context, version types.IPVersion, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
-	if len(rIP.Spec.IPs) == 0 {
-		return nil
-	}
-
-	newReservedIPs, err := spiderpoolip.ParseIPRanges(version, rIP.Spec.IPs)
-	if err != nil {
-		return field.Invalid(
-			ipsField,
-			rIP.Spec.IPs,
-			err.Error(),
-		)
-	}
-
-	rIPList, err := rw.ListReservedIPs(ctx)
-	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to list ReservedIPs: %v", err))
-	}
-
-	for _, r := range rIPList.Items {
-		if r.Name == rIP.Name || *r.Spec.IPVersion != version {
-			continue
-		}
-
-		existReservedIPs, err := spiderpoolip.ParseIPRanges(version, r.Spec.IPs)
-		if err != nil {
-			return field.InternalError(ipsField, fmt.Errorf("failed to parse 'spec.ips':\n%v\n of the existing ReservedIP %s: %v", r.Spec.IPs, r.Name, err))
-		}
-		if len(spiderpoolip.IPsIntersectionSet(newReservedIPs, existReservedIPs)) > 0 {
-			return field.Forbidden(
-				ipsField,
-				fmt.Sprintf("overlaps with the existing ReservedIP %s", r.Name),
+func (rw *ReservedIPWebhook) validateReservedIPs(ctx context.Context, version types.IPVersion, ips []string) *field.Error {
+	for i, r := range ips {
+		if err := spiderpoolip.IsIPRange(version, r); err != nil {
+			return field.Invalid(
+				ipsField.Index(i),
+				ips[i],
+				err.Error(),
 			)
 		}
 	}

@@ -392,9 +392,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		var v4SubnetObject, v6SubnetObject *v1.SpiderSubnet
 
 		BeforeEach(func() {
-
 			if frame.Info.SpiderSubnetEnabled {
-				// Subnet Adaptation
 				if frame.Info.IpV4Enabled {
 					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(1)
 					Expect(v4SubnetObject).NotTo(BeNil())
@@ -411,7 +409,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			dirtyIPv4 = common.GenerateExampleIpv4Address()
 			GinkgoWriter.Printf("generate dirty IPv4 :%v \n", dirtyIPv4)
 
-			dirtyIPv6 = common.GenerateExampleIpv4Address()
+			dirtyIPv6 = common.GenerateExampleIpv6Address()
 			GinkgoWriter.Printf("generate dirty IPv6:%v\n", dirtyIPv6)
 
 			dirtyPodName = "dirtyPod-" + tools.RandomName()
@@ -425,21 +423,27 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				GinkgoWriter.Println("create ipv4 pool")
 				v4poolName, v4poolObj = common.GenerateExampleIpv4poolObject(1)
 				if frame.Info.SpiderSubnetEnabled {
-					v4poolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
-					v4poolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4poolObj, 1)
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(common.CreateIppool(frame, v4poolObj)).To(Succeed())
 				}
 				v4poolNameList = []string{v4poolName}
-				Expect(common.CreateIppool(frame, v4poolObj)).To(Succeed())
 			}
 			if frame.Info.IpV6Enabled {
 				GinkgoWriter.Println("create ipv6 pool")
 				v6poolName, v6poolObj = common.GenerateExampleIpv6poolObject(1)
 				if frame.Info.SpiderSubnetEnabled {
-					v6poolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
-					v6poolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6poolObj, 1)
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(common.CreateIppool(frame, v6poolObj)).To(Succeed())
 				}
 				v6poolNameList = []string{v6poolName}
-				Expect(common.CreateIppool(frame, v6poolObj)).To(Succeed())
 			}
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("Try to delete IPv4 %v, IPv6 %v IPPool \n", v4poolName, v6poolName)
@@ -486,13 +490,15 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				// get pod ip record in ippool
 				if frame.Info.IpV4Enabled {
 					GinkgoWriter.Printf("get pod=%v/%v ip=%v record in ipv4 pool=%v\n", namespace, podName, podIPv4, v4poolName)
-					v4poolObj = common.GetIppoolByName(frame, v4poolName)
+					v4poolObj, err = common.GetIppoolByName(frame, v4poolName)
+					Expect(err).NotTo(HaveOccurred())
 					*podIPv4Record = v4poolObj.Status.AllocatedIPs[podIPv4]
 					GinkgoWriter.Printf("the pod ip record in ipv4 pool is %v\n", *podIPv4Record)
 				}
 				if frame.Info.IpV6Enabled {
 					GinkgoWriter.Printf("get pod=%v/%v ip=%v record in ipv6 pool=%v\n", namespace, podName, podIPv6, v6poolName)
-					v6poolObj = common.GetIppoolByName(frame, v6poolName)
+					v6poolObj, err = common.GetIppoolByName(frame, v6poolName)
+					Expect(err).NotTo(HaveOccurred())
 					*podIPv6Record = v6poolObj.Status.AllocatedIPs[podIPv6]
 					GinkgoWriter.Printf("the pod ip record in ipv6 pool is %v\n", *podIPv6Record)
 				}
@@ -518,7 +524,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					GinkgoWriter.Printf("ipv4 pool %+v\n", v4poolObj)
 
 					// check if dirty data added successfully
-					v4poolObj = common.GetIppoolByName(frame, v4poolName)
+					v4poolObj, err = common.GetIppoolByName(frame, v4poolName)
+					Expect(err).NotTo(HaveOccurred())
 					record, ok := v4poolObj.Status.AllocatedIPs[dirtyIPv4]
 					Expect(ok).To(BeTrue())
 					Expect(record).To(Equal(*dirtyIPv4Record))
@@ -544,7 +551,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					GinkgoWriter.Printf("ipv6 pool %+v\n", v6poolObj)
 
 					// Check if dirty data added successfully
-					v6poolObj = common.GetIppoolByName(frame, v6poolName)
+					v6poolObj, err = common.GetIppoolByName(frame, v6poolName)
+					Expect(err).NotTo(HaveOccurred())
 					record, ok := v6poolObj.Status.AllocatedIPs[dirtyIPv6]
 					Expect(ok).To(BeTrue())
 					Expect(record).To(Equal(*dirtyIPv6Record))

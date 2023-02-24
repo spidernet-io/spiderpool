@@ -5,65 +5,55 @@ package subnetmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net"
 
-	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	ippoolmanagertypes "github.com/spidernet-io/spiderpool/pkg/ippoolmanager/types"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
-	subnetmanagertypes "github.com/spidernet-io/spiderpool/pkg/subnetmanager/types"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-var logger *zap.Logger
-
-type subnetManager struct {
-	config        *SubnetManagerConfig
-	client        client.Client
-	runtimeMgr    ctrl.Manager
-	ipPoolManager ippoolmanagertypes.IPPoolManager
-	reservedMgr   reservedipmanager.ReservedIPManager
-
-	leader election.SpiderLeaseElector
-
-	workQueue workqueue.RateLimitingInterface
+type SubnetManager interface {
+	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
+	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
+	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, podController types.PodTopController, podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error)
+	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
 }
 
-func NewSubnetManager(c *SubnetManagerConfig, mgr ctrl.Manager, ipPoolManager ippoolmanagertypes.IPPoolManager, reservedIPMgr reservedipmanager.ReservedIPManager) (subnetmanagertypes.SubnetManager, error) {
-	if c == nil {
-		return nil, errors.New("subnet manager config must be specified")
-	}
-	if mgr == nil {
-		return nil, errors.New("k8s manager must be specified")
+type subnetManager struct {
+	config        SubnetManagerConfig
+	client        client.Client
+	ipPoolManager ippoolmanager.IPPoolManager
+	Scheme        *runtime.Scheme
+}
+
+func NewSubnetManager(config SubnetManagerConfig, client client.Client, ipPoolManager ippoolmanager.IPPoolManager, scheme *runtime.Scheme) (SubnetManager, error) {
+	if client == nil {
+		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
 	if ipPoolManager == nil {
-		return nil, errors.New("ippool manager must be specified")
+		return nil, fmt.Errorf("ippool manager %w", constant.ErrMissingRequiredParam)
 	}
-	if reservedIPMgr == nil {
-		return nil, errors.New("reserved IP manager must be specified")
+	if scheme == nil {
+		return nil, fmt.Errorf("scheme %w", constant.ErrMissingRequiredParam)
 	}
-
-	logger = logutils.Logger.Named("Subnet-Manager")
 
 	return &subnetManager{
-		config:        c,
-		client:        mgr.GetClient(),
-		runtimeMgr:    mgr,
+		config:        setDefaultsForSubnetManagerConfig(config),
+		client:        client,
 		ipPoolManager: ipPoolManager,
-		reservedMgr:   reservedIPMgr,
+		Scheme:        scheme,
 	}, nil
 }
 
@@ -77,202 +67,101 @@ func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string)
 }
 
 func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
-	subnetList := &spiderpoolv1.SpiderSubnetList{}
-	if err := sm.client.List(ctx, subnetList, opts...); err != nil {
+	var subnetList spiderpoolv1.SpiderSubnetList
+	if err := sm.client.List(ctx, &subnetList, opts...); err != nil {
 		return nil, err
 	}
 
-	return subnetList, nil
-}
-
-func (sm *subnetManager) GenerateIPsFromSubnetWhenScaleUpIP(ctx context.Context, subnetName string, pool *spiderpoolv1.SpiderIPPool, cursor bool) ([]string, error) {
-	if pool.Status.AutoDesiredIPCount == nil {
-		return nil, fmt.Errorf("%w: we can't generate IPs for the IPPool '%s' who doesn't have Status AutoDesiredIPCount", constant.ErrWrongInput, pool.Name)
-	}
-
-	subnet, err := sm.GetSubnetByName(ctx, subnetName)
-	if nil != err {
-		return nil, err
-	}
-
-	if subnet.DeletionTimestamp != nil {
-		return nil, fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't generate IPs from it", constant.ErrWrongInput, subnet.Name)
-	}
-
-	var ipVersion types.IPVersion
-	if subnet.Spec.IPVersion != nil {
-		ipVersion = *subnet.Spec.IPVersion
-	} else {
-		return nil, fmt.Errorf("%w: SpiderSubnet '%v' misses spec IP version", constant.ErrWrongInput, subnet)
-	}
-
-	log := logutils.FromContext(ctx)
-
-	var beforeAllocatedIPs []net.IP
-
-	desiredIPNum := int(*pool.Status.AutoDesiredIPCount)
-	poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(ipVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-	if nil != err {
-		return nil, fmt.Errorf("%w: failed to assemble IPPool '%s' total IPs, error: %v", constant.ErrWrongInput, pool.Name, err)
-	}
-	ipNum := desiredIPNum - len(poolTotalIPs)
-	if ipNum <= 0 {
-		return nil, fmt.Errorf("%w: IPPool '%s' status desiredIPNum is '%d' and total IP counts is '%d', we can't generate IPs for it",
-			constant.ErrWrongInput, pool.Name, desiredIPNum, len(poolTotalIPs))
-	}
-
-	subnetPoolAllocation, ok := subnet.Status.ControlledIPPools[pool.Name]
-	if ok {
-		subnetPoolAllocatedIPs, err := spiderpoolip.ParseIPRanges(ipVersion, subnetPoolAllocation.IPs)
-		if nil != err {
-			return nil, fmt.Errorf("%w: failed to parse SpiderSubnet '%s' Status ControlledIPPool '%s' IPs '%v', error: %v",
-				constant.ErrWrongInput, subnet.Name, pool.Name, subnetPoolAllocation.IPs, err)
-		}
-
-		// the subnetPoolAllocatedIPs is greater than pool total IP counts indicates that
-		// the SpiderSubnet updated successfully but the IPPool failed to update in the last procession
-		if len(subnetPoolAllocatedIPs) > len(poolTotalIPs) {
-			lastAllocatedIPs := spiderpoolip.IPsDiffSet(subnetPoolAllocatedIPs, poolTotalIPs)
-			log.Sugar().Warnf("SpiderSubnet '%s' Status ControlledIPPool '%s' has the allocated IPs '%v', try to re-use it!", subnetName, pool.Name, lastAllocatedIPs)
-			if len(lastAllocatedIPs) == desiredIPNum-len(poolTotalIPs) {
-				// last allocated IPs is same with the current allocation request
-				return spiderpoolip.ConvertIPsToIPRanges(ipVersion, lastAllocatedIPs)
-			} else if len(lastAllocatedIPs) > desiredIPNum-len(poolTotalIPs) {
-				// last allocated IPs is greater than the current allocation request,
-				// we will update the SpiderSubnet status correctly in next IPPool webhook SpiderSubnet update procession
-				return spiderpoolip.ConvertIPsToIPRanges(ipVersion, lastAllocatedIPs[:desiredIPNum-len(poolTotalIPs)])
-			} else {
-				// last allocated IPs less than the current allocation request,
-				// we can re-use the allocated IPs and generate some another IPs
-				beforeAllocatedIPs = lastAllocatedIPs
-				ipNum = desiredIPNum - len(poolTotalIPs) - len(lastAllocatedIPs)
-			}
-		}
-	}
-
-	freeIPs, err := controllers.GenSubnetFreeIPs(subnet)
-	if nil != err {
-		return nil, fmt.Errorf("failed to generate SpiderSubnet '%s' free IPs, error: %v", subnetName, err)
-	}
-
-	// filter reserved IPs
-	reservedIPList, err := sm.reservedMgr.ListReservedIPs(ctx)
-	if nil != err {
-		return nil, fmt.Errorf("failed to list reservedIPs, error: %v", err)
-	}
-
-	reservedIPs, err := reservedipmanager.AssembleReservedIPs(ipVersion, reservedIPList)
-	if nil != err {
-		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %v",
-			constant.ErrWrongInput, reservedIPs, ipVersion, err)
-	}
-
-	if len(reservedIPs) != 0 {
-		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, reservedIPs)
-	}
-
-	if len(pool.Spec.ExcludeIPs) != 0 {
-		excludeIPs, err := spiderpoolip.ParseIPRanges(ipVersion, pool.Spec.ExcludeIPs)
-		if nil != err {
-			return nil, fmt.Errorf("failed to parse exclude IP ranges '%v', error: %v", pool.Spec.ExcludeIPs, err)
-		}
-		freeIPs = spiderpoolip.IPsDiffSet(freeIPs, excludeIPs)
-	}
-
-	// check the filtered subnet free IP number is enough or not
-	if len(freeIPs) < ipNum {
-		return nil, fmt.Errorf("insufficient subnet FreeIPs, required '%d' but only left '%d'", ipNum, len(freeIPs))
-	}
-
-	allocateIPs := make([]net.IP, 0, ipNum)
-	if cursor {
-		allocateIPs = append(allocateIPs, freeIPs[:ipNum]...)
-	} else {
-		allocateIPs = append(allocateIPs, freeIPs[len(freeIPs)-ipNum:]...)
-	}
-
-	// re-use the last allocated IPs
-	if len(beforeAllocatedIPs) != 0 {
-		allocateIPs = append(allocateIPs, beforeAllocatedIPs...)
-	}
-
-	allocateIPRange, err := spiderpoolip.ConvertIPsToIPRanges(ipVersion, allocateIPs)
-	if nil != err {
-		return nil, err
-	}
-
-	logger.Sugar().Infof("generated '%d' IPs '%v' from SpiderSubnet '%s'", ipNum, allocateIPRange, subnet.Name)
-
-	return allocateIPRange, nil
-
+	return &subnetList, nil
 }
 
 // AllocateEmptyIPPool will create an empty IPPool and mark the status.AutoDesiredIPCount
 // notice: this function only serves for auto-created IPPool
-func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, appKind string, app metav1.Object, podSelector map[string]string,
-	ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) error {
+func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, podController types.PodTopController,
+	podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error) {
 	if len(subnetName) == 0 {
-		return fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
+		return nil, fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
 	}
 	if ipNum < 0 {
-		return fmt.Errorf("%w: the required IP numbers '%d' is invalid", constant.ErrWrongInput, ipNum)
+		return nil, fmt.Errorf("%w: the required IP numbers '%d' is invalid", constant.ErrWrongInput, ipNum)
 	}
 
+	log := logutils.FromContext(ctx)
 	subnet, err := sm.GetSubnetByName(ctx, subnetName)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	if subnet.DeletionTimestamp != nil {
-		return fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't create a corresponding IPPool", constant.ErrWrongInput, subnet.Name)
-	}
-
-	poolLabels := map[string]string{
-		constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
-		constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-		constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
-		constant.LabelIPPoolInterface:           ifName,
-	}
-
-	if ipVersion == constant.IPv4 {
-		poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV4
-	} else {
-		poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV6
-	}
-
-	if reclaimIPPool {
-		poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
+		return nil, fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't create a corresponding IPPool",
+			constant.ErrWrongInput, subnet.Name)
 	}
 
 	sp := &spiderpoolv1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   controllers.SubnetPoolName(appKind, app.GetNamespace(), app.GetName(), ipVersion, ifName, app.GetUID()),
-			Labels: poolLabels,
+			Name: controllers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, ipVersion, ifName, podController.UID),
 		},
 		Spec: spiderpoolv1.IPPoolSpec{
-			Subnet:  subnet.Spec.Subnet,
-			Gateway: subnet.Spec.Gateway,
-			Vlan:    subnet.Spec.Vlan,
-			Routes:  subnet.Spec.Routes,
-			PodAffinity: &metav1.LabelSelector{
-				MatchLabels: podSelector,
-			},
+			Subnet:      subnet.Spec.Subnet,
+			Gateway:     subnet.Spec.Gateway,
+			Vlan:        subnet.Spec.Vlan,
+			Routes:      subnet.Spec.Routes,
+			PodAffinity: podSelector,
 		},
 	}
 
-	logger.Sugar().Infof("try to create IPPool '%v'", sp)
-	err = sm.ipPoolManager.CreateIPPool(ctx, sp)
-	if nil != err {
-		return err
+	poolLabels := map[string]string{
+		constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
+		constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
+		constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+		constant.LabelIPPoolInterface:           ifName,
 	}
 
-	logger.Sugar().Infof("try to update IPPool '%v' status DesiredIPNumber '%d'", sp, ipNum)
+	if ipVersion == constant.IPv4 {
+		sp.Spec.IPVersion = pointer.Int64(constant.IPv4)
+		poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV4
+	} else {
+		sp.Spec.IPVersion = pointer.Int64(constant.IPv6)
+		poolLabels[constant.LabelIPPoolVersion] = constant.LabelIPPoolVersionV6
+	}
+
+	cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*sp.Spec.IPVersion, sp.Spec.Subnet)
+	if nil != err {
+		return nil, fmt.Errorf("failed to parse '%s' when allocating empty Auto-created IPPool '%v'", sp.Spec.Subnet, sp)
+	}
+	poolLabels[constant.LabelIPPoolCIDR] = cidrLabelValue
+
+	if reclaimIPPool {
+		poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
+	}
+	sp.Labels = poolLabels
+
+	err = ctrl.SetControllerReference(subnet, sp, sm.Scheme)
+	if nil != err {
+		return nil, fmt.Errorf("failed to set SpiderIPPool %s owner reference with SpiderSubnet %s: %v", sp.Name, subnetName, err)
+	}
+
+	timeRecorder := metric.NewTimeRecorder()
+	defer func() {
+		// Time taken for once Auto-created IPPool creation.
+		creationDuration := timeRecorder.SinceInSeconds()
+		metric.AutoPoolCreationDurationConstruct.RecordAutoPoolCreationDuration(ctx, creationDuration)
+		log.Sugar().Infof("Auto-created IPPool '%s' creation duration: %v", sp.Name, creationDuration)
+	}()
+	log.Sugar().Infof("try to create IPPool '%v'", sp)
+	err = sm.client.Create(ctx, sp)
+	if nil != err {
+		return nil, err
+	}
+
+	log.Sugar().Infof("try to update IPPool '%v' status DesiredIPNumber '%d'", sp, ipNum)
 	err = sm.ipPoolManager.UpdateDesiredIPNumber(ctx, sp, ipNum)
 	if nil != err {
-		return err
+		return nil, err
 	}
+	log.Sugar().Infof("create and mark IPPool '%v' successfully", sp)
 
-	return nil
+	return sp, nil
 }
 
 // CheckScaleIPPool will fetch some IPs from the specified subnet manager to expand the pool IPs
@@ -284,6 +173,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 		return fmt.Errorf("%w: assign IP number '%d' is invalid", constant.ErrWrongInput, ipNum)
 	}
 
+	log := logutils.FromContext(ctx)
 	needUpdate := false
 	if pool.Status.AutoDesiredIPCount == nil {
 		// no desired IP number annotation
@@ -291,7 +181,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 	} else {
 		// ignore it if they are equal
 		if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
-			logger.Sugar().Debugf("no need to scale subnet '%s' IPPool '%s'", subnetName, pool.Name)
+			log.Sugar().Debugf("no need to scale subnet '%s' IPPool '%s'", subnetName, pool.Name)
 			return nil
 		}
 
@@ -300,7 +190,7 @@ func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv
 	}
 
 	if needUpdate {
-		logger.Sugar().Infof("try to update IPPool '%s' status DesiredIPNumber to '%d'", pool.Name, ipNum)
+		log.Sugar().Infof("try to update IPPool '%s' status DesiredIPNumber to '%d'", pool.Name, ipNum)
 		err := sm.ipPoolManager.UpdateDesiredIPNumber(ctx, pool, ipNum)
 		if nil != err {
 			return err

@@ -8,16 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 type Limiter interface {
-	AcquireTicket(ctx context.Context, tickets ...string) (Reason, error)
+	AcquireTicket(ctx context.Context, tickets ...string) error
 	ReleaseTicket(ctx context.Context, tickets ...string)
 	Start(ctx context.Context) error
+	Started() bool
 }
 
 func NewLimiter(c LimiterConfig) Limiter {
@@ -25,8 +25,8 @@ func NewLimiter(c LimiterConfig) Limiter {
 
 	q := &queue{
 		cond:           sync.NewCond(&lock.Mutex{}),
+		shuttingDown:   true,
 		maxQueueSize:   *c.MaxQueueSize,
-		maxWaitTime:    *c.MaxWaitTime,
 		elements:       make([]*e, 0, *c.MaxQueueSize),
 		grantedTickets: map[string]int{},
 	}
@@ -34,66 +34,45 @@ func NewLimiter(c LimiterConfig) Limiter {
 	return q
 }
 
-const DefaultTicket = "not to use this"
-
-type Reason int
-
-const (
-	Checkin Reason = iota
-	CheckinTimeout
-	UnexpectedBlocking
-	ShutdownQueue
-	FullQueue
-)
+const DefaultTicket = "not to use this ticket"
 
 var (
-	ErrUnexpectedBlocking = errors.New("unexpected blocking, forgot to start the queue or the queuer may be lost")
-	ErrShutdownQueue      = errors.New("queue has been shutdown")
-	ErrFullQueue          = errors.New("queue is full")
+	ErrStartLimiteRrepeatedly = errors.New("start the limiter repeatedly")
+	ErrShutdownQueue          = errors.New("queue shutdown")
+	ErrFullQueue              = errors.New("queue is full")
 )
 
 type queue struct {
 	cond           *sync.Cond
 	shuttingDown   bool
 	maxQueueSize   int
-	maxWaitTime    time.Duration
 	elements       []*e
 	grantedTickets map[string]int
 }
 
 type e struct {
-	wantedTickets        []string
-	notifyCheckin        chan empty
-	notifyCheckinTimeout chan empty
-	finalCheckinTime     time.Time
+	wantedTickets []string
+	notifyCheckin chan empty
 }
 
 type empty struct{}
 
-func (q *queue) AcquireTicket(ctx context.Context, tickets ...string) (Reason, error) {
+func (q *queue) AcquireTicket(ctx context.Context, tickets ...string) error {
 	logger := logutils.FromContext(ctx)
-
 	logger.Sugar().Debugf("Waiting in queue with expect tickets: %v", tickets)
+
+	// TODO(iiiceoo): When ctx times out or is canceled, AcquireTicket should
+	// not still be blocked.
+
 	e, err := q.queueUp(tickets...)
 	if err != nil {
-		if errors.Is(err, ErrShutdownQueue) {
-			return ShutdownQueue, err
-		}
-		if errors.Is(err, ErrFullQueue) {
-			return FullQueue, err
-		}
+		return err
 	}
 
-	select {
-	case <-e.notifyCheckin:
-		logger.Debug("Succeed to acquire tickets")
-		return Checkin, nil
-	case <-e.notifyCheckinTimeout:
-		logger.Debug("Succeed to acquire tickets due to timeout")
-		return CheckinTimeout, nil
-	case <-time.After(time.Until(e.finalCheckinTime.Add(3 * time.Second))):
-		return UnexpectedBlocking, ErrUnexpectedBlocking
-	}
+	<-e.notifyCheckin
+	logger.Debug("Succeed to acquire tickets")
+
+	return nil
 }
 
 func (q *queue) queueUp(tickets ...string) (*e, error) {
@@ -113,10 +92,8 @@ func (q *queue) queueUp(tickets ...string) (*e, error) {
 	}
 
 	e := &e{
-		wantedTickets:        tickets,
-		notifyCheckin:        make(chan empty),
-		notifyCheckinTimeout: make(chan empty),
-		finalCheckinTime:     time.Now().Add(q.maxWaitTime),
+		wantedTickets: tickets,
+		notifyCheckin: make(chan empty),
 	}
 	q.elements = append(q.elements, e)
 
@@ -154,15 +131,34 @@ func (q *queue) ReleaseTicket(ctx context.Context, tickets ...string) {
 }
 
 func (q *queue) Start(ctx context.Context) error {
-	defer q.gracefulShutdown()
 	logger := logutils.FromContext(ctx)
+	logger.Info("Starting limiter")
+
+	if err := q.start(); err != nil {
+		return err
+	}
+	defer q.gracefulShutdown()
 
 	go func() {
 		for !q.checkin() {
 		}
 	}()
+
 	<-ctx.Done()
-	logger.Info("Begin to shutdown the queue")
+	logger.Info("Begin to shutdown the limiter")
+
+	return nil
+}
+
+func (q *queue) start() error {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+
+	if !q.shuttingDown {
+		return ErrStartLimiteRrepeatedly
+	}
+
+	q.shuttingDown = false
 
 	return nil
 }
@@ -185,45 +181,21 @@ func (q *queue) checkin() (shuttingDown bool) {
 	}
 
 	for i := 0; i < len(q.elements); i++ {
-		if time.Now().After(q.elements[i].finalCheckinTime) {
-			q.grantTicket(q.elements[i], CheckinTimeout)
-			q.elements = append(q.elements[:i], q.elements[i+1:]...)
-			i--
-			continue
-		}
-
 		if !q.checkAvailableTicket(q.elements[i].wantedTickets...) {
 			continue
 		}
 
-		q.grantTicket(q.elements[i], Checkin)
+		q.grantTicket(q.elements[i])
 		q.elements = append(q.elements[:i], q.elements[i+1:]...)
 		i--
 	}
 
-	if len(q.elements) != 0 {
-		finish := make(chan empty)
-		waitForFirstQueuer := func(e *e) {
-			select {
-			case <-time.After(time.Until(e.finalCheckinTime)):
-				q.cond.Broadcast()
-			case <-finish:
-			}
-		}
-		go waitForFirstQueuer(q.elements[0])
-
-		// Waiting here for avoiding next unnecessary round of polling q.elements
-		// following cases could make it move on:
-		// 1. A new queuer call queueUp().
-		// 2. ReleaseTicket() when ticket revert.
-		// 3. waitForFirstQueuer() found the earliest queuer who does not want
-		// waiting anymore.
-		// 4. shutdown() informs to close the queue.
-		q.cond.Wait()
-
-		// inform waitForFirstQueuer to exist if it is still running
-		close(finish)
-	}
+	// Waiting here for avoiding next unnecessary round of polling q.elements
+	// following cases could make it move on:
+	// 1. A new queuer call queueUp().
+	// 2. ReleaseTicket() when ticket revert.
+	// 3. shutdown() notify to close the queue.
+	q.cond.Wait()
 
 	return false
 }
@@ -238,16 +210,12 @@ func (q *queue) checkAvailableTicket(tickets ...string) bool {
 	return true
 }
 
-func (q *queue) grantTicket(e *e, r Reason) {
+func (q *queue) grantTicket(e *e) {
 	for _, t := range e.wantedTickets {
 		q.grantedTickets[t]++
 	}
 
-	if r == Checkin {
-		close(e.notifyCheckin)
-	} else if r == CheckinTimeout {
-		close(e.notifyCheckinTimeout)
-	}
+	close(e.notifyCheckin)
 }
 
 func (q *queue) gracefulShutdown() {
@@ -293,4 +261,11 @@ func (q *queue) waitAllTicketsRetrieved() {
 	// is finished, gracefulShutdown will ensure that waitAllTicketsRetrieved will
 	// not be called again, and then shutdown safely.
 	q.cond.Wait()
+}
+
+func (q *queue) Started() bool {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+
+	return !q.shuttingDown
 }

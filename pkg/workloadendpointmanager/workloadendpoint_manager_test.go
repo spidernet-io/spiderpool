@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/moby/moby/pkg/stringid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -36,7 +36,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 				workloadendpointmanager.EndpointManagerConfig{},
 				fakeClient,
-				mockPodManager,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(manager).NotTo(BeNil())
@@ -45,17 +44,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		It("inputs nil client", func() {
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 				workloadendpointmanager.EndpointManagerConfig{},
-				nil,
-				mockPodManager,
-			)
-			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-			Expect(manager).To(BeNil())
-		})
-
-		It("inputs nil Pod manager", func() {
-			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-				workloadendpointmanager.EndpointManagerConfig{},
-				fakeClient,
 				nil,
 			)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
@@ -319,101 +307,73 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 			It("inputs nil Pod", func() {
 				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), nil)
+				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), nil, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 				Expect(endpoint).To(BeNil())
 			})
 
-			It("failed to get the top controller of Pod due to some unknown errors", func() {
-				mockPodManager.EXPECT().
-					GetPodTopController(gomock.All(), gomock.All()).
-					Return("", nil, constant.ErrUnknown).
-					Times(1)
-
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT)
-				Expect(err).To(MatchError(constant.ErrUnknown))
-				Expect(endpoint).To(BeNil())
-			})
-
 			It("failed to set ownerReference to Pod due to some unknown errors", func() {
-				mockPodManager.EXPECT().
-					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
-					Times(1)
-
 				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
 				defer patches.Reset()
 
 				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT)
+				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(endpoint).To(BeNil())
 			})
 
 			It("failed to create Endpoint due to some unknown errors", func() {
-				mockPodManager.EXPECT().
-					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
-					Times(1)
-
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
 				defer patches.Reset()
 
 				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT)
+				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(endpoint).To(BeNil())
 			})
 
 			It("failed to update the status of Endpoint due to some unknown errors", func() {
-				mockPodManager.EXPECT().
-					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
-					Times(1)
-
 				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
 				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT)
+				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(endpoint).To(BeNil())
 			})
 
 			It("marks the IP allocation for orphan Pod", func() {
-				mockPodManager.EXPECT().
-					GetPodTopController(gomock.All(), gomock.All()).
-					Return(constant.OwnerNone, nil, nil).
-					Times(1)
-
 				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT)
+				endpoint, err := endpointManager.MarkIPAllocation(
+					ctx,
+					stringid.GenerateRandomID(),
+					podT,
+					spiderpooltypes.PodTopController{
+						Kind:      constant.KindPod,
+						Namespace: podT.Namespace,
+						Name:      podT.Name,
+						UID:       podT.UID,
+						APP:       podT,
+					},
+				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpoint).NotTo(BeNil())
 			})
 
 			It("marks the IP allocation for StatefulSet's Pod", func() {
-				mockPodManager.EXPECT().
-					GetPodTopController(gomock.All(), gomock.All()).
-					Return(
-						constant.OwnerStatefulSet,
-						&appsv1.StatefulSet{
-							TypeMeta: metav1.TypeMeta{
-								Kind:       "StatefulSet",
-								APIVersion: appsv1.SchemeGroupVersion.String(),
-							},
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "statefulset",
-								Namespace: namespace,
-							},
-						},
-						nil,
-					).
-					Times(1)
-
 				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT)
+				endpoint, err := endpointManager.MarkIPAllocation(
+					ctx,
+					stringid.GenerateRandomID(),
+					podT,
+					spiderpooltypes.PodTopController{
+						Kind:      constant.KindStatefulSet,
+						Namespace: namespace,
+						Name:      fmt.Sprintf("%s-sts", endpointName),
+						UID:       uuid.NewUUID(),
+						APP:       &appsv1.StatefulSet{},
+					},
+				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpoint).NotTo(BeNil())
 			})
@@ -456,13 +416,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 			It("inputs nil Pod", func() {
 				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), nil, endpointT)
+				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), endpointT, nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
 			It("inputs nil Endpoint", func() {
 				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, nil)
+				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), nil, podT)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
@@ -480,13 +440,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				newPod := podT.DeepCopy()
 				newPod.SetUID(uuid.NewUUID())
-				err = endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), newPod, &endpoint)
+				err = endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), &endpoint, newPod)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("re-marks the IP allocation with the same container ID", func() {
 				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, containerID, podT, endpointT)
+				err := endpointManager.ReMarkIPAllocation(ctx, containerID, endpointT, podT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -495,7 +455,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				defer patches.Reset()
 
 				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, endpointT)
+				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), endpointT, podT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -515,7 +475,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(err).NotTo(HaveOccurred())
 
 				newContainerID := stringid.GenerateRandomID()
-				err = endpointManager.ReMarkIPAllocation(ctx, newContainerID, podT, &endpoint)
+				err = endpointManager.ReMarkIPAllocation(ctx, newContainerID, &endpoint, podT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpoint.Status.Current.ContainerID).To(Equal(newContainerID))
 
@@ -527,7 +487,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("PatchIPAllocation", func() {
 			var marked *spiderpoolv1.PodIPAllocation
-			var v4Patch, v6Patch *spiderpoolv1.PodIPAllocation
+			var patch *spiderpoolv1.PodIPAllocation
 
 			BeforeEach(func() {
 				containerID := stringid.GenerateRandomID()
@@ -537,7 +497,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 					CreationTime: &metav1.Time{Time: time.Now()},
 				}
 
-				v4Patch = &spiderpoolv1.PodIPAllocation{
+				patch = &spiderpoolv1.PodIPAllocation{
 					ContainerID: containerID,
 					IPs: []spiderpoolv1.IPAllocationDetail{
 						{
@@ -546,25 +506,14 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 							IPv4:        pointer.String("172.18.40.10/24"),
 							IPv4Pool:    pointer.String("default-ipv4-ippool"),
 							IPv4Gateway: pointer.String("172.18.40.1"),
+							IPv6:        pointer.String("abcd:1234::a/120"),
+							IPv6Pool:    pointer.String("default-ipv6-ippool"),
+							IPv6Gateway: pointer.String("abcd:1234::1"),
 							Routes: []spiderpoolv1.Route{
 								{
 									Dst: "192.168.40.0/24",
 									Gw:  "172.18.40.1",
 								},
-							},
-						},
-					},
-				}
-				v6Patch = &spiderpoolv1.PodIPAllocation{
-					ContainerID: containerID,
-					IPs: []spiderpoolv1.IPAllocationDetail{
-						{
-							NIC:         "eth0",
-							Vlan:        pointer.Int64(0),
-							IPv6:        pointer.String("abcd:1234::a/120"),
-							IPv6Pool:    pointer.String("default-ipv6-ippool"),
-							IPv6Gateway: pointer.String("abcd:1234::1"),
-							Routes: []spiderpoolv1.Route{
 								{
 									Dst: "fd00:40::/120",
 									Gw:  "abcd:1234::1",
@@ -577,7 +526,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 			It("inputs nil Endpoint", func() {
 				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, v4Patch, nil)
+				err := endpointManager.PatchIPAllocation(ctx, patch, nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
@@ -591,7 +540,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				endpointT.Status.Current = nil
 
 				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, v4Patch, endpointT)
+				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -599,17 +548,17 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				endpointT.Status.Current = marked
 
 				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, v4Patch, endpointT)
+				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("patches the IP allocation with unmatched container ID", func() {
+			It("patches the IP allocation with mismatched container ID", func() {
 				endpointT.Status.Current = marked
 				endpointT.Status.History = append(endpointT.Status.History, *marked)
-				v4Patch.ContainerID = stringid.GenerateRandomID()
+				patch.ContainerID = stringid.GenerateRandomID()
 
 				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, v4Patch, endpointT)
+				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -621,11 +570,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				endpointT.Status.History = append(endpointT.Status.History, *marked)
 
 				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, v4Patch, endpointT)
+				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
-			It("patches the IP allocation of IPv4 and IPv6", func() {
+			It("patches the IP allocation", func() {
 				endpointT.Status.Current = marked
 				endpointT.Status.History = append(endpointT.Status.History, *marked)
 
@@ -633,37 +582,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = endpointManager.PatchIPAllocation(ctx, v4Patch, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-				err = endpointManager.PatchIPAllocation(ctx, v6Patch, endpointT)
+				err = endpointManager.PatchIPAllocation(ctx, patch, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				var endpoint spiderpoolv1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint.Status.Current.IPs).To(HaveLen(1))
-				Expect(endpoint.Status.Current.IPs[0]).To(Equal(
-					spiderpoolv1.IPAllocationDetail{
-						NIC:         "eth0",
-						Vlan:        pointer.Int64(0),
-						IPv4:        pointer.String("172.18.40.10/24"),
-						IPv4Pool:    pointer.String("default-ipv4-ippool"),
-						IPv4Gateway: pointer.String("172.18.40.1"),
-						IPv6:        pointer.String("abcd:1234::a/120"),
-						IPv6Pool:    pointer.String("default-ipv6-ippool"),
-						IPv6Gateway: pointer.String("abcd:1234::1"),
-						Routes: []spiderpoolv1.Route{
-							{
-								Dst: "192.168.40.0/24",
-								Gw:  "172.18.40.1",
-							},
-							{
-								Dst: "fd00:40::/120",
-								Gw:  "abcd:1234::1",
-							},
-						},
-					},
-				))
+				Expect(endpoint.Status.Current.IPs).To(Equal(patch.IPs))
 				Expect(*endpoint.Status.Current).To(Equal(endpoint.Status.History[0]))
 			})
 		})
@@ -729,21 +654,26 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		})
 
 		Describe("ReallocateCurrentIPAllocation", func() {
-			It("reallocates the current IP allocation for non-existent Endpoint", func() {
+			It("inputs nil Endpoint", func() {
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "node", namespace, endpointName)
-				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "node", nil)
+				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
-			It("reallocates the current IP allocation with the same container ID", func() {
+			It("re-allocates but not allocate in advance", func() {
+				endpointT.Status.Current = nil
+
+				ctx := context.TODO()
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "node", endpointT)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("re-allocates the current IP allocation with the same container ID", func() {
 				containerID := stringid.GenerateRandomID()
 				endpointT.Status.Current.ContainerID = containerID
 
 				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, "node", namespace, endpointName)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, "node", endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -755,26 +685,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				endpointT.Status.Current.Node = pointer.String("old-node")
 
 				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "new-node", namespace, endpointName)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "new-node", endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
-			})
-
-			It("runs out of retries to update the status of Endpoint, but conflicts still occur", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
-				defer patches.Reset()
-
-				endpointT.Status.Current.ContainerID = stringid.GenerateRandomID()
-				endpointT.Status.Current.Node = pointer.String("old-node")
-
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "new-node", namespace, endpointName)
-				Expect(err).To(MatchError(constant.ErrRetriesExhausted))
 			})
 
 			It("updates the current IP allocation", func() {
@@ -787,14 +699,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				containerID := stringid.GenerateRandomID()
 				nodeName := "new-node"
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, nodeName, namespace, endpointName)
-				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv1.SpiderEndpoint
-				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
+				err = endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, nodeName, endpointT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint.Status.Current.ContainerID).To(Equal(containerID))
-				Expect(*endpoint.Status.Current.Node).To(Equal(nodeName))
+				Expect(endpointT.Status.Current.ContainerID).To(Equal(containerID))
+				Expect(*endpointT.Status.Current.Node).To(Equal(nodeName))
 			})
 		})
 	})

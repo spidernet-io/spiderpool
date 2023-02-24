@@ -5,18 +5,10 @@ package v1
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
-)
 
-func ValueToStringGenerated(v interface{}) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("*%v", pv)
-}
+	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
+)
 
 // String serves for SpiderIPPool
 func (in *SpiderIPPool) String() string {
@@ -40,13 +32,13 @@ func (in *IPPoolSpec) String() string {
 	}
 
 	s := strings.Join([]string{`&IPPoolSpec{`,
-		`IPVersion:` + ValueToStringGenerated(in.IPVersion) + `,`,
+		`IPVersion:` + stringutil.ValueToStringGenerated(in.IPVersion) + `,`,
 		`Subnet:` + fmt.Sprintf("%v", in.Subnet) + `,`,
 		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
-		`Disable:` + ValueToStringGenerated(in.Disable) + `,`,
+		`Disable:` + stringutil.ValueToStringGenerated(in.Disable) + `,`,
 		`ExcludeIPs:` + fmt.Sprintf("%v", in.ExcludeIPs) + `,`,
-		`Gateway:` + ValueToStringGenerated(in.Gateway) + `,`,
-		`Vlan:` + ValueToStringGenerated(in.Vlan) + `,`,
+		`Gateway:` + stringutil.ValueToStringGenerated(in.Gateway) + `,`,
+		`Vlan:` + stringutil.ValueToStringGenerated(in.Vlan) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
 		`PodAffinity:` + fmt.Sprintf("%v", in.PodAffinity) + `,`,
 		`NamespaceAffinity:` + fmt.Sprintf("%v", in.NamespaceAffinity) + `,`,
@@ -64,9 +56,9 @@ func (in *IPPoolStatus) String() string {
 
 	s := strings.Join([]string{`&IPPoolStatus{`,
 		`AllocatedIPs:` + fmt.Sprintf("%+v", in.AllocatedIPs) + `,`,
-		`TotalIPCount:` + ValueToStringGenerated(in.TotalIPCount) + `,`,
-		`AllocatedIPCount:` + ValueToStringGenerated(in.AllocatedIPCount) + `,`,
-		`AutoDesiredIPCount:` + ValueToStringGenerated(in.AutoDesiredIPCount) + `,`,
+		`TotalIPCount:` + stringutil.ValueToStringGenerated(in.TotalIPCount) + `,`,
+		`AllocatedIPCount:` + stringutil.ValueToStringGenerated(in.AllocatedIPCount) + `,`,
+		`AutoDesiredIPCount:` + stringutil.ValueToStringGenerated(in.AutoDesiredIPCount) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -122,7 +114,7 @@ func (in *PodIPAllocation) String() string {
 
 	s := strings.Join([]string{`&PodIPAllocation{`,
 		`ContainerID:` + fmt.Sprintf("%+v", in.ContainerID) + `,`,
-		`Node:` + ValueToStringGenerated(in.Node) + `,`,
+		`Node:` + stringutil.ValueToStringGenerated(in.Node) + `,`,
 		`IPs:` + repeatedStringForIPs + `,`,
 		`CreationTime:` + fmt.Sprintf("%v", in.CreationTime) + `,`,
 		`}`,
@@ -138,14 +130,14 @@ func (in *IPAllocationDetail) String() string {
 
 	s := strings.Join([]string{`&IPAllocationDetail{`,
 		`NIC:` + fmt.Sprintf("%v", in.NIC) + `,`,
-		`IPv4:` + ValueToStringGenerated(in.IPv4) + `,`,
-		`IPv6:` + ValueToStringGenerated(in.IPv6) + `,`,
-		`IPv4Pool:` + ValueToStringGenerated(in.IPv4Pool) + `,`,
-		`IPv6Pool:` + ValueToStringGenerated(in.IPv6Pool) + `,`,
-		`Vlan:` + ValueToStringGenerated(in.Vlan) + `,`,
-		`IPv4Gateway:` + ValueToStringGenerated(in.IPv4Gateway) + `,`,
-		`IPv6Gateway:` + ValueToStringGenerated(in.IPv6Gateway) + `,`,
-		`CleanGateway:` + ValueToStringGenerated(in.CleanGateway) + `,`,
+		`IPv4:` + stringutil.ValueToStringGenerated(in.IPv4) + `,`,
+		`IPv6:` + stringutil.ValueToStringGenerated(in.IPv6) + `,`,
+		`IPv4Pool:` + stringutil.ValueToStringGenerated(in.IPv4Pool) + `,`,
+		`IPv6Pool:` + stringutil.ValueToStringGenerated(in.IPv6Pool) + `,`,
+		`Vlan:` + stringutil.ValueToStringGenerated(in.Vlan) + `,`,
+		`IPv4Gateway:` + stringutil.ValueToStringGenerated(in.IPv4Gateway) + `,`,
+		`IPv6Gateway:` + stringutil.ValueToStringGenerated(in.IPv6Gateway) + `,`,
+		`CleanGateway:` + stringutil.ValueToStringGenerated(in.CleanGateway) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
 		`}`,
 	}, "")
@@ -173,7 +165,7 @@ func (in *ReservedIPSpec) String() string {
 	}
 
 	s := strings.Join([]string{`&ReservedIPSpec{`,
-		`IPVersion:` + ValueToStringGenerated(in.IPVersion) + `,`,
+		`IPVersion:` + stringutil.ValueToStringGenerated(in.IPVersion) + `,`,
 		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
 		`}`,
 	}, "")
@@ -202,12 +194,12 @@ func (in *SubnetSpec) String() string {
 	}
 
 	s := strings.Join([]string{`&SubnetSpec{`,
-		`IPVersion:` + ValueToStringGenerated(in.IPVersion) + `,`,
+		`IPVersion:` + stringutil.ValueToStringGenerated(in.IPVersion) + `,`,
 		`Subnet:` + fmt.Sprintf("%v", in.Subnet) + `,`,
 		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
 		`ExcludeIPs:` + fmt.Sprintf("%v", in.ExcludeIPs) + `,`,
-		`Gateway:` + ValueToStringGenerated(in.Gateway) + `,`,
-		`Vlan:` + ValueToStringGenerated(in.Vlan) + `,`,
+		`Gateway:` + stringutil.ValueToStringGenerated(in.Gateway) + `,`,
+		`Vlan:` + stringutil.ValueToStringGenerated(in.Vlan) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
 		`}`,
 	}, "")
@@ -222,8 +214,8 @@ func (in *SubnetStatus) String() string {
 
 	s := strings.Join([]string{`SubnetStatus{`,
 		`ControlledIPPools:` + fmt.Sprintf("%v", in.ControlledIPPools) + `,`,
-		`TotalIPCount:` + ValueToStringGenerated(in.TotalIPCount) + `,`,
-		`AllocatedIPCount:` + ValueToStringGenerated(in.AllocatedIPCount) + `,`,
+		`TotalIPCount:` + stringutil.ValueToStringGenerated(in.TotalIPCount) + `,`,
+		`AllocatedIPCount:` + stringutil.ValueToStringGenerated(in.AllocatedIPCount) + `,`,
 		`}`,
 	}, "")
 	return s

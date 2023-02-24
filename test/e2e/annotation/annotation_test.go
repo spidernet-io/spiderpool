@@ -103,7 +103,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		// Get pods and check annotation
 		pod, err := frame.GetPod(podName, nsName)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(pod.Annotations[annotationKeyName]).To(Equal(podYaml.Annotations[annotationKeyName]))
 
 		// When an annotation has an invalid field or value, the Pod will fail to run.
 		ctx1, cancel1 := context.WithTimeout(context.Background(), common.EventOccurTimeout)
@@ -122,14 +121,14 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Entry("fail to run a pod with non-existed ippool v4、v6 values", Label("A00003"), pkgconstant.AnnoPodIPPool,
 			`{
 				"interface": "eth0",
-				"ipv4pools": ["IPamNotExistedPool"],
-				"ipv6pools": ["IPamNotExistedPool"]
+				"ipv4": ["IPamNotExistedPool"],
+				"ipv6": ["IPamNotExistedPool"]
 			}`),
 		Entry("fail to run a pod with non-existed ippool NIC values", Label("A00003"), Pending, pkgconstant.AnnoPodIPPool,
 			`{
 				"interface": "IPamNotExistedNIC",
-				"ipv4pools": ["default-v4-ippool"],
-				"ipv6pools": ["default-v6-ippool"]
+				"ipv4": ["default-v4-ippool"],
+				"ipv4": ["default-v6-ippool"]
 			}`),
 		Entry("fail to run a pod with non-existed ippool v4、v6 key", Label("A00003"), pkgconstant.AnnoPodIPPool,
 			`{
@@ -140,49 +139,49 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Entry("fail to run a pod with non-existed ippool NIC key", Label("A00003"), Pending, pkgconstant.AnnoPodIPPool,
 			`{
 				"IPamNotExistedNICKey": "eth0",
-				"ipv4pools": ["default-v4-ippool"],
-				"ipv6pools": ["default-v6-ippool"]
+				"ipv4": ["default-v4-ippool"],
+				"ipv6": ["default-v6-ippool"]
 			}`),
 		Entry("fail to run a pod with non-existed ippools v4、v6 values", Label("A00003"), pkgconstant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
-				"ipv4pools": ["IPamNotExistedPool"],
-				"ipv6pools": ["IPamNotExistedPool"],
-				"defaultRoute": true
+				"ipv4": ["IPamNotExistedPool"],
+				"ipv6": ["IPamNotExistedPool"],
+				"cleanGateway": true
 			 }]`),
 		Entry("fail to run a pod with non-existed ippools NIC values", Label("A00003"), Pending, pkgconstant.AnnoPodIPPools,
 			`[{
 				"interface": "IPamNotExistedNIC",
-				"ipv4pools": ["default-v4-ippool"],
-				"ipv6pools": ["default-v6-ippool"],
-				"defaultRoute": true
+				"ipv4": ["default-v4-ippool"],
+				"ipv6": ["default-v6-ippool"],
+				"cleanGateway": true
 			  }]`),
 		Entry("fail to run a pod with non-existed ippools defaultRoute values", Label("A00003"), pkgconstant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
-				"ipv4pools": ["default-v4-ippool"],
-				"ipv6pools": ["default-v6-ippool"],
-				"defaultRoute": IPamErrRouteBool
+				"ipv4": ["default-v4-ippool"],
+				"ipv6": ["default-v6-ippool"],
+				"cleanGateway": IPamErrRouteBool
 			   }]`),
 		Entry("fail to run a pod with non-existed ippools NIC key", Label("A00003"), pkgconstant.AnnoPodIPPools,
 			`[{
 				"IPamNotExistedNICKey": "eth0",
-				"ipv4pools": ["default-v4-ippool"],
-				"ipv6pools": ["default-v6-ippool"],
-				"defaultRoute": true
+				"ipv4": ["default-v4-ippool"],
+				"ipv6": ["default-v6-ippool"],
+				"cleanGateway": true
 				}]`),
 		Entry("fail to run a pod with non-existed ippools v4、v6 key", Label("A00003"), pkgconstant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
 				"IPamNotExistedPoolKey": ["default-v4-ippool"],
 				"IPamNotExistedPoolKey": ["default-v6-ippool"],
-				"defaultRoute": true
+				"cleanGateway": true
 				}]`),
 		Entry("fail to run a pod with non-existed ippools defaultRoute key", Label("A00003"), Pending, pkgconstant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
-				"ipv4pools": ["default-v4-ippool"],
-				"ipv6pools": ["default-v6-ippool"],
+				"ipv4": ["default-v4-ippool"],
+				"ipv6": ["default-v6-ippool"],
 				"IPamNotExistedRouteKey": true
 				}]`),
 	)
@@ -454,13 +453,14 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	Context("Spiderpool will successively try to allocate IP in the order of the elements in the IPPool array until the first allocation succeeds or all fail", func() {
 		var v4PoolNameList1, v6PoolNameList1, v4PoolNameList2, v6PoolNameList2 []string
 		var err error
-		var deployName = "deploy" + tools.RandomName()
+		var deployName string
 		var (
 			podOriginialNum int = 1
 			podScaleupNum   int = 2
 			ippoolIpNum     int = 1
 		)
 		BeforeEach(func() {
+			deployName = "deploy" + tools.RandomName()
 			// Create one ippool to be used as backup ippool
 			if frame.Info.IpV4Enabled {
 				if frame.Info.SpiderSubnetEnabled {

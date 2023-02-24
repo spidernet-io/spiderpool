@@ -405,8 +405,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/cidrManager.md" class="md-nav__link">
-        None
+      <a href="../../usage/spider-subnet/" class="md-nav__link">
+        SpiderSubnet
       </a>
     </li>
   
@@ -433,8 +433,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/cli/" class="md-nav__link">
-        Command line tool (spiderpoolctl)
+      <a href="../../usage/third-party-controller/" class="md-nav__link">
+        Spiderpool supports third-party controllers
       </a>
     </li>
   
@@ -601,9 +601,49 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get Started
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-metric-support" class="md-nav__link">
+    Enable Metric support
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metric-reference" class="md-nav__link">
     Metric reference
   </a>
+  
+    <nav class="md-nav" aria-label="Metric reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spiderpool-agent_1" class="md-nav__link">
+    Spiderpool Agent
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spiderpool-controller_1" class="md-nav__link">
+    Spiderpool Controller
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -652,6 +692,20 @@
     <li class="md-nav__item">
       <a href="../spiderendpoint/" class="md-nav__link">
         SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spidersubnet/" class="md-nav__link">
+        SpiderSubnet
       </a>
     </li>
   
@@ -899,9 +953,49 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    Get Started
+  </a>
+  
+    <nav class="md-nav" aria-label="Get Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-metric-support" class="md-nav__link">
+    Enable Metric support
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metric-reference" class="md-nav__link">
     Metric reference
   </a>
+  
+    <nav class="md-nav" aria-label="Metric reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spiderpool-agent_1" class="md-nav__link">
+    Spiderpool Agent
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spiderpool-controller_1" class="md-nav__link">
+    Spiderpool Controller
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -929,7 +1023,8 @@
 
 
 <h1 id="metric">Metric</h1>
-<p>Spiderpool supports metrics reporting</p>
+<p>Spiderpool can be configured to serve <a href="https://opentelemetry.io/">Opentelemetry</a> metrics.
+And spiderpool metrics provide the insight of Spiderpool Agent and Spiderpool Controller.</p>
 <h2 id="spiderpool-controller">spiderpool controller</h2>
 <p>The metrics of spiderpool controller is set by the following pod environment:</p>
 <table>
@@ -976,8 +1071,234 @@
 </tr>
 </tbody>
 </table>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-metric-support">Enable Metric support</h3>
+<p>Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer <a href="./install.md">install</a> for details</p>
+<p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of the daemonset <code>spiderpool-agent</code> for whether it is already set to <code>true</code> or not.</p>
+<p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of deployment <code>spiderpool-controller</code> for whether it is already set to <code>true</code> or not.</p>
+<pre><code class="language-shell">kubectl -n kube-system get daemonset spiderpool-agent -o yaml
+------
+kubectl -n kube-system get deployment spiderpool-controller -o yaml
+</code></pre>
+<p>You can set one or both of them to <code>true</code>.
+For example, let's enable spiderpool agent metrics by running <code>helm upgrade --set spiderpoolAgent.prometheus.enabled=true</code>.</p>
 <h2 id="metric-reference">Metric reference</h2>
-<p>Refer to <a href="./../../pkg/metric/README.md">metrics</a> for details.</p>
+<h3 id="spiderpool-agent_1">Spiderpool Agent</h3>
+<p>Spiderpool agent exports some metrics related with IPAM allocation and release. Currently, those include:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spiderpool_ipam_allocation_counts</td>
+<td>Number of IPAM allocation requests that Spiderpool Agent received , prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_failure_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation failures, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_rollback_failure_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation rollback failures, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_update_ippool_conflict_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation update IPPool conflicts, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_internal_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation internal errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_no_available_pool_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation no available IPPool errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_retries_exhausted_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation retries exhausted errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_ip_used_out_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation IP addresses used out errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_average_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent allocation processes, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_max_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_min_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_latest_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_duration_seconds</td>
+<td>Histogram of IPAM allocation duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_average_limit_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_max_limit_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_min_limit_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_latest_limit_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_limit_duration_seconds</td>
+<td>Histogram of IPAM allocation queuing duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_counts</td>
+<td>Count of the number of Spiderpool Agent received the IPAM release requests, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_failure_counts</td>
+<td>Number of Spiderpool Agent IPAM release failure, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_update_ippool_conflict_counts</td>
+<td>Number of Spiderpool Agent IPAM release update IPPool conflicts, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_err_internal_counts</td>
+<td>Number of Spiderpool Agent IPAM releasing internal error, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_err_retries_exhausted_counts</td>
+<td>Number of Spiderpool Agent IPAM releasing retries exhausted error, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_average_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent release processes, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_max_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent release process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_min_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent release process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_latest_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent release process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_duration_seconds</td>
+<td>Histogram of IPAM release duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_average_limit_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_max_limit_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_min_limit_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_latest_limit_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_limit_duration_seconds</td>
+<td>Histogram of IPAM release queuing duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_waited_for_available_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation wait for auto-created IPPool available, prometheus type: counter</td>
+</tr>
+</tbody>
+</table>
+<h3 id="spiderpool-controller_1">Spiderpool Controller</h3>
+<p>Spiderpool controller exports some metrics related with SpiderIPPool IP garbage collection. Currently, those include:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spiderpool_ip_gc_counts</td>
+<td>Number of Spiderpool Controller IP garbage collection, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ip_gc_failure_counts</td>
+<td>Number of Spiderpool Controller IP garbage collection failures, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_subnet_ippool_counts</td>
+<td>Number of SpiderSubnet corresponding IPPools number, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ippool_informer_conflict_counts</td>
+<td>Number of Spiderpool Controller IPPool object status update operation conflict number, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_creation_average_duration_seconds</td>
+<td>The average duration of All new auto-created IPPools creation and mark duration, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_creation_max_duration_seconds</td>
+<td>The maximum duration of auto-created IPPool creation and mark duration (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_creation_min_duration_seconds</td>
+<td>The minimum duration of auto-created IPPool creation and mark duration (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_creation_latest_duration_seconds</td>
+<td>The latest duration of auto-created IPPool creation and mark duration (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_scale_average_duration_seconds</td>
+<td>The average duration of All auto-created IPPools scale duration, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_scale_max_duration_seconds</td>
+<td>The maximum duration of auto-created IPPool scale duration (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_scale_min_duration_seconds</td>
+<td>The minimum duration of auto-created IPPool scale duration (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_scale_latest_duration_seconds</td>
+<td>The latest duration of auto-created IPPool scale duration (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_scale_duration_seconds</td>
+<td>Histogram of new auto-created IPPool scale duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_auto_pool_scale_conflict_counts</td>
+<td>Number of Spiderpool Controller auto-created IPPool scale operation conflicts, prometheus type: counter</td>
+</tr>
+</tbody>
+</table>
 
 
 

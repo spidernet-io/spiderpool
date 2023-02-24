@@ -44,9 +44,9 @@ nav:
       - usage/multi-interfaces-cni.md
       - usage/statefulset.md
       - usage/reserved-ip.md
-      - usage/cidrManager.md
+      - usage/spider-subnet.md
       - usage/debug.md
-      - usage/cli.md
+      - usage/third-party-controller.md
   - Concepts:
       - concepts/arch.md
       - concepts/allocation.md
@@ -57,6 +57,7 @@ nav:
       - concepts/spiderippool.md
       - concepts/spiderreservedip.md
       - concepts/spiderendpoint.md
+      - concepts/spidersubnet.md
   - Reference:
       - cmdref/spiderpoolctl.md
       - cmdref/spiderpool-controller.md

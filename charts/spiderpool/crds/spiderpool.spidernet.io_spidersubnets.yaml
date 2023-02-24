@@ -113,6 +113,9 @@ spec:
                 description: PoolIPPreAllocations is a map of pool IP pre-allocation
                   details indexed by pool name.
                 type: object
+              default:
+                default: false
+                type: boolean
               totalIPCount:
                 format: int64
                 minimum: 0

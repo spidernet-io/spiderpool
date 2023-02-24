@@ -58,6 +58,10 @@ type Route struct {
 
 // IPPoolStatus defines the observed state of SpiderIPPool.
 type IPPoolStatus struct {
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	Default *bool `json:"default,omitempty"`
+
 	// +kubebuilder:validation:Optional
 	AllocatedIPs PoolIPAllocations `json:"allocatedIPs,omitempty"`
 

@@ -4,8 +4,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"runtime/debug"
+	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -97,7 +99,10 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
 	}
 
-	params := daemonset.NewDeleteIpamIPParams()
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	params := daemonset.NewDeleteIpamIPParamsWithContext(ctx)
 	params.SetIpamDelArgs(ipamDelArgs)
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(params)
 	if nil != err {

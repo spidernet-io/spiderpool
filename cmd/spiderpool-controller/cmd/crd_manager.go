@@ -37,8 +37,9 @@ func newCRDManager() (ctrl.Manager, error) {
 	}
 
 	config := ctrl.GetConfigOrDie()
-	config.QPS = 50
-	config.Burst = 100
+	config.Burst = 200
+	config.QPS = 100
+
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		Port:                   port,

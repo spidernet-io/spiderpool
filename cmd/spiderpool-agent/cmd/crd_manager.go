@@ -27,7 +27,11 @@ func init() {
 }
 
 func newCRDManager() (ctrl.Manager, error) {
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	config.Burst = 100
+	config.QPS = 50
+
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",

@@ -244,7 +244,7 @@ func InitSpiderpoolAgentMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", auto_pool_waited_for_available_counts, err)
 	}
 	AutoPoolWaitedForAvailableCounts = autoPoolWaitedForAvailableCounts
-	AutoPoolWaitedForAvailableCounts.Add(ctx, 0)
+
 	return nil
 }
 
@@ -275,8 +275,6 @@ func InitSpiderpoolControllerMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_informer_conflict_counts, err)
 	}
 	IPPoolInformerConflictCounts = poolInformerConflictCounts
-
-	IPPoolInformerConflictCounts.Add(ctx, 0)
 
 	return nil
 }
@@ -520,8 +518,11 @@ func initSpiderpoolControllerGCMetrics(ctx context.Context) error {
 	}
 	IPGCFailureCounts = ipGCFailureCounts
 
-	IPGCTotalCounts.Add(ctx, 0)
-	IPGCFailureCounts.Add(ctx, 0)
+	releaseUpdateIPPoolConflictCounts, err := NewMetricInt64Counter(ipam_release_update_ippool_conflict_counts, "spiderpool controller gc release update IPPool conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_update_ippool_conflict_counts, err)
+	}
+	IpamReleaseUpdateIPPoolConflictCounts = releaseUpdateIPPoolConflictCounts
 
 	return nil
 }
@@ -591,8 +592,6 @@ func initAutoPoolScaleMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", auto_pool_scale_conflict_counts, err)
 	}
 	AutoPoolScaleConflictCounts = autoPoolScaleConflictCounts
-
-	AutoPoolScaleConflictCounts.Add(ctx, 0)
 
 	return nil
 }

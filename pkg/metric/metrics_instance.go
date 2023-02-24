@@ -18,13 +18,14 @@ const MetricPrefix = "spiderpool_"
 
 const (
 	// spiderpool agent ipam allocation metrics name
-	ipam_allocation_counts                       = MetricPrefix + "ipam_allocation_counts"
-	ipam_allocation_failure_counts               = MetricPrefix + "ipam_allocation_failure_counts"
-	ipam_allocation_rollback_failure_counts      = MetricPrefix + "ipam_allocation_rollback_failure_counts"
-	ipam_allocation_err_internal_counts          = MetricPrefix + "ipam_allocation_err_internal_counts"
-	ipam_allocation_err_no_available_pool_counts = MetricPrefix + "ipam_allocation_err_no_available_pool_counts"
-	ipam_allocation_err_retries_exhausted_counts = MetricPrefix + "ipam_allocation_err_retries_exhausted_counts"
-	ipam_allocation_err_ip_used_out_counts       = MetricPrefix + "ipam_allocation_err_ip_used_out_counts"
+	ipam_allocation_counts                        = MetricPrefix + "ipam_allocation_counts"
+	ipam_allocation_failure_counts                = MetricPrefix + "ipam_allocation_failure_counts"
+	ipam_allocation_rollback_failure_counts       = MetricPrefix + "ipam_allocation_rollback_failure_counts"
+	ipam_allocation_update_ippool_conflict_counts = MetricPrefix + "ipam_allocation_update_ippool_conflict_counts"
+	ipam_allocation_err_internal_counts           = MetricPrefix + "ipam_allocation_err_internal_counts"
+	ipam_allocation_err_no_available_pool_counts  = MetricPrefix + "ipam_allocation_err_no_available_pool_counts"
+	ipam_allocation_err_retries_exhausted_counts  = MetricPrefix + "ipam_allocation_err_retries_exhausted_counts"
+	ipam_allocation_err_ip_used_out_counts        = MetricPrefix + "ipam_allocation_err_ip_used_out_counts"
 
 	ipam_allocation_average_duration_seconds = MetricPrefix + "ipam_allocation_average_duration_seconds"
 	ipam_allocation_max_duration_seconds     = MetricPrefix + "ipam_allocation_max_duration_seconds"
@@ -32,17 +33,30 @@ const (
 	ipam_allocation_latest_duration_seconds  = MetricPrefix + "ipam_allocation_latest_duration_seconds"
 	ipam_allocation_duration_seconds         = MetricPrefix + "ipam_allocation_duration_seconds"
 
+	ipam_allocation_average_limit_duration_seconds = MetricPrefix + "ipam_allocation_average_limit_duration_seconds"
+	ipam_allocation_max_limit_duration_seconds     = MetricPrefix + "ipam_allocation_max_limit_duration_seconds"
+	ipam_allocation_min_limit_duration_seconds     = MetricPrefix + "ipam_allocation_min_limit_duration_seconds"
+	ipam_allocation_latest_limit_duration_seconds  = MetricPrefix + "ipam_allocation_latest_limit_duration_seconds"
+	ipam_allocation_limit_duration_seconds         = MetricPrefix + "ipam_allocation_limit_duration_seconds"
+
 	// spiderpool agent ipam release metrics name
-	ipam_release_counts                       = MetricPrefix + "ipam_release_counts"
-	ipam_release_failure_counts               = MetricPrefix + "ipam_release_failure_counts"
-	ipam_release_err_internal_counts          = MetricPrefix + "ipam_release_err_internal_counts"
-	ipam_release_err_retries_exhausted_counts = MetricPrefix + "ipam_release_err_retries_exhausted_counts"
+	ipam_release_counts                        = MetricPrefix + "ipam_release_counts"
+	ipam_release_failure_counts                = MetricPrefix + "ipam_release_failure_counts"
+	ipam_release_update_ippool_conflict_counts = MetricPrefix + "ipam_release_update_ippool_conflict_counts"
+	ipam_release_err_internal_counts           = MetricPrefix + "ipam_release_err_internal_counts"
+	ipam_release_err_retries_exhausted_counts  = MetricPrefix + "ipam_release_err_retries_exhausted_counts"
 
 	ipam_release_average_duration_seconds = MetricPrefix + "ipam_release_average_duration_seconds"
 	ipam_release_max_duration_seconds     = MetricPrefix + "ipam_release_max_duration_seconds"
 	ipam_release_min_duration_seconds     = MetricPrefix + "ipam_release_min_duration_seconds"
 	ipam_release_latest_duration_seconds  = MetricPrefix + "ipam_release_latest_duration_seconds"
 	ipam_release_duration_seconds         = MetricPrefix + "ipam_release_duration_seconds"
+
+	ipam_release_average_limit_duration_seconds = MetricPrefix + "ipam_release_average_limit_duration_seconds"
+	ipam_release_max_limit_duration_seconds     = MetricPrefix + "ipam_release_max_limit_duration_seconds"
+	ipam_release_min_limit_duration_seconds     = MetricPrefix + "ipam_release_min_limit_duration_seconds"
+	ipam_release_latest_limit_duration_seconds  = MetricPrefix + "ipam_release_latest_limit_duration_seconds"
+	ipam_release_limit_duration_seconds         = MetricPrefix + "ipam_release_limit_duration_seconds"
 
 	// spiderpool controller IP GC metrics name
 	ip_gc_counts         = MetricPrefix + "ip_gc_counts"
@@ -68,29 +82,41 @@ const (
 
 var (
 	// spiderpool agent ipam allocation metrics
-	IpamAllocationTotalCounts               instrument.Int64Counter
-	IpamAllocationFailureCounts             instrument.Int64Counter
-	IpamAllocationRollbackFailureCounts     instrument.Int64Counter
-	IpamAllocationErrInternalCounts         instrument.Int64Counter
-	IpamAllocationErrNoAvailablePoolCounts  instrument.Int64Counter
-	IpamAllocationErrRetriesExhaustedCounts instrument.Int64Counter
-	IpamAllocationErrIPUsedOutCounts        instrument.Int64Counter
-	ipamAllocationAverageDurationSeconds    = new(asyncFloat64Gauge)
-	ipamAllocationMaxDurationSeconds        = new(asyncFloat64Gauge)
-	ipamAllocationMinDurationSeconds        = new(asyncFloat64Gauge)
-	ipamAllocationLatestDurationSeconds     = new(asyncFloat64Gauge)
-	ipamAllocationDurationSecondsHistogram  instrument.Float64Histogram
+	IpamAllocationTotalCounts                   instrument.Int64Counter
+	IpamAllocationFailureCounts                 instrument.Int64Counter
+	IpamAllocationRollbackFailureCounts         instrument.Int64Counter
+	IpamAllocationUpdateIPPoolConflictCounts    instrument.Int64Counter
+	IpamAllocationErrInternalCounts             instrument.Int64Counter
+	IpamAllocationErrNoAvailablePoolCounts      instrument.Int64Counter
+	IpamAllocationErrRetriesExhaustedCounts     instrument.Int64Counter
+	IpamAllocationErrIPUsedOutCounts            instrument.Int64Counter
+	ipamAllocationAverageDurationSeconds        = new(asyncFloat64Gauge)
+	ipamAllocationMaxDurationSeconds            = new(asyncFloat64Gauge)
+	ipamAllocationMinDurationSeconds            = new(asyncFloat64Gauge)
+	ipamAllocationLatestDurationSeconds         = new(asyncFloat64Gauge)
+	ipamAllocationDurationSecondsHistogram      instrument.Float64Histogram
+	ipamAllocationAverageLimitDurationSeconds   = new(asyncFloat64Gauge)
+	ipamAllocationMaxLimitDurationSeconds       = new(asyncFloat64Gauge)
+	ipamAllocationMinLimitDurationSeconds       = new(asyncFloat64Gauge)
+	ipamAllocationLatestLimitDurationSeconds    = new(asyncFloat64Gauge)
+	ipamAllocationLimitDurationSecondsHistogram instrument.Float64Histogram
 
 	// spiderpool agent ipam release metrics
-	IpamReleaseTotalCounts               instrument.Int64Counter
-	IpamReleaseFailureCounts             instrument.Int64Counter
-	IpamReleaseErrInternalCounts         instrument.Int64Counter
-	IpamReleaseErrRetriesExhaustedCounts instrument.Int64Counter
-	ipamReleaseAverageDurationSeconds    = new(asyncFloat64Gauge)
-	ipamReleaseMaxDurationSeconds        = new(asyncFloat64Gauge)
-	ipamReleaseMinDurationSeconds        = new(asyncFloat64Gauge)
-	ipamReleaseLatestDurationSeconds     = new(asyncFloat64Gauge)
-	ipamReleaseDurationSecondsHistogram  instrument.Float64Histogram
+	IpamReleaseTotalCounts                   instrument.Int64Counter
+	IpamReleaseFailureCounts                 instrument.Int64Counter
+	IpamReleaseUpdateIPPoolConflictCounts    instrument.Int64Counter
+	IpamReleaseErrInternalCounts             instrument.Int64Counter
+	IpamReleaseErrRetriesExhaustedCounts     instrument.Int64Counter
+	ipamReleaseAverageDurationSeconds        = new(asyncFloat64Gauge)
+	ipamReleaseMaxDurationSeconds            = new(asyncFloat64Gauge)
+	ipamReleaseMinDurationSeconds            = new(asyncFloat64Gauge)
+	ipamReleaseLatestDurationSeconds         = new(asyncFloat64Gauge)
+	ipamReleaseDurationSecondsHistogram      instrument.Float64Histogram
+	ipamReleaseAverageLimitDurationSeconds   = new(asyncFloat64Gauge)
+	ipamReleaseMaxLimitDurationSeconds       = new(asyncFloat64Gauge)
+	ipamReleaseMinLimitDurationSeconds       = new(asyncFloat64Gauge)
+	ipamReleaseLatestLimitDurationSeconds    = new(asyncFloat64Gauge)
+	ipamReleaseLimitDurationSecondsHistogram instrument.Float64Histogram
 
 	// spiderpool controller IP GC metrics
 	IPGCTotalCounts   instrument.Int64Counter
@@ -278,6 +304,13 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	}
 	IpamAllocationRollbackFailureCounts = allocationRollbackFailureCounts
 
+	// spiderpool agent ipam allocation update IPPool conflict counts, metric type "int64 counter"
+	allocationUpdateIPPoolConflictCounts, err := NewMetricInt64Counter(ipam_allocation_update_ippool_conflict_counts, "spiderpool agent ipam allocation update IPPool conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_update_ippool_conflict_counts, err)
+	}
+	IpamAllocationUpdateIPPoolConflictCounts = allocationUpdateIPPoolConflictCounts
+
 	// spiderpool agent ipam allocation internal error counts, metric type "int64 counter"
 	allocationErrInternalCounts, err := NewMetricInt64Counter(ipam_allocation_err_internal_counts, "spiderpool agent ipam allocation internal error counts")
 	if nil != err {
@@ -337,9 +370,36 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	}
 	ipamAllocationDurationSecondsHistogram = allocationHistogram
 
-	// set the spiderpool agent ipam allocation total counts initial data
-	IpamAllocationTotalCounts.Add(ctx, 0)
-	IpamAllocationFailureCounts.Add(ctx, 0)
+	// spiderpool agent ipam average allocation limit duration, metric type "float64 gauge"
+	err = ipamAllocationAverageLimitDurationSeconds.initGauge(ipam_allocation_average_limit_duration_seconds, "spiderpool agent ipam average allocation limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam maximum allocation limit duration, metric type "float64 gauge"
+	err = ipamAllocationMaxLimitDurationSeconds.initGauge(ipam_allocation_max_limit_duration_seconds, "spiderpool agent ipam maximum allocation limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam minimum allocation limit duration, metric type "float64 gauge"
+	err = ipamAllocationMinLimitDurationSeconds.initGauge(ipam_allocation_min_limit_duration_seconds, "spiderpool agent ipam minimum allocation limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam latest allocation limit duration, metric type "float64 gauge"
+	err = ipamAllocationLatestLimitDurationSeconds.initGauge(ipam_allocation_latest_limit_duration_seconds, "spiderpool agent ipam latest allocation limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam allocation limit duration bucket, metric type "float64 histogram"
+	allocationLimitHistogram, err := NewMetricFloat64Histogram(ipam_allocation_limit_duration_seconds, "histogram of spiderpool agent ipam allocation limit duration")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_limit_duration_seconds, err)
+	}
+	ipamAllocationLimitDurationSecondsHistogram = allocationLimitHistogram
 
 	return nil
 }
@@ -359,6 +419,13 @@ func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_failure_counts, err)
 	}
 	IpamReleaseFailureCounts = releaseFailureCounts
+
+	// spiderpool agent ipam release update IPPool conflict counts, metric type "int64 counter"
+	releaseUpdateIPPoolConflictCounts, err := NewMetricInt64Counter(ipam_release_update_ippool_conflict_counts, "spiderpool agent ipam release update IPPool conflict counts")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_update_ippool_conflict_counts, err)
+	}
+	IpamReleaseUpdateIPPoolConflictCounts = releaseUpdateIPPoolConflictCounts
 
 	// spiderpool agent ipam releasing internal error counts, metric type "int64 counter"
 	releasingErrInternalCounts, err := NewMetricInt64Counter(ipam_release_err_internal_counts, "spiderpool agent ipam release internal error counts")
@@ -405,9 +472,36 @@ func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 	}
 	ipamReleaseDurationSecondsHistogram = releaseHistogram
 
-	// set the spiderpool agent ipam allocation total counts initial data
-	IpamReleaseTotalCounts.Add(ctx, 0)
-	IpamReleaseFailureCounts.Add(ctx, 0)
+	// spiderpool agent ipam average release limit duration, metric type "float64 gauge"
+	err = ipamReleaseAverageLimitDurationSeconds.initGauge(ipam_release_average_limit_duration_seconds, "spiderpool agent ipam average release limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam maximum release limit duration, metric type "float64 gauge"
+	err = ipamReleaseMaxLimitDurationSeconds.initGauge(ipam_release_max_limit_duration_seconds, "spiderpool agent ipam maximum release limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam minimum allocation limit duration, metric type "float64 gauge"
+	err = ipamReleaseMinLimitDurationSeconds.initGauge(ipam_release_min_limit_duration_seconds, "spiderpool agent ipam minimum release limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam latest release limit duration, metric type "float64 gauge"
+	err = ipamReleaseLatestLimitDurationSeconds.initGauge(ipam_release_latest_limit_duration_seconds, "spiderpool agent ipam latest release limit duration")
+	if nil != err {
+		return err
+	}
+
+	// spiderpool agent ipam allocation limit duration bucket, metric type "float64 histogram"
+	releaseLimitHistogram, err := NewMetricFloat64Histogram(ipam_release_limit_duration_seconds, "histogram of spiderpool agent ipam release limit duration")
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_limit_duration_seconds, err)
+	}
+	ipamReleaseLimitDurationSecondsHistogram = releaseLimitHistogram
 
 	return nil
 }

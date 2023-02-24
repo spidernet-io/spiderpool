@@ -65,10 +65,10 @@ type SubnetController struct {
 
 func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.Interface, leader election.SpiderLeaseElector) error {
 	if client == nil {
-		return fmt.Errorf("spiderpool clientset must be specified")
+		return fmt.Errorf("spiderpoolv1 clientset %w", constant.ErrMissingRequiredParam)
 	}
 	if leader == nil {
-		return fmt.Errorf("controller leader must be specified")
+		return fmt.Errorf("controller leader %w", constant.ErrMissingRequiredParam)
 	}
 
 	InformerLogger = logutils.Logger.Named("Subnet-Informer")
@@ -141,12 +141,6 @@ func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubn
 	ipPoolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: sc.enqueueSubnetOnIPPoolChange,
 		UpdateFunc: func(old, new interface{}) {
-			oldIPPool := old.(*spiderpoolv1.SpiderIPPool)
-			newIPPool := new.(*spiderpoolv1.SpiderIPPool)
-			if reflect.DeepEqual(newIPPool.Spec.IPs, oldIPPool.Spec.IPs) &&
-				reflect.DeepEqual(newIPPool.Spec.ExcludeIPs, oldIPPool.Spec.ExcludeIPs) {
-				return
-			}
 			sc.enqueueSubnetOnIPPoolChange(new)
 		},
 		DeleteFunc: sc.enqueueSubnetOnIPPoolChange,
@@ -253,6 +247,8 @@ func (sc *SubnetController) processNextWorkItem(ctx context.Context) bool {
 		sc.Workqueue.AddRateLimited(obj)
 		return true
 	}
+	logger.Info("Succeed to SYNC")
+
 	sc.Workqueue.Forget(obj)
 
 	return true

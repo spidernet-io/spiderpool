@@ -48,6 +48,7 @@ require (
 
 require (
 	github.com/agiledragon/gomonkey/v2 v2.9.0
+	github.com/golang/mock v1.6.0
 	github.com/moby/moby v23.0.1+incompatible
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus/client_golang v1.14.0

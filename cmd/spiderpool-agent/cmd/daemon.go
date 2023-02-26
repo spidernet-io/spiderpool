@@ -333,6 +333,7 @@ func initAgentServiceManagers(ctx context.Context) {
 			},
 			agentContext.CRDManager.GetClient(),
 			agentContext.IPPoolManager,
+			agentContext.RIPManager,
 			agentContext.CRDManager.GetScheme(),
 		)
 		if err != nil {

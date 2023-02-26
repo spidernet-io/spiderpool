@@ -258,7 +258,7 @@ func (ic *IPPoolController) onIPPoolUpdate(oldObj interface{}, newObj interface{
 // it will check whether the SpiderIPPool status AllocatedIPCount/TotalIPCount needs to be initialized
 // and enqueue them.
 func (ic *IPPoolController) updateSpiderIPPool(oldIPPool, currentIPPool *spiderpoolv1.SpiderIPPool, log *zap.Logger) error {
-	if currentIPPool.DeletionTimestamp != nil {
+	if currentIPPool.DeletionTimestamp != nil && len(currentIPPool.Spec.IPs) == 0 {
 		log.Debug("try to add terminating IPPool to IPPool workqueue")
 		ic.enqueueIPPool(currentIPPool)
 		return nil
@@ -445,7 +445,7 @@ func (ic *IPPoolController) processNextWorkItem(workQueue workqueue.RateLimiting
 }
 
 // scaleIPPoolIfNeeded checks whether the provided SpiderIPPool needs to be scaled and try to process it.
-func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
+func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) (err error) {
 	poolLabels := pool.GetLabels()
 	subnetName, ok := poolLabels[constant.LabelIPPoolOwnerSpiderSubnet]
 	if !ok {
@@ -473,10 +473,12 @@ func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spide
 
 	timeRecorder := metric.NewTimeRecorder()
 	defer func() {
-		// Time taken for once Auto-created IPPool scale.
-		scaleDuration := timeRecorder.SinceInSeconds()
-		metric.AutoPoolScaleDurationConstruct.RecordAutoPoolScaleDuration(ctx, scaleDuration)
-		informerLogger.Sugar().Infof("Auto-created IPPool '%s' scale duration: %v", pool.Name, scaleDuration)
+		if err == nil {
+			// Time taken for once Auto-created IPPool scale.
+			scaleDuration := timeRecorder.SinceInSeconds()
+			metric.AutoPoolScaleDurationConstruct.RecordAutoPoolScaleDuration(ctx, scaleDuration)
+			informerLogger.Sugar().Infof("Auto-created IPPool '%s' scale duration: %v", pool.Name, scaleDuration)
+		}
 	}()
 
 	if desiredIPNum > totalIPCount {
@@ -621,13 +623,13 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv1
 
 		// there's no need to scale the IPPool if the IPPool is terminating.
 		if !isCleaned {
-			err = ic.scaleIPPoolIfNeeded(ctx, pool)
-			if nil != err {
-				if apierrors.IsConflict(err) {
-					metric.AutoPoolScaleConflictCounts.Add(ctx, 1)
-				}
-				return err
-			}
+			//err = ic.scaleIPPoolIfNeeded(ctx, pool)
+			//if nil != err {
+			//	if apierrors.IsConflict(err) {
+			//		metric.AutoPoolScaleConflictCounts.Add(ctx, 1)
+			//	}
+			//	return err
+			//}
 		}
 	}
 

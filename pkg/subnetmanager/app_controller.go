@@ -17,6 +17,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8types "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -490,7 +491,7 @@ func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	for i := 0; i < sac.AppControllerWorkers; i++ {
+	for i := 0; i < 1; i++ {
 		informerLogger.Sugar().Debugf("Starting application controller processing worker '%d'", i)
 		go wait.Until(sac.runWorker, 1*time.Second, stopCh)
 	}
@@ -708,7 +709,7 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
-	fn := func(poolList spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string, matchLabel client.MatchingLabels) (err error) {
+	fn := func(pool *spiderpoolv1.SpiderIPPool, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
 		var ipNum int
 		if podSubnetConfig.FlexibleIPNum != nil {
 			ipNum = appReplicas + *(podSubnetConfig.FlexibleIPNum)
@@ -717,18 +718,12 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 		}
 
 		// verify whether the pool IPs need to be expanded or not
-		if len(poolList.Items) == 0 {
-			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s' with matchLabel '%v'", ipVersion, subnetName, matchLabel)
-			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
-			// and the IPPool informer will implement the scale action
-			_, err = sac.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
-		} else if len(poolList.Items) == 1 {
-			pool := poolList.Items[0]
-			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' with matchLabel '%v', check it whether need to be scaled", subnetName, pool.Name, matchLabel)
-			err = sac.subnetMgr.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
+		if pool == nil {
+			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s' ", ipVersion, subnetName)
+			_, err = sac.subnetMgr.AllocateIPPool(ctx, subnetName, podController, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
 		} else {
-			err = fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
-				constant.ErrWrongInput, subnetName, matchLabel, poolList.Items)
+			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s', check it whether need to be scaled", subnetName, pool.Name)
+			err = sac.subnetMgr.CheckScaleIPPool(ctx, pool.DeepCopy(), subnetName, ipNum)
 		}
 
 		return
@@ -749,20 +744,18 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 			go func() {
 				defer wg.Done()
 
-				var v4PoolList spiderpoolv1.SpiderIPPoolList
-				matchLabel := client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv4[0],
-					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
-					constant.LabelIPPoolInterface:           item.Interface,
-				}
-				errV4 = sac.client.List(ctx, &v4PoolList, matchLabel)
+				var v4Pool *spiderpoolv1.SpiderIPPool
+				v4PoolName := controllers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv4, item.Interface, podController.UID)
+				err := sac.client.Get(ctx, k8types.NamespacedName{Name: v4PoolName}, v4Pool)
 				if nil != errV4 {
-					return
+					if apierrors.IsNotFound(err) {
+						v4Pool = nil
+					} else {
+						return
+					}
 				}
 
-				errV4 = fn(v4PoolList, item.IPv4[0], constant.IPv4, item.Interface, matchLabel)
+				errV4 = fn(v4Pool, item.IPv4[0], constant.IPv4, item.Interface)
 			}()
 		}
 
@@ -771,20 +764,18 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 			go func() {
 				defer wg.Done()
 
-				var v6PoolList spiderpoolv1.SpiderIPPoolList
-				matchLabel := client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv6[0],
-					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
-					constant.LabelIPPoolInterface:           item.Interface,
-				}
-				errV6 = sac.client.List(ctx, &v6PoolList, matchLabel)
+				var v6Pool *spiderpoolv1.SpiderIPPool
+				v6PoolName := controllers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv6, item.Interface, podController.UID)
+				err := sac.client.Get(ctx, k8types.NamespacedName{Name: v6PoolName}, v6Pool)
 				if nil != errV6 {
-					return
+					if apierrors.IsNotFound(err) {
+						v6Pool = nil
+					} else {
+						return
+					}
 				}
 
-				errV6 = fn(v6PoolList, item.IPv6[0], constant.IPv6, item.Interface, matchLabel)
+				errV6 = fn(v6Pool, item.IPv6[0], constant.IPv6, item.Interface)
 			}()
 		}
 

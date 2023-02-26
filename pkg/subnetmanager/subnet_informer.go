@@ -7,10 +7,15 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -259,6 +264,8 @@ func (sc *SubnetController) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) error {
+	log := logutils.FromContext(ctx)
+
 	subnet, err := sc.SubnetsLister.Get(subnetName)
 	if err != nil {
 		return client.IgnoreNotFound(err)
@@ -269,11 +276,15 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 		return fmt.Errorf("failed to sync metadata of Subnet: %v", err)
 	}
 
+	// 补label
 	if err := sc.syncControllerSubnet(ctx, subnetCopy); err != nil {
 		return fmt.Errorf("failed to sync reference for controller Subnet: %v", err)
 	}
 
-	if err := sc.syncControlledIPPoolIPs(ctx, subnetCopy); err != nil {
+	// 对齐
+	//if err := sc.syncControlledIPPoolIPs(ctx, subnetCopy); err != nil {
+	log.Info("duiqi44444444444444444444444444444")
+	if err := sc.duiqi(ctx, subnetCopy); err != nil {
 		return fmt.Errorf("failed to sync the IP ranges of controlled IPPools of Subnet: %v", err)
 	}
 
@@ -310,6 +321,7 @@ func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpool
 	return nil
 }
 
+// 补池subnet-owner的label
 func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	ipPools, err := sc.IPPoolsLister.List(labels.Everything())
 	if err != nil {
@@ -348,6 +360,7 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 	return nil
 }
 
+// TODO: 对齐+刷totalIPCount
 func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	selector := labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector()
 	ipPools, err := sc.IPPoolsLister.List(selector)
@@ -443,4 +456,165 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 	logger.Sugar().Infof("Remove finalizer %s", constant.SpiderFinalizer)
 
 	return nil
+}
+
+func (sc *SubnetController) duiqi(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+	log := logutils.FromContext(ctx)
+	ipPools, err := sc.IPPoolsLister.List(labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector())
+	if err != nil {
+		return err
+	}
+
+	// 自动池提前分配的
+	preAutoPoolAllocated := make(spiderpoolv1.PoolIPPreAllocations, len(subnet.Status.ControlledIPPools))
+	for poolName, poolAllocatedIPs := range subnet.Status.ControlledIPPools {
+		preAutoPoolAllocated[poolName] = poolAllocatedIPs
+	}
+	for _, pool := range ipPools {
+		delete(preAutoPoolAllocated, pool.Name)
+	}
+	for poolName := range preAutoPoolAllocated {
+		appKind, appNS, appName, isMatching := parseAutoPoolName(poolName)
+		if !isMatching {
+			log.Sugar().Warnf("Not matching %s", poolName)
+			delete(preAutoPoolAllocated, poolName)
+		}
+		log.Sugar().Infof("appKind:'%s'; appNS:'%s'; appName:'%s'", appKind, appNS, appName)
+		var appErr error
+		switch appKind {
+		case constant.KindDeployment:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &appsv1.Deployment{})
+		case constant.KindReplicaSet:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &appsv1.ReplicaSet{})
+		case constant.KindStatefulSet:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &appsv1.StatefulSet{})
+		case constant.KindJob:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &batchv1.Job{})
+		case constant.KindCronJob:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &batchv1.CronJob{})
+		case constant.KindDaemonSet:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &appsv1.DaemonSet{})
+		case constant.KindPod:
+			appErr = sc.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, &corev1.Pod{})
+		default:
+		}
+
+		if appErr != nil {
+			if apierrors.IsNotFound(appErr) {
+				log.Sugar().Infof("app goodbye, poolName '%s'", poolName)
+				delete(preAutoPoolAllocated, poolName)
+			} else {
+				return fmt.Errorf("bad=============: %w", err)
+			}
+		}
+	}
+
+	if len(preAutoPoolAllocated) != 0 {
+		log.Sugar().Debugf("SpiderSubnet %s has auto-created IPPool pre-allocation %v", subnet.Name, preAutoPoolAllocated)
+	}
+
+	// subnet自己spec的所有ip
+	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	if err != nil {
+		return err
+	}
+	subnetTotalIPsCount := int64(len(subnetTotalIPs))
+
+	var subnetAllocatedIPsCount int
+	newSubnetAllocations := make(spiderpoolv1.PoolIPPreAllocations, len(ipPools))
+	for _, pool := range ipPools {
+		poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+		if err != nil {
+			return err
+		}
+		if len(poolTotalIPs) == 0 {
+			continue
+		}
+
+		validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs, false)
+		subnetAllocatedIPsCount += len(validIPs)
+
+		ranges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, validIPs)
+		if err != nil {
+			return err
+		}
+		newSubnetAllocations[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
+	}
+	for preAllocatedPoolName, preAllocation := range preAutoPoolAllocated {
+		tmpIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
+		if nil != err {
+			return err
+		}
+		subnetAllocatedIPsCount += len(tmpIPs)
+		newSubnetAllocations[preAllocatedPoolName] = preAllocation
+	}
+
+	sync := false
+	if !reflect.DeepEqual(newSubnetAllocations, subnet.Status.ControlledIPPools) {
+		log.With(zap.Any("old", subnet.Status.ControlledIPPools),
+			zap.Any("new", newSubnetAllocations)).
+			Info("subnet status allocation changed")
+
+		subnet.Status.ControlledIPPools = newSubnetAllocations
+		sync = true
+	}
+
+	allocatedIPCount := int64(subnetAllocatedIPsCount)
+	if !reflect.DeepEqual(&allocatedIPCount, subnet.Status.AllocatedIPCount) {
+		log.With(zap.Any("old", subnet.Status.AllocatedIPCount),
+			zap.Any("new", allocatedIPCount)).
+			Info("subnet status allocated IP Count changed")
+
+		subnet.Status.AllocatedIPCount = &allocatedIPCount
+		sync = true
+	}
+
+	// Update the count of total IP addresses.
+	if !reflect.DeepEqual(&subnetTotalIPsCount, subnet.Status.TotalIPCount) {
+		log.With(zap.Any("old", subnet.Status.TotalIPCount),
+			zap.Any("new", subnetTotalIPsCount)).
+			Info("subnet status total IP Count changed")
+
+		subnet.Status.TotalIPCount = &subnetTotalIPsCount
+		sync = true
+	}
+
+	if sync {
+		log.Sugar().Infof("go to change subnet: %v", subnet)
+		return sc.Status().Update(ctx, subnet)
+	}
+
+	return nil
+}
+
+func parseAutoPoolName(str string) (appKind, appNS, appName string, isMatching bool) {
+	splitStr := strings.Split(str, "-")
+	if len(splitStr) <= 3 {
+		return "", "", "", false
+	}
+	isMatching = true
+	appNS = splitStr[1]
+	appName = splitStr[2]
+
+	kindStr := splitStr[0]
+	switch kindStr {
+	case strings.ToLower(constant.KindDeployment):
+		appKind = constant.KindDeployment
+	case strings.ToLower(constant.KindReplicaSet):
+		appKind = constant.KindReplicaSet
+	case strings.ToLower(constant.KindStatefulSet):
+		appKind = constant.KindStatefulSet
+	case strings.ToLower(constant.KindJob):
+		appKind = constant.KindJob
+	case strings.ToLower(constant.KindCronJob):
+		appKind = constant.KindCronJob
+	case strings.ToLower(constant.KindDaemonSet):
+		appKind = constant.KindDaemonSet
+	case strings.ToLower(constant.KindPod):
+		appKind = constant.KindPod
+	default:
+		appKind = constant.KindUnknown
+	}
+
+	return
 }

@@ -405,8 +405,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/cidrManager.md" class="md-nav__link">
-        None
+      <a href="../../usage/spider-subnet/" class="md-nav__link">
+        SpiderSubnet
       </a>
     </li>
   
@@ -433,8 +433,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/cli/" class="md-nav__link">
-        Command line tool (spiderpoolctl)
+      <a href="../../usage/third-party-controller/" class="md-nav__link">
+        Spiderpool supports third-party controllers
       </a>
     </li>
   
@@ -607,6 +607,20 @@
     <li class="md-nav__item">
       <a href="../spiderendpoint/" class="md-nav__link">
         SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spidersubnet/" class="md-nav__link">
+        SpiderSubnet
       </a>
     </li>
   
@@ -862,10 +876,20 @@
 <p>For which ippool is used by a pod, the following rules are listed from high to low priority.</p>
 <ul>
 <li>
+<p>SpiderSubnet annotation. "ipam.spidernet.io/subnets" and "ipam.spidernet.io/subnet" will choose to use auto-created ippool if the SpiderSubnet feature is enabled. See <a href="../../usage/spider-subnet/">SpiderSubnet</a> for detail.</p>
+</li>
+<li>
 <p>Honor pod annotation. "ipam.spidernet.io/ippool" and "ipam.spidernet.io/ippools" could be used to specify an ippool. See <a href="../usage/annotation.md">Pod Annotation</a> for detail.</p>
 </li>
 <li>
 <p>Namespace annotation. "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool" could be used to specify an ippool. See <a href="../usage/annotation.md">namespace annotation</a> for detail.</p>
+</li>
+<li>
+<p>CNI configuration file. It can be set to "default_ipv4_ippool" and "default_ipv6_ippool" in the CNI configuration file. See <a href="../usage/config.md">configuration</a> for detail.</p>
+</li>
+<li>
+<p>Cluster default subnet.(you can do not specify any annotations and it will try to use cluster default subnet auto-created ippool if the SpiderSubnet feature it enabled)
+ It can be set to "clusterDefaultIPv4Subnet" and "clusterDefaultIPv6Subnet" in the "spiderpool-conf" ConfigMap. See <a href="../usage/config.md">configuration</a> for detail.</p>
 </li>
 <li>
 <p>Cluster default ippool.

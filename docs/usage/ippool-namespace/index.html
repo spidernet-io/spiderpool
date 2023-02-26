@@ -462,8 +462,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../cidrManager.md" class="md-nav__link">
-        None
+      <a href="../spider-subnet/" class="md-nav__link">
+        SpiderSubnet
       </a>
     </li>
   
@@ -490,8 +490,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
-        Command line tool (spiderpoolctl)
+      <a href="../third-party-controller/" class="md-nav__link">
+        Spiderpool supports third-party controllers
       </a>
     </li>
   
@@ -652,6 +652,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/spiderendpoint/" class="md-nav__link">
         SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/spidersubnet/" class="md-nav__link">
+        SpiderSubnet
       </a>
     </li>
   
@@ -929,42 +943,56 @@
 
 
 <h1 id="namespace-default-ippool">Namespace default IPPool</h1>
-<p><em>Spiderpool provides default IP pools at Namespace level. Pod running under a Namespace and not configured with a higher priority <a href="TODO">pool selection rule</a> will be assigned with IP addresses from the Namespace default IP pools.</em></p>
+<p><em>Spiderpool provides default IP pools at Namespace level. A Pod not configured with a <a href="TODO">pool selection rule</a> of higher priority will be assigned with IP addresses from the default IP pools of its Namespace.</em></p>
 <h2 id="set-up-spiderpool">Set up Spiderpool</h2>
 <p>If you have not deployed Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for instructions on how to deploy and easily configure Spiderpool.</p>
 <h2 id="get-started">Get started</h2>
-<p>First, create a new Namespace and an IPPool to be bound to it.</p>
-<pre><code class="language-bash">kubectl create ns test-ns1
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-default-ipv4-ippool.yaml
-</code></pre>
-<p>Next, We expect that all Pods created in Namespace <code>test-ns1</code> will be assigned with IP addresses from the IPPool <code>ns1-default-ipv4-ippool</code>.</p>
-<pre><code class="language-bash">kubectl get sp -l case=ns
+<ol>
+<li>
+<p>Create a Namespace named as <code>test-ns1</code>.</p>
+<p><code>bash
+kubectl create ns test-ns1</code></p>
+</li>
+<li>
+<p>Create an IPPool to be bound with Namespace <code>test-ns1</code>.</p>
+<p><code>bash
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-default-ipv4-ippool.yaml</code></p>
+</li>
+<li>
+<p>Check the status of this IPPool with the following command.</p>
+<p><code>bash
+kubectl get sp -l case=ns
 NAME                      VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-ns1-default-ipv4-ippool   4         172.18.41.0/24   0                    4                false
-</code></pre>
-<p>Use Namespace annotation <code>ipam.spidernet.io/defaultv4ippool</code> to specify the pool selection rules and bind Namespace and IPPool one by one.</p>
-<pre><code class="language-bash">kubectl patch ns test-ns1 --patch-file https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-ippool-selection-patch.yaml
-</code></pre>
-<pre><code class="language-yaml">metadata:
+ns1-default-ipv4-ippool   4         172.18.41.0/24   0                    4                false</code></p>
+</li>
+<li>
+<p>Specify pool selection rules for Namespace <code>test-ns1</code> with the following command and annotation.</p>
+<p><code>bash
+kubectl patch ns test-ns1 --patch-file https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-ippool-selection-patch.yaml</code></p>
+<p><code>yaml
+metadata:
   annotations:
-    ipam.spidernet.io/default-ipv4-ippool: '[&quot;ns1-default-ipv4-ippool&quot;]'
-</code></pre>
-<p>Create a Deployment with 3 replicas under the Namespace <code>test-ns1</code>.</p>
-<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-default-ippool-deploy.yaml
-</code></pre>
-<p>Finally, all Pods in the specific Namespace are assigned with IP addresses from the specified IPPool.</p>
+    ipam.spidernet.io/default-ipv4-ippool: '["ns1-default-ipv4-ippool"]'</code></p>
+</li>
+<li>
+<p>Create a Deployment with 3 replicas in the Namespace <code>test-ns1</code>.</p>
+<p><code>bash
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-default-ippool-deploy.yaml</code></p>
+</li>
+</ol>
+<p>Now, all Pods in the Namespace should have been assigned with an IP address from the specified IPPool. Verify it with the following command:</p>
 <pre><code class="language-bash">kubectl get se -n test-ns1
 NAME                                         INTERFACE   IPV4POOL                  IPV4              IPV6POOL   IPV6   NODE            CREATETION TIME
 ns1-default-ippool-deploy-7cd5449c88-9xncm   eth0        ns1-default-ipv4-ippool   172.18.41.41/24                     spider-worker   57s
 ns1-default-ippool-deploy-7cd5449c88-dpfjs   eth0        ns1-default-ipv4-ippool   172.18.41.43/24                     spider-worker   57s
 ns1-default-ippool-deploy-7cd5449c88-vjtdd   eth0        ns1-default-ipv4-ippool   172.18.41.42/24                     spider-worker   58s
 </code></pre>
-<p>Of course, the Namespace annotation <code>ipam.spidernet.io/defaultv4ippool</code> also supports the syntax of <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-multi.md">alternative IP pools</a>. You can specify multiple default IP pools for a certain Namespace at the same time. In addition, one IPPool can be specified as the default IP pool for different Namespaces.</p>
+<p>The Namespace annotation <code>ipam.spidernet.io/defaultv4ippool</code> also supports the syntax of <a href="../ippool-multi/">alternative IP pools</a>, which means <strong>you can specify multiple default IP pools for a Namespace</strong>. In addition, one IPPool can be specified as the default IP pool for different Namespaces.</p>
 <blockquote>
 <p>If you want to bind an IPPool to a specific Namespace in an <strong>exclusive</strong> way, it means that no Namespace other than this (or a group of Namespaces) has permission to use this IPPool, please refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-affinity-namespace.md">SpiderIPPool namespace affinity</a>.</p>
 </blockquote>
 <h2 id="clean-up">Clean up</h2>
-<p>Clean the relevant resources so that you can run this tutorial again.</p>
+<p>Clean relevant resources so that you can run this tutorial again.</p>
 <pre><code class="language-bash">kubectl delete ns test-ns1
 kubectl delete -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-namespace/ns1-default-ipv4-ippool.yaml --ignore-not-found=true
 </code></pre>

@@ -36,6 +36,10 @@ spec:
       jsonPath: .status.totalIPCount
       name: TOTAL-IP-COUNT
       type: integer
+    - description: default
+      jsonPath: .status.default
+      name: DEFAULT
+      type: boolean
     name: v1
     schema:
       openAPIV3Schema:

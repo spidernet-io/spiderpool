@@ -66,6 +66,7 @@ type PoolIPPreAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=".spec.subnet",description="subnet",name="SUBNET",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.allocatedIPCount",description="allocatedIPCount",name="ALLOCATED-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalIPCount",description="totalIPCount",name="TOTAL-IP-COUNT",type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.default",description="default",name="DEFAULT",type=boolean
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +genclient

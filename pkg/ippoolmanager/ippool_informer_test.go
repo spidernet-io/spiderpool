@@ -12,6 +12,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
@@ -50,7 +52,7 @@ var _ = Describe("IPPoolInformer", Label("ippool_informer_test"), func() {
 
 		var ippoolController *ippoolmanager.IPPoolController
 		var fakeIPPoolWatch *watch.FakeWatcher
-		// var ipPoolIndexer cache.Indexer
+		var ipPoolIndexer cache.Indexer
 
 		BeforeEach(func() {
 			ippoolmanager.InformerLogger = logutils.Logger.Named("Ippool-Informer")
@@ -68,7 +70,13 @@ var _ = Describe("IPPoolInformer", Label("ippool_informer_test"), func() {
 				Spec: spiderpoolv1.IPPoolSpec{},
 			}
 
-			ippoolController = &ippoolmanager.IPPoolController{}
+			ippoolController = &ippoolmanager.IPPoolController{
+				IPPoolControllerConfig: ippoolmanager.IPPoolControllerConfig{
+					EnableSpiderSubnet:      true,
+					EnableIPv4:              true,
+					IPPoolControllerWorkers: 1,
+				},
+			}
 
 			patches := gomonkey.ApplyFuncReturn(cache.WaitForNamedCacheSync, true)
 			DeferCleanup(patches.Reset)
@@ -89,9 +97,8 @@ var _ = Describe("IPPoolInformer", Label("ippool_informer_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func(g Gomega) {
 				g.Expect(ippoolController.IPPoolIndexer).NotTo(BeNil())
-				// ipPoolIndexer = ippoolController.IPPoolIndexer
+				ipPoolIndexer = ippoolController.IPPoolIndexer
 			}).Should(Succeed())
-
 		})
 
 		var deleteOption *client.DeleteOptions
@@ -114,6 +121,33 @@ var _ = Describe("IPPoolInformer", Label("ippool_informer_test"), func() {
 			fakeClientset.PrependWatchReactor("spiderippools", testing.DefaultWatchReactor(fakeIPPoolWatch, nil))
 			err := ippoolController.SetupInformer(ctx, fakeClientset, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+		})
+
+		It("Update ippool status", func() {
+			ipPoolT.SetUID(uuid.NewUUID())
+			ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			ipPoolT.Spec.Subnet = "172.18.40.0/24"
+			ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.10")
+
+			ctx := context.TODO()
+			err := fakeClient.Create(ctx, ipPoolT)
+			Expect(err).NotTo(HaveOccurred())
+			err = ipPoolIndexer.Add(ipPoolT)
+			Expect(err).NotTo(HaveOccurred())
+
+			newIPPoolT := ipPoolT.DeepCopy()
+			newIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			newIPPoolT.Spec.Subnet = "172.18.41.0/24"
+			newIPPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.41.10")
+			err = fakeClient.Update(ctx, newIPPoolT)
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeIPPoolWatch.Add(newIPPoolT)
+			Eventually(func(g Gomega) {
+				var ipPoolR spiderpoolv1.SpiderIPPool
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: newIPPoolT.Name}, &ipPoolR)
+				g.Expect(err).NotTo(HaveOccurred())
+			}).Should(Succeed())
 		})
 	})
 })

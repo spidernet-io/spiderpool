@@ -43,23 +43,23 @@ type SubnetAppController struct {
 	workQueue     workqueue.RateLimitingInterface
 	appController *controllers.Controller
 
-	deploymentsLister  appslisters.DeploymentLister
-	deploymentInformer cache.SharedIndexInformer
+	DeploymentsLister  appslisters.DeploymentLister
+	DeploymentInformer cache.SharedIndexInformer
 
-	replicaSetLister   appslisters.ReplicaSetLister
-	replicaSetInformer cache.SharedIndexInformer
+	ReplicaSetLister   appslisters.ReplicaSetLister
+	ReplicaSetInformer cache.SharedIndexInformer
 
-	statefulSetLister   appslisters.StatefulSetLister
-	statefulSetInformer cache.SharedIndexInformer
+	StatefulSetLister   appslisters.StatefulSetLister
+	StatefulSetInformer cache.SharedIndexInformer
 
-	daemonSetLister   appslisters.DaemonSetLister
-	daemonSetInformer cache.SharedIndexInformer
+	DaemonSetLister   appslisters.DaemonSetLister
+	DaemonSetInformer cache.SharedIndexInformer
 
-	jobLister   batchlisters.JobLister
-	jobInformer cache.SharedIndexInformer
+	JobLister   batchlisters.JobLister
+	JobInformer cache.SharedIndexInformer
 
-	cronJobLister   batchlisters.CronJobLister
-	cronJobInformer cache.SharedIndexInformer
+	CronJobLister   batchlisters.CronJobLister
+	CronJobInformer cache.SharedIndexInformer
 
 	SubnetAppControllerConfig
 }
@@ -114,7 +114,7 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 			factory := kubeinformers.NewSharedInformerFactory(client, 0)
 			sac.addEventHandlers(factory)
 			factory.Start(innerCtx.Done())
-			err := sac.Run(innerCtx.Done())
+			err := sac.run(innerCtx.Done())
 			if nil != err {
 				informerLogger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
 			}
@@ -412,29 +412,29 @@ func NewSubnetAppController(client client.Client, subnetMgr SubnetManager, subne
 }
 
 func (sac *SubnetAppController) addEventHandlers(factory kubeinformers.SharedInformerFactory) {
-	sac.deploymentsLister = factory.Apps().V1().Deployments().Lister()
-	sac.deploymentInformer = factory.Apps().V1().Deployments().Informer()
-	sac.appController.AddDeploymentHandler(sac.deploymentInformer)
+	sac.DeploymentsLister = factory.Apps().V1().Deployments().Lister()
+	sac.DeploymentInformer = factory.Apps().V1().Deployments().Informer()
+	sac.appController.AddDeploymentHandler(sac.DeploymentInformer)
 
-	sac.replicaSetLister = factory.Apps().V1().ReplicaSets().Lister()
-	sac.replicaSetInformer = factory.Apps().V1().ReplicaSets().Informer()
-	sac.appController.AddReplicaSetHandler(sac.replicaSetInformer)
+	sac.ReplicaSetLister = factory.Apps().V1().ReplicaSets().Lister()
+	sac.ReplicaSetInformer = factory.Apps().V1().ReplicaSets().Informer()
+	sac.appController.AddReplicaSetHandler(sac.ReplicaSetInformer)
 
-	sac.statefulSetLister = factory.Apps().V1().StatefulSets().Lister()
-	sac.statefulSetInformer = factory.Apps().V1().StatefulSets().Informer()
-	sac.appController.AddStatefulSetHandler(sac.statefulSetInformer)
+	sac.StatefulSetLister = factory.Apps().V1().StatefulSets().Lister()
+	sac.StatefulSetInformer = factory.Apps().V1().StatefulSets().Informer()
+	sac.appController.AddStatefulSetHandler(sac.StatefulSetInformer)
 
-	sac.daemonSetLister = factory.Apps().V1().DaemonSets().Lister()
-	sac.daemonSetInformer = factory.Apps().V1().DaemonSets().Informer()
-	sac.appController.AddDaemonSetHandler(sac.daemonSetInformer)
+	sac.DaemonSetLister = factory.Apps().V1().DaemonSets().Lister()
+	sac.DaemonSetInformer = factory.Apps().V1().DaemonSets().Informer()
+	sac.appController.AddDaemonSetHandler(sac.DaemonSetInformer)
 
-	sac.jobLister = factory.Batch().V1().Jobs().Lister()
-	sac.jobInformer = factory.Batch().V1().Jobs().Informer()
-	sac.appController.AddJobController(sac.jobInformer)
+	sac.JobLister = factory.Batch().V1().Jobs().Lister()
+	sac.JobInformer = factory.Batch().V1().Jobs().Informer()
+	sac.appController.AddJobController(sac.JobInformer)
 
-	sac.cronJobLister = factory.Batch().V1().CronJobs().Lister()
-	sac.cronJobInformer = factory.Batch().V1().CronJobs().Informer()
-	sac.appController.AddCronJobHandler(sac.cronJobInformer)
+	sac.CronJobLister = factory.Batch().V1().CronJobs().Lister()
+	sac.CronJobInformer = factory.Batch().V1().CronJobs().Informer()
+	sac.appController.AddCronJobHandler(sac.CronJobInformer)
 
 	// Once we lost the leader but get leader later, we have to use a new workqueue.
 	// Because the former workqueue was already shut down and wouldn't be re-start forever.
@@ -473,18 +473,18 @@ func (sac *SubnetAppController) enqueueApp(ctx context.Context, obj interface{},
 	log.Sugar().Debugf("added '%v' to application controller workequeue", appKey)
 }
 
-func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
+func (sac *SubnetAppController) run(stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer sac.workQueue.ShutDown()
 
 	informerLogger.Debug("Waiting for application informers caches to sync")
 	ok := cache.WaitForCacheSync(stopCh,
-		sac.deploymentInformer.HasSynced,
-		sac.replicaSetInformer.HasSynced,
-		sac.daemonSetInformer.HasSynced,
-		sac.statefulSetInformer.HasSynced,
-		sac.jobInformer.HasSynced,
-		sac.cronJobInformer.HasSynced,
+		sac.DeploymentInformer.HasSynced,
+		sac.ReplicaSetInformer.HasSynced,
+		sac.DaemonSetInformer.HasSynced,
+		sac.StatefulSetInformer.HasSynced,
+		sac.JobInformer.HasSynced,
+		sac.CronJobInformer.HasSynced,
 	)
 	if !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
@@ -585,7 +585,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 	switch appKey.AppKind {
 	case constant.KindDeployment:
-		deployment, err := sac.deploymentsLister.Deployments(namespace).Get(name)
+		deployment, err := sac.DeploymentsLister.Deployments(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
@@ -600,7 +600,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		app = deployment.DeepCopy()
 
 	case constant.KindReplicaSet:
-		replicaSet, err := sac.replicaSetLister.ReplicaSets(namespace).Get(name)
+		replicaSet, err := sac.ReplicaSetLister.ReplicaSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
@@ -615,7 +615,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		app = replicaSet.DeepCopy()
 
 	case constant.KindDaemonSet:
-		daemonSet, err := sac.daemonSetLister.DaemonSets(namespace).Get(name)
+		daemonSet, err := sac.DaemonSetLister.DaemonSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
@@ -630,7 +630,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		app = daemonSet.DeepCopy()
 
 	case constant.KindStatefulSet:
-		statefulSet, err := sac.statefulSetLister.StatefulSets(namespace).Get(name)
+		statefulSet, err := sac.StatefulSetLister.StatefulSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
@@ -645,7 +645,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		app = statefulSet.DeepCopy()
 
 	case constant.KindJob:
-		job, err := sac.jobLister.Jobs(namespace).Get(name)
+		job, err := sac.JobLister.Jobs(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
@@ -660,7 +660,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		app = job.DeepCopy()
 
 	case constant.KindCronJob:
-		cronJob, err := sac.cronJobLister.CronJobs(namespace).Get(name)
+		cronJob, err := sac.CronJobLister.CronJobs(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")

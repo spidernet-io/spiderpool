@@ -78,11 +78,11 @@ The Spiderpool provides a large number of different features as follows.
 
 ## Components
 
-Refer to [architecture](concepts/arch) for components.
+Refer to [architecture](concepts/arch.md) for components.
 
 ## Installation
 
-Refer to [installation](usage/install).
+Refer to [installation](usage/install.md).
 
 ## Quick Start
 
@@ -90,7 +90,7 @@ Refer to [demo](usage/demo).
 
 ## Development
 
-[Development guide](develop/pullrequest) is a reference point for development helper commands.
+[Development guide](develop/pullrequest.md) is a reference point for development helper commands.
 
 ## License
 

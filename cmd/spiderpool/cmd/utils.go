@@ -5,8 +5,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
+
 	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 // Set up logging for spiderpool plugin

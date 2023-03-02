@@ -32,7 +32,7 @@ Despite no strict definition for underlay and overlay networks in cloud-native n
 
 ### Overlay network solution
 
-Theses solutions implements the decoupling of POD network and host network, such as [Calico](https://github.com/projectcalico/calico), [Cilium](https://github.com/cilium/cilium) and other CNI plugins. They either use tunneling technologies such as vxlan to build an overlay network plane, and then employ NAT for north-south traffic, or they use BGP routing protocols to open up the routes of the host network so that the host network can forward the POD's East-west and north-south traffic.
+These solutions implement the decoupling of POD network and host network, such as [Calico](https://github.com/projectcalico/calico), [Cilium](https://github.com/cilium/cilium) and other CNI plugins. They either use tunneling technologies such as vxlan to build an overlay network plane, and then employ NAT for north-south traffic, or they use BGP routing protocols to open up the routes of the host network so that the host network can forward the POD's East-west and north-south traffic.
 
 The characteristics of these IPAM solutions for overlay networks:
 
@@ -46,11 +46,11 @@ The characteristics of these IPAM solutions for overlay networks:
 
 2. Sufficient IP address resources
 
-    As we all know, IPv6 address resources are abundant while IPv4 addresses are scarce. Because POD subnets can be planned independently under the "overlay network solution", a kubernetes cluster can have enough IP address resources as long as NAT technology is used in a appropriate manner. As a result, applications do not fail to start due to insufficient IPs, and IPAM components face less pressure to recover abnormal IPs.
+    As we all know, IPv6 address resources are abundant while IPv4 addresses are scarce. Because POD subnets can be planned independently under the "overlay network solution", a kubernetes cluster can have enough IP address resources as long as NAT technology is used in an appropriate manner. As a result, applications do not fail to start due to insufficient IPs, and IPAM components face less pressure to recover abnormal IPs.
 
 3. No requirement for static application IP addresses
 
-    For the static IP address requirement, there is a difference between stateless application and stateful application. Regarding stateless application like deployment, the POD's name will change when the POD restart. Moreover, the business logic of the application itself is stateless, so static IP addresses are enabled only if all the POD replicas are fixed in a set of IP addresses; for stateful applications such as statefulset, considering both the fixed information including POD's names and stateful business logic, the strong binding of one POD and specific IP addresses needs to be implemented for static IP addresses.
+    For the static IP address requirement, there is a difference between stateless application and stateful application. Regarding stateless application like deployment, the POD's name will change when the POD restarts. Moreover, the business logic of the application itself is stateless, so static IP addresses are enabled only if all the POD replicas are fixed in a set of IP addresses; for stateful applications such as statefulset, considering both the fixed information including POD's names and stateful business logic, the strong binding of one POD and specific IP addresses needs to be implemented for static IP addresses.
 
     The "overlay network solution" mostly exposes the ingress and source addresses of services to the outside of the cluster with the help of NAT technology, and realizes the east-west communication through DNS, clusterIP and other technologies.
     In addition, although the IP block of IPAM fixes the IP to a node, it does not guarantee the application replicas to follow the scheduling.Therefore, there is no scope for the static IP address capability. Most of the mainstream CNIs in the community have not yet supported "static IP addressed", or support it in a rough way.
@@ -61,7 +61,7 @@ The disadvantage is that it poses network upgrading challenges for the cloud tra
 
 ### Underlay network solution
 
-This solution implements a shared host network for PODs, which means PODs can directly obtain IP addresses in the host network. Thus applications can directly use their own IP addresses for east-west and north-south communications.
+This solution implements a shared host network for PODs, which means PODs can directly obtain IP addresses in the host network. Thus, applications can directly use their own IP addresses for east-west and north-south communications.
 
 There are two typical scenarios for underlay network solutions：clusters deployed on a "legacy network" and clusters deployed on an IAAS environment, such as a public cloud. The following summarizes the IPAM characteristics of the "legacy network scenario":
 
@@ -132,7 +132,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Automatic implementation of static IP addresses and dynamic scalability of IP count
 
-    To realize static IP addresses, current open source projects hardcode IP addresses in the application's annotation, which leads to prone to operations accidents, manual operations of IP address conflicts as well as higher IP management costs caused by application scalability.
+    To realize static IP addresses, current open source projects hardcode IP addresses in the application's annotation, which leads too prone to operations accidents, manual operations of IP address conflicts as well as higher IP management costs caused by application scalability.
     Spiderpool provides CRD-based management to solve the above problems and minimize operation efforts.
 
     For stateless applications, the IP address range can be automatically fixed and IP resources can be dynamically scaled according to the number of application replicas. See [example](./docs/usage/????) for more details.

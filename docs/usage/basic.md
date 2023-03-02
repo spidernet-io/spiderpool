@@ -72,7 +72,7 @@ The following is an example configuration of [macvlan CNI](https://www.cni.dev/p
 
 ## Create an IPPool
 
-Next, let's try to create an custom IPPool:
+Next, let's try to create a custom IPPool:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml

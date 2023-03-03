@@ -252,7 +252,6 @@ func initControllerServiceManagers(ctx context.Context) {
 		workloadendpointmanager.EndpointManagerConfig{
 			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
 			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-			MaxHistoryRecords:     &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords,
 		},
 		controllerContext.CRDManager.GetClient(),
 	)

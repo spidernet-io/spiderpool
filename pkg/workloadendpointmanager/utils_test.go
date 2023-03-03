@@ -6,10 +6,10 @@ package workloadendpointmanager_test
 import (
 	"fmt"
 
-	"github.com/moby/moby/pkg/stringid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -23,7 +23,7 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 	BeforeEach(func() {
 		endpointT = &spiderpoolv1.SpiderEndpoint{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       constant.SpiderEndpointKind,
+				Kind:       constant.KindSpiderEndpoint,
 				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -36,16 +36,16 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 
 	Describe("Test RetrieveIPAllocation", func() {
 		var nic1, nic2 string
-		var containerID string
+		var uid string
 		var allocationT *spiderpoolv1.PodIPAllocation
 
 		BeforeEach(func() {
 			nic1 = "eth0"
 			nic2 = "net1"
 
-			containerID = stringid.GenerateRandomID()
+			uid = string(uuid.NewUUID())
 			allocationT = &spiderpoolv1.PodIPAllocation{
-				ContainerID: containerID,
+				UID: uid,
 				IPs: []spiderpoolv1.IPAllocationDetail{
 					{
 						NIC:      nic1,
@@ -64,29 +64,27 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 		})
 
 		It("inputs nil Endpoint", func() {
-			allocation := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, nil)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, nil)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves the IP allocation but the current record is nil", func() {
-			allocation := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves non-existent current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
-			allocation := workloadendpointmanager.RetrieveIPAllocation(stringid.GenerateRandomID(), nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves the current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
-			allocation := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT)
 			Expect(allocation).To(Equal(allocationT))
 		})
 	})
-
-	PDescribe("Test ListAllHistoricalIPs", func() {})
 })

@@ -15,6 +15,7 @@ import (
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 var (
@@ -103,6 +104,11 @@ func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 }
 
 func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
+	if err != nil {
+		return field.InternalError(ipsField, fmt.Errorf("failed to unmarshal the allocated IP records of IPPool %s: %v", ipPool.Name, err))
+	}
+
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
@@ -113,7 +119,7 @@ func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 		totalIPsMap[ip.String()] = true
 	}
 
-	for ip, allocation := range ipPool.Status.AllocatedIPs {
+	for ip, allocation := range allocatedRecords {
 		if _, ok := totalIPsMap[ip]; !ok {
 			return field.Forbidden(
 				ipsField,
@@ -216,6 +222,14 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		return err
 	}
 
+	newIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	if err != nil {
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
+	}
+	if len(newIPs) == 0 {
+		return nil
+	}
+
 	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
 	if err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err))
@@ -229,11 +243,6 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		client.MatchingLabels{constant.LabelIPPoolCIDR: cidr},
 	); err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to list IPPools: %v", err))
-	}
-
-	newIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
-	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
 	}
 
 	for _, pool := range ipPoolList.Items {

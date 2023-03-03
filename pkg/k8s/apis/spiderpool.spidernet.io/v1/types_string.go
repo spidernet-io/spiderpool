@@ -84,15 +84,8 @@ func (in *WorkloadEndpointStatus) String() string {
 		return "nil"
 	}
 
-	repeatedStringForHistory := "[]History{"
-	for _, f := range in.History {
-		repeatedStringForHistory += strings.Replace(strings.Replace(f.String(), "History", "History", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForHistory += "}"
-
 	s := strings.Join([]string{`&WorkloadEndpointStatus{`,
 		`Current:` + fmt.Sprintf("%v", in.Current) + `,`,
-		`History:` + repeatedStringForHistory + `,`,
 		`OwnerControllerType:` + fmt.Sprintf("%v", in.OwnerControllerType) + `,`,
 		`OwnerControllerName` + fmt.Sprintf("%v", in.OwnerControllerName) + `,`,
 		`}`,

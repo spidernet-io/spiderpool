@@ -19,8 +19,8 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 type WorkloadEndpointManager interface {
@@ -28,11 +28,8 @@ type WorkloadEndpointManager interface {
 	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
 	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
-	MarkIPAllocation(ctx context.Context, containerID string, pod *corev1.Pod, podController types.PodTopController) (*spiderpoolv1.SpiderEndpoint, error)
-	ReMarkIPAllocation(ctx context.Context, containerID string, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) error
-	PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, endpoint *spiderpoolv1.SpiderEndpoint) error
-	ClearCurrentIPAllocation(ctx context.Context, containerID string, endpoint *spiderpoolv1.SpiderEndpoint) error
-	ReallocateCurrentIPAllocation(ctx context.Context, containerID, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error
+	PatchIPAllocationResults(ctx context.Context, containerID string, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
+	ReallocateCurrentIPAllocation(ctx context.Context, containerID, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error
 }
 
 type workloadEndpointManager struct {
@@ -78,6 +75,7 @@ func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint 
 }
 
 func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i <= em.config.MaxConflictRetries; i++ {
 		endpoint, err := em.GetEndpointByName(ctx, namespace, podName)
 		if err != nil {
@@ -96,7 +94,7 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 			if i == em.config.MaxConflictRetries {
 				return fmt.Errorf("%w (%d times), failed to remove finalizer %s from Endpoint %s/%s", constant.ErrRetriesExhausted, em.config.MaxConflictRetries, constant.SpiderFinalizer, namespace, podName)
 			}
-			time.Sleep(time.Duration(rand.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)
+			time.Sleep(time.Duration(r.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)
 			continue
 		}
 		break
@@ -105,162 +103,71 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 	return nil
 }
 
-func (em *workloadEndpointManager) MarkIPAllocation(ctx context.Context, containerID string, pod *corev1.Pod, podController types.PodTopController) (*spiderpoolv1.SpiderEndpoint, error) {
-	if pod == nil {
-		return nil, fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
-	}
-
-	logger := logutils.FromContext(ctx)
-
-	endpoint := &spiderpoolv1.SpiderEndpoint{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      pod.Name,
-			Namespace: pod.Namespace,
-		},
-	}
-
-	// Do not set ownerReference for Endpoint when its corresponding Pod is
-	// controlled by StatefulSet. Once the Pod of StatefulSet is recreated,
-	// we can immediately retrieve the old IP allocation results from the
-	// Endpoint without worrying about the cascading deletion of the Endpoint.
-	if podController.Kind != constant.KindStatefulSet {
-		if err := controllerutil.SetOwnerReference(pod, endpoint, em.config.scheme); err != nil {
-			return nil, err
-		}
-	}
-	controllerutil.AddFinalizer(endpoint, constant.SpiderFinalizer)
-
-	logger.Sugar().Debugf("Create a new Endpoint %s/%s", endpoint.Namespace, endpoint.Name)
-	if err := em.client.Create(ctx, endpoint); err != nil {
-		return nil, err
-	}
-
-	allocation := &spiderpoolv1.PodIPAllocation{
-		ContainerID:  containerID,
-		Node:         &pod.Spec.NodeName,
-		CreationTime: &metav1.Time{Time: time.Now()},
-	}
-
-	endpoint.Status.Current = allocation
-	endpoint.Status.History = []spiderpoolv1.PodIPAllocation{*allocation}
-	endpoint.Status.OwnerControllerType = podController.Kind
-	endpoint.Status.OwnerControllerName = podController.Name
-
-	logger.Sugar().Debugf("Update the current container ID of the new Endpoint %s/%s", endpoint.Namespace, endpoint.Name)
-	if err := em.client.Status().Update(ctx, endpoint); err != nil {
-		return nil, err
-	}
-
-	return endpoint, nil
-}
-
-func (em *workloadEndpointManager) ReMarkIPAllocation(ctx context.Context, containerID string, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod) error {
+func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, containerID string, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error {
 	if pod == nil {
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
 	}
-	if endpoint == nil {
-		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
-	}
-
-	logger := logutils.FromContext(ctx)
-
-	// Create -> Delete -> Create a Pod with the same namespace and name in
-	// a short time will cause some unexpected phenomena discussed in
-	// https://github.com/spidernet-io/spiderpool/issues/1187.
-	if endpoint.DeletionTimestamp != nil {
-		// We can use GVK + Pod name (Same name as Endpoint) for more accurate
-		// judgment, but this is unnecessary at present, because Endpoint has
-		// only one Owner.
-		ownerPod := endpoint.GetOwnerReferences()[0]
-		// Beware of deleting the normal Endpoint manually.
-		if ownerPod.UID != pod.GetUID() {
-			return fmt.Errorf("currently, the IP addresses of the Pod %s/%s (uid: %s) is being recycled. You may create two Pods with the same namespace and name in a very short time", endpoint.Namespace, ownerPod.Name, string(ownerPod.UID))
-		}
-	}
-
-	if endpoint.Status.Current != nil && endpoint.Status.Current.ContainerID == containerID {
-		return nil
-	}
 
 	allocation := &spiderpoolv1.PodIPAllocation{
 		ContainerID:  containerID,
-		Node:         &pod.Spec.NodeName,
+		UID:          string(pod.UID),
+		Node:         pod.Spec.NodeName,
+		IPs:          convert.ConvertResultsToIPDetails(results),
 		CreationTime: &metav1.Time{Time: time.Now()},
 	}
 
+	if endpoint == nil {
+		endpoint = &spiderpoolv1.SpiderEndpoint{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      pod.Name,
+				Namespace: pod.Namespace,
+			},
+			Status: spiderpoolv1.WorkloadEndpointStatus{
+				Current:             allocation,
+				OwnerControllerType: podController.Kind,
+				OwnerControllerName: podController.Name,
+			},
+		}
+
+		// Do not set ownerReference for Endpoint when its corresponding Pod is
+		// controlled by StatefulSet. Once the Pod of StatefulSet is recreated,
+		// we can immediately retrieve the old IP allocation results from the
+		// Endpoint without worrying about the cascading deletion of the Endpoint.
+		if podController.Kind != constant.KindStatefulSet {
+			if err := controllerutil.SetOwnerReference(pod, endpoint, em.config.scheme); err != nil {
+				return err
+			}
+		}
+		controllerutil.AddFinalizer(endpoint, constant.SpiderFinalizer)
+		return em.client.Create(ctx, endpoint)
+	}
+
+	if endpoint.Status.Current != nil && endpoint.Status.Current.UID == string(pod.UID) {
+		return nil
+	}
+
 	endpoint.Status.Current = allocation
-	endpoint.Status.History = append([]spiderpoolv1.PodIPAllocation{*allocation}, endpoint.Status.History...)
-	if len(endpoint.Status.History) > *em.config.MaxHistoryRecords {
-		logger.Sugar().Warnf("threshold of historical IP allocation records(<=%d) exceeded", em.config.MaxHistoryRecords)
-		endpoint.Status.History = endpoint.Status.History[:*em.config.MaxHistoryRecords]
-	}
-
-	logger.Sugar().Debugf("Change the current container ID of the Endpoint %s/%s", endpoint.Namespace, endpoint.Name)
-
-	return em.client.Status().Update(ctx, endpoint)
+	return em.client.Update(ctx, endpoint)
 }
 
-func (em *workloadEndpointManager) PatchIPAllocation(ctx context.Context, allocation *spiderpoolv1.PodIPAllocation, endpoint *spiderpoolv1.SpiderEndpoint) error {
-	if endpoint == nil {
-		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
-	}
-
-	if allocation == nil {
-		return fmt.Errorf("allocation %w", constant.ErrMissingRequiredParam)
-	}
-
-	if endpoint.Status.Current == nil {
-		return errors.New("patch a unmarked Endpoint")
-	}
-
-	if len(endpoint.Status.History) == 0 ||
-		endpoint.Status.History[0].ContainerID != endpoint.Status.Current.ContainerID {
-		return errors.New("data of the Endpoint is corrupt")
-	}
-
-	if endpoint.Status.Current.ContainerID != allocation.ContainerID {
-		return errors.New("patch a mismarked Endpoint")
-	}
-
-	endpoint.Status.Current.IPs = allocation.IPs
-	endpoint.Status.History = append([]spiderpoolv1.PodIPAllocation{*endpoint.Status.Current}, endpoint.Status.History...)
-
-	return em.client.Status().Update(ctx, endpoint)
-}
-
-func (em *workloadEndpointManager) ClearCurrentIPAllocation(ctx context.Context, containerID string, endpoint *spiderpoolv1.SpiderEndpoint) error {
-	if endpoint == nil || endpoint.Status.Current == nil {
-		return nil
-	}
-
-	if endpoint.Status.Current.ContainerID != containerID {
-		return nil
-	}
-
-	endpoint.Status.Current = nil
-	if err := em.client.Status().Update(ctx, endpoint); err != nil {
-		return client.IgnoreNotFound(err)
-	}
-
-	return nil
-}
-
-func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, containerID, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, containerID, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
 	}
 
 	if endpoint.Status.Current == nil {
-		return errors.New("must be allocated befroe re-allocation")
+		return errors.New("data is broken, Endpoint doesn't have current IP allocation")
 	}
 
-	if endpoint.Status.Current.ContainerID == containerID {
+	if endpoint.Status.Current.ContainerID == containerID &&
+		endpoint.Status.Current.UID == uid &&
+		endpoint.Status.Current.Node == nodeName {
 		return nil
 	}
 
 	endpoint.Status.Current.ContainerID = containerID
-	*endpoint.Status.Current.Node = nodeName
-	endpoint.Status.History = append([]spiderpoolv1.PodIPAllocation{*endpoint.Status.Current}, endpoint.Status.History...)
+	endpoint.Status.Current.UID = uid
+	endpoint.Status.Current.Node = nodeName
 
-	return em.client.Status().Update(ctx, endpoint)
+	return em.client.Update(ctx, endpoint)
 }

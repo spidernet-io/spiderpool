@@ -150,15 +150,17 @@ definitions:
     description: IPAM request args
     type: object
     properties:
-      podNamespace:
-        type: string
-      podName:
-        type: string
       containerID:
         type: string
       ifName:
         type: string
       netNamespace:
+        type: string
+      podNamespace:
+        type: string
+      podName:
+        type: string
+      podUID:
         type: string
       defaultIPv4IPPool:
         type: array
@@ -171,11 +173,12 @@ definitions:
       cleanGateway:
         type: boolean
     required:
-      - podNamespace
-      - podName
       - containerID
       - ifName
       - netNamespace
+      - podNamespace
+      - podName
+      - podUID
   IpamAddResponse:
     description: IPAM assignment IPs information
     type: object
@@ -201,17 +204,20 @@ definitions:
         type: string
       ifName:
         type: string
+      netNamespace:
+        type: string
       podNamespace:
         type: string
       podName:
         type: string
-      netNamespace:
+      podUID:
         type: string
     required:
       - containerID
       - ifName
       - podNamespace
       - podName
+      - podUID
   DNS:
     description: IPAM CNI types DNS
     type: object

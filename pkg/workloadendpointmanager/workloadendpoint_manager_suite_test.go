@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -42,7 +41,6 @@ var _ = BeforeSuite(func() {
 	endpointManager, err = workloadendpointmanager.NewWorkloadEndpointManager(
 		workloadendpointmanager.EndpointManagerConfig{
 			MaxConflictRetries: 1,
-			MaxHistoryRecords:  pointer.Int(1),
 		},
 		fakeClient,
 	)

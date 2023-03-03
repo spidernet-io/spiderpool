@@ -255,34 +255,7 @@ spec:
                 minimum: 0
                 type: integer
               allocatedIPs:
-                additionalProperties:
-                  properties:
-                    containerID:
-                      type: string
-                    interface:
-                      type: string
-                    namespace:
-                      type: string
-                    node:
-                      type: string
-                    ownerControllerName:
-                      type: string
-                    ownerControllerType:
-                      type: string
-                    pod:
-                      type: string
-                  required:
-                  - containerID
-                  - interface
-                  - namespace
-                  - node
-                  - ownerControllerName
-                  - ownerControllerType
-                  - pod
-                  type: object
-                description: PoolIPAllocations is a map of IP allocation details indexed
-                  by IP address.
-                type: object
+                type: string
               autoDesiredIPCount:
                 format: int64
                 minimum: 0

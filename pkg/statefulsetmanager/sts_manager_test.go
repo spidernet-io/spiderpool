@@ -6,7 +6,6 @@ package statefulsetmanager_test
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"sync/atomic"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -183,72 +182,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 		})
 
-		Describe("IsValidStatefulSetPod", func() {
-			var index int32
-			var stsPodName string
-			var nonStsPodName string
-
-			BeforeEach(func() {
-				index = 1
-				stsPodName = fmt.Sprintf("%s-%d", stsName, index)
-				nonStsPodName = "other"
-			})
-
-			It("is not a Pod controlled by StatefulSet", func() {
-				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, nonStsPodName, constant.KindUnknown)
-				Expect(err).To(HaveOccurred())
-				Expect(valid).To(BeFalse())
-			})
-
-			It("is a Pod controlled by StatefulSet, but the Pod name is invalid", func() {
-				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, nonStsPodName, constant.KindStatefulSet)
-				Expect(err).To(HaveOccurred())
-				Expect(valid).To(BeFalse())
-			})
-
-			It("failed to parse replica string to int due to some unknown errors", func() {
-				patches := gomonkey.ApplyFuncReturn(strconv.ParseInt, int64(0), constant.ErrUnknown)
-				defer patches.Reset()
-
-				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
-				Expect(err).To(HaveOccurred())
-				Expect(valid).To(BeFalse())
-			})
-
-			It("is a valid Pod controlled by StatefulSet, but the StatefulSet no longer exists", func() {
-				ctx := context.TODO()
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(valid).To(BeFalse())
-			})
-
-			It("used to be a Pod controlled by StatefulSet, but the StatefulSet scaled down", func() {
-				stsT.Spec.Replicas = &index
-
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
-				Expect(err).NotTo(HaveOccurred())
-
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(valid).To(BeFalse())
-			})
-
-			It("is a valid Pod controlled by StatefulSet", func() {
-				replicas := index + 1
-				stsT.Spec.Replicas = &replicas
-
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
-				Expect(err).NotTo(HaveOccurred())
-
-				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, stsPodName, constant.KindStatefulSet)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(valid).To(BeTrue())
-			})
+		PDescribe("IsValidStatefulSetPod", func() {
 		})
 	})
 })

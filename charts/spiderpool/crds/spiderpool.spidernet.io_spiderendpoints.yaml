@@ -118,64 +118,13 @@ spec:
                     type: array
                   node:
                     type: string
+                  uid:
+                    type: string
                 required:
                 - containerID
+                - node
+                - uid
                 type: object
-              history:
-                items:
-                  properties:
-                    containerID:
-                      type: string
-                    creationTime:
-                      format: date-time
-                      type: string
-                    ips:
-                      items:
-                        properties:
-                          cleanGateway:
-                            type: boolean
-                          interface:
-                            type: string
-                          ipv4:
-                            type: string
-                          ipv4Gateway:
-                            type: string
-                          ipv4Pool:
-                            type: string
-                          ipv6:
-                            type: string
-                          ipv6Gateway:
-                            type: string
-                          ipv6Pool:
-                            type: string
-                          routes:
-                            items:
-                              properties:
-                                dst:
-                                  type: string
-                                gw:
-                                  type: string
-                              required:
-                              - dst
-                              - gw
-                              type: object
-                            type: array
-                          vlan:
-                            default: 0
-                            format: int64
-                            maximum: 4095
-                            minimum: 0
-                            type: integer
-                        required:
-                        - interface
-                        type: object
-                      type: array
-                    node:
-                      type: string
-                  required:
-                  - containerID
-                  type: object
-                type: array
               ownerControllerName:
                 type: string
               ownerControllerType:
@@ -187,8 +136,7 @@ spec:
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}
+    subresources: {}
 status:
   acceptedNames:
     kind: ""

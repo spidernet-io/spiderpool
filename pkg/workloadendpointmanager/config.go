@@ -11,26 +11,16 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
-const (
-	defaultMaxHistoryRecords = 100
-)
-
 type EndpointManagerConfig struct {
 	MaxConflictRetries    int
 	ConflictRetryUnitTime time.Duration
 	scheme                *runtime.Scheme
-	MaxHistoryRecords     *int
 }
 
 func setDefaultsForEndpointManagerConfig(config EndpointManagerConfig) EndpointManagerConfig {
 	if config.scheme == nil {
 		config.scheme = runtime.NewScheme()
 		utilruntime.Must(corev1.AddToScheme(config.scheme))
-	}
-
-	if config.MaxHistoryRecords == nil {
-		maxHistoryRecords := defaultMaxHistoryRecords
-		config.MaxHistoryRecords = &maxHistoryRecords
 	}
 
 	return config

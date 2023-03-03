@@ -11,13 +11,18 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-// Set up logging for spiderpool plugin
+// Set up file logging for spiderpool bin.
 func setupFileLogging(conf *NetConf) (*zap.Logger, error) {
 	v := logutils.ConvertLogLevel(conf.IPAM.LogLevel)
 	if v == nil {
-		return nil, fmt.Errorf("wrong log level %s ", conf.IPAM.LogLevel)
+		return nil, fmt.Errorf("unsupported log level %s", conf.IPAM.LogLevel)
 	}
 
-	return logutils.InitFileLogger(*v, conf.IPAM.LogFilePath,
-		conf.IPAM.LogFileMaxSize, conf.IPAM.LogFileMaxAge, conf.IPAM.LogFileMaxCount)
+	return logutils.InitFileLogger(
+		*v,
+		conf.IPAM.LogFilePath,
+		conf.IPAM.LogFileMaxSize,
+		conf.IPAM.LogFileMaxAge,
+		conf.IPAM.LogFileMaxCount,
+	)
 }

@@ -12,9 +12,6 @@ type WorkloadEndpointStatus struct {
 	// +kubebuilder:validation:Optional
 	Current *PodIPAllocation `json:"current,omitempty"`
 
-	// +kubebuilder:validation:Optional
-	History []PodIPAllocation `json:"history,omitempty"`
-
 	// +kubebuilder:validation:Required
 	OwnerControllerType string `json:"ownerControllerType"`
 
@@ -26,8 +23,11 @@ type PodIPAllocation struct {
 	// +kubebuilder:validation:Required
 	ContainerID string `json:"containerID"`
 
-	// +kubebuilder:validation:Optional
-	Node *string `json:"node,omitempty"`
+	// +kubebuilder:validation:Required
+	UID string `json:"uid"`
+
+	// +kubebuilder:validation:Required
+	Node string `json:"node"`
 
 	// +kubebuilder:validation:Optional
 	IPs []IPAllocationDetail `json:"ips,omitempty"`
@@ -80,7 +80,6 @@ type IPAllocationDetail struct {
 // +kubebuilder:printcolumn:JSONPath=".status.current.node",description="node",name="NODE",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.creationTime",description="creationTime",name="CREATETION TIME",type=date
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 
 // Spiderndpoint is the Schema for the spiderendpoints API.
 type SpiderEndpoint struct {

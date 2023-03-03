@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -295,10 +293,10 @@ func (ic *IPPoolController) updateSpiderIPPool(oldIPPool, currentIPPool *spiderp
 
 	// If the auto-created IPPool's current IP number is not equal with the desired IP number, we'll try to scale it.
 	// If its allocated IPs are empty, we will check whether the IPPool should be deleted or not.
-	if ShouldScaleIPPool(currentIPPool) || len(currentIPPool.Status.AllocatedIPs) == 0 {
-		log.Debug("try to add IPPool to IPPool workqueue to scale or delete itself")
-		ic.enqueueIPPool(currentIPPool)
-	}
+	// if ShouldScaleIPPool(currentIPPool) || len(currentIPPool.Status.AllocatedIPs) == 0 {
+	// 	log.Debug("try to add IPPool to IPPool workqueue to scale or delete itself")
+	// 	ic.enqueueIPPool(currentIPPool)
+	// }
 
 	return nil
 }
@@ -504,30 +502,30 @@ func (ic *IPPoolController) scaleIPPoolIfNeeded(ctx context.Context, pool *spide
 	} else {
 		// shrink: free IP number >= return IP Num
 		// when it needs to scale down IP, enough IP is released to make sure it scale down successfully
-		if totalIPCount-len(pool.Status.AllocatedIPs) >= totalIPCount-desiredIPNum {
-			var allocatedIPRanges []string
-			for tmpIP := range pool.Status.AllocatedIPs {
-				allocatedIPRanges = append(allocatedIPRanges, tmpIP)
-			}
+		// if totalIPCount-len(pool.Status.AllocatedIPs) >= totalIPCount-desiredIPNum {
+		// 	var allocatedIPRanges []string
+		// 	for tmpIP := range pool.Status.AllocatedIPs {
+		// 		allocatedIPRanges = append(allocatedIPRanges, tmpIP)
+		// 	}
 
-			allocatedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, allocatedIPRanges)
-			if nil != err {
-				return fmt.Errorf("%w: failed to parse IP ranges '%v', error: %v", constant.ErrWrongInput, allocatedIPRanges, err)
-			}
-			freeIPs := spiderpoolip.IPsDiffSet(totalIPs, allocatedIPs, true)
-			discardedIPs := freeIPs[:totalIPCount-desiredIPNum]
-			discardedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, discardedIPs)
-			if nil != err {
-				return fmt.Errorf("%w: failed to convert IPs '%v' to IP ranges, error: %v", constant.ErrWrongInput, discardedIPs, err)
-			}
+		// 	allocatedIPs, err := spiderpoolip.ParseIPRanges(*pool.Spec.IPVersion, allocatedIPRanges)
+		// 	if nil != err {
+		// 		return fmt.Errorf("%w: failed to parse IP ranges '%v', error: %v", constant.ErrWrongInput, allocatedIPRanges, err)
+		// 	}
+		// 	freeIPs := spiderpoolip.IPsDiffSet(totalIPs, allocatedIPs, true)
+		// 	discardedIPs := freeIPs[:totalIPCount-desiredIPNum]
+		// 	discardedIPRanges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, discardedIPs)
+		// 	if nil != err {
+		// 		return fmt.Errorf("%w: failed to convert IPs '%v' to IP ranges, error: %v", constant.ErrWrongInput, discardedIPs, err)
+		// 	}
 
-			informerLogger.Sugar().Infof("try to scale IPPool '%s' IP number from '%d' to '%d' with discarded IPs '%v'", pool.Name, totalIPCount, desiredIPNum, discardedIPs)
-			// the IPPool webhook will automatically return the released IP back to SpiderSubnet
-			err = ic.scaleIPPoolWithIPs(logutils.IntoContext(ctx, informerLogger), pool, discardedIPRanges, false, desiredIPNum)
-			if nil != err {
-				return fmt.Errorf("failed to shrink IPPool '%s' with IPs '%v': %w", pool.Name, discardedIPs, err)
-			}
-		}
+		// 	informerLogger.Sugar().Infof("try to scale IPPool '%s' IP number from '%d' to '%d' with discarded IPs '%v'", pool.Name, totalIPCount, desiredIPNum, discardedIPs)
+		// 	// the IPPool webhook will automatically return the released IP back to SpiderSubnet
+		// 	err = ic.scaleIPPoolWithIPs(logutils.IntoContext(ctx, informerLogger), pool, discardedIPRanges, false, desiredIPNum)
+		// 	if nil != err {
+		// 		return fmt.Errorf("failed to shrink IPPool '%s' with IPs '%v': %w", pool.Name, discardedIPs, err)
+		// 	}
+		// }
 	}
 
 	return nil
@@ -541,72 +539,72 @@ func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spi
 
 	// Once an application was deleted we can make sure that the corresponding IPPool's IPs will be cleaned up because we have IP GC.
 	// If the IPPool is cleaned, we'll check whether the IPPool's corresponding application is existed or not and process it.
-	if len(pool.Status.AllocatedIPs) == 0 {
-		poolLabels := pool.GetLabels()
+	// if len(pool.Status.AllocatedIPs) == 0 {
+	// 	poolLabels := pool.GetLabels()
 
-		// check the label and decide to delete the IPPool or not
-		isReclaim := poolLabels[constant.LabelIPPoolReclaimIPPool]
-		if isReclaim != constant.True {
-			return false, nil
-		}
+	// 	// check the label and decide to delete the IPPool or not
+	// 	isReclaim := poolLabels[constant.LabelIPPoolReclaimIPPool]
+	// 	if isReclaim != constant.True {
+	// 		return false, nil
+	// 	}
 
-		// unpack the IPPool corresponding application type,namespace and name
-		appLabelValue := poolLabels[constant.LabelIPPoolOwnerApplication]
-		kind, ns, name, found := subnetmanagercontrollers.ParseAppLabelValue(appLabelValue)
-		if !found {
-			return false, fmt.Errorf("%w: invalid IPPool label '%s' value '%s'", constant.ErrWrongInput, constant.LabelIPPoolOwnerApplication, appLabelValue)
-		}
+	// 	// unpack the IPPool corresponding application type,namespace and name
+	// 	appLabelValue := poolLabels[constant.LabelIPPoolOwnerApplication]
+	// 	kind, ns, name, found := subnetmanagercontrollers.ParseAppLabelValue(appLabelValue)
+	// 	if !found {
+	// 		return false, fmt.Errorf("%w: invalid IPPool label '%s' value '%s'", constant.ErrWrongInput, constant.LabelIPPoolOwnerApplication, appLabelValue)
+	// 	}
 
-		var object client.Object
-		switch kind {
-		case constant.KindDeployment:
-			object = &appsv1.Deployment{}
-		case constant.KindReplicaSet:
-			object = &appsv1.ReplicaSet{}
-		case constant.KindDaemonSet:
-			object = &appsv1.DaemonSet{}
-		case constant.KindStatefulSet:
-			object = &appsv1.StatefulSet{}
-		case constant.KindJob:
-			object = &batchv1.Job{}
-		case constant.KindCronJob:
-			object = &batchv1.CronJob{}
-		default:
-			// pod and other controllers will clean up legacy ippools in IPAM
-			return false, nil
-		}
+	// 	var object client.Object
+	// 	switch kind {
+	// 	case constant.KindDeployment:
+	// 		object = &appsv1.Deployment{}
+	// 	case constant.KindReplicaSet:
+	// 		object = &appsv1.ReplicaSet{}
+	// 	case constant.KindDaemonSet:
+	// 		object = &appsv1.DaemonSet{}
+	// 	case constant.KindStatefulSet:
+	// 		object = &appsv1.StatefulSet{}
+	// 	case constant.KindJob:
+	// 		object = &batchv1.Job{}
+	// 	case constant.KindCronJob:
+	// 		object = &batchv1.CronJob{}
+	// 	default:
+	// 		// pod and other controllers will clean up legacy ippools in IPAM
+	// 		return false, nil
+	// 	}
 
-		enableDelete := false
+	// 	enableDelete := false
 
-		// check the IPPool's corresponding application whether is existed or not
-		informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%s/%s/%s'", pool.Name, kind, ns, name)
-		err = ic.client.Get(ctx, apitypes.NamespacedName{Namespace: ns, Name: name}, object)
-		if nil != err {
-			// if the application is no longer exist, we should delete the IPPool
-			if apierrors.IsNotFound(err) {
-				informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%s/%s/%s' is no longer exist, try to gc IPPool",
-					pool.Name, kind, ns, name)
-				enableDelete = true
-			} else {
-				return false, err
-			}
-		} else {
-			// mismatch application UID
-			if string(object.GetUID()) != poolLabels[constant.LabelIPPoolOwnerApplicationUID] {
-				enableDelete = true
-				informerLogger.Sugar().Warnf("auto-created IPPool '%v' mismatches application '%s/%s/%s' UID '%s', try to gc IPPool",
-					pool, kind, ns, name, object.GetUID())
-			}
-		}
+	// 	// check the IPPool's corresponding application whether is existed or not
+	// 	informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%s/%s/%s'", pool.Name, kind, ns, name)
+	// 	err = ic.client.Get(ctx, apitypes.NamespacedName{Namespace: ns, Name: name}, object)
+	// 	if nil != err {
+	// 		// if the application is no longer exist, we should delete the IPPool
+	// 		if apierrors.IsNotFound(err) {
+	// 			informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%s/%s/%s' is no longer exist, try to gc IPPool",
+	// 				pool.Name, kind, ns, name)
+	// 			enableDelete = true
+	// 		} else {
+	// 			return false, err
+	// 		}
+	// 	} else {
+	// 		// mismatch application UID
+	// 		if string(object.GetUID()) != poolLabels[constant.LabelIPPoolOwnerApplicationUID] {
+	// 			enableDelete = true
+	// 			informerLogger.Sugar().Warnf("auto-created IPPool '%v' mismatches application '%s/%s/%s' UID '%s', try to gc IPPool",
+	// 				pool, kind, ns, name, object.GetUID())
+	// 		}
+	// 	}
 
-		if enableDelete {
-			err := ic.client.Delete(ctx, pool)
-			if client.IgnoreNotFound(err) != nil {
-				return true, err
-			}
-			return true, nil
-		}
-	}
+	// 	if enableDelete {
+	// 		err := ic.client.Delete(ctx, pool)
+	// 		if client.IgnoreNotFound(err) != nil {
+	// 			return true, err
+	// 		}
+	// 		return true, nil
+	// 	}
+	// }
 
 	return false, nil
 }
@@ -648,18 +646,18 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv1
 func (ic *IPPoolController) syncHandleAllIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	if pool.DeletionTimestamp != nil {
 		// remove finalizer to delete the dying IPPool when the IPPool is no longer being used
-		if len(pool.Status.AllocatedIPs) == 0 {
-			err := ic.removeFinalizer(ctx, pool)
-			if nil != err {
-				if apierrors.IsNotFound(err) {
-					informerLogger.Sugar().Debugf("SpiderIPPool '%s' is already deleted", pool.Name)
-					return nil
-				}
-				return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer: %w", pool.Name, err)
-			}
+		// if len(pool.Status.AllocatedIPs) == 0 {
+		// 	err := ic.removeFinalizer(ctx, pool)
+		// 	if nil != err {
+		// 		if apierrors.IsNotFound(err) {
+		// 			informerLogger.Sugar().Debugf("SpiderIPPool '%s' is already deleted", pool.Name)
+		// 			return nil
+		// 		}
+		// 		return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer: %w", pool.Name, err)
+		// 	}
 
-			informerLogger.Sugar().Infof("remove SpiderIPPool '%s' finalizer successfully", pool.Name)
-		}
+		// 	informerLogger.Sugar().Infof("remove SpiderIPPool '%s' finalizer successfully", pool.Name)
+		// }
 	} else {
 		needUpdate := false
 
@@ -707,14 +705,14 @@ func (ic *IPPoolController) syncSubnetIPPools(obj interface{}) {
 		return
 	}
 
-	for _, pool := range ipPools {
-		// If the auto-created IPPool's current IP number is not equal with the desired IP number, we'll try to scale it.
-		// If its allocated IPs are empty, we will check whether the IPPool should be deleted or not.
-		if ShouldScaleIPPool(pool) || len(pool.Status.AllocatedIPs) == 0 {
-			informerLogger.Sugar().Debugf("try to add IPPool %s to resync with SpiderSubnet %s", pool.Name, subnet.Name)
-			ic.enqueueIPPool(pool)
-		}
-	}
+	// for _, pool := range ipPools {
+	// 	// If the auto-created IPPool's current IP number is not equal with the desired IP number, we'll try to scale it.
+	// 	// If its allocated IPs are empty, we will check whether the IPPool should be deleted or not.
+	// 	if ShouldScaleIPPool(pool) || len(pool.Status.AllocatedIPs) == 0 {
+	// 		informerLogger.Sugar().Debugf("try to add IPPool %s to resync with SpiderSubnet %s", pool.Name, subnet.Name)
+	// 		ic.enqueueIPPool(pool)
+	// 	}
+	// }
 	event.EventRecorder.Event(subnet, corev1.EventTypeNormal, constant.EventReasonResyncSubnet, "Resynced successfully")
 }
 

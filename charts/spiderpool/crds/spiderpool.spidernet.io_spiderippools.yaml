@@ -37,7 +37,7 @@ spec:
       name: TOTAL-IP-COUNT
       type: integer
     - description: default
-      jsonPath: .status.default
+      jsonPath: .spec.default
       name: DEFAULT
       type: boolean
     - description: disable
@@ -64,6 +64,9 @@ spec:
           spec:
             description: IPPoolSpec defines the desired state of SpiderIPPool.
             properties:
+              default:
+                default: false
+                type: boolean
               disable:
                 default: false
                 type: boolean
@@ -260,9 +263,6 @@ spec:
                 format: int64
                 minimum: 0
                 type: integer
-              default:
-                default: false
-                type: boolean
               totalIPCount:
                 format: int64
                 minimum: 0

@@ -37,7 +37,7 @@ spec:
       name: TOTAL-IP-COUNT
       type: integer
     - description: default
-      jsonPath: .status.default
+      jsonPath: .spec.default
       name: DEFAULT
       type: boolean
     name: v1
@@ -60,6 +60,9 @@ spec:
           spec:
             description: SubnetSpec defines the desired state of SpiderSubnet.
             properties:
+              default:
+                default: false
+                type: boolean
               excludeIPs:
                 items:
                   type: string
@@ -117,9 +120,6 @@ spec:
                 description: PoolIPPreAllocations is a map of pool IP pre-allocation
                   details indexed by pool name.
                 type: object
-              default:
-                default: false
-                type: boolean
               totalIPCount:
                 format: int64
                 minimum: 0

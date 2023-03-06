@@ -19,10 +19,6 @@ type IPPoolSpec struct {
 	// +kubebuilder:validation:Optional
 	IPs []string `json:"ips,omitempty"`
 
-	// +kubebuilder:default=false
-	// +kubebuilder:validation:Optional
-	Disable *bool `json:"disable,omitempty"`
-
 	// +kubebuilder:validation:Optional
 	ExcludeIPs []string `json:"excludeIPs,omitempty"`
 
@@ -46,6 +42,14 @@ type IPPoolSpec struct {
 
 	// +kubebuilder:validation:Optional
 	NodeAffinity *metav1.LabelSelector `json:"nodeAffinity,omitempty"`
+
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	Default *bool `json:"default,omitempty"`
+
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	Disable *bool `json:"disable,omitempty"`
 }
 
 type Route struct {
@@ -58,10 +62,6 @@ type Route struct {
 
 // IPPoolStatus defines the observed state of SpiderIPPool.
 type IPPoolStatus struct {
-	// +kubebuilder:default=false
-	// +kubebuilder:validation:Optional
-	Default *bool `json:"default,omitempty"`
-
 	// +kubebuilder:validation:Optional
 	AllocatedIPs *string `json:"allocatedIPs,omitempty"`
 
@@ -100,7 +100,7 @@ type PoolIPAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=".spec.subnet",description="subnet",name="SUBNET",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.allocatedIPCount",description="allocatedIPCount",name="ALLOCATED-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalIPCount",description="totalIPCount",name="TOTAL-IP-COUNT",type=integer
-// +kubebuilder:printcolumn:JSONPath=".status.default",description="default",name="DEFAULT",type=boolean
+// +kubebuilder:printcolumn:JSONPath=".spec.default",description="default",name="DEFAULT",type=boolean
 // +kubebuilder:printcolumn:JSONPath=".spec.disable",description="disable",name="DISABLE",type=boolean
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

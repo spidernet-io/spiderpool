@@ -130,7 +130,7 @@ func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubn
 	sc.IPPoolIndexer = ipPoolInformer.Informer().GetIndexer()
 	sc.SubnetsSynced = subnetInformer.Informer().HasSynced
 	sc.IPPoolsSynced = ipPoolInformer.Informer().HasSynced
-	sc.Workqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), constant.SpiderSubnetKind)
+	sc.Workqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), constant.KindSpiderSubnet)
 
 	subnetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    sc.enqueueSubnetOnAdd,
@@ -209,7 +209,7 @@ func (sc *SubnetController) run(ctx context.Context, workers int) error {
 	logger.Info("Starting Subnet informer")
 
 	logger.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForNamedCacheSync(constant.SpiderSubnetKind, ctx.Done(), sc.SubnetsSynced, sc.IPPoolsSynced); !ok {
+	if ok := cache.WaitForNamedCacheSync(constant.KindSpiderSubnet, ctx.Done(), sc.SubnetsSynced, sc.IPPoolsSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -399,7 +399,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 		}
 
 		// Record the metric of how many IPPools the Subnet has.
-		metric.SubnetPoolCounts.Record(int64(len(subnet.Status.ControlledIPPools)), attribute.String(constant.SpiderSubnetKind, subnet.Name))
+		metric.SubnetPoolCounts.Record(int64(len(subnet.Status.ControlledIPPools)), attribute.String(constant.KindSpiderSubnet, subnet.Name))
 	}
 
 	return nil

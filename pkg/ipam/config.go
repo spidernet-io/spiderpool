@@ -11,7 +11,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -26,7 +25,6 @@ type IPAMConfig struct {
 
 	OperationRetries     int
 	OperationGapDuration time.Duration
-	LimiterConfig        limiter.LimiterConfig
 }
 
 func setDefaultsForIPAMConfig(config IPAMConfig) IPAMConfig {
@@ -91,25 +89,25 @@ func (c *IPAMConfig) filterPoolMisspecified(ctx context.Context, t *ToBeAllocate
 	logger := logutils.FromContext(ctx)
 
 	var v4Count, v6Count int
-	var invalidPoolCandidates []*PoolCandidate
+	var validPoolCandidates []*PoolCandidate
 	for _, pc := range t.PoolCandidates {
 		if pc.IPVersion == constant.IPv4 && c.EnableIPv4 {
 			v4Count++
-			invalidPoolCandidates = append(invalidPoolCandidates, pc)
+			validPoolCandidates = append(validPoolCandidates, pc)
 		} else if pc.IPVersion == constant.IPv6 && c.EnableIPv6 {
 			v6Count++
-			invalidPoolCandidates = append(invalidPoolCandidates, pc)
+			validPoolCandidates = append(validPoolCandidates, pc)
 		} else {
 			logger.Sugar().Debugf("IPv%d is disabled, ignoring to allocate IPv%d IP to NIC %s from IPPool %v", pc.IPVersion, pc.IPVersion, t.NIC, pc.Pools)
 		}
 	}
-	t.PoolCandidates = invalidPoolCandidates
+	t.PoolCandidates = validPoolCandidates
 
 	if c.EnableIPv4 && v4Count == 0 {
-		return fmt.Errorf("%w, IPv4 is enabled, but no IPv4 IPPool for %s is specified", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w, IPv4 is enabled, but no IPv4 IPPool specified for NIC %s", constant.ErrWrongInput, t.NIC)
 	}
 	if c.EnableIPv6 && v6Count == 0 {
-		return fmt.Errorf("%w, IPv6 is enabled, but no IPv6 IPPool for %s is specified", constant.ErrWrongInput, t.NIC)
+		return fmt.Errorf("%w, IPv6 is enabled, but no IPv6 IPPool specified for NIC %s", constant.ErrWrongInput, t.NIC)
 	}
 
 	return nil

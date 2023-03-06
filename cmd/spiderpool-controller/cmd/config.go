@@ -18,10 +18,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -46,21 +46,19 @@ type envConf struct {
 
 // EnvInfo collects the env and relevant agentContext properties.
 var envInfo = []envConf{
-	{"SPIDERPOOL_LOG_LEVEL", constant.LogInfoLevelStr, true, &controllerContext.Cfg.LogLevel, nil, nil},
+	{"GIT_COMMIT_VERSION", "", false, &controllerContext.Cfg.CommitVersion, nil, nil},
+	{"GIT_COMMIT_TIME", "", false, &controllerContext.Cfg.CommitTime, nil, nil},
+	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
+	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &controllerContext.Cfg.GoMaxProcs},
+
+	{"SPIDERPOOL_LOG_LEVEL", logutils.LogInfoLevelStr, true, &controllerContext.Cfg.LogLevel, nil, nil},
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnabledMetric, nil},
 	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil, nil},
 	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5724", false, &controllerContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil, nil},
-	{"SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS", "100", false, nil, nil, &controllerContext.Cfg.WorkloadEndpointMaxHistoryRecords},
-	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
-	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
-	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
-	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
-	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "4", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
-	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "50", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
+
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
 	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCForTerminatingPod, nil},
 	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &gcIPConfig.ReleaseIPWorkerNum},
@@ -77,24 +75,28 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
 	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
 	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
-	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &controllerContext.Cfg.GoMaxProcs},
-	{"GIT_COMMIT_VERSION", "", false, &controllerContext.Cfg.CommitVersion, nil, nil},
-	{"GIT_COMMIT_TIME", "", false, &controllerContext.Cfg.CommitTime, nil, nil},
-	{"VERSION", "", false, &controllerContext.Cfg.AppVersion, nil, nil},
-	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
-	{"SPIDERPOOL_WORKQUEUE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
-	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
-	{"SPIDERPOOL_WORKQUEUE_MAX_RETRIES", "500", true, nil, nil, &controllerContext.Cfg.WorkQueueMaxRetries},
+
+	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "4", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
+	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "50", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
+	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
+
+	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
+	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
+	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
+	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
+
 	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
+	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
+	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
+	{"SPIDERPOOL_WORKQUEUE_MAX_RETRIES", "500", true, nil, nil, &controllerContext.Cfg.WorkQueueMaxRetries},
+	{"SPIDERPOOL_WORKQUEUE_RETRY_DELAY_DURATION", "5", true, nil, nil, &controllerContext.Cfg.WorkQueueRequeueDelayDuration},
 }
 
 type Config struct {
 	CommitVersion string
 	CommitTime    string
 	AppVersion    string
-
-	ControllerPodNamespace string
-	ControllerPodName      string
+	GoMaxProcs    int
 
 	// flags
 	ConfigPath        string
@@ -105,34 +107,33 @@ type Config struct {
 	LogLevel      string
 	EnabledMetric bool
 
-	HttpPort       string
-	MetricHttpPort string
-	WebhookPort    string
-
+	HttpPort         string
+	MetricHttpPort   string
+	WebhookPort      string
 	GopsListenPort   string
 	PyroscopeAddress string
 
-	UpdateCRMaxRetries                int
-	UpdateCRRetryUnitTime             int
-	WorkloadEndpointMaxHistoryRecords int
-	IPPoolMaxAllocatedIPs             int
+	ControllerPodNamespace string
+	ControllerPodName      string
+	LeaseDuration          int
+	LeaseRenewDeadline     int
+	LeaseRetryPeriod       int
+	LeaseRetryGap          int
+
+	UpdateCRMaxRetries    int
+	UpdateCRRetryUnitTime int
+	IPPoolMaxAllocatedIPs int
 
 	SubnetResyncPeriod               int
-	SubnetAppControllerWorkers       int
 	SubnetInformerWorkers            int
 	SubnetInformerMaxWorkqueueLength int
-	WorkQueueMaxRetries              int
-	// if IPPoolWorkQueueRequeueDelayDuration is negative number, we would not requeue it
-	WorkQueueRequeueDelayDuration int
+	SubnetAppControllerWorkers       int
 
 	IPPoolInformerResyncPeriod       int
 	IPPoolInformerWorkers            int
 	IPPoolInformerMaxWorkQueueLength int
-
-	LeaseDuration      int
-	LeaseRenewDeadline int
-	LeaseRetryPeriod   int
-	LeaseRetryGap      int
+	WorkQueueMaxRetries              int
+	WorkQueueRequeueDelayDuration    int
 
 	// configmap
 	EnableIPv4                        bool     `yaml:"enableIPv4"`
@@ -144,8 +145,6 @@ type Config struct {
 	ClusterDefaultIPv4Subnet          []string `yaml:"clusterDefaultIPv4Subnet"`
 	ClusterDefaultIPv6Subnet          []string `yaml:"clusterDefaultIPv6Subnet"`
 	ClusterSubnetDefaultFlexibleIPNum int      `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
-
-	GoMaxProcs int
 }
 
 type ControllerContext struct {

@@ -50,7 +50,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			subnetName = fmt.Sprintf("subnet-%v", count)
 			subnetT = &spiderpoolv1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderSubnetKind,
+					Kind:       constant.KindSpiderSubnet,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -62,7 +62,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			ipPoolName = fmt.Sprintf("ippool-%v", count)
 			ipPoolT = &spiderpoolv1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderIPPoolKind,
+					Kind:       constant.KindSpiderIPPool,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{

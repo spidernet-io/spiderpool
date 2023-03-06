@@ -63,7 +63,7 @@ type IPPoolStatus struct {
 	Default *bool `json:"default,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	AllocatedIPs PoolIPAllocations `json:"allocatedIPs,omitempty"`
+	AllocatedIPs *string `json:"allocatedIPs,omitempty"`
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
@@ -83,13 +83,7 @@ type PoolIPAllocations map[string]PoolIPAllocation
 
 type PoolIPAllocation struct {
 	// +kubebuilder:validation:Required
-	ContainerID string `json:"containerID"`
-
-	// +kubebuilder:validation:Required
 	NIC string `json:"interface"`
-
-	// +kubebuilder:validation:Required
-	Node string `json:"node"`
 
 	// +kubebuilder:validation:Required
 	Namespace string `json:"namespace"`
@@ -98,10 +92,7 @@ type PoolIPAllocation struct {
 	Pod string `json:"pod"`
 
 	// +kubebuilder:validation:Required
-	OwnerControllerType string `json:"ownerControllerType"`
-
-	// +kubebuilder:validation:Required
-	OwnerControllerName string `json:"ownerControllerName"`
+	UID string `json:"uid"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderippools",scope="Cluster",shortName={sp},singular="spiderippool"

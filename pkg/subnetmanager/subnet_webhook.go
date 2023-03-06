@@ -76,7 +76,7 @@ func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 	if errs := sw.validateCreateSubnet(logutils.IntoContext(ctx, logger), subnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
 			subnet.Name,
 			errs,
 		)
@@ -112,7 +112,7 @@ func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	if errs := sw.validateUpdateSubnet(logutils.IntoContext(ctx, logger), oldSubnet, newSubnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update Subnet: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderSubnetKind},
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
 			newSubnet.Name,
 			errs,
 		)

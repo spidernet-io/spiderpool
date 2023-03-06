@@ -24,15 +24,15 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 type IPPoolManager interface {
 	GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error)
 	ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
-	AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error)
-	ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error
-	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error
-	DeleteAllIPPools(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error
+	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error)
+	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
+	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
 	UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error
 }
 
@@ -75,53 +75,26 @@ func (im *ipPoolManager) ListIPPools(ctx context.Context, opts ...client.ListOpt
 	return &ipPoolList, nil
 }
 
-func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error) {
+func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
 	logger := logutils.FromContext(ctx)
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var ipConfig *models.IPConfig
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		logger := logger.With(zap.Int("times", i+1))
 		logger.Sugar().Debugf("Re-get IPPool %s for IP allocation", poolName)
-
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return nil, err
 		}
 
 		logger.Debug("Generate a random IP address")
-		allocatedIP, err := im.genRandomIP(ctx, ipPool)
+		allocatedIP, err := im.genRandomIP(ctx, nic, ipPool, pod)
 		if err != nil {
 			return nil, err
 		}
 
-		if ipPool.Status.AllocatedIPs == nil {
-			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
-		}
-
-		allocation := spiderpoolv1.PoolIPAllocation{
-			ContainerID:         containerID,
-			NIC:                 nic,
-			Node:                pod.Spec.NodeName,
-			Namespace:           pod.Namespace,
-			Pod:                 pod.Name,
-			OwnerControllerType: podController.Kind,
-			OwnerControllerName: podController.Name,
-		}
-
-		ip := allocatedIP.String()
-		ipPool.Status.AllocatedIPs[ip] = allocation
-
-		if ipPool.Status.AllocatedIPCount == nil {
-			ipPool.Status.AllocatedIPCount = new(int64)
-		}
-
-		*ipPool.Status.AllocatedIPCount++
-		if *ipPool.Status.AllocatedIPCount > int64(*im.config.MaxAllocatedIPs) {
-			return nil, fmt.Errorf("%w, threshold of IP allocations(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)
-		}
-
-		logger.Sugar().Debugf("Try to update the allocation status of IPPool %s with random IP %s", ipPool.Name, ip)
+		logger.Sugar().Debugf("Try to update the allocation status of IPPool %s with random IP %s", ipPool.Name, allocatedIP)
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if !apierrors.IsConflict(err) {
 				return nil, err
@@ -134,26 +107,30 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, 
 
 			interval := time.Duration(r.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime
 			logger.Sugar().Debugf("An conflict occurred when updating the status of the IPPool %s, it will be retried in %s", ipPool.Name, interval)
-
 			time.Sleep(interval)
 			continue
 		}
 
-		ipConfig = genResIPConfig(allocatedIP, nic, ipPool)
+		ipConfig = convert.GenIPConfigResult(allocatedIP, nic, ipPool)
 		break
 	}
 
 	return ipConfig, nil
 }
 
-func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) (net.IP, error) {
+func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv1.SpiderIPPool, pod *corev1.Pod) (net.IP, error) {
 	reservedIPs, err := im.rIPManager.AssembleReservedIPs(ctx, *ipPool.Spec.IPVersion)
 	if err != nil {
 		return nil, err
 	}
 
+	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
+	if err != nil {
+		return nil, err
+	}
+
 	var used []string
-	for ip := range ipPool.Status.AllocatedIPs {
+	for ip := range allocatedRecords {
 		used = append(used, ip)
 	}
 	usedIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, used)
@@ -171,34 +148,58 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.S
 		return nil, constant.ErrIPUsedOut
 	}
 
-	return availableIPs[0], nil
+	resIP := availableIPs[0]
+	allocatedRecords[resIP.String()] = spiderpoolv1.PoolIPAllocation{
+		NIC:       nic,
+		Namespace: pod.Namespace,
+		Pod:       pod.Name,
+		UID:       string(pod.UID),
+	}
+
+	data, err := convert.MarshalIPPoolAllocatedIPs(allocatedRecords)
+	if err != nil {
+		return nil, err
+	}
+	ipPool.Status.AllocatedIPs = data
+
+	if ipPool.Status.AllocatedIPCount == nil {
+		ipPool.Status.AllocatedIPCount = new(int64)
+	}
+
+	*ipPool.Status.AllocatedIPCount++
+	if *ipPool.Status.AllocatedIPCount > int64(*im.config.MaxAllocatedIPs) {
+		return nil, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)
+	}
+
+	return resIP, nil
 }
 
-func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error {
+func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {
 	logger := logutils.FromContext(ctx)
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		logger := logger.With(zap.Int("times", i+1))
 		logger.Sugar().Debugf("Re-get IPPool %s for IP release", poolName)
-
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
 		if err != nil {
 			return err
 		}
 
-		if ipPool.Status.AllocatedIPs == nil {
-			ipPool.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{}
+		allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
+		if err != nil {
+			return err
 		}
+
 		if ipPool.Status.AllocatedIPCount == nil {
 			ipPool.Status.AllocatedIPCount = new(int64)
 		}
 
 		release := false
-		for _, cur := range ipAndCIDs {
-			if record, ok := ipPool.Status.AllocatedIPs[cur.IP]; ok {
-				if record.ContainerID == cur.ContainerID {
-					delete(ipPool.Status.AllocatedIPs, cur.IP)
+		for _, iu := range ipAndUIDs {
+			if record, ok := allocatedRecords[iu.IP]; ok {
+				if record.UID == iu.UID {
+					delete(allocatedRecords, iu.IP)
 					*ipPool.Status.AllocatedIPCount--
 					release = true
 				}
@@ -209,7 +210,13 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 			return nil
 		}
 
-		logger.Sugar().Debugf("Try to clean the allocation status of IPPool %s with IP addresses %+v", ipPool.Name, ipAndCIDs)
+		data, err := convert.MarshalIPPoolAllocatedIPs(allocatedRecords)
+		if err != nil {
+			return err
+		}
+		ipPool.Status.AllocatedIPs = data
+
+		logger.Sugar().Debugf("Try to clean the allocation records of IPPool %s with IP addresses %+v", ipPool.Name, ipAndUIDs)
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if !apierrors.IsConflict(err) {
 				return err
@@ -217,7 +224,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 
 			metric.IpamReleaseUpdateIPPoolConflictCounts.Add(ctx, 1)
 			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w (%d times), failed to release IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
+				return fmt.Errorf("%w (%d times), failed to release IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndUIDs, poolName)
 			}
 
 			interval := time.Duration(r.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime
@@ -232,7 +239,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndCI
 	return nil
 }
 
-func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndCID) error {
+func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		ipPool, err := im.GetIPPoolByName(ctx, poolName)
@@ -240,22 +247,30 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 			return err
 		}
 
-		recreate := false
-		for _, cur := range ipAndCIDs {
-			if record, ok := ipPool.Status.AllocatedIPs[cur.IP]; ok {
-				if record.ContainerID == cur.ContainerID {
-					continue
-				}
+		allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
+		if err != nil {
+			return err
+		}
 
-				record.ContainerID = cur.ContainerID
-				record.Node = cur.Node
-				recreate = true
+		recreate := false
+		for _, iu := range ipAndUIDs {
+			if record, ok := allocatedRecords[iu.IP]; ok {
+				if record.UID != iu.UID {
+					record.UID = iu.UID
+					recreate = true
+				}
 			}
 		}
 
 		if !recreate {
 			return nil
 		}
+
+		data, err := convert.MarshalIPPoolAllocatedIPs(allocatedRecords)
+		if err != nil {
+			return err
+		}
+		ipPool.Status.AllocatedIPs = data
 
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if !apierrors.IsConflict(err) {
@@ -264,22 +279,13 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 
 			metric.IpamAllocationUpdateIPPoolConflictCounts.Add(ctx, 1)
 			if i == im.config.MaxConflictRetries {
-				return fmt.Errorf("%w (%d times), failed to re-allocate the IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndCIDs, poolName)
+				return fmt.Errorf("%w (%d times), failed to re-allocate the IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, im.config.MaxConflictRetries, ipAndUIDs, poolName)
 			}
 
 			time.Sleep(time.Duration(r.Intn(1<<(i+1))) * im.config.ConflictRetryUnitTime)
 			continue
 		}
 		break
-	}
-
-	return nil
-}
-
-func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
-	err := im.client.DeleteAllOf(ctx, pool, opts...)
-	if client.IgnoreNotFound(err) != nil {
-		return err
 	}
 
 	return nil

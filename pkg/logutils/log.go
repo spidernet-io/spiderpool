@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 // Pre-define log instance with default info level.
@@ -70,19 +68,29 @@ const (
 	FatalLevel = zapcore.FatalLevel
 )
 
+// Log level character string
+const (
+	LogDebugLevelStr = "debug"
+	LogInfoLevelStr  = "info"
+	LogWarnLevelStr  = "warn"
+	LogErrorLevelStr = "error"
+	LogFatalLevelStr = "fatal"
+	LogPanicLevelStr = "panic"
+)
+
 func ConvertLogLevel(level string) *LogLevel {
 	var logLevel LogLevel
-	if strings.EqualFold(level, constant.LogDebugLevelStr) {
+	if strings.EqualFold(level, LogDebugLevelStr) {
 		logLevel = DebugLevel
-	} else if strings.EqualFold(level, constant.LogInfoLevelStr) {
+	} else if strings.EqualFold(level, LogInfoLevelStr) {
 		logLevel = InfoLevel
-	} else if strings.EqualFold(level, constant.LogWarnLevelStr) {
+	} else if strings.EqualFold(level, LogWarnLevelStr) {
 		logLevel = WarnLevel
-	} else if strings.EqualFold(level, constant.LogErrorLevelStr) {
+	} else if strings.EqualFold(level, LogErrorLevelStr) {
 		logLevel = ErrorLevel
-	} else if strings.EqualFold(level, constant.LogFatalLevelStr) {
+	} else if strings.EqualFold(level, LogFatalLevelStr) {
 		logLevel = FatalLevel
-	} else if strings.EqualFold(level, constant.LogPanicLevelStr) {
+	} else if strings.EqualFold(level, LogPanicLevelStr) {
 		logLevel = PanicLevel
 	} else {
 		return nil

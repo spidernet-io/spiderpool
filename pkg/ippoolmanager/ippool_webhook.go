@@ -78,7 +78,7 @@ func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 	if errs := iw.validateCreateIPPoolWhileEnableSpiderSubnet(logutils.IntoContext(ctx, logger), ipPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create IPPool: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderIPPool},
 			ipPool.Name,
 			errs,
 		)
@@ -114,7 +114,7 @@ func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	if errs := iw.validateUpdateIPPoolWhileEnableSpiderSubnet(logutils.IntoContext(ctx, logger), oldIPPool, newIPPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderIPPoolKind},
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderIPPool},
 			newIPPool.Name,
 			errs,
 		)

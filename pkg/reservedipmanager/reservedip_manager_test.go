@@ -44,7 +44,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
 			rIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPKind,
+					Kind:       constant.KindSpiderReservedIP,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -57,7 +57,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			now := metav1.Now()
 			terminatingV4RIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPKind,
+					Kind:       constant.KindSpiderReservedIP,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{

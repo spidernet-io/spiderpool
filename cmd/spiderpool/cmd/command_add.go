@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 	"runtime/debug"
 	"time"
 
@@ -22,16 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-)
-
-var BinNamePlugin = filepath.Base(os.Args[0])
-
-var (
-	ErrAgentHealthCheck = fmt.Errorf("spiderpool agent backend is unhealthy")
-	ErrPostIPAM         = fmt.Errorf("spiderpool IP allocation error")
-	ErrDeleteIPAM       = fmt.Errorf("spiderpool IP releasing error")
 )
 
 // CmdAdd follows CNI SPEC cmdAdd.
@@ -58,101 +47,104 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	conf, err := LoadNetConf(args.StdinData)
 	if nil != err {
-		return fmt.Errorf("failed to load network config, error: %v", err)
+		return fmt.Errorf("failed to load CNI network configuration: %v", err)
 	}
 
 	logger, err = setupFileLogging(conf)
 	if nil != err {
-		return fmt.Errorf("failed to setup log: %v", err)
+		return fmt.Errorf("failed to setup file logging: %v", err)
 	}
 
-	// new cmdAdd logger
-	logger = logger.Named(BinNamePlugin)
-	logger.Sugar().Debugf("Processing CNI ADD request: containerID:'%s', netns:'%s', ifName:'%s', path:'%s'",
-		args.ContainerID, args.Netns, args.IfName, args.Path)
-	logger.Sugar().Debugf("CNI ADD NetConf: %#v", *conf)
+	logger = logger.Named(BinNamePlugin).With(
+		zap.String("Action", "ADD"),
+		zap.String("ContainerID", args.ContainerID),
+		zap.String("Netns", args.Netns),
+		zap.String("IfName", args.IfName),
+	)
+	logger.Debug("Processing CNI ADD request")
+	logger.Sugar().Debugf("CNI network configuration: %+v", *conf)
 
 	k8sArgs := K8sArgs{}
 	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		logger.Error(err.Error(), zap.String("Action", "Add"), zap.String("ContainerID", args.ContainerID))
+		err := fmt.Errorf("failed to load CNI ENV args: %v", err)
+		logger.Error(err.Error())
 		return err
 	}
-	logger.Sugar().Debugf("CNI ADD Args: %#v", k8sArgs)
 
-	// register some args into logger
-	logger = logger.With(zap.String("Action", "Add"),
-		zap.String("ContainerID", args.ContainerID),
-		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
+	logger = logger.With(
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
-		zap.String("IfName", args.IfName))
-	logger.Info("Generate IPAM configuration")
+		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
+	)
+	logger.Sugar().Debugf("CNI ENV args: %+v", k8sArgs)
 
-	// new unix client
-	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IpamUnixSocketPath)
+	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IPAMUnixSocketPath)
 	if nil != err {
+		err := fmt.Errorf("failed to create spiderpool-agent clinet: %v", err)
 		logger.Error(err.Error())
 		return err
 	}
 
-	// GET /ipam/healthy
-	logger.Debug("Sending health check to spider agent.")
+	logger.Debug("Send health check request to spiderpool-agent backend")
 	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
+		err := fmt.Errorf("%w, failed to check: %v", ErrAgentHealthCheck, err)
 		logger.Error(err.Error())
-		return ErrAgentHealthCheck
-	}
-	logger.Debug("Spider agent health check successfully.")
-
-	// POST /ipam/ip
-	logger.Debug("Sending IP assignment request to spider agent.")
-	ipamAddArgs := &models.IpamAddArgs{
-		ContainerID:       &args.ContainerID,
-		IfName:            &args.IfName,
-		NetNamespace:      &args.Netns,
-		PodName:           (*string)(&k8sArgs.K8S_POD_NAME),
-		PodNamespace:      (*string)(&k8sArgs.K8S_POD_NAMESPACE),
-		DefaultIPV4IPPool: conf.IPAM.DefaultIPv4IPPool,
-		DefaultIPV6IPPool: conf.IPAM.DefaultIPv6IPPool,
-		CleanGateway:      conf.IPAM.CleanGateway,
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	params := daemonset.NewPostIpamIPParamsWithContext(ctx)
-	params.SetIpamAddArgs(ipamAddArgs)
+	params := daemonset.NewPostIpamIPParams().
+		WithContext(ctx).
+		WithIpamAddArgs(&models.IpamAddArgs{
+			ContainerID:       &args.ContainerID,
+			NetNamespace:      &args.Netns,
+			IfName:            &args.IfName,
+			PodName:           (*string)(&k8sArgs.K8S_POD_NAME),
+			PodNamespace:      (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+			PodUID:            (*string)(&k8sArgs.K8S_POD_UID),
+			DefaultIPV4IPPool: conf.IPAM.DefaultIPv4IPPool,
+			DefaultIPV6IPPool: conf.IPAM.DefaultIPv6IPPool,
+			CleanGateway:      conf.IPAM.CleanGateway,
+		})
+
+	logger.Debug("Send IPAM request")
 	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
 	if nil != err {
-		logger.Error(err.Error())
-		return fmt.Errorf("%w: %v", ErrPostIPAM, err)
-	}
-	// validate spiderpool-agent response
-	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {
+		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
 	}
 
-	// assemble result with ipam response.
+	// Validate IPAM request response.
+	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {
+		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
+		logger.Error(err.Error())
+		return err
+	}
+
+	// Assemble the result of IPAM request response.
 	result, err := assembleResult(conf.CNIVersion, args.IfName, ipamResponse)
 	if err != nil {
+		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
 	}
 
-	logger.Sugar().Infof("IPAM assigned successfully: %v", *result)
-
+	logger.Sugar().Infof("IPAM allocation result: %+v", *result)
 	return types.PrintResult(result, conf.CNIVersion)
 }
 
-// assembleResult combines the cni result with spiderpool agent response.
+// assembleResult groups the IP allocation resutls of IPAM request response
+// based on NIC and combines them into CNI results.
 func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamIPOK) (*current.Result, error) {
-	// IPAM Plugin Result
 	result := &current.Result{
 		CNIVersion: cniVersion,
 	}
 
-	// Result DNS
+	// Mock DNS.
 	if nil != ipamResponse.Payload.DNS {
 		result.DNS = types.DNS{
 			Nameservers: ipamResponse.Payload.DNS.Nameservers,
@@ -162,60 +154,33 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 		}
 	}
 
-	// Result Routes
 	var routes []*types.Route
-	for _, singleRoute := range ipamResponse.Payload.Routes {
-		if *singleRoute.IfName == IfName {
-			// TODO(iiiceoo): Use pkg ip ParseRoute()
-			_, routeDst, err := net.ParseCIDR(*singleRoute.Dst)
+	for _, route := range ipamResponse.Payload.Routes {
+		if *route.IfName == IfName {
+			_, dst, err := net.ParseCIDR(*route.Dst)
 			if err != nil {
 				return nil, err
 			}
 			routes = append(routes, &types.Route{
-				Dst: *routeDst,
-				GW:  net.ParseIP(*singleRoute.Gw),
+				Dst: *dst,
+				GW:  net.ParseIP(*route.Gw),
 			})
 		}
 	}
 	result.Routes = routes
 
-	// Result Interfaces, IPs
-	var netInterfaces []*current.Interface
-	// for NIC index recording.
-	tmpIndex := 0
-	for _, ipconfig := range ipamResponse.Payload.Ips {
-		// filter IPAM multi-Interfaces
-		if *ipconfig.Nic == IfName {
-			address, err := spiderpoolip.ParseIP(*ipconfig.Version, *ipconfig.Address, true)
+	for _, ip := range ipamResponse.Payload.Ips {
+		if *ip.Nic == IfName {
+			address, err := spiderpoolip.ParseIP(*ip.Version, *ip.Address, true)
 			if err != nil {
 				return nil, err
 			}
-			gateway := net.ParseIP(ipconfig.Gateway)
-			nic := &current.Interface{Name: *ipconfig.Nic}
-			netInterfaces = append(netInterfaces, nic)
-
-			// record ips
-			if *ipconfig.Version == constant.IPv4 {
-				var v4ip current.IPConfig
-				nicIndex := tmpIndex
-				v4ip.Interface = &nicIndex
-				v4ip.Address = *address
-				v4ip.Gateway = gateway
-
-				result.IPs = append(result.IPs, &v4ip)
-			} else {
-				var v6ip current.IPConfig
-				nicIndex := tmpIndex
-				v6ip.Interface = &nicIndex
-				v6ip.Address = *address
-				v6ip.Gateway = gateway
-
-				result.IPs = append(result.IPs, &v6ip)
-			}
-			tmpIndex++
+			result.IPs = append(result.IPs, &current.IPConfig{
+				Address: *address,
+				Gateway: net.ParseIP(ip.Gateway),
+			})
 		}
 	}
-	result.Interfaces = netInterfaces
 
 	return result, nil
 }

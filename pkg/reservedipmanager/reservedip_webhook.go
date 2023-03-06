@@ -76,7 +76,7 @@ func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Obj
 	if errs := rw.validateCreateReservedIP(logutils.IntoContext(ctx, logger), rIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create ReservedIP: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderReservedIPKind},
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderReservedIP},
 			rIP.Name,
 			errs,
 		)
@@ -113,7 +113,7 @@ func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj 
 	if errs := rw.validateUpdateReservedIP(logutils.IntoContext(ctx, logger), oldRIP, newRIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update ReservedIP: %v", errs.ToAggregate().Error())
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.SpiderReservedIPKind},
+			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderReservedIP},
 			newRIP.Name,
 			errs,
 		)

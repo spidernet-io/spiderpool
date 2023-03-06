@@ -6,7 +6,6 @@ package ipam
 import (
 	"fmt"
 
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -73,21 +72,4 @@ func (ptp *PoolNameToIPPool) IPPools() []*spiderpoolv1.SpiderIPPool {
 
 func (pp PoolNameToIPPool) String() string {
 	return ""
-}
-
-type PoolNameToIPAndCIDs map[string][]types.IPAndCID
-
-func (pics *PoolNameToIPAndCIDs) Pools() []string {
-	var pools []string
-	for pool := range *pics {
-		pools = append(pools, pool)
-	}
-
-	return pools
-}
-
-type AllocationResult struct {
-	IP           *models.IPConfig
-	Routes       []*models.Route
-	CleanGateway bool
 }

@@ -19,7 +19,6 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -105,8 +104,10 @@ func DaemonMain() {
 		}
 	}
 
+	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
+
 	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
-	initAgentMetricsServer(context.TODO())
+	initAgentMetricsServer(agentContext.InnerCtx)
 
 	logger.Sugar().Infof("Begin to initialize cluster default pool configuration")
 	singletons.InitClusterDefaultPool(
@@ -117,7 +118,6 @@ func DaemonMain() {
 		agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum,
 	)
 
-	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
 	logger.Info("Begin to initialize spiderpool-agent runtime manager")
 	mgr, err := newCRDManager()
 	if nil != err {
@@ -139,7 +139,6 @@ func DaemonMain() {
 			EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
 			OperationRetries:         agentContext.Cfg.WaitSubnetPoolMaxRetries,
 			OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-			LimiterConfig:            limiter.LimiterConfig{MaxQueueSize: &agentContext.Cfg.LimiterMaxQueueSize},
 		},
 		agentContext.IPPoolManager,
 		agentContext.EndpointManager,
@@ -293,7 +292,6 @@ func initAgentServiceManagers(ctx context.Context) {
 		workloadendpointmanager.EndpointManagerConfig{
 			MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
 			ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-			MaxHistoryRecords:     &agentContext.Cfg.WorkloadEndpointMaxHistoryRecords,
 		},
 		agentContext.CRDManager.GetClient(),
 	)

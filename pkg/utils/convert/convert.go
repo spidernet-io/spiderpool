@@ -1,20 +1,23 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package ipam
+package convert
 
 import (
+	"encoding/json"
+	"net"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocationDetail) ([]*models.IPConfig, []*models.Route) {
+func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocationDetail) ([]*models.IPConfig, []*models.Route) {
 	var ips []*models.IPConfig
 	var routes []*models.Route
 	for _, d := range details {
@@ -54,13 +57,13 @@ func convertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 			})
 		}
 
-		routes = append(routes, convertSpecRoutesToOAIRoutes(d.NIC, d.Routes)...)
+		routes = append(routes, ConvertSpecRoutesToOAIRoutes(d.NIC, d.Routes)...)
 	}
 
 	return ips, routes
 }
 
-func convertResultsToIPConfigsAndAllRoutes(results []*AllocationResult) ([]*models.IPConfig, []*models.Route) {
+func ConvertResultsToIPConfigsAndAllRoutes(results []*types.AllocationResult) ([]*models.IPConfig, []*models.Route) {
 	var ips []*models.IPConfig
 	var routes []*models.Route
 	for _, r := range results {
@@ -102,7 +105,7 @@ func genDefaultRoute(nic, gateway string) *models.Route {
 	return route
 }
 
-func convertResultsToIPDetails(results []*AllocationResult) []spiderpoolv1.IPAllocationDetail {
+func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1.IPAllocationDetail {
 	nicToDetail := map[string]*spiderpoolv1.IPAllocationDetail{}
 	var cleanGateway *bool
 	for _, r := range results {
@@ -115,7 +118,7 @@ func convertResultsToIPDetails(results []*AllocationResult) []spiderpoolv1.IPAll
 				*cleanGateway = r.CleanGateway
 			}
 		}
-		routes := convertOAIRoutesToSpecRoutes(r.Routes)
+		routes := ConvertOAIRoutesToSpecRoutes(r.Routes)
 		if d, ok := nicToDetail[*r.IP.Nic]; ok {
 			if *r.IP.Version == constant.IPv4 {
 				d.IPv4 = r.IP.Address
@@ -164,7 +167,7 @@ func convertResultsToIPDetails(results []*AllocationResult) []spiderpoolv1.IPAll
 	return details
 }
 
-func convertAnnoPodRoutesToOAIRoutes(annoPodRoutes types.AnnoPodRoutesValue) []*models.Route {
+func ConvertAnnoPodRoutesToOAIRoutes(annoPodRoutes types.AnnoPodRoutesValue) []*models.Route {
 	var routes []*models.Route
 	for _, r := range annoPodRoutes {
 		dst := r.Dst
@@ -179,7 +182,7 @@ func convertAnnoPodRoutesToOAIRoutes(annoPodRoutes types.AnnoPodRoutesValue) []*
 	return routes
 }
 
-func convertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv1.Route) []*models.Route {
+func ConvertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv1.Route) []*models.Route {
 	var routes []*models.Route
 	for _, r := range specRoutes {
 		dst := r.Dst
@@ -194,7 +197,7 @@ func convertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv1.Route) [
 	return routes
 }
 
-func convertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Route {
+func ConvertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Route {
 	var routes []spiderpoolv1.Route
 	for _, r := range oaiRoutes {
 		routes = append(routes, spiderpoolv1.Route{
@@ -206,24 +209,69 @@ func convertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Rout
 	return routes
 }
 
-func GroupIPDetails(containerID, nodeName string, details []spiderpoolv1.IPAllocationDetail) PoolNameToIPAndCIDs {
-	pics := PoolNameToIPAndCIDs{}
+func GroupIPAllocationDetails(uid string, details []spiderpoolv1.IPAllocationDetail) types.PoolNameToIPAndUIDs {
+	pius := types.PoolNameToIPAndUIDs{}
 	for _, d := range details {
 		if d.IPv4 != nil {
-			pics[*d.IPv4Pool] = append(pics[*d.IPv4Pool], types.IPAndCID{
-				IP:          strings.Split(*d.IPv4, "/")[0],
-				ContainerID: containerID,
-				Node:        nodeName,
+			pius[*d.IPv4Pool] = append(pius[*d.IPv4Pool], types.IPAndUID{
+				IP:  strings.Split(*d.IPv4, "/")[0],
+				UID: uid,
 			})
 		}
 		if d.IPv6 != nil {
-			pics[*d.IPv6Pool] = append(pics[*d.IPv6Pool], types.IPAndCID{
-				IP:          strings.Split(*d.IPv6, "/")[0],
-				ContainerID: containerID,
-				Node:        nodeName,
+			pius[*d.IPv6Pool] = append(pius[*d.IPv6Pool], types.IPAndUID{
+				IP:  strings.Split(*d.IPv6, "/")[0],
+				UID: uid,
 			})
 		}
 	}
 
-	return pics
+	return pius
+}
+
+func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv1.SpiderIPPool) *models.IPConfig {
+	ipNet, _ := spiderpoolip.ParseIP(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, true)
+	ipNet.IP = allocateIP
+	address := ipNet.String()
+
+	var gateway string
+	if ipPool.Spec.Gateway != nil {
+		gateway = *ipPool.Spec.Gateway
+	}
+
+	return &models.IPConfig{
+		Address: &address,
+		Gateway: gateway,
+		IPPool:  ipPool.Name,
+		Nic:     &nic,
+		Version: ipPool.Spec.IPVersion,
+		Vlan:    *ipPool.Spec.Vlan,
+	}
+}
+
+func UnmarshalIPPoolAllocatedIPs(data *string) (spiderpoolv1.PoolIPAllocations, error) {
+	if data == nil {
+		return spiderpoolv1.PoolIPAllocations{}, nil
+	}
+
+	var records spiderpoolv1.PoolIPAllocations
+	if err := json.Unmarshal([]byte(*data), &records); err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
+
+func MarshalIPPoolAllocatedIPs(records spiderpoolv1.PoolIPAllocations) (*string, error) {
+	if len(records) == 0 {
+		return nil, nil
+	}
+
+	v, err := json.Marshal(records)
+	if err != nil {
+		return nil, err
+	}
+	data := string(v)
+
+	return &data, nil
 }

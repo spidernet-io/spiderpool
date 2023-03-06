@@ -10,10 +10,7 @@ import (
 	"path"
 	"strconv"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -50,6 +47,7 @@ func newCRDManager() (ctrl.Manager, error) {
 			&spiderpoolv1.SpiderSubnet{},
 			&spiderpoolv1.SpiderIPPool{},
 			&spiderpoolv1.SpiderEndpoint{},
+			&corev1.Pod{},
 		},
 	})
 	if err != nil {

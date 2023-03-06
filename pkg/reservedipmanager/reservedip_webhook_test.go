@@ -53,7 +53,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			rIPName = fmt.Sprintf("reservedip-%v", count)
 			rIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPKind,
+					Kind:       constant.KindSpiderReservedIP,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{

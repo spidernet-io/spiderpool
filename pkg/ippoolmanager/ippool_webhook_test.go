@@ -26,6 +26,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
@@ -60,7 +61,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			subnetName = fmt.Sprintf("subnet-%v", count)
 			subnetT = &spiderpoolv1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderSubnetKind,
+					Kind:       constant.KindSpiderSubnet,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -73,7 +74,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			ipPoolName = fmt.Sprintf("ippool-%v", count)
 			ipPoolT = &spiderpoolv1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderIPPoolKind,
+					Kind:       constant.KindSpiderIPPool,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -85,7 +86,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			existIPPoolName = fmt.Sprintf("z-exist-ippool-%v", count)
 			existIPPoolT = &spiderpoolv1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderIPPoolKind,
+					Kind:       constant.KindSpiderIPPool,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -705,6 +706,15 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
+				It("is a empty IPPool", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+
+					ctx := context.TODO()
+					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
 				It("exists invalid IPPool in the cluster", func() {
 					ipVersion := constant.IPv4
 					subnet := "172.18.40.0/24"
@@ -897,7 +907,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 			})
 
-			When("Validating the existence of the controller Subnet", func() {
+			When("Validating the total IP addresses contained in the controller Subnet", func() {
 				BeforeEach(func() {
 					ipPoolWebhook.EnableSpiderSubnet = true
 				})
@@ -945,8 +955,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
-				It("sets owner reference to a terminating Subnet", func() {
-					controllerutil.AddFinalizer(subnetT, constant.SpiderFinalizer)
+				It("is a empty IPPool", func() {
 					subnetT.SetUID(uuid.NewUUID())
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
@@ -961,29 +970,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := fakeClient.Create(ctx, subnetT)
 					Expect(err).NotTo(HaveOccurred())
 
-					err = fakeClient.Delete(ctx, subnetT)
-					Expect(err).NotTo(HaveOccurred())
-
 					err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
-						[]string{
-							"172.18.40.1-172.18.40.2",
-							"172.18.40.10",
-						}...,
-					)
 
 					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-			})
-
-			When("Validating the total IP addresses contained in the controller Subnet", func() {
-				BeforeEach(func() {
-					ipPoolWebhook.EnableSpiderSubnet = true
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("is out of the IP range of the Subnet", func() {
@@ -1220,6 +1214,19 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
+				It("remove all 'spec.ips'", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
+
+					newIPPoolT := ipPoolT.DeepCopy()
+					newIPPoolT.Spec.IPs = []string{}
+
+					ctx := context.TODO()
+					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
 				It("exists invalid IPPool in the cluster", func() {
 					ipVersion := constant.IPv4
 					subnet := "172.18.40.0/24"
@@ -1435,20 +1442,29 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					ipPoolT.Status.AllocatedIPs = spiderpoolv1.PoolIPAllocations{
-						"172.18.40.10": spiderpoolv1.PoolIPAllocation{},
-					}
+					data, err := convert.MarshalIPPoolAllocatedIPs(
+						spiderpoolv1.PoolIPAllocations{
+							"172.18.40.10": spiderpoolv1.PoolIPAllocation{
+								NIC:       "eth0",
+								Namespace: "default",
+								Pod:       "pod",
+								UID:       string(uuid.NewUUID()),
+							},
+						},
+					)
+					Expect(err).NotTo(HaveOccurred())
+					ipPoolT.Status.AllocatedIPs = data
 
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = newIPPoolT.Spec.IPs[:1]
 
 					ctx := context.TODO()
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 			})
 
-			When("Validating the existence of the controller Subnet", func() {
+			When("Validating the total IP addresses contained in the controller Subnet", func() {
 				BeforeEach(func() {
 					ipPoolWebhook.EnableSpiderSubnet = true
 				})
@@ -1492,23 +1508,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
-				It("updates the IPPool that sets the owner reference to a terminating Subnet", func() {
-					controllerutil.AddFinalizer(subnetT, constant.SpiderFinalizer)
+				It("remove all 'spec.ips' of IPPool", func() {
 					subnetT.SetUID(uuid.NewUUID())
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
-					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
-						[]string{
-							"172.18.40.1-172.18.40.2",
-							"172.18.40.10",
-						}...,
-					)
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					ctx := context.TODO()
 					err := fakeClient.Create(ctx, subnetT)
-					Expect(err).NotTo(HaveOccurred())
-
-					err = fakeClient.Delete(ctx, subnetT)
 					Expect(err).NotTo(HaveOccurred())
 
 					err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
@@ -1519,16 +1526,10 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
+					newIPPoolT.Spec.IPs = []string{}
 
 					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-			})
-
-			When("Validating the total IP addresses contained in the controller Subnet", func() {
-				BeforeEach(func() {
-					ipPoolWebhook.EnableSpiderSubnet = true
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("is out of the IP range of the Subnet", func() {

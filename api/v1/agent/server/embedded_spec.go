@@ -293,11 +293,12 @@ func init() {
       "description": "IPAM request args",
       "type": "object",
       "required": [
-        "podNamespace",
-        "podName",
         "containerID",
         "ifName",
-        "netNamespace"
+        "netNamespace",
+        "podNamespace",
+        "podName",
+        "podUID"
       ],
       "properties": {
         "cleanGateway": {
@@ -328,6 +329,9 @@ func init() {
           "type": "string"
         },
         "podNamespace": {
+          "type": "string"
+        },
+        "podUID": {
           "type": "string"
         }
       }
@@ -364,7 +368,8 @@ func init() {
         "containerID",
         "ifName",
         "podNamespace",
-        "podName"
+        "podName",
+        "podUID"
       ],
       "properties": {
         "containerID": {
@@ -380,6 +385,9 @@ func init() {
           "type": "string"
         },
         "podNamespace": {
+          "type": "string"
+        },
+        "podUID": {
           "type": "string"
         }
       }
@@ -682,11 +690,12 @@ func init() {
       "description": "IPAM request args",
       "type": "object",
       "required": [
-        "podNamespace",
-        "podName",
         "containerID",
         "ifName",
-        "netNamespace"
+        "netNamespace",
+        "podNamespace",
+        "podName",
+        "podUID"
       ],
       "properties": {
         "cleanGateway": {
@@ -717,6 +726,9 @@ func init() {
           "type": "string"
         },
         "podNamespace": {
+          "type": "string"
+        },
+        "podUID": {
           "type": "string"
         }
       }
@@ -753,7 +765,8 @@ func init() {
         "containerID",
         "ifName",
         "podNamespace",
-        "podName"
+        "podName",
+        "podUID"
       ],
       "properties": {
         "containerID": {
@@ -769,6 +782,9 @@ func init() {
           "type": "string"
         },
         "podNamespace": {
+          "type": "string"
+        },
+        "podUID": {
           "type": "string"
         }
       }

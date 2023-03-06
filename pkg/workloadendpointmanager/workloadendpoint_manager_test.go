@@ -11,6 +11,8 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,6 +24,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -280,7 +283,123 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 		})
 
-		PDescribe("PatchIPAllocationResults", func() {
+		Describe("PatchIPAllocationResults", func() {
+			var podT *corev1.Pod
+
+			BeforeEach(func() {
+				podT = &corev1.Pod{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Pod",
+						APIVersion: corev1.SchemeGroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      endpointName,
+						Namespace: namespace,
+						UID:       uuid.NewUUID(),
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node",
+					},
+				}
+			})
+
+			It("inputs nil Pod", func() {
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{})
+				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			})
+
+			It("failed to set ownerReference to Pod due to some unknown errors", func() {
+				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
+				defer patches.Reset()
+
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+
+			It("failed to create Endpoint due to some unknown errors", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
+				defer patches.Reset()
+
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+
+			It("creates Endpoint for orphan Pod", func() {
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(
+					ctx,
+					"",
+					[]*spiderpooltypes.AllocationResult{},
+					nil,
+					podT,
+					spiderpooltypes.PodTopController{
+						Kind:      constant.KindPod,
+						Namespace: podT.Namespace,
+						Name:      podT.Name,
+						UID:       podT.UID,
+						APP:       podT,
+					},
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				var endpoint spiderpoolv1.SpiderEndpoint
+				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
+				Expect(err).NotTo(HaveOccurred())
+
+				owner := endpoint.GetOwnerReferences()[0]
+				Expect(owner.UID).To(Equal(podT.GetUID()))
+				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
+			})
+
+			It("creates Endpoint for StatefulSet Pod", func() {
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(
+					ctx,
+					"",
+					[]*spiderpooltypes.AllocationResult{},
+					nil,
+					podT,
+					spiderpooltypes.PodTopController{
+						Kind:      constant.KindStatefulSet,
+						Namespace: namespace,
+						Name:      fmt.Sprintf("%s-sts", endpointName),
+						UID:       uuid.NewUUID(),
+						APP:       &appsv1.StatefulSet{},
+					},
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				var endpoint spiderpoolv1.SpiderEndpoint
+				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
+				Expect(err).NotTo(HaveOccurred())
+
+				owners := endpoint.GetOwnerReferences()
+				Expect(owners).To(BeEmpty())
+				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
+			})
+
+			It("patches IP allocation results with the same container ID and Pod UID", func() {
+				uid := uuid.NewUUID()
+				podT.SetUID(uid)
+				endpointT.Status.Current.UID = string(uid)
+
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("failed to update the status of Endpoint due to some unknown errors", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				defer patches.Reset()
+
+				ctx := context.TODO()
+				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+
 		})
 
 		Describe("ReallocateCurrentIPAllocation", func() {
@@ -298,15 +417,12 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("re-allocates the current IP allocation with the same container ID, Pod UID and Node name", func() {
-				uid := string(uuid.NewUUID())
-				nodeName := "node1"
-
-				endpointT.Status.Current.UID = uid
-				endpointT.Status.Current.Node = nodeName
+			It("re-allocates the current IP allocation with the same container ID and Pod UID", func() {
+				uid := uuid.NewUUID()
+				endpointT.Status.Current.UID = string(uid)
 
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", uid, nodeName, endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uid), "node", endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -315,10 +431,9 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				defer patches.Reset()
 
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
-				endpointT.Status.Current.Node = "node1"
 
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node", endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 

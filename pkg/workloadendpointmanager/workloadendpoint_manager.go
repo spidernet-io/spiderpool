@@ -142,7 +142,9 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return em.client.Create(ctx, endpoint)
 	}
 
-	if endpoint.Status.Current != nil && endpoint.Status.Current.UID == string(pod.UID) {
+	if endpoint.Status.Current != nil &&
+		endpoint.Status.Current.ContainerID == containerID &&
+		endpoint.Status.Current.UID == string(pod.UID) {
 		return nil
 	}
 
@@ -160,8 +162,7 @@ func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Con
 	}
 
 	if endpoint.Status.Current.ContainerID == containerID &&
-		endpoint.Status.Current.UID == uid &&
-		endpoint.Status.Current.Node == nodeName {
+		endpoint.Status.Current.UID == uid {
 		return nil
 	}
 

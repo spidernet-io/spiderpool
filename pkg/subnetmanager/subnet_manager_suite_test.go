@@ -14,11 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var mockCtrl *gomock.Controller
@@ -27,9 +24,6 @@ var mockLeaderElector *electionmock.MockSpiderLeaseElector
 var scheme *runtime.Scheme
 var fakeClient client.Client
 var subnetWebhook *subnetmanager.SubnetWebhook
-var subnetManager subnetmanager.SubnetManager
-var ipPoolManager ippoolmanager.IPPoolManager
-var rIPManager reservedipmanager.ReservedIPManager
 
 func TestSubnetManager(t *testing.T) {
 	mockCtrl = gomock.NewController(t)
@@ -44,9 +38,6 @@ var _ = BeforeSuite(func() {
 	err := spiderpoolv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = corev1.AddToScheme(scheme)
-	Expect(err).NotTo(HaveOccurred())
-
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
 		Build()
@@ -56,17 +47,4 @@ var _ = BeforeSuite(func() {
 	}
 
 	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
-
-	rIPManager, err = reservedipmanager.NewReservedIPManager(fakeClient)
-	Expect(err).NotTo(HaveOccurred())
-
-	ipPoolManager, err = ippoolmanager.NewIPPoolManager(ippoolmanager.IPPoolManagerConfig{
-		MaxConflictRetries: 3,
-	}, fakeClient, rIPManager)
-	Expect(err).NotTo(HaveOccurred())
-
-	subnetManager, err = subnetmanager.NewSubnetManager(subnetmanager.SubnetManagerConfig{
-		MaxConflictRetries: 3,
-	}, fakeClient, ipPoolManager, fakeClient.Scheme())
-	Expect(err).NotTo(HaveOccurred())
 })

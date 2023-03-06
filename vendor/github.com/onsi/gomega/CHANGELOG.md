@@ -1,3 +1,18 @@
+## 1.27.2
+
+### Fixes
+- improve poll progress message when polling a consistently that has been passing [28a319b]
+
+### Maintenance
+- bump ginkgo
+- remove tools.go hack as Ginkgo 2.8.2 automatically pulls in the cli dependencies [81443b3]
+
+## 1.27.1
+
+### Maintenance
+
+- Bump golang.org/x/net from 0.6.0 to 0.7.0 (#640) [bc686cd]
+
 ## 1.27.0
 
 ### Features

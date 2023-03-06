@@ -6,6 +6,7 @@ package statefulsetmanager_test
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync/atomic"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -182,7 +183,61 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 		})
 
-		PDescribe("IsValidStatefulSetPod", func() {
+		Describe("IsValidStatefulSetPod", func() {
+			It("is not a Pod of StatefulSet", func() {
+				ctx := context.TODO()
+				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, "invalid")
+				Expect(valid).To(BeFalse())
+			})
+
+			It("failed to parse replica string to int due to some unknown errors", func() {
+				patches := gomonkey.ApplyFuncReturn(strconv.ParseInt, int64(0), constant.ErrUnknown)
+				defer patches.Reset()
+
+				ctx := context.TODO()
+				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
+				Expect(valid).To(BeFalse())
+			})
+
+			It("is a valid Pod controlled by StatefulSet, but the StatefulSet no longer exists", func() {
+				ctx := context.TODO()
+				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
+				Expect(valid).To(BeFalse())
+			})
+
+			It("failed to get StatefulSets due to some unknown errors", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Get", constant.ErrUnknown)
+				defer patches.Reset()
+
+				ctx := context.TODO()
+				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
+				Expect(valid).To(BeTrue())
+			})
+
+			It("used to be a Pod controlled by StatefulSet, but the StatefulSet scaled down", func() {
+				replicas := int32(1)
+				stsT.Spec.Replicas = &replicas
+
+				ctx := context.TODO()
+				err := fakeClient.Create(ctx, stsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas))
+				Expect(valid).To(BeFalse())
+			})
+
+			It("is a valid Pod controlled by StatefulSet", func() {
+				replicas := int32(1)
+				stsT.Spec.Replicas = &replicas
+
+				ctx := context.TODO()
+				err := fakeClient.Create(ctx, stsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas-1))
+				Expect(valid).To(BeTrue())
+			})
+
 		})
 	})
 })

@@ -33,12 +33,12 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 			mutex = &lock.Mutex{}
 		})
 
-		It("general use", func() {
+		It("locks", func() {
 			mutex.Lock()
 			mutex.Unlock()
 		})
 
-		It("took lock timeout", func() {
+		It("holds the lock timeout", func() {
 			go func() {
 				mutex.Lock()
 				time.Sleep(selfishTimeout)
@@ -48,7 +48,7 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 			Eventually(buffer).Should(gbytes.Say("goroutine"))
 		})
 
-		It("ignore timeout when unlocking", func() {
+		It("ignores the timeout when unlocking", func() {
 			go func() {
 				mutex.Lock()
 				time.Sleep(selfishTimeout)
@@ -66,7 +66,7 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 			rwMutex = &lock.RWMutex{}
 		})
 
-		It("general use", func() {
+		It("locks", func() {
 			rwMutex.RLock()
 			rwMutex.RUnlock()
 
@@ -74,7 +74,7 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 			rwMutex.Unlock()
 		})
 
-		It("took lock timeout", func() {
+		It("holds the lock timeout", func() {
 			go func() {
 				rwMutex.Lock()
 				time.Sleep(selfishTimeout)
@@ -84,7 +84,7 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 			Eventually(buffer).Should(gbytes.Say("goroutine"))
 		})
 
-		It("ignore timeout when unlocking", func() {
+		It("ignores the timeout when unlocking", func() {
 			go func() {
 				rwMutex.Lock()
 				time.Sleep(selfishTimeout)

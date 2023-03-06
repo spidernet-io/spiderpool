@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/moby/moby/pkg/stringid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -287,7 +286,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		Describe("ReallocateCurrentIPAllocation", func() {
 			It("inputs nil Endpoint", func() {
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), string(uuid.NewUUID()), "node1", nil)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
@@ -295,21 +294,19 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				endpointT.Status.Current = nil
 
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), string(uuid.NewUUID()), "node1", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", endpointT)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("re-allocates the current IP allocation with the same container ID, Pod UID and Node name", func() {
-				containerID := stringid.GenerateRandomID()
 				uid := string(uuid.NewUUID())
 				nodeName := "node1"
 
-				endpointT.Status.Current.ContainerID = containerID
 				endpointT.Status.Current.UID = uid
 				endpointT.Status.Current.Node = nodeName
 
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, uid, nodeName, endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", uid, nodeName, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -317,17 +314,15 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
-				endpointT.Status.Current.ContainerID = stringid.GenerateRandomID()
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "node1"
 
 				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), string(uuid.NewUUID()), "node1", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
 			It("updates the current IP allocation", func() {
-				endpointT.Status.Current.ContainerID = stringid.GenerateRandomID()
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
 
@@ -335,13 +330,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				containerID := stringid.GenerateRandomID()
 				uid := string(uuid.NewUUID())
 				nodeName := "new-node"
 
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, uid, nodeName, endpointT)
+				err = endpointManager.ReallocateCurrentIPAllocation(ctx, "", uid, nodeName, endpointT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(endpointT.Status.Current.ContainerID).To(Equal(containerID))
 				Expect(endpointT.Status.Current.UID).To(Equal(uid))
 				Expect(endpointT.Status.Current.Node).To(Equal(nodeName))
 			})

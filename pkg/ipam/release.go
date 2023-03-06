@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -36,6 +37,24 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	if podStatus == constant.PodRunning {
 		logger.Info("Pod is still running, ignore release for reuse IP allocation")
 		return nil
+	}
+
+	// If Pod still exists, change the timeout of ctx to be consistent with
+	// the deletion grace period of Pod. After this time, all IP allocation
+	// recycling should be completed by GC instead of CmdDel().
+	//
+	// But if Pod no longer exists, CmdDel() is still called (DEL may be called
+	// multiple times according to the CNI Specification), then continue to use
+	// the original ctx of OAI UNIX client (default 30s).
+	if podStatus != constant.PodUnknown {
+		timeoutSec := *pod.DeletionGracePeriodSeconds - 5
+		if timeoutSec < 0 {
+			timeoutSec = 5
+		}
+
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSec)*time.Second)
+		defer cancel()
 	}
 
 	// *delArgs.PodUID must be used instead of string(pod.UID) in the whole

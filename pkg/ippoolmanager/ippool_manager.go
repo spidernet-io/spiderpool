@@ -76,9 +76,6 @@ func (im *ipPoolManager) ListIPPools(ctx context.Context, opts ...client.ListOpt
 }
 
 func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, containerID, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error) {
-	if pod == nil {
-		return nil, fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
-	}
 	logger := logutils.FromContext(ctx)
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -280,9 +277,6 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 }
 
 func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
-	if pool == nil {
-		return fmt.Errorf("pool %w", constant.ErrMissingRequiredParam)
-	}
 	err := im.client.DeleteAllOf(ctx, pool, opts...)
 	if client.IgnoreNotFound(err) != nil {
 		return err
@@ -292,10 +286,6 @@ func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, pool *spiderpoolv
 }
 
 func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error {
-	if pool == nil {
-		return fmt.Errorf("pool %w", constant.ErrMissingRequiredParam)
-	}
-
 	if pool.Status.AutoDesiredIPCount == nil {
 		pool.Status.AutoDesiredIPCount = new(int64)
 	} else {

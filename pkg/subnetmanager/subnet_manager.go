@@ -80,7 +80,7 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOpt
 func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName string, podController types.PodTopController,
 	podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error) {
 	if len(subnetName) == 0 {
-		return nil, fmt.Errorf("spider subnet name %w", constant.ErrMissingRequiredParam)
+		return nil, fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
 	}
 	if ipNum < 0 {
 		return nil, fmt.Errorf("%w: the required IP numbers '%d' is invalid", constant.ErrWrongInput, ipNum)
@@ -138,7 +138,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 
 	err = ctrl.SetControllerReference(subnet, sp, sm.Scheme)
 	if nil != err {
-		return nil, fmt.Errorf("failed to set SpiderIPPool %s owner reference with SpiderSubnet %s: %w", sp.Name, subnetName, err)
+		return nil, fmt.Errorf("failed to set SpiderIPPool %s owner reference with SpiderSubnet %s: %v", sp.Name, subnetName, err)
 	}
 
 	timeRecorder := metric.NewTimeRecorder()
@@ -167,7 +167,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 // CheckScaleIPPool will fetch some IPs from the specified subnet manager to expand the pool IPs
 func (sm *subnetManager) CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetName string, ipNum int) error {
 	if pool == nil {
-		return fmt.Errorf("IPPool: %w ", constant.ErrMissingRequiredParam)
+		return fmt.Errorf("%w: IPPool must be specified", constant.ErrWrongInput)
 	}
 	if ipNum <= 0 {
 		return fmt.Errorf("%w: assign IP number '%d' is invalid", constant.ErrWrongInput, ipNum)

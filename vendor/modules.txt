@@ -248,9 +248,6 @@ github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.2
 ## explicit
 github.com/mitchellh/reflectwalk
-# github.com/moby/moby v23.0.1+incompatible
-## explicit
-github.com/moby/moby/pkg/stringid
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 ## explicit
 github.com/modern-go/concurrent

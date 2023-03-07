@@ -10,10 +10,10 @@ import (
 // shutdownCmd represents the shutdown command.
 var shutdownCmd = &cobra.Command{
 	Use:   "shutdown",
-	Short: "shutdown " + BinNameController,
+	Short: "shutdown " + binNameController,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO (Icarus9913)
-		logger.Sugar().Infof("shutdown %s...", BinNameController)
+		logger.Sugar().Infof("Shutdown %s...", binNameController)
 	},
 }
 

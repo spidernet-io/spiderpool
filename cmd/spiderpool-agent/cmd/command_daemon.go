@@ -12,7 +12,7 @@ import (
 // daemonCmd represents the daemon command
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
-	Short: BinNameAgent + " daemon",
+	Short: binNameAgent + " daemon",
 	Run: func(cmd *cobra.Command, args []string) {
 		defer func() {
 			if e := recover(); nil != e {
@@ -28,7 +28,7 @@ var daemonCmd = &cobra.Command{
 func init() {
 	agentContext.BindAgentDaemonFlags(daemonCmd.PersistentFlags())
 	if err := ParseConfiguration(); nil != err {
-		logger.Fatal("Spiderpool-agent register ENV failed: " + err.Error())
+		logger.Sugar().Fatalf("Failed to register ENV for spiderpool-agent: %v", err)
 	}
 
 	rootCmd.AddCommand(daemonCmd)

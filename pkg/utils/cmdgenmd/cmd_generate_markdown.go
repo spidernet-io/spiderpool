@@ -17,7 +17,7 @@ var markdownPath string
 func GenMarkDownCmd(component string, rootCmd *cobra.Command, logger *zap.Logger) *cobra.Command {
 	var genMarkDownCmd = &cobra.Command{
 		Use:   "generate-markdown",
-		Short: "generate markdown for cli " + component,
+		Short: "generate markdown for " + component,
 		Run: func(cmd *cobra.Command, args []string) {
 			if markdownPath != "" {
 				if err := doc.GenMarkdownTree(rootCmd, markdownPath); nil != err {
@@ -27,7 +27,7 @@ func GenMarkDownCmd(component string, rootCmd *cobra.Command, logger *zap.Logger
 		},
 	}
 
-	genMarkDownCmd.Flags().StringVar(&markdownPath, "markdown-path", "", "generate markdown for cli "+component)
+	genMarkDownCmd.Flags().StringVar(&markdownPath, "markdown-path", "", "generate markdown for "+component)
 	err := genMarkDownCmd.MarkFlagRequired("markdown-path")
 	if nil != err {
 		logger.Error(err.Error())

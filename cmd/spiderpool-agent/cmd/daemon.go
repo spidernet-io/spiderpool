@@ -24,7 +24,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
-	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
@@ -32,40 +31,42 @@ import (
 
 // DaemonMain runs agentContext handlers.
 func DaemonMain() {
-	// reinitialize the logger
-	v := logutils.ConvertLogLevel(agentContext.Cfg.LogLevel)
-	if v == nil {
-		panic(fmt.Sprintf("unknown log level %s \n", agentContext.Cfg.LogLevel))
+	// Set logger level and re-init global logger.
+	level := logutils.ConvertLogLevel(agentContext.Cfg.LogLevel)
+	if level == nil {
+		panic(fmt.Sprintf("unknown log level %s\n", agentContext.Cfg.LogLevel))
 	}
-	err := logutils.InitStdoutLogger(*v)
-	if err != nil {
-		panic(fmt.Sprintf("failed to initialize logger with level %s, reason=%v \n", agentContext.Cfg.LogLevel, err))
+	if err := logutils.InitStdoutLogger(*level); err != nil {
+		panic(fmt.Sprintf("failed to initialize logger level %s: %v\n", agentContext.Cfg.LogLevel, err))
 	}
-	logger = logutils.Logger.Named(BinNameAgent)
+	logger = logutils.Logger.Named(binNameAgent)
 
-	currentP := runtime.GOMAXPROCS(-1)
-	logger.Sugar().Infof("default max golang procs %v \n", currentP)
-	if currentP > int(agentContext.Cfg.GoMaxProcs) {
-		runtime.GOMAXPROCS(int(agentContext.Cfg.GoMaxProcs))
-		currentP = runtime.GOMAXPROCS(-1)
-		logger.Sugar().Infof("change max golang procs %v \n", currentP)
-	}
-
+	// Print version info for debug.
 	if len(agentContext.Cfg.CommitVersion) > 0 {
-		logger.Sugar().Infof("CommitVersion: %v \n", agentContext.Cfg.CommitVersion)
+		logger.Sugar().Infof("CommitVersion: %v", agentContext.Cfg.CommitVersion)
 	}
 	if len(agentContext.Cfg.CommitTime) > 0 {
-		logger.Sugar().Infof("CommitTime: %v \n", agentContext.Cfg.CommitTime)
+		logger.Sugar().Infof("CommitTime: %v", agentContext.Cfg.CommitTime)
 	}
 	if len(agentContext.Cfg.AppVersion) > 0 {
-		logger.Sugar().Infof("AppVersion: %v \n", agentContext.Cfg.AppVersion)
+		logger.Sugar().Infof("AppVersion: %v", agentContext.Cfg.AppVersion)
 	}
 
+	// Set golang max procs.
+	currentP := runtime.GOMAXPROCS(-1)
+	logger.Sugar().Infof("Default max golang procs: %d", currentP)
+	if currentP > int(agentContext.Cfg.GoMaxProcs) {
+		p := runtime.GOMAXPROCS(int(agentContext.Cfg.GoMaxProcs))
+		logger.Sugar().Infof("Change max golang procs to %d", p)
+	}
+
+	// Load spiderpool's global Comfigmap.
 	if err := agentContext.LoadConfigmap(); err != nil {
-		logger.Sugar().Fatal("failed to load Configmap: %v", err)
+		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %v", err)
 	}
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 
+	// Set up gops.
 	if agentContext.Cfg.GopsListenPort != "" {
 		address := "127.0.0.1:" + agentContext.Cfg.GopsListenPort
 		op := agent.Options{
@@ -73,21 +74,21 @@ func DaemonMain() {
 			Addr:            address,
 		}
 		if err := agent.Listen(op); err != nil {
-			logger.Sugar().Fatalf("gops failed to listen on port %s, reason=%v", address, err)
+			logger.Sugar().Fatalf("gops failed to listen on %s: %v", address, err)
 		}
-		logger.Sugar().Infof("gops is listening on %s ", address)
 		defer agent.Close()
+		logger.Sugar().Infof("gops is listening on %s", address)
 	}
 
+	// Set up pyroscope.
 	if agentContext.Cfg.PyroscopeAddress != "" {
-		// push mode ,  push to pyroscope server
-		logger.Sugar().Infof("pyroscope works in push mode, server %s ", agentContext.Cfg.PyroscopeAddress)
+		logger.Sugar().Infof("pyroscope works in push mode with server: %s", agentContext.Cfg.PyroscopeAddress)
 		node, e := os.Hostname()
 		if e != nil || len(node) == 0 {
-			logger.Sugar().Fatalf("failed to get hostname, reason=%v", e)
+			logger.Sugar().Fatalf("Failed to get hostname: %v", e)
 		}
 		_, e = pyroscope.Start(pyroscope.Config{
-			ApplicationName: BinNameAgent,
+			ApplicationName: binNameAgent,
 			ServerAddress:   agentContext.Cfg.PyroscopeAddress,
 			Logger:          nil,
 			Tags:            map[string]string{"node": node},
@@ -100,23 +101,13 @@ func DaemonMain() {
 			},
 		})
 		if e != nil {
-			logger.Sugar().Fatalf("failed to setup pyroscope, reason=%v", e)
+			logger.Sugar().Fatalf("Failed to setup pyroscope: %v", e)
 		}
 	}
 
 	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
-
 	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
 	initAgentMetricsServer(agentContext.InnerCtx)
-
-	logger.Sugar().Infof("Begin to initialize cluster default pool configuration")
-	singletons.InitClusterDefaultPool(
-		agentContext.Cfg.ClusterDefaultIPv4IPPool,
-		agentContext.Cfg.ClusterDefaultIPv6IPPool,
-		agentContext.Cfg.ClusterDefaultIPv4Subnet,
-		agentContext.Cfg.ClusterDefaultIPv6Subnet,
-		agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum,
-	)
 
 	logger.Info("Begin to initialize spiderpool-agent runtime manager")
 	mgr, err := newCRDManager()

@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
@@ -263,7 +264,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	controllerContext.RIPManager = rIPManager
+	controllerContext.ReservedIPManager = rIPManager
 
 	logger.Debug("Begin to set up ReservedIP webhook")
 	if err := (&reservedipmanager.ReservedIPWebhook{
@@ -280,7 +281,7 @@ func initControllerServiceManagers(ctx context.Context) {
 		},
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
-		controllerContext.RIPManager,
+		controllerContext.ReservedIPManager,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -304,6 +305,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			controllerContext.CRDManager.GetClient(),
 			controllerContext.CRDManager.GetAPIReader(),
 			controllerContext.IPPoolManager,
+			controllerContext.ReservedIPManager,
 		)
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -395,8 +397,6 @@ func setupInformers() {
 	logger.Info("Begin to set up IPPool informer")
 	ipPoolController := ippoolmanager.NewIPPoolController(
 		ippoolmanager.IPPoolControllerConfig{
-			EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
-			EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
 			IPPoolControllerWorkers:       controllerContext.Cfg.IPPoolInformerWorkers,
 			EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
 			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
@@ -406,7 +406,6 @@ func setupInformers() {
 			ResyncPeriod:                  time.Duration(controllerContext.Cfg.IPPoolInformerResyncPeriod) * time.Second,
 		},
 		controllerContext.CRDManager.GetClient(),
-		controllerContext.RIPManager,
 	)
 	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
 	if nil != err {
@@ -427,14 +426,15 @@ func setupInformers() {
 		}
 
 		logger.Info("Begin to set up auto-created IPPool controller")
-		subnetAppController, err := subnetmanager.NewSubnetAppController(
+		subnetAppController, err := applicationcontroller.NewSubnetAppController(
 			controllerContext.CRDManager.GetClient(),
 			controllerContext.SubnetManager,
-			subnetmanager.SubnetAppControllerConfig{
+			applicationcontroller.SubnetAppControllerConfig{
 				EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
 				EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
 				AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
 				MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
+				WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
 				WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 				LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			})

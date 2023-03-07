@@ -110,16 +110,7 @@ spec:
                 minimum: 0
                 type: integer
               controlledIPPools:
-                additionalProperties:
-                  properties:
-                    ips:
-                      items:
-                        type: string
-                      type: array
-                  type: object
-                description: PoolIPPreAllocations is a map of pool IP pre-allocation
-                  details indexed by pool name.
-                type: object
+                type: string
               totalIPCount:
                 format: int64
                 minimum: 0

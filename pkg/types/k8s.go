@@ -100,3 +100,12 @@ func (in *AnnoSubnetItem) String() string {
 	}, "")
 	return s
 }
+
+// AutoPoolProperty describes Auto-created IPPool's properties
+type AutoPoolProperty struct {
+	DesiredIPNumber int
+	IPVersion       IPVersion
+	IsReclaimIPPool bool
+	IfName          string
+	PodSelector     *metav1.LabelSelector
+}

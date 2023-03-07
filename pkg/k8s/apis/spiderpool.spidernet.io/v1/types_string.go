@@ -58,7 +58,6 @@ func (in *IPPoolStatus) String() string {
 		`AllocatedIPs:` + fmt.Sprintf("%+v", in.AllocatedIPs) + `,`,
 		`TotalIPCount:` + stringutil.ValueToStringGenerated(in.TotalIPCount) + `,`,
 		`AllocatedIPCount:` + stringutil.ValueToStringGenerated(in.AllocatedIPCount) + `,`,
-		`AutoDesiredIPCount:` + stringutil.ValueToStringGenerated(in.AutoDesiredIPCount) + `,`,
 		`}`,
 	}, "")
 	return s

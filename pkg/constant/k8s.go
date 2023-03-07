@@ -31,14 +31,13 @@ const (
 )
 
 const (
-	PodRunning      types.PodStatus = "Running"
-	PodTerminating  types.PodStatus = "Terminating"
-	PodGraceTimeout types.PodStatus = "GraceTimeout"
-	PodSucceeded    types.PodStatus = "Succeeded"
-	PodFailed       types.PodStatus = "Failed"
-	PodEvicted      types.PodStatus = "Evicted"
-	PodDeleted      types.PodStatus = "Deleted"
-	PodUnknown      types.PodStatus = "Unknown"
+	PodRunning     types.PodStatus = "Running"
+	PodTerminating types.PodStatus = "Terminating"
+	PodSucceeded   types.PodStatus = "Succeeded"
+	PodFailed      types.PodStatus = "Failed"
+	PodEvicted     types.PodStatus = "Evicted"
+	PodDeleted     types.PodStatus = "Deleted"
+	PodUnknown     types.PodStatus = "Unknown"
 )
 
 const (
@@ -65,6 +64,7 @@ const (
 	LabelIPPoolVersion             = AnnotationPre + "/ippool-version"
 	LabelIPPoolVersionV4           = "IPv4"
 	LabelIPPoolVersionV6           = "IPv6"
+	LabelAutoPoolDesiredIPNumber   = AnnotationPre + "/auto-ippool-desired-ip-number"
 
 	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"

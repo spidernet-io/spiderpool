@@ -33,7 +33,7 @@ type IPPoolManager interface {
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
-	UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error
+	DeleteAllIPPools(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error
 }
 
 type ipPoolManager struct {
@@ -311,19 +311,10 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 	return nil
 }
 
-func (im *ipPoolManager) UpdateDesiredIPNumber(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, ipNum int) error {
-	if pool.Status.AutoDesiredIPCount == nil {
-		pool.Status.AutoDesiredIPCount = new(int64)
-	} else {
-		if *pool.Status.AutoDesiredIPCount == int64(ipNum) {
-			return nil
-		}
-	}
-
-	*pool.Status.AutoDesiredIPCount = int64(ipNum)
-	err := im.client.Status().Update(ctx, pool)
-	if nil != err {
-		return fmt.Errorf("failed to update IPPool '%s' auto desired IP count to %d : %v", pool.Name, ipNum, err)
+func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
+	err := im.client.DeleteAllOf(ctx, pool, opts...)
+	if client.IgnoreNotFound(err) != nil {
+		return err
 	}
 
 	return nil

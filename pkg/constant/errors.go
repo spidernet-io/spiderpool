@@ -17,3 +17,5 @@ var (
 var ErrMissingRequiredParam = errors.New("must be specified")
 
 var ErrUnknown = errors.New("unknown")
+
+var ErrFreeIPsNotEnough = errors.New("IPPool available free IPs are not enough")

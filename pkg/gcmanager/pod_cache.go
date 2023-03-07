@@ -14,7 +14,6 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -164,34 +163,39 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 			return nil, nil
 		}
 
-		podStatus, _ := podmanager.CheckPodStatus(currentPod)
-
+		var podStatus types.PodStatus
 		var isBuildTerminatingPodEntry, isBuildSucceededOrFailedPodEntry bool
 		switch {
 		case currentPod.DeletionTimestamp != nil && oldPod == nil:
 			// case: current pod is 'Terminating', no old pod
 			isBuildTerminatingPodEntry = true
+			podStatus = constant.PodTerminating
 
 		case currentPod.DeletionTimestamp != nil && oldPod != nil && oldPod.DeletionTimestamp == nil:
 			// case: current pod is 'Terminating', old pod wasn't 'Terminating' phase
 			isBuildTerminatingPodEntry = true
+			podStatus = constant.PodTerminating
 
 		case currentPod.DeletionTimestamp != nil && oldPod.DeletionTimestamp != nil && *currentPod.Spec.TerminationGracePeriodSeconds != *oldPod.Spec.TerminationGracePeriodSeconds:
 			// case: both of current pod and old pod are 'Terminating', but 'TerminationGracePeriodSeconds' changed
 			isBuildTerminatingPodEntry = true
+			podStatus = constant.PodTerminating
 
 		case (currentPod.Status.Phase == corev1.PodSucceeded || currentPod.Status.Phase == corev1.PodFailed) && oldPod == nil:
 			// case: current pod is 'Succeeded|Failed', no old pod
 			isBuildSucceededOrFailedPodEntry = true
+			podStatus = types.PodStatus(currentPod.Status.Phase)
 
 		case (currentPod.Status.Phase == corev1.PodSucceeded || currentPod.Status.Phase == corev1.PodFailed) && (oldPod != nil && currentPod.Status.Phase != oldPod.Status.Phase):
 			// case: current pod is 'Succeeded|Failed', old pod wasn't 'Succeeded|Failed' phase
 			isBuildSucceededOrFailedPodEntry = true
+			podStatus = types.PodStatus(currentPod.Status.Phase)
 
 		case (currentPod.Status.Phase == corev1.PodSucceeded || currentPod.Status.Phase == corev1.PodFailed) &&
 			(oldPod != nil && currentPod.Status.Phase == oldPod.Status.Phase && *currentPod.Spec.TerminationGracePeriodSeconds != *oldPod.Spec.TerminationGracePeriodSeconds):
 			// case: both of current pod and old pod are 'Terminating', but 'TerminationGracePeriodSeconds' changed
 			isBuildSucceededOrFailedPodEntry = true
+			podStatus = types.PodStatus(currentPod.Status.Phase)
 
 		default:
 			// Running | Unknown

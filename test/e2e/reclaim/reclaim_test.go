@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
-	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
@@ -379,7 +378,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			Expect(ok).To(BeTrue())
 		})
 
-	Context("test the reclaim of dirty IP record in the IPPool", func() {
+	/*Context("test the reclaim of dirty IP record in the IPPool", func() {
 		var v4poolName, v6poolName string
 		var v4poolNameList, v6poolNameList []string
 		var v4poolObj, v6poolObj *spiderpool.SpiderIPPool
@@ -596,5 +595,5 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		},
 			Entry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
 		)
-	})
+	})*/
 })

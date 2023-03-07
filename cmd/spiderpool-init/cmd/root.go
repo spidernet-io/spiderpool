@@ -7,225 +7,127 @@ import (
 	"context"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/utils/pointer"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var (
-	logger = logutils.Logger
-
-	runtimeClient client.Client
-
-	SpiderControllerEndpointName      = ""
-	SpiderControllerEndpointNamespace = ""
-
-	RetryIntervalForApi = time.Second * 2
-)
-
-func WaitForSpiderControllerEndpoint(ctx context.Context) {
-	logger.Sugar().Infof("begin to check endpoint %s/%s ", SpiderControllerEndpointNamespace, SpiderControllerEndpointName)
-	for {
-		existed, e := k8sCheckEndpointAvailable(runtimeClient, SpiderControllerEndpointName, SpiderControllerEndpointNamespace)
-		if e != nil {
-			logger.Sugar().Warnf("failed to check spider controller endpoint : %v ", e)
-		} else {
-			if existed {
-				logger.Info("spider controller is ready")
-				return
-			} else {
-				logger.Info("waiting for spider controller")
-			}
-		}
-
-		select {
-		case <-ctx.Done():
-			logger.Fatal("time out , failed  ")
-
-		default:
-			time.Sleep(RetryIntervalForApi)
-		}
-	}
-}
-
-func CreateIppool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) {
-
-	for {
-
-		if v, e := k8sCheckIppoolExisted(runtimeClient, pool.Name); e == nil && v != nil {
-			logger.Sugar().Errorf(" ippool %v is already existed, ignore creating , detail=%v ", pool.Name, *v)
-			return
-		}
-
-		e := k8sCreateIppool(runtimeClient, pool)
-		if e != nil {
-			if apierrors.IsAlreadyExists(e) {
-				logger.Sugar().Errorf(" ippool %v is already existed, ignore creating ", pool.Name)
-				return
-			}
-			logger.Sugar().Warnf("failed to create ippool %s , reason=%v ", pool.Name, e)
-		} else {
-			logger.Sugar().Infof("succeeded to create ippool %v ", pool.Name)
-			return
-		}
-
-		select {
-		case <-ctx.Done():
-			logger.Fatal("time out , failed  ")
-
-		default:
-			time.Sleep(RetryIntervalForApi)
-		}
-	}
-}
-
-func CreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) {
-
-	for {
-
-		if v, e := k8sCheckSubnetExisted(runtimeClient, subnet.Name); e == nil && v != nil {
-			logger.Sugar().Errorf(" subnet %v is already existed, ignore creating , detail=%v ", subnet.Name, *v)
-			return
-		}
-
-		e := k8sCreateSubnet(runtimeClient, subnet)
-		if e != nil {
-			if apierrors.IsAlreadyExists(e) {
-				logger.Sugar().Errorf(" subnet %v is already existed, ignore creating ", subnet.Name)
-				return
-			}
-			logger.Sugar().Warnf("failed to create subnet %s , reason=%v ", subnet.Name, e)
-		} else {
-			logger.Sugar().Infof("succeeded to create subnet %v ", subnet.Name)
-			return
-		}
-
-		select {
-		case <-ctx.Done():
-			logger.Fatal("time out , failed  ")
-
-		default:
-			time.Sleep(RetryIntervalForApi)
-		}
-	}
-}
+var logger *zap.Logger
 
 func Execute() {
-	// init k8s client
-	runtimeClient = InitK8sClient()
+	logger = logutils.Logger.Named("Spiderpool-Init")
 
-	// global context
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*20)
+	config := NewInitDefaultConfig()
+	clinet, err := NewCoreClient()
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
-	// wait for spider controller endpoint and the webhook is ready
-	WaitForSpiderControllerEndpoint(ctx)
+	if err := clinet.WaitForEndpointReady(ctx, config.Namespace, config.ControllerName); err != nil {
+		logger.Fatal(err.Error())
+	}
 
-	// create ipv4 subnet
-	if len(Config.SubnetV4Name) > 0 {
-		logger.Sugar().Infof("Ipv4 subnet will be created ")
+	if len(config.V4SubnetName) != 0 {
+		logger.Sugar().Infof("Try to create default IPv4 Subnet %s", config.V4SubnetName)
 
-		obj := &spiderpoolv1.SpiderSubnet{
-			ObjectMeta: metav1.ObjectMeta{Name: Config.SubnetV4Name},
+		subnet := &spiderpoolv1.SpiderSubnet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: config.V4SubnetName,
+			},
 			Spec: spiderpoolv1.SubnetSpec{
-				Subnet: Config.PoolV4Subnet,
-				IPs:    Config.PoolV4IPRanges,
+				IPVersion: pointer.Int64(constant.IPv4),
+				Subnet:    config.V4CIDR,
+				IPs:       config.V4IPRanges,
+				Default:   pointer.Bool(true),
 			},
 		}
-		if len(Config.PoolV4Gateway) > 0 {
-			obj.Spec.Gateway = &Config.PoolV4Gateway
+		if len(config.V4Gateway) != 0 {
+			subnet.Spec.Gateway = pointer.String(config.V4Gateway)
 		}
-		logger.Sugar().Infof("try to create subnet: %+v ", obj)
 
-		CreateSubnet(ctx, obj)
-
-	} else {
-		logger.Info("Ipv4 subnet will not be created")
+		if err := clinet.WaitForSubnetCreated(ctx, subnet); err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 
-	// create ipv4 ippool
-	if len(Config.PoolV4Name) > 0 {
-		logger.Sugar().Infof("Ipv4 ippool will be created ")
+	if len(config.V6SubnetName) != 0 {
+		logger.Sugar().Infof("Try to create default IPv6 Subnet %s", config.V6SubnetName)
 
-		pool := &spiderpoolv1.SpiderIPPool{
-			ObjectMeta: metav1.ObjectMeta{Name: Config.PoolV4Name},
-			Spec: spiderpoolv1.IPPoolSpec{
-				Subnet: Config.PoolV4Subnet,
+		subnet := &spiderpoolv1.SpiderSubnet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: config.V6SubnetName,
 			},
-		}
-
-		// if we create SpiderSubnet CR object, we'll create an empty default IPPool.
-		// Otherwise, we'll create a truly useful default IPPool
-		if len(Config.SubnetV4Name) == 0 {
-			pool.Spec.IPs = Config.PoolV4IPRanges
-		}
-
-		if len(Config.PoolV4Gateway) > 0 {
-			pool.Spec.Gateway = &Config.PoolV4Gateway
-		}
-		logger.Sugar().Infof("try to create ippool: %+v ", pool)
-
-		CreateIppool(ctx, pool)
-
-	} else {
-		logger.Info("Ipv4 ippool will not be created")
-	}
-
-	// create ipv6 subnet
-	if len(Config.SubnetV6Name) > 0 {
-		logger.Sugar().Infof("Ipv6 subnet will be created ")
-
-		obj := &spiderpoolv1.SpiderSubnet{
-			ObjectMeta: metav1.ObjectMeta{Name: Config.SubnetV6Name},
 			Spec: spiderpoolv1.SubnetSpec{
-				Subnet: Config.PoolV6Subnet,
-				IPs:    Config.PoolV6IPRanges,
+				IPVersion: pointer.Int64(constant.IPv6),
+				Subnet:    config.V6CIDR,
+				IPs:       config.V6IPRanges,
+				Default:   pointer.Bool(true),
 			},
 		}
-		if len(Config.PoolV6Gateway) > 0 {
-			obj.Spec.Gateway = &Config.PoolV6Gateway
+		if len(config.V6Gateway) != 0 {
+			subnet.Spec.Gateway = pointer.String(config.V6Gateway)
 		}
-		logger.Sugar().Infof("try to create subnet: %+v ", obj)
 
-		CreateSubnet(ctx, obj)
-
-	} else {
-		logger.Info("Ipv6 subnet will not be created")
+		if err := clinet.WaitForSubnetCreated(ctx, subnet); err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 
-	// create ipv6 ippool
-	if len(Config.PoolV6Name) > 0 {
-		logger.Sugar().Infof("Ipv6 ippool will be created ")
+	if len(config.V4IPPoolName) != 0 {
+		logger.Sugar().Infof("Try to create default IPv4 IPPool %s", config.V4IPPoolName)
 
-		pool := &spiderpoolv1.SpiderIPPool{
-			ObjectMeta: metav1.ObjectMeta{Name: Config.PoolV6Name},
+		ipPool := &spiderpoolv1.SpiderIPPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: config.V4IPPoolName,
+			},
 			Spec: spiderpoolv1.IPPoolSpec{
-				Subnet: Config.PoolV6Subnet,
+				IPVersion: pointer.Int64(constant.IPv4),
+				Subnet:    config.V4CIDR,
+				IPs:       config.V4IPRanges,
+				Default:   pointer.Bool(true),
 			},
 		}
-
-		// if we create SpiderSubnet CR object, we'll create an empty default IPPool.
-		// Otherwise, we'll create a truly useful default IPPool
-		if len(Config.SubnetV6Name) == 0 {
-			pool.Spec.IPs = Config.PoolV6IPRanges
+		if len(config.V4Gateway) != 0 {
+			ipPool.Spec.Gateway = pointer.String(config.V4Gateway)
 		}
 
-		if len(Config.PoolV6Gateway) > 0 {
-			pool.Spec.Gateway = &Config.PoolV6Gateway
+		if err := clinet.WaitForIPPoolCreated(ctx, ipPool); err != nil {
+			logger.Fatal(err.Error())
 		}
-		logger.Sugar().Infof("try to create ippool: %+v ", pool)
-
-		CreateIppool(ctx, pool)
-
-	} else {
-		logger.Info("Ipv6 ippool will not be created")
 	}
 
-	logger.Info("finish initialization")
+	if len(config.V6IPPoolName) != 0 {
+		logger.Sugar().Infof("Try to create default IPv6 IPPool %s", config.V6IPPoolName)
 
-	// wait for helm --wait
-	time.Sleep(time.Second * 300)
+		ipPool := &spiderpoolv1.SpiderIPPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: config.V6IPPoolName,
+			},
+			Spec: spiderpoolv1.IPPoolSpec{
+				IPVersion: pointer.Int64(constant.IPv6),
+				Subnet:    config.V6CIDR,
+				IPs:       config.V6IPRanges,
+				Default:   pointer.Bool(true),
+			},
+		}
+		if len(config.V6Gateway) != 0 {
+			ipPool.Spec.Gateway = pointer.String(config.V6Gateway)
+		}
+
+		if err := clinet.WaitForIPPoolCreated(ctx, ipPool); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+
+	logger.Info("Finish init")
+
+	// Wait for helm --wait.
+	time.Sleep(300 * time.Second)
 }

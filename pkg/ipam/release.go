@@ -41,12 +41,14 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 
 	// If Pod still exists, change the timeout of ctx to be consistent with
 	// the deletion grace period of Pod. After this time, all IP allocation
-	// recycling should be completed by GC instead of CmdDel().
+	// recycling should be completed by GC instead of CNI DEL.
 	//
-	// But if Pod no longer exists, CmdDel() is still called (DEL may be called
-	// multiple times according to the CNI Specification), then continue to use
-	// the original ctx of OAI UNIX client (default 30s).
+	// But if Pod no longer exists, CNI DEL is still called (CNI DEL may be
+	// called multiple times according to the CNI Specification), continue
+	// to use the original ctx of OAI UNIX client (default 30s).
 	if podStatus != constant.PodUnknown {
+		*delArgs.PodUID = string(pod.UID)
+
 		timeoutSec := *pod.DeletionGracePeriodSeconds - 5
 		if timeoutSec < 0 {
 			timeoutSec = 5
@@ -57,8 +59,15 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		defer cancel()
 	}
 
-	// *delArgs.PodUID must be used instead of string(pod.UID) in the whole
-	// process. When Pod does not exist, string(pod.UID) will cause panic.
+	// Give priority to the UID of Pod, and then consider ENV K8S_POD_UID in
+	// CNI_ARGS, because some CRIs do not set K8S_POD_UID (such as dockershim).
+	// If do not get UID through all the above channels, skip CNI DEL and hand
+	// over the task of IP allocation recycling to GC.
+	if len(*delArgs.PodUID) == 0 {
+		logger.Info("No way to get Pod UID, skip release")
+		return nil
+	}
+
 	defer i.cache.rmFailureIPs(*delArgs.PodUID)
 	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
 	if err != nil {

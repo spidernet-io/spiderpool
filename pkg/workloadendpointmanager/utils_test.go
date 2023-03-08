@@ -37,14 +37,14 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 	Describe("Test RetrieveIPAllocation", func() {
 		var nic1, nic2 string
 		var uid string
-		var allocationT *spiderpoolv1.PodIPAllocation
+		var allocationT spiderpoolv1.PodIPAllocation
 
 		BeforeEach(func() {
 			nic1 = "eth0"
 			nic2 = "net1"
 
 			uid = string(uuid.NewUUID())
-			allocationT = &spiderpoolv1.PodIPAllocation{
+			allocationT = spiderpoolv1.PodIPAllocation{
 				UID: uid,
 				IPs: []spiderpoolv1.IPAllocationDetail{
 					{
@@ -68,11 +68,6 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 			Expect(allocation).To(BeNil())
 		})
 
-		It("retrieves the IP allocation but the current record is nil", func() {
-			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT)
-			Expect(allocation).To(BeNil())
-		})
-
 		It("retrieves non-existent current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
@@ -84,7 +79,7 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 			endpointT.Status.Current = allocationT
 
 			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT)
-			Expect(allocation).To(Equal(allocationT))
+			Expect(*allocation).To(Equal(allocationT))
 		})
 	})
 })

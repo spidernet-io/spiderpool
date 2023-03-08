@@ -9,14 +9,17 @@ import (
 
 // WorkloadEndpointStatus defines the observed state of SpiderEndpoint.
 type WorkloadEndpointStatus struct {
-	// +kubebuilder:validation:Optional
-	Current *PodIPAllocation `json:"current,omitempty"`
+	// +kubebuilder:validation:Required
+	Current PodIPAllocation `json:"current"`
 
 	// +kubebuilder:validation:Required
 	OwnerControllerType string `json:"ownerControllerType"`
 
 	// +kubebuilder:validation:Required
 	OwnerControllerName string `json:"ownerControllerName"`
+
+	// +kubebuilder:validation:Required
+	CreationTime metav1.Time `json:"creationTime"`
 }
 
 type PodIPAllocation struct {
@@ -29,11 +32,8 @@ type PodIPAllocation struct {
 	// +kubebuilder:validation:Required
 	Node string `json:"node"`
 
-	// +kubebuilder:validation:Optional
-	IPs []IPAllocationDetail `json:"ips,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	CreationTime *metav1.Time `json:"creationTime,omitempty"`
+	// +kubebuilder:validation:Required
+	IPs []IPAllocationDetail `json:"ips"`
 }
 
 type IPAllocationDetail struct {

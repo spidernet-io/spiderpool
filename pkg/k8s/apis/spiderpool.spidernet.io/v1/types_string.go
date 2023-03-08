@@ -88,6 +88,7 @@ func (in *WorkloadEndpointStatus) String() string {
 		`Current:` + fmt.Sprintf("%v", in.Current) + `,`,
 		`OwnerControllerType:` + fmt.Sprintf("%v", in.OwnerControllerType) + `,`,
 		`OwnerControllerName` + fmt.Sprintf("%v", in.OwnerControllerName) + `,`,
+		`CreationTime:` + fmt.Sprintf("%v", in.CreationTime) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -107,9 +108,9 @@ func (in *PodIPAllocation) String() string {
 
 	s := strings.Join([]string{`&PodIPAllocation{`,
 		`ContainerID:` + fmt.Sprintf("%+v", in.ContainerID) + `,`,
+		`UID:` + fmt.Sprintf("%+v", in.UID) + `,`,
 		`Node:` + stringutil.ValueToStringGenerated(in.Node) + `,`,
 		`IPs:` + repeatedStringForIPs + `,`,
-		`CreationTime:` + fmt.Sprintf("%v", in.CreationTime) + `,`,
 		`}`,
 	}, "")
 	return s

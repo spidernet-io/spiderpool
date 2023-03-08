@@ -72,7 +72,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 					Labels:    labels,
 				},
 				Status: spiderpoolv1.WorkloadEndpointStatus{
-					Current: &spiderpoolv1.PodIPAllocation{},
+					Current: spiderpoolv1.PodIPAllocation{},
 				},
 			}
 		})
@@ -407,14 +407,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				ctx := context.TODO()
 				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-			})
-
-			It("re-allocates but the Endpoint data is broken", func() {
-				endpointT.Status.Current = nil
-
-				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", endpointT)
-				Expect(err).To(HaveOccurred())
 			})
 
 			It("re-allocates the current IP allocation with the same container ID and Pod UID", func() {

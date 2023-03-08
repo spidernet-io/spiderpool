@@ -5,7 +5,6 @@ package ipam
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -95,10 +94,6 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, containerID string, 
 	if endpoint == nil {
 		logger.Debug("Endpoint not found, try to allocate IP in standard mode instead of retrieving")
 		return nil, nil
-	}
-
-	if endpoint.Status.Current == nil {
-		return nil, errors.New("data is broken, Endpoint doesn't have current IP allocation")
 	}
 
 	logger.Info("Concurrently refresh IP records of IPPools")

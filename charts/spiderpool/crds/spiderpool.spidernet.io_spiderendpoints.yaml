@@ -68,12 +68,12 @@ spec:
           status:
             description: WorkloadEndpointStatus defines the observed state of SpiderEndpoint.
             properties:
+              creationTime:
+                format: date-time
+                type: string
               current:
                 properties:
                   containerID:
-                    type: string
-                  creationTime:
-                    format: date-time
                     type: string
                   ips:
                     items:
@@ -122,6 +122,7 @@ spec:
                     type: string
                 required:
                 - containerID
+                - ips
                 - node
                 - uid
                 type: object
@@ -130,6 +131,8 @@ spec:
               ownerControllerType:
                 type: string
             required:
+            - creationTime
+            - current
             - ownerControllerName
             - ownerControllerType
             type: object

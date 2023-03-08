@@ -11,14 +11,11 @@ func RetrieveIPAllocation(uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint
 	if endpoint == nil {
 		return nil
 	}
-	if endpoint.Status.Current == nil {
-		return nil
-	}
 
 	if endpoint.Status.Current.UID == uid {
 		for _, d := range endpoint.Status.Current.IPs {
 			if d.NIC == nic {
-				return endpoint.Status.Current
+				return &endpoint.Status.Current
 			}
 		}
 	}

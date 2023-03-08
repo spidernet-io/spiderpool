@@ -5,7 +5,6 @@ package workloadendpointmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -108,12 +107,11 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
 	}
 
-	allocation := &spiderpoolv1.PodIPAllocation{
-		ContainerID:  containerID,
-		UID:          string(pod.UID),
-		Node:         pod.Spec.NodeName,
-		IPs:          convert.ConvertResultsToIPDetails(results),
-		CreationTime: &metav1.Time{Time: time.Now()},
+	allocation := spiderpoolv1.PodIPAllocation{
+		ContainerID: containerID,
+		UID:         string(pod.UID),
+		Node:        pod.Spec.NodeName,
+		IPs:         convert.ConvertResultsToIPDetails(results),
 	}
 
 	if endpoint == nil {
@@ -126,6 +124,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 				Current:             allocation,
 				OwnerControllerType: podController.Kind,
 				OwnerControllerName: podController.Name,
+				CreationTime:        metav1.Time{Time: time.Now()},
 			},
 		}
 
@@ -142,8 +141,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return em.client.Create(ctx, endpoint)
 	}
 
-	if endpoint.Status.Current != nil &&
-		endpoint.Status.Current.ContainerID == containerID &&
+	if endpoint.Status.Current.ContainerID == containerID &&
 		endpoint.Status.Current.UID == string(pod.UID) {
 		return nil
 	}
@@ -155,10 +153,6 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, containerID, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
-	}
-
-	if endpoint.Status.Current == nil {
-		return errors.New("data is broken, Endpoint doesn't have current IP allocation")
 	}
 
 	if endpoint.Status.Current.ContainerID == containerID &&

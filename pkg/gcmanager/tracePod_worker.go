@@ -8,6 +8,11 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 // tracePodWorker will circle traverse PodEntry database
@@ -61,65 +66,62 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 	loggerReleaseIP := logger.With(zap.Any("IPPoolIP_Worker", workerIndex))
 	loggerReleaseIP.Info("Starting running 'releaseIPPoolIPExecutor'")
 
-	// for {
-	// 	select {
-	// 	case podCache := <-s.gcIPPoolIPSignal:
-	// 		endpoint, err := s.wepMgr.GetEndpointByName(ctx, podCache.Namespace, podCache.PodName)
-	// 		if nil != err {
-	// 			if apierrors.IsNotFound(err) {
-	// 				loggerReleaseIP.Sugar().Infof("SpiderEndpoint '%s/%s' not found, maybe already cleaned by ScanAll", podCache.Namespace, podCache.PodName)
-	// 				continue
-	// 			}
+	for {
+		select {
+		case podCache := <-s.gcIPPoolIPSignal:
+			endpoint, err := s.wepMgr.GetEndpointByName(ctx, podCache.Namespace, podCache.PodName, constant.UseCache)
+			if nil != err {
+				if apierrors.IsNotFound(err) {
+					loggerReleaseIP.Sugar().Infof("SpiderEndpoint '%s/%s' not found, maybe already cleaned by ScanAll", podCache.Namespace, podCache.PodName)
+					continue
+				}
 
-	// 			loggerReleaseIP.Sugar().Errorf("failed to get SpiderEndpoint '%s/%s', error: %v", podCache.Namespace, podCache.PodName, err)
-	// 			continue
-	// 		}
+				loggerReleaseIP.Sugar().Errorf("failed to get SpiderEndpoint '%s/%s', error: %v", podCache.Namespace, podCache.PodName, err)
+				continue
+			}
 
-	// 		// we need to gather the pod corresponding SpiderEndpoint to get the used history IPs.
-	// 		podUsedIPs := workloadendpointmanager.ListAllHistoricalIPs(endpoint)
+			// we need to gather the pod corresponding SpiderEndpoint allocation data to get the used history IPs.
+			podUsedIPs := convert.GroupIPAllocationDetails(endpoint.Status.Current.UID, endpoint.Status.Current.IPs)
+			// release pod used history IPs
+			for poolName, ips := range podUsedIPs {
+				loggerReleaseIP.Sugar().Infof("pod '%s/%s used IPs '%+v' from pool '%s', begin to release",
+					podCache.Namespace, podCache.PodName, ips, poolName)
 
-	// 		// release pod used history IPs
-	// 		for poolName, ips := range podUsedIPs {
-	// 			loggerReleaseIP.Sugar().Infof("pod '%s/%s used IPs '%+v' from pool '%s', begin to release",
-	// 				podCache.Namespace, podCache.PodName, ips, poolName)
+				err = s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
+				if nil != err {
+					metric.IPGCFailureCounts.Add(ctx, 1)
+					loggerReleaseIP.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in SpiderEndpoint '%s/%s', error: %v",
+						poolName, ips, podCache.Namespace, podCache.PodName, err)
+					continue
+				}
+				metric.IPGCTotalCounts.Add(ctx, 1)
+			}
 
-	// 			err = s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
-	// 			if nil != err {
-	// 				metrics.IPGCFailureCounts.Add(ctx, 1)
-	// 				loggerReleaseIP.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in wep '%s/%s', error: %v",
-	// 					poolName, ips, podCache.Namespace, podCache.PodName, err)
-	// 				continue
-	// 			}
+			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", *podCache)
 
-	// 			// metric
-	// 			metrics.IPGCTotalCounts.Add(ctx, 1)
-	// 		}
+			// delete StatefulSet wep (other controller wep has OwnerReference, its lifecycle is same with pod)
+			if endpoint.Status.OwnerControllerType == constant.KindStatefulSet && endpoint.DeletionTimestamp == nil {
+				err = s.wepMgr.DeleteEndpoint(ctx, endpoint)
+				if nil != err {
+					loggerReleaseIP.Sugar().Errorf("failed to delete StatefulSet wep '%s/%s', error: '%v'",
+						podCache.Namespace, podCache.PodName, err)
+					continue
+				}
+			}
 
-	// 		loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", *podCache)
+			err = s.wepMgr.RemoveFinalizer(ctx, podCache.Namespace, podCache.PodName)
+			if nil != err {
+				loggerReleaseIP.Sugar().Errorf("failed to remove wep '%s/%s' finalizer, error: '%v'",
+					podCache.Namespace, podCache.PodName, err)
+				continue
+			}
 
-	// 		// delete StatefulSet wep (other controller wep has OwnerReference, its lifecycle is same with pod)
-	// 		if endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
-	// 			err = s.wepMgr.DeleteEndpoint(ctx, endpoint)
-	// 			if nil != err {
-	// 				loggerReleaseIP.Sugar().Errorf("failed to delete StatefulSet wep '%s/%s', error: '%v'",
-	// 					podCache.Namespace, podCache.PodName, err)
-	// 				continue
-	// 			}
-	// 		}
+			loggerReleaseIP.Sugar().Infof("remove wep '%s/%s' finalizer '%s' successfully",
+				podCache.Namespace, podCache.PodName, constant.SpiderFinalizer)
 
-	// 		err = s.wepMgr.RemoveFinalizer(ctx, podCache.Namespace, podCache.PodName)
-	// 		if nil != err {
-	// 			loggerReleaseIP.Sugar().Errorf("failed to remove wep '%s/%s' finalizer, error: '%v'",
-	// 				podCache.Namespace, podCache.PodName, err)
-	// 			continue
-	// 		}
-
-	// 		loggerReleaseIP.Sugar().Infof("remove wep '%s/%s' finalizer '%s' successfully",
-	// 			podCache.Namespace, podCache.PodName, constant.SpiderFinalizer)
-
-	// 	case <-ctx.Done():
-	// 		loggerReleaseIP.Info("receive ctx done, stop running releaseIPPoolIPExecutor")
-	// 		return
-	// 	}
-	// }
+		case <-ctx.Done():
+			loggerReleaseIP.Info("receive ctx done, stop running releaseIPPoolIPExecutor")
+			return
+		}
+	}
 }

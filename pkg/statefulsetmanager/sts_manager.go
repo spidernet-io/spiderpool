@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,7 +17,7 @@ import (
 type StatefulSetManager interface {
 	GetStatefulSetByName(ctx context.Context, namespace, name string, cached bool) (*appsv1.StatefulSet, error)
 	ListStatefulSets(ctx context.Context, cached bool, opts ...client.ListOption) (*appsv1.StatefulSetList, error)
-	IsValidStatefulSetPod(ctx context.Context, namespace, podName string) bool
+	IsValidStatefulSetPod(ctx context.Context, namespace, podName, podControllerType string) (bool, error)
 }
 
 type statefulSetManager struct {
@@ -71,22 +70,26 @@ func (sm *statefulSetManager) ListStatefulSets(ctx context.Context, cached bool,
 // IsValidStatefulSetPod only serves for StatefulSet pod, it will check the pod whether need to be cleaned up with the given params podNS, podName.
 // Once the pod's controller StatefulSet was deleted, the pod's corresponding IPPool IP and Endpoint need to be cleaned up.
 // Or the pod's controller StatefulSet decreased its replicas and the pod's index is out of replicas, it needs to be cleaned up too.
-func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespace, podName string) bool {
+func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespace, podName, podControllerType string) (bool, error) {
+	if podControllerType != constant.KindStatefulSet {
+		return false, fmt.Errorf("pod '%s/%s' is controlled by '%s' instead of StatefulSet", namespace, podName, podControllerType)
+	}
+
 	stsName, replicas, found := getStatefulSetNameAndOrdinal(podName)
 	if !found {
-		return false
+		return false, fmt.Errorf("failed to parse the name and replica of its StatefulSet controller from the name of Pod '%s/%s'", namespace, podName)
 	}
 
 	sts, err := sm.GetStatefulSetByName(ctx, namespace, stsName, constant.IgnoreCache)
 	if err != nil {
-		return !apierrors.IsNotFound(err)
+		return false, client.IgnoreNotFound(err)
 	}
 
 	// The Pod controlled by StatefulSet is created or re-created.
 	if replicas <= int(*sts.Spec.Replicas)-1 {
-		return true
+		return true, nil
 	}
 
 	// StatefulSet scaled down.
-	return false
+	return false, nil
 }

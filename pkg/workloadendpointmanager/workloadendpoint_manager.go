@@ -23,8 +23,8 @@ import (
 )
 
 type WorkloadEndpointManager interface {
-	GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.SpiderEndpoint, error)
-	ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
+	GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv1.SpiderEndpoint, error)
+	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
 	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
 	PatchIPAllocationResults(ctx context.Context, containerID string, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
@@ -32,33 +32,48 @@ type WorkloadEndpointManager interface {
 }
 
 type workloadEndpointManager struct {
-	config EndpointManagerConfig
-	client client.Client
+	config    EndpointManagerConfig
+	client    client.Client
+	apiReader client.Reader
 }
 
-func NewWorkloadEndpointManager(config EndpointManagerConfig, client client.Client) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(config EndpointManagerConfig, client client.Client, apiReader client.Reader) (WorkloadEndpointManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
+	if apiReader == nil {
+		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
+	}
 
 	return &workloadEndpointManager{
-		config: setDefaultsForEndpointManagerConfig(config),
-		client: client,
+		config:    setDefaultsForEndpointManagerConfig(config),
+		client:    client,
+		apiReader: apiReader,
 	}, nil
 }
 
-func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string) (*spiderpoolv1.SpiderEndpoint, error) {
+func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv1.SpiderEndpoint, error) {
+	reader := em.apiReader
+	if cached == constant.UseCache {
+		reader = em.client
+	}
+
 	var endpoint spiderpoolv1.SpiderEndpoint
-	if err := em.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &endpoint); nil != err {
+	if err := reader.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &endpoint); nil != err {
 		return nil, err
 	}
 
 	return &endpoint, nil
 }
 
-func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error) {
+func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error) {
+	reader := em.apiReader
+	if cached == constant.UseCache {
+		reader = em.client
+	}
+
 	var endpointList spiderpoolv1.SpiderEndpointList
-	if err := em.client.List(ctx, &endpointList, opts...); err != nil {
+	if err := reader.List(ctx, &endpointList, opts...); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +91,7 @@ func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint 
 func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i <= em.config.MaxConflictRetries; i++ {
-		endpoint, err := em.GetEndpointByName(ctx, namespace, podName)
+		endpoint, err := em.GetEndpointByName(ctx, namespace, podName, constant.IgnoreCache)
 		if err != nil {
 			return client.IgnoreNotFound(err)
 		}
@@ -133,7 +148,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		// we can immediately retrieve the old IP allocation results from the
 		// Endpoint without worrying about the cascading deletion of the Endpoint.
 		if podController.Kind != constant.KindStatefulSet {
-			if err := controllerutil.SetOwnerReference(pod, endpoint, em.config.scheme); err != nil {
+			if err := controllerutil.SetOwnerReference(pod, endpoint, em.client.Scheme()); err != nil {
 				return err
 			}
 		}

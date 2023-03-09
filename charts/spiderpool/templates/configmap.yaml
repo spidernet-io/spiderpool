@@ -20,28 +20,3 @@ data:
     enableIPv6: {{ .Values.feature.enableIPv6 }}
     enableStatefulSet: {{ .Values.feature.enableStatefulSet }}
     enableSpiderSubnet: {{ .Values.feature.enableSpiderSubnet }}
-    {{- if ( and .Values.feature.enableIPv4 .Values.clusterDefaultPool.installIPv4IPPool ) }}
-    clusterDefaultIPv4IPPool: [{{ .Values.clusterDefaultPool.ipv4IPPoolName }}]
-    {{- else}}
-    clusterDefaultIPv4IPPool: []
-    {{- end }}
-    {{- if ( and .Values.feature.enableIPv6 .Values.clusterDefaultPool.installIPv6IPPool ) }}
-    clusterDefaultIPv6IPPool: [{{ .Values.clusterDefaultPool.ipv6IPPoolName }}]
-    {{- else}}
-    clusterDefaultIPv6IPPool: []
-    {{- end }}
-    {{- if ( and .Values.feature.enableSpiderSubnet .Values.feature.enableIPv4 ) }}
-    clusterDefaultIPv4Subnet: [{{ .Values.clusterDefaultPool.ipv4SubnetName }}]
-    {{- else}}
-    clusterDefaultIPv4Subnet: []
-    {{- end}}
-    {{- if ( and .Values.feature.enableSpiderSubnet .Values.feature.enableIPv6 )}}
-    clusterDefaultIPv6Subnet: [{{ .Values.clusterDefaultPool.ipv6SubnetName }}]
-    {{- else}}
-    clusterDefaultIPv6Subnet: []
-    {{- end }}
-    {{- if .Values.feature.enableSpiderSubnet }}
-    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetDefaultFlexibleIPNumber }}
-    {{- else}}
-    clusterSubnetDefaultFlexibleIPNumber: 0
-    {{- end }}

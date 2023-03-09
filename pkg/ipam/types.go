@@ -71,5 +71,5 @@ func (ptp *PoolNameToIPPool) IPPools() []*spiderpoolv1.SpiderIPPool {
 }
 
 func (pp PoolNameToIPPool) String() string {
-	return ""
+	return "*"
 }

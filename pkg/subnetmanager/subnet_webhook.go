@@ -24,7 +24,8 @@ import (
 var WebhookLogger *zap.Logger
 
 type SubnetWebhook struct {
-	client.Client
+	Client    client.Client
+	APIReader client.Reader
 
 	EnableIPv4 bool
 	EnableIPv6 bool

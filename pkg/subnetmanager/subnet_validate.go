@@ -177,7 +177,7 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 
 	// TODO(iiiceoo): Use label selector.
 	subnetList := spiderpoolv1.SpiderSubnetList{}
-	if err := sw.List(ctx, &subnetList); err != nil {
+	if err := sw.APIReader.List(ctx, &subnetList); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to list Subnets: %v", err))
 	}
 

@@ -182,7 +182,7 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 
 	// TODO(iiiceoo): Use label selector.
 	var ipPoolList spiderpoolv1.SpiderIPPoolList
-	if err := iw.Client.List(ctx, &ipPoolList); err != nil {
+	if err := iw.APIReader.List(ctx, &ipPoolList); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
 	}
 
@@ -237,7 +237,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 
 	// TODO(iiiceoo): The list in validateIPPoolCIDR should be reused.
 	var ipPoolList spiderpoolv1.SpiderIPPoolList
-	if err := iw.Client.List(
+	if err := iw.APIReader.List(
 		ctx,
 		&ipPoolList,
 		client.MatchingLabels{constant.LabelIPPoolCIDR: cidr},

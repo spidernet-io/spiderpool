@@ -28,7 +28,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to release")
 
-	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
+	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
@@ -68,8 +68,8 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		return nil
 	}
 
-	defer i.cache.rmFailureIPs(*delArgs.PodUID)
-	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName)
+	defer i.failure.rmFailureIPs(*delArgs.PodUID)
+	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Info("Endpoint does not exist, ignore release")

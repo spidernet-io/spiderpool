@@ -10,7 +10,6 @@ import (
 	"path"
 	"strconv"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -43,14 +42,22 @@ func newCRDManager() (ctrl.Manager, error) {
 		CertDir:                path.Dir(controllerContext.Cfg.TlsServerCertPath),
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
-		ClientDisableCacheFor: []client.Object{
-			&spiderpoolv1.SpiderSubnet{},
-			&spiderpoolv1.SpiderIPPool{},
-			&spiderpoolv1.SpiderEndpoint{},
-			&corev1.Pod{},
-		},
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
+		subnet := raw.(*spiderpoolv1.SpiderSubnet)
+		return []string{strconv.FormatBool(*subnet.Spec.Default)}
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+		ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+		return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+	}); err != nil {
 		return nil, err
 	}
 

@@ -30,7 +30,7 @@ type IPAM interface {
 type ipam struct {
 	config      IPAMConfig
 	ipamLimiter limiter.Limiter
-	cache       *failureCache
+	failure     *failureCache
 
 	ipPoolManager   ippoolmanager.IPPoolManager
 	endpointManager workloadendpointmanager.WorkloadEndpointManager
@@ -76,7 +76,7 @@ func NewIPAM(
 	return &ipam{
 		config:          setDefaultsForIPAMConfig(config),
 		ipamLimiter:     limiter.NewLimiter(limiter.LimiterConfig{}),
-		cache:           newFailureCache(),
+		failure:         newFailureCache(),
 		ipPoolManager:   ipPoolManager,
 		endpointManager: endpointManager,
 		nodeManager:     nodeManager,
@@ -88,7 +88,19 @@ func NewIPAM(
 }
 
 func (i *ipam) Start(ctx context.Context) error {
-	return i.ipamLimiter.Start(ctx)
+	errCh := make(chan error)
+	go func() {
+		if err := i.ipamLimiter.Start(ctx); err != nil {
+			errCh <- err
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
 
 type failureCache struct {

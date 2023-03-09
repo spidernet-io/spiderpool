@@ -20,39 +20,52 @@ import (
 )
 
 type PodManager interface {
-	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
-	ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error)
+	GetPodByName(ctx context.Context, namespace, podName string, cached bool) (*corev1.Pod, error)
+	ListPods(ctx context.Context, cached bool, opts ...client.ListOption) (*corev1.PodList, error)
 	GetPodTopController(ctx context.Context, pod *corev1.Pod) (types.PodTopController, error)
 }
 
 type podManager struct {
-	config PodManagerConfig
-	client client.Client
+	client    client.Client
+	apiReader client.Reader
 }
 
-func NewPodManager(config PodManagerConfig, client client.Client) (PodManager, error) {
+func NewPodManager(client client.Client, apiReader client.Reader) (PodManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
+	if apiReader == nil {
+		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
+	}
 
 	return &podManager{
-		config: setDefaultsForPodManagerConfig(config),
-		client: client,
+		client:    client,
+		apiReader: apiReader,
 	}, nil
 }
 
-func (pm *podManager) GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error) {
+func (pm *podManager) GetPodByName(ctx context.Context, namespace, podName string, cached bool) (*corev1.Pod, error) {
+	reader := pm.apiReader
+	if cached == constant.UseCache {
+		reader = pm.client
+	}
+
 	var pod corev1.Pod
-	if err := pm.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+	if err := reader.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
 		return nil, err
 	}
 
 	return &pod, nil
 }
 
-func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error) {
+func (pm *podManager) ListPods(ctx context.Context, cached bool, opts ...client.ListOption) (*corev1.PodList, error) {
+	reader := pm.apiReader
+	if cached == constant.UseCache {
+		reader = pm.client
+	}
+
 	var podList corev1.PodList
-	if err := pm.client.List(ctx, &podList, opts...); err != nil {
+	if err := reader.List(ctx, &podList, opts...); err != nil {
 		return nil, err
 	}
 

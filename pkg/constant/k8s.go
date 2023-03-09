@@ -87,6 +87,11 @@ const (
 )
 
 const (
+	UseCache    = true
+	IgnoreCache = false
+)
+
+const (
 	SpiderControllerElectorLockName = SpiderpoolController + "-" + resourcelock.LeasesResourceLock
 	QualifiedK8sObjNameFmt          = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 )

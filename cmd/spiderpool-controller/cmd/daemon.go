@@ -206,14 +206,20 @@ func initControllerServiceManagers(ctx context.Context) {
 	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
 	logger.Debug("Begin to initialize Node manager")
-	nodeManager, err := nodemanager.NewNodeManager(controllerContext.CRDManager.GetClient())
+	nodeManager, err := nodemanager.NewNodeManager(
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(controllerContext.CRDManager.GetClient())
+	nsManager, err := namespacemanager.NewNamespaceManager(
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -221,11 +227,8 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize Pod manager")
 	podManager, err := podmanager.NewPodManager(
-		podmanager.PodManagerConfig{
-			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-		},
 		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -233,7 +236,10 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.PodManager = podManager
 
 	logger.Info("Begin to initialize StatefulSet manager")
-	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(controllerContext.CRDManager.GetClient())
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -246,6 +252,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 		},
 		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -253,7 +260,10 @@ func initControllerServiceManagers(ctx context.Context) {
 	controllerContext.EndpointManager = endpointManager
 
 	logger.Debug("Begin to initialize ReservedIP manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(controllerContext.CRDManager.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -261,7 +271,6 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to set up ReservedIP webhook")
 	if err := (&reservedipmanager.ReservedIPWebhook{
-		Client:     controllerContext.CRDManager.GetClient(),
 		EnableIPv4: controllerContext.Cfg.EnableIPv4,
 		EnableIPv6: controllerContext.Cfg.EnableIPv6,
 	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
@@ -276,6 +285,7 @@ func initControllerServiceManagers(ctx context.Context) {
 			MaxAllocatedIPs:       &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
 		},
 		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
 		controllerContext.RIPManager,
 	)
 	if err != nil {
@@ -286,7 +296,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to set up IPPool webhook")
 	if err := (&ippoolmanager.IPPoolWebhook{
 		Client:             controllerContext.CRDManager.GetClient(),
-		Scheme:             controllerContext.CRDManager.GetScheme(),
+		APIReader:          controllerContext.CRDManager.GetAPIReader(),
 		EnableIPv4:         controllerContext.Cfg.EnableIPv4,
 		EnableIPv6:         controllerContext.Cfg.EnableIPv6,
 		EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
@@ -302,8 +312,8 @@ func initControllerServiceManagers(ctx context.Context) {
 				ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 			},
 			controllerContext.CRDManager.GetClient(),
+			controllerContext.CRDManager.GetAPIReader(),
 			controllerContext.IPPoolManager,
-			controllerContext.CRDManager.GetScheme(),
 		)
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -313,6 +323,7 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Debug("Begin to set up Subnet webhook")
 		if err := (&subnetmanager.SubnetWebhook{
 			Client:     controllerContext.CRDManager.GetClient(),
+			APIReader:  controllerContext.CRDManager.GetAPIReader(),
 			EnableIPv4: controllerContext.Cfg.EnableIPv4,
 			EnableIPv6: controllerContext.Cfg.EnableIPv6,
 		}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
@@ -416,7 +427,7 @@ func setupInformers() {
 		logger.Info("Begin to set up Subnet informer")
 		if err := (&subnetmanager.SubnetController{
 			Client:                  controllerContext.CRDManager.GetClient(),
-			Scheme:                  controllerContext.CRDManager.GetScheme(),
+			APIReader:               controllerContext.CRDManager.GetAPIReader(),
 			LeaderRetryElectGap:     time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			ResyncPeriod:            time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
 			SubnetControllerWorkers: controllerContext.Cfg.SubnetInformerWorkers,

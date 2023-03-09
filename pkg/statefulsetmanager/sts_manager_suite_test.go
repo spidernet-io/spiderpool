@@ -10,6 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
+	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -18,6 +20,8 @@ import (
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
+var tracker k8stesting.ObjectTracker
+var fakeAPIReader client.Reader
 var stsManager statefulsetmanager.StatefulSetManager
 
 func TestStatefulSetManager(t *testing.T) {
@@ -34,6 +38,15 @@ var _ = BeforeSuite(func() {
 		WithScheme(scheme).
 		Build()
 
-	stsManager, err = statefulsetmanager.NewStatefulSetManager(fakeClient)
+	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
+	fakeAPIReader = fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjectTracker(tracker).
+		Build()
+
+	stsManager, err = statefulsetmanager.NewStatefulSetManager(
+		fakeClient,
+		fakeAPIReader,
+	)
 	Expect(err).NotTo(HaveOccurred())
 })

@@ -61,7 +61,7 @@ func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 	}
 
 	var subnet spiderpoolv1.SpiderSubnet
-	if err := iw.Client.Get(ctx, apitypes.NamespacedName{Name: owner.Name}, &subnet); err != nil {
+	if err := iw.APIReader.Get(ctx, apitypes.NamespacedName{Name: owner.Name}, &subnet); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to get controller Subnet %s: %v", owner.Name, err))
 	}
 

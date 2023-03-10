@@ -27,8 +27,8 @@ type WorkloadEndpointManager interface {
 	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
 	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
-	PatchIPAllocationResults(ctx context.Context, containerID string, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
-	ReallocateCurrentIPAllocation(ctx context.Context, containerID, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error
+	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
+	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error
 }
 
 type workloadEndpointManager struct {
@@ -117,16 +117,9 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 	return nil
 }
 
-func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, containerID string, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error {
+func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error {
 	if pod == nil {
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
-	}
-
-	allocation := spiderpoolv1.PodIPAllocation{
-		ContainerID: containerID,
-		UID:         string(pod.UID),
-		Node:        pod.Spec.NodeName,
-		IPs:         convert.ConvertResultsToIPDetails(results),
 	}
 
 	if endpoint == nil {
@@ -136,7 +129,11 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 				Namespace: pod.Namespace,
 			},
 			Status: spiderpoolv1.WorkloadEndpointStatus{
-				Current:             allocation,
+				Current: spiderpoolv1.PodIPAllocation{
+					UID:  string(pod.UID),
+					Node: pod.Spec.NodeName,
+					IPs:  convert.ConvertResultsToIPDetails(results),
+				},
 				OwnerControllerType: podController.Kind,
 				OwnerControllerName: podController.Name,
 				CreationTime:        metav1.Time{Time: time.Now()},
@@ -156,26 +153,24 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return em.client.Create(ctx, endpoint)
 	}
 
-	if endpoint.Status.Current.ContainerID == containerID &&
-		endpoint.Status.Current.UID == string(pod.UID) {
+	if endpoint.Status.Current.UID != string(pod.UID) {
 		return nil
 	}
 
-	endpoint.Status.Current = allocation
+	// TODO(iiiceoo): Only append records with different NIC.
+	endpoint.Status.Current.IPs = append(endpoint.Status.Current.IPs, convert.ConvertResultsToIPDetails(results)...)
 	return em.client.Update(ctx, endpoint)
 }
 
-func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, containerID, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
 	}
 
-	if endpoint.Status.Current.ContainerID == containerID &&
-		endpoint.Status.Current.UID == uid {
+	if endpoint.Status.Current.UID == uid {
 		return nil
 	}
 
-	endpoint.Status.Current.ContainerID = containerID
 	endpoint.Status.Current.UID = uid
 	endpoint.Status.Current.Node = nodeName
 

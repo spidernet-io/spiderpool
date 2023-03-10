@@ -73,8 +73,6 @@ spec:
                 type: string
               current:
                 properties:
-                  containerID:
-                    type: string
                   ips:
                     items:
                       properties:
@@ -121,7 +119,6 @@ spec:
                   uid:
                     type: string
                 required:
-                - containerID
                 - ips
                 - node
                 - uid

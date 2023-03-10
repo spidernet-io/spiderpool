@@ -24,9 +24,6 @@ type WorkloadEndpointStatus struct {
 
 type PodIPAllocation struct {
 	// +kubebuilder:validation:Required
-	ContainerID string `json:"containerID"`
-
-	// +kubebuilder:validation:Required
 	UID string `json:"uid"`
 
 	// +kubebuilder:validation:Required

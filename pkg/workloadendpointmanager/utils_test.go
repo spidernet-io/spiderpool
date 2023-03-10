@@ -64,21 +64,28 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 		})
 
 		It("inputs nil Endpoint", func() {
-			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, nil)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, nil, false)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves non-existent current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
-			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT, false)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves the current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
-			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT, false)
+			Expect(*allocation).To(Equal(allocationT))
+		})
+
+		It("retrieves the IP allocation of StatefulSet", func() {
+			endpointT.Status.Current = allocationT
+
+			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT, true)
 			Expect(*allocation).To(Equal(allocationT))
 		})
 	})

@@ -22,7 +22,6 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocation
 	var routes []*models.Route
 	for _, d := range details {
 		nic := d.NIC
-
 		if d.IPv4 != nil {
 			version := constant.IPv4
 			var ipv4Gateway string
@@ -107,30 +106,31 @@ func genDefaultRoute(nic, gateway string) *models.Route {
 
 func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1.IPAllocationDetail {
 	nicToDetail := map[string]*spiderpoolv1.IPAllocationDetail{}
-	var cleanGateway *bool
 	for _, r := range results {
 		var gateway *string
+		var cleanGateway *bool
 		if r.IP.Gateway != "" {
 			gateway = new(string)
+			cleanGateway = new(bool)
 			*gateway = r.IP.Gateway
-			if cleanGateway == nil {
-				cleanGateway = new(bool)
-				*cleanGateway = r.CleanGateway
-			}
+			*cleanGateway = r.CleanGateway
 		}
+
+		address := *r.IP.Address
+		pool := r.IP.IPPool
+		vlan := r.IP.Vlan
 		routes := ConvertOAIRoutesToSpecRoutes(r.Routes)
+
 		if d, ok := nicToDetail[*r.IP.Nic]; ok {
 			if *r.IP.Version == constant.IPv4 {
-				d.IPv4 = r.IP.Address
-				d.IPv4Pool = &r.IP.IPPool
+				d.IPv4 = &address
+				d.IPv4Pool = &pool
 				d.IPv4Gateway = gateway
-				d.CleanGateway = cleanGateway
 				d.Routes = append(d.Routes, routes...)
 			} else {
 				d.IPv6 = r.IP.Address
 				d.IPv6Pool = &r.IP.IPPool
 				d.IPv6Gateway = gateway
-				d.CleanGateway = cleanGateway
 				d.Routes = append(d.Routes, routes...)
 			}
 			continue
@@ -139,9 +139,9 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1
 		if *r.IP.Version == constant.IPv4 {
 			nicToDetail[*r.IP.Nic] = &spiderpoolv1.IPAllocationDetail{
 				NIC:          *r.IP.Nic,
-				IPv4:         r.IP.Address,
-				IPv4Pool:     &r.IP.IPPool,
-				Vlan:         &r.IP.Vlan,
+				IPv4:         &address,
+				IPv4Pool:     &pool,
+				Vlan:         &vlan,
 				IPv4Gateway:  gateway,
 				CleanGateway: cleanGateway,
 				Routes:       routes,
@@ -149,9 +149,9 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1
 		} else {
 			nicToDetail[*r.IP.Nic] = &spiderpoolv1.IPAllocationDetail{
 				NIC:          *r.IP.Nic,
-				IPv6:         r.IP.Address,
-				IPv6Pool:     &r.IP.IPPool,
-				Vlan:         &r.IP.Vlan,
+				IPv6:         &address,
+				IPv6Pool:     &pool,
+				Vlan:         &vlan,
 				IPv6Gateway:  gateway,
 				CleanGateway: cleanGateway,
 				Routes:       routes,

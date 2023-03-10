@@ -7,12 +7,12 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
-func RetrieveIPAllocation(uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint) *spiderpoolv1.PodIPAllocation {
+func RetrieveIPAllocation(uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint, isSTS bool) *spiderpoolv1.PodIPAllocation {
 	if endpoint == nil {
 		return nil
 	}
 
-	if endpoint.Status.Current.UID == uid {
+	if endpoint.Status.Current.UID == uid || isSTS {
 		for _, d := range endpoint.Status.Current.IPs {
 			if d.NIC == nic {
 				return &endpoint.Status.Current

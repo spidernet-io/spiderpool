@@ -89,10 +89,14 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	logger := logutils.FromContext(ctx)
 
-	// Check whether an STS needs to release its currently allocated IP addresses.
+	// Check whether an StatefulSet needs to release its currently allocated IP addresses.
 	// It is discussed in https://github.com/spidernet-io/spiderpool/issues/1045
 	if i.config.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
-		valid := i.stsManager.IsValidStatefulSetPod(ctx, endpoint.Namespace, endpoint.Name)
+		valid, err := i.stsManager.IsValidStatefulSetPod(ctx, endpoint.Namespace, endpoint.Name, endpoint.Status.OwnerControllerType)
+		if nil != err {
+			return fmt.Errorf("failed to check pod %s/%s whether is a valid StatefulSet pod: %v", endpoint.Namespace, endpoint.Name, err)
+		}
+
 		if valid {
 			logger.Info("There is no need to release the IP allocation of StatefulSet")
 			return nil

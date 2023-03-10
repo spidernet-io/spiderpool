@@ -142,8 +142,8 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 	return nil
 }
 
+// TODO(Icarus9913): implement me
 func (s *SpiderGC) GetPodDatabase() PodDBer {
-	// TODO (Icarus9913): ??????
 	return s.PodDB
 }
 
@@ -156,6 +156,6 @@ func (s *SpiderGC) TriggerGCAll() {
 	}
 }
 
+// TODO(Icarus9913): implement me
 func (s *SpiderGC) Health() {
-	//TODO (Icarus9913): implement me
 }

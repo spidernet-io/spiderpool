@@ -226,7 +226,8 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 
 		Describe("IsValidStatefulSetPod", func() {
 			It("is not a Pod of StatefulSet", func() {
-				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, "invalid")
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, namespace, "orphan-pod", constant.KindPod)
+				Expect(err).To(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 
@@ -234,12 +235,14 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				patches := gomonkey.ApplyFuncReturn(strconv.ParseInt, int64(0), constant.ErrUnknown)
 				defer patches.Reset()
 
-				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0), constant.KindStatefulSet)
+				Expect(err).To(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 
 			It("is a valid Pod controlled by StatefulSet, but the StatefulSet no longer exists", func() {
-				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0), constant.KindStatefulSet)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 
@@ -247,8 +250,9 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "Get", constant.ErrUnknown)
 				defer patches.Reset()
 
-				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
-				Expect(valid).To(BeTrue())
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0), constant.KindStatefulSet)
+				Expect(err).To(HaveOccurred())
+				Expect(valid).To(BeFalse())
 			})
 
 			It("used to be a Pod controlled by StatefulSet, but the StatefulSet scaled down", func() {
@@ -258,7 +262,8 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas))
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas), constant.KindStatefulSet)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 
@@ -269,10 +274,10 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas-1))
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas-1), constant.KindStatefulSet)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeTrue())
 			})
-
 		})
 	})
 })

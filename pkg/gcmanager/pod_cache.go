@@ -134,7 +134,11 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	if deleted {
 		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
 		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
-			isValidStsPod := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name)
+			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
+			if nil != err {
+				return nil, err
+			}
+
 			// StatefulSet pod restarted, no need to trace it.
 			if isValidStsPod {
 				return nil, nil

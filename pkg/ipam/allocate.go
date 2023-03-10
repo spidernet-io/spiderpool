@@ -31,7 +31,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to allocate")
 
-	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName, constant.IgnoreCache)
+	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName, constant.UseCache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Pod %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
@@ -47,7 +47,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	logger.Sugar().Debugf("%s %s/%s is the top controller of the Pod", podTopController.Kind, podTopController.Namespace, podTopController.Name)
 
-	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, pod.Name, constant.IgnoreCache)
+	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, pod.Name, constant.UseCache)
 	if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %v", pod.Namespace, pod.Name, err)
 	}
@@ -392,7 +392,7 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 			}
 
 			logger.Sugar().Debugf("Get original IPPool %s", pool)
-			ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, pool, constant.IgnoreCache)
+			ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, pool, constant.UseCache)
 			if err != nil {
 				return fmt.Errorf("failed to get original IPPool %s: %v", pool, err)
 			}

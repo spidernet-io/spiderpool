@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -81,8 +82,8 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 		return ToBeAllocateds{t}, nil
 	}
 
-	// Select IPPool candidates through Configmap spiderpool-conf.
-	t, err = i.config.getClusterDefaultPool(ctx, *addArgs.IfName, addArgs.CleanGateway)
+	// Select IPPools whose spec.default is true.
+	t, err = i.getClusterDefaultPools(ctx, *addArgs.IfName, addArgs.CleanGateway)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +164,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 			if j > 1 {
 				isRetried = true
 			}
-			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabels)
+			poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabels)
 			if nil != err {
 				return nil, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabels, err)
 			}
@@ -366,7 +367,7 @@ func (i *ipam) findOrApplyClusterDefaultSubnetIPPool(ctx context.Context, podCon
 				isRetried = true
 			}
 
-			poolList, err := i.ipPoolManager.ListIPPools(ctx, matchLabel)
+			poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabel)
 			if nil != err {
 				return nil, fmt.Errorf("failed to get IPPoolList with labels '%v', error: %v", matchLabel, err)
 			}
@@ -543,7 +544,7 @@ func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway 
 }
 
 func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGateway bool) (*ToBeAllocated, error) {
-	ns, err := i.nsManager.GetNamespaceByName(ctx, namespace)
+	ns, err := i.nsManager.GetNamespaceByName(ctx, namespace, constant.UseCache)
 	if err != nil {
 		return nil, err
 	}
@@ -605,4 +606,59 @@ func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV
 	}
 
 	return t
+}
+
+func (i *ipam) getClusterDefaultPools(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {
+	ipPoolList, err := i.ipPoolManager.ListIPPools(
+		ctx,
+		constant.UseCache,
+		client.MatchingFields{"spec.default": strconv.FormatBool(true)},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ipPoolList.Items) == 0 {
+		return nil, fmt.Errorf("%w, no pool selection rules of any type are specified", constant.ErrNoAvailablePool)
+	}
+
+	logger := logutils.FromContext(ctx)
+	logger.Info("Use cluster default IPPools")
+
+	t := &ToBeAllocated{
+		NIC:          nic,
+		CleanGateway: cleanGateway,
+	}
+
+	var v4Pools, v6Pools []string
+	v4PToIPPool := PoolNameToIPPool{}
+	v6PToIPPool := PoolNameToIPPool{}
+	for _, ipPool := range ipPoolList.Items {
+		if *ipPool.Spec.IPVersion == constant.IPv4 {
+			v4Pools = append(v4Pools, ipPool.Name)
+			p := ipPool
+			v4PToIPPool[ipPool.Name] = &p
+		} else {
+			v6Pools = append(v6Pools, ipPool.Name)
+			p := ipPool
+			v6PToIPPool[ipPool.Name] = &p
+		}
+	}
+
+	if len(v4Pools) != 0 {
+		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
+			IPVersion: constant.IPv4,
+			Pools:     v4Pools,
+			PToIPPool: v4PToIPPool,
+		})
+	}
+	if len(v6Pools) != 0 {
+		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
+			IPVersion: constant.IPv6,
+			Pools:     v6Pools,
+			PToIPPool: v6PToIPPool,
+		})
+	}
+
+	return t, nil
 }

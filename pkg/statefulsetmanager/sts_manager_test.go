@@ -15,6 +15,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -25,13 +26,21 @@ import (
 var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 	Describe("New StatefulSetManager", func() {
 		It("inputs nil client", func() {
-			manager, err := statefulsetmanager.NewStatefulSetManager(nil)
+			manager, err := statefulsetmanager.NewStatefulSetManager(nil, fakeAPIReader)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(manager).To(BeNil())
+		})
+
+		It("inputs nil API reader", func() {
+			manager, err := statefulsetmanager.NewStatefulSetManager(fakeClient, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 	})
 
 	Describe("Test StatefulSetManager's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var namespace string
 		var stsName string
@@ -39,6 +48,8 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 		var stsT *appsv1.StatefulSet
 
 		BeforeEach(func() {
+			ctx = context.TODO()
+
 			atomic.AddUint64(&count, 1)
 			namespace = "default"
 			stsName = fmt.Sprintf("sts-%v", count)
@@ -66,52 +77,85 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, stsT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    appsv1.GroupName,
+					Version:  appsv1.SchemeGroupVersion.Version,
+					Resource: "statefulsets",
+				},
+				stsT.Namespace,
+				stsT.Name,
+			)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("GetStatefulSetByName", func() {
 			It("gets non-existent StatefulSet", func() {
-				ctx := context.TODO()
-				sts, err := stsManager.GetStatefulSetByName(ctx, namespace, stsName)
+				sts, err := stsManager.GetStatefulSetByName(ctx, namespace, stsName, constant.IgnoreCache)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(sts).To(BeNil())
 			})
 
-			It("gets an existing StatefulSet", func() {
-				ctx := context.TODO()
+			It("gets an existing StatefulSet through cache", func() {
 				err := fakeClient.Create(ctx, stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				sts, err := stsManager.GetStatefulSetByName(ctx, namespace, stsName)
+				sts, err := stsManager.GetStatefulSetByName(ctx, namespace, stsName, constant.UseCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(sts).NotTo(BeNil())
+				Expect(sts).To(Equal(stsT))
+			})
 
+			It("gets an existing StatefulSet through API Server", func() {
+				err := tracker.Add(stsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				sts, err := stsManager.GetStatefulSetByName(ctx, namespace, stsName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sts).NotTo(BeNil())
 				Expect(sts).To(Equal(stsT))
 			})
 		})
 
 		Describe("ListStatefulSets", func() {
 			It("failed to list StatefulSets due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
+				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				stsList, err := stsManager.ListStatefulSets(ctx)
+				stsList, err := stsManager.ListStatefulSets(ctx, constant.IgnoreCache)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(stsList).To(BeNil())
 			})
 
-			It("lists all StatefulSets", func() {
-				ctx := context.TODO()
+			It("lists all StatefulSets through cache", func() {
 				err := fakeClient.Create(ctx, stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				stsList, err := stsManager.ListStatefulSets(ctx)
+				stsList, err := stsManager.ListStatefulSets(ctx, constant.UseCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stsList.Items).NotTo(BeEmpty())
+
+				hasSts := false
+				for _, sts := range stsList.Items {
+					if sts.Name == stsName {
+						hasSts = true
+						break
+					}
+				}
+				Expect(hasSts).To(BeTrue())
+			})
+
+			It("lists all StatefulSets through API Server", func() {
+				err := tracker.Add(stsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				stsList, err := stsManager.ListStatefulSets(ctx, constant.IgnoreCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stsList.Items).NotTo(BeEmpty())
 
@@ -126,11 +170,10 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 
 			It("filters results by Namespace", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
+				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				stsList, err := stsManager.ListStatefulSets(ctx, client.InNamespace(namespace))
+				stsList, err := stsManager.ListStatefulSets(ctx, constant.IgnoreCache, client.InNamespace(namespace))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stsList.Items).NotTo(BeEmpty())
 
@@ -145,11 +188,10 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 
 			It("filters results by label selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
+				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				stsList, err := stsManager.ListStatefulSets(ctx, client.MatchingLabels(labels))
+				stsList, err := stsManager.ListStatefulSets(ctx, constant.IgnoreCache, client.MatchingLabels(labels))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stsList.Items).NotTo(BeEmpty())
 
@@ -164,11 +206,10 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 
 			It("filters results by field selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
+				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				stsList, err := stsManager.ListStatefulSets(ctx, client.MatchingFields{metav1.ObjectNameField: stsName})
+				stsList, err := stsManager.ListStatefulSets(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: stsName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stsList.Items).NotTo(BeEmpty())
 
@@ -185,7 +226,6 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 
 		Describe("IsValidStatefulSetPod", func() {
 			It("is not a Pod of StatefulSet", func() {
-				ctx := context.TODO()
 				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, "invalid")
 				Expect(valid).To(BeFalse())
 			})
@@ -194,22 +234,19 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				patches := gomonkey.ApplyFuncReturn(strconv.ParseInt, int64(0), constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
 				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
 				Expect(valid).To(BeFalse())
 			})
 
 			It("is a valid Pod controlled by StatefulSet, but the StatefulSet no longer exists", func() {
-				ctx := context.TODO()
 				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
 				Expect(valid).To(BeFalse())
 			})
 
 			It("failed to get StatefulSets due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Get", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "Get", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
 				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0))
 				Expect(valid).To(BeTrue())
 			})
@@ -218,8 +255,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				replicas := int32(1)
 				stsT.Spec.Replicas = &replicas
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
+				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
 				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas))
@@ -230,8 +266,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				replicas := int32(1)
 				stsT.Spec.Replicas = &replicas
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, stsT)
+				err := tracker.Add(stsT)
 				Expect(err).NotTo(HaveOccurred())
 
 				valid := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, replicas-1))

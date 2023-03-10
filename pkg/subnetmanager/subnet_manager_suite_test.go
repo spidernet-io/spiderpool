@@ -10,6 +10,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
+	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -23,6 +25,8 @@ var mockLeaderElector *electionmock.MockSpiderLeaseElector
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
+var tracker k8stesting.ObjectTracker
+var fakeAPIReader client.Reader
 var subnetWebhook *subnetmanager.SubnetWebhook
 
 func TestSubnetManager(t *testing.T) {
@@ -42,8 +46,15 @@ var _ = BeforeSuite(func() {
 		WithScheme(scheme).
 		Build()
 
+	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
+	fakeAPIReader = fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjectTracker(tracker).
+		Build()
+
 	subnetWebhook = &subnetmanager.SubnetWebhook{
-		Client: fakeClient,
+		Client:    fakeClient,
+		APIReader: fakeAPIReader,
 	}
 
 	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)

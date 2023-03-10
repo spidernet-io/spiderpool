@@ -245,14 +245,20 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initAgentServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize Node manager")
-	nodeManager, err := nodemanager.NewNodeManager(agentContext.CRDManager.GetClient())
+	nodeManager, err := nodemanager.NewNodeManager(
+		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.NodeManager = nodeManager
 
 	logger.Debug("Begin to initialize Namespace manager")
-	nsManager, err := namespacemanager.NewNamespaceManager(agentContext.CRDManager.GetClient())
+	nsManager, err := namespacemanager.NewNamespaceManager(
+		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -260,11 +266,8 @@ func initAgentServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize Pod manager")
 	podManager, err := podmanager.NewPodManager(
-		podmanager.PodManagerConfig{
-			MaxConflictRetries:    agentContext.Cfg.UpdateCRMaxRetries,
-			ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-		},
 		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -272,7 +275,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.PodManager = podManager
 
 	logger.Debug("Begin to initialize StatefulSet manager")
-	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(agentContext.CRDManager.GetClient())
+	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(
+		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -285,6 +291,7 @@ func initAgentServiceManagers(ctx context.Context) {
 			ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 		},
 		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -292,7 +299,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.EndpointManager = endpointManager
 
 	logger.Debug("Begin to initialize ReservedIP manager")
-	rIPManager, err := reservedipmanager.NewReservedIPManager(agentContext.CRDManager.GetClient())
+	rIPManager, err := reservedipmanager.NewReservedIPManager(
+		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
+	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -306,6 +316,7 @@ func initAgentServiceManagers(ctx context.Context) {
 			MaxAllocatedIPs:       &agentContext.Cfg.IPPoolMaxAllocatedIPs,
 		},
 		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
 		agentContext.RIPManager,
 	)
 	if err != nil {
@@ -321,8 +332,8 @@ func initAgentServiceManagers(ctx context.Context) {
 				ConflictRetryUnitTime: time.Duration(agentContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
 			},
 			agentContext.CRDManager.GetClient(),
+			agentContext.CRDManager.GetAPIReader(),
 			agentContext.IPPoolManager,
-			agentContext.CRDManager.GetScheme(),
 		)
 		if err != nil {
 			logger.Fatal(err.Error())

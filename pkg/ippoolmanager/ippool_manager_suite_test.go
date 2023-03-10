@@ -9,6 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
+	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -18,6 +20,8 @@ import (
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
+var tracker k8stesting.ObjectTracker
+var fakeAPIReader client.Reader
 var ipPoolWebhook *ippoolmanager.IPPoolWebhook
 
 func TestIPPoolManager(t *testing.T) {
@@ -34,9 +38,15 @@ var _ = BeforeSuite(func() {
 		WithScheme(scheme).
 		Build()
 
+	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
+	fakeAPIReader = fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjectTracker(tracker).
+		Build()
+
 	ipPoolWebhook = &ippoolmanager.IPPoolWebhook{
 		Client:             fakeClient,
-		Scheme:             scheme,
+		APIReader:          fakeAPIReader,
 		EnableIPv4:         true,
 		EnableIPv6:         true,
 		EnableSpiderSubnet: true,

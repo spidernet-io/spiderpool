@@ -24,8 +24,8 @@ import (
 var WebhookLogger *zap.Logger
 
 type IPPoolWebhook struct {
-	client.Client
-	Scheme *runtime.Scheme
+	Client    client.Client
+	APIReader client.Reader
 
 	EnableIPv4         bool
 	EnableIPv6         bool

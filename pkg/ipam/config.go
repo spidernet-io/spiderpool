@@ -31,34 +31,6 @@ func setDefaultsForIPAMConfig(config IPAMConfig) IPAMConfig {
 	return config
 }
 
-func (c *IPAMConfig) getClusterDefaultPool(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {
-	if len(c.ClusterDefaultIPv4IPPool) == 0 && len(c.ClusterDefaultIPv6IPPool) == 0 {
-		return nil, fmt.Errorf("%w, no pool selection rules of any type are specified", constant.ErrNoAvailablePool)
-	}
-
-	logger := logutils.FromContext(ctx)
-	logger.Info("Use IPPools from cluster default pools")
-
-	t := &ToBeAllocated{
-		NIC:          nic,
-		CleanGateway: cleanGateway,
-	}
-	if len(c.ClusterDefaultIPv4IPPool) != 0 {
-		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv4,
-			Pools:     c.ClusterDefaultIPv4IPPool,
-		})
-	}
-	if len(c.ClusterDefaultIPv6IPPool) != 0 {
-		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv6,
-			Pools:     c.ClusterDefaultIPv6IPPool,
-		})
-	}
-
-	return t, nil
-}
-
 func (c *IPAMConfig) checkIPVersionEnable(ctx context.Context, tt ToBeAllocateds) error {
 	logger := logutils.FromContext(ctx)
 

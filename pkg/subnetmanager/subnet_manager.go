@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,50 +24,61 @@ import (
 )
 
 type SubnetManager interface {
-	GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error)
-	ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
+	GetSubnetByName(ctx context.Context, subnetName string, cached bool) (*spiderpoolv1.SpiderSubnet, error)
+	ListSubnets(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
 	AllocateEmptyIPPool(ctx context.Context, subnetMgrName string, podController types.PodTopController, podSelector *metav1.LabelSelector, ipNum int, ipVersion types.IPVersion, reclaimIPPool bool, ifName string) (*spiderpoolv1.SpiderIPPool, error)
 	CheckScaleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetManagerName string, ipNum int) error
 }
 
 type subnetManager struct {
-	config        SubnetManagerConfig
-	client        client.Client
+	config    SubnetManagerConfig
+	client    client.Client
+	apiReader client.Reader
+
 	ipPoolManager ippoolmanager.IPPoolManager
-	Scheme        *runtime.Scheme
 }
 
-func NewSubnetManager(config SubnetManagerConfig, client client.Client, ipPoolManager ippoolmanager.IPPoolManager, scheme *runtime.Scheme) (SubnetManager, error) {
+func NewSubnetManager(config SubnetManagerConfig, client client.Client, apiReader client.Reader, ipPoolManager ippoolmanager.IPPoolManager) (SubnetManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
+	if apiReader == nil {
+		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
+	}
 	if ipPoolManager == nil {
 		return nil, fmt.Errorf("ippool manager %w", constant.ErrMissingRequiredParam)
-	}
-	if scheme == nil {
-		return nil, fmt.Errorf("scheme %w", constant.ErrMissingRequiredParam)
 	}
 
 	return &subnetManager{
 		config:        setDefaultsForSubnetManagerConfig(config),
 		client:        client,
+		apiReader:     apiReader,
 		ipPoolManager: ipPoolManager,
-		Scheme:        scheme,
 	}, nil
 }
 
-func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string) (*spiderpoolv1.SpiderSubnet, error) {
+func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string, cached bool) (*spiderpoolv1.SpiderSubnet, error) {
+	reader := sm.apiReader
+	if cached == constant.UseCache {
+		reader = sm.client
+	}
+
 	var subnet spiderpoolv1.SpiderSubnet
-	if err := sm.client.Get(ctx, apitypes.NamespacedName{Name: subnetName}, &subnet); err != nil {
+	if err := reader.Get(ctx, apitypes.NamespacedName{Name: subnetName}, &subnet); err != nil {
 		return nil, err
 	}
 
 	return &subnet, nil
 }
 
-func (sm *subnetManager) ListSubnets(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
+func (sm *subnetManager) ListSubnets(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
+	reader := sm.apiReader
+	if cached == constant.UseCache {
+		reader = sm.client
+	}
+
 	var subnetList spiderpoolv1.SpiderSubnetList
-	if err := sm.client.List(ctx, &subnetList, opts...); err != nil {
+	if err := reader.List(ctx, &subnetList, opts...); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +97,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 	}
 
 	log := logutils.FromContext(ctx)
-	subnet, err := sm.GetSubnetByName(ctx, subnetName)
+	subnet, err := sm.GetSubnetByName(ctx, subnetName, constant.IgnoreCache)
 	if nil != err {
 		return nil, err
 	}
@@ -136,7 +146,7 @@ func (sm *subnetManager) AllocateEmptyIPPool(ctx context.Context, subnetName str
 	}
 	sp.Labels = poolLabels
 
-	err = ctrl.SetControllerReference(subnet, sp, sm.Scheme)
+	err = ctrl.SetControllerReference(subnet, sp, sm.client.Scheme())
 	if nil != err {
 		return nil, fmt.Errorf("failed to set SpiderIPPool %s owner reference with SpiderSubnet %s: %v", sp.Name, subnetName, err)
 	}

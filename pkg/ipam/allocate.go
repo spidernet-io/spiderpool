@@ -31,7 +31,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to allocate")
 
-	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName)
+	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName, constant.IgnoreCache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Pod %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
@@ -47,12 +47,12 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	logger.Sugar().Debugf("%s %s/%s is the top controller of the Pod", podTopController.Kind, podTopController.Namespace, podTopController.Name)
 
-	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, pod.Name)
+	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, pod.Name, constant.IgnoreCache)
 	if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %v", pod.Namespace, pod.Name, err)
 	}
 
-	if endpoint == nil {
+	if endpoint != nil {
 		logger.Sugar().Debugf("Get Endpoint %s/%s", pod.Namespace, pod.Name)
 	} else {
 		logger.Debug("No Endpoint")
@@ -68,10 +68,10 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 			return addResp, nil
 		}
 	} else {
-		logger.Debug("Try to retrieve the existing IP allocation in multi-NIC mode")
+		logger.Debug("Try to retrieve the existing IP allocation")
 		addResp, err := i.retrieveMultiNICIPAllocation(ctx, string(pod.UID), *addArgs.IfName, endpoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the IP allocation in multi-NIC mode: %w", err)
+			return nil, fmt.Errorf("failed to retrieve the IP allocation: %w", err)
 		}
 		if addResp != nil {
 			return addResp, nil
@@ -175,7 +175,7 @@ func (i *ipam) retrieveMultiNICIPAllocation(ctx context.Context, uid, nic string
 		Ips:    ips,
 		Routes: routes,
 	}
-	logger.Sugar().Infof("Succeed to retrieve the IP allocation in multi-NIC mode: %+v", *addResp)
+	logger.Sugar().Infof("Succeed to retrieve the IP allocation: %+v", *addResp)
 
 	return addResp, nil
 }
@@ -199,11 +199,11 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	defer func() {
 		if err != nil {
 			if len(results) != 0 {
-				i.cache.addFailureIPs(string(pod.UID), results)
+				i.failure.addFailureIPs(string(pod.UID), results)
 			}
 			return
 		}
-		i.cache.rmFailureIPs(string(pod.UID))
+		i.failure.rmFailureIPs(string(pod.UID))
 	}()
 
 	logger.Debug("Concurrently allocate IP addresses from all IPPool candidates")
@@ -333,7 +333,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod) (*types.AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
-	for _, oldRes := range i.cache.getFailureIPs(string(pod.UID)) {
+	for _, oldRes := range i.failure.getFailureIPs(string(pod.UID)) {
 		for _, ipPool := range c.PToIPPool {
 			if oldRes.IP.IPPool == ipPool.Name && *oldRes.IP.Nic == nic {
 				logger.Sugar().Infof("Reuse allocated IPv%d IP %s for NIC %s from IPPool %s", c.IPVersion, *oldRes.IP.Address, nic, ipPool.Name)
@@ -374,7 +374,6 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) error {
 	logger := logutils.FromContext(ctx)
 
-	// TODO(iiiceoo): Use gorouting.
 	for _, c := range t.PoolCandidates {
 		if c.PToIPPool == nil {
 			c.PToIPPool = PoolNameToIPPool{}
@@ -393,7 +392,7 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 			}
 
 			logger.Sugar().Debugf("Get original IPPool %s", pool)
-			ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, pool)
+			ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, pool, constant.IgnoreCache)
 			if err != nil {
 				return fmt.Errorf("failed to get original IPPool %s: %v", pool, err)
 			}
@@ -408,6 +407,9 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 	logger := logutils.FromContext(ctx)
 
 	for _, c := range t.PoolCandidates {
+		cp := make([]string, len(c.Pools))
+		copy(cp, c.Pools)
+
 		var errs []error
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
@@ -422,7 +424,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		}
 
 		if len(c.Pools) == 0 {
-			return fmt.Errorf("%w, all IPv%d IPPools %v of %s filtered out: %v", constant.ErrNoAvailablePool, c.IPVersion, c.Pools, t.NIC, utilerrors.NewAggregate(errs))
+			return fmt.Errorf("%w, all IPv%d IPPools %v of %s filtered out: %v", constant.ErrNoAvailablePool, c.IPVersion, cp, t.NIC, utilerrors.NewAggregate(errs))
 		}
 	}
 
@@ -443,7 +445,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 	}
 
 	if ipPool.Spec.NodeAffinity != nil {
-		node, err := i.nodeManager.GetNodeByName(ctx, pod.Spec.NodeName)
+		node, err := i.nodeManager.GetNodeByName(ctx, pod.Spec.NodeName, constant.UseCache)
 		if err != nil {
 			return err
 		}
@@ -457,7 +459,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 	}
 
 	if ipPool.Spec.NamespaceAffinity != nil {
-		namespace, err := i.nsManager.GetNamespaceByName(ctx, pod.Namespace)
+		namespace, err := i.nsManager.GetNamespaceByName(ctx, pod.Namespace, constant.UseCache)
 		if err != nil {
 			return err
 		}

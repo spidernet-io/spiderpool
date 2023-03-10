@@ -80,7 +80,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IPAMUnixSocketPath)
 	if nil != err {
-		err := fmt.Errorf("failed to create spiderpool-agent clinet: %v", err)
+		err := fmt.Errorf("failed to create spiderpool-agent client: %v", err)
 		logger.Error(err.Error())
 		return err
 	}

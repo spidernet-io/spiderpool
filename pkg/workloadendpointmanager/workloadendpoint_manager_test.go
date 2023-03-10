@@ -34,6 +34,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 				workloadendpointmanager.EndpointManagerConfig{},
 				fakeClient,
+				fakeAPIReader,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(manager).NotTo(BeNil())
@@ -43,6 +44,17 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 				workloadendpointmanager.EndpointManagerConfig{},
 				nil,
+				fakeAPIReader,
+			)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(manager).To(BeNil())
+		})
+
+		It("inputs nil API reader", func() {
+			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
+				workloadendpointmanager.EndpointManagerConfig{},
+				fakeClient,
+				nil,
 			)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
@@ -50,6 +62,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 	})
 
 	Describe("Test WorkloadEndpointManager's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var namespace string
 		var endpointName string
@@ -57,6 +71,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		var endpointT *spiderpoolv1.SpiderEndpoint
 
 		BeforeEach(func() {
+			ctx = context.TODO()
+
 			atomic.AddUint64(&count, 1)
 			namespace = "default"
 			endpointName = fmt.Sprintf("endpoint-%v", count)
@@ -86,52 +102,85 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, endpointT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    constant.SpiderpoolAPIGroup,
+					Version:  constant.SpiderpoolAPIVersionV1,
+					Resource: "spiderendpoints",
+				},
+				endpointT.Namespace,
+				endpointT.Name,
+			)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("GetEndpointByName", func() {
 			It("gets non-existent Endpoint", func() {
-				ctx := context.TODO()
-				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName)
+				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName, constant.IgnoreCache)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(endpoint).To(BeNil())
 			})
 
-			It("gets an existing Endpoint", func() {
-				ctx := context.TODO()
+			It("gets an existing Endpoint through cache", func() {
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName)
+				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName, constant.UseCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpoint).NotTo(BeNil())
+				Expect(endpoint).To(Equal(endpointT))
+			})
 
+			It("gets an existing Endpoint through API Server", func() {
+				err := tracker.Add(endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(endpoint).NotTo(BeNil())
 				Expect(endpoint).To(Equal(endpointT))
 			})
 		})
 
 		Describe("ListEndpoints", func() {
 			It("failed to list Endpoints due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx)
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(endpointList).To(BeNil())
 			})
 
-			It("lists all Endpoints", func() {
-				ctx := context.TODO()
+			It("lists all Endpoints through cache", func() {
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx)
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.UseCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(endpointList.Items).NotTo(BeEmpty())
+
+				hasEndpoint := false
+				for _, endpoint := range endpointList.Items {
+					if endpoint.Name == endpointName {
+						hasEndpoint = true
+						break
+					}
+				}
+				Expect(hasEndpoint).To(BeTrue())
+			})
+
+			It("lists all Endpoints through API Server", func() {
+				err := tracker.Add(endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -146,11 +195,10 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("filters results by Namespace", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx, client.MatchingFields{metav1.ObjectNameField: endpointName})
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: endpointName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -165,11 +213,10 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("filters results by label selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx, client.MatchingLabels(labels))
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache, client.MatchingLabels(labels))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -184,11 +231,10 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("filters results by field selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx, client.MatchingFields{metav1.ObjectNameField: endpointName})
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: endpointName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -205,13 +251,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("DeleteEndpoint", func() {
 			It("deletes non-existent Endpoint", func() {
-				ctx := context.TODO()
 				err := endpointManager.DeleteEndpoint(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("deletes an existing Endpoint", func() {
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -222,14 +266,14 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("RemoveFinalizer", func() {
 			It("removes the finalizer for non-existent Endpoint", func() {
-				ctx := context.TODO()
 				err := endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("removes the finalizer that does not exit on the Endpoint", func() {
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -242,8 +286,9 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -256,8 +301,9 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -267,8 +313,9 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("removes the Endpoint's finalizer", func() {
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -304,7 +351,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("inputs nil Pod", func() {
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
@@ -313,7 +359,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
@@ -322,13 +367,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
 			It("creates Endpoint for orphan Pod", func() {
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(
 					ctx,
 					"",
@@ -355,7 +398,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("creates Endpoint for StatefulSet Pod", func() {
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(
 					ctx,
 					"",
@@ -386,7 +428,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				podT.SetUID(uid)
 				endpointT.Status.Current.UID = string(uid)
 
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -395,7 +436,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
 				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
@@ -404,7 +444,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("ReallocateCurrentIPAllocation", func() {
 			It("inputs nil Endpoint", func() {
-				ctx := context.TODO()
 				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
@@ -413,7 +452,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				uid := uuid.NewUUID()
 				endpointT.Status.Current.UID = string(uid)
 
-				ctx := context.TODO()
 				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uid), "node", endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -424,7 +462,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				ctx := context.TODO()
 				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node", endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
@@ -433,7 +470,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 

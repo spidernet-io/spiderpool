@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,19 +25,29 @@ import (
 var _ = Describe("NamespaceManager", Label("namespace_manager_test"), func() {
 	Describe("New NamespaceManager", func() {
 		It("inputs nil client", func() {
-			manager, err := namespacemanager.NewNamespaceManager(nil)
+			manager, err := namespacemanager.NewNamespaceManager(nil, fakeAPIReader)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(manager).To(BeNil())
+		})
+
+		It("inputs nil API reader", func() {
+			manager, err := namespacemanager.NewNamespaceManager(fakeClient, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 	})
 
 	Describe("Test NamespaceManager's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var nsName string
 		var labels map[string]string
 		var nsT *corev1.Namespace
 
 		BeforeEach(func() {
+			ctx = context.TODO()
+
 			atomic.AddUint64(&count, 1)
 			nsName = fmt.Sprintf("namespace-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
@@ -62,52 +73,85 @@ var _ = Describe("NamespaceManager", Label("namespace_manager_test"), func() {
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, nsT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    corev1.GroupName,
+					Version:  corev1.SchemeGroupVersion.Version,
+					Resource: "namespaces",
+				},
+				nsT.Namespace,
+				nsT.Name,
+			)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("GetNamespaceByName", func() {
 			It("gets non-existent Namespace", func() {
-				ctx := context.TODO()
-				ns, err := nsManager.GetNamespaceByName(ctx, nsName)
+				ns, err := nsManager.GetNamespaceByName(ctx, nsName, constant.IgnoreCache)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(ns).To(BeNil())
 			})
 
-			It("gets an existing Namespace", func() {
-				ctx := context.TODO()
+			It("gets an existing Namespace through cache", func() {
 				err := fakeClient.Create(ctx, nsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				ns, err := nsManager.GetNamespaceByName(ctx, nsName)
+				ns, err := nsManager.GetNamespaceByName(ctx, nsName, constant.UseCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(ns).NotTo(BeNil())
+				Expect(ns).To(Equal(nsT))
+			})
 
+			It("gets an existing Namespace through API Server", func() {
+				err := tracker.Add(nsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				ns, err := nsManager.GetNamespaceByName(ctx, nsName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ns).NotTo(BeNil())
 				Expect(ns).To(Equal(nsT))
 			})
 		})
 
 		Describe("ListNamespaces", func() {
 			It("failed to list Namespaces due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, nsT)
+				err := tracker.Add(nsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				nsList, err := nsManager.ListNamespaces(ctx)
+				nsList, err := nsManager.ListNamespaces(ctx, constant.IgnoreCache)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(nsList).To(BeNil())
 			})
 
-			It("lists all Namespaces", func() {
-				ctx := context.TODO()
+			It("lists all Namespaces through cache", func() {
 				err := fakeClient.Create(ctx, nsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				nsList, err := nsManager.ListNamespaces(ctx)
+				nsList, err := nsManager.ListNamespaces(ctx, constant.UseCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(nsList.Items).NotTo(BeEmpty())
+
+				hasNS := false
+				for _, ns := range nsList.Items {
+					if ns.Name == nsName {
+						hasNS = true
+						break
+					}
+				}
+				Expect(hasNS).To(BeTrue())
+			})
+
+			It("lists all Namespaces through API Server", func() {
+				err := tracker.Add(nsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				nsList, err := nsManager.ListNamespaces(ctx, constant.IgnoreCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nsList.Items).NotTo(BeEmpty())
 
@@ -122,11 +166,10 @@ var _ = Describe("NamespaceManager", Label("namespace_manager_test"), func() {
 			})
 
 			It("filters results by label selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, nsT)
+				err := tracker.Add(nsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				nsList, err := nsManager.ListNamespaces(ctx, client.MatchingLabels(labels))
+				nsList, err := nsManager.ListNamespaces(ctx, constant.IgnoreCache, client.MatchingLabels(labels))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nsList.Items).NotTo(BeEmpty())
 
@@ -141,11 +184,10 @@ var _ = Describe("NamespaceManager", Label("namespace_manager_test"), func() {
 			})
 
 			It("filters results by field selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, nsT)
+				err := tracker.Add(nsT)
 				Expect(err).NotTo(HaveOccurred())
 
-				nsList, err := nsManager.ListNamespaces(ctx, client.MatchingFields{metav1.ObjectNameField: nsName})
+				nsList, err := nsManager.ListNamespaces(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: nsName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nsList.Items).NotTo(BeEmpty())
 

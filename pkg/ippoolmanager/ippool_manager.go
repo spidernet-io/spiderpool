@@ -28,8 +28,8 @@ import (
 )
 
 type IPPoolManager interface {
-	GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error)
-	ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
+	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv1.SpiderIPPool, error)
+	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
@@ -39,12 +39,16 @@ type IPPoolManager interface {
 type ipPoolManager struct {
 	config     IPPoolManagerConfig
 	client     client.Client
+	apiReader  client.Reader
 	rIPManager reservedipmanager.ReservedIPManager
 }
 
-func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, rIPManager reservedipmanager.ReservedIPManager) (IPPoolManager, error) {
+func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, apiReader client.Reader, rIPManager reservedipmanager.ReservedIPManager) (IPPoolManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
+	}
+	if apiReader == nil {
+		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
 	}
 	if rIPManager == nil {
 		return nil, fmt.Errorf("reserved-IP manager %w", constant.ErrMissingRequiredParam)
@@ -53,22 +57,33 @@ func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, rIPManag
 	return &ipPoolManager{
 		config:     setDefaultsForIPPoolManagerConfig(config),
 		client:     client,
+		apiReader:  apiReader,
 		rIPManager: rIPManager,
 	}, nil
 }
 
-func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string) (*spiderpoolv1.SpiderIPPool, error) {
+func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv1.SpiderIPPool, error) {
+	reader := im.apiReader
+	if cached == constant.UseCache {
+		reader = im.client
+	}
+
 	var ipPool spiderpoolv1.SpiderIPPool
-	if err := im.client.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
+	if err := reader.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
 		return nil, err
 	}
 
 	return &ipPool, nil
 }
 
-func (im *ipPoolManager) ListIPPools(ctx context.Context, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error) {
+func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error) {
+	reader := im.apiReader
+	if cached == constant.UseCache {
+		reader = im.client
+	}
+
 	var ipPoolList spiderpoolv1.SpiderIPPoolList
-	if err := im.client.List(ctx, &ipPoolList, opts...); err != nil {
+	if err := reader.List(ctx, &ipPoolList, opts...); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +98,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		logger := logger.With(zap.Int("times", i+1))
 		logger.Sugar().Debugf("Re-get IPPool %s for IP allocation", poolName)
-		ipPool, err := im.GetIPPoolByName(ctx, poolName)
+		ipPool, err := im.GetIPPoolByName(ctx, poolName, constant.IgnoreCache)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +196,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
 		logger := logger.With(zap.Int("times", i+1))
 		logger.Sugar().Debugf("Re-get IPPool %s for IP release", poolName)
-		ipPool, err := im.GetIPPoolByName(ctx, poolName)
+		ipPool, err := im.GetIPPoolByName(ctx, poolName, constant.IgnoreCache)
 		if err != nil {
 			return err
 		}
@@ -242,7 +257,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i <= im.config.MaxConflictRetries; i++ {
-		ipPool, err := im.GetIPPoolByName(ctx, poolName)
+		ipPool, err := im.GetIPPoolByName(ctx, poolName, constant.IgnoreCache)
 		if err != nil {
 			return err
 		}

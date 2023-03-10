@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -43,8 +42,8 @@ const (
 var InformerLogger *zap.Logger
 
 type SubnetController struct {
-	client.Client
-	Scheme *runtime.Scheme
+	Client    client.Client
+	APIReader client.Reader
 
 	SubnetsLister listers.SpiderSubnetLister
 	IPPoolsLister listers.SpiderIPPoolLister
@@ -298,7 +297,7 @@ func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpool
 	}
 
 	if sync {
-		if err := sc.Update(ctx, subnet); err != nil {
+		if err := sc.Client.Update(ctx, subnet); err != nil {
 			return err
 		}
 	}
@@ -320,7 +319,7 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 		orphan := false
 		poolCopy := pool.DeepCopy()
 		if !metav1.IsControlledBy(poolCopy, subnet) {
-			if err := ctrl.SetControllerReference(subnet, poolCopy, sc.Scheme); err != nil {
+			if err := ctrl.SetControllerReference(subnet, poolCopy, sc.Client.Scheme()); err != nil {
 				return err
 			}
 			orphan = true
@@ -335,7 +334,7 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 		}
 
 		if orphan {
-			if err := sc.Update(ctx, poolCopy); err != nil {
+			if err := sc.Client.Update(ctx, poolCopy); err != nil {
 				return err
 			}
 		}
@@ -394,7 +393,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	}
 
 	if sync {
-		if err := sc.Status().Update(ctx, subnet); err != nil {
+		if err := sc.Client.Status().Update(ctx, subnet); err != nil {
 			return err
 		}
 
@@ -409,7 +408,7 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 	logger := logutils.FromContext(ctx)
 
 	if !controllerutil.ContainsFinalizer(subnet, metav1.FinalizerDeleteDependents) {
-		if err := sc.Delete(
+		if err := sc.Client.Delete(
 			ctx,
 			subnet,
 			client.PropagationPolicy(metav1.DeletePropagationForeground),
@@ -417,7 +416,7 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 			return err
 		}
 
-		if err := sc.Get(ctx, types.NamespacedName{Name: subnet.Name}, subnet); err != nil {
+		if err := sc.APIReader.Get(ctx, types.NamespacedName{Name: subnet.Name}, subnet); err != nil {
 			return err
 		}
 	}
@@ -433,7 +432,7 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 	}
 
 	controllerutil.RemoveFinalizer(subnet, constant.SpiderFinalizer)
-	if err := sc.Update(ctx, subnet); err != nil {
+	if err := sc.Client.Update(ctx, subnet); err != nil {
 		return err
 	}
 	logger.Sugar().Infof("Remove finalizer %s", constant.SpiderFinalizer)

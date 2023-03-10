@@ -33,6 +33,8 @@ import (
 
 var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 	Describe("SYNC", func() {
+		var ctx context.Context
+
 		var count uint64
 		var subnetName string
 		var subnetT *spiderpoolv1.SpiderSubnet
@@ -45,6 +47,8 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		BeforeEach(func() {
 			subnetmanager.InformerLogger = logutils.Logger.Named("Subnet-Informer")
+
+			ctx = context.TODO()
 
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
@@ -74,7 +78,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			subnetController = &subnetmanager.SubnetController{
 				Client:                  fakeClient,
-				Scheme:                  scheme,
+				APIReader:               fakeClient,
 				LeaderRetryElectGap:     time.Second,
 				SubnetControllerWorkers: 1,
 				MaxWorkqueueLength:      1,
@@ -88,7 +92,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				Return(true).
 				AnyTimes()
 
-			ctx, cancel := context.WithCancel(context.Background())
+			bCtx, cancel := context.WithCancel(context.Background())
 			DeferCleanup(cancel)
 
 			fakeSubnetWatch = watch.NewFake()
@@ -97,7 +101,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			fakeClientset.PrependWatchReactor("spidersubnets", testing.DefaultWatchReactor(fakeSubnetWatch, nil))
 			fakeClientset.PrependWatchReactor("spiderippools", testing.DefaultWatchReactor(fakeIPPoolWatch, nil))
 
-			err := subnetController.SetupInformer(ctx, fakeClientset, mockLeaderElector)
+			err := subnetController.SetupInformer(bCtx, fakeClientset, mockLeaderElector)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func(g Gomega) {
 				g.Expect(subnetController.SubnetIndexer).NotTo(BeNil())
@@ -105,7 +109,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				subnetIndexer = subnetController.SubnetIndexer
 				ipPoolIndexer = subnetController.IPPoolIndexer
 			}).Should(Succeed())
-
 		})
 
 		var deleteOption *client.DeleteOptions
@@ -117,7 +120,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, ipPoolT, deleteOption)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 
@@ -135,7 +137,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			subnetT.Spec.IPVersion = &ipVersion
 			subnetT.Spec.Subnet = subnet
 
-			ctx := context.TODO()
 			err = fakeClient.Create(ctx, subnetT)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -159,7 +160,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 
-			ctx := context.TODO()
 			err := fakeClient.Create(ctx, subnetT)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -200,7 +200,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 			subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.10")
 
-			ctx := context.TODO()
 			err := fakeClient.Create(ctx, subnetT)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -244,7 +243,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 
-			ctx := context.TODO()
 			err := fakeClient.Create(ctx, subnetT)
 			Expect(err).NotTo(HaveOccurred())
 

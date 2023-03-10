@@ -22,7 +22,7 @@ func Execute() {
 	logger = logutils.Logger.Named("Spiderpool-Init")
 
 	config := NewInitDefaultConfig()
-	clinet, err := NewCoreClient()
+	client, err := NewCoreClient()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -30,7 +30,7 @@ func Execute() {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
-	if err := clinet.WaitForEndpointReady(ctx, config.Namespace, config.ControllerName); err != nil {
+	if err := client.WaitForEndpointReady(ctx, config.Namespace, config.ControllerName); err != nil {
 		logger.Fatal(err.Error())
 	}
 
@@ -52,7 +52,7 @@ func Execute() {
 			subnet.Spec.Gateway = pointer.String(config.V4Gateway)
 		}
 
-		if err := clinet.WaitForSubnetCreated(ctx, subnet); err != nil {
+		if err := client.WaitForSubnetCreated(ctx, subnet); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -75,7 +75,7 @@ func Execute() {
 			subnet.Spec.Gateway = pointer.String(config.V6Gateway)
 		}
 
-		if err := clinet.WaitForSubnetCreated(ctx, subnet); err != nil {
+		if err := client.WaitForSubnetCreated(ctx, subnet); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -98,7 +98,7 @@ func Execute() {
 			ipPool.Spec.Gateway = pointer.String(config.V4Gateway)
 		}
 
-		if err := clinet.WaitForIPPoolCreated(ctx, ipPool); err != nil {
+		if err := client.WaitForIPPoolCreated(ctx, ipPool); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -121,7 +121,7 @@ func Execute() {
 			ipPool.Spec.Gateway = pointer.String(config.V6Gateway)
 		}
 
-		if err := clinet.WaitForIPPoolCreated(ctx, ipPool); err != nil {
+		if err := client.WaitForIPPoolCreated(ctx, ipPool); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}

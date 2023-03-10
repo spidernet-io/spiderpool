@@ -120,7 +120,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 
 	subnet := subnetList.Items[0]
 	if !metav1.IsControlledBy(ipPool, &subnet) {
-		if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Scheme); err != nil {
+		if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Client.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference: %v", err)
 		}
 		logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)

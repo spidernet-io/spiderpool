@@ -107,7 +107,6 @@ func (in *PodIPAllocation) String() string {
 	repeatedStringForIPs += "}"
 
 	s := strings.Join([]string{`&PodIPAllocation{`,
-		`ContainerID:` + fmt.Sprintf("%+v", in.ContainerID) + `,`,
 		`UID:` + fmt.Sprintf("%+v", in.UID) + `,`,
 		`Node:` + stringutil.ValueToStringGenerated(in.Node) + `,`,
 		`IPs:` + repeatedStringForIPs + `,`,

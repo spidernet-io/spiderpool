@@ -351,7 +351,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("inputs nil Pod", func() {
-				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
@@ -359,7 +359,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
 				defer patches.Reset()
 
-				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -367,14 +367,13 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
 				defer patches.Reset()
 
-				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
 			It("creates Endpoint for orphan Pod", func() {
 				err := endpointManager.PatchIPAllocationResults(
 					ctx,
-					"",
 					[]*spiderpooltypes.AllocationResult{},
 					nil,
 					podT,
@@ -400,7 +399,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("creates Endpoint for StatefulSet Pod", func() {
 				err := endpointManager.PatchIPAllocationResults(
 					ctx,
-					"",
 					[]*spiderpooltypes.AllocationResult{},
 					nil,
 					podT,
@@ -423,12 +421,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
 			})
 
-			It("patches IP allocation results with the same container ID and Pod UID", func() {
-				uid := uuid.NewUUID()
-				podT.SetUID(uid)
-				endpointT.Status.Current.UID = string(uid)
+			It("patches IP allocation results with different Pod UID", func() {
+				podT.SetUID(uuid.NewUUID())
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -436,7 +433,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
-				err := endpointManager.PatchIPAllocationResults(ctx, "", []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
+				uid := uuid.NewUUID()
+				podT.SetUID(uid)
+				endpointT.Status.Current.UID = string(uid)
+
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -444,15 +445,15 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("ReallocateCurrentIPAllocation", func() {
 			It("inputs nil Endpoint", func() {
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node1", nil)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node1", nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
-			It("re-allocates the current IP allocation with the same container ID and Pod UID", func() {
+			It("re-allocates the current IP allocation with the same Pod UID", func() {
 				uid := uuid.NewUUID()
 				endpointT.Status.Current.UID = string(uid)
 
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uid), "node", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uid), "node", endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -462,7 +463,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, "", string(uuid.NewUUID()), "node", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node", endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -476,7 +477,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				uid := string(uuid.NewUUID())
 				nodeName := "new-node"
 
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, "", uid, nodeName, endpointT)
+				err = endpointManager.ReallocateCurrentIPAllocation(ctx, uid, nodeName, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointT.Status.Current.UID).To(Equal(uid))
 				Expect(endpointT.Status.Current.Node).To(Equal(nodeName))

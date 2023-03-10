@@ -107,7 +107,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 		}
 	}
 
-	allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic, endpoint)
+	allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic, endpoint, false)
 	if allocation == nil {
 		logger.Info("Nothing retrieved for releasing")
 		return nil

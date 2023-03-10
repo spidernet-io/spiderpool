@@ -517,6 +517,42 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 			})
 
+			When("Validating 'spec.default'", func() {
+				It("creates non-default IPv4 IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(false)
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("creates default IPv4 IPPool, but there is already one in the cluster", func() {
+					existSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existSubnetT.Spec.Subnet = "172.18.40.0/24"
+					existSubnetT.Spec.Default = pointer.Bool(true)
+
+					err := fakeClient.Create(ctx, existSubnetT)
+					Expect(err).NotTo(HaveOccurred())
+
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(true)
+
+					err = subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("creates default IPv4 IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(true)
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
 			When("Validating 'spec.ips'", func() {
 				It("inputs invalid 'spec.ips'", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -794,6 +830,39 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+			})
+
+			When("Validating 'spec.default'", func() {
+				It("set default IPv4 IPPool, but there is already one in the cluster", func() {
+					existSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existSubnetT.Spec.Subnet = "172.18.40.0/24"
+					existSubnetT.Spec.Default = pointer.Bool(true)
+
+					err := fakeClient.Create(ctx, existSubnetT)
+					Expect(err).NotTo(HaveOccurred())
+
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(false)
+
+					newIPPoolT := subnetT.DeepCopy()
+					newIPPoolT.Spec.Default = pointer.Bool(true)
+
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newIPPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("set default IPv4 IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(false)
+
+					newIPPoolT := subnetT.DeepCopy()
+					newIPPoolT.Spec.Default = pointer.Bool(true)
+
+					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 

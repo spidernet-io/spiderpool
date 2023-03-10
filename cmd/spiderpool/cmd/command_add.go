@@ -93,7 +93,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
 	params := daemonset.NewPostIpamIPParams().

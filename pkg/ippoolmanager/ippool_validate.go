@@ -25,6 +25,7 @@ var (
 	excludeIPsField *field.Path = field.NewPath("spec").Child("excludeIPs")
 	gatewayField    *field.Path = field.NewPath("spec").Child("gateway")
 	routesField     *field.Path = field.NewPath("spec").Child("routes")
+	defaultField    *field.Path = field.NewPath("spec").Child("default")
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
@@ -93,6 +94,9 @@ func validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool *spiderpoolv1.SpiderI
 }
 
 func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if err := iw.validateIPPoolDefault(ctx, ipPool); err != nil {
+		return err
+	}
 	if err := iw.validateIPPoolAvailableIPs(ctx, ipPool); err != nil {
 		return err
 	}
@@ -206,6 +210,34 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 					subnetField,
 					ipPool.Spec.Subnet,
 					fmt.Sprintf("overlap with IPPool %s which 'spec.subnet' is %s", pool.Name, pool.Spec.Subnet),
+				)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (iw *IPPoolWebhook) validateIPPoolDefault(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+	if ipPool.Spec.Default == nil || !*ipPool.Spec.Default {
+		return nil
+	}
+
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
+	if err := iw.Client.List(
+		ctx,
+		&ipPoolList,
+		client.MatchingFields{"spec.default": strconv.FormatBool(true)},
+	); err != nil {
+		return field.InternalError(defaultField, fmt.Errorf("failed to list default IPPools: %v", err))
+	}
+
+	for _, dp := range ipPoolList.Items {
+		if *dp.Spec.IPVersion == *ipPool.Spec.IPVersion {
+			if dp.Name != ipPool.Name {
+				return field.Forbidden(
+					defaultField,
+					fmt.Sprintf("IPPool %s has been set as the default IPPool, and there is only one default IPPool in the cluster", dp.Name),
 				)
 			}
 		}

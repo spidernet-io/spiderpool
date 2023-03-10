@@ -175,20 +175,11 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					}
 				}
 			} else {
-				endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)
-				if err != nil {
-					scanAllLogger.Sugar().Errorf("failed to get Endpoint '%s/%s', error: %v", podYaml.Namespace, podYaml.Name, err)
-					continue
-				}
-
-				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with Endpoint pod UID
-				if endpoint.Status.Current.UID != poolIPAllocation.UID {
+				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with pod UID
+				if string(podYaml.UID) != poolIPAllocation.UID {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
-					// release IP but no need to clean up SpiderEndpoint object
-					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
-						IP:  poolIP,
-						UID: poolIPAllocation.UID},
-					})
+					// we are afraid that no one removes the old same name Endpoint finalizer
+					err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
 					if nil != err {
 						wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
 						continue
@@ -196,33 +187,42 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 
 					wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 				} else {
-					// case: The pod in IPPool's ip-allocationDetail is also exist in k8s,
-					// and the IPPool IP corresponding allocation pod UID is same with Endpoint pod UID, but the IPPool IP isn't belong to the Endpoint IPs
-					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "same pod UID but IPPoolAllocation IP is different with Endpoint IP"))
-					isBadIP := true
-					for _, endpointIP := range endpoint.Status.Current.IPs {
-						if *pool.Spec.IPVersion == constant.IPv4 {
-							if endpointIP.IPv4 != nil && strings.Split(*endpointIP.IPv4, "/")[0] == poolIP {
-								isBadIP = false
-							}
-						} else {
-							if endpointIP.IPv6 != nil && strings.Split(*endpointIP.IPv6, "/")[0] == poolIP {
-								isBadIP = false
+					endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)
+					if err != nil {
+						scanAllLogger.Sugar().Errorf("failed to get Endpoint '%s/%s', error: %v", podYaml.Namespace, podYaml.Name, err)
+						continue
+					}
+
+					if endpoint.Status.Current.UID == string(podYaml.UID) {
+						// case: The pod in IPPool's ip-allocationDetail is also exist in k8s,
+						// and the IPPool IP corresponding allocation pod UID is same with Endpoint pod UID, but the IPPool IP isn't belong to the Endpoint IPs
+						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "same pod UID but IPPoolAllocation IP is different with Endpoint IP"))
+						isBadIP := true
+						for _, endpointIP := range endpoint.Status.Current.IPs {
+							if *pool.Spec.IPVersion == constant.IPv4 {
+								if endpointIP.IPv4 != nil && strings.Split(*endpointIP.IPv4, "/")[0] == poolIP {
+									isBadIP = false
+								}
+							} else {
+								if endpointIP.IPv6 != nil && strings.Split(*endpointIP.IPv6, "/")[0] == poolIP {
+									isBadIP = false
+								}
 							}
 						}
-					}
-					if isBadIP {
-						// release IP but no need to clean up SpiderEndpoint object
-						err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
-							IP:  poolIP,
-							UID: poolIPAllocation.UID},
-						})
-						if nil != err {
-							wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
-							continue
+						if isBadIP {
+							// release IP but no need to clean up SpiderEndpoint object
+							err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
+								IP:  poolIP,
+								UID: poolIPAllocation.UID},
+							})
+							if nil != err {
+								wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
+								continue
+							}
+							wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 						}
-						wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 					}
+					// It's impossible that a new IP would be allocated when an old same name Endpoint object exist, because we already avoid it in IPAM
 				}
 			}
 		}

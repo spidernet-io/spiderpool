@@ -31,14 +31,13 @@ type SubnetManager interface {
 }
 
 type subnetManager struct {
-	config    SubnetManagerConfig
 	client    client.Client
 	apiReader client.Reader
 
 	ipPoolManager ippoolmanager.IPPoolManager
 }
 
-func NewSubnetManager(config SubnetManagerConfig, client client.Client, apiReader client.Reader, ipPoolManager ippoolmanager.IPPoolManager) (SubnetManager, error) {
+func NewSubnetManager(client client.Client, apiReader client.Reader, ipPoolManager ippoolmanager.IPPoolManager) (SubnetManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
@@ -50,7 +49,6 @@ func NewSubnetManager(config SubnetManagerConfig, client client.Client, apiReade
 	}
 
 	return &subnetManager{
-		config:        setDefaultsForSubnetManagerConfig(config),
 		client:        client,
 		apiReader:     apiReader,
 		ipPoolManager: ipPoolManager,

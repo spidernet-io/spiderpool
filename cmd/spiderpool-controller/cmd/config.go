@@ -76,8 +76,6 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
 	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
 
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &controllerContext.Cfg.UpdateCRMaxRetries},
-	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "50", false, nil, nil, &controllerContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 
 	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
@@ -120,8 +118,6 @@ type Config struct {
 	LeaseRetryPeriod       int
 	LeaseRetryGap          int
 
-	UpdateCRMaxRetries    int
-	UpdateCRRetryUnitTime int
 	IPPoolMaxAllocatedIPs int
 
 	SubnetResyncPeriod               int

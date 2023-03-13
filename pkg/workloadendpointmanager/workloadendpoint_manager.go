@@ -6,13 +6,12 @@ package workloadendpointmanager
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -20,6 +19,7 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 )
 
 type WorkloadEndpointManager interface {
@@ -32,12 +32,11 @@ type WorkloadEndpointManager interface {
 }
 
 type workloadEndpointManager struct {
-	config    EndpointManagerConfig
 	client    client.Client
 	apiReader client.Reader
 }
 
-func NewWorkloadEndpointManager(config EndpointManagerConfig, client client.Client, apiReader client.Reader) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(client client.Client, apiReader client.Reader) (WorkloadEndpointManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
@@ -46,7 +45,6 @@ func NewWorkloadEndpointManager(config EndpointManagerConfig, client client.Clie
 	}
 
 	return &workloadEndpointManager{
-		config:    setDefaultsForEndpointManagerConfig(config),
 		client:    client,
 		apiReader: apiReader,
 	}, nil
@@ -89,8 +87,9 @@ func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint 
 }
 
 func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespace, podName string) error {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i <= em.config.MaxConflictRetries; i++ {
+	backoff := retry.DefaultRetry
+	steps := backoff.Steps
+	err := retry.RetryOnConflictWithContext(ctx, backoff, func(ctx context.Context) error {
 		endpoint, err := em.GetEndpointByName(ctx, namespace, podName, constant.IgnoreCache)
 		if err != nil {
 			return client.IgnoreNotFound(err)
@@ -101,17 +100,13 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 		}
 
 		controllerutil.RemoveFinalizer(endpoint, constant.SpiderFinalizer)
-		if err := em.client.Update(ctx, endpoint); err != nil {
-			if !apierrors.IsConflict(err) {
-				return err
-			}
-			if i == em.config.MaxConflictRetries {
-				return fmt.Errorf("%w (%d times), failed to remove finalizer %s from Endpoint %s/%s", constant.ErrRetriesExhausted, em.config.MaxConflictRetries, constant.SpiderFinalizer, namespace, podName)
-			}
-			time.Sleep(time.Duration(r.Intn(1<<(i+1))) * em.config.ConflictRetryUnitTime)
-			continue
+		return em.client.Update(ctx, endpoint)
+	})
+	if err != nil {
+		if err == wait.ErrWaitTimeout {
+			err = fmt.Errorf("%w (%d times), failed to remove finalizer %s from Endpoint %s/%s", constant.ErrRetriesExhausted, steps, constant.SpiderFinalizer, namespace, podName)
 		}
-		break
+		return err
 	}
 
 	return nil

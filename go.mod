@@ -52,7 +52,7 @@ require (
 	github.com/moby/moby v23.0.1+incompatible
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus/client_golang v1.14.0
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.10.0
 )
 
 require (

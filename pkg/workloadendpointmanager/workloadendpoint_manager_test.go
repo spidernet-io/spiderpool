@@ -30,19 +30,8 @@ import (
 
 var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test"), func() {
 	Describe("New WorkloadEndpointManager", func() {
-		It("sets default config", func() {
-			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-				workloadendpointmanager.EndpointManagerConfig{},
-				fakeClient,
-				fakeAPIReader,
-			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(manager).NotTo(BeNil())
-		})
-
 		It("inputs nil client", func() {
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-				workloadendpointmanager.EndpointManagerConfig{},
 				nil,
 				fakeAPIReader,
 			)
@@ -52,7 +41,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		It("inputs nil API reader", func() {
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-				workloadendpointmanager.EndpointManagerConfig{},
 				fakeClient,
 				nil,
 			)

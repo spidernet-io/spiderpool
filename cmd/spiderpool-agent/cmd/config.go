@@ -60,8 +60,6 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
 
-	{"SPIDERPOOL_UPDATE_CR_MAX_RETRIES", "3", false, nil, nil, &agentContext.Cfg.UpdateCRMaxRetries},
-	{"SPIDERPOOL_UPDATE_CR_RETRY_UNIT_TIME", "50", false, nil, nil, &agentContext.Cfg.UpdateCRRetryUnitTime},
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", true, nil, nil, &agentContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "1", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_MAX_RETRIES", "50", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolMaxRetries},
@@ -85,8 +83,6 @@ type Config struct {
 	GopsListenPort   string
 	PyroscopeAddress string
 
-	UpdateCRMaxRetries       int
-	UpdateCRRetryUnitTime    int
 	IPPoolMaxAllocatedIPs    int
 	WaitSubnetPoolTime       int
 	WaitSubnetPoolMaxRetries int

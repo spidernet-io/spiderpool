@@ -247,10 +247,6 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize Endpoint manager")
 	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-		workloadendpointmanager.EndpointManagerConfig{
-			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-		},
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
 	)
@@ -280,9 +276,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
 		ippoolmanager.IPPoolManagerConfig{
-			MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-			ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-			MaxAllocatedIPs:       &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+			MaxAllocatedIPs: &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
 		},
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
@@ -307,10 +301,6 @@ func initControllerServiceManagers(ctx context.Context) {
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Debug("Begin to initialize Subnet manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(
-			subnetmanager.SubnetManagerConfig{
-				MaxConflictRetries:    controllerContext.Cfg.UpdateCRMaxRetries,
-				ConflictRetryUnitTime: time.Duration(controllerContext.Cfg.UpdateCRRetryUnitTime) * time.Millisecond,
-			},
 			controllerContext.CRDManager.GetClient(),
 			controllerContext.CRDManager.GetAPIReader(),
 			controllerContext.IPPoolManager,

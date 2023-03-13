@@ -49,9 +49,6 @@ var _ = BeforeSuite(func() {
 		Build()
 
 	endpointManager, err = workloadendpointmanager.NewWorkloadEndpointManager(
-		workloadendpointmanager.EndpointManagerConfig{
-			MaxConflictRetries: 1,
-		},
 		fakeClient,
 		fakeAPIReader,
 	)

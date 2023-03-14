@@ -223,9 +223,10 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
-				subnetAllocatedIPPools, err := convert.UnmarshalSubnetAllocatedIPPools(subnetR.Status.ControlledIPPools)
+
+				preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnetR.Status.ControlledIPPools)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(subnetAllocatedIPPools).To(Equal(
+				g.Expect(preAllocations).To(Equal(
 					spiderpoolv1.PoolIPPreAllocations{
 						ipPoolT.Name: spiderpoolv1.PoolIPPreAllocation{
 							IPs: []string{"172.18.40.10"},

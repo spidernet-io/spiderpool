@@ -57,10 +57,8 @@ type SubnetStatus struct {
 type PoolIPPreAllocations map[string]PoolIPPreAllocation
 
 type PoolIPPreAllocation struct {
-	// +kubebuilder:validation:Optional
-	IPs []string `json:"ips"`
-	// +kubebuilder:validation:Optional
-	Application *string `json:"application,omitempty"`
+	IPs         []string `json:"ips"`
+	Application *string  `json:"application,omitempty"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spidersubnets",scope="Cluster",shortName={ss},singular="spidersubnet"

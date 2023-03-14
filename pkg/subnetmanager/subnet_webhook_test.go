@@ -26,6 +26,7 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
@@ -1040,7 +1041,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			When("Validating the pre-allocated IP addresses", func() {
-				/*It("failed to assemble total IP addresses due to some unknown errors", func() {
+				It("failed to assemble total IP addresses due to some unknown errors", func() {
 					patches := gomonkey.ApplyFuncReturn(spiderpoolip.AssembleTotalIPs, nil, constant.ErrUnknown)
 					defer patches.Reset()
 
@@ -1053,22 +1054,25 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					subnetT.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{
+					preAllocations := spiderpoolv1.PoolIPPreAllocations{
 						"pool": spiderpoolv1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.10",
 							},
 						},
 					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
 
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})*/
+				})
 
-				/*It("has invalid 'status.controlledIPPools'", func() {
+				It("has invalid 'status.controlledIPPools'", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
@@ -1078,18 +1082,23 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					subnetT.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{IPs: constant.InvalidIPRanges},
+					preAllocations := spiderpoolv1.PoolIPPreAllocations{
+						"pool": spiderpoolv1.PoolIPPreAllocation{
+							IPs: constant.InvalidIPRanges,
+						},
 					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
 
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})*/
+				})
 
-				/*It("removes IP range that is being used by IPPool", func() {
+				It("removes IP ranges that is being used by IPPool", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
@@ -1099,20 +1108,51 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					subnetT.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{
+					preAllocations := spiderpoolv1.PoolIPPreAllocations{
 						"pool": spiderpoolv1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.10",
 							},
 						},
 					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
 
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})*/
+				})
+
+				It("removes IP ranges not used by IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+
+					preAllocations := spiderpoolv1.PoolIPPreAllocations{
+						"pool": spiderpoolv1.PoolIPPreAllocation{
+							IPs: []string{
+								"172.18.40.1",
+							},
+						},
+					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
+
+					newSubnetT := subnetT.DeepCopy()
+					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
+
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					Expect(err).NotTo(HaveOccurred())
+				})
 			})
 
 			It("deletes Subnet", func() {

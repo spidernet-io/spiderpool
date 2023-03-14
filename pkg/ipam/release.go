@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -49,7 +48,6 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	// called multiple times according to the CNI Specification), continue
 	// to use the original ctx of OAI UNIX client (default 30s).
 	if pod != nil {
-		// TODO
 		*delArgs.PodUID = string(pod.UID)
 		logger = logger.With(zap.String("PodUID", *delArgs.PodUID))
 
@@ -87,13 +85,14 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	}
 	logger.Info("Succeed to release")
 
-	if i.config.EnableSpiderSubnet && endpoint.Status.OwnerControllerType == constant.KindPod {
-		logger.Info("try to check whether need to delete dead orphan pod's auto-created IPPool")
-		err := i.deleteDeadOrphanPodAutoIPPool(ctx, *delArgs.PodNamespace, *delArgs.PodName, *delArgs.IfName)
-		if nil != err {
-			logger.Sugar().Errorf("failed to delete dead orphan pod auto-created IPPool: %v", err)
-		}
-	}
+	// TODO(Icarus9913): Orphan Pod.
+	// if i.config.EnableSpiderSubnet && endpoint.Status.OwnerControllerType == constant.KindPod {
+	// 	logger.Info("try to check whether need to delete dead orphan pod's auto-created IPPool")
+	// 	err := i.deleteDeadOrphanPodAutoIPPool(ctx, *delArgs.PodNamespace, *delArgs.PodName, *delArgs.IfName)
+	// 	if nil != err {
+	// 		logger.Sugar().Errorf("failed to delete dead orphan pod auto-created IPPool: %v", err)
+	// 	}
+	// }
 
 	return nil
 }
@@ -184,19 +183,19 @@ func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv1.I
 }
 
 // deleteDeadOrphanPodAutoIPPool will delete orphan pod corresponding IPPools
-func (i *ipam) deleteDeadOrphanPodAutoIPPool(ctx context.Context, podNS, podName, ifName string) error {
-	log := logutils.FromContext(ctx)
-	log.Sugar().Infof("orphan pod dead, try to delete corresponding IPPool list that already exist")
-	err := i.ipPoolManager.DeleteAllIPPools(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
-		// this label make it sure to find orphan pod corresponding IPPool
-		constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
-		// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?
-		constant.LabelIPPoolInterface:     ifName,
-		constant.LabelIPPoolReclaimIPPool: constant.True,
-	})
-	if nil != err {
-		return err
-	}
+// func (i *ipam) deleteDeadOrphanPodAutoIPPool(ctx context.Context, podNS, podName, ifName string) error {
+// 	log := logutils.FromContext(ctx)
+// 	log.Sugar().Infof("orphan pod dead, try to delete corresponding IPPool list that already exist")
+// 	err := i.ipPoolManager.DeleteAllIPPools(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
+// 		// this label make it sure to find orphan pod corresponding IPPool
+// 		constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
+// 		// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?
+// 		constant.LabelIPPoolInterface:     ifName,
+// 		constant.LabelIPPoolReclaimIPPool: constant.True,
+// 	})
+// 	if nil != err {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

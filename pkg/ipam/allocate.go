@@ -36,7 +36,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	isAlive := podmanager.IsPodAlive(pod)
 	if !isAlive {
-		return nil, fmt.Errorf("pod %s/%s is not alive, we cannot allocate IP addresees for it", pod.Namespace, pod.Name)
+		return nil, fmt.Errorf("dead Pod %s/%s, we cannot allocate IP addresees to it", pod.Namespace, pod.Name)
 	}
 
 	podTopController, err := i.podManager.GetPodTopController(ctx, pod)

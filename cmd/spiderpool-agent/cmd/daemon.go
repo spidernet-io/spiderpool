@@ -323,7 +323,6 @@ func initAgentServiceManagers(ctx context.Context) {
 		subnetManager, err := subnetmanager.NewSubnetManager(
 			agentContext.CRDManager.GetClient(),
 			agentContext.CRDManager.GetAPIReader(),
-			agentContext.IPPoolManager,
 			agentContext.ReservedIPManager,
 		)
 		if err != nil {

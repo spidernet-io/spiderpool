@@ -19,7 +19,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
@@ -34,31 +33,25 @@ type SubnetManager interface {
 }
 
 type subnetManager struct {
-	client    client.Client
-	apiReader client.Reader
-
-	ipPoolManager ippoolmanager.IPPoolManager
+	client        client.Client
+	apiReader     client.Reader
 	reservedIPMgr reservedipmanager.ReservedIPManager
 }
 
-func NewSubnetManager(client client.Client, apiReader client.Reader, ipPoolManager ippoolmanager.IPPoolManager, reservedIPMgr reservedipmanager.ReservedIPManager) (SubnetManager, error) {
+func NewSubnetManager(client client.Client, apiReader client.Reader, reservedIPMgr reservedipmanager.ReservedIPManager) (SubnetManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
 	if apiReader == nil {
 		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
 	}
-	if ipPoolManager == nil {
-		return nil, fmt.Errorf("ippool manager %w", constant.ErrMissingRequiredParam)
-	}
 	if reservedIPMgr == nil {
-		return nil, fmt.Errorf("reserved ip manager %w", constant.ErrMissingRequiredParam)
+		return nil, fmt.Errorf("reserved-IP manager %w", constant.ErrMissingRequiredParam)
 	}
 
 	return &subnetManager{
 		client:        client,
 		apiReader:     apiReader,
-		ipPoolManager: ipPoolManager,
 		reservedIPMgr: reservedIPMgr,
 	}, nil
 }

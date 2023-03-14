@@ -5,6 +5,7 @@ package subnetmanager
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -117,7 +118,17 @@ func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
 	}
 
-	for poolName, preAllocation := range subnet.Status.ControlledIPPools {
+	if subnet.Status.ControlledIPPools == nil {
+		return nil
+	}
+
+	var subnetControlledIPPools spiderpoolv1.PoolIPPreAllocations
+	err = json.Unmarshal([]byte(*subnet.Status.ControlledIPPools), &subnetControlledIPPools)
+	if nil != err {
+		return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse subnet controlledIPPools: %v", err))
+	}
+
+	for poolName, preAllocation := range subnetControlledIPPools {
 		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
 		if err != nil {
 			return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse the pre-allocation of the IPPool %s: %v", poolName, err))

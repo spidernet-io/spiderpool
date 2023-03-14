@@ -29,6 +29,7 @@ import (
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
@@ -222,7 +223,9 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(subnetR.Status.ControlledIPPools).To(Equal(
+				subnetAllocatedIPPools, err := convert.UnmarshalSubnetAllocatedIPPools(subnetR.Status.ControlledIPPools)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(subnetAllocatedIPPools).To(Equal(
 					spiderpoolv1.PoolIPPreAllocations{
 						ipPoolT.Name: spiderpoolv1.PoolIPPreAllocation{
 							IPs: []string{"172.18.40.10"},

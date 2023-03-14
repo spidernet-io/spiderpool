@@ -259,10 +259,6 @@ spec:
                 type: integer
               allocatedIPs:
                 type: string
-              autoDesiredIPCount:
-                format: int64
-                minimum: 0
-                type: integer
               totalIPCount:
                 format: int64
                 minimum: 0

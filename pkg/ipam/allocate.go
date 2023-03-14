@@ -6,7 +6,6 @@ package ipam
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -35,11 +34,10 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Pod %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
-	podStatus, allocatable := podmanager.CheckPodStatus(pod)
-	if !allocatable {
-		return nil, fmt.Errorf("%s Pod %s/%s cannot allocate IP addresees", strings.ToLower(string(podStatus)), pod.Namespace, pod.Name)
+	isAlive := podmanager.IsPodAlive(pod)
+	if !isAlive {
+		return nil, fmt.Errorf("pod %s/%s is not alive, we cannot allocate IP addresees for it", pod.Namespace, pod.Name)
 	}
-	logger.Sugar().Debugf("Get Pod with status %s", podStatus)
 
 	podTopController, err := i.podManager.GetPodTopController(ctx, pod)
 	if nil != err {

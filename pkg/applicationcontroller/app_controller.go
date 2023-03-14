@@ -1,7 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package subnetmanager
+package applicationcontroller
 
 import (
 	"context"
@@ -17,6 +17,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8types "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -27,21 +28,22 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
+	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-var informerLogger *zap.Logger
+var logger *zap.Logger
 
 type SubnetAppController struct {
 	client        client.Client
-	subnetMgr     SubnetManager
+	subnetMgr     subnetmanager.SubnetManager
 	workQueue     workqueue.RateLimitingInterface
-	appController *controllers.Controller
+	appController *applicationinformers.Controller
 
 	deploymentsLister  appslisters.DeploymentLister
 	deploymentInformer cache.SharedIndexInformer
@@ -69,16 +71,35 @@ type SubnetAppControllerConfig struct {
 	EnableIPv6                    bool
 	AppControllerWorkers          int
 	MaxWorkqueueLength            int
+	WorkQueueMaxRetries           int
 	WorkQueueRequeueDelayDuration time.Duration
 	LeaderRetryElectGap           time.Duration
 }
 
-func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubernetes.Interface, controllerLeader election.SpiderLeaseElector) error {
-	if controllerLeader == nil {
+func NewSubnetAppController(client client.Client, subnetMgr subnetmanager.SubnetManager, subnetAppControllerConfig SubnetAppControllerConfig) (*SubnetAppController, error) {
+	logger = logutils.Logger.Named("SpiderSubnet-Application-Controllers")
+
+	c := &SubnetAppController{
+		client:                    client,
+		subnetMgr:                 subnetMgr,
+		SubnetAppControllerConfig: subnetAppControllerConfig,
+	}
+
+	appController, err := applicationinformers.NewApplicationController(c.controllerAddOrUpdateHandler(), c.controllerDeleteHandler(), logger)
+	if nil != err {
+		return nil, err
+	}
+	c.appController = appController
+
+	return c, nil
+}
+
+func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubernetes.Interface, leader election.SpiderLeaseElector) error {
+	if leader == nil {
 		return fmt.Errorf("failed to start SpiderSubnet App informer, controller leader must be specified")
 	}
 
-	informerLogger.Info("try to register SpiderSubnet App informer")
+	logger.Info("try to register SpiderSubnet App informer")
 	go func() {
 		for {
 			select {
@@ -87,7 +108,7 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 			default:
 			}
 
-			if !controllerLeader.IsElected() {
+			if !leader.IsElected() {
 				time.Sleep(sac.LeaderRetryElectGap)
 				continue
 			}
@@ -101,8 +122,8 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 					default:
 					}
 
-					if !controllerLeader.IsElected() {
-						informerLogger.Warn("Leader lost, stop Subnet App informer")
+					if !leader.IsElected() {
+						logger.Warn("Leader lost, stop Subnet App informer")
 						innerCancel()
 						return
 					}
@@ -110,305 +131,19 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 				}
 			}()
 
-			informerLogger.Info("create SpiderSubnet App informer")
+			logger.Info("create SpiderSubnet App informer")
 			factory := kubeinformers.NewSharedInformerFactory(client, 0)
 			sac.addEventHandlers(factory)
 			factory.Start(innerCtx.Done())
 			err := sac.Run(innerCtx.Done())
 			if nil != err {
-				informerLogger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
+				logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
 			}
-			informerLogger.Error("SpiderSubnet App informer broken")
+			logger.Error("SpiderSubnet App informer broken")
 		}
 	}()
 
 	return nil
-}
-
-// ControllerAddOrUpdateHandler serves for kubernetes original controller applications(such as: Deployment,ReplicaSet,Job...),
-// to create a new IPPool or scale the IPPool
-func (sac *SubnetAppController) ControllerAddOrUpdateHandler() controllers.AppInformersAddOrUpdateFunc {
-	return func(ctx context.Context, oldObj, newObj interface{}) error {
-		log := logutils.FromContext(ctx)
-
-		var err error
-		var oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig
-		var appKind string
-		var app metav1.Object
-		var oldAppReplicas, newAppReplicas int
-
-		switch newObject := newObj.(type) {
-		case *appsv1.Deployment:
-			appKind = constant.KindDeployment
-			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
-
-			// no need reconcile for HostNetwork application
-			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
-			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
-			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
-			}
-
-			// default IPAM mode
-			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
-				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
-				return nil
-			}
-
-			app = newObject.DeepCopy()
-
-			if oldObj != nil {
-				oldDeployment := oldObj.(*appsv1.Deployment)
-				oldAppReplicas = controllers.GetAppReplicas(oldDeployment.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDeployment.Spec.Template.Annotations, log)
-				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
-				}
-			}
-
-		case *appsv1.ReplicaSet:
-			appKind = constant.KindReplicaSet
-			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
-
-			// no need reconcile for HostNetwork application
-			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
-			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
-			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
-			}
-
-			// default IPAM mode
-			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
-				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
-				return nil
-			}
-
-			app = newObject.DeepCopy()
-
-			if oldObj != nil {
-				oldReplicaSet := oldObj.(*appsv1.ReplicaSet)
-				oldAppReplicas = controllers.GetAppReplicas(oldReplicaSet.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldReplicaSet.Spec.Template.Annotations, log)
-				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
-				}
-			}
-
-		case *appsv1.StatefulSet:
-			appKind = constant.KindStatefulSet
-			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
-
-			// no need reconcile for HostNetwork application
-			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
-			newAppReplicas = controllers.GetAppReplicas(newObject.Spec.Replicas)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
-			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
-			}
-
-			// default IPAM mode
-			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
-				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
-				return nil
-			}
-
-			app = newObject.DeepCopy()
-
-			if oldObj != nil {
-				oldStatefulSet := oldObj.(*appsv1.StatefulSet)
-				oldAppReplicas = controllers.GetAppReplicas(oldStatefulSet.Spec.Replicas)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldStatefulSet.Spec.Template.Annotations, log)
-				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
-				}
-			}
-
-		case *batchv1.Job:
-			appKind = constant.KindJob
-			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
-
-			// no need reconcile for HostNetwork application
-			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
-			newAppReplicas = controllers.CalculateJobPodNum(newObject.Spec.Parallelism, newObject.Spec.Completions)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
-			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
-			}
-
-			// default IPAM mode
-			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
-				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
-				return nil
-			}
-
-			app = newObject.DeepCopy()
-
-			if oldObj != nil {
-				oldJob := oldObj.(*batchv1.Job)
-				oldAppReplicas = controllers.CalculateJobPodNum(oldJob.Spec.Parallelism, oldJob.Spec.Completions)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldJob.Spec.Template.Annotations, log)
-				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
-				}
-			}
-
-		case *batchv1.CronJob:
-			appKind = constant.KindCronJob
-			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
-
-			// no need reconcile for HostNetwork application
-			if newObject.Spec.JobTemplate.Spec.Template.Spec.HostNetwork {
-				log.Sugar().Debugf("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
-			newAppReplicas = controllers.CalculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations, log)
-			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
-			}
-
-			// default IPAM mode
-			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
-				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
-				return nil
-			}
-
-			app = newObject.DeepCopy()
-
-			if oldObj != nil {
-				oldCronJob := oldObj.(*batchv1.CronJob)
-				oldAppReplicas = controllers.CalculateJobPodNum(oldCronJob.Spec.JobTemplate.Spec.Parallelism, oldCronJob.Spec.JobTemplate.Spec.Completions)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations, log)
-				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
-				}
-			}
-
-		case *appsv1.DaemonSet:
-			appKind = constant.KindDaemonSet
-			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
-
-			// no need reconcile for HostNetwork application
-			if newObject.Spec.Template.Spec.HostNetwork {
-				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
-			newAppReplicas = int(newObject.Status.DesiredNumberScheduled)
-			newSubnetConfig, err = controllers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
-			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
-			}
-
-			// default IPAM mode
-			if controllers.IsDefaultIPPoolMode(newSubnetConfig) {
-				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
-				return nil
-			}
-
-			app = newObject.DeepCopy()
-
-			if oldObj != nil {
-				oldDaemonSet := oldObj.(*appsv1.DaemonSet)
-				oldAppReplicas = int(oldDaemonSet.Status.DesiredNumberScheduled)
-				oldSubnetConfig, err = controllers.GetSubnetAnnoConfig(oldDaemonSet.Spec.Template.Annotations, log)
-				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
-				}
-			}
-
-		default:
-			return fmt.Errorf("unrecognized application: %+v", newObj)
-		}
-
-		ctx = logutils.IntoContext(ctx, log)
-		// check the difference between the two object and choose to reconcile or not
-		if sac.hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas) {
-			log.Debug("try to add app to application controller workequeue")
-			sac.enqueueApp(ctx, app, appKind)
-		}
-
-		return nil
-	}
-}
-
-func NewSubnetAppController(client client.Client, subnetMgr SubnetManager, subnetAppControllerConfig SubnetAppControllerConfig) (*SubnetAppController, error) {
-	informerLogger = logutils.Logger.Named("SpiderSubnet-Application-Controllers")
-
-	c := &SubnetAppController{
-		client:                    client,
-		subnetMgr:                 subnetMgr,
-		SubnetAppControllerConfig: subnetAppControllerConfig,
-	}
-
-	appController, err := controllers.NewApplicationController(c.ControllerAddOrUpdateHandler(), c.ControllerDeleteHandler(), informerLogger)
-	if nil != err {
-		return nil, err
-	}
-	c.appController = appController
-
-	return c, nil
 }
 
 func (sac *SubnetAppController) addEventHandlers(factory kubeinformers.SharedInformerFactory) {
@@ -439,6 +174,274 @@ func (sac *SubnetAppController) addEventHandlers(factory kubeinformers.SharedInf
 	// Once we lost the leader but get leader later, we have to use a new workqueue.
 	// Because the former workqueue was already shut down and wouldn't be re-start forever.
 	sac.workQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Application-Controllers")
+}
+
+// controllerAddOrUpdateHandler serves for kubernetes original controller applications(such as: Deployment,ReplicaSet,Job...),
+// to create a new IPPool or scale the IPPool
+func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinformers.AppInformersAddOrUpdateFunc {
+	return func(ctx context.Context, oldObj, newObj interface{}) error {
+		log := logutils.FromContext(ctx)
+
+		var err error
+		var oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig
+		var appKind string
+		var app metav1.Object
+		var oldAppReplicas, newAppReplicas int
+
+		switch newObject := newObj.(type) {
+		case *appsv1.Deployment:
+			appKind = constant.KindDeployment
+			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
+
+			// no need reconcile for HostNetwork application
+			if newObject.Spec.Template.Spec.HostNetwork {
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
+				return nil
+			}
+
+			// check the app whether is the top controller or not
+			owner := metav1.GetControllerOf(newObject)
+			if owner != nil {
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
+				return nil
+			}
+
+			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
+			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
+			if nil != err {
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+			}
+
+			// default IPAM mode
+			if applicationinformers.IsDefaultIPPoolMode(newSubnetConfig) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
+				return nil
+			}
+
+			app = newObject.DeepCopy()
+
+			if oldObj != nil {
+				oldDeployment := oldObj.(*appsv1.Deployment)
+				oldAppReplicas = applicationinformers.GetAppReplicas(oldDeployment.Spec.Replicas)
+				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldDeployment.Spec.Template.Annotations, log)
+				if nil != err {
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+				}
+			}
+
+		case *appsv1.ReplicaSet:
+			appKind = constant.KindReplicaSet
+			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
+
+			// no need reconcile for HostNetwork application
+			if newObject.Spec.Template.Spec.HostNetwork {
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
+				return nil
+			}
+
+			// check the app whether is the top controller or not
+			owner := metav1.GetControllerOf(newObject)
+			if owner != nil {
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
+				return nil
+			}
+
+			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
+			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
+			if nil != err {
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+			}
+
+			// default IPAM mode
+			if applicationinformers.IsDefaultIPPoolMode(newSubnetConfig) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
+				return nil
+			}
+
+			app = newObject.DeepCopy()
+
+			if oldObj != nil {
+				oldReplicaSet := oldObj.(*appsv1.ReplicaSet)
+				oldAppReplicas = applicationinformers.GetAppReplicas(oldReplicaSet.Spec.Replicas)
+				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldReplicaSet.Spec.Template.Annotations, log)
+				if nil != err {
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+				}
+			}
+
+		case *appsv1.StatefulSet:
+			appKind = constant.KindStatefulSet
+			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
+
+			// no need reconcile for HostNetwork application
+			if newObject.Spec.Template.Spec.HostNetwork {
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
+				return nil
+			}
+
+			// check the app whether is the top controller or not
+			owner := metav1.GetControllerOf(newObject)
+			if owner != nil {
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
+				return nil
+			}
+
+			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
+			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
+			if nil != err {
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+			}
+
+			// default IPAM mode
+			if applicationinformers.IsDefaultIPPoolMode(newSubnetConfig) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
+				return nil
+			}
+
+			app = newObject.DeepCopy()
+
+			if oldObj != nil {
+				oldStatefulSet := oldObj.(*appsv1.StatefulSet)
+				oldAppReplicas = applicationinformers.GetAppReplicas(oldStatefulSet.Spec.Replicas)
+				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldStatefulSet.Spec.Template.Annotations, log)
+				if nil != err {
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+				}
+			}
+
+		case *batchv1.Job:
+			appKind = constant.KindJob
+			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
+
+			// no need reconcile for HostNetwork application
+			if newObject.Spec.Template.Spec.HostNetwork {
+				log.Sugar().Debugf("HostNetwork mode, we would not create or scale IPPool for it")
+				return nil
+			}
+
+			// check the app whether is the top controller or not
+			owner := metav1.GetControllerOf(newObject)
+			if owner != nil {
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
+				return nil
+			}
+
+			newAppReplicas = applicationinformers.CalculateJobPodNum(newObject.Spec.Parallelism, newObject.Spec.Completions)
+			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
+			if nil != err {
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+			}
+
+			// default IPAM mode
+			if applicationinformers.IsDefaultIPPoolMode(newSubnetConfig) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
+				return nil
+			}
+
+			app = newObject.DeepCopy()
+
+			if oldObj != nil {
+				oldJob := oldObj.(*batchv1.Job)
+				oldAppReplicas = applicationinformers.CalculateJobPodNum(oldJob.Spec.Parallelism, oldJob.Spec.Completions)
+				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldJob.Spec.Template.Annotations, log)
+				if nil != err {
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+				}
+			}
+
+		case *batchv1.CronJob:
+			appKind = constant.KindCronJob
+			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
+
+			// no need reconcile for HostNetwork application
+			if newObject.Spec.JobTemplate.Spec.Template.Spec.HostNetwork {
+				log.Sugar().Debugf("HostNetwork mode, we would not create or scale IPPool for it")
+				return nil
+			}
+
+			// check the app whether is the top controller or not
+			owner := metav1.GetControllerOf(newObject)
+			if owner != nil {
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
+				return nil
+			}
+
+			newAppReplicas = applicationinformers.CalculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
+			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations, log)
+			if nil != err {
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+			}
+
+			// default IPAM mode
+			if applicationinformers.IsDefaultIPPoolMode(newSubnetConfig) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
+				return nil
+			}
+
+			app = newObject.DeepCopy()
+
+			if oldObj != nil {
+				oldCronJob := oldObj.(*batchv1.CronJob)
+				oldAppReplicas = applicationinformers.CalculateJobPodNum(oldCronJob.Spec.JobTemplate.Spec.Parallelism, oldCronJob.Spec.JobTemplate.Spec.Completions)
+				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations, log)
+				if nil != err {
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+				}
+			}
+
+		case *appsv1.DaemonSet:
+			appKind = constant.KindDaemonSet
+			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", newObject.GetNamespace(), newObject.GetName())))
+
+			// no need reconcile for HostNetwork application
+			if newObject.Spec.Template.Spec.HostNetwork {
+				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
+				return nil
+			}
+
+			// check the app whether is the top controller or not
+			owner := metav1.GetControllerOf(newObject)
+			if owner != nil {
+				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
+				return nil
+			}
+
+			newAppReplicas = int(newObject.Status.DesiredNumberScheduled)
+			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
+			if nil != err {
+				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+			}
+
+			// default IPAM mode
+			if applicationinformers.IsDefaultIPPoolMode(newSubnetConfig) {
+				log.Debug("app will use default IPAM mode, because there's no subnet annotation or no ClusterDefaultSubnets")
+				return nil
+			}
+
+			app = newObject.DeepCopy()
+
+			if oldObj != nil {
+				oldDaemonSet := oldObj.(*appsv1.DaemonSet)
+				oldAppReplicas = int(oldDaemonSet.Status.DesiredNumberScheduled)
+				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldDaemonSet.Spec.Template.Annotations, log)
+				if nil != err {
+					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+				}
+			}
+
+		default:
+			return fmt.Errorf("unrecognized application: %+v", newObj)
+		}
+
+		ctx = logutils.IntoContext(ctx, log)
+		// check the difference between the two object and choose to reconcile or not
+		if sac.hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas) {
+			log.Debug("try to add app to application controller workequeue")
+			sac.enqueueApp(ctx, app, appKind)
+		}
+
+		return nil
+	}
 }
 
 // appWorkQueueKey involves application object meta namespaceKey and application kind
@@ -477,7 +480,7 @@ func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer sac.workQueue.ShutDown()
 
-	informerLogger.Debug("Waiting for application informers caches to sync")
+	logger.Debug("Waiting for application informers caches to sync")
 	ok := cache.WaitForCacheSync(stopCh,
 		sac.deploymentInformer.HasSynced,
 		sac.replicaSetInformer.HasSynced,
@@ -490,15 +493,11 @@ func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	for i := 0; i < sac.AppControllerWorkers; i++ {
-		informerLogger.Sugar().Debugf("Starting application controller processing worker '%d'", i)
-		go wait.Until(sac.runWorker, 1*time.Second, stopCh)
-	}
-
-	informerLogger.Info("application controller workers started")
+	logger.Sugar().Debugf("Starting application controller processing worker")
+	go wait.Until(sac.runWorker, 1*time.Second, stopCh)
 
 	<-stopCh
-	informerLogger.Error("Shutting down application controller workers")
+	logger.Error("Shutting down application controller workers")
 	return nil
 }
 
@@ -510,7 +509,7 @@ func (sac *SubnetAppController) runWorker() {
 func (sac *SubnetAppController) processNextWorkItem() bool {
 	obj, shutdown := sac.workQueue.Get()
 	if shutdown {
-		informerLogger.Error("application controller workqueue is already shutdown!")
+		logger.Error("application controller workqueue is already shutdown!")
 		return false
 	}
 
@@ -524,7 +523,7 @@ func (sac *SubnetAppController) processNextWorkItem() bool {
 			return fmt.Errorf("expected appWorkQueueKey in workQueue but got '%+v'", obj)
 		}
 
-		log = informerLogger.With(
+		log = logger.With(
 			zap.String("OPERATION", "process_app_items"),
 			zap.String("Application", fmt.Sprintf("%s/%s", key.AppKind, key.MetaNamespaceKey)),
 		)
@@ -538,7 +537,7 @@ func (sac *SubnetAppController) processNextWorkItem() bool {
 			}
 
 			// requeue the conflict items
-			if apierrors.IsConflict(err) {
+			if apierrors.IsConflict(err) || apierrors.IsAlreadyExists(err) || errors.Is(err, constant.ErrFreeIPsNotEnough) {
 				sac.workQueue.AddRateLimited(obj)
 				log.Sugar().Warnf("encountered app controller syncHandler conflict '%v', retrying...", err)
 				return nil
@@ -546,7 +545,7 @@ func (sac *SubnetAppController) processNextWorkItem() bool {
 
 			// if we set nonnegative number for the requeue delay duration, we will requeue it. otherwise we will discard it.
 			if sac.WorkQueueRequeueDelayDuration >= 0 {
-				if sac.workQueue.NumRequeues(obj) < sac.MaxWorkqueueLength {
+				if sac.workQueue.NumRequeues(obj) < sac.WorkQueueMaxRetries {
 					log.Sugar().Errorf("encountered app controller syncHandler error '%v', requeue it after '%v'", err, sac.WorkQueueRequeueDelayDuration)
 					sac.workQueue.AddAfter(obj, sac.WorkQueueRequeueDelayDuration)
 					return nil
@@ -596,7 +595,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 		podAnno = deployment.Spec.Template.Annotations
 		podSelector = deployment.Spec.Selector
-		appReplicas = controllers.GetAppReplicas(deployment.Spec.Replicas)
+		appReplicas = applicationinformers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
 
 	case constant.KindReplicaSet:
@@ -611,7 +610,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 		podAnno = replicaSet.Spec.Template.Annotations
 		podSelector = replicaSet.Spec.Selector
-		appReplicas = controllers.GetAppReplicas(replicaSet.Spec.Replicas)
+		appReplicas = applicationinformers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
 
 	case constant.KindDaemonSet:
@@ -641,7 +640,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 		podAnno = statefulSet.Spec.Template.Annotations
 		podSelector = statefulSet.Spec.Selector
-		appReplicas = controllers.GetAppReplicas(statefulSet.Spec.Replicas)
+		appReplicas = applicationinformers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
 
 	case constant.KindJob:
@@ -656,7 +655,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 		podAnno = job.Spec.Template.Annotations
 		podSelector = job.Spec.Selector
-		appReplicas = controllers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
+		appReplicas = applicationinformers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
 
 	case constant.KindCronJob:
@@ -671,20 +670,20 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 		podAnno = cronJob.Spec.JobTemplate.Spec.Template.Annotations
 		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
-		appReplicas = controllers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
+		appReplicas = applicationinformers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
 		app = cronJob.DeepCopy()
 
 	default:
 		return fmt.Errorf("%w: unexpected appWorkQueueKey in workQueue '%+v'", constant.ErrWrongInput, appKey)
 	}
 
-	subnetConfig, err = controllers.GetSubnetAnnoConfig(podAnno, log)
+	subnetConfig, err = applicationinformers.GetSubnetAnnoConfig(podAnno, log)
 	if nil != err {
 		return fmt.Errorf("%w: failed to get pod annotation subnet config, error: %v", constant.ErrWrongInput, err)
 	}
 
-	log.Debug("Going to create IPPool or mark IPPool desired IP number")
-	err = sac.createOrMarkIPPool(logutils.IntoContext(context.TODO(), log),
+	log.Debug("try to apply auto-created IPPool")
+	err = sac.applyAutoIPPool(logutils.IntoContext(context.TODO(), log),
 		*subnetConfig,
 		types.PodTopController{
 			Kind:      appKey.AppKind,
@@ -702,34 +701,39 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 	return nil
 }
 
-// createOrMarkIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
-func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig,
+// applyAutoIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
+func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig,
 	podController types.PodTopController, podSelector *metav1.LabelSelector, appReplicas int) error {
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
-	fn := func(poolList spiderpoolv1.SpiderIPPoolList, subnetName string, ipVersion types.IPVersion, ifName string, matchLabel client.MatchingLabels) (err error) {
-		var ipNum int
-		if podSubnetConfig.FlexibleIPNum != nil {
-			ipNum = appReplicas + *(podSubnetConfig.FlexibleIPNum)
-		} else {
-			ipNum = podSubnetConfig.AssignIPNum
+	fn := func(poolName string, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
+		tmpPool := &spiderpoolv1.SpiderIPPool{}
+		err = sac.client.Get(ctx, k8types.NamespacedName{Name: poolName}, tmpPool)
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				tmpPool = nil
+			} else {
+				return err
+			}
 		}
 
-		// verify whether the pool IPs need to be expanded or not
-		if len(poolList.Items) == 0 {
-			log.Sugar().Debugf("there's no 'IPv%d' IPPoolList retrieved from SpiderSubent '%s' with matchLabel '%v'", ipVersion, subnetName, matchLabel)
-			// create an empty IPPool and mark the desired IP number when the subnet name was specified,
-			// and the IPPool informer will implement the scale action
-			_, err = sac.subnetMgr.AllocateEmptyIPPool(ctx, subnetName, podController, podSelector, ipNum, ipVersion, podSubnetConfig.ReclaimIPPool, ifName)
-		} else if len(poolList.Items) == 1 {
-			pool := poolList.Items[0]
-			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' with matchLabel '%v', check it whether need to be scaled", subnetName, pool.Name, matchLabel)
-			err = sac.subnetMgr.CheckScaleIPPool(ctx, &pool, subnetName, ipNum)
+		var desiredIPNumber int
+		if podSubnetConfig.FlexibleIPNum != nil {
+			desiredIPNumber = appReplicas + *(podSubnetConfig.FlexibleIPNum)
 		} else {
-			err = fmt.Errorf("%w: it's invalid that SpiderSubnet '%s' owns multiple matchLabel '%v' corresponding IPPools '%v' for one specify application",
-				constant.ErrWrongInput, subnetName, matchLabel, poolList.Items)
+			desiredIPNumber = podSubnetConfig.AssignIPNum
 		}
+
+		log.Sugar().Infof("try to reconcile auto-created IPPool %s", poolName)
+
+		_, err = sac.subnetMgr.ReconcileAutoIPPool(ctx, tmpPool.DeepCopy(), subnetName, podController, types.AutoPoolProperty{
+			DesiredIPNumber: desiredIPNumber,
+			IPVersion:       ipVersion,
+			IsReclaimIPPool: podSubnetConfig.ReclaimIPPool,
+			IfName:          ifName,
+			PodSelector:     podSelector,
+		})
 
 		return
 	}
@@ -749,20 +753,8 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 			go func() {
 				defer wg.Done()
 
-				var v4PoolList spiderpoolv1.SpiderIPPoolList
-				matchLabel := client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv4[0],
-					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
-					constant.LabelIPPoolInterface:           item.Interface,
-				}
-				errV4 = sac.client.List(ctx, &v4PoolList, matchLabel)
-				if nil != errV4 {
-					return
-				}
-
-				errV4 = fn(v4PoolList, item.IPv4[0], constant.IPv4, item.Interface, matchLabel)
+				v4PoolName := applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv4, item.Interface, podController.UID)
+				errV4 = fn(v4PoolName, item.IPv4[0], constant.IPv4, item.Interface)
 			}()
 		}
 
@@ -771,20 +763,8 @@ func (sac *SubnetAppController) createOrMarkIPPool(ctx context.Context, podSubne
 			go func() {
 				defer wg.Done()
 
-				var v6PoolList spiderpoolv1.SpiderIPPoolList
-				matchLabel := client.MatchingLabels{
-					constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-					constant.LabelIPPoolOwnerSpiderSubnet:   item.IPv6[0],
-					constant.LabelIPPoolOwnerApplication:    controllers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-					constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
-					constant.LabelIPPoolInterface:           item.Interface,
-				}
-				errV6 = sac.client.List(ctx, &v6PoolList, matchLabel)
-				if nil != errV6 {
-					return
-				}
-
-				errV6 = fn(v6PoolList, item.IPv6[0], constant.IPv6, item.Interface, matchLabel)
+				v6PoolName := applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv6, item.Interface, podController.UID)
+				errV6 = fn(v6PoolName, item.IPv6[0], constant.IPv6, item.Interface)
 			}()
 		}
 
@@ -843,8 +823,8 @@ func (sac *SubnetAppController) hasSubnetConfigChanged(ctx context.Context, oldS
 	return isChanged
 }
 
-// ControllerDeleteHandler will return a function that clean up the application SpiderSubnet legacies (such as: the before created IPPools)
-func (sac *SubnetAppController) ControllerDeleteHandler() controllers.APPInformersDelFunc {
+// controllerDeleteHandler will return a function that clean up the application SpiderSubnet legacies (such as: the before created IPPools)
+func (sac *SubnetAppController) controllerDeleteHandler() applicationinformers.APPInformersDelFunc {
 	return func(ctx context.Context, obj interface{}) error {
 		log := logutils.FromContext(ctx)
 
@@ -855,73 +835,61 @@ func (sac *SubnetAppController) ControllerDeleteHandler() controllers.APPInforme
 		case *appsv1.Deployment:
 			appKind = constant.KindDeployment
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
-
 			owner := metav1.GetControllerOf(object)
 			if owner != nil {
 				log.Sugar().Debugf("the application has a owner '%s/%s', we would not clean up legacy for it", owner.Kind, owner.Name)
 				return nil
 			}
-
 			app = object
 
 		case *appsv1.ReplicaSet:
 			appKind = constant.KindReplicaSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
-
 			owner := metav1.GetControllerOf(object)
 			if owner != nil {
 				log.Sugar().Debugf("the application has a owner '%s/%s', we would not clean up legacy for it", owner.Kind, owner.Name)
 				return nil
 			}
-
 			app = object
 
 		case *appsv1.StatefulSet:
 			appKind = constant.KindStatefulSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
-
 			owner := metav1.GetControllerOf(object)
 			if owner != nil {
 				log.Sugar().Debugf("the application has a owner '%s/%s', we would not clean up legacy for it", owner.Kind, owner.Name)
 				return nil
 			}
-
 			app = object
 
 		case *batchv1.Job:
 			appKind = constant.KindJob
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
-
 			owner := metav1.GetControllerOf(object)
 			if owner != nil {
 				log.Sugar().Debugf("the application has a owner '%s/%s', we would not clean up legacy for it", owner.Kind, owner.Name)
 				return nil
 			}
-
 			app = object
 
 		case *batchv1.CronJob:
 			appKind = constant.KindCronJob
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
-
 			owner := metav1.GetControllerOf(object)
 			if owner != nil {
 				log.Sugar().Debugf("the application has a owner '%s/%s', we would not clean up legacy for it", owner.Kind, owner.Name)
 				return nil
 			}
-
 			app = object
 
 		case *appsv1.DaemonSet:
 			appKind = constant.KindDaemonSet
 			log = log.With(zap.String(appKind, fmt.Sprintf("%s/%s", object.Namespace, object.Name)))
-
 			owner := metav1.GetControllerOf(object)
 			if owner != nil {
 				log.Sugar().Debugf("the application has a owner '%s/%s', we would not clean up legacy for it", owner.Kind, owner.Name)
 				return nil
 			}
-
 			app = object
 
 		default:
@@ -929,57 +897,17 @@ func (sac *SubnetAppController) ControllerDeleteHandler() controllers.APPInforme
 		}
 
 		// clean up all legacy IPPools that matched with the application UID
-		err := sac.tryToCleanUpLegacyIPPools(logutils.IntoContext(ctx, log), app)
+		err := sac.client.DeleteAllOf(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
+			constant.LabelIPPoolOwnerApplication:    applicationinformers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
+			constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
+			constant.LabelIPPoolReclaimIPPool:       constant.True,
+		})
 		if nil != err {
 			log.Sugar().Errorf("failed to clean up legacy IPPool, error: %v", err)
+			return nil
 		}
 
+		log.Info("delete application corresponding auto-created IPPools successfully")
 		return nil
 	}
-}
-
-func (sac *SubnetAppController) tryToCleanUpLegacyIPPools(ctx context.Context, app metav1.Object, labels ...client.MatchingLabels) error {
-	log := logutils.FromContext(ctx)
-
-	matchLabel := client.MatchingLabels{
-		constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
-		constant.LabelIPPoolReclaimIPPool:       constant.True,
-	}
-
-	for _, label := range labels {
-		for k, v := range label {
-			matchLabel[k] = v
-		}
-	}
-
-	var poolList spiderpoolv1.SpiderIPPoolList
-	err := sac.client.List(ctx, &poolList, matchLabel)
-	if nil != err {
-		return err
-	}
-
-	if len(poolList.Items) != 0 {
-		wg := new(sync.WaitGroup)
-
-		deletePool := func(pool *spiderpoolv1.SpiderIPPool) {
-			defer wg.Done()
-			err := sac.client.Delete(ctx, pool)
-			if nil != err {
-				log.Sugar().Errorf("failed to delete IPPool '%s', error: %v", pool.Name, err)
-				return
-			}
-
-			log.Sugar().Infof("delete IPPool '%s' successfully", pool.Name)
-		}
-
-		for i := range poolList.Items {
-			wg.Add(1)
-			pool := poolList.Items[i]
-			go deletePool(&pool)
-		}
-
-		wg.Wait()
-	}
-
-	return nil
 }

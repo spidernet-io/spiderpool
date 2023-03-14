@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -274,4 +275,27 @@ func MarshalIPPoolAllocatedIPs(records spiderpoolv1.PoolIPAllocations) (*string,
 	data := string(v)
 
 	return &data, nil
+}
+
+func UnmarshalSubnetAllocatedIPPools(data *string) (spiderpoolv1.PoolIPPreAllocations, error) {
+	if data == nil {
+		return spiderpoolv1.PoolIPPreAllocations{}, nil
+	}
+
+	var subnetStatusAllocatedIPPool spiderpoolv1.PoolIPPreAllocations
+	err := json.Unmarshal([]byte(*data), &subnetStatusAllocatedIPPool)
+	if nil != err {
+		return spiderpoolv1.PoolIPPreAllocations{}, err
+	}
+
+	return subnetStatusAllocatedIPPool, nil
+}
+
+func MarshalSubnetAllocatedIPPools(data spiderpoolv1.PoolIPPreAllocations) (*string, error) {
+	bytes, err := json.Marshal(data)
+	if nil != err {
+		return nil, err
+	}
+
+	return pointer.String(string(bytes)), nil
 }

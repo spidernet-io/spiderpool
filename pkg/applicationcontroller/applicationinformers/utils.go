@@ -1,7 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package controllers
+package applicationinformers
 
 import (
 	"encoding/json"
@@ -68,9 +68,18 @@ func GetAppReplicas(replicas *int32) int {
 
 func GenSubnetFreeIPs(subnet *spiderpoolv1.SpiderSubnet) ([]net.IP, error) {
 	var used []string
-	for _, pool := range subnet.Status.ControlledIPPools {
-		used = append(used, pool.IPs...)
+
+	if subnet.Status.ControlledIPPools != nil {
+		var controlledIPPools spiderpoolv1.PoolIPPreAllocations
+		err := json.Unmarshal([]byte(*subnet.Status.ControlledIPPools), &controlledIPPools)
+		if nil != err {
+			return nil, err
+		}
+		for _, pool := range controlledIPPools {
+			used = append(used, pool.IPs...)
+		}
 	}
+
 	usedIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, used)
 	if err != nil {
 		return nil, err

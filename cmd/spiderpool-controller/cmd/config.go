@@ -155,17 +155,17 @@ type ControllerContext struct {
 	ClientSet *kubernetes.Clientset
 
 	// manager
-	CRDManager      ctrl.Manager
-	SubnetManager   subnetmanager.SubnetManager
-	IPPoolManager   ippoolmanager.IPPoolManager
-	EndpointManager workloadendpointmanager.WorkloadEndpointManager
-	RIPManager      reservedipmanager.ReservedIPManager
-	NodeManager     nodemanager.NodeManager
-	NSManager       namespacemanager.NamespaceManager
-	PodManager      podmanager.PodManager
-	GCManager       gcmanager.GCManager
-	StsManager      statefulsetmanager.StatefulSetManager
-	Leader          election.SpiderLeaseElector
+	CRDManager        ctrl.Manager
+	SubnetManager     subnetmanager.SubnetManager
+	IPPoolManager     ippoolmanager.IPPoolManager
+	EndpointManager   workloadendpointmanager.WorkloadEndpointManager
+	ReservedIPManager reservedipmanager.ReservedIPManager
+	NodeManager       nodemanager.NodeManager
+	NSManager         namespacemanager.NamespaceManager
+	PodManager        podmanager.PodManager
+	GCManager         gcmanager.GCManager
+	StsManager        statefulsetmanager.StatefulSetManager
+	Leader            election.SpiderLeaseElector
 
 	// handler
 	HttpServer        *server.Server

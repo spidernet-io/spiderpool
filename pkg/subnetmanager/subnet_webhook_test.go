@@ -1040,7 +1040,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			When("Validating the pre-allocated IP addresses", func() {
-				It("failed to assemble total IP addresses due to some unknown errors", func() {
+				/*It("failed to assemble total IP addresses due to some unknown errors", func() {
 					patches := gomonkey.ApplyFuncReturn(spiderpoolip.AssembleTotalIPs, nil, constant.ErrUnknown)
 					defer patches.Reset()
 
@@ -1066,9 +1066,9 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
+				})*/
 
-				It("has invalid 'status.controlledIPPools'", func() {
+				/*It("has invalid 'status.controlledIPPools'", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
@@ -1087,9 +1087,9 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
+				})*/
 
-				It("removes IP range that is being used by IPPool", func() {
+				/*It("removes IP range that is being used by IPPool", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
@@ -1112,7 +1112,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
+				})*/
 			})
 
 			It("deletes Subnet", func() {

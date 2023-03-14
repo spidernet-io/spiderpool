@@ -9,11 +9,13 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -33,9 +35,9 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		return fmt.Errorf("failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 
-	podStatus, _ := podmanager.CheckPodStatus(pod)
-	if podStatus == constant.PodRunning {
-		logger.Info("Pod is still running, ignore release for reuse IP allocation")
+	isAlive := podmanager.IsPodAlive(pod)
+	if isAlive {
+		logger.Info("Pod is still alive, ignore release for reuse IP allocation")
 		return nil
 	}
 
@@ -46,8 +48,10 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	// But if Pod no longer exists, CNI DEL is still called (CNI DEL may be
 	// called multiple times according to the CNI Specification), continue
 	// to use the original ctx of OAI UNIX client (default 30s).
-	if podStatus != constant.PodUnknown {
+	if pod != nil {
+		// TODO
 		*delArgs.PodUID = string(pod.UID)
+		logger = logger.With(zap.String("PodUID", *delArgs.PodUID))
 
 		timeoutSec := *pod.DeletionGracePeriodSeconds - 5
 		if timeoutSec < 0 {
@@ -55,7 +59,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		}
 
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSec)*time.Second)
+		ctx, cancel = context.WithTimeout(logutils.IntoContext(ctx, logger), time.Duration(timeoutSec)*time.Second)
 		defer cancel()
 	}
 
@@ -82,6 +86,14 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		return err
 	}
 	logger.Info("Succeed to release")
+
+	if i.config.EnableSpiderSubnet && endpoint.Status.OwnerControllerType == constant.KindPod {
+		logger.Info("try to check whether need to delete dead orphan pod's auto-created IPPool")
+		err := i.deleteDeadOrphanPodAutoIPPool(ctx, *delArgs.PodNamespace, *delArgs.PodName, *delArgs.IfName)
+		if nil != err {
+			logger.Sugar().Errorf("failed to delete dead orphan pod auto-created IPPool: %v", err)
+		}
+	}
 
 	return nil
 }
@@ -166,6 +178,24 @@ func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv1.I
 
 	if len(errs) != 0 {
 		return fmt.Errorf("failed to release all allocated IP addresses %+v: %w", pius, utilerrors.NewAggregate(errs))
+	}
+
+	return nil
+}
+
+// deleteDeadOrphanPodAutoIPPool will delete orphan pod corresponding IPPools
+func (i *ipam) deleteDeadOrphanPodAutoIPPool(ctx context.Context, podNS, podName, ifName string) error {
+	log := logutils.FromContext(ctx)
+	log.Sugar().Infof("orphan pod dead, try to delete corresponding IPPool list that already exist")
+	err := i.ipPoolManager.DeleteAllIPPools(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
+		// this label make it sure to find orphan pod corresponding IPPool
+		constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
+		// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?
+		constant.LabelIPPoolInterface:     ifName,
+		constant.LabelIPPoolReclaimIPPool: constant.True,
+	})
+	if nil != err {
+		return err
 	}
 
 	return nil

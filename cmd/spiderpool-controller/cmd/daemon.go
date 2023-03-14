@@ -304,7 +304,6 @@ func initControllerServiceManagers(ctx context.Context) {
 		subnetManager, err := subnetmanager.NewSubnetManager(
 			controllerContext.CRDManager.GetClient(),
 			controllerContext.CRDManager.GetAPIReader(),
-			controllerContext.IPPoolManager,
 			controllerContext.ReservedIPManager,
 		)
 		if err != nil {

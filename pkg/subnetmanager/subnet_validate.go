@@ -5,7 +5,6 @@ package subnetmanager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 var (
@@ -122,13 +122,12 @@ func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 		return nil
 	}
 
-	var subnetControlledIPPools spiderpoolv1.PoolIPPreAllocations
-	err = json.Unmarshal([]byte(*subnet.Status.ControlledIPPools), &subnetControlledIPPools)
-	if nil != err {
-		return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse subnet controlledIPPools: %v", err))
+	preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
+	if err != nil {
+		return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to unmarshal the controlled IPPools of Subnet %s: %v", subnet.Name, err))
 	}
 
-	for poolName, preAllocation := range subnetControlledIPPools {
+	for poolName, preAllocation := range preAllocations {
 		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
 		if err != nil {
 			return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse the pre-allocation of the IPPool %s: %v", poolName, err))

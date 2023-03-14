@@ -5,7 +5,6 @@ package subnetmanager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -17,12 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	apitypes "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -304,9 +301,7 @@ func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpool
 	}
 
 	if sync {
-		if err := sc.Client.Update(ctx, subnet); err != nil {
-			return err
-		}
+		return sc.Client.Update(ctx, subnet)
 	}
 
 	return nil
@@ -351,7 +346,45 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 }
 
 func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
-	log := logutils.FromContext(ctx)
+	logger := logutils.FromContext(ctx)
+
+	preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal the controlled IPPools of Subnet %s: %v", subnet.Name, err)
+	}
+
+	// Merge pre-allocated IP addresses of each IPPool and calculate their count.
+	var tmpCount int
+	newPreAllocations := spiderpoolv1.PoolIPPreAllocations{}
+	for poolName, preAllocation := range preAllocations {
+		// Only auto-created IPPools have the field 'Application'.
+		if preAllocation.Application != nil {
+			appKind, appNS, appName, isMatch := applicationinformers.ParseAppLabelValue(*preAllocation.Application)
+			if !isMatch {
+				logger.Sugar().Errorf("Invalid application record %s of IPPool %s, remove the pre-allocation from Subnet", *preAllocation.Application, poolName)
+				continue
+			}
+
+			exist, err := sc.isAppExist(ctx, appKind, appNS, appName)
+			if err != nil {
+				return fmt.Errorf("failed to check whether the application %s/%s/%s corresponding to the auto-created IPPool %s exists: %v", appKind, appNS, appName, poolName, err)
+			}
+
+			if !exist {
+				logger.Sugar().Infof("The Application %s/%s/%s corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appKind, appNS, appName, poolName)
+				continue
+			}
+
+			autoIPPoolIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
+			if err != nil {
+				logger.Sugar().Errorf("Invalid IP ranges of IPPool %s, remove the pre-allocation from Subnet", poolName)
+				continue
+			}
+			tmpCount += len(autoIPPoolIPs)
+			newPreAllocations[poolName] = preAllocation
+		}
+	}
+
 	ipPools, err := sc.IPPoolsLister.List(labels.Set{constant.LabelIPPoolOwnerSpiderSubnet: subnet.Name}.AsSelector())
 	if err != nil {
 		return err
@@ -361,94 +394,46 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	if err != nil {
 		return err
 	}
-	subnetTotalIPsCount := int64(len(subnetTotalIPs))
 
-	subnetStatusAllocatedIPPool, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
-	if nil != err {
-		return fmt.Errorf("%w: failed to parse SpiderSubnet %s status controlledIPPools: %v", constant.ErrWrongInput, subnet.Name, err)
-	}
-
-	newSubnetAllocations := spiderpoolv1.PoolIPPreAllocations{}
-	for tmpPoolName, tmpPool := range subnetStatusAllocatedIPPool {
-		// only auto-created IPPools have property 'Application'
-		if tmpPool.Application != nil {
-			appKind, appNS, appName, isMatch := applicationinformers.ParseAppLabelValue(*tmpPool.Application)
-			if isMatch {
-				exist, err := sc.isAppExist(ctx, appKind, appNS, appName)
-				if nil != err {
-					return fmt.Errorf("failed to check auto-created IPPool %s corresponding Application whether is exist: %v", tmpPoolName, err)
-				}
-
-				if exist {
-					newSubnetAllocations[tmpPoolName] = tmpPool
-				} else {
-					log.Sugar().Warnf("auto-created IPPool %s corresponding Application is no longer exist, remove the IPPool IPs allocations from subnet", tmpPoolName)
-				}
-			} else {
-				log.Sugar().Errorf("unknown SpiderSubnet %s controlledIPPools allocation: %s/%v, discard it", subnet.Name, tmpPoolName, tmpPool)
-			}
-		}
-	}
-
-	for _, pool := range ipPools {
-		if !ippoolmanager.IsAutoCreatedIPPool(pool) {
-			poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	for _, ipPool := range ipPools {
+		if !ippoolmanager.IsAutoCreatedIPPool(ipPool) {
+			poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 			if err != nil {
-				return err
+				logger.Sugar().Errorf("Invalid total IP ranges of IPPool %s, remove the pre-allocation from Subnet", ipPool.Name)
+				continue
 			}
 			if len(poolTotalIPs) == 0 {
 				continue
 			}
 
 			validIPs := spiderpoolip.IPsIntersectionSet(subnetTotalIPs, poolTotalIPs, false)
-			ranges, err := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, validIPs)
-			if err != nil {
-				return err
-			}
-			newSubnetAllocations[pool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
+			tmpCount += len(validIPs)
+
+			ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*ipPool.Spec.IPVersion, validIPs)
+			newPreAllocations[ipPool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
 		}
 	}
 
 	sync := false
-	if !reflect.DeepEqual(newSubnetAllocations, subnetStatusAllocatedIPPool) {
-		log.With(zap.Any("old", subnet.Status.ControlledIPPools),
-			zap.Any("new", newSubnetAllocations)).
-			Info("subnet status allocation changed")
-
-		marshal, err := json.Marshal(newSubnetAllocations)
-		if nil != err {
+	if !reflect.DeepEqual(newPreAllocations, preAllocations) {
+		data, err := convert.MarshalSubnetAllocatedIPPools(newPreAllocations)
+		if err != nil {
 			return err
 		}
-		subnet.Status.ControlledIPPools = pointer.String(string(marshal))
-		sync = true
-	}
-
-	var allocatedIPCount int64
-	for _, poolAllocation := range newSubnetAllocations {
-		tmpIPs, _ := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, poolAllocation.IPs)
-		allocatedIPCount += int64(len(tmpIPs))
-	}
-	if !reflect.DeepEqual(&allocatedIPCount, subnet.Status.AllocatedIPCount) {
-		log.With(zap.Any("old", subnet.Status.AllocatedIPCount),
-			zap.Any("new", allocatedIPCount)).
-			Info("subnet status allocated IP Count changed")
-
+		subnet.Status.ControlledIPPools = data
+		allocatedIPCount := int64(tmpCount)
 		subnet.Status.AllocatedIPCount = &allocatedIPCount
 		sync = true
 	}
 
 	// Update the count of total IP addresses.
-	if !reflect.DeepEqual(&subnetTotalIPsCount, subnet.Status.TotalIPCount) {
-		log.With(zap.Any("old", subnet.Status.TotalIPCount),
-			zap.Any("new", subnetTotalIPsCount)).
-			Info("subnet status total IP Count changed")
-
-		subnet.Status.TotalIPCount = &subnetTotalIPsCount
+	totalIPCount := int64(len(subnetTotalIPs))
+	if !reflect.DeepEqual(&totalIPCount, subnet.Status.TotalIPCount) {
+		subnet.Status.TotalIPCount = &totalIPCount
 		sync = true
 	}
 
 	if sync {
-		log.Sugar().Infof("go to change subnet: %v", subnet)
 		return sc.Client.Status().Update(ctx, subnet)
 	}
 
@@ -478,12 +463,7 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 
 	// Some IP addresses are still occupied by the controlled IPPools, ignore
 	// to remove the finalizer.
-	subnetStatusAllocatedIPPool, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
-	if nil != err {
-		return fmt.Errorf("%w: failed to parse SpiderSubnet %s status controlledIPPools: %v", constant.ErrWrongInput, subnet.Name, err)
-	}
-
-	if len(subnetStatusAllocatedIPPool) > 0 {
+	if subnet.Status.ControlledIPPools != nil {
 		return nil
 	}
 
@@ -516,7 +496,7 @@ func (sc *SubnetController) isAppExist(ctx context.Context, appKind, appNS, appN
 		return false, nil
 	}
 
-	err := sc.Client.Get(ctx, apitypes.NamespacedName{Namespace: appNS, Name: appName}, object)
+	err := sc.Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, object)
 	if nil != err {
 		// if the application is no longer exist, we should delete the IPPool
 		if apierrors.IsNotFound(err) {

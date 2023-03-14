@@ -14,7 +14,6 @@ import (
 	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -23,7 +22,6 @@ import (
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
-	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -56,15 +54,15 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 
 	// If feature SpiderSubnet is enabled, select IPPool candidates through the cluster
 	// default Subnet defined in Configmap spiderpool-conf.
-	/*	if i.config.EnableSpiderSubnet {
-		fromClusterDefaultSubnet, err := i.getPoolFromClusterDefaultSubnet(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
-		if nil != err {
-			return nil, err
-		}
-		if fromClusterDefaultSubnet != nil {
-			return ToBeAllocateds{fromClusterDefaultSubnet}, nil
-		}
-	}*/
+	// 	if i.config.EnableSpiderSubnet {
+	// 	fromClusterDefaultSubnet, err := i.getPoolFromClusterDefaultSubnet(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
+	// 	if nil != err {
+	// 		return nil, err
+	// 	}
+	// 	if fromClusterDefaultSubnet != nil {
+	// 		return ToBeAllocateds{fromClusterDefaultSubnet}, nil
+	// 	}
+	// }
 
 	// Select IPPool candidates through the Namespace annotations
 	// "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool".
@@ -230,116 +228,116 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	return result, nil
 }
 
-func (i *ipam) getPoolFromClusterDefaultSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool, podController types.PodTopController) (*ToBeAllocated, error) {
-	poolIPNum, podSelector, err := getAutoPoolIPNumberAndSelector(pod, podController)
-	if nil != err {
-		return nil, err
-	}
+// func (i *ipam) getPoolFromClusterDefaultSubnet(ctx context.Context, pod *corev1.Pod, nic string, cleanGateway bool, podController types.PodTopController) (*ToBeAllocated, error) {
+// 	poolIPNum, podSelector, err := getAutoPoolIPNumberAndSelector(pod, podController)
+// 	if nil != err {
+// 		return nil, err
+// 	}
 
-	// get pod annotation "ipam.spidernet.io/reclaim-ippool"
-	reclaimIPPool, err := subnetmanagercontrollers.ShouldReclaimIPPool(pod.Annotations)
-	if nil != err {
-		return nil, err
-	}
+// 	// get pod annotation "ipam.spidernet.io/reclaim-ippool"
+// 	reclaimIPPool, err := subnetmanagercontrollers.ShouldReclaimIPPool(pod.Annotations)
+// 	if nil != err {
+// 		return nil, err
+// 	}
 
-	v4Pool, v6Pool, err := i.findOrApplyClusterDefaultSubnetIPPool(ctx, podController, podSelector, nic, poolIPNum, reclaimIPPool)
-	if nil != err {
-		return nil, fmt.Errorf("failed to find or apply auto-created IPPool: %v", err)
-	}
+// 	v4Pool, v6Pool, err := i.findOrApplyClusterDefaultSubnetIPPool(ctx, podController, podSelector, nic, poolIPNum, reclaimIPPool)
+// 	if nil != err {
+// 		return nil, fmt.Errorf("failed to find or apply auto-created IPPool: %v", err)
+// 	}
 
-	// no cluster default subnets
-	if v4Pool == nil && v6Pool == nil {
-		return nil, nil
-	}
+// 	// no cluster default subnets
+// 	if v4Pool == nil && v6Pool == nil {
+// 		return nil, nil
+// 	}
 
-	result := &ToBeAllocated{
-		NIC:          nic,
-		CleanGateway: cleanGateway,
-	}
+// 	result := &ToBeAllocated{
+// 		NIC:          nic,
+// 		CleanGateway: cleanGateway,
+// 	}
 
-	if v4Pool != nil {
-		result.PoolCandidates = append(result.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv4,
-			Pools:     []string{v4Pool.Name},
-			PToIPPool: PoolNameToIPPool{v4Pool.Name: v4Pool},
-		})
-	}
+// 	if v4Pool != nil {
+// 		result.PoolCandidates = append(result.PoolCandidates, &PoolCandidate{
+// 			IPVersion: constant.IPv4,
+// 			Pools:     []string{v4Pool.Name},
+// 			PToIPPool: PoolNameToIPPool{v4Pool.Name: v4Pool},
+// 		})
+// 	}
 
-	if v6Pool != nil {
-		result.PoolCandidates = append(result.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv6,
-			Pools:     []string{v6Pool.Name},
-			PToIPPool: PoolNameToIPPool{v6Pool.Name: v6Pool},
-		})
-	}
+// 	if v6Pool != nil {
+// 		result.PoolCandidates = append(result.PoolCandidates, &PoolCandidate{
+// 			IPVersion: constant.IPv6,
+// 			Pools:     []string{v6Pool.Name},
+// 			PToIPPool: PoolNameToIPPool{v6Pool.Name: v6Pool},
+// 		})
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 // findOrApplyClusterDefaultSubnetIPPool serves for cluster default subnet usage.
 // This will create auto-created IPPool or update auto-created IPPool desired IP number
-func (i *ipam) findOrApplyClusterDefaultSubnetIPPool(ctx context.Context, podController types.PodTopController, podSelector *metav1.LabelSelector,
-	ifName string, poolIPNum int, reclaimIPPool bool) (v4Pool, v6Pool *spiderpoolv1.SpiderIPPool, err error) {
-	//log := logutils.FromContext(ctx)
+// func (i *ipam) findOrApplyClusterDefaultSubnetIPPool(ctx context.Context, podController types.PodTopController, podSelector *metav1.LabelSelector,
+// 	ifName string, poolIPNum int, reclaimIPPool bool) (v4Pool, v6Pool *spiderpoolv1.SpiderIPPool, err error) {
+// 	//log := logutils.FromContext(ctx)
 
-	var clusterDefaultV4Subnet, clusterDefaultV6Subnet string
+// 	var clusterDefaultV4Subnet, clusterDefaultV6Subnet string
 
-	if len(singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet) != 0 {
-		clusterDefaultV4Subnet = singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet[0]
-	}
-	if len(singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet) != 0 {
-		clusterDefaultV6Subnet = singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet[0]
-	}
-	// no cluster default subnet specified
-	if (i.config.EnableIPv4 && clusterDefaultV4Subnet == "") || (i.config.EnableIPv6 && clusterDefaultV6Subnet == "") {
-		return nil, nil, nil
-	}
+// 	if len(singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet) != 0 {
+// 		clusterDefaultV4Subnet = singletons.ClusterDefaultPool.ClusterDefaultIPv4Subnet[0]
+// 	}
+// 	if len(singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet) != 0 {
+// 		clusterDefaultV6Subnet = singletons.ClusterDefaultPool.ClusterDefaultIPv6Subnet[0]
+// 	}
+// 	// no cluster default subnet specified
+// 	if (i.config.EnableIPv4 && clusterDefaultV4Subnet == "") || (i.config.EnableIPv6 && clusterDefaultV6Subnet == "") {
+// 		return nil, nil, nil
+// 	}
 
-	fn := func(subnetName string, ipVersion types.IPVersion, matchLabel client.MatchingLabels) (*spiderpoolv1.SpiderIPPool, error) {
-		return nil, fmt.Errorf("not support")
-	}
+// 	fn := func(subnetName string, ipVersion types.IPVersion, matchLabel client.MatchingLabels) (*spiderpoolv1.SpiderIPPool, error) {
+// 		return nil, fmt.Errorf("not support")
+// 	}
 
-	var errV4, errV6 error
-	var wg sync.WaitGroup
+// 	var errV4, errV6 error
+// 	var wg sync.WaitGroup
 
-	if i.config.EnableIPv4 && clusterDefaultV4Subnet != "" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+// 	if i.config.EnableIPv4 && clusterDefaultV4Subnet != "" {
+// 		wg.Add(1)
+// 		go func() {
+// 			defer wg.Done()
 
-			v4Pool, errV4 = fn(clusterDefaultV4Subnet, constant.IPv4, client.MatchingLabels{
-				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-				constant.LabelIPPoolOwnerSpiderSubnet:   clusterDefaultV4Subnet,
-				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
-				constant.LabelIPPoolInterface:           ifName,
-			})
-		}()
-	}
+// 			v4Pool, errV4 = fn(clusterDefaultV4Subnet, constant.IPv4, client.MatchingLabels{
+// 				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+// 				constant.LabelIPPoolOwnerSpiderSubnet:   clusterDefaultV4Subnet,
+// 				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
+// 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV4,
+// 				constant.LabelIPPoolInterface:           ifName,
+// 			})
+// 		}()
+// 	}
 
-	if i.config.EnableIPv6 && clusterDefaultV6Subnet != "" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+// 	if i.config.EnableIPv6 && clusterDefaultV6Subnet != "" {
+// 		wg.Add(1)
+// 		go func() {
+// 			defer wg.Done()
 
-			v6Pool, errV6 = fn(clusterDefaultV6Subnet, constant.IPv6, client.MatchingLabels{
-				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-				constant.LabelIPPoolOwnerSpiderSubnet:   clusterDefaultV6Subnet,
-				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
-				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
-				constant.LabelIPPoolInterface:           ifName,
-			})
-		}()
-	}
+// 			v6Pool, errV6 = fn(clusterDefaultV6Subnet, constant.IPv6, client.MatchingLabels{
+// 				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+// 				constant.LabelIPPoolOwnerSpiderSubnet:   clusterDefaultV6Subnet,
+// 				constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
+// 				constant.LabelIPPoolVersion:             constant.LabelIPPoolVersionV6,
+// 				constant.LabelIPPoolInterface:           ifName,
+// 			})
+// 		}()
+// 	}
 
-	wg.Wait()
+// 	wg.Wait()
 
-	if errV4 != nil || errV6 != nil {
-		return nil, nil, multierr.Append(errV4, errV6)
-	}
+// 	if errV4 != nil || errV6 != nil {
+// 		return nil, nil, multierr.Append(errV4, errV6)
+// 	}
 
-	return
-}
+// 	return
+// }
 
 func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) (ToBeAllocateds, error) {
 	logger := logutils.FromContext(ctx)

@@ -212,6 +212,10 @@ github.com/josharian/intern
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
+# github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
+## explicit; go 1.17
+github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
+github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 # github.com/kr/pretty v0.3.0
 ## explicit; go 1.12
 github.com/kr/pretty
@@ -250,6 +254,9 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.2
 ## explicit; go 1.12
 github.com/modern-go/reflect2
+# github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+## explicit
+github.com/mohae/deepcopy
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
@@ -283,6 +290,7 @@ github.com/onsi/ginkgo/v2/types
 github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/gbytes
+github.com/onsi/gomega/gexec
 github.com/onsi/gomega/internal
 github.com/onsi/gomega/internal/gutil
 github.com/onsi/gomega/matchers
@@ -391,6 +399,10 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
+# github.com/spidernet-io/e2eframework v0.0.0-20230221030303-dfe135b79617
+## explicit; go 1.19
+github.com/spidernet-io/e2eframework/framework
+github.com/spidernet-io/e2eframework/tools
 # github.com/subosito/gotenv v1.3.0
 ## explicit; go 1.18
 github.com/subosito/gotenv

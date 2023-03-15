@@ -12,19 +12,22 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
@@ -35,6 +38,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
@@ -46,8 +50,9 @@ const (
 var InformerLogger *zap.Logger
 
 type SubnetController struct {
-	Client    client.Client
-	APIReader client.Reader
+	Client        client.Client
+	APIReader     client.Reader
+	DynamicClient dynamic.Interface
 
 	SubnetsLister listers.SpiderSubnetLister
 	IPPoolsLister listers.SpiderIPPoolLister
@@ -359,19 +364,19 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	for poolName, preAllocation := range preAllocations {
 		// Only auto-created IPPools have the field 'Application'.
 		if preAllocation.Application != nil {
-			appKind, appNS, appName, isMatch := applicationinformers.ParseAppLabelValue(*preAllocation.Application)
+			appNamespacedName, isMatch := ParseApplicationNamespacedName(*preAllocation.Application)
 			if !isMatch {
 				logger.Sugar().Errorf("Invalid application record %s of IPPool %s, remove the pre-allocation from Subnet", *preAllocation.Application, poolName)
 				continue
 			}
 
-			exist, err := sc.isAppExist(ctx, appKind, appNS, appName)
+			exist, err := sc.isAppExist(ctx, appNamespacedName)
 			if err != nil {
-				return fmt.Errorf("failed to check whether the application %s/%s/%s corresponding to the auto-created IPPool %s exists: %v", appKind, appNS, appName, poolName, err)
+				return fmt.Errorf("failed to check whether the application %v corresponding to the auto-created IPPool %s exists: %v", appNamespacedName, poolName, err)
 			}
 
 			if !exist {
-				logger.Sugar().Infof("The Application %s/%s/%s corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appKind, appNS, appName, poolName)
+				logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
 				continue
 			}
 
@@ -476,9 +481,12 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 	return nil
 }
 
-func (sc *SubnetController) isAppExist(ctx context.Context, appKind, appNS, appName string) (bool, error) {
+func (sc *SubnetController) isAppExist(ctx context.Context, appNamespacedName spiderpooltypes.AppNamespacedName) (bool, error) {
 	var object client.Object
-	switch appKind {
+	isThirdController := false
+	switch appNamespacedName.Kind {
+	case constant.KindPod:
+		object = &corev1.Pod{}
 	case constant.KindDeployment:
 		object = &appsv1.Deployment{}
 	case constant.KindReplicaSet:
@@ -492,11 +500,20 @@ func (sc *SubnetController) isAppExist(ctx context.Context, appKind, appNS, appN
 	case constant.KindCronJob:
 		object = &batchv1.CronJob{}
 	default:
-		// pod and other controllers will clean up legacy ippools in IPAM
-		return false, nil
+		isThirdController = true
 	}
 
-	err := sc.Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, object)
+	var err error
+	if isThirdController {
+		gvr, e := generateGVR(appNamespacedName)
+		if nil != e {
+			return false, e
+		}
+		_, err = sc.DynamicClient.Resource(gvr).Namespace(appNamespacedName.Namespace).Get(ctx, appNamespacedName.Name, metav1.GetOptions{})
+	} else {
+		err = sc.Client.Get(ctx, types.NamespacedName{Namespace: appNamespacedName.Namespace, Name: appNamespacedName.Name}, object)
+	}
+
 	if nil != err {
 		// if the application is no longer exist, we should delete the IPPool
 		if apierrors.IsNotFound(err) {
@@ -507,4 +524,16 @@ func (sc *SubnetController) isAppExist(ctx context.Context, appKind, appNS, appN
 	}
 
 	return true, nil
+}
+
+func generateGVR(appNamespacedName spiderpooltypes.AppNamespacedName) (schema.GroupVersionResource, error) {
+	gv, err := schema.ParseGroupVersion(appNamespacedName.APIVersion)
+	if nil != err {
+		return schema.GroupVersionResource{}, err
+	}
+
+	gvk := gv.WithKind(appNamespacedName.Kind)
+	gvrPlural, _ := meta.UnsafeGuessKindToResource(gvk)
+
+	return gvrPlural, nil
 }

@@ -13,5 +13,6 @@
 // +kubebuilder:rbac:groups="apps",resources=statefulsets;deployments;replicasets;daemonsets,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups="batch",resources=jobs;cronjobs,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups="",resources=nodes;namespaces;endpoints;pods,verbs=get;list;watch;update
+// +kubebuilder:rbac:groups="*",resources="*",verbs=get
 
 package v1

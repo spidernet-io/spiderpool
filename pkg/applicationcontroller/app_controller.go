@@ -581,6 +581,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 	var podAnno map[string]string
 	var podSelector *metav1.LabelSelector
 	var appReplicas int
+	var apiVersion string
 
 	switch appKey.AppKind {
 	case constant.KindDeployment:
@@ -597,6 +598,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = deployment.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
+		apiVersion = deployment.APIVersion
 
 	case constant.KindReplicaSet:
 		replicaSet, err := sac.replicaSetLister.ReplicaSets(namespace).Get(name)
@@ -612,6 +614,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = replicaSet.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
+		apiVersion = replicaSet.APIVersion
 
 	case constant.KindDaemonSet:
 		daemonSet, err := sac.daemonSetLister.DaemonSets(namespace).Get(name)
@@ -627,6 +630,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = daemonSet.Spec.Selector
 		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
 		app = daemonSet.DeepCopy()
+		apiVersion = daemonSet.APIVersion
 
 	case constant.KindStatefulSet:
 		statefulSet, err := sac.statefulSetLister.StatefulSets(namespace).Get(name)
@@ -642,6 +646,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = statefulSet.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
+		apiVersion = statefulSet.APIVersion
 
 	case constant.KindJob:
 		job, err := sac.jobLister.Jobs(namespace).Get(name)
@@ -657,6 +662,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = job.Spec.Selector
 		appReplicas = applicationinformers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
+		apiVersion = job.APIVersion
 
 	case constant.KindCronJob:
 		cronJob, err := sac.cronJobLister.CronJobs(namespace).Get(name)
@@ -672,6 +678,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
 		appReplicas = applicationinformers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
 		app = cronJob.DeepCopy()
+		apiVersion = cronJob.APIVersion
 
 	default:
 		return fmt.Errorf("%w: unexpected appWorkQueueKey in workQueue '%+v'", constant.ErrWrongInput, appKey)
@@ -686,11 +693,14 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 	err = sac.applyAutoIPPool(logutils.IntoContext(context.TODO(), log),
 		*subnetConfig,
 		types.PodTopController{
-			Kind:      appKey.AppKind,
-			Namespace: app.GetNamespace(),
-			Name:      app.GetName(),
-			UID:       app.GetUID(),
-			APP:       app,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: apiVersion,
+				Kind:       appKey.AppKind,
+				Namespace:  app.GetNamespace(),
+				Name:       app.GetName(),
+			},
+			UID: app.GetUID(),
+			APP: app,
 		},
 		podSelector,
 		appReplicas)

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
@@ -241,7 +242,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				}
 				subnetControlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{
 					IPs:         poolIPRange,
-					Application: pointer.String(applicationinformers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name)),
+					Application: pointer.String(ApplicationNamespacedName(podController.AppNamespacedName)),
 				}
 				marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 				if nil != err {
@@ -304,7 +305,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 	}
 	newlyControlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{
 		IPs:         allocateIPRange,
-		Application: pointer.String(applicationinformers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name)),
+		Application: pointer.String(ApplicationNamespacedName(podController.AppNamespacedName)),
 	}
 	data, err := json.Marshal(newlyControlledIPPools)
 	if nil != err {
@@ -345,4 +346,24 @@ func subnetStatusCount(subnet *spiderpoolv1.SpiderSubnet) (totalCount, allocated
 		allocatedIPCount += int64(len(tmpIPs))
 	}
 	return int64(len(subnetTotalIPs)), allocatedIPCount
+}
+
+// TODO(Icarus9913): move it
+func ApplicationNamespacedName(appNamespacedName types.AppNamespacedName) string {
+	return fmt.Sprintf("%s_%s_%s_%s", appNamespacedName.APIVersion, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
+}
+
+// TODO(Icarus9913): move it
+func ParseApplicationNamespacedName(appNamespacedNameKey string) (appNamespacedName types.AppNamespacedName, isMatch bool) {
+	split := strings.Split(appNamespacedNameKey, "_")
+	if len(split) == 4 {
+		return types.AppNamespacedName{
+			APIVersion: split[0],
+			Kind:       split[1],
+			Namespace:  split[2],
+			Name:       split[3],
+		}, true
+	}
+
+	return
 }

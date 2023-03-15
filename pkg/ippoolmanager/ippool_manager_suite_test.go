@@ -4,10 +4,12 @@
 package ippoolmanager_test
 
 import (
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	k8stesting "k8s.io/client-go/testing"
@@ -36,12 +38,28 @@ var _ = BeforeSuite(func() {
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
+		WithIndex(&spiderpoolv1.SpiderIPPool{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+			return []string{ipPool.GetObjectMeta().GetName()}
+		}).
+		WithIndex(&spiderpoolv1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+		}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
+		WithIndex(&spiderpoolv1.SpiderIPPool{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+			return []string{ipPool.GetObjectMeta().GetName()}
+		}).
+		WithIndex(&spiderpoolv1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+		}).
 		Build()
 
 	ipPoolWebhook = &ippoolmanager.IPPoolWebhook{

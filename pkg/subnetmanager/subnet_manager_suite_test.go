@@ -4,11 +4,13 @@
 package subnetmanager_test
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	k8stesting "k8s.io/client-go/testing"
@@ -44,12 +46,28 @@ var _ = BeforeSuite(func() {
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
+		WithIndex(&spiderpoolv1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+			return []string{subnet.GetObjectMeta().GetName()}
+		}).
+		WithIndex(&spiderpoolv1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+			return []string{strconv.FormatBool(*subnet.Spec.Default)}
+		}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
+		WithIndex(&spiderpoolv1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+			return []string{subnet.GetObjectMeta().GetName()}
+		}).
+		WithIndex(&spiderpoolv1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+			return []string{strconv.FormatBool(*subnet.Spec.Default)}
+		}).
 		Build()
 
 	subnetWebhook = &subnetmanager.SubnetWebhook{

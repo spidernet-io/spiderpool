@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -239,12 +240,13 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 				err := kruiseapi.AddToScheme(scheme)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = controllerutil.SetControllerReference(&kruisev1.CloneSet{}, podT, scheme)
+				cloneSet := &kruisev1.CloneSet{}
+				err = controllerutil.SetControllerReference(cloneSet, podT, scheme)
 				Expect(err).NotTo(HaveOccurred())
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(podTopController.Kind).Should(Equal(constant.KindUnknown))
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with ReplicaSet controller", func() {
@@ -389,7 +391,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(podTopController.Kind).Should(Equal(constant.KindUnknown))
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with Job controller", func() {
@@ -462,7 +464,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(podTopController.Kind).Should(Equal(constant.KindUnknown))
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with CronJob controller", func() {

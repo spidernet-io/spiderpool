@@ -85,7 +85,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 	if podOwner == nil {
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
-				APIVersion: podOwner.APIVersion,
+				APIVersion: pod.APIVersion,
 				Kind:       constant.KindPod,
 				Namespace:  pod.Namespace,
 				Name:       pod.Name,

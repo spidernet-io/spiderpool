@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -238,7 +238,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 }
 
 // releaseSingleIPAndRemoveWEPFinalizer serves for handleTerminatingPod to gc singleIP and remove wep finalizer
-func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poolName, poolIP string, poolIPAllocation spiderpoolv1.PoolIPAllocation) error {
+func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poolName, poolIP string, poolIPAllocation spiderpoolv2beta1.PoolIPAllocation) error {
 	log := logutils.FromContext(ctx)
 
 	singleIP := []types.IPAndUID{{IP: poolIP, UID: poolIPAllocation.PodUID}}

@@ -14,13 +14,13 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 type ReservedIPManager interface {
-	GetReservedIPByName(ctx context.Context, rIPName string, cached bool) (*spiderpoolv1.SpiderReservedIP, error)
-	ListReservedIPs(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error)
+	GetReservedIPByName(ctx context.Context, rIPName string, cached bool) (*spiderpoolv2beta1.SpiderReservedIP, error)
+	ListReservedIPs(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderReservedIPList, error)
 	AssembleReservedIPs(ctx context.Context, version types.IPVersion) ([]net.IP, error)
 }
 
@@ -43,13 +43,13 @@ func NewReservedIPManager(client client.Client, apiReader client.Reader) (Reserv
 	}, nil
 }
 
-func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName string, cached bool) (*spiderpoolv1.SpiderReservedIP, error) {
+func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName string, cached bool) (*spiderpoolv2beta1.SpiderReservedIP, error) {
 	reader := rm.apiReader
 	if cached == constant.UseCache {
 		reader = rm.client
 	}
 
-	var rIP spiderpoolv1.SpiderReservedIP
+	var rIP spiderpoolv2beta1.SpiderReservedIP
 	if err := reader.Get(ctx, apitypes.NamespacedName{Name: rIPName}, &rIP); err != nil {
 		return nil, err
 	}
@@ -57,13 +57,13 @@ func (rm *reservedIPManager) GetReservedIPByName(ctx context.Context, rIPName st
 	return &rIP, nil
 }
 
-func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderReservedIPList, error) {
+func (rm *reservedIPManager) ListReservedIPs(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderReservedIPList, error) {
 	reader := rm.apiReader
 	if cached == constant.UseCache {
 		reader = rm.client
 	}
 
-	var rIPList spiderpoolv1.SpiderReservedIPList
+	var rIPList spiderpoolv2beta1.SpiderReservedIPList
 	if err := reader.List(ctx, &rIPList, opts...); err != nil {
 		return nil, err
 	}

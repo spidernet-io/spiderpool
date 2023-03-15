@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
@@ -56,7 +56,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		var namespace string
 		var endpointName string
 		var labels map[string]string
-		var endpointT *spiderpoolv1.SpiderEndpoint
+		var endpointT *spiderpoolv2beta1.SpiderEndpoint
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -65,18 +65,18 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			namespace = "default"
 			endpointName = fmt.Sprintf("endpoint-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			endpointT = &spiderpoolv1.SpiderEndpoint{
+			endpointT = &spiderpoolv2beta1.SpiderEndpoint{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderEndpoint,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      endpointName,
 					Namespace: namespace,
 					Labels:    labels,
 				},
-				Status: spiderpoolv1.WorkloadEndpointStatus{
-					Current: spiderpoolv1.PodIPAllocation{},
+				Status: spiderpoolv2beta1.WorkloadEndpointStatus{
+					Current: spiderpoolv2beta1.PodIPAllocation{},
 				},
 			}
 		})
@@ -96,7 +96,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spiderendpoints",
 				},
 				endpointT.Namespace,
@@ -309,7 +309,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv1.SpiderEndpoint
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -378,7 +378,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv1.SpiderEndpoint
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -406,7 +406,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv1.SpiderEndpoint
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 

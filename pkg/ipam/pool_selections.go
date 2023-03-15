@@ -21,7 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -139,10 +139,10 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 
 	// This function will find the IPPool with the assembled IPPool name
 	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
-	findSubnetIPPool := func(subnetName string, ipVersion types.IPVersion) (*spiderpoolv1.SpiderIPPool, error) {
+	findSubnetIPPool := func(subnetName string, ipVersion types.IPVersion) (*spiderpoolv2beta1.SpiderIPPool, error) {
 		poolName := subnetmanagercontrollers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, ipVersion, nic, podController.UID)
 
-		var pool *spiderpoolv1.SpiderIPPool
+		var pool *spiderpoolv2beta1.SpiderIPPool
 		var err error
 		for j := 1; j <= i.config.OperationRetries; j++ {
 			// third-party controller applications
@@ -193,7 +193,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		return pool, nil
 	}
 
-	var v4PoolCandidate, v6PoolCandidate *spiderpoolv1.SpiderIPPool
+	var v4PoolCandidate, v6PoolCandidate *spiderpoolv2beta1.SpiderIPPool
 	var errV4, errV6 error
 	var wg sync.WaitGroup
 
@@ -249,7 +249,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	return result, nil
 }
 
-func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName, poolName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv1.SpiderIPPool, error) {
+func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName, poolName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	tmpPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
 	if nil != err {
 		if apierrors.IsNotFound(err) {

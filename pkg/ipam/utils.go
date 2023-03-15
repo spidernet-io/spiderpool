@@ -18,7 +18,7 @@ import (
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -154,7 +154,7 @@ func getAutoPoolIPNumberAndSelector(pod *corev1.Pod, podController types.PodTopC
 }
 
 // isPoolIPsDesired checks the auto-created IPPool's IPs whether matches its AutoDesiredIPCount
-func isPoolIPsDesired(pool *spiderpoolv1.SpiderIPPool, desiredIPCount int) bool {
+func isPoolIPsDesired(pool *spiderpoolv2beta1.SpiderIPPool, desiredIPCount int) bool {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if nil != err {
 		return false

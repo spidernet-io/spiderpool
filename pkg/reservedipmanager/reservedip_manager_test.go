@@ -20,7 +20,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
 
@@ -45,7 +45,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 		var count uint64
 		var rIPName string
 		var labels map[string]string
-		var rIPT, terminatingV4RIPT *spiderpoolv1.SpiderReservedIP
+		var rIPT, terminatingV4RIPT *spiderpoolv2beta1.SpiderReservedIP
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -53,30 +53,30 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			atomic.AddUint64(&count, 1)
 			rIPName = fmt.Sprintf("reservedip-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			rIPT = &spiderpoolv1.SpiderReservedIP{
+			rIPT = &spiderpoolv2beta1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderReservedIP,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   rIPName,
 					Labels: labels,
 				},
-				Spec: spiderpoolv1.ReservedIPSpec{},
+				Spec: spiderpoolv2beta1.ReservedIPSpec{},
 			}
 
 			now := metav1.Now()
-			terminatingV4RIPT = &spiderpoolv1.SpiderReservedIP{
+			terminatingV4RIPT = &spiderpoolv2beta1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderReservedIP,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:                       "terminating-ipv4-reservedip",
 					DeletionTimestamp:          &now,
 					DeletionGracePeriodSeconds: pointer.Int64(30),
 				},
-				Spec: spiderpoolv1.ReservedIPSpec{
+				Spec: spiderpoolv2beta1.ReservedIPSpec{
 					IPVersion: pointer.Int64(constant.IPv4),
 					IPs: []string{
 						"172.18.40.40",
@@ -103,7 +103,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spiderreservedips",
 				},
 				rIPT.Namespace,
@@ -114,7 +114,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spiderendpoints",
 				},
 				terminatingV4RIPT.Namespace,

@@ -16,7 +16,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -24,7 +24,7 @@ var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
+	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
 }
 
 const retryIntervalSec = 2
@@ -45,7 +45,7 @@ func NewCoreClient() (*CoreClient, error) {
 	return &CoreClient{Client: client}, nil
 }
 
-func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 
 	for {
@@ -71,7 +71,7 @@ func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoo
 	}
 }
 
-func (c *CoreClient) WaitForIPPoolCreated(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
+func (c *CoreClient) WaitForIPPoolCreated(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) error {
 	logger := logutils.FromContext(ctx)
 
 	for {

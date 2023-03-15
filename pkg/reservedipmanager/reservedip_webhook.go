@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -32,7 +32,7 @@ func (rw *ReservedIPWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv1.SpiderReservedIP{}).
+		For(&spiderpoolv2beta1.SpiderReservedIP{}).
 		WithDefaulter(rw).
 		WithValidator(rw).
 		Complete()
@@ -42,7 +42,7 @@ var _ webhook.CustomDefaulter = (*ReservedIPWebhook)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (rw *ReservedIPWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	rIP := obj.(*spiderpoolv1.SpiderReservedIP)
+	rIP := obj.(*spiderpoolv2beta1.SpiderReservedIP)
 
 	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("ReservedIPName", rIP.Name),
@@ -61,7 +61,7 @@ var _ webhook.CustomValidator = (*ReservedIPWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-	rIP := obj.(*spiderpoolv1.SpiderReservedIP)
+	rIP := obj.(*spiderpoolv2beta1.SpiderReservedIP)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("ReservedIPNamespace", rIP.Namespace),
@@ -84,8 +84,8 @@ func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Obj
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
-	oldRIP := oldObj.(*spiderpoolv1.SpiderReservedIP)
-	newRIP := newObj.(*spiderpoolv1.SpiderReservedIP)
+	oldRIP := oldObj.(*spiderpoolv2beta1.SpiderReservedIP)
+	newRIP := newObj.(*spiderpoolv2beta1.SpiderReservedIP)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("ReservedIPNamespace", newRIP.Namespace),

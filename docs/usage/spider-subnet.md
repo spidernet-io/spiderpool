@@ -70,7 +70,7 @@ auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e                4
 auto-deployment-default-demo-deploy-subnet-v6-eth0-6b26cd19032e                6         fc00:f853:ccd:e790::/64   1                    3                false
 ------------------------------------------------------------------------------------------
 $ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e -o yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   creationTimestamp: "2022-12-26T06:16:04Z"
@@ -86,7 +86,7 @@ metadata:
     ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
   name: auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v1
+  - apiVersion: spiderpool.spidernet.io/v2beta1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderSubnet
@@ -140,7 +140,7 @@ auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e                4
 auto-deployment-default-demo-deploy-subnet-v6-eth0-6b26cd19032e                6         fc00:f853:ccd:e790::/64   2                    4                false
 ------------------------------------------------------------------------------------------
 $ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e -o yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   creationTimestamp: "2022-12-26T06:16:04Z"
@@ -156,7 +156,7 @@ metadata:
     ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
   name: auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v1
+  - apiVersion: spiderpool.spidernet.io/v2beta1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderSubnet

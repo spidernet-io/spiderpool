@@ -12,10 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
-func (iw *IPPoolWebhook) validateCreateIPPoolWhileEnableSpiderSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateCreateIPPoolWhileEnableSpiderSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
 	if errs := iw.validateCreateIPPool(ctx, ipPool); len(errs) != 0 {
 		return errs
 	}
@@ -29,7 +29,7 @@ func (iw *IPPoolWebhook) validateCreateIPPoolWhileEnableSpiderSubnet(ctx context
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateUpdateIPPoolWhileEnableSpiderSubnet(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateUpdateIPPoolWhileEnableSpiderSubnet(ctx context.Context, oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
 	if errs := iw.validateUpdateIPPool(ctx, oldIPPool, newIPPool); len(errs) != 0 {
 		return errs
 	}
@@ -43,7 +43,7 @@ func (iw *IPPoolWebhook) validateUpdateIPPoolWhileEnableSpiderSubnet(ctx context
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
+func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
 	owner := metav1.GetControllerOf(ipPool)
 	if owner == nil {
 		return field.Forbidden(
@@ -60,7 +60,7 @@ func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 		return nil
 	}
 
-	var subnet spiderpoolv1.SpiderSubnet
+	var subnet spiderpoolv2beta1.SpiderSubnet
 	if err := iw.APIReader.Get(ctx, apitypes.NamespacedName{Name: owner.Name}, &subnet); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to get controller Subnet %s: %v", owner.Name, err))
 	}

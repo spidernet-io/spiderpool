@@ -8,7 +8,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -39,11 +39,11 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=spiderpool.spidernet.io, Version=v1
-	case v1.SchemeGroupVersion.WithResource("spiderippools"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V1().SpiderIPPools().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("spidersubnets"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V1().SpiderSubnets().Informer()}, nil
+	// Group=spiderpool.spidernet.io, Version=v2beta1
+	case v2beta1.SchemeGroupVersion.WithResource("spiderippools"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderIPPools().Informer()}, nil
+	case v2beta1.SchemeGroupVersion.WithResource("spidersubnets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderSubnets().Informer()}, nil
 
 	}
 

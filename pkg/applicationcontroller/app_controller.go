@@ -31,7 +31,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -718,7 +718,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 
 	// retrieve application pools
 	fn := func(poolName string, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
-		tmpPool := &spiderpoolv1.SpiderIPPool{}
+		tmpPool := &spiderpoolv2beta1.SpiderIPPool{}
 		err = sac.client.Get(ctx, k8types.NamespacedName{Name: poolName}, tmpPool)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
@@ -907,7 +907,7 @@ func (sac *SubnetAppController) controllerDeleteHandler() applicationinformers.A
 		}
 
 		// clean up all legacy IPPools that matched with the application UID
-		err := sac.client.DeleteAllOf(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
+		err := sac.client.DeleteAllOf(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
 			constant.LabelIPPoolOwnerApplication:    applicationinformers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
 			constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
 			constant.LabelIPPoolReclaimIPPool:       constant.True,

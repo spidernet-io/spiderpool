@@ -40,7 +40,7 @@ spec:
       jsonPath: .spec.default
       name: DEFAULT
       type: boolean
-    name: v1
+    name: v2beta1
     schema:
       openAPIV3Schema:
         description: SpiderSubnet is the Schema for the spidersubnets API.

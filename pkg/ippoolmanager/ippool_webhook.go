@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -38,7 +38,7 @@ func (iw *IPPoolWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv1.SpiderIPPool{}).
+		For(&spiderpoolv2beta1.SpiderIPPool{}).
 		WithDefaulter(iw).
 		WithValidator(iw).
 		Complete()
@@ -48,7 +48,7 @@ var _ webhook.CustomDefaulter = (*IPPoolWebhook)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	ipPool := obj.(*spiderpoolv1.SpiderIPPool)
+	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("IPPoolName", ipPool.Name),
@@ -67,7 +67,7 @@ var _ webhook.CustomValidator = (*IPPoolWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-	ipPool := obj.(*spiderpoolv1.SpiderIPPool)
+	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", ipPool.Name),
@@ -89,8 +89,8 @@ func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
-	oldIPPool := oldObj.(*spiderpoolv1.SpiderIPPool)
-	newIPPool := newObj.(*spiderpoolv1.SpiderIPPool)
+	oldIPPool := oldObj.(*spiderpoolv2beta1.SpiderIPPool)
+	newIPPool := newObj.(*spiderpoolv2beta1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", newIPPool.Name),

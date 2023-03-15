@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 )
 
@@ -41,17 +41,17 @@ func TestSubnetManager(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv1.AddToScheme(scheme)
+	err := spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithIndex(&spiderpoolv1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{strconv.FormatBool(*subnet.Spec.Default)}
 		}).
 		Build()
@@ -60,12 +60,12 @@ var _ = BeforeSuite(func() {
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
-		WithIndex(&spiderpoolv1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv1.SpiderSubnet)
+		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{strconv.FormatBool(*subnet.Spec.Default)}
 		}).
 		Build()

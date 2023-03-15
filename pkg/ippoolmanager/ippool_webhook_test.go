@@ -25,7 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -50,9 +50,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 		var count uint64
 		var subnetName string
-		var subnetT *spiderpoolv1.SpiderSubnet
+		var subnetT *spiderpoolv2beta1.SpiderSubnet
 		var ipPoolName, existIPPoolName string
-		var ipPoolT, existIPPoolT *spiderpoolv1.SpiderIPPool
+		var ipPoolT, existIPPoolT *spiderpoolv2beta1.SpiderIPPool
 
 		BeforeEach(func() {
 			ippoolmanager.WebhookLogger = logutils.Logger.Named("IPPool-Webhook")
@@ -64,41 +64,41 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
-			subnetT = &spiderpoolv1.SpiderSubnet{
+			subnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderSubnet,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   subnetName,
 					Labels: map[string]string{},
 				},
-				Spec: spiderpoolv1.SubnetSpec{},
+				Spec: spiderpoolv2beta1.SubnetSpec{},
 			}
 
 			ipPoolName = fmt.Sprintf("ippool-%v", count)
-			ipPoolT = &spiderpoolv1.SpiderIPPool{
+			ipPoolT = &spiderpoolv2beta1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderIPPool,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: ipPoolName,
 				},
-				Spec: spiderpoolv1.IPPoolSpec{},
+				Spec: spiderpoolv2beta1.IPPoolSpec{},
 			}
 
 			existIPPoolName = fmt.Sprintf("z-exist-ippool-%v", count)
-			existIPPoolT = &spiderpoolv1.SpiderIPPool{
+			existIPPoolT = &spiderpoolv2beta1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderIPPool,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   existIPPoolName,
 					Labels: map[string]string{},
 				},
-				Spec: spiderpoolv1.IPPoolSpec{},
+				Spec: spiderpoolv2beta1.IPPoolSpec{},
 			}
 		})
 
@@ -123,7 +123,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spiderippools",
 				},
 				ipPoolT.Namespace,
@@ -134,7 +134,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spiderippools",
 				},
 				existIPPoolT.Namespace,
@@ -145,7 +145,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spidersubnets",
 				},
 				subnetT.Namespace,
@@ -888,7 +888,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 					ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: constant.InvalidCIDR,
 							Gw:  "172.18.40.1",
 						},
@@ -908,7 +908,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 					ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  constant.InvalidIP,
 						},
@@ -928,7 +928,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 					ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  "172.18.41.1",
 						},
@@ -1070,7 +1070,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 				ipPoolT.Spec.Vlan = pointer.Int64(0)
 				ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
@@ -1111,7 +1111,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolT.Spec.Gateway = pointer.String("abcd:1234::1")
 				ipPoolT.Spec.Vlan = pointer.Int64(0)
 				ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},
@@ -1420,7 +1420,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: constant.InvalidCIDR,
 							Gw:  "172.18.40.1",
 						},
@@ -1442,7 +1442,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  constant.InvalidIP,
 						},
@@ -1464,7 +1464,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  "172.18.41.1",
 						},
@@ -1487,8 +1487,8 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 
 					data, err := convert.MarshalIPPoolAllocatedIPs(
-						spiderpoolv1.PoolIPAllocations{
-							"172.18.40.10": spiderpoolv1.PoolIPAllocation{
+						spiderpoolv2beta1.PoolIPAllocations{
+							"172.18.40.10": spiderpoolv2beta1.PoolIPAllocation{
 								NIC:            "eth0",
 								NamespacedName: "default/pod",
 								PodUID:         string(uuid.NewUUID()),
@@ -1648,7 +1648,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				newIPPoolT.Spec.ExcludeIPs = append(newIPPoolT.Spec.ExcludeIPs, "172.18.40.10")
 				newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 				newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
@@ -1686,7 +1686,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				newIPPoolT.Spec.ExcludeIPs = append(newIPPoolT.Spec.ExcludeIPs, "abcd:1234::a")
 				newIPPoolT.Spec.Gateway = pointer.String("abcd:1234::1")
 				newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},

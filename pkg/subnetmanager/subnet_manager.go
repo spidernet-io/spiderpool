@@ -20,7 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -28,9 +28,9 @@ import (
 )
 
 type SubnetManager interface {
-	GetSubnetByName(ctx context.Context, subnetName string, cached bool) (*spiderpoolv1.SpiderSubnet, error)
-	ListSubnets(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error)
-	ReconcileAutoIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv1.SpiderIPPool, error)
+	GetSubnetByName(ctx context.Context, subnetName string, cached bool) (*spiderpoolv2beta1.SpiderSubnet, error)
+	ListSubnets(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderSubnetList, error)
+	ReconcileAutoIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error)
 }
 
 type subnetManager struct {
@@ -57,13 +57,13 @@ func NewSubnetManager(client client.Client, apiReader client.Reader, reservedIPM
 	}, nil
 }
 
-func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string, cached bool) (*spiderpoolv1.SpiderSubnet, error) {
+func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string, cached bool) (*spiderpoolv2beta1.SpiderSubnet, error) {
 	reader := sm.apiReader
 	if cached == constant.UseCache {
 		reader = sm.client
 	}
 
-	var subnet spiderpoolv1.SpiderSubnet
+	var subnet spiderpoolv2beta1.SpiderSubnet
 	if err := reader.Get(ctx, apitypes.NamespacedName{Name: subnetName}, &subnet); err != nil {
 		return nil, err
 	}
@@ -71,13 +71,13 @@ func (sm *subnetManager) GetSubnetByName(ctx context.Context, subnetName string,
 	return &subnet, nil
 }
 
-func (sm *subnetManager) ListSubnets(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderSubnetList, error) {
+func (sm *subnetManager) ListSubnets(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderSubnetList, error) {
 	reader := sm.apiReader
 	if cached == constant.UseCache {
 		reader = sm.client
 	}
 
-	var subnetList spiderpoolv1.SpiderSubnetList
+	var subnetList spiderpoolv2beta1.SpiderSubnetList
 	if err := reader.List(ctx, &subnetList, opts...); err != nil {
 		return nil, err
 	}
@@ -85,8 +85,8 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, cached bool, opts ...c
 	return &subnetList, nil
 }
 
-func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool, subnetName string,
-	podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv1.SpiderIPPool, error) {
+func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool, subnetName string,
+	podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	if len(subnetName) == 0 {
 		return nil, fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
 	}
@@ -119,11 +119,11 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 	}
 
 	if operationCreate {
-		pool = &spiderpoolv1.SpiderIPPool{
+		pool = &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),
 			},
-			Spec: spiderpoolv1.IPPoolSpec{
+			Spec: spiderpoolv2beta1.IPPoolSpec{
 				IPVersion:   pointer.Int64(autoPoolProperty.IPVersion),
 				Subnet:      subnet.Spec.Subnet,
 				Gateway:     subnet.Spec.Gateway,
@@ -184,13 +184,13 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 }
 
 // preAllocateIPsFromSubnet will calculate the auto-created IPPool required IPs from corresponding SpiderSubnet and return it.
-func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet, pool *spiderpoolv1.SpiderIPPool, ipVersion types.IPVersion, desiredIPNum int, podController types.PodTopController) ([]string, error) {
+func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet, pool *spiderpoolv2beta1.SpiderIPPool, ipVersion types.IPVersion, desiredIPNum int, podController types.PodTopController) ([]string, error) {
 	log := logutils.FromContext(ctx)
 
 	var beforeAllocatedIPs []net.IP
 	ipNum := desiredIPNum
 
-	var subnetControlledIPPools spiderpoolv1.PoolIPPreAllocations
+	var subnetControlledIPPools spiderpoolv2beta1.PoolIPPreAllocations
 	if subnet.Status.ControlledIPPools != nil {
 		err := json.Unmarshal([]byte(*subnet.Status.ControlledIPPools), &subnetControlledIPPools)
 		if nil != err {
@@ -240,7 +240,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				if nil != err {
 					return nil, err
 				}
-				subnetControlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{
+				subnetControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 					IPs:         poolIPRange,
 					Application: pointer.String(ApplicationNamespacedName(podController.AppNamespacedName)),
 				}
@@ -299,11 +299,11 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 		return nil, err
 	}
 
-	newlyControlledIPPools := make(spiderpoolv1.PoolIPPreAllocations, len(subnetControlledIPPools))
+	newlyControlledIPPools := make(spiderpoolv2beta1.PoolIPPreAllocations, len(subnetControlledIPPools))
 	for tmpPoolName, poolAllocation := range subnetControlledIPPools {
 		newlyControlledIPPools[tmpPoolName] = poolAllocation
 	}
-	newlyControlledIPPools[pool.Name] = spiderpoolv1.PoolIPPreAllocation{
+	newlyControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 		IPs:         allocateIPRange,
 		Application: pointer.String(ApplicationNamespacedName(podController.AppNamespacedName)),
 	}
@@ -326,14 +326,14 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 }
 
 // TODO(Icarus9913): remove it
-func subnetStatusCount(subnet *spiderpoolv1.SpiderSubnet) (totalCount, allocatedCount int64) {
+func subnetStatusCount(subnet *spiderpoolv2beta1.SpiderSubnet) (totalCount, allocatedCount int64) {
 	// total IP Count
 	subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 
 	if subnet.Status.ControlledIPPools == nil {
 		return 0, 0
 	}
-	var controlledIPPools spiderpoolv1.PoolIPPreAllocations
+	var controlledIPPools spiderpoolv2beta1.PoolIPPreAllocations
 	err := json.Unmarshal([]byte(*subnet.Status.ControlledIPPools), &controlledIPPools)
 	if nil != err {
 		return 0, 0

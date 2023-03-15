@@ -19,7 +19,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
@@ -29,12 +29,12 @@ import (
 )
 
 type IPPoolManager interface {
-	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv1.SpiderIPPool, error)
-	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
+	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error)
+	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error)
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
-	DeleteAllIPPools(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error
+	DeleteAllIPPools(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, opts ...client.DeleteAllOfOption) error
 }
 
 type ipPoolManager struct {
@@ -63,13 +63,13 @@ func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, apiReade
 	}, nil
 }
 
-func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv1.SpiderIPPool, error) {
+func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	reader := im.apiReader
 	if cached == constant.UseCache {
 		reader = im.client
 	}
 
-	var ipPool spiderpoolv1.SpiderIPPool
+	var ipPool spiderpoolv2beta1.SpiderIPPool
 	if err := reader.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
 		return nil, err
 	}
@@ -77,13 +77,13 @@ func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, c
 	return &ipPool, nil
 }
 
-func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error) {
+func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error) {
 	reader := im.apiReader
 	if cached == constant.UseCache {
 		reader = im.client
 	}
 
-	var ipPoolList spiderpoolv1.SpiderIPPoolList
+	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
 	if err := reader.List(ctx, &ipPoolList, opts...); err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 	return ipConfig, nil
 }
 
-func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv1.SpiderIPPool, pod *corev1.Pod) (net.IP, error) {
+func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod) (net.IP, error) {
 	reservedIPs, err := im.rIPManager.AssembleReservedIPs(ctx, *ipPool.Spec.IPVersion)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 	}
 
 	resIP := availableIPs[0]
-	allocatedRecords[resIP.String()] = spiderpoolv1.PoolIPAllocation{
+	allocatedRecords[resIP.String()] = spiderpoolv2beta1.PoolIPAllocation{
 		NIC:            nic,
 		NamespacedName: key,
 		PodUID:         string(pod.UID),
@@ -316,7 +316,7 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 	return nil
 }
 
-func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
+func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
 	err := im.client.DeleteAllOf(ctx, ipPool, opts...)
 
 	return client.IgnoreNotFound(err)

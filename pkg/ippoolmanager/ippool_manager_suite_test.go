@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
 var scheme *runtime.Scheme
@@ -33,17 +33,17 @@ func TestIPPoolManager(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv1.AddToScheme(scheme)
+	err := spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithIndex(&spiderpoolv1.SpiderIPPool{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{ipPool.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
-			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 		}).
 		Build()
@@ -52,12 +52,12 @@ var _ = BeforeSuite(func() {
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
-		WithIndex(&spiderpoolv1.SpiderIPPool{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{ipPool.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
-			ipPool := raw.(*spiderpoolv1.SpiderIPPool)
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 		}).
 		Build()

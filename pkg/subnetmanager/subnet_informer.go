@@ -32,11 +32,11 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
-	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
+	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
+	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -73,7 +73,7 @@ type SubnetController struct {
 
 func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.Interface, leader election.SpiderLeaseElector) error {
 	if client == nil {
-		return fmt.Errorf("spiderpoolv1 clientset %w", constant.ErrMissingRequiredParam)
+		return fmt.Errorf("spiderpoolv2beta1 clientset %w", constant.ErrMissingRequiredParam)
 	}
 	if leader == nil {
 		return fmt.Errorf("controller leader %w", constant.ErrMissingRequiredParam)
@@ -115,8 +115,8 @@ func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.
 			InformerLogger.Info("Initialize Subnet informer")
 			informerFactory := externalversions.NewSharedInformerFactory(client, sc.ResyncPeriod)
 			sc.addEventHandlers(
-				informerFactory.Spiderpool().V1().SpiderSubnets(),
-				informerFactory.Spiderpool().V1().SpiderIPPools(),
+				informerFactory.Spiderpool().V2beta1().SpiderSubnets(),
+				informerFactory.Spiderpool().V2beta1().SpiderIPPools(),
 			)
 
 			informerFactory.Start(innerCtx.Done())
@@ -156,7 +156,7 @@ func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubn
 }
 
 func (sc *SubnetController) enqueueSubnetOnAdd(obj interface{}) {
-	subnet := obj.(*spiderpoolv1.SpiderSubnet)
+	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
 	logger := InformerLogger.With(
 		zap.String("SubnetName", subnet.Name),
 		zap.String("Operation", "ADD"),
@@ -172,7 +172,7 @@ func (sc *SubnetController) enqueueSubnetOnAdd(obj interface{}) {
 }
 
 func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
-	newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
+	newSubnet := newObj.(*spiderpoolv2beta1.SpiderSubnet)
 	logger := InformerLogger.With(
 		zap.String("SubnetName", newSubnet.Name),
 		zap.String("Operation", "UPDATE"),
@@ -188,7 +188,7 @@ func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
 }
 
 func (sc *SubnetController) enqueueSubnetOnIPPoolChange(obj interface{}) {
-	ipPool := obj.(*spiderpoolv1.SpiderIPPool)
+	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
 	ownerSubnet, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]
 	if !ok {
 		return
@@ -290,7 +290,7 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	return nil
 }
 
-func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
 	if err != nil {
 		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", subnet.Spec.Subnet, err)
@@ -312,7 +312,7 @@ func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpool
 	return nil
 }
 
-func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	ipPools, err := sc.IPPoolsLister.List(labels.Everything())
 	if err != nil {
 		return err
@@ -350,7 +350,7 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 	return nil
 }
 
-func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 
 	preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
@@ -360,7 +360,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 
 	// Merge pre-allocated IP addresses of each IPPool and calculate their count.
 	var tmpCount int
-	newPreAllocations := spiderpoolv1.PoolIPPreAllocations{}
+	newPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{}
 	for poolName, preAllocation := range preAllocations {
 		// Only auto-created IPPools have the field 'Application'.
 		if preAllocation.Application != nil {
@@ -415,7 +415,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			tmpCount += len(validIPs)
 
 			ranges, _ := spiderpoolip.ConvertIPsToIPRanges(*ipPool.Spec.IPVersion, validIPs)
-			newPreAllocations[ipPool.Name] = spiderpoolv1.PoolIPPreAllocation{IPs: ranges}
+			newPreAllocations[ipPool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{IPs: ranges}
 		}
 	}
 
@@ -445,7 +445,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	return nil
 }
 
-func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 
 	if !controllerutil.ContainsFinalizer(subnet, metav1.FinalizerDeleteDependents) {

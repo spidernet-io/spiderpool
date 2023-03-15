@@ -146,7 +146,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		var err error
 		for j := 1; j <= i.config.OperationRetries; j++ {
 			// third-party controller applications
-			if !slices.Contains(k8sKinds, podController.Kind) {
+			if !slices.Contains(constant.K8sKinds, podController.Kind) {
 				pool, err = i.applyThirdControllerAutoPool(ctx, subnetName, poolName, podController, types.AutoPoolProperty{
 					DesiredIPNumber: poolIPNum,
 					IPVersion:       ipVersion,

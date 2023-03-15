@@ -25,9 +25,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
-var k8sKinds = []string{constant.KindPod, constant.KindDeployment, constant.KindReplicaSet, constant.KindDaemonSet,
-	constant.KindStatefulSet, constant.KindJob, constant.KindCronJob}
-
 func getCustomRoutes(pod *corev1.Pod) ([]*models.Route, error) {
 	anno, ok := pod.Annotations[constant.AnnoPodRoutes]
 	if !ok {

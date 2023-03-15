@@ -30,6 +30,8 @@ const (
 	KindCronJob     = "CronJob"
 )
 
+var K8sKinds = []string{KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob}
+
 const (
 	PodRunning     types.PodStatus = "Running"
 	PodTerminating types.PodStatus = "Terminating"

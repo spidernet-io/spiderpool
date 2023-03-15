@@ -4,10 +4,12 @@
 package reservedipmanager_test
 
 import (
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,12 +40,28 @@ var _ = BeforeSuite(func() {
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
+			return []string{rIP.GetObjectMeta().GetName()}
+		}).
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
+			return []string{strconv.FormatInt(*rIP.Spec.IPVersion, 10)}
+		}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
+			return []string{rIP.GetObjectMeta().GetName()}
+		}).
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
+			return []string{strconv.FormatInt(*rIP.Spec.IPVersion, 10)}
+		}).
 		Build()
 
 	rIPManager, err = reservedipmanager.NewReservedIPManager(

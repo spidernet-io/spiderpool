@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -152,7 +153,8 @@ type ControllerContext struct {
 	InnerCancel context.CancelFunc
 
 	// kubernetes Clientset
-	ClientSet *kubernetes.Clientset
+	ClientSet     *kubernetes.Clientset
+	DynamicClient *dynamic.DynamicClient
 
 	// manager
 	CRDManager        ctrl.Manager

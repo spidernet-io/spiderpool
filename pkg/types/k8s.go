@@ -15,12 +15,17 @@ import (
 
 type PodStatus string
 
+type AppNamespacedName struct {
+	APIVersion string
+	Kind       string
+	Namespace  string
+	Name       string
+}
+
 type PodTopController struct {
-	Kind      string
-	Namespace string
-	Name      string
-	UID       apitypes.UID
-	APP       metav1.Object
+	AppNamespacedName
+	UID apitypes.UID
+	APP metav1.Object
 }
 
 type AnnoPodIPPoolValue struct {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -128,6 +129,13 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 	controllerContext.ClientSet = clientSet
+
+	logger.Debug("Begin to initial K8s dynamic client")
+	dynamicClient, err := initDynamicClient()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	controllerContext.DynamicClient = dynamicClient
 
 	logger.Debug("Begin to initialize K8s event recorder")
 	event.InitEventRecorder(controllerContext.ClientSet, mgr.GetScheme(), constant.Spiderpool)
@@ -384,6 +392,15 @@ func initK8sClientSet() (*kubernetes.Clientset, error) {
 	return clientSet, nil
 }
 
+func initDynamicClient() (*dynamic.DynamicClient, error) {
+	dynamicClient, err := dynamic.NewForConfig(ctrl.GetConfigOrDie())
+	if nil != err {
+		return nil, fmt.Errorf("failed to init Kubernetes dynamic client: %v", err)
+	}
+
+	return dynamicClient, nil
+}
+
 // setupInformers will run IPPool,Subnet... informers,
 // because these informers count on webhook
 func setupInformers() {
@@ -416,6 +433,7 @@ func setupInformers() {
 		if err := (&subnetmanager.SubnetController{
 			Client:                  controllerContext.CRDManager.GetClient(),
 			APIReader:               controllerContext.CRDManager.GetAPIReader(),
+			DynamicClient:           controllerContext.DynamicClient,
 			LeaderRetryElectGap:     time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			ResyncPeriod:            time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
 			SubnetControllerWorkers: controllerContext.Cfg.SubnetInformerWorkers,

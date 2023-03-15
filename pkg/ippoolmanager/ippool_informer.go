@@ -106,7 +106,11 @@ func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclients
 
 			informerLogger.Info("create SpiderIPPool informer")
 			factory := externalversions.NewSharedInformerFactory(client, ic.ResyncPeriod)
-			ic.addEventHandlers(factory.Spiderpool().V2beta1().SpiderIPPools())
+			err := ic.addEventHandlers(factory.Spiderpool().V2beta1().SpiderIPPools())
+			if nil != err {
+				informerLogger.Error(err.Error())
+				continue
+			}
 			factory.Start(innerCtx.Done())
 
 			if err := ic.Run(innerCtx.Done()); nil != err {
@@ -119,14 +123,14 @@ func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclients
 	return nil
 }
 
-func (ic *IPPoolController) addEventHandlers(poolInformer informers.SpiderIPPoolInformer) {
+func (ic *IPPoolController) addEventHandlers(poolInformer informers.SpiderIPPoolInformer) error {
 	ic.poolLister = poolInformer.Lister()
 	ic.poolSynced = poolInformer.Informer().HasSynced
 
 	ic.poolWorkqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderIPPools")
 
 	// for all IPPool processing
-	poolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := poolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: ic.enqueueIPPool,
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			ic.enqueueIPPool(newObj)
@@ -135,6 +139,11 @@ func (ic *IPPoolController) addEventHandlers(poolInformer informers.SpiderIPPool
 
 		},
 	})
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 // enqueueIPPool will check the given pool and enqueue them into different workqueue

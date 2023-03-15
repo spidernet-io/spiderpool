@@ -11,14 +11,19 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func (c *Controller) AddReplicaSetHandler(informer cache.SharedIndexInformer) {
+func (c *Controller) AddReplicaSetHandler(informer cache.SharedIndexInformer) error {
 	controllersLogger.Info("Setting up ReplicaSet handlers")
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onReplicaSetAdd,
 		UpdateFunc: c.onReplicaSetUpdate,
 		DeleteFunc: c.onReplicaSetDelete,
 	})
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Controller) onReplicaSetAdd(obj interface{}) {

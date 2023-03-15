@@ -133,9 +133,14 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 
 			logger.Info("create SpiderSubnet App informer")
 			factory := kubeinformers.NewSharedInformerFactory(client, 0)
-			sac.addEventHandlers(factory)
+			err := sac.addEventHandlers(factory)
+			if nil != err {
+				logger.Error(err.Error())
+				continue
+			}
+
 			factory.Start(innerCtx.Done())
-			err := sac.Run(innerCtx.Done())
+			err = sac.Run(innerCtx.Done())
 			if nil != err {
 				logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
 			}
@@ -146,34 +151,54 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 	return nil
 }
 
-func (sac *SubnetAppController) addEventHandlers(factory kubeinformers.SharedInformerFactory) {
+func (sac *SubnetAppController) addEventHandlers(factory kubeinformers.SharedInformerFactory) error {
 	sac.deploymentsLister = factory.Apps().V1().Deployments().Lister()
 	sac.deploymentInformer = factory.Apps().V1().Deployments().Informer()
-	sac.appController.AddDeploymentHandler(sac.deploymentInformer)
+	err := sac.appController.AddDeploymentHandler(sac.deploymentInformer)
+	if nil != err {
+		return err
+	}
 
 	sac.replicaSetLister = factory.Apps().V1().ReplicaSets().Lister()
 	sac.replicaSetInformer = factory.Apps().V1().ReplicaSets().Informer()
-	sac.appController.AddReplicaSetHandler(sac.replicaSetInformer)
+	err = sac.appController.AddReplicaSetHandler(sac.replicaSetInformer)
+	if nil != err {
+		return err
+	}
 
 	sac.statefulSetLister = factory.Apps().V1().StatefulSets().Lister()
 	sac.statefulSetInformer = factory.Apps().V1().StatefulSets().Informer()
-	sac.appController.AddStatefulSetHandler(sac.statefulSetInformer)
+	err = sac.appController.AddStatefulSetHandler(sac.statefulSetInformer)
+	if nil != err {
+		return err
+	}
 
 	sac.daemonSetLister = factory.Apps().V1().DaemonSets().Lister()
 	sac.daemonSetInformer = factory.Apps().V1().DaemonSets().Informer()
-	sac.appController.AddDaemonSetHandler(sac.daemonSetInformer)
+	err = sac.appController.AddDaemonSetHandler(sac.daemonSetInformer)
+	if nil != err {
+		return err
+	}
 
 	sac.jobLister = factory.Batch().V1().Jobs().Lister()
 	sac.jobInformer = factory.Batch().V1().Jobs().Informer()
-	sac.appController.AddJobController(sac.jobInformer)
+	err = sac.appController.AddJobController(sac.jobInformer)
+	if nil != err {
+		return err
+	}
 
 	sac.cronJobLister = factory.Batch().V1().CronJobs().Lister()
 	sac.cronJobInformer = factory.Batch().V1().CronJobs().Informer()
-	sac.appController.AddCronJobHandler(sac.cronJobInformer)
+	err = sac.appController.AddCronJobHandler(sac.cronJobInformer)
+	if nil != err {
+		return err
+	}
 
 	// Once we lost the leader but get leader later, we have to use a new workqueue.
 	// Because the former workqueue was already shut down and wouldn't be re-start forever.
 	sac.workQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Application-Controllers")
+
+	return nil
 }
 
 // controllerAddOrUpdateHandler serves for kubernetes original controller applications(such as: Deployment,ReplicaSet,Job...),

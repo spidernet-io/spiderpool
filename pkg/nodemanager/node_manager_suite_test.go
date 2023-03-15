@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	k8stesting "k8s.io/client-go/testing"
@@ -36,12 +37,20 @@ var _ = BeforeSuite(func() {
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
+		WithIndex(&corev1.Node{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			node := raw.(*corev1.Node)
+			return []string{node.GetObjectMeta().GetName()}
+		}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
+		WithIndex(&corev1.Node{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			node := raw.(*corev1.Node)
+			return []string{node.GetObjectMeta().GetName()}
+		}).
 		Build()
 
 	nodeManager, err = nodemanager.NewNodeManager(

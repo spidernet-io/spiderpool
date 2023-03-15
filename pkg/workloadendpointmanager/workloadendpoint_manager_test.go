@@ -366,11 +366,14 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 					nil,
 					podT,
 					spiderpooltypes.PodTopController{
-						Kind:      constant.KindPod,
-						Namespace: podT.Namespace,
-						Name:      podT.Name,
-						UID:       podT.UID,
-						APP:       podT,
+						AppNamespacedName: spiderpooltypes.AppNamespacedName{
+							APIVersion: corev1.SchemeGroupVersion.String(),
+							Kind:       constant.KindPod,
+							Namespace:  podT.Namespace,
+							Name:       podT.Name,
+						},
+						UID: podT.UID,
+						APP: podT,
 					},
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -391,11 +394,14 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 					nil,
 					podT,
 					spiderpooltypes.PodTopController{
-						Kind:      constant.KindStatefulSet,
-						Namespace: namespace,
-						Name:      fmt.Sprintf("%s-sts", endpointName),
-						UID:       uuid.NewUUID(),
-						APP:       &appsv1.StatefulSet{},
+						AppNamespacedName: spiderpooltypes.AppNamespacedName{
+							APIVersion: appsv1.SchemeGroupVersion.String(),
+							Kind:       constant.KindStatefulSet,
+							Namespace:  namespace,
+							Name:       fmt.Sprintf("%s-sts", endpointName),
+						},
+						UID: uuid.NewUUID(),
+						APP: &appsv1.StatefulSet{},
 					},
 				)
 				Expect(err).NotTo(HaveOccurred())

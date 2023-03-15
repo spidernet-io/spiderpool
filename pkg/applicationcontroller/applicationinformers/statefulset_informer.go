@@ -11,14 +11,19 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func (c *Controller) AddStatefulSetHandler(informer cache.SharedIndexInformer) {
+func (c *Controller) AddStatefulSetHandler(informer cache.SharedIndexInformer) error {
 	controllersLogger.Info("Setting up StatefulSet handlers")
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onStatefulSetAdd,
 		UpdateFunc: c.onStatefulSetUpdate,
 		DeleteFunc: c.onStatefulSetDelete,
 	})
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Controller) onStatefulSetAdd(obj interface{}) {

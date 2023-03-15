@@ -114,10 +114,14 @@ func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.
 
 			InformerLogger.Info("Initialize Subnet informer")
 			informerFactory := externalversions.NewSharedInformerFactory(client, sc.ResyncPeriod)
-			sc.addEventHandlers(
+			err := sc.addEventHandlers(
 				informerFactory.Spiderpool().V2beta1().SpiderSubnets(),
 				informerFactory.Spiderpool().V2beta1().SpiderIPPools(),
 			)
+			if nil != err {
+				InformerLogger.Error(err.Error())
+				continue
+			}
 
 			informerFactory.Start(innerCtx.Done())
 			if err := sc.run(logutils.IntoContext(innerCtx, InformerLogger), sc.SubnetControllerWorkers); err != nil {
@@ -131,7 +135,7 @@ func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.
 	return nil
 }
 
-func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubnetInformer, ipPoolInformer informers.SpiderIPPoolInformer) {
+func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubnetInformer, ipPoolInformer informers.SpiderIPPoolInformer) error {
 	sc.SubnetsLister = subnetInformer.Lister()
 	sc.IPPoolsLister = ipPoolInformer.Lister()
 	sc.SubnetIndexer = subnetInformer.Informer().GetIndexer()
@@ -140,19 +144,27 @@ func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubn
 	sc.IPPoolsSynced = ipPoolInformer.Informer().HasSynced
 	sc.Workqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), constant.KindSpiderSubnet)
 
-	subnetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := subnetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    sc.enqueueSubnetOnAdd,
 		UpdateFunc: sc.enqueueSubnetOnUpdate,
 		DeleteFunc: nil,
 	})
+	if nil != err {
+		return err
+	}
 
-	ipPoolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = ipPoolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: sc.enqueueSubnetOnIPPoolChange,
 		UpdateFunc: func(old, new interface{}) {
 			sc.enqueueSubnetOnIPPoolChange(new)
 		},
 		DeleteFunc: sc.enqueueSubnetOnIPPoolChange,
 	})
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 func (sc *SubnetController) enqueueSubnetOnAdd(obj interface{}) {

@@ -11,14 +11,19 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func (c *Controller) AddJobController(informer cache.SharedIndexInformer) {
+func (c *Controller) AddJobController(informer cache.SharedIndexInformer) error {
 	controllersLogger.Info("Setting up Job informer")
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onJobAdd,
 		UpdateFunc: c.onJobUpdate,
 		DeleteFunc: c.onJobDelete,
 	})
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Controller) onJobAdd(obj interface{}) {

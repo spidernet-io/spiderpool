@@ -19,11 +19,15 @@ func (s *SpiderGC) startPodInformer() {
 		stopper := make(chan struct{})
 
 		podInformer := informerFactory.Core().V1().Pods().Informer()
-		podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		_, err := podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    s.onPodAdd,
 			UpdateFunc: s.onPodUpdate,
 			DeleteFunc: s.onPodDel,
 		})
+		if nil != err {
+			logger.Error(err.Error())
+			continue
+		}
 		go podInformer.Run(stopper)
 
 		<-stopper

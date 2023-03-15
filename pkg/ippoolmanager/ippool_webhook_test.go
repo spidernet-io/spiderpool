@@ -1489,10 +1489,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					data, err := convert.MarshalIPPoolAllocatedIPs(
 						spiderpoolv1.PoolIPAllocations{
 							"172.18.40.10": spiderpoolv1.PoolIPAllocation{
-								NIC:       "eth0",
-								Namespace: "default",
-								Pod:       "pod",
-								UID:       string(uuid.NewUUID()),
+								NIC:            "eth0",
+								NamespacedName: "default/pod",
+								PodUID:         string(uuid.NewUUID()),
 							},
 						},
 					)

@@ -127,7 +127,7 @@ func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 		if _, ok := totalIPsMap[ip]; !ok {
 			return field.Forbidden(
 				ipsField,
-				fmt.Sprintf("remove an IP address %s that is being used by Pod %s/%s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ip, allocation.Namespace, allocation.Pod),
+				fmt.Sprintf("remove an IP address %s that is being used by Pod %s, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", ip, allocation.NamespacedName),
 			)
 		}
 	}

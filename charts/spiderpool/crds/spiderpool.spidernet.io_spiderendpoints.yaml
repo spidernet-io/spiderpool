@@ -44,10 +44,6 @@ spec:
       jsonPath: .status.current.node
       name: NODE
       type: string
-    - description: creationTime
-      jsonPath: .status.creationTime
-      name: CREATETION TIME
-      type: date
     name: v1
     schema:
       openAPIV3Schema:
@@ -68,9 +64,6 @@ spec:
           status:
             description: WorkloadEndpointStatus defines the observed state of SpiderEndpoint.
             properties:
-              creationTime:
-                format: date-time
-                type: string
               current:
                 properties:
                   ips:
@@ -128,7 +121,6 @@ spec:
               ownerControllerType:
                 type: string
             required:
-            - creationTime
             - current
             - ownerControllerName
             - ownerControllerType

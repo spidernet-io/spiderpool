@@ -13,6 +13,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -165,12 +166,16 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 		return nil, constant.ErrIPUsedOut
 	}
 
+	key, err := cache.MetaNamespaceKeyFunc(pod)
+	if err != nil {
+		return nil, err
+	}
+
 	resIP := availableIPs[0]
 	allocatedRecords[resIP.String()] = spiderpoolv1.PoolIPAllocation{
-		NIC:       nic,
-		Namespace: pod.Namespace,
-		Pod:       pod.Name,
-		UID:       string(pod.UID),
+		NIC:            nic,
+		NamespacedName: key,
+		PodUID:         string(pod.UID),
 	}
 
 	data, err := convert.MarshalIPPoolAllocatedIPs(allocatedRecords)
@@ -219,7 +224,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 		release := false
 		for _, iu := range ipAndUIDs {
 			if record, ok := allocatedRecords[iu.IP]; ok {
-				if record.UID == iu.UID {
+				if record.PodUID == iu.UID {
 					delete(allocatedRecords, iu.IP)
 					*ipPool.Status.AllocatedIPCount--
 					release = true
@@ -275,8 +280,8 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 		recreate := false
 		for _, iu := range ipAndUIDs {
 			if record, ok := allocatedRecords[iu.IP]; ok {
-				if record.UID != iu.UID {
-					record.UID = iu.UID
+				if record.PodUID != iu.UID {
+					record.PodUID = iu.UID
 					recreate = true
 				}
 			}

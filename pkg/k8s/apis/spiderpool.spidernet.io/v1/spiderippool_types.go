@@ -78,10 +78,9 @@ type IPPoolStatus struct {
 type PoolIPAllocations map[string]PoolIPAllocation
 
 type PoolIPAllocation struct {
-	NIC       string `json:"interface"`
-	Namespace string `json:"namespace"`
-	Pod       string `json:"pod"`
-	UID       string `json:"uid"`
+	NIC            string `json:"interface"`
+	NamespacedName string `json:"pod"`
+	PodUID         string `json:"podUid"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderippools",scope="Cluster",shortName={sp},singular="spiderippool"

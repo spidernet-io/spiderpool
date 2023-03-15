@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -51,6 +52,7 @@ type queue struct {
 }
 
 type e struct {
+	ctx           context.Context
 	wantedTickets []string
 	notifyCheckin chan empty
 }
@@ -61,21 +63,21 @@ func (q *queue) AcquireTicket(ctx context.Context, tickets ...string) error {
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Debugf("Waiting in queue with expect tickets: %v", tickets)
 
-	// TODO(iiiceoo): When ctx times out or is canceled, AcquireTicket should
-	// not still be blocked.
-
-	e, err := q.queueUp(tickets...)
+	e, err := q.queueUp(ctx, tickets...)
 	if err != nil {
 		return err
 	}
 
-	<-e.notifyCheckin
-	logger.Debug("Succeed to acquire tickets")
-
-	return nil
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-e.notifyCheckin:
+		logger.Debug("Succeed to acquire tickets")
+		return nil
+	}
 }
 
-func (q *queue) queueUp(tickets ...string) (*e, error) {
+func (q *queue) queueUp(ctx context.Context, tickets ...string) (*e, error) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 
@@ -92,6 +94,7 @@ func (q *queue) queueUp(tickets ...string) (*e, error) {
 	}
 
 	e := &e{
+		ctx:           ctx,
 		wantedTickets: tickets,
 		notifyCheckin: make(chan empty),
 	}
@@ -180,14 +183,20 @@ func (q *queue) checkin() (shuttingDown bool) {
 		return q.shuttingDown
 	}
 
+	now := time.Now()
 	for i := 0; i < len(q.elements); i++ {
-		if !q.checkAvailableTicket(q.elements[i].wantedTickets...) {
+		deadline, ok := q.elements[i].ctx.Deadline()
+		if ok && now.After(deadline) {
+			q.elements = append(q.elements[:i], q.elements[i+1:]...)
+			i--
 			continue
 		}
 
-		q.grantTicket(q.elements[i])
-		q.elements = append(q.elements[:i], q.elements[i+1:]...)
-		i--
+		if q.checkAvailableTicket(q.elements[i].wantedTickets...) {
+			q.grantTicket(q.elements[i])
+			q.elements = append(q.elements[:i], q.elements[i+1:]...)
+			i--
+		}
 	}
 
 	// Waiting here for avoiding next unnecessary round of polling q.elements

@@ -13,11 +13,11 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv1.IPAllocationDetail) ([]*models.IPConfig, []*models.Route) {
+func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAllocationDetail) ([]*models.IPConfig, []*models.Route) {
 	var ips []*models.IPConfig
 	var routes []*models.Route
 	for _, d := range details {
@@ -104,8 +104,8 @@ func genDefaultRoute(nic, gateway string) *models.Route {
 	return route
 }
 
-func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1.IPAllocationDetail {
-	nicToDetail := map[string]*spiderpoolv1.IPAllocationDetail{}
+func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv2beta1.IPAllocationDetail {
+	nicToDetail := map[string]*spiderpoolv2beta1.IPAllocationDetail{}
 	for _, r := range results {
 		var gateway *string
 		var cleanGateway *bool
@@ -137,7 +137,7 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1
 		}
 
 		if *r.IP.Version == constant.IPv4 {
-			nicToDetail[*r.IP.Nic] = &spiderpoolv1.IPAllocationDetail{
+			nicToDetail[*r.IP.Nic] = &spiderpoolv2beta1.IPAllocationDetail{
 				NIC:          *r.IP.Nic,
 				IPv4:         &address,
 				IPv4Pool:     &pool,
@@ -147,7 +147,7 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1
 				Routes:       routes,
 			}
 		} else {
-			nicToDetail[*r.IP.Nic] = &spiderpoolv1.IPAllocationDetail{
+			nicToDetail[*r.IP.Nic] = &spiderpoolv2beta1.IPAllocationDetail{
 				NIC:          *r.IP.Nic,
 				IPv6:         &address,
 				IPv6Pool:     &pool,
@@ -159,7 +159,7 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv1
 		}
 	}
 
-	details := []spiderpoolv1.IPAllocationDetail{}
+	details := []spiderpoolv2beta1.IPAllocationDetail{}
 	for _, d := range nicToDetail {
 		details = append(details, *d)
 	}
@@ -182,7 +182,7 @@ func ConvertAnnoPodRoutesToOAIRoutes(annoPodRoutes types.AnnoPodRoutesValue) []*
 	return routes
 }
 
-func ConvertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv1.Route) []*models.Route {
+func ConvertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv2beta1.Route) []*models.Route {
 	var routes []*models.Route
 	for _, r := range specRoutes {
 		dst := r.Dst
@@ -197,10 +197,10 @@ func ConvertSpecRoutesToOAIRoutes(nic string, specRoutes []spiderpoolv1.Route) [
 	return routes
 }
 
-func ConvertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Route {
-	var routes []spiderpoolv1.Route
+func ConvertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv2beta1.Route {
+	var routes []spiderpoolv2beta1.Route
 	for _, r := range oaiRoutes {
-		routes = append(routes, spiderpoolv1.Route{
+		routes = append(routes, spiderpoolv2beta1.Route{
 			Dst: *r.Dst,
 			Gw:  *r.Gw,
 		})
@@ -209,7 +209,7 @@ func ConvertOAIRoutesToSpecRoutes(oaiRoutes []*models.Route) []spiderpoolv1.Rout
 	return routes
 }
 
-func GroupIPAllocationDetails(uid string, details []spiderpoolv1.IPAllocationDetail) types.PoolNameToIPAndUIDs {
+func GroupIPAllocationDetails(uid string, details []spiderpoolv2beta1.IPAllocationDetail) types.PoolNameToIPAndUIDs {
 	pius := types.PoolNameToIPAndUIDs{}
 	for _, d := range details {
 		if d.IPv4 != nil {
@@ -229,7 +229,7 @@ func GroupIPAllocationDetails(uid string, details []spiderpoolv1.IPAllocationDet
 	return pius
 }
 
-func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv1.SpiderIPPool) *models.IPConfig {
+func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv2beta1.SpiderIPPool) *models.IPConfig {
 	ipNet, _ := spiderpoolip.ParseIP(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, true)
 	ipNet.IP = allocateIP
 	address := ipNet.String()
@@ -249,12 +249,12 @@ func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv1.Spide
 	}
 }
 
-func UnmarshalIPPoolAllocatedIPs(data *string) (spiderpoolv1.PoolIPAllocations, error) {
+func UnmarshalIPPoolAllocatedIPs(data *string) (spiderpoolv2beta1.PoolIPAllocations, error) {
 	if data == nil {
-		return spiderpoolv1.PoolIPAllocations{}, nil
+		return spiderpoolv2beta1.PoolIPAllocations{}, nil
 	}
 
-	var records spiderpoolv1.PoolIPAllocations
+	var records spiderpoolv2beta1.PoolIPAllocations
 	if err := json.Unmarshal([]byte(*data), &records); err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func UnmarshalIPPoolAllocatedIPs(data *string) (spiderpoolv1.PoolIPAllocations, 
 	return records, nil
 }
 
-func MarshalIPPoolAllocatedIPs(records spiderpoolv1.PoolIPAllocations) (*string, error) {
+func MarshalIPPoolAllocatedIPs(records spiderpoolv2beta1.PoolIPAllocations) (*string, error) {
 	if len(records) == 0 {
 		return nil, nil
 	}
@@ -276,12 +276,12 @@ func MarshalIPPoolAllocatedIPs(records spiderpoolv1.PoolIPAllocations) (*string,
 	return &data, nil
 }
 
-func UnmarshalSubnetAllocatedIPPools(data *string) (spiderpoolv1.PoolIPPreAllocations, error) {
+func UnmarshalSubnetAllocatedIPPools(data *string) (spiderpoolv2beta1.PoolIPPreAllocations, error) {
 	if data == nil {
-		return spiderpoolv1.PoolIPPreAllocations{}, nil
+		return spiderpoolv2beta1.PoolIPPreAllocations{}, nil
 	}
 
-	var subnetStatusAllocatedIPPool spiderpoolv1.PoolIPPreAllocations
+	var subnetStatusAllocatedIPPool spiderpoolv2beta1.PoolIPPreAllocations
 	err := json.Unmarshal([]byte(*data), &subnetStatusAllocatedIPPool)
 	if nil != err {
 		return nil, err
@@ -290,7 +290,7 @@ func UnmarshalSubnetAllocatedIPPools(data *string) (spiderpoolv1.PoolIPPreAlloca
 	return subnetStatusAllocatedIPPool, nil
 }
 
-func MarshalSubnetAllocatedIPPools(preAllocations spiderpoolv1.PoolIPPreAllocations) (*string, error) {
+func MarshalSubnetAllocatedIPPools(preAllocations spiderpoolv2beta1.PoolIPPreAllocations) (*string, error) {
 	if len(preAllocations) == 0 {
 		return nil, nil
 	}

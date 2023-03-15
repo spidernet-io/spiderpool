@@ -15,19 +15,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 )
 
 type WorkloadEndpointManager interface {
-	GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv1.SpiderEndpoint, error)
-	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
-	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error
+	GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv2beta1.SpiderEndpoint, error)
+	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderEndpointList, error)
+	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, namespace, podName string) error
-	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
-	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error
+	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
+	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
 }
 
 type workloadEndpointManager struct {
@@ -49,13 +49,13 @@ func NewWorkloadEndpointManager(client client.Client, apiReader client.Reader) (
 	}, nil
 }
 
-func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv1.SpiderEndpoint, error) {
+func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv2beta1.SpiderEndpoint, error) {
 	reader := em.apiReader
 	if cached == constant.UseCache {
 		reader = em.client
 	}
 
-	var endpoint spiderpoolv1.SpiderEndpoint
+	var endpoint spiderpoolv2beta1.SpiderEndpoint
 	if err := reader.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &endpoint); nil != err {
 		return nil, err
 	}
@@ -63,13 +63,13 @@ func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namesp
 	return &endpoint, nil
 }
 
-func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error) {
+func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderEndpointList, error) {
 	reader := em.apiReader
 	if cached == constant.UseCache {
 		reader = em.client
 	}
 
-	var endpointList spiderpoolv1.SpiderEndpointList
+	var endpointList spiderpoolv2beta1.SpiderEndpointList
 	if err := reader.List(ctx, &endpointList, opts...); err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached boo
 	return &endpointList, nil
 }
 
-func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
 	if err := em.client.Delete(ctx, endpoint); err != nil {
 		return client.IgnoreNotFound(err)
 	}
@@ -111,19 +111,19 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, namespac
 	return nil
 }
 
-func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error {
+func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error {
 	if pod == nil {
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
 	}
 
 	if endpoint == nil {
-		endpoint = &spiderpoolv1.SpiderEndpoint{
+		endpoint = &spiderpoolv2beta1.SpiderEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
 			},
-			Status: spiderpoolv1.WorkloadEndpointStatus{
-				Current: spiderpoolv1.PodIPAllocation{
+			Status: spiderpoolv2beta1.WorkloadEndpointStatus{
+				Current: spiderpoolv2beta1.PodIPAllocation{
 					UID:  string(pod.UID),
 					Node: pod.Spec.NodeName,
 					IPs:  convert.ConvertResultsToIPDetails(results),
@@ -155,7 +155,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 	return em.client.Update(ctx, endpoint)
 }
 
-func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
 	}

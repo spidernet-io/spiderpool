@@ -12,7 +12,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -37,11 +37,11 @@ func Execute() {
 	if len(config.V4SubnetName) != 0 {
 		logger.Sugar().Infof("Try to create default IPv4 Subnet %s", config.V4SubnetName)
 
-		subnet := &spiderpoolv1.SpiderSubnet{
+		subnet := &spiderpoolv2beta1.SpiderSubnet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: config.V4SubnetName,
 			},
-			Spec: spiderpoolv1.SubnetSpec{
+			Spec: spiderpoolv2beta1.SubnetSpec{
 				IPVersion: pointer.Int64(constant.IPv4),
 				Subnet:    config.V4CIDR,
 				IPs:       config.V4IPRanges,
@@ -60,11 +60,11 @@ func Execute() {
 	if len(config.V6SubnetName) != 0 {
 		logger.Sugar().Infof("Try to create default IPv6 Subnet %s", config.V6SubnetName)
 
-		subnet := &spiderpoolv1.SpiderSubnet{
+		subnet := &spiderpoolv2beta1.SpiderSubnet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: config.V6SubnetName,
 			},
-			Spec: spiderpoolv1.SubnetSpec{
+			Spec: spiderpoolv2beta1.SubnetSpec{
 				IPVersion: pointer.Int64(constant.IPv6),
 				Subnet:    config.V6CIDR,
 				IPs:       config.V6IPRanges,
@@ -83,11 +83,11 @@ func Execute() {
 	if len(config.V4IPPoolName) != 0 {
 		logger.Sugar().Infof("Try to create default IPv4 IPPool %s", config.V4IPPoolName)
 
-		ipPool := &spiderpoolv1.SpiderIPPool{
+		ipPool := &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: config.V4IPPoolName,
 			},
-			Spec: spiderpoolv1.IPPoolSpec{
+			Spec: spiderpoolv2beta1.IPPoolSpec{
 				IPVersion: pointer.Int64(constant.IPv4),
 				Subnet:    config.V4CIDR,
 				IPs:       config.V4IPRanges,
@@ -106,11 +106,11 @@ func Execute() {
 	if len(config.V6IPPoolName) != 0 {
 		logger.Sugar().Infof("Try to create default IPv6 IPPool %s", config.V6IPPoolName)
 
-		ipPool := &spiderpoolv1.SpiderIPPool{
+		ipPool := &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: config.V6IPPoolName,
 			},
-			Spec: spiderpoolv1.IPPoolSpec{
+			Spec: spiderpoolv2beta1.IPPoolSpec{
 				IPVersion: pointer.Int64(constant.IPv6),
 				Subnet:    config.V6CIDR,
 				IPs:       config.V6IPRanges,

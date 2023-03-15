@@ -10,12 +10,12 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func (rw *ReservedIPWebhook) mutateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) error {
+func (rw *ReservedIPWebhook) mutateReservedIP(ctx context.Context, rIP *spiderpoolv2beta1.SpiderReservedIP) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate ReservedIP")
 

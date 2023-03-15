@@ -23,7 +23,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -49,7 +49,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 		var count uint64
 		var subnetName, existSubnetName string
-		var subnetT, existSubnetT *spiderpoolv1.SpiderSubnet
+		var subnetT, existSubnetT *spiderpoolv2beta1.SpiderSubnet
 
 		BeforeEach(func() {
 			subnetmanager.WebhookLogger = logutils.Logger.Named("Subnet-Webhook")
@@ -60,27 +60,27 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
-			subnetT = &spiderpoolv1.SpiderSubnet{
+			subnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderSubnet,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: subnetName,
 				},
-				Spec: spiderpoolv1.SubnetSpec{},
+				Spec: spiderpoolv2beta1.SubnetSpec{},
 			}
 
 			existSubnetName = fmt.Sprintf("z-exist-subnet-%v", count)
-			existSubnetT = &spiderpoolv1.SpiderSubnet{
+			existSubnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderSubnet,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: existSubnetName,
 				},
-				Spec: spiderpoolv1.SubnetSpec{},
+				Spec: spiderpoolv2beta1.SubnetSpec{},
 			}
 		})
 
@@ -102,7 +102,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spidersubnets",
 				},
 				subnetT.Namespace,
@@ -113,7 +113,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			err = tracker.Delete(
 				schema.GroupVersionResource{
 					Group:    constant.SpiderpoolAPIGroup,
-					Version:  constant.SpiderpoolAPIVersionV1,
+					Version:  constant.SpiderpoolAPIVersion,
 					Resource: "spidersubnets",
 				},
 				existSubnetT.Namespace,
@@ -654,7 +654,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: constant.InvalidCIDR,
 							Gw:  "172.18.40.1",
 						},
@@ -674,7 +674,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  constant.InvalidIP,
 						},
@@ -694,7 +694,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  "172.18.41.1",
 						},
@@ -718,7 +718,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.Gateway = pointer.String("172.18.40.1")
 				subnetT.Spec.Vlan = pointer.Int64(0)
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
@@ -741,7 +741,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.Gateway = pointer.String("abcd:1234::1")
 				subnetT.Spec.Vlan = pointer.Int64(0)
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},
@@ -985,7 +985,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: constant.InvalidCIDR,
 							Gw:  "172.18.40.1",
 						},
@@ -1007,7 +1007,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  constant.InvalidIP,
 						},
@@ -1029,7 +1029,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  "172.18.41.1",
 						},
@@ -1054,8 +1054,8 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					preAllocations := spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.10",
 							},
@@ -1082,8 +1082,8 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					preAllocations := spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: constant.InvalidIPRanges,
 						},
 					}
@@ -1108,8 +1108,8 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					preAllocations := spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.10",
 							},
@@ -1136,8 +1136,8 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					preAllocations := spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.1",
 							},
@@ -1191,7 +1191,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "172.18.40.10")
 				newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
 				newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
@@ -1212,7 +1212,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "abcd:1234::a")
 				newSubnetT.Spec.Gateway = pointer.String("abcd:1234::1")
 				newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},

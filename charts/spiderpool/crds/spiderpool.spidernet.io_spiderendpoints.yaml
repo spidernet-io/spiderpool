@@ -44,7 +44,7 @@ spec:
       jsonPath: .status.current.node
       name: NODE
       type: string
-    name: v1
+    name: v2beta1
     schema:
       openAPIV3Schema:
         description: Spiderndpoint is the Schema for the spiderendpoints API.

@@ -29,7 +29,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -55,7 +55,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -81,7 +81,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -118,7 +118,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -144,7 +144,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -170,7 +170,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE

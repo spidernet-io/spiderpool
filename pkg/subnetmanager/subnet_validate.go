@@ -14,7 +14,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -30,7 +30,7 @@ var (
 	controlledIPPoolsField *field.Path = field.NewPath("status").Child("controlledIPPools")
 )
 
-func (sw *SubnetWebhook) validateCreateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
+func (sw *SubnetWebhook) validateCreateSubnet(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) field.ErrorList {
 	if err := sw.validateSubnetIPVersion(subnet.Spec.IPVersion); err != nil {
 		return field.ErrorList{err}
 	}
@@ -51,7 +51,7 @@ func (sw *SubnetWebhook) validateCreateSubnet(ctx context.Context, subnet *spide
 	return errs
 }
 
-func (sw *SubnetWebhook) validateUpdateSubnet(ctx context.Context, oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) field.ErrorList {
+func (sw *SubnetWebhook) validateUpdateSubnet(ctx context.Context, oldSubnet, newSubnet *spiderpoolv2beta1.SpiderSubnet) field.ErrorList {
 	if err := validateSubnetShouldNotBeChanged(oldSubnet, newSubnet); err != nil {
 		return field.ErrorList{err}
 	}
@@ -76,7 +76,7 @@ func (sw *SubnetWebhook) validateUpdateSubnet(ctx context.Context, oldSubnet, ne
 	return errs
 }
 
-func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
 	if newSubnet.Spec.IPVersion != nil && oldSubnet.Spec.IPVersion != nil &&
 		*newSubnet.Spec.IPVersion != *oldSubnet.Spec.IPVersion {
 		return field.Forbidden(
@@ -95,7 +95,7 @@ func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv1.SpiderS
 	return nil
 }
 
-func (sw *SubnetWebhook) validateSubnetSpec(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func (sw *SubnetWebhook) validateSubnetSpec(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
 	if err := sw.validateSubnetDefault(ctx, subnet); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (sw *SubnetWebhook) validateSubnetSpec(ctx context.Context, subnet *spiderp
 	return validateSubnetRoutes(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.Routes)
 }
 
-func validateSubnetIPInUse(subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func validateSubnetIPInUse(subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
@@ -181,7 +181,7 @@ func (sw *SubnetWebhook) validateSubnetIPVersion(version *types.IPVersion) *fiel
 	return nil
 }
 
-func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
 	if err := spiderpoolip.IsCIDR(*subnet.Spec.IPVersion, subnet.Spec.Subnet); err != nil {
 		return field.Invalid(
 			subnetField,
@@ -191,7 +191,7 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 	}
 
 	// TODO(iiiceoo): Use label selector.
-	subnetList := spiderpoolv1.SpiderSubnetList{}
+	subnetList := spiderpoolv2beta1.SpiderSubnetList{}
 	if err := sw.APIReader.List(ctx, &subnetList); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to list Subnets: %v", err))
 	}
@@ -220,12 +220,12 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 	return nil
 }
 
-func (sw *SubnetWebhook) validateSubnetDefault(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
+func (sw *SubnetWebhook) validateSubnetDefault(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
 	if subnet.Spec.Default == nil || !*subnet.Spec.Default {
 		return nil
 	}
 
-	var subnetList spiderpoolv1.SpiderSubnetList
+	var subnetList spiderpoolv2beta1.SpiderSubnetList
 	if err := sw.Client.List(
 		ctx,
 		&subnetList,
@@ -276,7 +276,7 @@ func validateSubnetGateway(version types.IPVersion, subnet string, gateway *stri
 	return nil
 }
 
-func validateSubnetRoutes(version types.IPVersion, subnet string, routes []spiderpoolv1.Route) *field.Error {
+func validateSubnetRoutes(version types.IPVersion, subnet string, routes []spiderpoolv2beta1.Route) *field.Error {
 	for i, r := range routes {
 		if err := spiderpoolip.IsCIDR(version, r.Dst); err != nil {
 			return field.Invalid(

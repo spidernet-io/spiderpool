@@ -16,7 +16,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -97,7 +97,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	return nil
 }
 
-func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint) error {
+func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
 	logger := logutils.FromContext(ctx)
 
 	// Check whether an StatefulSet needs to release its currently allocated IP addresses.
@@ -137,7 +137,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 	return nil
 }
 
-func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv1.IPAllocationDetail) error {
+func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv2beta1.IPAllocationDetail) error {
 	logger := logutils.FromContext(ctx)
 
 	pius := convert.GroupIPAllocationDetails(uid, details)
@@ -186,7 +186,7 @@ func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv1.I
 // func (i *ipam) deleteDeadOrphanPodAutoIPPool(ctx context.Context, podNS, podName, ifName string) error {
 // 	log := logutils.FromContext(ctx)
 // 	log.Sugar().Infof("orphan pod dead, try to delete corresponding IPPool list that already exist")
-// 	err := i.ipPoolManager.DeleteAllIPPools(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
+// 	err := i.ipPoolManager.DeleteAllIPPools(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
 // 		// this label make it sure to find orphan pod corresponding IPPool
 // 		constant.LabelIPPoolOwnerApplication: subnetmanagercontrollers.AppLabelValue(constant.KindPod, podNS, podName),
 // 		// TODO(Icarus9913): should we delete all interfaces auto-created IPPool in the first cmdDel?

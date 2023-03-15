@@ -25,7 +25,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
@@ -38,9 +38,9 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		var count uint64
 		var subnetName string
-		var subnetT *spiderpoolv1.SpiderSubnet
+		var subnetT *spiderpoolv2beta1.SpiderSubnet
 		var ipPoolName string
-		var ipPoolT *spiderpoolv1.SpiderIPPool
+		var ipPoolT *spiderpoolv2beta1.SpiderIPPool
 
 		var subnetController *subnetmanager.SubnetController
 		var fakeSubnetWatch, fakeIPPoolWatch *watch.FakeWatcher
@@ -53,28 +53,28 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
-			subnetT = &spiderpoolv1.SpiderSubnet{
+			subnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderSubnet,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: subnetName,
 				},
-				Spec: spiderpoolv1.SubnetSpec{},
+				Spec: spiderpoolv2beta1.SubnetSpec{},
 			}
 
 			ipPoolName = fmt.Sprintf("ippool-%v", count)
-			ipPoolT = &spiderpoolv1.SpiderIPPool{
+			ipPoolT = &spiderpoolv2beta1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderIPPool,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   ipPoolName,
 					Labels: map[string]string{},
 				},
-				Spec: spiderpoolv1.IPPoolSpec{},
+				Spec: spiderpoolv2beta1.IPPoolSpec{},
 			}
 
 			subnetController = &subnetmanager.SubnetController{
@@ -146,7 +146,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv1.SpiderSubnet
+				var subnetR spiderpoolv2beta1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
@@ -178,11 +178,11 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv1.SpiderSubnet
+				var subnetR spiderpoolv2beta1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				var ipPoolR spiderpoolv1.SpiderIPPool
+				var ipPoolR spiderpoolv2beta1.SpiderIPPool
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPoolR)
 				g.Expect(err).NotTo(HaveOccurred())
 
@@ -220,15 +220,15 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv1.SpiderSubnet
+				var subnetR spiderpoolv2beta1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
 				preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnetR.Status.ControlledIPPools)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(preAllocations).To(Equal(
-					spiderpoolv1.PoolIPPreAllocations{
-						ipPoolT.Name: spiderpoolv1.PoolIPPreAllocation{
+					spiderpoolv2beta1.PoolIPPreAllocations{
+						ipPoolT.Name: spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: []string{"172.18.40.10"},
 						},
 					},
@@ -267,11 +267,11 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Modify(subnetT)
 			Eventually(func(g Gomega) {
-				// var ipPoolR spiderpoolv1.SpiderIPPool
+				// var ipPoolR spiderpoolv2beta1.SpiderIPPool
 				// err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPoolR)
 				// g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 
-				var subnetR spiderpoolv1.SpiderSubnet
+				var subnetR spiderpoolv2beta1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			}).Should(Succeed())

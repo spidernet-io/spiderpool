@@ -147,7 +147,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 
 		err := os.MkdirAll(filepath.Dir(fileOutputOption.Filename), 0755)
 		if nil != err {
-			return nil, fmt.Errorf("Failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
+			return nil, fmt.Errorf("failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
 		}
 	}
 
@@ -210,7 +210,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 func InitStdoutLogger(logLevel LogLevel) error {
 	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_STDOUT, nil, true, true, true, logLevel)
 	if nil != err {
-		return fmt.Errorf("Failed to init logger for stdout: %v", err)
+		return fmt.Errorf("failed to init logger for stdout: %v", err)
 	}
 	Logger = l
 	return nil
@@ -221,7 +221,7 @@ func InitStdoutLogger(logLevel LogLevel) error {
 func InitStderrLogger(logLevel LogLevel) error {
 	l, err := NewLoggerWithOption(ConsoleLogFormat, OUTPUT_STDERR, nil, false, false, false, logLevel)
 	if nil != err {
-		return fmt.Errorf("Failed to init logger for stderr: %v", err)
+		return fmt.Errorf("failed to init logger for stderr: %v", err)
 	}
 	LoggerStderr = l
 	return nil
@@ -238,7 +238,7 @@ func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge,
 	}
 	logFile, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, logLevel)
 	if nil != err {
-		return nil, fmt.Errorf("Failed to init logger for file: %v", err)
+		return nil, fmt.Errorf("failed to init logger for file: %v", err)
 	}
 
 	return logFile, nil

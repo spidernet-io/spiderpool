@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -37,7 +37,7 @@ func (sw *SubnetWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv1.SpiderSubnet{}).
+		For(&spiderpoolv2beta1.SpiderSubnet{}).
 		WithDefaulter(sw).
 		WithValidator(sw).
 		Complete()
@@ -47,7 +47,7 @@ var _ webhook.CustomDefaulter = (*SubnetWebhook)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (sw *SubnetWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	subnet := obj.(*spiderpoolv1.SpiderSubnet)
+	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("SubnetName", subnet.Name),
@@ -66,7 +66,7 @@ var _ webhook.CustomValidator = (*SubnetWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-	subnet := obj.(*spiderpoolv1.SpiderSubnet)
+	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("SubnetName", subnet.Name),
@@ -88,8 +88,8 @@ func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
-	oldSubnet := oldObj.(*spiderpoolv1.SpiderSubnet)
-	newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
+	oldSubnet := oldObj.(*spiderpoolv2beta1.SpiderSubnet)
+	newSubnet := newObj.(*spiderpoolv2beta1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("SubnetName", newSubnet.Name),

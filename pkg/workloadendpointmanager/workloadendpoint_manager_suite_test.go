@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -33,7 +33,7 @@ func TestWorkloadEndpointManager(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv1.AddToScheme(scheme)
+	err := spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = corev1.AddToScheme(scheme)
@@ -41,8 +41,8 @@ var _ = BeforeSuite(func() {
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithIndex(&spiderpoolv1.SpiderEndpoint{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			endpoint := raw.(*spiderpoolv1.SpiderEndpoint)
+		WithIndex(&spiderpoolv2beta1.SpiderEndpoint{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			endpoint := raw.(*spiderpoolv2beta1.SpiderEndpoint)
 			return []string{endpoint.GetObjectMeta().GetName()}
 		}).
 		Build()
@@ -51,8 +51,8 @@ var _ = BeforeSuite(func() {
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
-		WithIndex(&spiderpoolv1.SpiderEndpoint{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			endpoint := raw.(*spiderpoolv1.SpiderEndpoint)
+		WithIndex(&spiderpoolv2beta1.SpiderEndpoint{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			endpoint := raw.(*spiderpoolv2beta1.SpiderEndpoint)
 			return []string{endpoint.GetObjectMeta().GetName()}
 		}).
 		Build()

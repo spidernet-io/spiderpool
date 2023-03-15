@@ -13,40 +13,40 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manager_utils_test"), func() {
-	var endpointT *spiderpoolv1.SpiderEndpoint
+	var endpointT *spiderpoolv2beta1.SpiderEndpoint
 
 	BeforeEach(func() {
-		endpointT = &spiderpoolv1.SpiderEndpoint{
+		endpointT = &spiderpoolv2beta1.SpiderEndpoint{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       constant.KindSpiderEndpoint,
-				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "endpoint",
 				Namespace: "default",
 			},
-			Status: spiderpoolv1.WorkloadEndpointStatus{},
+			Status: spiderpoolv2beta1.WorkloadEndpointStatus{},
 		}
 	})
 
 	Describe("Test RetrieveIPAllocation", func() {
 		var nic1, nic2 string
 		var uid string
-		var allocationT spiderpoolv1.PodIPAllocation
+		var allocationT spiderpoolv2beta1.PodIPAllocation
 
 		BeforeEach(func() {
 			nic1 = "eth0"
 			nic2 = "net1"
 
 			uid = string(uuid.NewUUID())
-			allocationT = spiderpoolv1.PodIPAllocation{
+			allocationT = spiderpoolv2beta1.PodIPAllocation{
 				UID: uid,
-				IPs: []spiderpoolv1.IPAllocationDetail{
+				IPs: []spiderpoolv2beta1.IPAllocationDetail{
 					{
 						NIC:      nic1,
 						Vlan:     pointer.Int64(0),

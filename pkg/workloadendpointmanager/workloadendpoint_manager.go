@@ -6,7 +6,6 @@ package workloadendpointmanager
 import (
 	"context"
 	"fmt"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,7 +130,6 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 				},
 				OwnerControllerType: podController.Kind,
 				OwnerControllerName: podController.Name,
-				CreationTime:        metav1.Time{Time: time.Now()},
 			},
 		}
 

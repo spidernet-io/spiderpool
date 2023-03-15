@@ -87,7 +87,6 @@ func (in *WorkloadEndpointStatus) String() string {
 		`Current:` + fmt.Sprintf("%v", in.Current) + `,`,
 		`OwnerControllerType:` + fmt.Sprintf("%v", in.OwnerControllerType) + `,`,
 		`OwnerControllerName` + fmt.Sprintf("%v", in.OwnerControllerName) + `,`,
-		`CreationTime:` + fmt.Sprintf("%v", in.CreationTime) + `,`,
 		`}`,
 	}, "")
 	return s

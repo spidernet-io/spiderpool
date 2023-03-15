@@ -17,9 +17,6 @@ type WorkloadEndpointStatus struct {
 
 	// +kubebuilder:validation:Required
 	OwnerControllerName string `json:"ownerControllerName"`
-
-	// +kubebuilder:validation:Required
-	CreationTime metav1.Time `json:"creationTime"`
 }
 
 type PodIPAllocation struct {
@@ -75,7 +72,6 @@ type IPAllocationDetail struct {
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv6Pool",description="ipv6Pool",name="IPV6POOL",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv6",description="ipv6",name="IPV6",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.node",description="node",name="NODE",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.creationTime",description="creationTime",name="CREATETION TIME",type=date
 // +kubebuilder:object:root=true
 
 // Spiderndpoint is the Schema for the spiderendpoints API.

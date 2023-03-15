@@ -11,6 +11,7 @@ import (
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
@@ -89,20 +90,26 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 		}
 
 		for poolIP, poolIPAllocation := range poolAllocatedIPs {
+			podNS, podName, err := cache.SplitMetaNamespaceKey(poolIPAllocation.NamespacedName)
+			if err != nil {
+				logger.Error(err.Error())
+				continue
+			}
+
 			scanAllLogger := logger.With(
-				zap.String("podNS", poolIPAllocation.Namespace),
-				zap.String("podName", poolIPAllocation.Pod),
-				zap.String("podUID", poolIPAllocation.UID),
+				zap.String("podNS", podNS),
+				zap.String("podName", podName),
+				zap.String("podUID", poolIPAllocation.PodUID),
 			)
 
-			podYaml, err := s.podMgr.GetPodByName(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod, constant.UseCache)
+			podYaml, err := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
 			if err != nil {
 				wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation"))
 
 				// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
 				if apierrors.IsNotFound(err) {
 					isBadIP := false
-					endpoint, err := s.wepMgr.GetEndpointByName(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod, constant.UseCache)
+					endpoint, err := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
 					if nil != err {
 						if apierrors.IsNotFound(err) {
 							// the corresponding SpiderEndpoint is also not exist
@@ -113,15 +120,15 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						}
 					} else {
 						if s.gcConfig.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
-							isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod, constant.KindStatefulSet)
+							isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, podNS, podName, constant.KindStatefulSet)
 							if nil != err {
 								scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod '%s/%s' IP '%s' should be cleaned or not, error: %v",
-									poolIPAllocation.Namespace, poolIPAllocation.Pod, poolIP, err)
+									podNS, podName, poolIP, err)
 								continue
 							}
 							if isValidStsPod {
 								scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod '%s/%s'",
-									poolIP, poolIPAllocation.Namespace, poolIPAllocation.Pod)
+									poolIP, podNS, podName)
 								continue
 							} else {
 								isBadIP = true
@@ -148,7 +155,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 			// check pod status phase with its yaml
 			podEntry, err := s.buildPodEntry(nil, podYaml, false)
 			if nil != err {
-				scanAllLogger.Sugar().Errorf("failed to build podEntry '%s/%s' in scanAll, error: %v", poolIPAllocation.Namespace, poolIPAllocation.Pod, err)
+				scanAllLogger.Sugar().Errorf("failed to build podEntry '%s/%s' in scanAll, error: %v", podNS, podName, err)
 				continue
 			}
 
@@ -171,12 +178,12 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						}
 
 						scanAllLogger.With(zap.String("tracing-reason", string(podEntry.PodTracingReason))).
-							Sugar().Infof("update podEntry '%s/%s' successfully", poolIPAllocation.Namespace, poolIPAllocation.Pod)
+							Sugar().Infof("update podEntry '%s/%s' successfully", podNS, podName)
 					}
 				}
 			} else {
 				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with pod UID
-				if string(podYaml.UID) != poolIPAllocation.UID {
+				if string(podYaml.UID) != poolIPAllocation.PodUID {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
 					// we are afraid that no one removes the old same name Endpoint finalizer
 					err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
@@ -213,7 +220,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							// release IP but no need to clean up SpiderEndpoint object
 							err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
 								IP:  poolIP,
-								UID: poolIPAllocation.UID},
+								UID: poolIPAllocation.PodUID},
 							})
 							if nil != err {
 								wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
@@ -234,7 +241,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poolName, poolIP string, poolIPAllocation spiderpoolv1.PoolIPAllocation) error {
 	log := logutils.FromContext(ctx)
 
-	singleIP := []types.IPAndUID{{IP: poolIP, UID: poolIPAllocation.UID}}
+	singleIP := []types.IPAndUID{{IP: poolIP, UID: poolIPAllocation.PodUID}}
 	err := s.ippoolMgr.ReleaseIP(ctx, poolName, singleIP)
 	if nil != err {
 		metric.IPGCFailureCounts.Add(ctx, 1)
@@ -244,15 +251,20 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 	metric.IPGCTotalCounts.Add(ctx, 1)
 	log.Sugar().Infof("release ip '%s' successfully", poolIP)
 
-	err = s.wepMgr.RemoveFinalizer(ctx, poolIPAllocation.Namespace, poolIPAllocation.Pod)
-	if nil != err {
-		if apierrors.IsNotFound(err) {
-			log.Sugar().Debugf("SpiderEndpoint '%s/%s' is already cleaned up", poolIPAllocation.Namespace, poolIPAllocation.Pod)
-			return nil
-		}
-		return fmt.Errorf("failed to remove SpiderEndpoint '%s/%s' finalizer, error: '%v'", poolIPAllocation.Namespace, poolIPAllocation.Pod, err)
+	podNS, podName, err := cache.SplitMetaNamespaceKey(poolIPAllocation.NamespacedName)
+	if err != nil {
+		return err
 	}
 
-	log.Sugar().Infof("remove SpiderEndpoint '%s/%s' finalizer successfully", poolIPAllocation.Namespace, poolIPAllocation.Pod)
+	err = s.wepMgr.RemoveFinalizer(ctx, podNS, podName)
+	if nil != err {
+		if apierrors.IsNotFound(err) {
+			log.Sugar().Debugf("SpiderEndpoint '%s/%s' is already cleaned up", podNS, podName)
+			return nil
+		}
+		return fmt.Errorf("failed to remove SpiderEndpoint '%s/%s' finalizer, error: '%v'", podNS, podName, err)
+	}
+
+	log.Sugar().Infof("remove SpiderEndpoint '%s/%s' finalizer successfully", podNS, podName)
 	return nil
 }

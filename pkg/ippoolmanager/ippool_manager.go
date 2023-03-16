@@ -165,13 +165,16 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 	if len(availableIPs) == 0 {
 		return nil, constant.ErrIPUsedOut
 	}
+	resIP := availableIPs[0]
 
 	key, err := cache.MetaNamespaceKeyFunc(pod)
 	if err != nil {
 		return nil, err
 	}
 
-	resIP := availableIPs[0]
+	if allocatedRecords == nil {
+		allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{}
+	}
 	allocatedRecords[resIP.String()] = spiderpoolv2beta1.PoolIPAllocation{
 		NIC:            nic,
 		NamespacedName: key,

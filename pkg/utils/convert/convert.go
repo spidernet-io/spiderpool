@@ -251,7 +251,7 @@ func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv2beta1.
 
 func UnmarshalIPPoolAllocatedIPs(data *string) (spiderpoolv2beta1.PoolIPAllocations, error) {
 	if data == nil {
-		return spiderpoolv2beta1.PoolIPAllocations{}, nil
+		return nil, nil
 	}
 
 	var records spiderpoolv2beta1.PoolIPAllocations
@@ -278,7 +278,7 @@ func MarshalIPPoolAllocatedIPs(records spiderpoolv2beta1.PoolIPAllocations) (*st
 
 func UnmarshalSubnetAllocatedIPPools(data *string) (spiderpoolv2beta1.PoolIPPreAllocations, error) {
 	if data == nil {
-		return spiderpoolv2beta1.PoolIPPreAllocations{}, nil
+		return nil, nil
 	}
 
 	var subnetStatusAllocatedIPPool spiderpoolv2beta1.PoolIPPreAllocations

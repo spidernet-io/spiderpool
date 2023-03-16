@@ -285,6 +285,7 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 			if record, ok := allocatedRecords[iu.IP]; ok {
 				if record.PodUID != iu.UID {
 					record.PodUID = iu.UID
+					allocatedRecords[iu.IP] = record
 					recreate = true
 				}
 			}

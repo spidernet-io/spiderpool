@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -496,22 +497,27 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 func (sc *SubnetController) isAppExist(ctx context.Context, appNamespacedName spiderpooltypes.AppNamespacedName) (bool, error) {
 	var object client.Object
 	isThirdController := false
-	switch appNamespacedName.Kind {
-	case constant.KindPod:
-		object = &corev1.Pod{}
-	case constant.KindDeployment:
-		object = &appsv1.Deployment{}
-	case constant.KindReplicaSet:
-		object = &appsv1.ReplicaSet{}
-	case constant.KindDaemonSet:
-		object = &appsv1.DaemonSet{}
-	case constant.KindStatefulSet:
-		object = &appsv1.StatefulSet{}
-	case constant.KindJob:
-		object = &batchv1.Job{}
-	case constant.KindCronJob:
-		object = &batchv1.CronJob{}
-	default:
+
+	if slices.Contains(constant.K8sAPIVersions, appNamespacedName.APIVersion) {
+		switch appNamespacedName.Kind {
+		case constant.KindPod:
+			object = &corev1.Pod{}
+		case constant.KindDeployment:
+			object = &appsv1.Deployment{}
+		case constant.KindReplicaSet:
+			object = &appsv1.ReplicaSet{}
+		case constant.KindDaemonSet:
+			object = &appsv1.DaemonSet{}
+		case constant.KindStatefulSet:
+			object = &appsv1.StatefulSet{}
+		case constant.KindJob:
+			object = &batchv1.Job{}
+		case constant.KindCronJob:
+			object = &batchv1.CronJob{}
+		default:
+			isThirdController = true
+		}
+	} else {
 		isThirdController = true
 	}
 

@@ -4,6 +4,9 @@
 package constant
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -31,6 +34,7 @@ const (
 )
 
 var K8sKinds = []string{KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob}
+var K8sAPIVersions = []string{appsv1.SchemeGroupVersion.String(), batchv1.SchemeGroupVersion.String(), corev1.SchemeGroupVersion.String()}
 
 const (
 	PodRunning     types.PodStatus = "Running"

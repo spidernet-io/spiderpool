@@ -63,81 +63,79 @@ func parseENVAsDefault() InitDefaultConfig {
 	// IPv4
 	config.V4SubnetName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4SubnetName), "\"", "")
 	config.V4IPPoolName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4IPPoolName), "\"", "")
-	if len(config.V4SubnetName) == 0 && len(config.V4IPPoolName) == 0 {
-		logger.Info("Ignore creating default IPv4 Subnet or IPPool")
-		return config
-	}
-
-	config.V4CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4CIDR), "\"", "")
-	if len(config.V4CIDR) == 0 {
-		logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv4 Subnet or IPPool", ENVDefaultIPv4CIDR, constant.ErrMissingRequiredParam)
-	}
-	if err := spiderpoolip.IsCIDR(constant.IPv4, config.V4CIDR); err != nil {
-		logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4CIDR, config.V4CIDR, err)
-	}
-
-	config.V4Gateway = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4Gateway), "\"", "")
-	if len(config.V4Gateway) > 0 {
-		if err := spiderpoolip.IsIP(constant.IPv4, config.V4Gateway); err != nil {
-			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4Gateway, config.V4Gateway, err)
+	if len(config.V4SubnetName) != 0 || len(config.V4IPPoolName) != 0 {
+		config.V4CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4CIDR), "\"", "")
+		if len(config.V4CIDR) == 0 {
+			logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv4 Subnet or IPPool", ENVDefaultIPv4CIDR, constant.ErrMissingRequiredParam)
 		}
-	}
+		if err := spiderpoolip.IsCIDR(constant.IPv4, config.V4CIDR); err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4CIDR, config.V4CIDR, err)
+		}
 
-	v := os.Getenv(ENVDefaultIPv4IPRanges)
-	if len(v) > 0 {
-		v = strings.ReplaceAll(v, "\"", "")
-		v = strings.ReplaceAll(v, "\\", "")
-		v = strings.ReplaceAll(v, "[", "")
-		v = strings.ReplaceAll(v, "]", "")
-		v = strings.ReplaceAll(v, ",", " ")
-		ranges := strings.Fields(v)
-
-		for _, r := range ranges {
-			if err := spiderpoolip.IsIPRange(constant.IPv4, r); err != nil {
-				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4IPRanges, ranges, err)
+		config.V4Gateway = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4Gateway), "\"", "")
+		if len(config.V4Gateway) > 0 {
+			if err := spiderpoolip.IsIP(constant.IPv4, config.V4Gateway); err != nil {
+				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4Gateway, config.V4Gateway, err)
 			}
 		}
-		config.V4IPRanges = ranges
+
+		v := os.Getenv(ENVDefaultIPv4IPRanges)
+		if len(v) > 0 {
+			v = strings.ReplaceAll(v, "\"", "")
+			v = strings.ReplaceAll(v, "\\", "")
+			v = strings.ReplaceAll(v, "[", "")
+			v = strings.ReplaceAll(v, "]", "")
+			v = strings.ReplaceAll(v, ",", " ")
+			ranges := strings.Fields(v)
+
+			for _, r := range ranges {
+				if err := spiderpoolip.IsIPRange(constant.IPv4, r); err != nil {
+					logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4IPRanges, ranges, err)
+				}
+			}
+			config.V4IPRanges = ranges
+		}
+	} else {
+		logger.Info("Ignore creating default IPv4 Subnet or IPPool")
 	}
 
 	// IPv6
 	config.V6SubnetName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6SubnetName), "\"", "")
 	config.V6IPPoolName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6IPPoolName), "\"", "")
-	if len(config.V6SubnetName) == 0 && len(config.V6IPPoolName) == 0 {
-		logger.Info("Ignore creating default IPv6 Subnet or IPPool")
-		return config
-	}
-
-	config.V6CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6CIDR), "\"", "")
-	if len(config.V6CIDR) == 0 {
-		logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv6 Subnet or IPPool", ENVDefaultIPv6CIDR, constant.ErrMissingRequiredParam)
-	}
-	if err := spiderpoolip.IsCIDR(constant.IPv6, config.V6CIDR); err != nil {
-		logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6CIDR, config.V6CIDR, err)
-	}
-
-	config.V6Gateway = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6Gateway), "\"", "")
-	if len(config.V6Gateway) > 0 {
-		if err := spiderpoolip.IsIP(constant.IPv6, config.V6Gateway); err != nil {
-			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6Gateway, config.V6Gateway, err)
+	if len(config.V6SubnetName) != 0 || len(config.V6IPPoolName) != 0 {
+		config.V6CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6CIDR), "\"", "")
+		if len(config.V6CIDR) == 0 {
+			logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv6 Subnet or IPPool", ENVDefaultIPv6CIDR, constant.ErrMissingRequiredParam)
 		}
-	}
+		if err := spiderpoolip.IsCIDR(constant.IPv6, config.V6CIDR); err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6CIDR, config.V6CIDR, err)
+		}
 
-	v = os.Getenv(ENVDefaultIPv6IPRanges)
-	if len(v) > 0 {
-		v = strings.ReplaceAll(v, "\"", "")
-		v = strings.ReplaceAll(v, "\\", "")
-		v = strings.ReplaceAll(v, "[", "")
-		v = strings.ReplaceAll(v, "]", "")
-		v = strings.ReplaceAll(v, ",", " ")
-		ranges := strings.Fields(v)
-
-		for _, r := range ranges {
-			if err := spiderpoolip.IsIPRange(constant.IPv6, r); err != nil {
-				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6IPRanges, ranges, err)
+		config.V6Gateway = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6Gateway), "\"", "")
+		if len(config.V6Gateway) > 0 {
+			if err := spiderpoolip.IsIP(constant.IPv6, config.V6Gateway); err != nil {
+				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6Gateway, config.V6Gateway, err)
 			}
 		}
-		config.V6IPRanges = ranges
+
+		v := os.Getenv(ENVDefaultIPv6IPRanges)
+		if len(v) > 0 {
+			v = strings.ReplaceAll(v, "\"", "")
+			v = strings.ReplaceAll(v, "\\", "")
+			v = strings.ReplaceAll(v, "[", "")
+			v = strings.ReplaceAll(v, "]", "")
+			v = strings.ReplaceAll(v, ",", " ")
+			ranges := strings.Fields(v)
+
+			for _, r := range ranges {
+				if err := spiderpoolip.IsIPRange(constant.IPv6, r); err != nil {
+					logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6IPRanges, ranges, err)
+				}
+			}
+			config.V6IPRanges = ranges
+		}
+	} else {
+		logger.Info("Ignore creating default IPv6 Subnet or IPPool")
 	}
 
 	if config.V4SubnetName == config.V6SubnetName && len(config.V4SubnetName) != 0 {

@@ -70,6 +70,7 @@ if [ -z "${START_TAG}" ] ; then
       fi
     }
 
+    TMP_DEST_TAG=$DEST_TAG
     if [ -z "${RC}" ] ;then
       SET_VERSION
     else

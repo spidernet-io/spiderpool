@@ -6,47 +6,47 @@ package workloadendpointmanager_test
 import (
 	"fmt"
 
-	"github.com/moby/moby/pkg/stringid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manager_utils_test"), func() {
-	var endpointT *spiderpoolv1.SpiderEndpoint
+	var endpointT *spiderpoolv2beta1.SpiderEndpoint
 
 	BeforeEach(func() {
-		endpointT = &spiderpoolv1.SpiderEndpoint{
+		endpointT = &spiderpoolv2beta1.SpiderEndpoint{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       constant.SpiderEndpointKind,
-				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+				Kind:       constant.KindSpiderEndpoint,
+				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "endpoint",
 				Namespace: "default",
 			},
-			Status: spiderpoolv1.WorkloadEndpointStatus{},
+			Status: spiderpoolv2beta1.WorkloadEndpointStatus{},
 		}
 	})
 
 	Describe("Test RetrieveIPAllocation", func() {
 		var nic1, nic2 string
-		var containerID string
-		var allocationT *spiderpoolv1.PodIPAllocation
+		var uid string
+		var allocationT spiderpoolv2beta1.PodIPAllocation
 
 		BeforeEach(func() {
 			nic1 = "eth0"
 			nic2 = "net1"
 
-			containerID = stringid.GenerateRandomID()
-			allocationT = &spiderpoolv1.PodIPAllocation{
-				ContainerID: containerID,
-				IPs: []spiderpoolv1.IPAllocationDetail{
+			uid = string(uuid.NewUUID())
+			allocationT = spiderpoolv2beta1.PodIPAllocation{
+				UID: uid,
+				IPs: []spiderpoolv2beta1.IPAllocationDetail{
 					{
 						NIC:      nic1,
 						Vlan:     pointer.Int64(0),
@@ -64,29 +64,29 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 		})
 
 		It("inputs nil Endpoint", func() {
-			allocation := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, nil)
-			Expect(allocation).To(BeNil())
-		})
-
-		It("retrieves the IP allocation but the current record is nil", func() {
-			allocation := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, nil, false)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves non-existent current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
-			allocation := workloadendpointmanager.RetrieveIPAllocation(stringid.GenerateRandomID(), nic2, endpointT)
+			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT, false)
 			Expect(allocation).To(BeNil())
 		})
 
 		It("retrieves the current IP allocation", func() {
 			endpointT.Status.Current = allocationT
 
-			allocation := workloadendpointmanager.RetrieveIPAllocation(containerID, nic2, endpointT)
-			Expect(allocation).To(Equal(allocationT))
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT, false)
+			Expect(*allocation).To(Equal(allocationT))
+		})
+
+		It("retrieves the IP allocation of StatefulSet", func() {
+			endpointT.Status.Current = allocationT
+
+			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT, true)
+			Expect(*allocation).To(Equal(allocationT))
 		})
 	})
-
-	PDescribe("Test ListAllHistoricalIPs", func() {})
 })

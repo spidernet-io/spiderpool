@@ -8,17 +8,18 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/spidernet-io/spiderpool/pkg/cmdgenmd"
+
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils/cmdgenmd"
 )
 
-var BinNameAgent = filepath.Base(os.Args[0])
-var logger = logutils.Logger.Named(BinNameAgent)
+var binNameAgent = filepath.Base(os.Args[0])
+var logger = logutils.Logger.Named(binNameAgent)
 
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{
-	Use:   BinNameAgent,
-	Short: BinNameAgent + " cli",
+	Use:   binNameAgent,
+	Short: binNameAgent,
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -31,6 +32,5 @@ func Execute() {
 
 func init() {
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
-
-	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(BinNameAgent, rootCmd, logger))
+	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(binNameAgent, rootCmd, logger))
 }

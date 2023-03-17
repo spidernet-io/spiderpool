@@ -9,17 +9,21 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
+	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
+var tracker k8stesting.ObjectTracker
+var fakeAPIReader client.Reader
 var endpointManager workloadendpointmanager.WorkloadEndpointManager
 
 func TestWorkloadEndpointManager(t *testing.T) {
@@ -29,7 +33,7 @@ func TestWorkloadEndpointManager(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv1.AddToScheme(scheme)
+	err := spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = corev1.AddToScheme(scheme)
@@ -37,14 +41,25 @@ var _ = BeforeSuite(func() {
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
+		WithIndex(&spiderpoolv2beta1.SpiderEndpoint{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			endpoint := raw.(*spiderpoolv2beta1.SpiderEndpoint)
+			return []string{endpoint.GetObjectMeta().GetName()}
+		}).
+		Build()
+
+	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
+	fakeAPIReader = fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjectTracker(tracker).
+		WithIndex(&spiderpoolv2beta1.SpiderEndpoint{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			endpoint := raw.(*spiderpoolv2beta1.SpiderEndpoint)
+			return []string{endpoint.GetObjectMeta().GetName()}
+		}).
 		Build()
 
 	endpointManager, err = workloadendpointmanager.NewWorkloadEndpointManager(
-		workloadendpointmanager.EndpointManagerConfig{
-			MaxConflictRetries: 1,
-			MaxHistoryRecords:  pointer.Int(1),
-		},
 		fakeClient,
+		fakeAPIReader,
 	)
 	Expect(err).NotTo(HaveOccurred())
 })

@@ -24,7 +24,7 @@ spec:
       jsonPath: .spec.ipVersion
       name: VERSION
       type: string
-    name: v1
+    name: v2beta1
     schema:
       openAPIV3Schema:
         description: SpiderReservedIP is the Schema for the spiderreservedips API.

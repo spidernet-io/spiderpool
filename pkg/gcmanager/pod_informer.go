@@ -19,11 +19,15 @@ func (s *SpiderGC) startPodInformer() {
 		stopper := make(chan struct{})
 
 		podInformer := informerFactory.Core().V1().Pods().Informer()
-		podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		_, err := podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    s.onPodAdd,
 			UpdateFunc: s.onPodUpdate,
 			DeleteFunc: s.onPodDel,
 		})
+		if nil != err {
+			logger.Error(err.Error())
+			continue
+		}
 		go podInformer.Run(stopper)
 
 		<-stopper
@@ -38,12 +42,7 @@ func (s *SpiderGC) onPodAdd(obj interface{}) {
 		return
 	}
 
-	pod, ok := obj.(*corev1.Pod)
-	if !ok {
-		logger.Sugar().Errorf("onPodAdd: failed to assert object '%+v' to k8s Pod", obj)
-		return
-	}
-
+	pod := obj.(*corev1.Pod)
 	podEntry, err := s.buildPodEntry(nil, pod, false)
 	if nil != err {
 		logger.Sugar().Errorf("onPodAdd: failed to build Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)
@@ -52,7 +51,6 @@ func (s *SpiderGC) onPodAdd(obj interface{}) {
 
 	// flush the pod database
 	if podEntry != nil {
-		// TODO (Icarus9913): print tracing pod IPs with debug log level
 		err = s.GetPodDatabase().ApplyPodEntry(podEntry)
 		if nil != err {
 			logger.Sugar().Errorf("onPodAdd: failed to apply Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)
@@ -67,18 +65,8 @@ func (s *SpiderGC) onPodUpdate(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	oldPod, ok := oldObj.(*corev1.Pod)
-	if !ok {
-		logger.Sugar().Errorf("onPodUpdate: failed to assert oldObj '%+v' to k8s Pod", oldPod)
-		return
-	}
-
-	pod, ok := newObj.(*corev1.Pod)
-	if !ok {
-		logger.Sugar().Errorf("onPodUpdate: failed to assert newObj '%+v' to k8s Pod", newObj)
-		return
-	}
-
+	oldPod := oldObj.(*corev1.Pod)
+	pod := newObj.(*corev1.Pod)
 	podEntry, err := s.buildPodEntry(oldPod, pod, false)
 	if nil != err {
 		logger.Sugar().Errorf("onPodUpdate: failed to build Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)
@@ -87,7 +75,6 @@ func (s *SpiderGC) onPodUpdate(oldObj interface{}, newObj interface{}) {
 
 	// flush the pod database
 	if podEntry != nil {
-		// TODO (Icarus9913): print tracing pod IPs with debug log level
 		err = s.GetPodDatabase().ApplyPodEntry(podEntry)
 		if nil != err {
 			logger.Sugar().Errorf("onPodUpdate: failed to apply Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)
@@ -102,14 +89,8 @@ func (s *SpiderGC) onPodDel(obj interface{}) {
 		return
 	}
 
-	pod, ok := obj.(*corev1.Pod)
-	if !ok {
-		logger.Sugar().Errorf("onPodDel: failed to assert object '%+v' to k8s Pod", obj)
-		return
-	}
-
+	pod := obj.(*corev1.Pod)
 	logger.Sugar().Infof("onPodDel: receive pod '%s/%s' deleted event", pod.Namespace, pod.Name)
-
 	podEntry, err := s.buildPodEntry(nil, pod, true)
 	if nil != err {
 		logger.Sugar().Errorf("onPodDel: failed to build Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)

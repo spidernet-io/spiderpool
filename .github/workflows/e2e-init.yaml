@@ -154,7 +154,8 @@ jobs:
 
       - name: Get the E2E Performance Result For Dual-stack
         id: get_performance
-        if: ${{ inputs.ip_family == 'dual' }}
+        # TODO(ty-dc),Pending
+        if: ${{ inputs.ip_family == 'Pending' }}
         shell: bash
         run: |
           # sudo apt-get install -y jq
@@ -164,7 +165,7 @@ jobs:
           echo ::set-output name=result::${TODO_STATUS}
 
       - name: Update Badge For Dual-stack
-        if: ${{ steps.get_performance.outputs.result != '' && inputs.ip_family == 'dual' }}
+        if: ${{ steps.get_performance.outputs.result != '' && inputs.ip_family == 'Pending' }}
         uses: schneegans/dynamic-badges-action@v1.6.0
         with:
           auth: ${{ secrets.WELAN_PAT }}

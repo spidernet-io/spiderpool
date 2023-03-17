@@ -17,7 +17,7 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 ```
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: static-ipv4-ippool

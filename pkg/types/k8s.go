@@ -15,12 +15,17 @@ import (
 
 type PodStatus string
 
+type AppNamespacedName struct {
+	APIVersion string
+	Kind       string
+	Namespace  string
+	Name       string
+}
+
 type PodTopController struct {
-	Kind      string
-	Namespace string
-	Name      string
-	UID       apitypes.UID
-	APP       metav1.Object
+	AppNamespacedName
+	UID apitypes.UID
+	APP metav1.Object
 }
 
 type AnnoPodIPPoolValue struct {
@@ -99,4 +104,13 @@ func (in *AnnoSubnetItem) String() string {
 		`}`,
 	}, "")
 	return s
+}
+
+// AutoPoolProperty describes Auto-created IPPool's properties
+type AutoPoolProperty struct {
+	DesiredIPNumber int
+	IPVersion       IPVersion
+	IsReclaimIPPool bool
+	IfName          string
+	PodSelector     *metav1.LabelSelector
 }

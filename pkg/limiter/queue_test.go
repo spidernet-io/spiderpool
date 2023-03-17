@@ -87,11 +87,11 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				ctx, cancel = context.WithCancel(context.Background())
 				DeferCleanup(cancel)
 
-				maxQueueSize := 3
+				maxQueueSize := 2
 				config = limiter.LimiterConfig{
 					MaxQueueSize: &maxQueueSize,
 				}
-				queuers = 3
+				queuers = maxQueueSize
 				workHours = 1 * time.Second
 			})
 
@@ -123,19 +123,29 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				}
 				wg.Wait()
 			})
-		})
 
-		Context("Concurrency", func() {
-			BeforeEach(func() {
-				ctx, cancel = context.WithCancel(context.Background())
-				DeferCleanup(cancel)
+			It("acquires tickets but ctx timeout", func() {
+				ctx, cancel := context.WithTimeout(context.TODO(), workHours)
+				defer cancel()
 
-				maxQueueSize := 200
-				config = limiter.LimiterConfig{
-					MaxQueueSize: &maxQueueSize,
+				wg := sync.WaitGroup{}
+				wg.Add(queuers)
+				for i := 0; i < queuers; i++ {
+					go func() {
+						defer GinkgoRecover()
+						defer wg.Done()
+
+						err := queue.AcquireTicket(ctx)
+						if err != nil {
+							Expect(err).To(MatchError(ctx.Err()))
+							return
+						}
+
+						time.Sleep(workHours)
+						queue.ReleaseTicket(ctx)
+					}()
 				}
-				queuers = 200
-				workHours = 50 * time.Millisecond
+				wg.Wait()
 			})
 		})
 

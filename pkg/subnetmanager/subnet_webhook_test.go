@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,9 +23,10 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
 var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
@@ -43,38 +45,42 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 	})
 
 	Describe("Test SubnetWebhook's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var subnetName, existSubnetName string
-		var subnetT, existSubnetT *spiderpoolv1.SpiderSubnet
+		var subnetT, existSubnetT *spiderpoolv2beta1.SpiderSubnet
 
 		BeforeEach(func() {
 			subnetmanager.WebhookLogger = logutils.Logger.Named("Subnet-Webhook")
 			subnetWebhook.EnableIPv4 = true
 			subnetWebhook.EnableIPv6 = true
 
+			ctx = context.TODO()
+
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
-			subnetT = &spiderpoolv1.SpiderSubnet{
+			subnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderSubnetKind,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					Kind:       constant.KindSpiderSubnet,
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: subnetName,
 				},
-				Spec: spiderpoolv1.SubnetSpec{},
+				Spec: spiderpoolv2beta1.SubnetSpec{},
 			}
 
 			existSubnetName = fmt.Sprintf("z-exist-subnet-%v", count)
-			existSubnetT = &spiderpoolv1.SpiderSubnet{
+			existSubnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderSubnetKind,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					Kind:       constant.KindSpiderSubnet,
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: existSubnetName,
 				},
-				Spec: spiderpoolv1.SubnetSpec{},
+				Spec: spiderpoolv2beta1.SubnetSpec{},
 			}
 		})
 
@@ -87,11 +93,32 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, subnetT, deleteOption)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 
 			err = fakeClient.Delete(ctx, existSubnetT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    constant.SpiderpoolAPIGroup,
+					Version:  constant.SpiderpoolAPIVersion,
+					Resource: "spidersubnets",
+				},
+				subnetT.Namespace,
+				subnetT.Name,
+			)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    constant.SpiderpoolAPIGroup,
+					Version:  constant.SpiderpoolAPIVersion,
+					Resource: "spidersubnets",
+				},
+				existSubnetT.Namespace,
+				existSubnetT.Name,
+			)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
@@ -100,7 +127,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				now := metav1.Now()
 				subnetT.SetDeletionTimestamp(&now)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -108,7 +134,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			It("adds finalizer", func() {
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -120,7 +145,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -133,7 +157,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnet := "172.18.40.0/24"
 				subnetT.Spec.Subnet = subnet
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -149,7 +172,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			It("failed to set 'spec.ipVersion' due to the invalid 'spec.subnet'", func() {
 				subnetT.Spec.Subnet = constant.InvalidCIDR
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.IPVersion).To(BeNil())
@@ -158,7 +180,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			It("sets 'spec.ipVersion' to 4", func() {
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*subnetT.Spec.IPVersion).To(Equal(constant.IPv4))
@@ -167,7 +188,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			It("sets 'spec.ipVersion' to 6", func() {
 				subnetT.Spec.Subnet = "abcd:1234::/120"
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*subnetT.Spec.IPVersion).To(Equal(constant.IPv6))
@@ -184,7 +204,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.IPs).To(Equal(
@@ -208,7 +227,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.IPs).To(Equal(
@@ -231,7 +249,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.IPs).To(Equal(
@@ -252,7 +269,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.IPs).To(Equal(
@@ -274,7 +290,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.ExcludeIPs).To(Equal(
@@ -298,7 +313,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.ExcludeIPs).To(Equal(
@@ -321,7 +335,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.ExcludeIPs).To(Equal(
@@ -342,7 +355,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.Default(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(subnetT.Spec.ExcludeIPs).To(Equal(
@@ -365,7 +377,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -380,7 +391,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -396,7 +406,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -412,7 +421,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -429,13 +437,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
 				It("failed to list Subnets due to some unknown errors", func() {
-					patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+					patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 					defer patches.Reset()
 
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -447,7 +454,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -462,8 +468,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, subnetT)
+					err := tracker.Add(subnetT)
 					Expect(err).NotTo(HaveOccurred())
 
 					err = subnetWebhook.ValidateCreate(ctx, subnetT)
@@ -475,8 +480,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					existSubnetT.Spec.Subnet = constant.InvalidCIDR
 					existSubnetT.Spec.IPs = append(existSubnetT.Spec.IPs, "172.18.41.1-172.18.41.2")
 
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, existSubnetT)
+					err := tracker.Add(existSubnetT)
 					Expect(err).NotTo(HaveOccurred())
 
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -497,8 +501,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					existSubnetT.Spec.Subnet = "172.18.40.0/25"
 					existSubnetT.Spec.IPs = append(existSubnetT.Spec.IPs, "172.18.40.40")
 
-					ctx := context.TODO()
-					err := fakeClient.Create(ctx, existSubnetT)
+					err := tracker.Add(existSubnetT)
 					Expect(err).NotTo(HaveOccurred())
 
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -515,13 +518,48 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 			})
 
+			When("Validating 'spec.default'", func() {
+				It("creates non-default IPv4 IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(false)
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("creates default IPv4 IPPool, but there is already one in the cluster", func() {
+					existSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existSubnetT.Spec.Subnet = "172.18.40.0/24"
+					existSubnetT.Spec.Default = pointer.Bool(true)
+
+					err := fakeClient.Create(ctx, existSubnetT)
+					Expect(err).NotTo(HaveOccurred())
+
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(true)
+
+					err = subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("creates default IPv4 IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(true)
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
 			When("Validating 'spec.ips'", func() {
 				It("inputs invalid 'spec.ips'", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, constant.InvalidIPRange)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -536,7 +574,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -554,7 +591,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 					subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, constant.InvalidIPRange)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -570,7 +606,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 					subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.41.10")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -588,7 +623,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 					subnetT.Spec.Gateway = pointer.String(constant.InvalidIP)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -604,7 +638,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 					subnetT.Spec.Gateway = pointer.String("172.18.41.1")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -621,13 +654,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: constant.InvalidCIDR,
 							Gw:  "172.18.40.1",
 						},
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -642,13 +674,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  constant.InvalidIP,
 						},
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -663,13 +694,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  "172.18.41.1",
 						},
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -688,13 +718,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.Gateway = pointer.String("172.18.40.1")
 				subnetT.Spec.Vlan = pointer.Int64(0)
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateCreate(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -712,13 +741,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.Gateway = pointer.String("abcd:1234::1")
 				subnetT.Spec.Vlan = pointer.Int64(0)
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateCreate(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -739,7 +767,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPVersion = nil
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -757,7 +784,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -771,7 +797,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "172.18.40.10")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -785,7 +810,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "adbc:1234::a")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -805,9 +829,41 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Subnet = "172.18.40.0/25"
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+			})
+
+			When("Validating 'spec.default'", func() {
+				It("set default IPv4 IPPool, but there is already one in the cluster", func() {
+					existSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existSubnetT.Spec.Subnet = "172.18.40.0/24"
+					existSubnetT.Spec.Default = pointer.Bool(true)
+
+					err := fakeClient.Create(ctx, existSubnetT)
+					Expect(err).NotTo(HaveOccurred())
+
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(false)
+
+					newIPPoolT := subnetT.DeepCopy()
+					newIPPoolT.Spec.Default = pointer.Bool(true)
+
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newIPPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("set default IPv4 IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.Default = pointer.Bool(false)
+
+					newIPPoolT := subnetT.DeepCopy()
+					newIPPoolT.Spec.Default = pointer.Bool(true)
+
+					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
@@ -825,7 +881,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, constant.InvalidIPRange)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -838,7 +893,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "172.18.41.10")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -858,7 +912,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, constant.InvalidIPRange)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -876,7 +929,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "172.18.41.10")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -897,7 +949,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Gateway = pointer.String(constant.InvalidIP)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -916,7 +967,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Gateway = pointer.String("172.18.41.1")
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -935,13 +985,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: constant.InvalidCIDR,
 							Gw:  "172.18.40.1",
 						},
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -958,13 +1007,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  constant.InvalidIP,
 						},
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -981,13 +1029,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-						spiderpoolv1.Route{
+						spiderpoolv2beta1.Route{
 							Dst: "192.168.40.0/24",
 							Gw:  "172.18.41.1",
 						},
 					)
 
-					ctx := context.TODO()
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
@@ -1007,19 +1054,21 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					subnetT.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.10",
 							},
 						},
 					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
 
-					ctx := context.TODO()
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
@@ -1033,19 +1082,23 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					subnetT.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{IPs: constant.InvalidIPRanges},
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
+							IPs: constant.InvalidIPRanges,
+						},
 					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
 
-					ctx := context.TODO()
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 
-				It("removes IP range that is being used by IPPool", func() {
+				It("removes IP ranges that is being used by IPPool", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
@@ -1055,20 +1108,50 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 
-					subnetT.Status.ControlledIPPools = spiderpoolv1.PoolIPPreAllocations{
-						"pool": spiderpoolv1.PoolIPPreAllocation{
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
 							IPs: []string{
 								"172.18.40.10",
 							},
 						},
 					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
 
-					ctx := context.TODO()
-					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("removes IP ranges not used by IPPool", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+
+					preAllocations := spiderpoolv2beta1.PoolIPPreAllocations{
+						"pool": spiderpoolv2beta1.PoolIPPreAllocation{
+							IPs: []string{
+								"172.18.40.1",
+							},
+						},
+					}
+					data, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = data
+
+					newSubnetT := subnetT.DeepCopy()
+					newSubnetT.Spec.IPs = newSubnetT.Spec.IPs[:1]
+
+					err = subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
@@ -1081,7 +1164,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				newSubnetT := subnetT.DeepCopy()
 				controllerutil.RemoveFinalizer(newSubnetT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -1094,7 +1176,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 				newSubnetT := subnetT.DeepCopy()
 
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 				Expect(apierrors.IsForbidden(err)).To(BeTrue())
 			})
@@ -1110,13 +1191,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "172.18.40.10")
 				newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
 				newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -1132,13 +1212,12 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "abcd:1234::a")
 				newSubnetT.Spec.Gateway = pointer.String("abcd:1234::1")
 				newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
-					spiderpoolv1.Route{
+					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},
 				)
 
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -1146,7 +1225,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 		Describe("ValidateDelete", func() {
 			It("passes", func() {
-				ctx := context.TODO()
 				err := subnetWebhook.ValidateDelete(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})

@@ -15,12 +15,12 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
+func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate IPPool")
 
@@ -91,7 +91,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv1.
 	return nil
 }
 
-func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
+func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) error {
 	logger := logutils.FromContext(ctx)
 
 	// TODO(iiiceoo): There was an occasional bug.
@@ -105,7 +105,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err)
 	}
 
-	var subnetList spiderpoolv1.SpiderSubnetList
+	var subnetList spiderpoolv2beta1.SpiderSubnetList
 	if err := iw.Client.List(
 		ctx,
 		&subnetList,
@@ -120,7 +120,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 
 	subnet := subnetList.Items[0]
 	if !metav1.IsControlledBy(ipPool, &subnet) {
-		if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Scheme); err != nil {
+		if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Client.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference: %v", err)
 		}
 		logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)

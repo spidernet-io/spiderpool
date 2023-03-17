@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 )
 
@@ -32,21 +31,10 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 		}
 	})
 
-	Describe("Test CheckPodStatus", func() {
+	Describe("Test IsPodAlive", func() {
 		It("inputs nil Pod", func() {
-			status, allocatable := podmanager.CheckPodStatus(nil)
-			Expect(status).To(Equal(constant.PodUnknown))
-			Expect(allocatable).To(BeFalse())
-		})
-
-		It("checks terminated Pod", func() {
-			now := metav1.Now()
-			podT.SetDeletionTimestamp(&now)
-			podT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
-
-			status, allocatable := podmanager.CheckPodStatus(podT)
-			Expect(status).To(Equal(constant.PodGraceTimeout))
-			Expect(allocatable).To(BeFalse())
+			isAlive := podmanager.IsPodAlive(nil)
+			Expect(isAlive).To(BeFalse())
 		})
 
 		It("checks terminating Pod", func() {
@@ -54,42 +42,37 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			podT.SetDeletionTimestamp(&now)
 			podT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
 
-			status, allocatable := podmanager.CheckPodStatus(podT)
-			Expect(status).To(Equal(constant.PodTerminating))
-			Expect(allocatable).To(BeFalse())
+			isAlive := podmanager.IsPodAlive(podT)
+			Expect(isAlive).To(BeFalse())
 		})
 
 		It("checks succeeded Pod", func() {
 			podT.Status.Phase = corev1.PodSucceeded
 			podT.Spec.RestartPolicy = corev1.RestartPolicyNever
 
-			status, allocatable := podmanager.CheckPodStatus(podT)
-			Expect(status).To(Equal(constant.PodSucceeded))
-			Expect(allocatable).To(BeFalse())
+			isAlive := podmanager.IsPodAlive(podT)
+			Expect(isAlive).To(BeFalse())
 		})
 
 		It("checks failed Pod", func() {
 			podT.Status.Phase = corev1.PodFailed
 			podT.Spec.RestartPolicy = corev1.RestartPolicyNever
 
-			status, allocatable := podmanager.CheckPodStatus(podT)
-			Expect(status).To(Equal(constant.PodFailed))
-			Expect(allocatable).To(BeFalse())
+			isAlive := podmanager.IsPodAlive(podT)
+			Expect(isAlive).To(BeFalse())
 		})
 
 		It("checks evicted Pod", func() {
 			podT.Status.Phase = corev1.PodFailed
 			podT.Status.Reason = "Evicted"
 
-			status, allocatable := podmanager.CheckPodStatus(podT)
-			Expect(status).To(Equal(constant.PodEvicted))
-			Expect(allocatable).To(BeFalse())
+			isAlive := podmanager.IsPodAlive(podT)
+			Expect(isAlive).To(BeFalse())
 		})
 
 		It("checks running Pod", func() {
-			status, allocatable := podmanager.CheckPodStatus(podT)
-			Expect(status).To(Equal(constant.PodRunning))
-			Expect(allocatable).To(BeTrue())
+			isAlive := podmanager.IsPodAlive(podT)
+			Expect(isAlive).To(BeTrue())
 		})
 	})
 })

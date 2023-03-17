@@ -43,73 +43,73 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 
 	conf, err := LoadNetConf(args.StdinData)
 	if nil != err {
-		return fmt.Errorf("failed to load network config, error: %v", err)
+		return fmt.Errorf("failed to load CNI network configuration: %v", err)
 	}
 
 	logger, err = setupFileLogging(conf)
 	if nil != err {
-		return fmt.Errorf("failed to set up log: %v", err)
+		return fmt.Errorf("failed to setup file logging: %v", err)
 	}
 
-	// new cmdDel logger
-	logger = logger.Named(BinNamePlugin)
-	logger.Sugar().Debugf("Processing CNI DEL request: ContainerID:%s, Netns:%s, IfName:%s, Path:%s",
-		args.ContainerID, args.Netns, args.IfName, args.Path)
-	logger.Sugar().Debugf("CNI DEL NetConf: %#v", *conf)
+	logger = logger.Named(BinNamePlugin).With(
+		zap.String("Action", "DEL"),
+		zap.String("ContainerID", args.ContainerID),
+		zap.String("Netns", args.Netns),
+		zap.String("IfName", args.IfName),
+	)
+	logger.Debug("Processing CNI DEL request")
+	logger.Sugar().Debugf("CNI network configuration: %+v", *conf)
 
 	k8sArgs := K8sArgs{}
 	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		logger.Error(err.Error(), zap.String("Action", "Del"), zap.String("ContainerID", args.ContainerID))
+		err := fmt.Errorf("failed to load CNI ENV args: %v", err)
+		logger.Error(err.Error())
 		return err
 	}
-	logger.Sugar().Debugf("CNI DEL Args: %#v", k8sArgs)
 
-	// register some args into logger
-	logger = logger.With(zap.String("Action", "Del"),
-		zap.String("ContainerID", args.ContainerID),
-		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
+	logger = logger.With(
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
-		zap.String("IfName", args.IfName))
-	logger.Info("Generate IPAM configuration")
+		zap.String("PodUID", string(k8sArgs.K8S_POD_UID)),
+	)
+	logger.Sugar().Debugf("CNI ENV args: %+v", k8sArgs)
 
-	// new unix client
-	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IpamUnixSocketPath)
+	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IPAMUnixSocketPath)
 	if nil != err {
+		err := fmt.Errorf("failed to create spiderpool-agent client: %v", err)
 		logger.Error(err.Error())
 		return err
 	}
 
-	// GET /ipam/healthy
-	logger.Debug("Sending health check to spider agent.")
+	logger.Debug("Send health check request to spiderpool-agent backend")
 	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
+		err := fmt.Errorf("%w, failed to check: %v", ErrAgentHealthCheck, err)
 		logger.Error(err.Error())
-		return ErrAgentHealthCheck
-	}
-	logger.Debug("Spider agent health check successfully.")
-
-	// DELETE /ipam/ip
-	logger.Info("Sending IP release request to spider agent.")
-	ipamDelArgs := &models.IpamDelArgs{
-		ContainerID:  &args.ContainerID,
-		IfName:       &args.IfName,
-		NetNamespace: args.Netns,
-		PodName:      (*string)(&k8sArgs.K8S_POD_NAME),
-		PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	params := daemonset.NewDeleteIpamIPParamsWithContext(ctx)
-	params.SetIpamDelArgs(ipamDelArgs)
+	params := daemonset.NewDeleteIpamIPParams().
+		WithContext(ctx).
+		WithIpamDelArgs(&models.IpamDelArgs{
+			ContainerID:  &args.ContainerID,
+			NetNamespace: args.Netns,
+			IfName:       &args.IfName,
+			PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+			PodName:      (*string)(&k8sArgs.K8S_POD_NAME),
+			PodUID:       (*string)(&k8sArgs.K8S_POD_UID),
+		})
+
+	logger.Debug("Send IPAM request")
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(params)
 	if nil != err {
-		logger.Error(err.Error())
-		return fmt.Errorf("%w: %v", ErrDeleteIPAM, err)
+		logger.Sugar().Errorf("%w: %v", ErrDeleteIPAM, err)
+		return nil
 	}
 
-	logger.Info("IP release successfully.")
+	logger.Info("IPAM release successfully")
 	return nil
 }

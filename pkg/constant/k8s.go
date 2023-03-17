@@ -19,36 +19,27 @@ const (
 	DefaultIPAMUnixSocketPath = "/var/run/spidernet/spiderpool.sock"
 )
 
-// Log level character string
 const (
-	LogDebugLevelStr = "debug"
-	LogInfoLevelStr  = "info"
-	LogWarnLevelStr  = "warn"
-	LogErrorLevelStr = "error"
-	LogFatalLevelStr = "fatal"
-	LogPanicLevelStr = "panic"
+	KindPod         = "Pod"
+	KindDeployment  = "Deployment"
+	KindStatefulSet = "StatefulSet"
+	KindDaemonSet   = "DaemonSet"
+	KindUnknown     = "Unknown"
+	KindReplicaSet  = "ReplicaSet"
+	KindJob         = "Job"
+	KindCronJob     = "CronJob"
 )
 
-const (
-	KindPod         string = "Pod"
-	KindDeployment  string = "Deployment"
-	KindStatefulSet string = "StatefulSet"
-	KindDaemonSet   string = "DaemonSet"
-	KindUnknown     string = "Unknown"
-	KindReplicaSet  string = "ReplicaSet"
-	KindJob         string = "Job"
-	KindCronJob     string = "CronJob"
-)
+var K8sKinds = []string{KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob}
 
 const (
-	PodRunning      types.PodStatus = "Running"
-	PodTerminating  types.PodStatus = "Terminating"
-	PodGraceTimeout types.PodStatus = "GraceTimeout"
-	PodSucceeded    types.PodStatus = "Succeeded"
-	PodFailed       types.PodStatus = "Failed"
-	PodEvicted      types.PodStatus = "Evicted"
-	PodDeleted      types.PodStatus = "Deleted"
-	PodUnknown      types.PodStatus = "Unknown"
+	PodRunning     types.PodStatus = "Running"
+	PodTerminating types.PodStatus = "Terminating"
+	PodSucceeded   types.PodStatus = "Succeeded"
+	PodFailed      types.PodStatus = "Failed"
+	PodEvicted     types.PodStatus = "Evicted"
+	PodDeleted     types.PodStatus = "Deleted"
+	PodUnknown     types.PodStatus = "Unknown"
 )
 
 const (
@@ -58,7 +49,6 @@ const (
 	AnnoPodIPPools      = AnnotationPre + "/ippools"
 	AnnoPodRoutes       = AnnotationPre + "/routes"
 	AnnoPodDNS          = AnnotationPre + "/dns"
-	AnnoPodStatus       = AnnotationPre + "/status"
 	AnnoNSDefautlV4Pool = AnnotationPre + "/default-ipv4-ippool"
 	AnnoNSDefautlV6Pool = AnnotationPre + "/default-ipv6-ippool"
 
@@ -71,31 +61,36 @@ const (
 	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
 	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"
 	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
+	LabelIPPoolInterface           = AnnotationPre + "/interface"
+	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
 	LabelIPPoolVersion             = AnnotationPre + "/ippool-version"
 	LabelIPPoolVersionV4           = "IPv4"
 	LabelIPPoolVersionV6           = "IPv6"
-	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
-	LabelIPPoolInterface           = AnnotationPre + "/interface"
+	LabelAutoPoolDesiredIPNumber   = AnnotationPre + "/auto-ippool-desired-ip-number"
 
 	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"
 )
 
 const (
-	Spiderpool               = "spiderpool"
-	SpiderpoolAgent          = "spiderpool-agent"
-	SpiderpoolController     = "spiderpool-controller"
-	SpiderpoolAPIGroup       = "spiderpool.spidernet.io"
-	SpiderFinalizer          = SpiderpoolAPIGroup
-	SpiderpoolAPIVersionV1   = "v1"
-	SpiderIPPoolKind         = "SpiderIPPool"
-	SpiderEndpointKind       = "SpiderEndpoint"
-	SpiderReservedIPKind     = "SpiderReservedIP"
-	SpiderSubnetKind         = "SpiderSubnet"
-	SpiderIPPoolListKind     = "SpiderIPPoolList"
-	SpiderEndpointListKind   = "SpiderEndpointList"
-	SpiderReservedIPListKind = "SpiderReservedIPList"
-	SpiderSubnetListKind     = "SpiderSubnetList"
+	Spiderpool           = "spiderpool"
+	SpiderpoolAgent      = "spiderpool-agent"
+	SpiderpoolController = "spiderpool-controller"
+)
+
+const (
+	SpiderFinalizer      = SpiderpoolAPIGroup
+	SpiderpoolAPIGroup   = "spiderpool.spidernet.io"
+	SpiderpoolAPIVersion = "v2beta1"
+	KindSpiderSubnet     = "SpiderSubnet"
+	KindSpiderIPPool     = "SpiderIPPool"
+	KindSpiderEndpoint   = "SpiderEndpoint"
+	KindSpiderReservedIP = "SpiderReservedIP"
+)
+
+const (
+	UseCache    = true
+	IgnoreCache = false
 )
 
 const (

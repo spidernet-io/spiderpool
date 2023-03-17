@@ -10,24 +10,20 @@ import (
 	"path"
 	"strconv"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
 var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
+	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
 }
 
 func newCRDManager() (ctrl.Manager, error) {
@@ -46,18 +42,27 @@ func newCRDManager() (ctrl.Manager, error) {
 		CertDir:                path.Dir(controllerContext.Cfg.TlsServerCertPath),
 		MetricsBindAddress:     "0",
 		HealthProbeBindAddress: "0",
-		ClientDisableCacheFor: []client.Object{
-			&spiderpoolv1.SpiderSubnet{},
-			&spiderpoolv1.SpiderIPPool{},
-			&spiderpoolv1.SpiderEndpoint{},
-		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
-		reservedIP := raw.(*spiderpoolv1.SpiderReservedIP)
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
+		subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
+		return []string{strconv.FormatBool(*subnet.Spec.Default)}
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
+		return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+		reservedIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 		return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
 	}); err != nil {
 		return nil, err

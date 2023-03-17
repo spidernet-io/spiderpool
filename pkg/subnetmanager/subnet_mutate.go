@@ -11,12 +11,12 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
+func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate Subnet")
 

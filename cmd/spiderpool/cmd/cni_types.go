@@ -7,9 +7,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+)
+
+var BinNamePlugin = filepath.Base(os.Args[0])
+
+var (
+	ErrAgentHealthCheck = fmt.Errorf("unhealthy spiderpool-agent backend")
+	ErrPostIPAM         = fmt.Errorf("spiderpool IP allocation error")
+	ErrDeleteIPAM       = fmt.Errorf("spiderpool IP release error")
 )
 
 const (
@@ -21,9 +32,9 @@ const (
 // SupportCNIVersions indicate the CNI version that spiderpool support.
 var SupportCNIVersions = []string{CniVersion030, CniVersion031, CniVersion040}
 
-const DefaultLogLevelStr = constant.LogInfoLevelStr
+const DefaultLogLevelStr = logutils.LogInfoLevelStr
 
-// K8sArgs is the valid CNI_ARGS used for Kubernetes
+// K8sArgs is the valid CNI_ARGS used for Kubernetes.
 type K8sArgs struct {
 	types.CommonArgs
 	IP                         net.IP
@@ -33,14 +44,15 @@ type K8sArgs struct {
 	K8S_POD_UID                types.UnmarshallableString //revive:disable-line
 }
 
-// NetConf for cni config file written in json
+// NetConf is the structure of CNI network configuration.
 type NetConf struct {
 	Name       string     `json:"name"`
 	CNIVersion string     `json:"cniVersion"`
 	IPAM       IPAMConfig `json:"ipam"`
 }
 
-// IPAMConfig is a custom IPAM struct, you can check reference details: https://www.cni.dev/docs/spec/#plugin-configuration-objects
+// IPAMConfig is a custom IPAM struct.
+// Reference: https://www.cni.dev/docs/spec/#plugin-configuration-objects
 type IPAMConfig struct {
 	Type string `json:"type"`
 
@@ -54,24 +66,24 @@ type IPAMConfig struct {
 	DefaultIPv6IPPool []string `json:"default_ipv6_ippool"`
 	CleanGateway      bool     `json:"clean_gateway"`
 
-	IpamUnixSocketPath string `json:"ipam_unix_socket_path"`
+	IPAMUnixSocketPath string `json:"ipam_unix_socket_path"`
 }
 
-// LoadNetConf converts inputs (i.e. stdin) to NetConf
+// LoadNetConf converts input (i.e. stdin) to NetConf.
 func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 	netConf := &NetConf{}
 
 	err := json.Unmarshal(argsStdin, netConf)
 	if nil != err {
-		return nil, fmt.Errorf("unable to parse CNI configuration \"%s\": %s", argsStdin, err)
+		return nil, fmt.Errorf("failed to parse CNI network configuration: %v", err)
 	}
 
 	if netConf.IPAM.LogLevel == "" {
 		netConf.IPAM.LogLevel = DefaultLogLevelStr
 	}
 
-	if netConf.IPAM.IpamUnixSocketPath == "" {
-		netConf.IPAM.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
+	if netConf.IPAM.IPAMUnixSocketPath == "" {
+		netConf.IPAM.IPAMUnixSocketPath = constant.DefaultIPAMUnixSocketPath
 	}
 
 	for _, vers := range SupportCNIVersions {
@@ -80,5 +92,5 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("mismatch the given CNI Version: %s, spiderpool supports CNI version %#v", netConf.CNIVersion, SupportCNIVersions)
+	return nil, fmt.Errorf("unsupported specified CNI version %s, the CNI versions supported by Spiderpool: %v", netConf.CNIVersion, SupportCNIVersions)
 }

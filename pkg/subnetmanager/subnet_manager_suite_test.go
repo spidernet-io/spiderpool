@@ -19,16 +19,19 @@ import (
 
 	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	reservedipmanagermock "github.com/spidernet-io/spiderpool/pkg/reservedipmanager/mock"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 )
 
 var mockCtrl *gomock.Controller
 var mockLeaderElector *electionmock.MockSpiderLeaseElector
+var mockRIPManager *reservedipmanagermock.MockReservedIPManager
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
 var tracker k8stesting.ObjectTracker
 var fakeAPIReader client.Reader
+var subnetManager subnetmanager.SubnetManager
 var subnetWebhook *subnetmanager.SubnetWebhook
 
 func TestSubnetManager(t *testing.T) {
@@ -70,10 +73,17 @@ var _ = BeforeSuite(func() {
 		}).
 		Build()
 
+	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
+	mockRIPManager = reservedipmanagermock.NewMockReservedIPManager(mockCtrl)
+	subnetManager, err = subnetmanager.NewSubnetManager(
+		fakeClient,
+		fakeAPIReader,
+		mockRIPManager,
+	)
+	Expect(err).NotTo(HaveOccurred())
+
 	subnetWebhook = &subnetmanager.SubnetWebhook{
 		Client:    fakeClient,
 		APIReader: fakeAPIReader,
 	}
-
-	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
 })

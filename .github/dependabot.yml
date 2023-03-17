@@ -11,7 +11,7 @@ updates:
       interval: weekly
     # default to default branch
     # target-branch: "main"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 4
     rebase-strategy: "disabled"
     ignore:
       # k8s dependencies will be updated manually along with tests

@@ -20,39 +20,52 @@ import (
 )
 
 type PodManager interface {
-	GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error)
-	ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error)
+	GetPodByName(ctx context.Context, namespace, podName string, cached bool) (*corev1.Pod, error)
+	ListPods(ctx context.Context, cached bool, opts ...client.ListOption) (*corev1.PodList, error)
 	GetPodTopController(ctx context.Context, pod *corev1.Pod) (types.PodTopController, error)
 }
 
 type podManager struct {
-	config PodManagerConfig
-	client client.Client
+	client    client.Client
+	apiReader client.Reader
 }
 
-func NewPodManager(config PodManagerConfig, client client.Client) (PodManager, error) {
+func NewPodManager(client client.Client, apiReader client.Reader) (PodManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
+	if apiReader == nil {
+		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
+	}
 
 	return &podManager{
-		config: setDefaultsForPodManagerConfig(config),
-		client: client,
+		client:    client,
+		apiReader: apiReader,
 	}, nil
 }
 
-func (pm *podManager) GetPodByName(ctx context.Context, namespace, podName string) (*corev1.Pod, error) {
+func (pm *podManager) GetPodByName(ctx context.Context, namespace, podName string, cached bool) (*corev1.Pod, error) {
+	reader := pm.apiReader
+	if cached == constant.UseCache {
+		reader = pm.client
+	}
+
 	var pod corev1.Pod
-	if err := pm.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
+	if err := reader.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &pod); err != nil {
 		return nil, err
 	}
 
 	return &pod, nil
 }
 
-func (pm *podManager) ListPods(ctx context.Context, opts ...client.ListOption) (*corev1.PodList, error) {
+func (pm *podManager) ListPods(ctx context.Context, cached bool, opts ...client.ListOption) (*corev1.PodList, error) {
+	reader := pm.apiReader
+	if cached == constant.UseCache {
+		reader = pm.client
+	}
+
 	var podList corev1.PodList
-	if err := pm.client.List(ctx, &podList, opts...); err != nil {
+	if err := reader.List(ctx, &podList, opts...); err != nil {
 		return nil, err
 	}
 
@@ -71,21 +84,27 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 	podOwner := metav1.GetControllerOf(pod)
 	if podOwner == nil {
 		return types.PodTopController{
-			Kind:      constant.KindPod,
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-			UID:       pod.UID,
-			APP:       pod,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: pod.APIVersion,
+				Kind:       constant.KindPod,
+				Namespace:  pod.Namespace,
+				Name:       pod.Name,
+			},
+			UID: pod.UID,
+			APP: pod,
 		}, nil
 	}
 
 	// third party controller
 	if podOwner.APIVersion != appsv1.SchemeGroupVersion.String() && podOwner.APIVersion != batchv1.SchemeGroupVersion.String() {
 		return types.PodTopController{
-			Kind:      constant.KindUnknown,
-			Namespace: pod.Namespace,
-			Name:      podOwner.Name,
-			UID:       podOwner.UID,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: podOwner.APIVersion,
+				Kind:       podOwner.Kind,
+				Namespace:  pod.Namespace,
+				Name:       podOwner.Name,
+			},
+			UID: podOwner.UID,
 		}, nil
 	}
 
@@ -111,28 +130,37 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 					return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 				}
 				return types.PodTopController{
-					Kind:      constant.KindDeployment,
-					Namespace: deployment.Namespace,
-					Name:      deployment.Name,
-					UID:       deployment.UID,
-					APP:       &deployment,
+					AppNamespacedName: types.AppNamespacedName{
+						APIVersion: deployment.APIVersion,
+						Kind:       constant.KindDeployment,
+						Namespace:  deployment.Namespace,
+						Name:       deployment.Name,
+					},
+					UID: deployment.UID,
+					APP: &deployment,
 				}, nil
 			}
 
 			logger.Sugar().Warnf("the controller type '%s' of pod '%s/%s' is unknown", replicasetOwner.Kind, pod.Namespace, pod.Name)
 			return types.PodTopController{
-				Kind:      constant.KindUnknown,
-				Namespace: pod.Namespace,
-				Name:      replicasetOwner.Name,
-				UID:       replicasetOwner.UID,
+				AppNamespacedName: types.AppNamespacedName{
+					APIVersion: replicasetOwner.APIVersion,
+					Kind:       replicasetOwner.Kind,
+					Namespace:  pod.Namespace,
+					Name:       replicasetOwner.Name,
+				},
+				UID: replicasetOwner.UID,
 			}, nil
 		}
 		return types.PodTopController{
-			Kind:      constant.KindReplicaSet,
-			Namespace: replicaset.Namespace,
-			Name:      replicaset.Name,
-			UID:       replicaset.UID,
-			APP:       &replicaset,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: replicaset.APIVersion,
+				Kind:       constant.KindReplicaSet,
+				Namespace:  replicaset.Namespace,
+				Name:       replicaset.Name,
+			},
+			UID: replicaset.UID,
+			APP: &replicaset,
 		}, nil
 
 	case constant.KindJob:
@@ -150,28 +178,37 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 					return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 				}
 				return types.PodTopController{
-					Kind:      constant.KindCronJob,
-					Namespace: cronJob.Namespace,
-					Name:      cronJob.Name,
-					UID:       cronJob.UID,
-					APP:       &cronJob,
+					AppNamespacedName: types.AppNamespacedName{
+						APIVersion: cronJob.APIVersion,
+						Kind:       constant.KindCronJob,
+						Namespace:  cronJob.Namespace,
+						Name:       cronJob.Name,
+					},
+					UID: cronJob.UID,
+					APP: &cronJob,
 				}, nil
 			}
 
 			logger.Sugar().Warnf("the controller type '%s' of pod '%s/%s' is unknown", jobOwner.Kind, pod.Namespace, pod.Name)
 			return types.PodTopController{
-				Kind:      constant.KindUnknown,
-				Namespace: job.Namespace,
-				Name:      jobOwner.Name,
-				UID:       jobOwner.UID,
+				AppNamespacedName: types.AppNamespacedName{
+					APIVersion: jobOwner.APIVersion,
+					Kind:       jobOwner.Kind,
+					Namespace:  job.Namespace,
+					Name:       jobOwner.Name,
+				},
+				UID: jobOwner.UID,
 			}, nil
 		}
 		return types.PodTopController{
-			Kind:      constant.KindJob,
-			Namespace: job.Namespace,
-			Name:      job.Name,
-			UID:       job.UID,
-			APP:       &job,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: job.APIVersion,
+				Kind:       constant.KindJob,
+				Namespace:  job.Namespace,
+				Name:       job.Name,
+			},
+			UID: job.UID,
+			APP: &job,
 		}, nil
 
 	case constant.KindDaemonSet:
@@ -181,11 +218,14 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 		}
 		return types.PodTopController{
-			Kind:      constant.KindDaemonSet,
-			Namespace: daemonSet.Namespace,
-			Name:      daemonSet.Name,
-			UID:       daemonSet.UID,
-			APP:       &daemonSet,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: daemonSet.APIVersion,
+				Kind:       constant.KindDaemonSet,
+				Namespace:  daemonSet.Namespace,
+				Name:       daemonSet.Name,
+			},
+			UID: daemonSet.UID,
+			APP: &daemonSet,
 		}, nil
 
 	case constant.KindStatefulSet:
@@ -195,19 +235,25 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 		}
 		return types.PodTopController{
-			Kind:      constant.KindStatefulSet,
-			Namespace: statefulSet.Namespace,
-			Name:      statefulSet.Name,
-			UID:       statefulSet.UID,
-			APP:       &statefulSet,
+			AppNamespacedName: types.AppNamespacedName{
+				APIVersion: statefulSet.APIVersion,
+				Kind:       constant.KindStatefulSet,
+				Namespace:  statefulSet.Namespace,
+				Name:       statefulSet.Name,
+			},
+			UID: statefulSet.UID,
+			APP: &statefulSet,
 		}, nil
 	}
 
 	logger.Sugar().Warnf("the controller type '%s' of pod '%s/%s' is unknown", podOwner.Kind, pod.Namespace, pod.Name)
 	return types.PodTopController{
-		Kind:      constant.KindUnknown,
-		Namespace: pod.Namespace,
-		Name:      podOwner.Name,
-		UID:       podOwner.UID,
+		AppNamespacedName: types.AppNamespacedName{
+			APIVersion: podOwner.APIVersion,
+			Kind:       podOwner.Kind,
+			Namespace:  pod.Namespace,
+			Name:       podOwner.Name,
+		},
+		UID: podOwner.UID,
 	}, nil
 }

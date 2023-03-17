@@ -7,153 +7,156 @@ import (
 	"os"
 	"strings"
 
-	"github.com/asaskevich/govalidator"
-
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 )
 
 const (
-	EnvDefaultIPv4SubnetName   = "SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME"
-	EnvDefaultIPv4PoolName     = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME"
-	EnvDefaultIPv4PoolSubnet   = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET"
-	EnvDefaultIPv4PoolIPRanges = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_IPRANGES"
-	EnvDefaultIPv4PoolGateway  = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_GATEWAY"
+	ENVNamespace                = "SPIDERPOOL_NAMESPACE"
+	ENVSpiderpoolControllerName = "SPIDERPOOL_CONTROLLER_NAME"
 
-	EnvDefaultIPv6SubnetName   = "SPIDERPOOL_INIT_DEFAULT_IPV6_SUBNET_NAME"
-	EnvDefaultIPv6PoolName     = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME"
-	EnvDefaultIPv6PoolSubnet   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET"
-	EnvDefaultIPv6PoolIPRanges = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
-	EnvDefaultIPv6PoolGateway  = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
+	ENVDefaultIPv4SubnetName = "SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME"
+	ENVDefaultIPv4IPPoolName = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME"
+	ENVDefaultIPv4CIDR       = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET"
+	ENVDefaultIPv4IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_IPRANGES"
+	ENVDefaultIPv4Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_GATEWAY"
 
-	EnvNamespace                = "SPIDERPOOL_NAMESPACE"
-	EnvSpiderpoolControllerName = "SPIDERPOOL_CONTROLLER_NAME"
+	ENVDefaultIPv6SubnetName = "SPIDERPOOL_INIT_DEFAULT_IPV6_SUBNET_NAME"
+	ENVDefaultIPv6IPPoolName = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME"
+	ENVDefaultIPv6CIDR       = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET"
+	ENVDefaultIPv6IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
+	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
 )
 
-type _Config struct {
-	SubnetV4Name   string
-	PoolV4Name     string
-	PoolV4Subnet   string
-	PoolV4IPRanges []string
-	PoolV4Gateway  string
+type InitDefaultConfig struct {
+	Namespace      string
+	ControllerName string
 
-	SubnetV6Name   string
-	PoolV6Name     string
-	PoolV6Subnet   string
-	PoolV6IPRanges []string
-	PoolV6Gateway  string
+	V4SubnetName string
+	V4IPPoolName string
+	V4CIDR       string
+	V4IPRanges   []string
+	V4Gateway    string
+
+	V6SubnetName string
+	V6IPPoolName string
+	V6CIDR       string
+	V6IPRanges   []string
+	V6Gateway    string
 }
 
-var Config = _Config{}
+func NewInitDefaultConfig() InitDefaultConfig {
+	return parseENVAsDefault()
+}
 
-func init() {
-	// -------- for ipv4
-	Config.SubnetV4Name = strings.Replace(os.Getenv(EnvDefaultIPv4SubnetName), "\"", "", -1)
-	logger.Sugar().Infof("SubnetV4Name=%s", Config.SubnetV4Name)
+func parseENVAsDefault() InitDefaultConfig {
+	config := InitDefaultConfig{}
+	config.Namespace = strings.ReplaceAll(os.Getenv(ENVNamespace), "\"", "")
+	if len(config.Namespace) == 0 {
+		logger.Sugar().Fatalf("ENV %s %w", ENVNamespace, constant.ErrMissingRequiredParam)
+	}
+	config.ControllerName = strings.ReplaceAll(os.Getenv(ENVSpiderpoolControllerName), "\"", "")
+	if len(config.ControllerName) == 0 {
+		logger.Sugar().Fatalf("ENV %s %w", ENVSpiderpoolControllerName, constant.ErrMissingRequiredParam)
+	}
 
-	Config.PoolV4Name = strings.Replace(os.Getenv(EnvDefaultIPv4PoolName), "\"", "", -1)
-	logger.Sugar().Infof("PoolV4Name=%s", Config.PoolV4Name)
-
-	Config.PoolV4Subnet = strings.Replace(os.Getenv(EnvDefaultIPv4PoolSubnet), "\"", "", -1)
-	logger.Sugar().Infof("PoolV4Subnet=%s", Config.PoolV4Subnet)
-	if len(Config.PoolV4Subnet) > 0 {
-		if _, e := spiderpoolip.ParseCIDR(4, Config.PoolV4Subnet); e != nil {
-			logger.Sugar().Fatalf("PoolV4Subnet '%v' is bad format, error: %v", Config.PoolV4Subnet, e)
+	// IPv4
+	config.V4SubnetName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4SubnetName), "\"", "")
+	config.V4IPPoolName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4IPPoolName), "\"", "")
+	if len(config.V4SubnetName) != 0 || len(config.V4IPPoolName) != 0 {
+		config.V4CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4CIDR), "\"", "")
+		if len(config.V4CIDR) == 0 {
+			logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv4 Subnet or IPPool", ENVDefaultIPv4CIDR, constant.ErrMissingRequiredParam)
 		}
-	}
-
-	Config.PoolV4Gateway = strings.Replace(os.Getenv(EnvDefaultIPv4PoolGateway), "\"", "", -1)
-	logger.Sugar().Infof("PoolV4Gateway=%s", Config.PoolV4Gateway)
-	if len(Config.PoolV4Gateway) > 0 {
-		if !govalidator.IsIPv4(Config.PoolV4Gateway) {
-			logger.Sugar().Fatalf("PoolV4Gateway %v is not ipv4 address", Config.PoolV4Gateway)
+		if err := spiderpoolip.IsCIDR(constant.IPv4, config.V4CIDR); err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4CIDR, config.V4CIDR, err)
 		}
-	}
 
-	tmp := os.Getenv(EnvDefaultIPv4PoolIPRanges)
-	logger.Sugar().Infof("PoolV4IPRanges=%s", tmp)
-	if len(tmp) > 0 {
-		tmp = strings.Replace(tmp, "\"", "", -1)
-		tmp = strings.Replace(tmp, "\\", "", -1)
-		tmp = strings.Replace(tmp, "[", "", -1)
-		tmp = strings.Replace(tmp, "]", "", -1)
-		tmp = strings.Replace(tmp, ",", " ", -1)
-		t := strings.Fields(tmp)
-		if _, err := spiderpoolip.ParseIPRanges(4, t); nil != err {
-			logger.Sugar().Fatalf("PoolV4IPRanges format is wrong,  PoolV4IPRanges='%v', error: %v", t, err)
+		config.V4Gateway = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4Gateway), "\"", "")
+		if len(config.V4Gateway) > 0 {
+			if err := spiderpoolip.IsIP(constant.IPv4, config.V4Gateway); err != nil {
+				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4Gateway, config.V4Gateway, err)
+			}
 		}
-		Config.PoolV4IPRanges = t
-	}
 
-	// ---------- for ipv6
-	Config.SubnetV6Name = strings.Replace(os.Getenv(EnvDefaultIPv6SubnetName), "\"", "", -1)
-	logger.Sugar().Infof("SubnetV6Name=%s", Config.SubnetV6Name)
+		v := os.Getenv(ENVDefaultIPv4IPRanges)
+		if len(v) > 0 {
+			v = strings.ReplaceAll(v, "\"", "")
+			v = strings.ReplaceAll(v, "\\", "")
+			v = strings.ReplaceAll(v, "[", "")
+			v = strings.ReplaceAll(v, "]", "")
+			v = strings.ReplaceAll(v, ",", " ")
+			ranges := strings.Fields(v)
 
-	Config.PoolV6Name = strings.Replace(os.Getenv(EnvDefaultIPv6PoolName), "\"", "", -1)
-	logger.Sugar().Infof("PoolV6Name=%s", Config.PoolV6Name)
-
-	Config.PoolV6Subnet = strings.Replace(os.Getenv(EnvDefaultIPv6PoolSubnet), "\"", "", -1)
-	logger.Sugar().Infof("PoolV6Subnet=%s", Config.PoolV6Subnet)
-	if len(Config.PoolV6Subnet) > 0 {
-		if _, e := spiderpoolip.ParseCIDR(6, Config.PoolV6Subnet); e != nil {
-			logger.Sugar().Fatalf("PoolV6Subnet '%v' is bad format, error: %v", Config.PoolV4Subnet, e)
-		}
-	}
-
-	Config.PoolV6Gateway = strings.Replace(os.Getenv(EnvDefaultIPv6PoolGateway), "\"", "", -1)
-	logger.Sugar().Infof("PoolV6Gateway=%s", Config.PoolV6Gateway)
-	if len(Config.PoolV6Gateway) > 0 {
-		if !govalidator.IsIPv6(Config.PoolV6Gateway) {
-			logger.Sugar().Fatalf("PoolV6Gateway %v is not ipv6 address", Config.PoolV6Gateway)
-		}
-	}
-
-	tmp = os.Getenv(EnvDefaultIPv6PoolIPRanges)
-	logger.Sugar().Infof("PoolV6IPRanges=%s", tmp)
-	if len(tmp) > 0 {
-		tmp = strings.Replace(tmp, "\"", "", -1)
-		tmp = strings.Replace(tmp, "\\", "", -1)
-		tmp = strings.Replace(tmp, "[", "", -1)
-		tmp = strings.Replace(tmp, "]", "", -1)
-		tmp = strings.Replace(tmp, ",", " ", -1)
-		t := strings.Fields(tmp)
-		if _, err := spiderpoolip.ParseIPRanges(6, t); nil != err {
-			logger.Sugar().Fatalf("PoolV6IPRanges format is wrong,  PoolV6IPRanges='%v', error: %v", t, err)
-		}
-		Config.PoolV6IPRanges = t
-	}
-
-	SpiderControllerEndpointNamespace = strings.Replace(os.Getenv(EnvNamespace), "\"", "", -1)
-	logger.Sugar().Infof("SpiderControllerEndpointNamespace=%s", SpiderControllerEndpointNamespace)
-	if len(SpiderControllerEndpointNamespace) == 0 {
-		logger.Sugar().Fatalf("SpiderControllerEndpointNamespace is empty")
-	}
-
-	SpiderControllerEndpointName = strings.Replace(os.Getenv(EnvSpiderpoolControllerName), "\"", "", -1)
-	logger.Sugar().Infof("SpiderControllerEndpointName=%s", SpiderControllerEndpointName)
-	if len(SpiderControllerEndpointName) == 0 {
-		logger.Sugar().Fatalf("SpiderControllerEndpointName is empty")
-	}
-
-	// check
-	if len(Config.PoolV4Name) != 0 {
-		if len(Config.PoolV4Subnet) == 0 {
-			logger.Sugar().Fatalf("PoolV4Subnet is empty")
-		}
-		if len(Config.PoolV4IPRanges) == 0 {
-			logger.Sugar().Fatalf("PoolV4IPRanges is empty")
+			for _, r := range ranges {
+				if err := spiderpoolip.IsIPRange(constant.IPv4, r); err != nil {
+					logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4IPRanges, ranges, err)
+				}
+			}
+			config.V4IPRanges = ranges
 		}
 	} else {
-		logger.Info("ignore creating IPv4 ippool ")
-	}
-	if len(Config.PoolV6Name) != 0 {
-		if len(Config.PoolV6Subnet) == 0 {
-			logger.Sugar().Fatalf("PoolV6Subnet is empty")
-		}
-		if len(Config.PoolV6IPRanges) == 0 {
-			logger.Sugar().Fatalf("PoolV6IPRanges is empty")
-		}
-	} else {
-		logger.Info("ignore creating IPv6 ippool ")
+		logger.Info("Ignore creating default IPv4 Subnet or IPPool")
 	}
 
+	// IPv6
+	config.V6SubnetName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6SubnetName), "\"", "")
+	config.V6IPPoolName = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6IPPoolName), "\"", "")
+	if len(config.V6SubnetName) != 0 || len(config.V6IPPoolName) != 0 {
+		config.V6CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6CIDR), "\"", "")
+		if len(config.V6CIDR) == 0 {
+			logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv6 Subnet or IPPool", ENVDefaultIPv6CIDR, constant.ErrMissingRequiredParam)
+		}
+		if err := spiderpoolip.IsCIDR(constant.IPv6, config.V6CIDR); err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6CIDR, config.V6CIDR, err)
+		}
+
+		config.V6Gateway = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6Gateway), "\"", "")
+		if len(config.V6Gateway) > 0 {
+			if err := spiderpoolip.IsIP(constant.IPv6, config.V6Gateway); err != nil {
+				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6Gateway, config.V6Gateway, err)
+			}
+		}
+
+		v := os.Getenv(ENVDefaultIPv6IPRanges)
+		if len(v) > 0 {
+			v = strings.ReplaceAll(v, "\"", "")
+			v = strings.ReplaceAll(v, "\\", "")
+			v = strings.ReplaceAll(v, "[", "")
+			v = strings.ReplaceAll(v, "]", "")
+			v = strings.ReplaceAll(v, ",", " ")
+			ranges := strings.Fields(v)
+
+			for _, r := range ranges {
+				if err := spiderpoolip.IsIPRange(constant.IPv6, r); err != nil {
+					logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6IPRanges, ranges, err)
+				}
+			}
+			config.V6IPRanges = ranges
+		}
+	} else {
+		logger.Info("Ignore creating default IPv6 Subnet or IPPool")
+	}
+
+	if config.V4SubnetName == config.V6SubnetName && len(config.V4SubnetName) != 0 {
+		logger.Sugar().Fatalf(
+			"ENV %s %s\nENV %s %s\nDefault IPv4 Subnet name cannot be the same as IPv6 one",
+			ENVDefaultIPv4SubnetName,
+			config.V4SubnetName,
+			ENVDefaultIPv6SubnetName,
+			config.V6SubnetName,
+		)
+	}
+	if config.V4IPPoolName == config.V6IPPoolName && len(config.V4IPPoolName) != 0 {
+		logger.Sugar().Fatalf(
+			"ENV %s %s\nENV %s %s\nDefault IPv4 IPPool name cannot be the same as IPv6 one",
+			ENVDefaultIPv4IPPoolName,
+			config.V4IPPoolName,
+			ENVDefaultIPv6IPPoolName,
+			config.V6IPPoolName,
+		)
+	}
+	logger.Sugar().Infof("Init default config: %+v", config)
+
+	return config
 }

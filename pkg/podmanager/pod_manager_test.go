@@ -18,7 +18,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -28,26 +30,27 @@ import (
 
 var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 	Describe("New PodManager", func() {
-		It("sets default config", func() {
-			manager, err := podmanager.NewPodManager(podmanager.PodManagerConfig{}, fakeClient)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(manager).NotTo(BeNil())
+		It("inputs nil client", func() {
+			manager, err := podmanager.NewPodManager(nil, fakeAPIReader)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(manager).To(BeNil())
 		})
 
-		It("inputs nil client", func() {
-			manager, err := podmanager.NewPodManager(podmanager.PodManagerConfig{}, nil)
+		It("inputs nil API reader", func() {
+			manager, err := podmanager.NewPodManager(fakeClient, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 	})
 
 	Describe("Test PodManager's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var namespace string
 		var podName string
 		var labels map[string]string
 		var podT *corev1.Pod
-		var ctx context.Context
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -79,52 +82,85 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, podT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    corev1.GroupName,
+					Version:  corev1.SchemeGroupVersion.Version,
+					Resource: "pods",
+				},
+				podT.Namespace,
+				podT.Name,
+			)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("GetPodByName", func() {
 			It("gets non-existent Pod", func() {
-				ctx := context.TODO()
-				pod, err := podManager.GetPodByName(ctx, namespace, podName)
+				pod, err := podManager.GetPodByName(ctx, namespace, podName, constant.IgnoreCache)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(pod).To(BeNil())
 			})
 
-			It("gets an existing Pod", func() {
-				ctx := context.TODO()
+			It("gets an existing Pod through cache", func() {
 				err := fakeClient.Create(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				pod, err := podManager.GetPodByName(ctx, namespace, podName)
+				pod, err := podManager.GetPodByName(ctx, namespace, podName, constant.UseCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(pod).NotTo(BeNil())
+				Expect(pod).To(Equal(podT))
+			})
 
+			It("gets an existing Pod through API Server", func() {
+				err := tracker.Add(podT)
+				Expect(err).NotTo(HaveOccurred())
+
+				pod, err := podManager.GetPodByName(ctx, namespace, podName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pod).NotTo(BeNil())
 				Expect(pod).To(Equal(podT))
 			})
 		})
 
 		Describe("ListPods", func() {
 			It("failed to list Pods due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, podT)
+				err := tracker.Add(podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				podList, err := podManager.ListPods(ctx)
+				podList, err := podManager.ListPods(ctx, constant.IgnoreCache)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(podList).To(BeNil())
 			})
 
-			It("lists all Pods", func() {
-				ctx := context.TODO()
+			It("lists all Pods through cache", func() {
 				err := fakeClient.Create(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				podList, err := podManager.ListPods(ctx)
+				podList, err := podManager.ListPods(ctx, constant.UseCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(podList.Items).NotTo(BeEmpty())
+
+				hasPod := false
+				for _, pod := range podList.Items {
+					if pod.Name == podName {
+						hasPod = true
+						break
+					}
+				}
+				Expect(hasPod).To(BeTrue())
+			})
+
+			It("lists all Pods through API Server", func() {
+				err := tracker.Add(podT)
+				Expect(err).NotTo(HaveOccurred())
+
+				podList, err := podManager.ListPods(ctx, constant.IgnoreCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(podList.Items).NotTo(BeEmpty())
 
@@ -139,11 +175,10 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 			})
 
 			It("filters results by Namespace", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, podT)
+				err := tracker.Add(podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				podList, err := podManager.ListPods(ctx, client.InNamespace(namespace))
+				podList, err := podManager.ListPods(ctx, constant.IgnoreCache, client.InNamespace(namespace))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(podList.Items).NotTo(BeEmpty())
 
@@ -158,11 +193,10 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 			})
 
 			It("filters results by label selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, podT)
+				err := tracker.Add(podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				podList, err := podManager.ListPods(ctx, client.MatchingLabels(labels))
+				podList, err := podManager.ListPods(ctx, constant.IgnoreCache, client.MatchingLabels(labels))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(podList.Items).NotTo(BeEmpty())
 
@@ -177,11 +211,10 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 			})
 
 			It("filters results by field selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, podT)
+				err := tracker.Add(podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				podList, err := podManager.ListPods(ctx, client.MatchingFields{metav1.ObjectNameField: podName})
+				podList, err := podManager.ListPods(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: podName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(podList.Items).NotTo(BeEmpty())
 
@@ -207,12 +240,13 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 				err := kruiseapi.AddToScheme(scheme)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = controllerutil.SetControllerReference(&kruisev1.CloneSet{}, podT, scheme)
+				cloneSet := &kruisev1.CloneSet{}
+				err = controllerutil.SetControllerReference(cloneSet, podT, scheme)
 				Expect(err).NotTo(HaveOccurred())
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(podTopController.Kind).Should(Equal(constant.KindUnknown))
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with ReplicaSet controller", func() {
@@ -357,7 +391,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(podTopController.Kind).Should(Equal(constant.KindUnknown))
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with Job controller", func() {
@@ -430,7 +464,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(podTopController.Kind).Should(Equal(constant.KindUnknown))
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with CronJob controller", func() {

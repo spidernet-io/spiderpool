@@ -39,7 +39,7 @@ install-bash-completion:
 build_image:
 	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
 	@for NAME in $(SPIDERPOOL_IMAGES); do \
-		docker buildx build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+		docker buildx build --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
 				--file $(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile \

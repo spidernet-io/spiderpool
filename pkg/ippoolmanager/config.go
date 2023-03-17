@@ -3,16 +3,12 @@
 
 package ippoolmanager
 
-import "time"
-
 const (
 	defaultMaxAllocatedIPs = 5000
 )
 
 type IPPoolManagerConfig struct {
-	MaxConflictRetries    int
-	ConflictRetryUnitTime time.Duration
-	MaxAllocatedIPs       *int
+	MaxAllocatedIPs *int
 }
 
 func setDefaultsForIPPoolManagerConfig(config IPPoolManagerConfig) IPPoolManagerConfig {

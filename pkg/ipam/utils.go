@@ -15,125 +15,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/singletons"
-	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/subnetmanager/controllers"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
-
-func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) (ToBeAllocateds, error) {
-	logger := logutils.FromContext(ctx)
-	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
-
-	var annoPodIPPools types.AnnoPodIPPoolsValue
-	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPools)
-	err := json.Unmarshal([]byte(anno), &annoPodIPPools)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", errPrefix, err)
-	}
-	if len(annoPodIPPools) == 0 {
-		return nil, fmt.Errorf("%w: value requires at least one item", errPrefix)
-	}
-
-	nicSet := map[string]struct{}{}
-	for _, v := range annoPodIPPools {
-		if v.NIC == "" {
-			return nil, fmt.Errorf("%w: interface must be specified", errPrefix)
-		}
-		if _, ok := nicSet[v.NIC]; ok {
-			return nil, fmt.Errorf("%w: duplicate interface %s", errPrefix, v.NIC)
-		}
-		nicSet[v.NIC] = struct{}{}
-	}
-
-	if _, ok := nicSet[nic]; !ok {
-		return nil, fmt.Errorf("%w: interfaces do not contain that requested by runtime", errPrefix)
-	}
-
-	var tt ToBeAllocateds
-	for _, v := range annoPodIPPools {
-		t := &ToBeAllocated{
-			NIC:          v.NIC,
-			CleanGateway: v.CleanGateway,
-		}
-		if len(v.IPv4Pools) != 0 {
-			t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-				IPVersion: constant.IPv4,
-				Pools:     v.IPv4Pools,
-			})
-		}
-		if len(v.IPv6Pools) != 0 {
-			t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-				IPVersion: constant.IPv6,
-				Pools:     v.IPv6Pools,
-			})
-		}
-		tt = append(tt, t)
-	}
-
-	return tt, nil
-}
-
-func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway bool) (*ToBeAllocated, error) {
-	logger := logutils.FromContext(ctx)
-	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPool)
-
-	var annoPodIPPool types.AnnoPodIPPoolValue
-	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPool)
-	if err := json.Unmarshal([]byte(anno), &annoPodIPPool); err != nil {
-		return nil, fmt.Errorf("%w: %v", errPrefix, err)
-	}
-
-	t := &ToBeAllocated{
-		NIC:          nic,
-		CleanGateway: cleanGateway,
-	}
-	if len(annoPodIPPool.IPv4Pools) != 0 {
-		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv4,
-			Pools:     annoPodIPPool.IPv4Pools,
-		})
-	}
-	if len(annoPodIPPool.IPv6Pools) != 0 {
-		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv6,
-			Pools:     annoPodIPPool.IPv6Pools,
-		})
-	}
-
-	return t, nil
-}
-
-func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool) *ToBeAllocated {
-	if len(netConfV4Pool) == 0 && len(netConfV6Pool) == 0 {
-		return nil
-	}
-
-	logger := logutils.FromContext(ctx)
-	logger.Info("Use IPPools from CNI network configuration")
-
-	t := &ToBeAllocated{
-		NIC:          nic,
-		CleanGateway: cleanGateway,
-	}
-	if len(netConfV4Pool) != 0 {
-		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv4,
-			Pools:     netConfV4Pool,
-		})
-	}
-	if len(netConfV6Pool) != 0 {
-		t.PoolCandidates = append(t.PoolCandidates, &PoolCandidate{
-			IPVersion: constant.IPv6,
-			Pools:     netConfV6Pool,
-		})
-	}
-
-	return t
-}
 
 func getCustomRoutes(pod *corev1.Pod) ([]*models.Route, error) {
 	anno, ok := pod.Annotations[constant.AnnoPodRoutes]
@@ -154,10 +44,10 @@ func getCustomRoutes(pod *corev1.Pod) ([]*models.Route, error) {
 		}
 	}
 
-	return convertAnnoPodRoutesToOAIRoutes(annoPodRoutes), nil
+	return convert.ConvertAnnoPodRoutesToOAIRoutes(annoPodRoutes), nil
 }
 
-func groupCustomRoutes(ctx context.Context, customRoutes []*models.Route, results []*AllocationResult) error {
+func groupCustomRoutes(ctx context.Context, customRoutes []*models.Route, results []*types.AllocationResult) error {
 	if len(customRoutes) == 0 {
 		return nil
 	}
@@ -264,19 +154,13 @@ func getAutoPoolIPNumberAndSelector(pod *corev1.Pod, podController types.PodTopC
 }
 
 // isPoolIPsDesired checks the auto-created IPPool's IPs whether matches its AutoDesiredIPCount
-func isPoolIPsDesired(pool *spiderpoolv1.SpiderIPPool) bool {
-	// normal IPPool
-	if pool.Status.AutoDesiredIPCount == nil {
-		return false
-	}
-
-	desiredIPCount := *pool.Status.AutoDesiredIPCount
+func isPoolIPsDesired(pool *spiderpoolv2beta1.SpiderIPPool, desiredIPCount int) bool {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if nil != err {
 		return false
 	}
 
-	if desiredIPCount == int64(len(totalIPs)) {
+	if len(totalIPs) == desiredIPCount {
 		return true
 	}
 

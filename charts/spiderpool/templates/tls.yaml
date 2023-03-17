@@ -16,7 +16,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /mutate-spiderpool-spidernet-io-v1-spidersubnet
+      path: /mutate-spiderpool-spidernet-io-v2beta1-spidersubnet
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -29,7 +29,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -42,7 +42,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /mutate-spiderpool-spidernet-io-v1-spiderippool
+      path: /mutate-spiderpool-spidernet-io-v2beta1-spiderippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -55,7 +55,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -68,7 +68,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /mutate-spiderpool-spidernet-io-v1-spiderreservedip
+      path: /mutate-spiderpool-spidernet-io-v2beta1-spiderreservedip
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -81,7 +81,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -105,7 +105,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /validate-spiderpool-spidernet-io-v1-spidersubnet
+      path: /validate-spiderpool-spidernet-io-v2beta1-spidersubnet
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -118,7 +118,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -131,7 +131,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /validate-spiderpool-spidernet-io-v1-spiderippool
+      path: /validate-spiderpool-spidernet-io-v2beta1-spiderippool
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -144,7 +144,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE
@@ -157,7 +157,7 @@ webhooks:
     service:
       name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace }}
-      path: /validate-spiderpool-spidernet-io-v1-spiderreservedip
+      path: /validate-spiderpool-spidernet-io-v2beta1-spiderreservedip
       port: {{ .Values.spiderpoolController.webhookPort }}
     {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
     caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -170,7 +170,7 @@ webhooks:
   - apiGroups:
     - spiderpool.spidernet.io
     apiVersions:
-    - v1
+    - v2beta1
     operations:
     - CREATE
     - UPDATE

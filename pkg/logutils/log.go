@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 // Pre-define log instance with default info level.
@@ -70,19 +68,29 @@ const (
 	FatalLevel = zapcore.FatalLevel
 )
 
+// Log level character string
+const (
+	LogDebugLevelStr = "debug"
+	LogInfoLevelStr  = "info"
+	LogWarnLevelStr  = "warn"
+	LogErrorLevelStr = "error"
+	LogFatalLevelStr = "fatal"
+	LogPanicLevelStr = "panic"
+)
+
 func ConvertLogLevel(level string) *LogLevel {
 	var logLevel LogLevel
-	if strings.EqualFold(level, constant.LogDebugLevelStr) {
+	if strings.EqualFold(level, LogDebugLevelStr) {
 		logLevel = DebugLevel
-	} else if strings.EqualFold(level, constant.LogInfoLevelStr) {
+	} else if strings.EqualFold(level, LogInfoLevelStr) {
 		logLevel = InfoLevel
-	} else if strings.EqualFold(level, constant.LogWarnLevelStr) {
+	} else if strings.EqualFold(level, LogWarnLevelStr) {
 		logLevel = WarnLevel
-	} else if strings.EqualFold(level, constant.LogErrorLevelStr) {
+	} else if strings.EqualFold(level, LogErrorLevelStr) {
 		logLevel = ErrorLevel
-	} else if strings.EqualFold(level, constant.LogFatalLevelStr) {
+	} else if strings.EqualFold(level, LogFatalLevelStr) {
 		logLevel = FatalLevel
-	} else if strings.EqualFold(level, constant.LogPanicLevelStr) {
+	} else if strings.EqualFold(level, LogPanicLevelStr) {
 		logLevel = PanicLevel
 	} else {
 		return nil
@@ -139,7 +147,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 
 		err := os.MkdirAll(filepath.Dir(fileOutputOption.Filename), 0755)
 		if nil != err {
-			return nil, fmt.Errorf("Failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
+			return nil, fmt.Errorf("failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
 		}
 	}
 
@@ -202,7 +210,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 func InitStdoutLogger(logLevel LogLevel) error {
 	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_STDOUT, nil, true, true, true, logLevel)
 	if nil != err {
-		return fmt.Errorf("Failed to init logger for stdout: %v", err)
+		return fmt.Errorf("failed to init logger for stdout: %v", err)
 	}
 	Logger = l
 	return nil
@@ -213,7 +221,7 @@ func InitStdoutLogger(logLevel LogLevel) error {
 func InitStderrLogger(logLevel LogLevel) error {
 	l, err := NewLoggerWithOption(ConsoleLogFormat, OUTPUT_STDERR, nil, false, false, false, logLevel)
 	if nil != err {
-		return fmt.Errorf("Failed to init logger for stderr: %v", err)
+		return fmt.Errorf("failed to init logger for stderr: %v", err)
 	}
 	LoggerStderr = l
 	return nil
@@ -230,7 +238,7 @@ func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge,
 	}
 	logFile, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, logLevel)
 	if nil != err {
-		return nil, fmt.Errorf("Failed to init logger for file: %v", err)
+		return nil, fmt.Errorf("failed to init logger for file: %v", err)
 	}
 
 	return logFile, nil

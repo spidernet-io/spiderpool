@@ -36,11 +36,15 @@ spec:
       jsonPath: .status.totalIPCount
       name: TOTAL-IP-COUNT
       type: integer
+    - description: default
+      jsonPath: .spec.default
+      name: DEFAULT
+      type: boolean
     - description: disable
       jsonPath: .spec.disable
       name: DISABLE
       type: boolean
-    name: v1
+    name: v2beta1
     schema:
       openAPIV3Schema:
         description: SpiderIPPool is the Schema for the spiderippools API.
@@ -60,6 +64,9 @@ spec:
           spec:
             description: IPPoolSpec defines the desired state of SpiderIPPool.
             properties:
+              default:
+                default: false
+                type: boolean
               disable:
                 default: false
                 type: boolean
@@ -251,41 +258,7 @@ spec:
                 minimum: 0
                 type: integer
               allocatedIPs:
-                additionalProperties:
-                  properties:
-                    containerID:
-                      type: string
-                    interface:
-                      type: string
-                    namespace:
-                      type: string
-                    node:
-                      type: string
-                    ownerControllerName:
-                      type: string
-                    ownerControllerType:
-                      type: string
-                    pod:
-                      type: string
-                  required:
-                  - containerID
-                  - interface
-                  - namespace
-                  - node
-                  - ownerControllerName
-                  - ownerControllerType
-                  - pod
-                  type: object
-                description: PoolIPAllocations is a map of IP allocation details indexed
-                  by IP address.
-                type: object
-              autoDesiredIPCount:
-                format: int64
-                minimum: 0
-                type: integer
-              default:
-                default: false
-                type: boolean
+                type: string
               totalIPCount:
                 format: int64
                 minimum: 0

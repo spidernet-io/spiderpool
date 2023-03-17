@@ -14,58 +14,69 @@ import (
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
 
 var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 	Describe("New ReservedIPManager", func() {
 		It("inputs nil client", func() {
-			manager, err := reservedipmanager.NewReservedIPManager(nil)
+			manager, err := reservedipmanager.NewReservedIPManager(nil, fakeAPIReader)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(manager).To(BeNil())
+		})
+
+		It("inputs nil API reader", func() {
+			manager, err := reservedipmanager.NewReservedIPManager(fakeClient, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 	})
 
 	Describe("Test ReservedIPManager's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var rIPName string
 		var labels map[string]string
-		var rIPT, terminatingV4RIPT *spiderpoolv1.SpiderReservedIP
+		var rIPT, terminatingV4RIPT *spiderpoolv2beta1.SpiderReservedIP
 
 		BeforeEach(func() {
+			ctx = context.TODO()
+
 			atomic.AddUint64(&count, 1)
 			rIPName = fmt.Sprintf("reservedip-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			rIPT = &spiderpoolv1.SpiderReservedIP{
+			rIPT = &spiderpoolv2beta1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPKind,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					Kind:       constant.KindSpiderReservedIP,
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   rIPName,
 					Labels: labels,
 				},
-				Spec: spiderpoolv1.ReservedIPSpec{},
+				Spec: spiderpoolv2beta1.ReservedIPSpec{},
 			}
 
 			now := metav1.Now()
-			terminatingV4RIPT = &spiderpoolv1.SpiderReservedIP{
+			terminatingV4RIPT = &spiderpoolv2beta1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderReservedIPKind,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					Kind:       constant.KindSpiderReservedIP,
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:                       "terminating-ipv4-reservedip",
 					DeletionTimestamp:          &now,
 					DeletionGracePeriodSeconds: pointer.Int64(30),
 				},
-				Spec: spiderpoolv1.ReservedIPSpec{
+				Spec: spiderpoolv2beta1.ReservedIPSpec{
 					IPVersion: pointer.Int64(constant.IPv4),
 					IPs: []string{
 						"172.18.40.40",
@@ -83,55 +94,99 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, rIPT, deleteOption)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 
 			err = fakeClient.Delete(ctx, terminatingV4RIPT, deleteOption)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    constant.SpiderpoolAPIGroup,
+					Version:  constant.SpiderpoolAPIVersion,
+					Resource: "spiderreservedips",
+				},
+				rIPT.Namespace,
+				rIPT.Name,
+			)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    constant.SpiderpoolAPIGroup,
+					Version:  constant.SpiderpoolAPIVersion,
+					Resource: "spiderendpoints",
+				},
+				terminatingV4RIPT.Namespace,
+				terminatingV4RIPT.Name,
+			)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("GetReservedIPByName", func() {
 			It("gets non-existent ReservedIP", func() {
-				ctx := context.TODO()
-				rIP, err := rIPManager.GetReservedIPByName(ctx, rIPName)
+				rIP, err := rIPManager.GetReservedIPByName(ctx, rIPName, constant.IgnoreCache)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(rIP).To(BeNil())
 			})
 
-			It("gets an existing ReservedIP", func() {
-				ctx := context.TODO()
+			It("gets an existing ReservedIP through cache", func() {
 				err := fakeClient.Create(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
 
-				rIP, err := rIPManager.GetReservedIPByName(ctx, rIPName)
+				rIP, err := rIPManager.GetReservedIPByName(ctx, rIPName, constant.UseCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rIP).NotTo(BeNil())
+				Expect(rIP).To(Equal(rIPT))
+			})
 
+			It("gets an existing ReservedIP through API Server", func() {
+				err := tracker.Add(rIPT)
+				Expect(err).NotTo(HaveOccurred())
+
+				rIP, err := rIPManager.GetReservedIPByName(ctx, rIPName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rIP).NotTo(BeNil())
 				Expect(rIP).To(Equal(rIPT))
 			})
 		})
 
 		Describe("ListReservedIPs", func() {
 			It("failed to list ReservedIPs due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, rIPT)
+				err := tracker.Add(rIPT)
 				Expect(err).NotTo(HaveOccurred())
 
-				rIPList, err := rIPManager.ListReservedIPs(ctx)
+				rIPList, err := rIPManager.ListReservedIPs(ctx, constant.IgnoreCache)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(rIPList).To(BeNil())
 			})
 
-			It("lists all ReservedIPs", func() {
-				ctx := context.TODO()
+			It("lists all ReservedIPs through cache", func() {
 				err := fakeClient.Create(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
 
-				rIPList, err := rIPManager.ListReservedIPs(ctx)
+				rIPList, err := rIPManager.ListReservedIPs(ctx, constant.UseCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rIPList.Items).NotTo(BeEmpty())
+
+				hasRIP := false
+				for _, rIP := range rIPList.Items {
+					if rIP.Name == rIPName {
+						hasRIP = true
+						break
+					}
+				}
+				Expect(hasRIP).To(BeTrue())
+			})
+
+			It("lists all ReservedIPs through API Server", func() {
+				err := tracker.Add(rIPT)
+				Expect(err).NotTo(HaveOccurred())
+
+				rIPList, err := rIPManager.ListReservedIPs(ctx, constant.IgnoreCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rIPList.Items).NotTo(BeEmpty())
 
@@ -146,11 +201,10 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			})
 
 			It("filters results by label selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, rIPT)
+				err := tracker.Add(rIPT)
 				Expect(err).NotTo(HaveOccurred())
 
-				rIPList, err := rIPManager.ListReservedIPs(ctx, client.MatchingLabels(labels))
+				rIPList, err := rIPManager.ListReservedIPs(ctx, constant.IgnoreCache, client.MatchingLabels(labels))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rIPList.Items).NotTo(BeEmpty())
 
@@ -165,11 +219,10 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			})
 
 			It("filters results by field selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, rIPT)
+				err := tracker.Add(rIPT)
 				Expect(err).NotTo(HaveOccurred())
 
-				rIPList, err := rIPManager.ListReservedIPs(ctx, client.MatchingFields{metav1.ObjectNameField: rIPName})
+				rIPList, err := rIPManager.ListReservedIPs(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: rIPName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(rIPList.Items).NotTo(BeEmpty())
 
@@ -186,7 +239,6 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 
 		Describe("AssembleReservedIPs", func() {
 			It("inputs invalid IP version", func() {
-				ctx := context.TODO()
 				ips, err := rIPManager.AssembleReservedIPs(ctx, constant.InvalidIPVersion)
 				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
 				Expect(ips).To(BeEmpty())
@@ -196,7 +248,6 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
 				ips, err := rIPManager.AssembleReservedIPs(ctx, constant.IPv4)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(ips).To(BeEmpty())
@@ -209,7 +260,6 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 					"172.18.40.10",
 				}
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -231,7 +281,6 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
 

@@ -9,7 +9,7 @@ You may have observed that there is a field `excludeIPs` in SpiderIPPool CRD. To
 For example, create an IPPool without using `excludeIPs`, which contains two IP ranges: `172.18.41.40-172.18.41.44` and `172.18.41.46-172.18.41.50`, you should define the `ips` as follows:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: not-use-excludeips
@@ -24,7 +24,7 @@ spec:
 But in fact, this semantics can be more succinctly described through `excludeIPs`:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: use-excludeips
@@ -56,7 +56,7 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 ```
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderReservedIP
 metadata:
   name: test-ipv4-reservedip
@@ -73,7 +73,7 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 ```
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: test-ipv4-ippool
@@ -154,7 +154,7 @@ kubectl delete \
 So, can you use IPPool's field `excludeIPs` to achieve the same effect as ReservedIP? The answer is **NO**! Look at such a case, now you want to reserve an IP `172.18.43.31` for an external application of the Kubernetes cluster, which may be a Redis node. To achieve this, you created such an IPPool:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: already-in-use
@@ -170,7 +170,7 @@ spec:
 I believe that if there is only one IPPool under the subnet `172.18.43.0/24` network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an IPPool:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: created-by-someone-else

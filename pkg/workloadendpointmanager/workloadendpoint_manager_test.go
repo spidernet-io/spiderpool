@@ -7,10 +7,8 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
-	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/moby/moby/pkg/stringid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -25,25 +23,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test"), func() {
 	Describe("New WorkloadEndpointManager", func() {
-		It("sets default config", func() {
-			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-				workloadendpointmanager.EndpointManagerConfig{},
-				fakeClient,
-			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(manager).NotTo(BeNil())
-		})
-
 		It("inputs nil client", func() {
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
-				workloadendpointmanager.EndpointManagerConfig{},
+				nil,
+				fakeAPIReader,
+			)
+			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
+			Expect(manager).To(BeNil())
+		})
+
+		It("inputs nil API reader", func() {
+			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
+				fakeClient,
 				nil,
 			)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
@@ -52,29 +50,33 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 	})
 
 	Describe("Test WorkloadEndpointManager's method", func() {
+		var ctx context.Context
+
 		var count uint64
 		var namespace string
 		var endpointName string
 		var labels map[string]string
-		var endpointT *spiderpoolv1.SpiderEndpoint
+		var endpointT *spiderpoolv2beta1.SpiderEndpoint
 
 		BeforeEach(func() {
+			ctx = context.TODO()
+
 			atomic.AddUint64(&count, 1)
 			namespace = "default"
 			endpointName = fmt.Sprintf("endpoint-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			endpointT = &spiderpoolv1.SpiderEndpoint{
+			endpointT = &spiderpoolv2beta1.SpiderEndpoint{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       constant.SpiderEndpointKind,
-					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersionV1),
+					Kind:       constant.KindSpiderEndpoint,
+					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      endpointName,
 					Namespace: namespace,
 					Labels:    labels,
 				},
-				Status: spiderpoolv1.WorkloadEndpointStatus{
-					Current: &spiderpoolv1.PodIPAllocation{},
+				Status: spiderpoolv2beta1.WorkloadEndpointStatus{
+					Current: spiderpoolv2beta1.PodIPAllocation{},
 				},
 			}
 		})
@@ -88,52 +90,85 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				PropagationPolicy:  &policy,
 			}
 
-			ctx := context.TODO()
 			err := fakeClient.Delete(ctx, endpointT, deleteOption)
+			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+
+			err = tracker.Delete(
+				schema.GroupVersionResource{
+					Group:    constant.SpiderpoolAPIGroup,
+					Version:  constant.SpiderpoolAPIVersion,
+					Resource: "spiderendpoints",
+				},
+				endpointT.Namespace,
+				endpointT.Name,
+			)
 			Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 		})
 
 		Describe("GetEndpointByName", func() {
 			It("gets non-existent Endpoint", func() {
-				ctx := context.TODO()
-				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName)
+				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName, constant.IgnoreCache)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(endpoint).To(BeNil())
 			})
 
-			It("gets an existing Endpoint", func() {
-				ctx := context.TODO()
+			It("gets an existing Endpoint through cache", func() {
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName)
+				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName, constant.UseCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpoint).NotTo(BeNil())
+				Expect(endpoint).To(Equal(endpointT))
+			})
 
+			It("gets an existing Endpoint through API Server", func() {
+				err := tracker.Add(endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				endpoint, err := endpointManager.GetEndpointByName(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(endpoint).NotTo(BeNil())
 				Expect(endpoint).To(Equal(endpointT))
 			})
 		})
 
 		Describe("ListEndpoints", func() {
 			It("failed to list Endpoints due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx)
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(endpointList).To(BeNil())
 			})
 
-			It("lists all Endpoints", func() {
-				ctx := context.TODO()
+			It("lists all Endpoints through cache", func() {
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx)
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.UseCache)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(endpointList.Items).NotTo(BeEmpty())
+
+				hasEndpoint := false
+				for _, endpoint := range endpointList.Items {
+					if endpoint.Name == endpointName {
+						hasEndpoint = true
+						break
+					}
+				}
+				Expect(hasEndpoint).To(BeTrue())
+			})
+
+			It("lists all Endpoints through API Server", func() {
+				err := tracker.Add(endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -148,11 +183,10 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("filters results by Namespace", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx, client.MatchingFields{metav1.ObjectNameField: endpointName})
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: endpointName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -167,11 +201,10 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("filters results by label selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx, client.MatchingLabels(labels))
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache, client.MatchingLabels(labels))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -186,11 +219,10 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("filters results by field selector", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				err := tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				endpointList, err := endpointManager.ListEndpoints(ctx, client.MatchingFields{metav1.ObjectNameField: endpointName})
+				endpointList, err := endpointManager.ListEndpoints(ctx, constant.IgnoreCache, client.MatchingFields{metav1.ObjectNameField: endpointName})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointList.Items).NotTo(BeEmpty())
 
@@ -207,13 +239,11 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("DeleteEndpoint", func() {
 			It("deletes non-existent Endpoint", func() {
-				ctx := context.TODO()
 				err := endpointManager.DeleteEndpoint(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("deletes an existing Endpoint", func() {
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -224,14 +254,14 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("RemoveFinalizer", func() {
 			It("removes the finalizer for non-existent Endpoint", func() {
-				ctx := context.TODO()
 				err := endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("removes the finalizer that does not exit on the Endpoint", func() {
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -244,8 +274,9 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -258,8 +289,9 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
@@ -269,14 +301,15 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("removes the Endpoint's finalizer", func() {
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv1.SpiderEndpoint
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -285,7 +318,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 		})
 
-		Describe("MarkIPAllocation", func() {
+		Describe("PatchIPAllocationResults", func() {
 			var podT *corev1.Pod
 
 			BeforeEach(func() {
@@ -306,404 +339,142 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("inputs nil Pod", func() {
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), nil, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-				Expect(endpoint).To(BeNil())
 			})
 
 			It("failed to set ownerReference to Pod due to some unknown errors", func() {
 				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
-				Expect(endpoint).To(BeNil())
 			})
 
 			It("failed to create Endpoint due to some unknown errors", func() {
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
-				Expect(endpoint).To(BeNil())
 			})
 
-			It("failed to update the status of Endpoint due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
-				defer patches.Reset()
-
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(ctx, stringid.GenerateRandomID(), podT, spiderpooltypes.PodTopController{})
-				Expect(err).To(MatchError(constant.ErrUnknown))
-				Expect(endpoint).To(BeNil())
-			})
-
-			It("marks the IP allocation for orphan Pod", func() {
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(
+			It("creates Endpoint for orphan Pod", func() {
+				err := endpointManager.PatchIPAllocationResults(
 					ctx,
-					stringid.GenerateRandomID(),
+					[]*spiderpooltypes.AllocationResult{},
+					nil,
 					podT,
 					spiderpooltypes.PodTopController{
-						Kind:      constant.KindPod,
-						Namespace: podT.Namespace,
-						Name:      podT.Name,
-						UID:       podT.UID,
-						APP:       podT,
-					},
-				)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint).NotTo(BeNil())
-			})
-
-			It("marks the IP allocation for StatefulSet's Pod", func() {
-				ctx := context.TODO()
-				endpoint, err := endpointManager.MarkIPAllocation(
-					ctx,
-					stringid.GenerateRandomID(),
-					podT,
-					spiderpooltypes.PodTopController{
-						Kind:      constant.KindStatefulSet,
-						Namespace: namespace,
-						Name:      fmt.Sprintf("%s-sts", endpointName),
-						UID:       uuid.NewUUID(),
-						APP:       &appsv1.StatefulSet{},
-					},
-				)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint).NotTo(BeNil())
-			})
-		})
-
-		Describe("ReMarkIPAllocation", func() {
-			var containerID string
-			var podT *corev1.Pod
-
-			BeforeEach(func() {
-				podT = &corev1.Pod{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Pod",
-						APIVersion: corev1.SchemeGroupVersion.String(),
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      endpointName,
-						Namespace: namespace,
-						UID:       uuid.NewUUID(),
-					},
-					Spec: corev1.PodSpec{
-						NodeName: "node",
-					},
-				}
-
-				containerID = stringid.GenerateRandomID()
-				allocation := &spiderpoolv1.PodIPAllocation{
-					ContainerID:  containerID,
-					Node:         &podT.Spec.NodeName,
-					CreationTime: &metav1.Time{Time: time.Now()},
-				}
-
-				err := controllerutil.SetOwnerReference(podT, endpointT, scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
-				endpointT.Status.Current = allocation
-				endpointT.Status.History = append(endpointT.Status.History, *allocation)
-			})
-
-			It("inputs nil Pod", func() {
-				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), endpointT, nil)
-				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-			})
-
-			It("inputs nil Endpoint", func() {
-				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), nil, podT)
-				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-			})
-
-			It("test to create two Pods with the same namespace and name in a very short time", func() {
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = fakeClient.Delete(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				var endpoint spiderpoolv1.SpiderEndpoint
-				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
-				Expect(err).NotTo(HaveOccurred())
-
-				newPod := podT.DeepCopy()
-				newPod.SetUID(uuid.NewUUID())
-				err = endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), &endpoint, newPod)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("re-marks the IP allocation with the same container ID", func() {
-				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, containerID, endpointT, podT)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("failed to update the status of Endpoint due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
-				defer patches.Reset()
-
-				ctx := context.TODO()
-				err := endpointManager.ReMarkIPAllocation(ctx, stringid.GenerateRandomID(), endpointT, podT)
-				Expect(err).To(MatchError(constant.ErrUnknown))
-			})
-
-			It("re-marks the IP allocation", func() {
-				By("Create the Endpoint")
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Inadvertently delete the Endpoint manually")
-				err = fakeClient.Delete(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Re-mark the Endpoint")
-				var endpoint spiderpoolv1.SpiderEndpoint
-				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
-				Expect(err).NotTo(HaveOccurred())
-
-				newContainerID := stringid.GenerateRandomID()
-				err = endpointManager.ReMarkIPAllocation(ctx, newContainerID, &endpoint, podT)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint.Status.Current.ContainerID).To(Equal(newContainerID))
-
-				By("Truncate the extra history records")
-				Expect(endpoint.Status.History).To(HaveLen(1))
-				Expect(*endpoint.Status.Current).To(Equal(endpoint.Status.History[0]))
-			})
-		})
-
-		Describe("PatchIPAllocation", func() {
-			var marked *spiderpoolv1.PodIPAllocation
-			var patch *spiderpoolv1.PodIPAllocation
-
-			BeforeEach(func() {
-				containerID := stringid.GenerateRandomID()
-				marked = &spiderpoolv1.PodIPAllocation{
-					ContainerID:  containerID,
-					Node:         pointer.String("node"),
-					CreationTime: &metav1.Time{Time: time.Now()},
-				}
-
-				patch = &spiderpoolv1.PodIPAllocation{
-					ContainerID: containerID,
-					IPs: []spiderpoolv1.IPAllocationDetail{
-						{
-							NIC:         "eth0",
-							Vlan:        pointer.Int64(0),
-							IPv4:        pointer.String("172.18.40.10/24"),
-							IPv4Pool:    pointer.String("default-ipv4-ippool"),
-							IPv4Gateway: pointer.String("172.18.40.1"),
-							IPv6:        pointer.String("abcd:1234::a/120"),
-							IPv6Pool:    pointer.String("default-ipv6-ippool"),
-							IPv6Gateway: pointer.String("abcd:1234::1"),
-							Routes: []spiderpoolv1.Route{
-								{
-									Dst: "192.168.40.0/24",
-									Gw:  "172.18.40.1",
-								},
-								{
-									Dst: "fd00:40::/120",
-									Gw:  "abcd:1234::1",
-								},
-							},
+						AppNamespacedName: spiderpooltypes.AppNamespacedName{
+							APIVersion: corev1.SchemeGroupVersion.String(),
+							Kind:       constant.KindPod,
+							Namespace:  podT.Namespace,
+							Name:       podT.Name,
 						},
+						UID: podT.UID,
+						APP: podT,
 					},
-				}
-			})
-
-			It("inputs nil Endpoint", func() {
-				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, patch, nil)
-				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-			})
-
-			It("inputs nil IP allocation", func() {
-				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, nil, endpointT)
-				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
-			})
-
-			It("patches the IP allocation for unmarked Endpoint", func() {
-				endpointT.Status.Current = nil
-
-				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("patches the IP allocation when the Endpoint data is corrupt", func() {
-				endpointT.Status.Current = marked
-
-				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("patches the IP allocation with mismatched container ID", func() {
-				endpointT.Status.Current = marked
-				endpointT.Status.History = append(endpointT.Status.History, *marked)
-				patch.ContainerID = stringid.GenerateRandomID()
-
-				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("failed to update the status of Endpoint due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
-				defer patches.Reset()
-
-				endpointT.Status.Current = marked
-				endpointT.Status.History = append(endpointT.Status.History, *marked)
-
-				ctx := context.TODO()
-				err := endpointManager.PatchIPAllocation(ctx, patch, endpointT)
-				Expect(err).To(MatchError(constant.ErrUnknown))
-			})
-
-			It("patches the IP allocation", func() {
-				endpointT.Status.Current = marked
-				endpointT.Status.History = append(endpointT.Status.History, *marked)
-
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
+				)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = endpointManager.PatchIPAllocation(ctx, patch, endpointT)
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv1.SpiderEndpoint
-				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint.Status.Current.IPs).To(Equal(patch.IPs))
-				Expect(*endpoint.Status.Current).To(Equal(endpoint.Status.History[0]))
-			})
-		})
-
-		Describe("ClearCurrentIPAllocation", func() {
-			It("inputs nil Endpoint", func() {
-				ctx := context.TODO()
-				err := endpointManager.ClearCurrentIPAllocation(ctx, stringid.GenerateRandomID(), nil)
-				Expect(err).NotTo(HaveOccurred())
+				owner := endpoint.GetOwnerReferences()[0]
+				Expect(owner.UID).To(Equal(podT.GetUID()))
+				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
 			})
 
-			It("clears up nil current IP allocation", func() {
-				ctx := context.TODO()
-				err := endpointManager.ClearCurrentIPAllocation(ctx, stringid.GenerateRandomID(), endpointT)
+			It("creates Endpoint for StatefulSet Pod", func() {
+				err := endpointManager.PatchIPAllocationResults(
+					ctx,
+					[]*spiderpooltypes.AllocationResult{},
+					nil,
+					podT,
+					spiderpooltypes.PodTopController{
+						AppNamespacedName: spiderpooltypes.AppNamespacedName{
+							APIVersion: appsv1.SchemeGroupVersion.String(),
+							Kind:       constant.KindStatefulSet,
+							Namespace:  namespace,
+							Name:       fmt.Sprintf("%s-sts", endpointName),
+						},
+						UID: uuid.NewUUID(),
+						APP: &appsv1.StatefulSet{},
+					},
+				)
 				Expect(err).NotTo(HaveOccurred())
+
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
+				Expect(err).NotTo(HaveOccurred())
+
+				owners := endpoint.GetOwnerReferences()
+				Expect(owners).To(BeEmpty())
+				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
 			})
 
-			It("clears up the current IP allocation with unmatched container ID", func() {
-				endpointT.Status.Current.ContainerID = stringid.GenerateRandomID()
+			It("patches IP allocation results with different Pod UID", func() {
+				podT.SetUID(uuid.NewUUID())
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				ctx := context.TODO()
-				err := endpointManager.ClearCurrentIPAllocation(ctx, stringid.GenerateRandomID(), endpointT)
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("failed to update the status of Endpoint due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
-				containerId := stringid.GenerateRandomID()
-				endpointT.Status.Current.ContainerID = containerId
+				uid := uuid.NewUUID()
+				podT.SetUID(uid)
+				endpointT.Status.Current.UID = string(uid)
 
-				ctx := context.TODO()
-				err := endpointManager.ClearCurrentIPAllocation(ctx, containerId, endpointT)
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
-			It("clears up the current IP allocation for non-existent Endpoint", func() {
-				containerId := stringid.GenerateRandomID()
-				endpointT.Status.Current.ContainerID = containerId
-
-				ctx := context.TODO()
-				err := endpointManager.ClearCurrentIPAllocation(ctx, containerId, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("clears up the current IP allocation", func() {
-				containerId := stringid.GenerateRandomID()
-				endpointT.Status.Current.ContainerID = containerId
-
-				ctx := context.TODO()
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = endpointManager.ClearCurrentIPAllocation(ctx, containerId, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				var endpoint spiderpoolv1.SpiderEndpoint
-				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(endpoint.Status.Current).To(BeNil())
-			})
 		})
 
 		Describe("ReallocateCurrentIPAllocation", func() {
 			It("inputs nil Endpoint", func() {
-				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "node", nil)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node1", nil)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
-			It("re-allocates but not allocate in advance", func() {
-				endpointT.Status.Current = nil
+			It("re-allocates the current IP allocation with the same Pod UID", func() {
+				uid := uuid.NewUUID()
+				endpointT.Status.Current.UID = string(uid)
 
-				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "node", endpointT)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("re-allocates the current IP allocation with the same container ID", func() {
-				containerID := stringid.GenerateRandomID()
-				endpointT.Status.Current.ContainerID = containerID
-
-				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, "node", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uid), "node", endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("failed to update the status of Endpoint due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
-				endpointT.Status.Current.ContainerID = stringid.GenerateRandomID()
-				endpointT.Status.Current.Node = pointer.String("old-node")
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				ctx := context.TODO()
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, stringid.GenerateRandomID(), "new-node", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node", endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
 			It("updates the current IP allocation", func() {
-				endpointT.Status.Current.ContainerID = stringid.GenerateRandomID()
-				endpointT.Status.Current.Node = pointer.String("old-node")
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
+				endpointT.Status.Current.Node = "old-node"
 
-				ctx := context.TODO()
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				containerID := stringid.GenerateRandomID()
+				uid := string(uuid.NewUUID())
 				nodeName := "new-node"
 
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, containerID, nodeName, endpointT)
+				err = endpointManager.ReallocateCurrentIPAllocation(ctx, uid, nodeName, endpointT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(endpointT.Status.Current.ContainerID).To(Equal(containerID))
-				Expect(*endpointT.Status.Current.Node).To(Equal(nodeName))
+				Expect(endpointT.Status.Current.UID).To(Equal(uid))
+				Expect(endpointT.Status.Current.Node).To(Equal(nodeName))
 			})
 		})
 	})

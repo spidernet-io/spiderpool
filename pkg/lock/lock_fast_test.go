@@ -21,7 +21,7 @@ var _ = Describe("Fast lock", Label("unitest", "lock_test"), func() {
 			mutex = &lock.Mutex{}
 		})
 
-		It("general use", func() {
+		It("locks", func() {
 			mutex.Lock()
 			Expect(mutex.TryLock()).NotTo(BeTrue())
 
@@ -41,7 +41,7 @@ var _ = Describe("Fast lock", Label("unitest", "lock_test"), func() {
 			rwMutex = &lock.RWMutex{}
 		})
 
-		It("general use", func() {
+		It("locks", func() {
 			rwMutex.Lock()
 			Expect(rwMutex.TryRLock()).NotTo(BeTrue())
 			Expect(rwMutex.TryLock()).NotTo(BeTrue())

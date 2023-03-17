@@ -15,37 +15,52 @@ import (
 )
 
 type StatefulSetManager interface {
-	GetStatefulSetByName(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
-	ListStatefulSets(ctx context.Context, opts ...client.ListOption) (*appsv1.StatefulSetList, error)
+	GetStatefulSetByName(ctx context.Context, namespace, name string, cached bool) (*appsv1.StatefulSet, error)
+	ListStatefulSets(ctx context.Context, cached bool, opts ...client.ListOption) (*appsv1.StatefulSetList, error)
 	IsValidStatefulSetPod(ctx context.Context, namespace, podName, podControllerType string) (bool, error)
 }
 
 type statefulSetManager struct {
-	client client.Client
+	client    client.Client
+	apiReader client.Reader
 }
 
-func NewStatefulSetManager(client client.Client) (StatefulSetManager, error) {
+func NewStatefulSetManager(client client.Client, apiReader client.Reader) (StatefulSetManager, error) {
 	if client == nil {
-		return nil, fmt.Errorf("k8s clinet %w", constant.ErrMissingRequiredParam)
+		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
+	}
+	if apiReader == nil {
+		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
 	}
 
 	return &statefulSetManager{
-		client: client,
+		client:    client,
+		apiReader: apiReader,
 	}, nil
 }
 
-func (sm *statefulSetManager) GetStatefulSetByName(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error) {
+func (sm *statefulSetManager) GetStatefulSetByName(ctx context.Context, namespace, name string, cached bool) (*appsv1.StatefulSet, error) {
+	reader := sm.apiReader
+	if cached == constant.UseCache {
+		reader = sm.client
+	}
+
 	var sts appsv1.StatefulSet
-	if err := sm.client.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: name}, &sts); err != nil {
+	if err := reader.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: name}, &sts); err != nil {
 		return nil, err
 	}
 
 	return &sts, nil
 }
 
-func (sm *statefulSetManager) ListStatefulSets(ctx context.Context, opts ...client.ListOption) (*appsv1.StatefulSetList, error) {
+func (sm *statefulSetManager) ListStatefulSets(ctx context.Context, cached bool, opts ...client.ListOption) (*appsv1.StatefulSetList, error) {
+	reader := sm.apiReader
+	if cached == constant.UseCache {
+		reader = sm.client
+	}
+
 	var stsList appsv1.StatefulSetList
-	if err := sm.client.List(ctx, &stsList, opts...); err != nil {
+	if err := reader.List(ctx, &stsList, opts...); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +80,7 @@ func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespa
 		return false, fmt.Errorf("failed to parse the name and replica of its StatefulSet controller from the name of Pod '%s/%s'", namespace, podName)
 	}
 
-	sts, err := sm.GetStatefulSetByName(ctx, namespace, stsName)
+	sts, err := sm.GetStatefulSetByName(ctx, namespace, stsName, constant.IgnoreCache)
 	if err != nil {
 		return false, client.IgnoreNotFound(err)
 	}

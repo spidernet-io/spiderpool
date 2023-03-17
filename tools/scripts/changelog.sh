@@ -76,7 +76,7 @@ if [ -z "${START_TAG}" ] ; then
       if (( RC == 0 )) ;then
         SET_VERSION
         # remove rc
-        DEST_TAG=` grep -oE "[vV]*[0-9]+\.[0-9]+\.[0-9]+" <<< "${DEST_TAG}" `
+        TMP_DEST_TAG=` grep -oE "[vV]*[0-9]+\.[0-9]+\.[0-9]+" <<< "${DEST_TAG}" `
         RC=""
       else
         START_X=$V_X
@@ -86,7 +86,7 @@ if [ -z "${START_TAG}" ] ; then
       fi
     fi
     #------ result
-    START_TAG=` sed -E "s?[0-9]+\.[0-9]+\.[0-9]+?${START_X}.${START_Y}.${START_Z}?" <<<  "${DEST_TAG}" `
+    START_TAG=` sed -E "s?[0-9]+\.[0-9]+\.[0-9]+?${START_X}.${START_Y}.${START_Z}?" <<<  "${TMP_DEST_TAG}" `
     if [ -n "${RC}" ] ; then
       START_TAG=` sed -E "s?([vV]*[0-9]+\.[0-9]+\.[0-9]+[^0-9]*[^0-9]*)[0-9]+?\1${START_RC}?" <<<  "${START_TAG}" `
     fi

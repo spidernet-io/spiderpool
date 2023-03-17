@@ -1,4 +1,4 @@
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: default-ipv4-ippool
@@ -10,7 +10,7 @@ spec:
   ips:
     - 172.18.41.40-172.18.41.41
 ---
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: backup-ipv4-ippool

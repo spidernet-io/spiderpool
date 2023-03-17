@@ -5,8 +5,9 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spidernet-io/spiderpool/pkg/cmdgenmd"
+
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils/cmdgenmd"
 )
 
 const SPIDERPOOL_CTL = "spiderpoolctl"
@@ -30,6 +31,5 @@ func Execute() {
 
 func init() {
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
-
 	rootCmd.AddCommand(cmdgenmd.GenMarkDownCmd(SPIDERPOOL_CTL, rootCmd, logger))
 }

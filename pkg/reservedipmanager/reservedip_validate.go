@@ -11,7 +11,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -20,7 +20,7 @@ var (
 	ipsField       *field.Path = field.NewPath("spec").Child("ips")
 )
 
-func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *spiderpoolv2beta1.SpiderReservedIP) field.ErrorList {
 	if err := rw.validateReservedIPIPVersion(rIP.Spec.IPVersion); err != nil {
 		return field.ErrorList{err}
 	}
@@ -37,7 +37,7 @@ func (rw *ReservedIPWebhook) validateCreateReservedIP(ctx context.Context, rIP *
 	return errs
 }
 
-func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) field.ErrorList {
+func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRIP, newRIP *spiderpoolv2beta1.SpiderReservedIP) field.ErrorList {
 	if err := validateReservedIPShouldNotBeChanged(oldRIP, newRIP); err != nil {
 		return field.ErrorList{err}
 	}
@@ -58,7 +58,7 @@ func (rw *ReservedIPWebhook) validateUpdateReservedIP(ctx context.Context, oldRI
 	return errs
 }
 
-func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderReservedIP) *field.Error {
+func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv2beta1.SpiderReservedIP) *field.Error {
 	if newRIP.Spec.IPVersion != nil && oldRIP.Spec.IPVersion != nil &&
 		*newRIP.Spec.IPVersion != *oldRIP.Spec.IPVersion {
 		return field.Forbidden(
@@ -70,7 +70,7 @@ func validateReservedIPShouldNotBeChanged(oldRIP, newRIP *spiderpoolv1.SpiderRes
 	return nil
 }
 
-func (rw *ReservedIPWebhook) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv1.SpiderReservedIP) *field.Error {
+func (rw *ReservedIPWebhook) validateReservedIPSpec(ctx context.Context, rIP *spiderpoolv2beta1.SpiderReservedIP) *field.Error {
 	return rw.validateReservedIPs(ctx, *rIP.Spec.IPVersion, rIP.Spec.IPs)
 }
 

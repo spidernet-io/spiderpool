@@ -31,7 +31,7 @@ done < ${SPDX_COPYRIGHT_HEADER}
 
 APIS_PKG="pkg/k8s/apis"
 OUTPUT_PKG="pkg/k8s/client"
-GROUPS_WITH_VERSIONS="spiderpool.spidernet.io:v1"
+GROUPS_WITH_VERSIONS="spiderpool.spidernet.io:v2beta1"
 
 echo "change directory: ${PROJECT_ROOT}"
 cd "${PROJECT_ROOT}"

@@ -6,8 +6,7 @@ package ipam
 import (
 	"fmt"
 
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -60,10 +59,10 @@ func (c *PoolCandidate) String() string {
 	return fmt.Sprintf("%+v", *c)
 }
 
-type PoolNameToIPPool map[string]*spiderpoolv1.SpiderIPPool
+type PoolNameToIPPool map[string]*spiderpoolv2beta1.SpiderIPPool
 
-func (ptp *PoolNameToIPPool) IPPools() []*spiderpoolv1.SpiderIPPool {
-	var ipPools []*spiderpoolv1.SpiderIPPool
+func (ptp *PoolNameToIPPool) IPPools() []*spiderpoolv2beta1.SpiderIPPool {
+	var ipPools []*spiderpoolv2beta1.SpiderIPPool
 	for _, p := range *ptp {
 		ipPools = append(ipPools, p)
 	}
@@ -72,22 +71,5 @@ func (ptp *PoolNameToIPPool) IPPools() []*spiderpoolv1.SpiderIPPool {
 }
 
 func (pp PoolNameToIPPool) String() string {
-	return ""
-}
-
-type PoolNameToIPAndCIDs map[string][]types.IPAndCID
-
-func (pics *PoolNameToIPAndCIDs) Pools() []string {
-	var pools []string
-	for pool := range *pics {
-		pools = append(pools, pool)
-	}
-
-	return pools
-}
-
-type AllocationResult struct {
-	IP           *models.IPConfig
-	Routes       []*models.Route
-	CleanGateway bool
+	return "*"
 }

@@ -34,26 +34,26 @@ type SubnetManager interface {
 }
 
 type subnetManager struct {
-	client        client.Client
-	apiReader     client.Reader
-	reservedIPMgr reservedipmanager.ReservedIPManager
+	client     client.Client
+	apiReader  client.Reader
+	rIPManager reservedipmanager.ReservedIPManager
 }
 
-func NewSubnetManager(client client.Client, apiReader client.Reader, reservedIPMgr reservedipmanager.ReservedIPManager) (SubnetManager, error) {
+func NewSubnetManager(client client.Client, apiReader client.Reader, rIPManager reservedipmanager.ReservedIPManager) (SubnetManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
 	if apiReader == nil {
 		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
 	}
-	if reservedIPMgr == nil {
+	if rIPManager == nil {
 		return nil, fmt.Errorf("reserved-IP manager %w", constant.ErrMissingRequiredParam)
 	}
 
 	return &subnetManager{
-		client:        client,
-		apiReader:     apiReader,
-		reservedIPMgr: reservedIPMgr,
+		client:     client,
+		apiReader:  apiReader,
+		rIPManager: rIPManager,
 	}, nil
 }
 
@@ -274,7 +274,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 	}
 
 	// filter reserved IPs
-	reservedIPs, err := sm.reservedIPMgr.AssembleReservedIPs(ctx, ipVersion)
+	reservedIPs, err := sm.rIPManager.AssembleReservedIPs(ctx, ipVersion)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %v",
 			constant.ErrWrongInput, reservedIPs, ipVersion, err)

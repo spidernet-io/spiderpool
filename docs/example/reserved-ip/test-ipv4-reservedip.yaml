@@ -1,4 +1,4 @@
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderReservedIP
 metadata:
   name: test-ipv4-reservedip

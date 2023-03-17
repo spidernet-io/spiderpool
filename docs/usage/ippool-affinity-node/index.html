@@ -954,7 +954,7 @@
 <p>Create two IPPools with 1 IP address each, one of which will provide IP addresses for all Pods running on the master Node.</p>
 <pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-node/master-ipv4-ippool.yaml
 </code></pre>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: master-ipv4-ippool
@@ -970,7 +970,7 @@ spec:
 <p>The other provides IP addresses for the Pods on the worker Node.</p>
 <pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-node/worker-ipv4-ippool.yaml
 </code></pre>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: worker-ipv4-ippool

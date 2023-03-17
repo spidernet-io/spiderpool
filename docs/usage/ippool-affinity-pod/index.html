@@ -967,7 +967,7 @@
 <p>First, create an IPPool configured with <code>podAffinity</code>.</p>
 <pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/static-ipv4-ippool.yaml
 </code></pre>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: static-ipv4-ippool

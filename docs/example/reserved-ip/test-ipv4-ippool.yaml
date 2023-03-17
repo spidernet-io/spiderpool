@@ -1,4 +1,4 @@
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: test-ipv4-ippool

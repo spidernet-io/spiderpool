@@ -1,4 +1,4 @@
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderSubnet
 metadata:
   name: subnet-demo-v4-1
@@ -8,7 +8,7 @@ spec:
   ips:
     - 172.15.41.1-172.15.41.200
 ---
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderSubnet
 metadata:
   name: subnet-demo-v6-1
@@ -18,7 +18,7 @@ spec:
   ips:
     - 2002::ac0f:2901-2002::ac0f:29c8
 ---
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderSubnet
 metadata:
   name: subnet-demo-v4-2
@@ -28,7 +28,7 @@ spec:
   ips:
     - 172.14.41.1-172.14.41.200
 ---
-apiVersion: spiderpool.spidernet.io/v1
+apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderSubnet
 metadata:
   name: subnet-demo-v6-2

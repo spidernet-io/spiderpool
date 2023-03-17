@@ -1001,7 +1001,7 @@
 <h2 id="ippool-excludeips">IPPool excludeIPs</h2>
 <p>You may have observed that there is a field <code>excludeIPs</code> in SpiderIPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main function is not like this. Field <code>excludeIPs</code> is more of a <strong>syntax sugar</strong>, so that users can more flexibly define the IP address ranges of the IPPool.</p>
 <p>For example, create an IPPool without using <code>excludeIPs</code>, which contains two IP ranges: <code>172.18.41.40-172.18.41.44</code> and <code>172.18.41.46-172.18.41.50</code>, you should define the <code>ips</code> as follows:</p>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: not-use-excludeips
@@ -1013,7 +1013,7 @@ spec:
   - 172.18.41.46-172.18.41.50
 </code></pre>
 <p>But in fact, this semantics can be more succinctly described through <code>excludeIPs</code>:</p>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: use-excludeips
@@ -1034,7 +1034,7 @@ spec:
 <p>To understand how it works, let's do such a test. First, create an ReservedIP which reserves 9 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.49</code>.</p>
 <pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
 </code></pre>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderReservedIP
 metadata:
   name: test-ipv4-reservedip
@@ -1046,7 +1046,7 @@ spec:
 <p>At the same time, create an IPPool with 10 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.50</code>. Yes, we deliberately make it hold one more IP address than the ReservedIP above.</p>
 <pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml
 </code></pre>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: test-ipv4-ippool
@@ -1108,7 +1108,7 @@ reservedip-deploy-6cf9858886-pkcfl   1/1     Running             0          35s 
 </code></pre>
 <h2 id="a-trap">A Trap</h2>
 <p>So, can you use IPPool's field <code>excludeIPs</code> to achieve the same effect as ReservedIP? The answer is <strong>NO</strong>! Look at such a case, now you want to reserve an IP <code>172.18.43.31</code> for an external application of the Kubernetes cluster, which may be a Redis node. To achieve this, you created such an IPPool:</p>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: already-in-use
@@ -1121,7 +1121,7 @@ spec:
   - 172.18.43.31
 </code></pre>
 <p>I believe that if there is only one IPPool under the subnet <code>172.18.43.0/24</code> network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an IPPool:</p>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: created-by-someone-else

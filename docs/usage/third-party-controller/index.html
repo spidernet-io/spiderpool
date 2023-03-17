@@ -1056,7 +1056,7 @@ For kubernetes StatefulSet, we use the StatefulSet object replicas property and 
 <p>Next, let's create a custom IPPool.</p>
 <pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml
 </code></pre>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v1
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
   name: custom-ipv4-ippool

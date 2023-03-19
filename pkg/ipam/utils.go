@@ -13,6 +13,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/strings/slices"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
@@ -85,35 +86,39 @@ func getAutoPoolIPNumberAndSelector(pod *corev1.Pod, podController types.PodTopC
 	var podSelector *metav1.LabelSelector
 	var isThirdPartyController bool
 
-	switch podController.Kind {
-	// orphan pod
-	case constant.KindPod:
-		return 1, &metav1.LabelSelector{MatchLabels: pod.Labels}, nil
-	case constant.KindDeployment:
-		deployment := podController.APP.(*appsv1.Deployment)
-		appReplicas = subnetmanagercontrollers.GetAppReplicas(deployment.Spec.Replicas)
-		podSelector = deployment.Spec.Selector
-	case constant.KindReplicaSet:
-		replicaSet := podController.APP.(*appsv1.ReplicaSet)
-		podSelector = replicaSet.Spec.Selector
-		appReplicas = subnetmanagercontrollers.GetAppReplicas(replicaSet.Spec.Replicas)
-	case constant.KindStatefulSet:
-		statefulSet := podController.APP.(*appsv1.StatefulSet)
-		appReplicas = subnetmanagercontrollers.GetAppReplicas(statefulSet.Spec.Replicas)
-		podSelector = statefulSet.Spec.Selector
-	case constant.KindDaemonSet:
-		daemonSet := podController.APP.(*appsv1.DaemonSet)
-		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
-		podSelector = daemonSet.Spec.Selector
-	case constant.KindJob:
-		job := podController.APP.(*batchv1.Job)
-		appReplicas = subnetmanagercontrollers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
-		podSelector = job.Spec.Selector
-	case constant.KindCronJob:
-		cronJob := podController.APP.(*batchv1.CronJob)
-		appReplicas = subnetmanagercontrollers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
-		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
-	default:
+	if slices.Contains(constant.K8sAPIVersions, podController.APIVersion) {
+		switch podController.Kind {
+		// orphan pod
+		case constant.KindPod:
+			return 1, &metav1.LabelSelector{MatchLabels: pod.Labels}, nil
+		case constant.KindDeployment:
+			deployment := podController.APP.(*appsv1.Deployment)
+			appReplicas = subnetmanagercontrollers.GetAppReplicas(deployment.Spec.Replicas)
+			podSelector = deployment.Spec.Selector
+		case constant.KindReplicaSet:
+			replicaSet := podController.APP.(*appsv1.ReplicaSet)
+			podSelector = replicaSet.Spec.Selector
+			appReplicas = subnetmanagercontrollers.GetAppReplicas(replicaSet.Spec.Replicas)
+		case constant.KindStatefulSet:
+			statefulSet := podController.APP.(*appsv1.StatefulSet)
+			appReplicas = subnetmanagercontrollers.GetAppReplicas(statefulSet.Spec.Replicas)
+			podSelector = statefulSet.Spec.Selector
+		case constant.KindDaemonSet:
+			daemonSet := podController.APP.(*appsv1.DaemonSet)
+			appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
+			podSelector = daemonSet.Spec.Selector
+		case constant.KindJob:
+			job := podController.APP.(*batchv1.Job)
+			appReplicas = subnetmanagercontrollers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
+			podSelector = job.Spec.Selector
+		case constant.KindCronJob:
+			cronJob := podController.APP.(*batchv1.CronJob)
+			appReplicas = subnetmanagercontrollers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
+			podSelector = cronJob.Spec.JobTemplate.Spec.Selector
+		default:
+			isThirdPartyController = true
+		}
+	} else {
 		isThirdPartyController = true
 	}
 

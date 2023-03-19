@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -21,6 +20,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -335,7 +335,7 @@ func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2b
 		if needUpdate {
 			err = ic.client.Status().Update(ctx, pool)
 			if nil != err {
-				return err
+				return fmt.Errorf("failed to update pool: %w", err)
 			}
 			informerLogger.Sugar().Debugf("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, *pool.Status.TotalIPCount)
 		}
@@ -393,54 +393,57 @@ func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spi
 
 	if check {
 		// 	// unpack the IPPool corresponding application type,namespace and name
-		appLabelValue := poolLabels[constant.LabelIPPoolOwnerApplication]
-		kind, ns, name, found := applicationinformers.ParseAppLabelValue(appLabelValue)
-		if !found {
-			return fmt.Errorf("%w: invalid IPPool label '%s' value '%s'", constant.ErrWrongInput, constant.LabelIPPoolOwnerApplication, appLabelValue)
+		appNamespacedNameStr := pool.Annotations[constant.AnnoSpiderSubnetPoolApp]
+		appNamespacedName, isMatch := applicationinformers.ParseApplicationNamespacedName(appNamespacedNameStr)
+		if !isMatch {
+			return fmt.Errorf("%w: invalid IPPool annotation '%s' value '%s'", constant.ErrWrongInput, constant.AnnoSpiderSubnetPoolApp, appNamespacedNameStr)
 		}
 
 		var object client.Object
-		switch kind {
-		case constant.KindDeployment:
-			object = &appsv1.Deployment{}
-		case constant.KindReplicaSet:
-			object = &appsv1.ReplicaSet{}
-		case constant.KindDaemonSet:
-			object = &appsv1.DaemonSet{}
-		case constant.KindStatefulSet:
-			object = &appsv1.StatefulSet{}
-		case constant.KindJob:
-			object = &batchv1.Job{}
-		case constant.KindCronJob:
-			object = &batchv1.CronJob{}
-		case constant.KindPod:
-			// this serves for clusterDefaultSubnet feature
-			object = &corev1.Pod{}
-		default:
+		if slices.Contains(constant.K8sAPIVersions, appNamespacedName.APIVersion) {
+			switch appNamespacedName.Kind {
+			case constant.KindDeployment:
+				object = &appsv1.Deployment{}
+			case constant.KindReplicaSet:
+				object = &appsv1.ReplicaSet{}
+			case constant.KindDaemonSet:
+				object = &appsv1.DaemonSet{}
+			case constant.KindStatefulSet:
+				object = &appsv1.StatefulSet{}
+			case constant.KindJob:
+				object = &batchv1.Job{}
+			case constant.KindCronJob:
+				object = &batchv1.CronJob{}
+			default:
+				// third-party controllers IPPools need to be cleaned up by the users
+				return nil
+			}
+		} else {
 			// third-party controllers IPPools need to be cleaned up by the users
 			return nil
 		}
 
 		enableDelete := false
-
 		// check the IPPool's corresponding application whether is existed or not
-		informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%s/%s/%s'", pool.Name, kind, ns, name)
-		err := ic.client.Get(ctx, apitypes.NamespacedName{Namespace: ns, Name: name}, object)
+		informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%s/%s/%s'",
+			pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
+		err := ic.client.Get(ctx, apitypes.NamespacedName{Namespace: appNamespacedName.Namespace, Name: appNamespacedName.Name}, object)
 		if nil != err {
 			// if the application is no longer exist, we should delete the IPPool
 			if apierrors.IsNotFound(err) {
 				informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%s/%s/%s' is no longer exist, try to gc IPPool",
-					pool.Name, kind, ns, name)
+					pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
 				enableDelete = true
 			} else {
-				return err
+				return fmt.Errorf("failed to get auto-created IPPool '%s' corresponding application '%s/%s/%s': %w",
+					pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name, err)
 			}
 		} else {
 			// mismatch application UID
 			if string(object.GetUID()) != poolLabels[constant.LabelIPPoolOwnerApplicationUID] {
-				enableDelete = true
 				informerLogger.Sugar().Warnf("auto-created IPPool '%v' mismatches application '%s/%s/%s' UID '%s', try to gc IPPool",
-					pool, kind, ns, name, object.GetUID())
+					pool, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name, object.GetUID())
+				enableDelete = true
 			}
 		}
 

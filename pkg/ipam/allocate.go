@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -55,7 +56,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		logger.Debug("No Endpoint")
 	}
 
-	if i.config.EnableStatefulSet && podTopController.Kind == constant.KindStatefulSet {
+	if i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet {
 		logger.Info("Try to retrieve the IP allocation of StatefulSet")
 		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.IfName, pod, endpoint)
 		if err != nil {

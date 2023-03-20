@@ -34,7 +34,6 @@ type IPPoolManager interface {
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
-	DeleteAllIPPools(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, opts ...client.DeleteAllOfOption) error
 }
 
 type ipPoolManager struct {
@@ -318,10 +317,4 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 	}
 
 	return nil
-}
-
-func (im *ipPoolManager) DeleteAllIPPools(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, opts ...client.DeleteAllOfOption) error {
-	err := im.client.DeleteAllOf(ctx, ipPool, opts...)
-
-	return client.IgnoreNotFound(err)
 }

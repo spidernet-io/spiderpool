@@ -16,6 +16,7 @@ type Config struct {
 	ServerAddress          string // e.g http://pyroscope.services.internal:4040
 	AuthToken              string // specify this token when using pyroscope cloud
 	SampleRate             uint32 // todo this one is not used
+	UploadRate             time.Duration
 	Logger                 Logger
 	ProfileTypes           []ProfileType
 	DisableGCRuns          bool // this will disable automatic runtime.GC runs between getting the heap profiles
@@ -59,6 +60,11 @@ func Start(cfg Config) (*Profiler, error) {
 		return nil, err
 	}
 
+	if cfg.UploadRate == 0 {
+		// For backward compatibility.
+		cfg.UploadRate = 10 * time.Second
+	}
+
 	sc := SessionConfig{
 		Upstream:               uploader,
 		Logger:                 cfg.Logger,
@@ -68,7 +74,7 @@ func Start(cfg Config) (*Profiler, error) {
 		DisableGCRuns:          cfg.DisableGCRuns,
 		DisableAutomaticResets: cfg.DisableAutomaticResets,
 		SampleRate:             cfg.SampleRate,
-		UploadRate:             10 * time.Second,
+		UploadRate:             cfg.UploadRate,
 	}
 
 	cfg.Logger.Infof("starting profiling session:")
@@ -83,7 +89,7 @@ func Start(cfg Config) (*Profiler, error) {
 		return nil, fmt.Errorf("new session: %w", err)
 	}
 	uploader.Start()
-	if err = s.start(); err != nil {
+	if err = s.Start(); err != nil {
 		return nil, fmt.Errorf("start session: %w", err)
 	}
 

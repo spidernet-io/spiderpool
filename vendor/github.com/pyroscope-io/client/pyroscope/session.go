@@ -200,7 +200,7 @@ func copyBuf(b []byte) []byte {
 	return r
 }
 
-func (ps *Session) start() error {
+func (ps *Session) Start() error {
 	t := ps.truncatedTime()
 	ps.reset(t, t)
 

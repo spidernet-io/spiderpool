@@ -51,8 +51,11 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 		*delArgs.PodUID = string(pod.UID)
 		logger = logger.With(zap.String("PodUID", *delArgs.PodUID))
 
-		timeoutSec := *pod.DeletionGracePeriodSeconds - 5
-		if timeoutSec < 0 {
+		var timeoutSec int64
+		if pod.DeletionGracePeriodSeconds != nil {
+			timeoutSec = *pod.DeletionGracePeriodSeconds - 5
+		}
+		if timeoutSec <= 0 {
 			timeoutSec = 5
 		}
 

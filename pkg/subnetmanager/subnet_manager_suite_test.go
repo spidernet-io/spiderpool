@@ -4,7 +4,6 @@
 package subnetmanager_test
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -53,10 +52,6 @@ var _ = BeforeSuite(func() {
 			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
-			return []string{strconv.FormatBool(*subnet.Spec.Default)}
-		}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
@@ -66,10 +61,6 @@ var _ = BeforeSuite(func() {
 		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
 			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
-		}).
-		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
-			return []string{strconv.FormatBool(*subnet.Spec.Default)}
 		}).
 		Build()
 

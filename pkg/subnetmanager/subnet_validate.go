@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
@@ -26,7 +25,6 @@ var (
 	excludeIPsField        *field.Path = field.NewPath("spec").Child("excludeIPs")
 	gatewayField           *field.Path = field.NewPath("spec").Child("gateway")
 	routesField            *field.Path = field.NewPath("spec").Child("routes")
-	defaultField           *field.Path = field.NewPath("spec").Child("default")
 	controlledIPPoolsField *field.Path = field.NewPath("status").Child("controlledIPPools")
 )
 
@@ -96,9 +94,6 @@ func validateSubnetShouldNotBeChanged(oldSubnet, newSubnet *spiderpoolv2beta1.Sp
 }
 
 func (sw *SubnetWebhook) validateSubnetSpec(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
-	if err := sw.validateSubnetDefault(ctx, subnet); err != nil {
-		return err
-	}
 	if err := validateSubnetIPs(*subnet.Spec.IPVersion, subnet.Spec.Subnet, subnet.Spec.IPs); err != nil {
 		return err
 	}
@@ -212,34 +207,6 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 					subnetField,
 					subnet.Spec.Subnet,
 					fmt.Sprintf("overlap with Subnet %s which 'spec.subnet' is %s", s.Name, s.Spec.Subnet),
-				)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (sw *SubnetWebhook) validateSubnetDefault(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
-	if subnet.Spec.Default == nil || !*subnet.Spec.Default {
-		return nil
-	}
-
-	var subnetList spiderpoolv2beta1.SpiderSubnetList
-	if err := sw.Client.List(
-		ctx,
-		&subnetList,
-		client.MatchingFields{"spec.default": strconv.FormatBool(true)},
-	); err != nil {
-		return field.InternalError(defaultField, fmt.Errorf("failed to list default Subnets: %v", err))
-	}
-
-	for _, ds := range subnetList.Items {
-		if *ds.Spec.IPVersion == *subnet.Spec.IPVersion {
-			if ds.Name != subnet.Name {
-				return field.Forbidden(
-					defaultField,
-					fmt.Sprintf("Subnet %s has been set as the default Subnet, and there is only one default Subnet in the cluster", ds.Name),
 				)
 			}
 		}

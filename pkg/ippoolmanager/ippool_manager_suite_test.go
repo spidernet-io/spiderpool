@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,14 +17,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	reservedipmanagermock "github.com/spidernet-io/spiderpool/pkg/reservedipmanager/mock"
 )
+
+var mockCtrl *gomock.Controller
+var mockLeaderElector *electionmock.MockSpiderLeaseElector
+var mockRIPManager *reservedipmanagermock.MockReservedIPManager
 
 var scheme *runtime.Scheme
 var fakeClient client.Client
 var tracker k8stesting.ObjectTracker
 var fakeAPIReader client.Reader
+var ipPoolManager ippoolmanager.IPPoolManager
 var ipPoolWebhook *ippoolmanager.IPPoolWebhook
 
 func TestIPPoolManager(t *testing.T) {
@@ -61,6 +69,16 @@ var _ = BeforeSuite(func() {
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 		}).
 		Build()
+
+	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
+	mockRIPManager = reservedipmanagermock.NewMockReservedIPManager(mockCtrl)
+	ipPoolManager, err = ippoolmanager.NewIPPoolManager(
+		ippoolmanager.IPPoolManagerConfig{},
+		fakeClient,
+		fakeAPIReader,
+		mockRIPManager,
+	)
+	Expect(err).NotTo(HaveOccurred())
 
 	ipPoolWebhook = &ippoolmanager.IPPoolWebhook{
 		Client:             fakeClient,

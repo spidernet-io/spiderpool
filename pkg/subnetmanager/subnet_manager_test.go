@@ -55,7 +55,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 			ctx = context.TODO()
 
 			atomic.AddUint64(&count, 1)
-			subnetName = fmt.Sprintf("node-%v", count)
+			subnetName = fmt.Sprintf("subnet-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
 			subnetT = &spiderpoolv2beta1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{

@@ -28,7 +28,7 @@ import (
 )
 
 func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, podController types.PodTopController) (ToBeAllocateds, error) {
-	// If faature SpiderSubnet is enabled, select IPPool candidates through the
+	// If feature SpiderSubnet is enabled, select IPPool candidates through the
 	// Pod annotations "ipam.spidernet.io/subnet" or "ipam.spidernet.io/subnets".
 	if i.config.EnableSpiderSubnet {
 		fromSubnet, err := i.getPoolFromSubnetAnno(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
@@ -53,18 +53,6 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 		}
 		return ToBeAllocateds{t}, nil
 	}
-
-	// If feature SpiderSubnet is enabled, select IPPool candidates through the cluster
-	// default Subnet defined in Configmap spiderpool-conf.
-	// 	if i.config.EnableSpiderSubnet {
-	// 	fromClusterDefaultSubnet, err := i.getPoolFromClusterDefaultSubnet(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
-	// 	if nil != err {
-	// 		return nil, err
-	// 	}
-	// 	if fromClusterDefaultSubnet != nil {
-	// 		return ToBeAllocateds{fromClusterDefaultSubnet}, nil
-	// 	}
-	// }
 
 	// Select IPPool candidates through the Namespace annotations
 	// "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool".
@@ -132,7 +120,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 
 	// This only serves for orphan pod or third party controller application, because we'll create or scale the auto-created IPPool here.
 	// For those kubernetes applications(such as deployment and replicaset), the spiderpool-controller will create or scale the auto-created IPPool asynchronously.
-	poolIPNum, podSelector, err := getAutoPoolIPNumberAndSelector(pod, podController)
+	poolIPNum, err := getAutoPoolIPNumberAndSelector(pod, podController)
 	if nil != err {
 		return nil, err
 	}
@@ -152,7 +140,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 					IPVersion:       ipVersion,
 					IsReclaimIPPool: false,
 					IfName:          nic,
-					PodSelector:     podSelector,
+					PodSelector:     nil,
 				})
 			} else {
 				pool, err = i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)

@@ -53,14 +53,6 @@ type AnnoNSDefautlV4PoolValue []string
 
 type AnnoNSDefautlV6PoolValue []string
 
-type ClusterDefaultPoolConfig struct {
-	ClusterDefaultIPv4IPPool             []string
-	ClusterDefaultIPv6IPPool             []string
-	ClusterDefaultIPv4Subnet             []string
-	ClusterDefaultIPv6Subnet             []string
-	ClusterSubnetDefaultFlexibleIPNumber int
-}
-
 type PodSubnetAnnoConfig struct {
 	MultipleSubnets []AnnoSubnetItem
 	SingleSubnet    *AnnoSubnetItem

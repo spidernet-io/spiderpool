@@ -18,7 +18,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -148,10 +147,8 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 			subnetAnnoConfig.AssignIPNum = ipNum
 		}
 	} else {
-		// no annotation "ipam.spidernet.io/ippool-ip-number", we'll use the configmap clusterDefaultSubnetFlexibleIPNumber
-		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster default subnet flexible IP number: %d",
-			singletons.ClusterDefaultPool.ClusterSubnetDefaultFlexibleIPNumber)
-		subnetAnnoConfig.FlexibleIPNum = pointer.Int(singletons.ClusterDefaultPool.ClusterSubnetDefaultFlexibleIPNumber)
+		log.Sugar().Debugf("no specified IPPool IP number, default to set it 0")
+		subnetAnnoConfig.FlexibleIPNum = pointer.Int(0)
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)

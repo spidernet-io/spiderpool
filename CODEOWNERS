@@ -26,3 +26,4 @@
 /codecov.yml @weizhoublue
 /.golangci.yaml @weizhoublue
 /MAINTAINERS.md @weizhoublue
+/.trivyignore @weizhoublue

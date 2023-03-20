@@ -45,7 +45,6 @@ func Execute() {
 				IPVersion: pointer.Int64(constant.IPv4),
 				Subnet:    config.V4CIDR,
 				IPs:       config.V4IPRanges,
-				Default:   pointer.Bool(true),
 			},
 		}
 		if len(config.V4Gateway) != 0 {
@@ -68,7 +67,6 @@ func Execute() {
 				IPVersion: pointer.Int64(constant.IPv6),
 				Subnet:    config.V6CIDR,
 				IPs:       config.V6IPRanges,
-				Default:   pointer.Bool(true),
 			},
 		}
 		if len(config.V6Gateway) != 0 {

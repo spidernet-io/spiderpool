@@ -47,13 +47,6 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderSubnet{}, "spec.default", func(raw client.Object) []string {
-		subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
-		return []string{strconv.FormatBool(*subnet.Spec.Default)}
-	}); err != nil {
-		return nil, err
-	}
-
 	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
 		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 		return []string{strconv.FormatBool(*ipPool.Spec.Default)}

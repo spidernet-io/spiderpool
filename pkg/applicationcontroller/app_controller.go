@@ -939,7 +939,6 @@ func (sac *SubnetAppController) controllerDeleteHandler() applicationinformers.A
 
 		// clean up all legacy IPPools that matched with the application UID
 		err := sac.client.DeleteAllOf(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
-			constant.LabelIPPoolOwnerApplication:    applicationinformers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
 			constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
 			constant.LabelIPPoolReclaimIPPool:       constant.True,
 		})

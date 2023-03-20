@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
@@ -135,8 +134,10 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 
 		poolLabels := map[string]string{
 			constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
-			constant.LabelIPPoolOwnerApplication:    applicationinformers.AppLabelValue(podController.Kind, podController.Namespace, podController.Name),
 			constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+		}
+		poolAnno := map[string]string{
+			constant.AnnoSpiderSubnetPoolApp: applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
 		}
 
 		cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*pool.Spec.IPVersion, pool.Spec.Subnet)
@@ -148,6 +149,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 			poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
 		}
 		pool.Labels = poolLabels
+		pool.Annotations = poolAnno
 
 		// set owner reference
 		err = ctrl.SetControllerReference(subnet, pool, sm.client.Scheme())
@@ -242,7 +244,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				}
 				subnetControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 					IPs:         poolIPRange,
-					Application: pointer.String(ApplicationNamespacedName(podController.AppNamespacedName)),
+					Application: pointer.String(applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName)),
 				}
 				marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 				if nil != err {
@@ -305,7 +307,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 	}
 	newlyControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 		IPs:         allocateIPRange,
-		Application: pointer.String(ApplicationNamespacedName(podController.AppNamespacedName)),
+		Application: pointer.String(applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName)),
 	}
 	data, err := json.Marshal(newlyControlledIPPools)
 	if nil != err {
@@ -346,24 +348,4 @@ func subnetStatusCount(subnet *spiderpoolv2beta1.SpiderSubnet) (totalCount, allo
 		allocatedIPCount += int64(len(tmpIPs))
 	}
 	return int64(len(subnetTotalIPs)), allocatedIPCount
-}
-
-// TODO(Icarus9913): move it
-func ApplicationNamespacedName(appNamespacedName types.AppNamespacedName) string {
-	return fmt.Sprintf("%s_%s_%s_%s", appNamespacedName.APIVersion, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
-}
-
-// TODO(Icarus9913): move it
-func ParseApplicationNamespacedName(appNamespacedNameKey string) (appNamespacedName types.AppNamespacedName, isMatch bool) {
-	split := strings.Split(appNamespacedNameKey, "_")
-	if len(split) == 4 {
-		return types.AppNamespacedName{
-			APIVersion: split[0],
-			Kind:       split[1],
-			Namespace:  split[2],
-			Name:       split[3],
-		}, true
-	}
-
-	return
 }

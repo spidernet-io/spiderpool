@@ -25,14 +25,13 @@ var errInvalidInput = func(str string) error {
 	return fmt.Errorf("invalid input '%s'", str)
 }
 
-func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersion types.IPVersion, ifName string, controllerUID apitypes.UID) string {
-	// the format of uuid is "xxxxxxxx-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+func SubnetPoolName(controllerName string, ipVersion types.IPVersion, ifName string, controllerUID apitypes.UID) string {
+	// the format of uuid is "xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 	// ref: https://github.com/google/uuid/blob/44b5fee7c49cf3bcdf723f106b36d56ef13ccc88/uuid.go#L185
 	splits := strings.Split(string(controllerUID), "-")
 	lastOne := splits[len(splits)-1]
 
-	return fmt.Sprintf("auto-%s-%s-%s-v%d-%s-%s",
-		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, ifName, strings.ToLower(lastOne))
+	return fmt.Sprintf("auto-%s-v%d-%s-%s", strings.ToLower(controllerName), ipVersion, ifName, strings.ToLower(lastOne))
 }
 
 // ApplicationNamespacedName will joint the application apiVersion, application type, namespace and name as a string, then we need unpack it for tracing

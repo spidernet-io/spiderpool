@@ -128,7 +128,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	// This function will find the IPPool with the assembled IPPool name
 	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
 	findSubnetIPPool := func(subnetName string, ipVersion types.IPVersion) (*spiderpoolv2beta1.SpiderIPPool, error) {
-		poolName := subnetmanagercontrollers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, ipVersion, nic, podController.UID)
+		poolName := subnetmanagercontrollers.SubnetPoolName(podController.Name, ipVersion, nic, podController.UID)
 
 		var pool *spiderpoolv2beta1.SpiderIPPool
 		var err error

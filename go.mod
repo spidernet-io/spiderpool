@@ -47,7 +47,7 @@ require (
 require (
 	github.com/agiledragon/gomonkey/v2 v2.9.0
 	github.com/golang/mock v1.6.0
-	github.com/openkruise/kruise-api v1.3.0
+	github.com/openkruise/kruise-api v1.4.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spidernet-io/e2eframework v0.0.0-20230320014720-910ce6ec0949
 	go.uber.org/multierr v1.8.0
@@ -142,6 +142,7 @@ require (
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
+	sigs.k8s.io/gateway-api v0.6.2 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

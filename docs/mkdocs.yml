@@ -31,7 +31,9 @@ markdown_extensions:
   - attr_list
 
 nav:
+  - README.md
   - Usage:
+      - usage/basic.md
       - usage/install.md
       - usage/basic.md
       - usage/ippool-multi.md

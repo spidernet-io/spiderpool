@@ -1,6 +1,6 @@
 # Installation
 
-*This guide shows how to install Spiderpool using [Helm](https://helm.sh/).* 
+*This guide shows how to install Spiderpool using [Helm 3](https://v3.helm.sh/).*
 
 ## Generic
 
@@ -102,7 +102,7 @@ IPV4_SUBNET_YOU_EXPECT="172.18.40.0/24"
 IPV4_IPRANGES_YOU_EXPECT="172.18.40.40-172.20.40.200"
 ```
 
-Let's create an IPv4 IPPool while deploying Spiderpool, and configure it as the cluster default IPPool in the [global Configmap configuration](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/config.md#configmap-configuration). 
+Let's create an IPv4 IPPool while deploying Spiderpool, and configure it as the cluster default IPPool in the [global Configmap configuration](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/config.md#configmap-configuration).
 
 ```bash
 helm install spiderpool spiderpool/spiderpool --namespace kube-system \

@@ -757,7 +757,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			if apierrors.IsNotFound(err) {
 				tmpPool = nil
 			} else {
-				return err
+				return fmt.Errorf("failed to get auto-created IPPool '%s': %w", poolName, err)
 			}
 		}
 
@@ -796,7 +796,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			go func() {
 				defer wg.Done()
 
-				v4PoolName := applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv4, item.Interface, podController.UID)
+				v4PoolName := applicationinformers.SubnetPoolName(podController.Name, constant.IPv4, item.Interface, podController.UID)
 				errV4 = fn(v4PoolName, item.IPv4[0], constant.IPv4, item.Interface)
 			}()
 		}
@@ -806,7 +806,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			go func() {
 				defer wg.Done()
 
-				v6PoolName := applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv6, item.Interface, podController.UID)
+				v6PoolName := applicationinformers.SubnetPoolName(podController.Name, constant.IPv6, item.Interface, podController.UID)
 				errV6 = fn(v6PoolName, item.IPv6[0], constant.IPv6, item.Interface)
 			}()
 		}

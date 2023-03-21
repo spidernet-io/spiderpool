@@ -120,7 +120,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 	if operationCreate {
 		pool = &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),
+				Name: applicationinformers.SubnetPoolName(podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),
 			},
 			Spec: spiderpoolv2beta1.IPPoolSpec{
 				IPVersion:   pointer.Int64(autoPoolProperty.IPVersion),

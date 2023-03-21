@@ -71,12 +71,12 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 // executeScanAll scans the whole pod and whole IPPoolList
 func (s *SpiderGC) executeScanAll(ctx context.Context) {
 	poolList, err := s.ippoolMgr.ListIPPools(ctx, constant.UseCache)
-	if apierrors.IsNotFound(err) {
-		logger.Sugar().Warnf("scan all failed, ippoolList not found!")
-		return
-	}
-
 	if nil != err {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Warnf("scan all failed, ippoolList not found!")
+			return
+		}
+
 		logger.Sugar().Errorf("scan all failed: '%v'", err)
 		return
 	}
@@ -104,18 +104,14 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 
 			podYaml, err := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
 			if err != nil {
-				wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation"))
-
 				// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
 				if apierrors.IsNotFound(err) {
-					isBadIP := false
+					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation"))
 					endpoint, err := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
 					if nil != err {
-						if apierrors.IsNotFound(err) {
-							// the corresponding SpiderEndpoint is also not exist
-							isBadIP = true
-						} else {
-							wrappedLog.Error(err.Error())
+						// just continue if we meet other errors
+						if !apierrors.IsNotFound(err) {
+							wrappedLog.Sugar().Errorf("failed to get SpiderEndpoint: %v", err)
 							continue
 						}
 					} else {
@@ -130,25 +126,21 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 								scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod '%s/%s'",
 									poolIP, podNS, podName)
 								continue
-							} else {
-								isBadIP = true
 							}
 						}
 					}
 
-					if isBadIP {
-						wrappedLog.Sugar().Warnf("found IPPool '%s' legacy IP '%s', try to release it", pool.Name, poolIP)
-						err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
-						if nil != err {
-							wrappedLog.Error(err.Error())
-							continue
-						}
-						// clean up single IP and remove its corresponding SpiderEndpoint successfully, just continue to the next poolIP
+					wrappedLog.Sugar().Warnf("found IPPool '%s' legacy IP '%s', try to release it", pool.Name, poolIP)
+					err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
+					if nil != err {
+						wrappedLog.Error(err.Error())
 						continue
 					}
+					// clean up single IP and remove its corresponding SpiderEndpoint successfully, just continue to the next poolIP
+					continue
 				}
 
-				wrappedLog.Sugar().Errorf("check pod from kubernetes failed with error '%v'", err)
+				scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", err)
 				continue
 			}
 

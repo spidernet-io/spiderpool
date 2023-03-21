@@ -231,12 +231,12 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				Expect(valid).To(BeFalse())
 			})
 
-			It("failed to parse replica string to int due to some unknown errors", func() {
+			It("invalid StatefulSet pod with bad pod name replica parsing", func() {
 				patches := gomonkey.ApplyFuncReturn(strconv.ParseInt, int64(0), constant.ErrUnknown)
 				defer patches.Reset()
 
 				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0), constant.KindStatefulSet)
-				Expect(err).To(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeFalse())
 			})
 

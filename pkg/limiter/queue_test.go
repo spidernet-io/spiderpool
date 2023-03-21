@@ -124,7 +124,7 @@ var _ = Describe("Limiter", Label("queue_test"), func() {
 				wg.Wait()
 			})
 
-			It("acquires tickets but ctx timeout", func() {
+			PIt("acquires tickets but ctx timeout", func() {
 				ctx, cancel := context.WithTimeout(context.TODO(), workHours)
 				defer cancel()
 

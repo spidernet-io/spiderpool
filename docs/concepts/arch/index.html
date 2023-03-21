@@ -210,26 +210,55 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
     
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_1">
+        <label class="md-nav__link" for="__nav_2">
           Usage
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Usage" data-md-level="1">
-        <label class="md-nav__title" for="__nav_1">
+        <label class="md-nav__title" for="__nav_2">
           <span class="md-nav__icon md-icon"></span>
           Usage
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/basic/" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+            
           
             
               
@@ -252,7 +281,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/basic/" class="md-nav__link">
-        Quick start
+        Quick Start
       </a>
     </li>
   
@@ -460,18 +489,18 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
       
       
       
       
-        <label class="md-nav__link" for="__nav_2">
+        <label class="md-nav__link" for="__nav_3">
           Concepts
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Concepts" data-md-level="1">
-        <label class="md-nav__title" for="__nav_2">
+        <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Concepts
         </label>
@@ -675,18 +704,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_3">
+        <label class="md-nav__link" for="__nav_4">
           Reference
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Reference" data-md-level="1">
-        <label class="md-nav__title" for="__nav_3">
+        <label class="md-nav__title" for="__nav_4">
           <span class="md-nav__icon md-icon"></span>
           Reference
         </label>
@@ -751,18 +780,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_4">
+        <label class="md-nav__link" for="__nav_5">
           Development
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Development" data-md-level="1">
-        <label class="md-nav__title" for="__nav_4">
+        <label class="md-nav__title" for="__nav_5">
           <span class="md-nav__icon md-icon"></span>
           Development
         </label>
@@ -941,13 +970,16 @@
 <p>Spiderpool supports for the following CRDs:</p>
 <ul>
 <li>
-<p>ippool CRD. It is used to store the IP resource for a subnet. Refer to <a href="./ippool.md">ippool</a> for detail.</p>
+<p>SpiderSubnet CRD. It is used to represent a collection of IP addresses from which Spiderpool expects SpiderIPPool IPs to be assigned. Refer to <a href="../spidersubnet/">SpiderSubnet</a> for detail.</p>
 </li>
 <li>
-<p>workloadendpoint CRD. It is used to store the IP assigned to a pod. Refer to <a href="./workloadendpoint.md">workloadendpoint</a> for detail.</p>
+<p>SpiderReservedIP CRD. It is used to represent a collection of IP addresses that Spiderpool expects not to be allocated. Refer to <a href="../spiderreservedip/">SpiderReservedIP</a> for detail.</p>
 </li>
 <li>
-<p>reservedip CRD. It is used to set the reserved IP, which will not be assigned to a pod even if you have set it in the ippool. Refer to <a href="./reservedip.md">reservedip</a> for detail.</p>
+<p>SpiderIPPool CRD. It is used to represent a collection of IP addresses from which Spiderpool expects endpoint IPs to be assigned. Refer to <a href="../spiderippool/">SpiderIPPool</a> for detail.</p>
+</li>
+<li>
+<p>SpiderEndpoint CRD. It is used to represent IP address allocation details for a specific endpoint object. Refer to <a href="../spiderendpoint/">SpiderEndpoint</a> for detail.</p>
 </li>
 </ul>
 

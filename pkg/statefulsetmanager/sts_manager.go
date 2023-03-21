@@ -77,7 +77,7 @@ func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespa
 
 	stsName, replicas, found := getStatefulSetNameAndOrdinal(podName)
 	if !found {
-		return false, fmt.Errorf("failed to parse the name and replica of its StatefulSet controller from the name of Pod '%s/%s'", namespace, podName)
+		return false, nil
 	}
 
 	sts, err := sm.GetStatefulSetByName(ctx, namespace, stsName, constant.IgnoreCache)

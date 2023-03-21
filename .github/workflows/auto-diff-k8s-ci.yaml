@@ -1,0 +1,146 @@
+name: Auto Adapted K8s Matrix CI
+
+permissions: write-all
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'sha, tag, branch'
+        required: true
+        default: main
+      k8s_version:
+        description: 'should be a released k8s version, format e.g: v1.25.2; if not set, versions 1.22 - 1.26 will be run.)'
+        required: false
+        type: string
+      run_e2e_test:
+        description: 'run e2e test'
+        required: false
+        type: choice
+        default: false
+        options:
+          - true
+          - false
+
+jobs:
+  get_ref:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.result.outputs.ref }}
+      e2e_enabled: ${{ steps.get_ref.outputs.e2e_enabled }}
+      custom_k8s_version: ${{ steps.get_ref.outputs.custom_k8s_version }}
+      default_k8s_version: ${{ steps.get_ref.outputs.default_k8s_version }}
+      run_e2e_test: ${{ steps.get_ref.outputs.run_e2e_test }}
+    
+    steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo "call by self workflow_dispatch"
+            echo ::set-output name=tag::${{ github.event.inputs.ref }}
+            echo ::set-output name=e2e_enabled::true
+            if ${{ github.event.inputs.k8s_version == '' }}; then
+              echo ::set-output name=custom_k8s_version::false
+              echo ::set-output name=default_k8s_version::true
+            else
+              echo "A custom version of k8s will be run: ${{ github.event.inputs.k8s_version }} "
+              echo ::set-output name=custom_k8s_version::true
+              echo ::set-output name=default_k8s_version::false
+            fi
+            if ${{ github.event.inputs.run_e2e_test == 'true' }}; then
+              echo ::set-output name=run_e2e_test::true
+            else
+              echo ::set-output name=run_e2e_test::false
+            fi
+          else
+            # schedule event
+            # use main sha for ci image tag
+            echo "trigger by schedule"
+            echo ::set-output name=tag::main
+            echo ::set-output name=push::false
+            echo ::set-output name=e2e_enabled::true
+            echo ::set-output name=custom_k8s_version::false
+            echo ::set-output name=default_k8s_version::true
+            echo ::set-output name=run_e2e_test::true
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ steps.get_ref.outputs.tag }}
+
+      - name: Result Ref
+        id: result
+        run: |
+          ref=$( git show -s --format='format:%H')
+          echo ::set-output name=ref::${ref}
+
+  call_build_ci_image:
+    needs: [get_ref]
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+    uses: ./.github/workflows/build-image-ci.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+      push: false
+    secrets: inherit
+
+  lint_chart_against_release_image:
+    needs: get_ref
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+    uses: ./.github/workflows/call-lint-chart.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
+
+  call_release_chart:
+    needs: [get_ref]
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+    uses: ./.github/workflows/call-release-chart.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+      submit: false
+    secrets: inherit
+
+  call_k8s_matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          [
+            v1.22.0,
+            v1.23.0,
+            v1.24.0,
+            v1.25.0,
+            v1.26.0,
+          ]
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.default_k8s_version == 'true' && needs.get_ref.outputs.custom_k8s_version == 'false' }}
+    uses: ./.github/workflows/e2e-diff-k8s.yaml
+    with:
+      ip_family: dual
+      image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
+      push: false
+      ref: ${{ needs.get_ref.outputs.ref }}
+      charts: ${{ needs.call_release_chart.outputs.artifact }}
+      k8s_version: ${{ matrix.version }}
+      run_e2e_test: ${{ needs.get_ref.outputs.run_e2e_test }}
+    secrets: inherit
+
+  call_custom_k8s:
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.default_k8s_version == 'false' && needs.get_ref.outputs.custom_k8s_version == 'true' }}
+    uses: ./.github/workflows/e2e-diff-k8s.yaml
+    with:
+      ip_family: dual
+      image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
+      push: false
+      ref: ${{ needs.get_ref.outputs.ref }}
+      charts: ${{ needs.call_release_chart.outputs.artifact }}
+      k8s_version: ${{ inputs.k8s_version }}
+      run_e2e_test: ${{ needs.get_ref.outputs.run_e2e_test }}
+    secrets: inherit

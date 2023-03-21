@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -40,6 +41,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -408,6 +410,9 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	if err != nil {
 		return err
 	}
+
+	// record the metric of how many IPPools the Subnet has.
+	metric.SubnetPoolCounts.Record(int64(len(ipPools)), attribute.String(constant.KindSpiderSubnet, subnet.Name))
 
 	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {

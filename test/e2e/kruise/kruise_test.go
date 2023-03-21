@@ -142,7 +142,7 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 		}
 	})
 
-	PIt("SpiderSubnet feature supports third party controllers.", Label("kruise", "E00010", "E00011"), func() {
+	It("SpiderSubnet feature supports third party controllers.", Label("kruise", "E00010", "E00011"), func() {
 		if !frame.Info.SpiderSubnetEnabled {
 			Skip("Test conditions `enableSpiderSubnet:true` not met")
 		}

@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -85,7 +86,8 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 	if podOwner == nil {
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
-				APIVersion: pod.APIVersion,
+				// pod.APIVersion is empty string
+				APIVersion: corev1.SchemeGroupVersion.String(),
 				Kind:       constant.KindPod,
 				Namespace:  pod.Namespace,
 				Name:       pod.Name,
@@ -96,7 +98,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 	}
 
 	// third party controller
-	if podOwner.APIVersion != appsv1.SchemeGroupVersion.String() && podOwner.APIVersion != batchv1.SchemeGroupVersion.String() {
+	if !slices.Contains(constant.K8sAPIVersions, podOwner.APIVersion) {
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
 				APIVersion: podOwner.APIVersion,
@@ -123,7 +125,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 
 		replicasetOwner := metav1.GetControllerOf(&replicaset)
 		if replicasetOwner != nil {
-			if replicasetOwner.Kind == constant.KindDeployment {
+			if replicasetOwner.APIVersion == appsv1.SchemeGroupVersion.String() && replicasetOwner.Kind == constant.KindDeployment {
 				var deployment appsv1.Deployment
 				err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: replicaset.Namespace, Name: replicasetOwner.Name}, &deployment)
 				if nil != err {
@@ -131,7 +133,8 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 				}
 				return types.PodTopController{
 					AppNamespacedName: types.AppNamespacedName{
-						APIVersion: deployment.APIVersion,
+						// deployment.APIVersion is empty string
+						APIVersion: appsv1.SchemeGroupVersion.String(),
 						Kind:       constant.KindDeployment,
 						Namespace:  deployment.Namespace,
 						Name:       deployment.Name,
@@ -154,7 +157,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		}
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
-				APIVersion: replicaset.APIVersion,
+				APIVersion: appsv1.SchemeGroupVersion.String(),
 				Kind:       constant.KindReplicaSet,
 				Namespace:  replicaset.Namespace,
 				Name:       replicaset.Name,
@@ -171,7 +174,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		}
 		jobOwner := metav1.GetControllerOf(&job)
 		if jobOwner != nil {
-			if jobOwner.Kind == constant.KindCronJob {
+			if jobOwner.APIVersion == batchv1.SchemeGroupVersion.String() && jobOwner.Kind == constant.KindCronJob {
 				var cronJob batchv1.CronJob
 				err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: job.Namespace, Name: jobOwner.Name}, &cronJob)
 				if nil != err {
@@ -179,7 +182,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 				}
 				return types.PodTopController{
 					AppNamespacedName: types.AppNamespacedName{
-						APIVersion: cronJob.APIVersion,
+						APIVersion: batchv1.SchemeGroupVersion.String(),
 						Kind:       constant.KindCronJob,
 						Namespace:  cronJob.Namespace,
 						Name:       cronJob.Name,
@@ -202,7 +205,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		}
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
-				APIVersion: job.APIVersion,
+				APIVersion: batchv1.SchemeGroupVersion.String(),
 				Kind:       constant.KindJob,
 				Namespace:  job.Namespace,
 				Name:       job.Name,
@@ -219,7 +222,8 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		}
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
-				APIVersion: daemonSet.APIVersion,
+				// daemonSet.APIVersion is empty string
+				APIVersion: appsv1.SchemeGroupVersion.String(),
 				Kind:       constant.KindDaemonSet,
 				Namespace:  daemonSet.Namespace,
 				Name:       daemonSet.Name,
@@ -236,7 +240,8 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		}
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
-				APIVersion: statefulSet.APIVersion,
+				// statefulSet.APIVersion is empty string
+				APIVersion: appsv1.SchemeGroupVersion.String(),
 				Kind:       constant.KindStatefulSet,
 				Namespace:  statefulSet.Namespace,
 				Name:       statefulSet.Name,

@@ -10,8 +10,8 @@ import (
 
 // TODO(Icarus9913): Deprecated.
 func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
-	// only the auto-created IPPool owns the label "ipam.spidernet.io/owner-application"
-	poolLabels := pool.GetLabels()
-	_, ok := poolLabels[constant.LabelIPPoolOwnerApplication]
+	// only the auto-created IPPool owns the annotation "ipam.spidernet.io/application"
+	poolAnno := pool.GetAnnotations()
+	_, ok := poolAnno[constant.AnnoSpiderSubnetPoolApp]
 	return ok
 }

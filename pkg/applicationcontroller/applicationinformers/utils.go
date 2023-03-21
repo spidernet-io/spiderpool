@@ -18,7 +18,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/singletons"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -26,33 +25,32 @@ var errInvalidInput = func(str string) error {
 	return fmt.Errorf("invalid input '%s'", str)
 }
 
-func SubnetPoolName(controllerKind, controllerNS, controllerName string, ipVersion types.IPVersion, ifName string, controllerUID apitypes.UID) string {
-	// the format of uuid is "xxxxxxxx-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+func SubnetPoolName(controllerName string, ipVersion types.IPVersion, ifName string, controllerUID apitypes.UID) string {
+	// the format of uuid is "xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 	// ref: https://github.com/google/uuid/blob/44b5fee7c49cf3bcdf723f106b36d56ef13ccc88/uuid.go#L185
 	splits := strings.Split(string(controllerUID), "-")
 	lastOne := splits[len(splits)-1]
 
-	return fmt.Sprintf("auto-%s-%s-%s-v%d-%s-%s",
-		strings.ToLower(controllerKind), strings.ToLower(controllerNS), strings.ToLower(controllerName), ipVersion, ifName, strings.ToLower(lastOne))
+	return fmt.Sprintf("auto-%s-v%d-%s-%s", strings.ToLower(controllerName), ipVersion, ifName, strings.ToLower(lastOne))
 }
 
-// AppLabelValue will joint the application type, namespace and name as a label value, then we need unpack it for tracing
+// ApplicationNamespacedName will joint the application apiVersion, application type, namespace and name as a string, then we need unpack it for tracing
 // [ns and object name constraint Ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
-// [label value ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
-// Because the label value enable you to use '_', then we can use it as the slash.
-// So, for tracing it back, we set format is "{appKind}_{appNS}_{appName}"
-func AppLabelValue(appKind string, appNS, appName string) string {
-	return fmt.Sprintf("%s_%s_%s", appKind, appNS, appName)
+// We set format is "{apiVersion}:{appKind}:{appNS}:{appName}"
+func ApplicationNamespacedName(appNamespacedName types.AppNamespacedName) string {
+	return fmt.Sprintf("%s:%s:%s:%s", appNamespacedName.APIVersion, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
 }
 
-// ParseAppLabelValue will unpack the application label value, its corresponding function is AppLabelValue
-func ParseAppLabelValue(str string) (appKind, appNS, appName string, isFound bool) {
-	typeKind, after, found := strings.Cut(str, "_")
-	if found {
-		isFound = found
-		appKind = typeKind
-
-		appNS, appName, _ = strings.Cut(after, "_")
+// ParseApplicationNamespacedName will unpack the appNamespacedNameKey, its corresponding function is ApplicationNamespacedName
+func ParseApplicationNamespacedName(appNamespacedNameKey string) (appNamespacedName types.AppNamespacedName, isMatch bool) {
+	split := strings.Split(appNamespacedNameKey, ":")
+	if len(split) == 4 {
+		return types.AppNamespacedName{
+			APIVersion: split[0],
+			Kind:       split[1],
+			Namespace:  split[2],
+			Name:       split[3],
+		}, true
 	}
 
 	return
@@ -148,10 +146,8 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 			subnetAnnoConfig.AssignIPNum = ipNum
 		}
 	} else {
-		// no annotation "ipam.spidernet.io/ippool-ip-number", we'll use the configmap clusterDefaultSubnetFlexibleIPNumber
-		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster default subnet flexible IP number: %d",
-			singletons.ClusterDefaultPool.ClusterSubnetDefaultFlexibleIPNumber)
-		subnetAnnoConfig.FlexibleIPNum = pointer.Int(singletons.ClusterDefaultPool.ClusterSubnetDefaultFlexibleIPNumber)
+		log.Sugar().Debugf("no specified IPPool IP number, default to set it 0")
+		subnetAnnoConfig.FlexibleIPNum = pointer.Int(0)
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)

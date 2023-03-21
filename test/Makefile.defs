@@ -15,9 +15,9 @@ E2E_BRIDGE_V6_GW = fd91::1
 E2E_IP_FAMILY ?= dual
 
 # kubernetes version
-# E2E_KIND_IMAGE_TAG ?= v1.24.0
+E2E_KIND_IMAGE_TAG ?= v1.26.2
 # with kind default version
-E2E_KIND_IMAGE_TAG ?=
+# E2E_KIND_IMAGE_TAG ?= 
 
 # disable default cni, default true
 E2E_DISABLE_DEFAULT_CNI ?= true

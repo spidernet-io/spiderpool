@@ -33,10 +33,6 @@ type SubnetSpec struct {
 
 	// +kubebuilder:validation:Optional
 	Routes []Route `json:"routes,omitempty"`
-
-	// +kubebuilder:default=false
-	// +kubebuilder:validation:Optional
-	Default *bool `json:"default,omitempty"`
 }
 
 // SubnetStatus defines the observed state of SpiderSubnet.
@@ -66,7 +62,6 @@ type PoolIPPreAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=".spec.subnet",description="subnet",name="SUBNET",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.allocatedIPCount",description="allocatedIPCount",name="ALLOCATED-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalIPCount",description="totalIPCount",name="TOTAL-IP-COUNT",type=integer
-// +kubebuilder:printcolumn:JSONPath=".spec.default",description="default",name="DEFAULT",type=boolean
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +genclient

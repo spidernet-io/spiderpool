@@ -462,7 +462,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 		// check the difference between the two object and choose to reconcile or not
 		if sac.hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas) {
 			log.Debug("try to add app to application controller workequeue")
-			sac.enqueueApp(ctx, app, appKind)
+			sac.enqueueApp(ctx, app, appKind, app.GetUID())
 		}
 
 		return nil
@@ -473,10 +473,11 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 type appWorkQueueKey struct {
 	MetaNamespaceKey string
 	AppKind          string
+	AppUID           k8types.UID
 }
 
 // enqueueApp will insert application custom appWorkQueueKey to the workQueue
-func (sac *SubnetAppController) enqueueApp(ctx context.Context, obj interface{}, appKind string) {
+func (sac *SubnetAppController) enqueueApp(ctx context.Context, obj interface{}, appKind string, appUID k8types.UID) {
 	log := logutils.FromContext(ctx)
 
 	// object meta key: 'namespace/name'
@@ -489,6 +490,7 @@ func (sac *SubnetAppController) enqueueApp(ctx context.Context, obj interface{},
 	appKey := appWorkQueueKey{
 		MetaNamespaceKey: metaKey,
 		AppKind:          appKind,
+		AppUID:           appUID,
 	}
 
 	// validate workqueue capacity
@@ -614,7 +616,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
-				return nil
+				return sac.deleteAutoPools(logutils.IntoContext(context.TODO(), log), appKey.AppUID)
 			}
 			return err
 		}
@@ -623,14 +625,15 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = deployment.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
-		apiVersion = deployment.APIVersion
+		// deployment.APIVersion is empty string
+		apiVersion = appsv1.SchemeGroupVersion.String()
 
 	case constant.KindReplicaSet:
 		replicaSet, err := sac.replicaSetLister.ReplicaSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
-				return nil
+				return sac.deleteAutoPools(logutils.IntoContext(context.TODO(), log), appKey.AppUID)
 			}
 			return err
 		}
@@ -639,14 +642,15 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = replicaSet.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
-		apiVersion = replicaSet.APIVersion
+		// replicaSet.APIVersion is empty string
+		apiVersion = appsv1.SchemeGroupVersion.String()
 
 	case constant.KindDaemonSet:
 		daemonSet, err := sac.daemonSetLister.DaemonSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
-				return nil
+				return sac.deleteAutoPools(logutils.IntoContext(context.TODO(), log), appKey.AppUID)
 			}
 			return err
 		}
@@ -655,14 +659,15 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = daemonSet.Spec.Selector
 		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
 		app = daemonSet.DeepCopy()
-		apiVersion = daemonSet.APIVersion
+		// daemonSet.APIVersion is empty string
+		apiVersion = appsv1.SchemeGroupVersion.String()
 
 	case constant.KindStatefulSet:
 		statefulSet, err := sac.statefulSetLister.StatefulSets(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
-				return nil
+				return sac.deleteAutoPools(logutils.IntoContext(context.TODO(), log), appKey.AppUID)
 			}
 			return err
 		}
@@ -671,14 +676,15 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = statefulSet.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
-		apiVersion = statefulSet.APIVersion
+		// statefulSet.APIVersion is empty string
+		apiVersion = appsv1.SchemeGroupVersion.String()
 
 	case constant.KindJob:
 		job, err := sac.jobLister.Jobs(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
-				return nil
+				return sac.deleteAutoPools(logutils.IntoContext(context.TODO(), log), appKey.AppUID)
 			}
 			return err
 		}
@@ -687,14 +693,15 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = job.Spec.Selector
 		appReplicas = applicationinformers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
-		apiVersion = job.APIVersion
+		// job.APIVersion is empty string
+		apiVersion = batchv1.SchemeGroupVersion.String()
 
 	case constant.KindCronJob:
 		cronJob, err := sac.cronJobLister.CronJobs(namespace).Get(name)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				log.Sugar().Debugf("application in work queue no longer exists")
-				return nil
+				return sac.deleteAutoPools(logutils.IntoContext(context.TODO(), log), appKey.AppUID)
 			}
 			return err
 		}
@@ -703,7 +710,8 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
 		appReplicas = applicationinformers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
 		app = cronJob.DeepCopy()
-		apiVersion = cronJob.APIVersion
+		// cronJob.APIVersion is empty string
+		apiVersion = batchv1.SchemeGroupVersion.String()
 
 	default:
 		return fmt.Errorf("%w: unexpected appWorkQueueKey in workQueue '%+v'", constant.ErrWrongInput, appKey)
@@ -749,7 +757,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			if apierrors.IsNotFound(err) {
 				tmpPool = nil
 			} else {
-				return err
+				return fmt.Errorf("failed to get auto-created IPPool '%s': %w", poolName, err)
 			}
 		}
 
@@ -788,7 +796,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			go func() {
 				defer wg.Done()
 
-				v4PoolName := applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv4, item.Interface, podController.UID)
+				v4PoolName := applicationinformers.SubnetPoolName(podController.Name, constant.IPv4, item.Interface, podController.UID)
 				errV4 = fn(v4PoolName, item.IPv4[0], constant.IPv4, item.Interface)
 			}()
 		}
@@ -798,7 +806,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			go func() {
 				defer wg.Done()
 
-				v6PoolName := applicationinformers.SubnetPoolName(podController.Kind, podController.Namespace, podController.Name, constant.IPv6, item.Interface, podController.UID)
+				v6PoolName := applicationinformers.SubnetPoolName(podController.Name, constant.IPv6, item.Interface, podController.UID)
 				errV6 = fn(v6PoolName, item.IPv6[0], constant.IPv6, item.Interface)
 			}()
 		}
@@ -928,21 +936,33 @@ func (sac *SubnetAppController) controllerDeleteHandler() applicationinformers.A
 			app = object
 
 		default:
-			return fmt.Errorf("unrecognized application: %+v", obj)
+			return fmt.Errorf("%w: unrecognized application: %+v", constant.ErrWrongInput, obj)
 		}
 
-		// clean up all legacy IPPools that matched with the application UID
-		err := sac.client.DeleteAllOf(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
-			constant.LabelIPPoolOwnerApplication:    applicationinformers.AppLabelValue(appKind, app.GetNamespace(), app.GetName()),
-			constant.LabelIPPoolOwnerApplicationUID: string(app.GetUID()),
-			constant.LabelIPPoolReclaimIPPool:       constant.True,
-		})
+		err := sac.deleteAutoPools(logutils.IntoContext(ctx, log), app.GetUID())
 		if nil != err {
 			log.Sugar().Errorf("failed to clean up legacy IPPool, error: %v", err)
+			sac.enqueueApp(ctx, obj, appKind, app.GetUID())
 			return nil
 		}
 
 		log.Info("delete application corresponding auto-created IPPools successfully")
 		return nil
 	}
+}
+
+func (sac *SubnetAppController) deleteAutoPools(ctx context.Context, appUID k8types.UID) error {
+	log := logutils.FromContext(ctx)
+	err := sac.client.DeleteAllOf(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
+		constant.LabelIPPoolOwnerApplicationUID: string(appUID),
+		constant.LabelIPPoolReclaimIPPool:       constant.True,
+	})
+	if nil != err {
+		if apierrors.IsNotFound(err) {
+			log.Info("delete application corresponding auto-created IPPools successfully")
+			return nil
+		}
+		return err
+	}
+	return nil
 }

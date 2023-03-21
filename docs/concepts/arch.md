@@ -20,8 +20,10 @@ Spiderpool consists of following components:
 
 Spiderpool supports for the following CRDs:
 
-* ippool CRD. It is used to store the IP resource for a subnet. Refer to [ippool](./ippool.md) for detail.
+* SpiderSubnet CRD. It is used to represent a collection of IP addresses from which Spiderpool expects SpiderIPPool IPs to be assigned. Refer to [SpiderSubnet](./spidersubnet.md) for detail.
 
-* workloadendpoint CRD. It is used to store the IP assigned to a pod. Refer to [workloadendpoint](./workloadendpoint.md) for detail.
+* SpiderReservedIP CRD. It is used to represent a collection of IP addresses that Spiderpool expects not to be allocated. Refer to [SpiderReservedIP](./spiderreservedip.md) for detail.
 
-* reservedip CRD. It is used to set the reserved IP, which will not be assigned to a pod even if you have set it in the ippool. Refer to [reservedip](./reservedip.md) for detail.
+* SpiderIPPool CRD. It is used to represent a collection of IP addresses from which Spiderpool expects endpoint IPs to be assigned. Refer to [SpiderIPPool](./spiderippool.md) for detail.
+
+* SpiderEndpoint CRD. It is used to represent IP address allocation details for a specific endpoint object. Refer to [SpiderEndpoint](./spiderendpoint.md) for detail.

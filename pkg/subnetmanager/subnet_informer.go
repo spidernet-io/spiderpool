@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -24,10 +25,12 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
@@ -38,6 +41,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -376,7 +380,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	for poolName, preAllocation := range preAllocations {
 		// Only auto-created IPPools have the field 'Application'.
 		if preAllocation.Application != nil {
-			appNamespacedName, isMatch := ParseApplicationNamespacedName(*preAllocation.Application)
+			appNamespacedName, isMatch := applicationinformers.ParseApplicationNamespacedName(*preAllocation.Application)
 			if !isMatch {
 				logger.Sugar().Errorf("Invalid application record %s of IPPool %s, remove the pre-allocation from Subnet", *preAllocation.Application, poolName)
 				continue
@@ -406,6 +410,9 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 	if err != nil {
 		return err
 	}
+
+	// record the metric of how many IPPools the Subnet has.
+	metric.SubnetPoolCounts.Record(int64(len(ipPools)), attribute.String(constant.KindSpiderSubnet, subnet.Name))
 
 	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
@@ -496,22 +503,27 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 func (sc *SubnetController) isAppExist(ctx context.Context, appNamespacedName spiderpooltypes.AppNamespacedName) (bool, error) {
 	var object client.Object
 	isThirdController := false
-	switch appNamespacedName.Kind {
-	case constant.KindPod:
-		object = &corev1.Pod{}
-	case constant.KindDeployment:
-		object = &appsv1.Deployment{}
-	case constant.KindReplicaSet:
-		object = &appsv1.ReplicaSet{}
-	case constant.KindDaemonSet:
-		object = &appsv1.DaemonSet{}
-	case constant.KindStatefulSet:
-		object = &appsv1.StatefulSet{}
-	case constant.KindJob:
-		object = &batchv1.Job{}
-	case constant.KindCronJob:
-		object = &batchv1.CronJob{}
-	default:
+
+	if slices.Contains(constant.K8sAPIVersions, appNamespacedName.APIVersion) {
+		switch appNamespacedName.Kind {
+		case constant.KindPod:
+			object = &corev1.Pod{}
+		case constant.KindDeployment:
+			object = &appsv1.Deployment{}
+		case constant.KindReplicaSet:
+			object = &appsv1.ReplicaSet{}
+		case constant.KindDaemonSet:
+			object = &appsv1.DaemonSet{}
+		case constant.KindStatefulSet:
+			object = &appsv1.StatefulSet{}
+		case constant.KindJob:
+			object = &batchv1.Job{}
+		case constant.KindCronJob:
+			object = &batchv1.CronJob{}
+		default:
+			isThirdController = true
+		}
+	} else {
 		isThirdController = true
 	}
 

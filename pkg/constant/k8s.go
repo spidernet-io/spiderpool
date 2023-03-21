@@ -4,6 +4,9 @@
 package constant
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -31,6 +34,7 @@ const (
 )
 
 var K8sKinds = []string{KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob}
+var K8sAPIVersions = []string{corev1.SchemeGroupVersion.String(), appsv1.SchemeGroupVersion.String(), batchv1.SchemeGroupVersion.String()}
 
 const (
 	PodRunning     types.PodStatus = "Running"
@@ -57,16 +61,11 @@ const (
 	AnnoSpiderSubnets             = AnnotationPre + "/subnets"
 	AnnoSpiderSubnetPoolIPNumber  = AnnotationPre + "/ippool-ip-number"
 	AnnoSpiderSubnetReclaimIPPool = AnnotationPre + "/ippool-reclaim"
+	AnnoSpiderSubnetPoolApp       = AnnotationPre + "/application"
 
 	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
-	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"
 	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
-	LabelIPPoolInterface           = AnnotationPre + "/interface"
 	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
-	LabelIPPoolVersion             = AnnotationPre + "/ippool-version"
-	LabelIPPoolVersionV4           = "IPv4"
-	LabelIPPoolVersionV6           = "IPv6"
-	LabelAutoPoolDesiredIPNumber   = AnnotationPre + "/auto-ippool-desired-ip-number"
 
 	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"

@@ -23,6 +23,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -129,10 +130,19 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
 	findSubnetIPPool := func(subnetName string, ipVersion types.IPVersion) (*spiderpoolv2beta1.SpiderIPPool, error) {
 		poolName := subnetmanagercontrollers.SubnetPoolName(podController.Name, ipVersion, nic, podController.UID)
+		var isRetried bool
+		defer func() {
+			if isRetried {
+				metric.AutoPoolWaitedForAvailableCounts.Add(ctx, 1)
+			}
+		}()
 
 		var pool *spiderpoolv2beta1.SpiderIPPool
 		var err error
 		for j := 1; j <= i.config.OperationRetries; j++ {
+			if j > 1 {
+				isRetried = true
+			}
 			// third-party controller applications
 			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
 				pool, err = i.applyThirdControllerAutoPool(ctx, subnetName, poolName, podController, types.AutoPoolProperty{

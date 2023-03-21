@@ -132,7 +132,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Automatic implementation of static IP addresses and dynamic scalability of IP count
 
-    To realize static IP addresses, current open source projects hardcode IP addresses in the application's annotation, which leads too prone to operations accidents, manual operations of IP address conflicts as well as higher IP management costs caused by application scalability.
+    To realize static IP addresses, current open source projects hardcode IP addresses in the application's annotation, which is prone to operations accidents, manual operations of IP address conflicts as well as higher IP management costs caused by application scalability.
     Spiderpool provides CRD-based management to solve the above problems and minimize operation efforts.
 
     For stateless applications, the IP address range can be automatically fixed and IP resources can be dynamically scaled according to the number of application replicas. See [example](./docs/usage/????) for more details.

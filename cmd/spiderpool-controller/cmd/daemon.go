@@ -336,8 +336,8 @@ func initControllerServiceManagers(ctx context.Context) {
 func initGCManager(ctx context.Context) {
 	// EnableStatefulSet was determined by Configmap.
 	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
+	gcIPConfig.LeaderRetryElectGap = time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
 	gcManager, err := gcmanager.NewGCManager(
-		ctx,
 		controllerContext.ClientSet,
 		gcIPConfig,
 		controllerContext.EndpointManager,

@@ -4,20 +4,50 @@
 package gcmanager
 
 import (
+	"context"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 )
 
 // startPodInformer will set up k8s pod informer in circle
-func (s *SpiderGC) startPodInformer() {
+func (s *SpiderGC) startPodInformer(ctx context.Context) {
 	logger.Sugar().Infof("register pod informer")
 
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		if !s.leader.IsElected() {
+			time.Sleep(s.gcConfig.LeaderRetryElectGap)
+			continue
+		}
+
+		innerCtx, innerCancel := context.WithCancel(ctx)
+		go func() {
+			for {
+				select {
+				case <-innerCtx.Done():
+					return
+				default:
+				}
+
+				if !s.leader.IsElected() {
+					logger.Warn("Leader lost, stop IP GC pod informer")
+					innerCancel()
+					return
+				}
+				time.Sleep(s.gcConfig.LeaderRetryElectGap)
+			}
+		}()
+
 		logger.Info("create Pod informer")
 		informerFactory := informers.NewSharedInformerFactory(s.k8ClientSet, 0)
-		stopper := make(chan struct{})
-
 		podInformer := informerFactory.Core().V1().Pods().Informer()
 		_, err := podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    s.onPodAdd,
@@ -26,11 +56,12 @@ func (s *SpiderGC) startPodInformer() {
 		})
 		if nil != err {
 			logger.Error(err.Error())
+			innerCancel()
 			continue
 		}
-		go podInformer.Run(stopper)
+		informerFactory.Start(innerCtx.Done())
 
-		<-stopper
+		<-innerCtx.Done()
 		logger.Error("k8s pod informer broken")
 	}
 }

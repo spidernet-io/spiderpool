@@ -33,6 +33,8 @@ type GarbageCollectionConfig struct {
 	GCSignalTimeoutDuration   int
 	GCSignalGapDuration       int
 	AdditionalGraceDelay      int
+
+	LeaderRetryElectGap time.Duration
 }
 
 var logger *zap.Logger
@@ -68,7 +70,7 @@ type SpiderGC struct {
 	leader election.SpiderLeaseElector
 }
 
-func NewGCManager(ctx context.Context, clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
+func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
 	wepManager workloadendpointmanager.WorkloadEndpointManager,
 	ippoolManager ippoolmanager.IPPoolManager,
 	podManager podmanager.PodManager,
@@ -126,7 +128,7 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 	}
 
 	// start pod informer
-	go s.startPodInformer()
+	go s.startPodInformer(ctx)
 
 	// trace pod worker
 	go s.tracePodWorker(ctx)

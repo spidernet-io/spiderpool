@@ -109,7 +109,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				}
 			}
 
-			err = s.wepMgr.RemoveFinalizer(ctx, podCache.Namespace, podCache.PodName)
+			err = s.wepMgr.RemoveFinalizer(ctx, endpoint)
 			if nil != err {
 				loggerReleaseIP.Sugar().Errorf("failed to remove wep '%s/%s' finalizer, error: '%v'",
 					podCache.Namespace, podCache.PodName, err)

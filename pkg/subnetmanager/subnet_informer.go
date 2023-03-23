@@ -398,8 +398,11 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			}
 
 			if !exist {
-				logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
-				continue
+				_, err := sc.IPPoolsLister.Get(poolName)
+				if apierrors.IsNotFound(err) {
+					logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
+					continue
+				}
 			}
 
 			autoIPPoolIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)

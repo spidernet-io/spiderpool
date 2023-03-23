@@ -161,7 +161,7 @@ spec:
           value: {{ .Values.feature.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
           value: {{ .Values.feature.gc.GcDeletingTimeOutPod.enabled | quote }}
-        - name: SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY
+        - name: SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY
           value: {{ .Values.feature.gc.GcDeletingTimeOutPod.delay | quote }}
         - name: SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION
           value: {{ .Values.feature.gc.gcAll.intervalInSecond | quote }}

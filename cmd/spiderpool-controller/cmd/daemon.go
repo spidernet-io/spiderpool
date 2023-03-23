@@ -445,6 +445,7 @@ func setupInformers() {
 		logger.Info("Begin to set up auto-created IPPool controller")
 		subnetAppController, err := applicationcontroller.NewSubnetAppController(
 			controllerContext.CRDManager.GetClient(),
+			controllerContext.CRDManager.GetAPIReader(),
 			controllerContext.SubnetManager,
 			applicationcontroller.SubnetAppControllerConfig{
 				EnableIPv4:                    controllerContext.Cfg.EnableIPv4,

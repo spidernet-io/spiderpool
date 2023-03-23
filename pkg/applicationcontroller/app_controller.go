@@ -40,7 +40,9 @@ import (
 var logger *zap.Logger
 
 type SubnetAppController struct {
-	client        client.Client
+	client    client.Client
+	apiReader client.Reader
+
 	subnetMgr     subnetmanager.SubnetManager
 	workQueue     workqueue.RateLimitingInterface
 	appController *applicationinformers.Controller
@@ -76,11 +78,12 @@ type SubnetAppControllerConfig struct {
 	LeaderRetryElectGap           time.Duration
 }
 
-func NewSubnetAppController(client client.Client, subnetMgr subnetmanager.SubnetManager, subnetAppControllerConfig SubnetAppControllerConfig) (*SubnetAppController, error) {
+func NewSubnetAppController(client client.Client, apiReader client.Reader, subnetMgr subnetmanager.SubnetManager, subnetAppControllerConfig SubnetAppControllerConfig) (*SubnetAppController, error) {
 	logger = logutils.Logger.Named("SpiderSubnet-Application-Controllers")
 
 	c := &SubnetAppController{
 		client:                    client,
+		apiReader:                 apiReader,
 		subnetMgr:                 subnetMgr,
 		SubnetAppControllerConfig: subnetAppControllerConfig,
 	}
@@ -752,7 +755,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 	// retrieve application pools
 	fn := func(poolName string, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
 		tmpPool := &spiderpoolv2beta1.SpiderIPPool{}
-		err = sac.client.Get(ctx, k8types.NamespacedName{Name: poolName}, tmpPool)
+		err = sac.apiReader.Get(ctx, k8types.NamespacedName{Name: poolName}, tmpPool)
 		if nil != err {
 			if apierrors.IsNotFound(err) {
 				tmpPool = nil

@@ -176,6 +176,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 			// found
 			logger.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%v' ", subnetName, pool)
 
+			// TODO(Icarus9913): If shrink failed, it'll cost the whole loop
 			// we fetched Auto-created IPPool but it doesn't have any IPs, just wait for a while and let the IPPool informer to allocate IPs for it
 			if !isPoolIPsDesired(pool, poolIPNum) {
 				logger.Sugar().Warnf("fetch SubnetIPPool %d times: retrieved IPPool '%s' but doesn't have the desiredIPNumber IPs, wait for a second and get a retry", j, poolName)

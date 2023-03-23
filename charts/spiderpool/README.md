@@ -118,7 +118,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `feature.enableIPv6`                      | enable ipv6                                                              | `false`  |
 | `feature.networkMode`                     | the network mode                                                         | `legacy` |
 | `feature.enableStatefulSet`               | the network mode                                                         | `true`   |
-| `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                               | `false`  |
+| `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                               | `true`   |
 | `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                    | `true`   |
 | `feature.gc.gcAll.intervalInSecond`       | the gc all interval duration                                             | `600`    |
 | `feature.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period | `true`   |

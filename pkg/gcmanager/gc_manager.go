@@ -136,7 +136,7 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 	// monitor gc signal from CLI or DefaultGCInterval
 	go s.monitorGCSignal(ctx)
 
-	for i := 0; i < s.gcConfig.ReleaseIPWorkerNum; i++ {
+	for i := 1; i <= s.gcConfig.ReleaseIPWorkerNum; i++ {
 		go s.releaseIPPoolIPExecutor(ctx, i)
 	}
 

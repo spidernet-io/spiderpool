@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -81,152 +82,185 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 		return
 	}
 
-	for _, pool := range poolList.Items {
-		logger.Sugar().Debugf("checking IPPool '%s'", pool.Name)
-		poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)
-		if nil != err {
-			logger.Sugar().Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %v", pool, err)
-			continue
+	var v4poolList, v6poolList []spiderpoolv2beta1.SpiderIPPool
+	for i := range poolList.Items {
+		if poolList.Items[i].Spec.IPVersion != nil {
+			if *poolList.Items[i].Spec.IPVersion == constant.IPv4 {
+				v4poolList = append(v4poolList, poolList.Items[i])
+			} else {
+				v6poolList = append(v6poolList, poolList.Items[i])
+			}
 		}
+	}
 
-		for poolIP, poolIPAllocation := range poolAllocatedIPs {
-			podNS, podName, err := cache.SplitMetaNamespaceKey(poolIPAllocation.NamespacedName)
-			if err != nil {
-				logger.Error(err.Error())
+	fnScanAll := func(pools []spiderpoolv2beta1.SpiderIPPool) {
+		for _, pool := range pools {
+			logger.Sugar().Debugf("checking IPPool '%s'", pool.Name)
+			poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)
+			if nil != err {
+				logger.Sugar().Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %v", pool, err)
 				continue
 			}
 
-			scanAllLogger := logger.With(
-				zap.String("podNS", podNS),
-				zap.String("podName", podName),
-				zap.String("podUID", poolIPAllocation.PodUID),
-			)
-
-			podYaml, err := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
-			if err != nil {
-				// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
-				if apierrors.IsNotFound(err) {
-					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation"))
-					endpoint, err := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
-					if nil != err {
-						// just continue if we meet other errors
-						if !apierrors.IsNotFound(err) {
-							wrappedLog.Sugar().Errorf("failed to get SpiderEndpoint: %v", err)
-							continue
-						}
-					} else {
-						if s.gcConfig.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
-							isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, podNS, podName, constant.KindStatefulSet)
-							if nil != err {
-								scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod '%s/%s' IP '%s' should be cleaned or not, error: %v",
-									podNS, podName, poolIP, err)
-								continue
-							}
-							if isValidStsPod {
-								scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod '%s/%s'",
-									poolIP, podNS, podName)
-								continue
-							}
-						}
-					}
-
-					wrappedLog.Sugar().Warnf("found IPPool '%s' legacy IP '%s', try to release it", pool.Name, poolIP)
-					err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
-					if nil != err {
-						wrappedLog.Error(err.Error())
-						continue
-					}
-					// clean up single IP and remove its corresponding SpiderEndpoint successfully, just continue to the next poolIP
+			for poolIP, poolIPAllocation := range poolAllocatedIPs {
+				podNS, podName, err := cache.SplitMetaNamespaceKey(poolIPAllocation.NamespacedName)
+				if err != nil {
+					logger.Error(err.Error())
 					continue
 				}
 
-				scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", err)
-				continue
-			}
+				scanAllLogger := logger.With(
+					zap.String("podNS", podNS),
+					zap.String("podName", podName),
+					zap.String("podUID", poolIPAllocation.PodUID),
+				)
 
-			// check pod status phase with its yaml
-			podEntry, err := s.buildPodEntry(nil, podYaml, false)
-			if nil != err {
-				scanAllLogger.Sugar().Errorf("failed to build podEntry '%s/%s' in scanAll, error: %v", podNS, podName, err)
-				continue
-			}
+				podYaml, err := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
+				if err != nil {
+					// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
+					if apierrors.IsNotFound(err) {
+						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod not found in k8s but still exists in IPPool allocation"))
+						endpoint, err := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
+						if nil != err {
+							// just continue if we meet other errors
+							if !apierrors.IsNotFound(err) {
+								wrappedLog.Sugar().Errorf("failed to get SpiderEndpoint: %v", err)
+								continue
+							}
+						} else {
+							if s.gcConfig.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
+								isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, podNS, podName, constant.KindStatefulSet)
+								if nil != err {
+									scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod '%s/%s' IP '%s' should be cleaned or not, error: %v",
+										podNS, podName, poolIP, err)
+									continue
+								}
+								if isValidStsPod {
+									scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod '%s/%s'",
+										poolIP, podNS, podName)
+									continue
+								}
+							}
+						}
 
-			// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the pod is in 'Terminating|Succeeded|Failed' status phase
-			if podEntry != nil {
-				if time.Now().UTC().After(podEntry.TracingStopTime) {
-					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod is out of time"))
-					err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
-					if nil != err {
-						wrappedLog.Error(err.Error())
+						wrappedLog.Sugar().Warnf("found IPPool '%s' legacy IP '%s', try to release it", pool.Name, poolIP)
+						err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
+						if nil != err {
+							wrappedLog.Error(err.Error())
+							continue
+						}
+						// clean up single IP and remove its corresponding SpiderEndpoint successfully, just continue to the next poolIP
 						continue
 					}
-				} else {
-					// otherwise, flush the PodEntry database and let tracePodWorker to solve it if the current controller is elected master.
-					if s.leader.IsElected() {
-						err = s.PodDB.ApplyPodEntry(podEntry)
+
+					scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", err)
+					continue
+				}
+
+				// check pod status phase with its yaml
+				podEntry, err := s.buildPodEntry(nil, podYaml, false)
+				if nil != err {
+					scanAllLogger.Sugar().Errorf("failed to build podEntry '%s/%s' in scanAll, error: %v", podNS, podName, err)
+					continue
+				}
+
+				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the pod is in 'Terminating|Succeeded|Failed' status phase
+				if podEntry != nil {
+					if time.Now().UTC().After(podEntry.TracingStopTime) {
+						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "pod is out of time"))
+						err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
 						if nil != err {
-							scanAllLogger.Error(err.Error())
+							wrappedLog.Error(err.Error())
+							continue
+						}
+					} else {
+						// otherwise, flush the PodEntry database and let tracePodWorker to solve it if the current controller is elected master.
+						if s.leader.IsElected() {
+							err = s.PodDB.ApplyPodEntry(podEntry)
+							if nil != err {
+								scanAllLogger.Error(err.Error())
+								continue
+							}
+
+							scanAllLogger.With(zap.String("tracing-reason", string(podEntry.PodTracingReason))).
+								Sugar().Infof("update podEntry '%s/%s' successfully", podNS, podName)
+						}
+					}
+				} else {
+					// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with pod UID
+					if string(podYaml.UID) != poolIPAllocation.PodUID {
+						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
+						// we are afraid that no one removes the old same name Endpoint finalizer
+						err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
+						if nil != err {
+							wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
 							continue
 						}
 
-						scanAllLogger.With(zap.String("tracing-reason", string(podEntry.PodTracingReason))).
-							Sugar().Infof("update podEntry '%s/%s' successfully", podNS, podName)
-					}
-				}
-			} else {
-				// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with pod UID
-				if string(podYaml.UID) != poolIPAllocation.PodUID {
-					wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
-					// we are afraid that no one removes the old same name Endpoint finalizer
-					err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
-					if nil != err {
-						wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
-						continue
-					}
+						wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
+					} else {
+						endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)
+						if err != nil {
+							scanAllLogger.Sugar().Errorf("failed to get Endpoint '%s/%s', error: %v", podYaml.Namespace, podYaml.Name, err)
+							continue
+						}
 
-					wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
-				} else {
-					endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)
-					if err != nil {
-						scanAllLogger.Sugar().Errorf("failed to get Endpoint '%s/%s', error: %v", podYaml.Namespace, podYaml.Name, err)
-						continue
-					}
-
-					if endpoint.Status.Current.UID == string(podYaml.UID) {
-						// case: The pod in IPPool's ip-allocationDetail is also exist in k8s,
-						// and the IPPool IP corresponding allocation pod UID is same with Endpoint pod UID, but the IPPool IP isn't belong to the Endpoint IPs
-						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "same pod UID but IPPoolAllocation IP is different with Endpoint IP"))
-						isBadIP := true
-						for _, endpointIP := range endpoint.Status.Current.IPs {
-							if *pool.Spec.IPVersion == constant.IPv4 {
-								if endpointIP.IPv4 != nil && strings.Split(*endpointIP.IPv4, "/")[0] == poolIP {
-									isBadIP = false
-								}
-							} else {
-								if endpointIP.IPv6 != nil && strings.Split(*endpointIP.IPv6, "/")[0] == poolIP {
-									isBadIP = false
+						if endpoint.Status.Current.UID == string(podYaml.UID) {
+							// case: The pod in IPPool's ip-allocationDetail is also exist in k8s,
+							// and the IPPool IP corresponding allocation pod UID is same with Endpoint pod UID, but the IPPool IP isn't belong to the Endpoint IPs
+							wrappedLog := scanAllLogger.With(zap.String("gc-reason", "same pod UID but IPPoolAllocation IP is different with Endpoint IP"))
+							isBadIP := true
+							for _, endpointIP := range endpoint.Status.Current.IPs {
+								if *pool.Spec.IPVersion == constant.IPv4 {
+									if endpointIP.IPv4 != nil && strings.Split(*endpointIP.IPv4, "/")[0] == poolIP {
+										isBadIP = false
+									}
+								} else {
+									if endpointIP.IPv6 != nil && strings.Split(*endpointIP.IPv6, "/")[0] == poolIP {
+										isBadIP = false
+									}
 								}
 							}
-						}
-						if isBadIP {
-							// release IP but no need to clean up SpiderEndpoint object
-							err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
-								IP:  poolIP,
-								UID: poolIPAllocation.PodUID},
-							})
-							if nil != err {
-								wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
-								continue
+							if isBadIP {
+								// release IP but no need to clean up SpiderEndpoint object
+								err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
+									IP:  poolIP,
+									UID: poolIPAllocation.PodUID},
+								})
+								if nil != err {
+									wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
+									continue
+								}
+								wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 							}
-							wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 						}
+						// It's impossible that a new IP would be allocated when an old same name Endpoint object exist, because we already avoid it in IPAM
 					}
-					// It's impossible that a new IP would be allocated when an old same name Endpoint object exist, because we already avoid it in IPAM
 				}
 			}
+			logger.Sugar().Debugf("task checking IPPool '%s' is completed", pool.Name)
 		}
-		logger.Sugar().Debugf("task checking IPPool '%s' is completed", pool.Name)
 	}
+
+	wg := sync.WaitGroup{}
+	if len(v4poolList) != 0 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fnScanAll(v4poolList)
+		}()
+	}
+
+	if len(v6poolList) != 0 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fnScanAll(v6poolList)
+		}()
+	}
+
+	wg.Wait()
+	logger.Sugar().Debugf("IP GC scan all finished")
 }
 
 // releaseSingleIPAndRemoveWEPFinalizer serves for handleTerminatingPod to gc singleIP and remove wep finalizer

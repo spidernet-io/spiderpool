@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/spidernet-io/spiderpool/pkg/election"
@@ -41,12 +42,9 @@ var logger *zap.Logger
 
 type GCManager interface {
 	Start(ctx context.Context) error
-
 	GetPodDatabase() PodDBer
-
 	TriggerGCAll()
-
-	Health()
+	Health() bool
 }
 
 var _ GCManager = &SpiderGC{}
@@ -66,8 +64,9 @@ type SpiderGC struct {
 	ippoolMgr ippoolmanager.IPPoolManager
 	podMgr    podmanager.PodManager
 	stsMgr    statefulsetmanager.StatefulSetManager
+	leader    election.SpiderLeaseElector
 
-	leader election.SpiderLeaseElector
+	informerFactory informers.SharedInformerFactory
 }
 
 func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
@@ -158,6 +157,22 @@ func (s *SpiderGC) TriggerGCAll() {
 	}
 }
 
-// TODO(Icarus9913): implement me
-func (s *SpiderGC) Health() {
+const waitForCacheSyncTimeout = 5 * time.Second
+
+func (s *SpiderGC) Health() bool {
+	isHealth := true
+
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), waitForCacheSyncTimeout)
+	defer cancelFunc()
+
+	if s.informerFactory != nil {
+		waitForCacheSync := s.informerFactory.WaitForCacheSync(ctx.Done())
+		for _, isCacheSync := range waitForCacheSync {
+			if !isCacheSync {
+				isHealth = false
+			}
+		}
+	}
+
+	return isHealth
 }

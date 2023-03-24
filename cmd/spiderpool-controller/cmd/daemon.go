@@ -212,7 +212,7 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize spiderpool-controller leader election")
-	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
+	initSpiderControllerLeaderElect(ctx)
 
 	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(

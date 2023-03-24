@@ -26,6 +26,7 @@ type SpiderLeaseElector interface {
 	Run(ctx context.Context, clientSet kubernetes.Interface) error
 	// IsElected returns a boolean value to check current Elector whether is a leader
 	IsElected() bool
+	GetLeader() string
 }
 
 type SpiderLeader struct {
@@ -172,4 +173,8 @@ func (sl *SpiderLeader) tryToElect(ctx context.Context) {
 
 		time.Sleep(sl.leaderRetryElectGap)
 	}
+}
+
+func (sl *SpiderLeader) GetLeader() string {
+	return sl.leaderElector.GetLeader()
 }

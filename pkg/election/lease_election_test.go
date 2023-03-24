@@ -108,6 +108,7 @@ var _ = Describe("Leader Election", Label("unitest", "election_test"), func() {
 
 			// wait for us to become leader
 			Eventually(spiderLeaseElector.IsElected).WithTimeout(5 * time.Second).Should(BeTrue())
+			Expect(spiderLeaseElector.GetLeader()).Should(Equal(globalParams.leaseLockIdentity))
 
 			cancel()
 			Eventually(ctx.Done()).WithTimeout(1 * time.Second).Should(BeClosed())

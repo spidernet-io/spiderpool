@@ -5,6 +5,7 @@ package gcmanager
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
@@ -82,21 +84,35 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 
 			// we need to gather the pod corresponding SpiderEndpoint allocation data to get the used history IPs.
 			podUsedIPs := convert.GroupIPAllocationDetails(endpoint.Status.Current.UID, endpoint.Status.Current.IPs)
-			// release pod used history IPs
-			for poolName, ips := range podUsedIPs {
-				loggerReleaseIP.Sugar().Infof("pod '%s/%s used IPs '%+v' from pool '%s', begin to release",
-					podCache.Namespace, podCache.PodName, ips, poolName)
-
-				err = s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
-				if nil != err {
-					metric.IPGCFailureCounts.Add(ctx, 1)
-					loggerReleaseIP.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in SpiderEndpoint '%s/%s', error: %v",
-						poolName, ips, podCache.Namespace, podCache.PodName, err)
-					continue
-				}
-				metric.IPGCTotalCounts.Add(ctx, 1)
+			tickets := podUsedIPs.Pools()
+			err = s.gcLimiter.AcquireTicket(ctx, tickets...)
+			if nil != err {
+				logger.Sugar().Errorf("failed to get IP GC limiter tickets, error: %v", err)
 			}
 
+			wg := sync.WaitGroup{}
+			wg.Add(len(podUsedIPs))
+			// release pod used history IPs
+			for tmpPoolName, tmpIPs := range podUsedIPs {
+				go func(poolName string, ips []types.IPAndUID) {
+					defer wg.Done()
+
+					loggerReleaseIP.Sugar().Infof("pod '%s/%s used IPs '%+v' from pool '%s', begin to release",
+						podCache.Namespace, podCache.PodName, ips, poolName)
+
+					err := s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
+					if nil != err {
+						metric.IPGCFailureCounts.Add(ctx, 1)
+						loggerReleaseIP.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in SpiderEndpoint '%s/%s', error: %v",
+							poolName, ips, podCache.Namespace, podCache.PodName, err)
+					}
+					metric.IPGCTotalCounts.Add(ctx, 1)
+				}(tmpPoolName, tmpIPs)
+			}
+			wg.Wait()
+
+			// we need to release tickets after we finish this ip gc task
+			s.gcLimiter.ReleaseTicket(ctx, tickets...)
 			loggerReleaseIP.Sugar().Infof("release IPPoolIP task '%+v' successfully", *podCache)
 
 			// delete StatefulSet wep (other controller wep has OwnerReference, its lifecycle is same with pod)
@@ -115,7 +131,6 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 					podCache.Namespace, podCache.PodName, err)
 				continue
 			}
-
 			loggerReleaseIP.Sugar().Infof("remove wep '%s/%s' finalizer '%s' successfully",
 				podCache.Namespace, podCache.PodName, constant.SpiderFinalizer)
 

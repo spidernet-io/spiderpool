@@ -331,7 +331,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			By("G00004: The IP should be reclaimed when deleting the pod with 0 second of grace period")
 			opt := &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: pointer.Int64(10),
 			}
 			// Delete resources with 0 second of grace period
 			GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)

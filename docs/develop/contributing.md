@@ -114,11 +114,7 @@ A pull request will be checked by following workflow, which is required for merg
 
 ### Action: your PR should be signed off
 
-When you commit your modification, add `-s` in your commit command:
-
-```
-git commit -s
-```
+When you commit your modification, add `-s` in your commit command `git commit -s`
 
 ### Action: check yaml files
 

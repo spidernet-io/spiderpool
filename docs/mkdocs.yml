@@ -66,9 +66,8 @@ nav:
       - cmdref/spiderpool-agent.md
   - Development:
       - develop/roadmap.md
-      - develop/pullrequest.md
+      - develop/contributing.md
       - develop/release.md
       - develop/swagger_openapi.md
-      - develop/test.md
       - develop/changelog.md
       - develop/upgrade.md

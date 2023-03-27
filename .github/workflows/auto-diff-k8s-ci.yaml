@@ -1,0 +1,365 @@
+name: Auto Adapted K8s Matrix CI
+
+permissions: write-all
+
+env:
+  CLUSTER_NAME: spider
+  E2E_TIME_OUT: 60m
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'sha, tag, branch'
+        required: true
+        default: main
+      k8s_version:
+        description: 'should be a released k8s version, format e.g: v1.25.2; if not set, versions 1.22 - 1.26 will be run.)'
+        required: false
+        type: string
+      e2e_enabled:
+        description: 'run e2e test'
+        required: false
+        type: choice
+        default: false
+        options:
+          - true
+          - false
+
+jobs:
+  get_ref:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.result.outputs.ref }}
+      e2e_enabled: ${{ steps.get_ref.outputs.e2e_enabled }}
+      inputs_k8s_version: ${{ steps.get_ref.outputs.inputs_k8s_version }}
+      default_k8s_version: ${{ steps.get_ref.outputs.default_k8s_version }}
+    steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo "call by self workflow_dispatch"
+            echo ::set-output name=tag::${{ github.event.inputs.ref }}
+            if ${{ github.event.inputs.k8s_version == '' }}; then
+              echo ::set-output name=inputs_k8s_version::false
+              echo ::set-output name=default_k8s_version::true
+            else
+              echo "A custom version of k8s will be run: ${{ github.event.inputs.k8s_version }} "
+              echo ::set-output name=inputs_k8s_version::true
+              echo ::set-output name=default_k8s_version::false
+            fi
+            if ${{ github.event.inputs.e2e_enabled == 'true' }}; then
+              echo ::set-output name=e2e_enabled::true
+            else
+              echo ::set-output name=e2e_enabled::false
+            fi
+          else
+            # schedule event
+            # use main sha for ci image tag
+            echo "trigger by schedule"
+            echo ::set-output name=tag::main
+            echo ::set-output name=push::false
+            echo ::set-output name=e2e_enabled::true
+            echo ::set-output name=inputs_k8s_version::false
+            echo ::set-output name=default_k8s_version::true
+          fi
+      # some event, the tag is not sha, so checkout it and get sha
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ steps.get_ref.outputs.tag }}
+
+      - name: Result Ref
+        id: result
+        run: |
+          ref=$( git show -s --format='format:%H')
+          echo ::set-output name=ref::${ref}
+
+  call_build_ci_image:
+    needs: [get_ref]
+    uses: ./.github/workflows/build-image-ci.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+      push: false
+    secrets: inherit
+
+  lint_chart_against_release_image:
+    needs: get_ref
+    uses: ./.github/workflows/call-lint-chart.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
+
+  call_release_chart:
+    needs: [get_ref]
+    uses: ./.github/workflows/call-release-chart.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+      submit: false
+    secrets: inherit
+
+  call_k8s_matrix:
+    # k8s versions
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [v1.22.0, v1.23.0, v1.24.0, v1.25.0, v1.26.0]
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.default_k8s_version == 'true' && needs.get_ref.outputs.inputs_k8s_version == 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        id: prepare
+        run: |
+          echo "ref: ${{ needs.get_ref.outputs.ref }} "
+          echo "===== image "
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+          TMP=` date +%m%d%H%M%S `
+          E2E_CLUSTER_NAME="spiderpool${TMP}"
+          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ needs.get_ref.outputs.ref }}
+
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.0
+          id: go
+
+      - name: Install Kind Bin
+        uses: helm/kind-action@v1.5.0
+        with:
+          install_only: true
+
+      - name: Install Tools
+        run: |
+          # install kind/p2ctl/helm/ginkgo
+          bash ./test/scripts/install-tools.sh
+
+      - name: Download spiderpool-agent image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-agent
+          path: test/.download
+
+      - name: Download spiderpool-controller image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-controller
+          path: test/.download
+
+      - name: Load Images
+        run: |
+          TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
+          for ITEM in $TAR_FILES ; do
+              IMAGE_NAME=${ITEM%*.tar}
+              echo ${IMAGE_NAME}
+              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+          done
+
+      - name: Setting up a specific version of kind cluster
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          shell: bash
+          command: |
+                make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+                    -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                    -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+                    -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+                    -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT="" \
+                    -e E2E_KIND_IMAGE_TAG=${{ matrix.version }}
+
+      - name: Run e2e Test
+        id: run_e2e
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        continue-on-error: true
+        run: |
+          echo ${{ github.event.inputs.labels }}
+          RESULT=0
+          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  || RESULT=1
+          if ((RESULT==0)) ; then
+              echo ::set-output name=pass::true
+          else
+              echo ::set-output name=pass::false
+          fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo ::set-output name=updaloadlog::true
+          else
+              echo ::set-output name=updaloadlog::false
+          fi
+          if [ -f "./e2ereport.json" ] ; then
+              echo "error, did not find e2e report"
+              echo ::set-output name=upload::true
+          else
+              echo ::set-output name=upload::false
+          fi
+
+      - name: Upload e2e log
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ matrix.version }}-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 7
+
+      - name: Upload e2e report
+        if: ${{ steps.run_e2e.outputs.upload == 'true' && needs.get_ref.outputs.e2e_enabled == 'true' }}
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ matrix.version }}-e2ereport.json
+          path: e2ereport.json
+          retention-days: 1
+
+      - name: Show e2e Result
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        run: |
+          if ${{ steps.run_e2e.outputs.pass == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi
+
+
+  call_inputs_k8s:
+    # workflow_dispatch event flow triggered by running the input k8s version
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.default_k8s_version == 'false' && needs.get_ref.outputs.inputs_k8s_version == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        id: prepare
+        run: |
+          echo "ref: ${{ needs.get_ref.outputs.ref }} "
+          echo "===== image "
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}"
+          echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ needs.call_build_ci_image.outputs.imageTag }}-race"
+          TMP=` date +%m%d%H%M%S `
+          E2E_CLUSTER_NAME="spiderpool${TMP}"
+          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ needs.get_ref.outputs.ref }}
+
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.0
+          id: go
+
+      - name: Install Kind Bin
+        uses: helm/kind-action@v1.5.0
+        with:
+          install_only: true
+
+      - name: Install Tools
+        run: |
+          # install kind/p2ctl/helm/ginkgo
+          bash ./test/scripts/install-tools.sh
+
+      - name: Download spiderpool-agent image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-agent
+          path: test/.download
+
+      - name: Download spiderpool-controller image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-controller
+          path: test/.download
+
+      - name: Load Images
+        run: |
+          TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
+          for ITEM in $TAR_FILES ; do
+              IMAGE_NAME=${ITEM%*.tar}
+              echo ${IMAGE_NAME}
+              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+          done
+
+      - name: Setting up a specific version of kind cluster
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          shell: bash
+          command: |
+                make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+                    -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                    -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+                    -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+                    -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT="" \
+                    -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }}
+
+      - name: Run e2e Test
+        id: run_e2e
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        continue-on-error: true
+        run: |
+          echo ${{ github.event.inputs.labels }}
+          RESULT=0
+          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }}  || RESULT=1
+          if ((RESULT==0)) ; then
+              echo ::set-output name=pass::true
+          else
+              echo ::set-output name=pass::false
+          fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo ::set-output name=updaloadlog::true
+          else
+              echo ::set-output name=updaloadlog::false
+          fi
+          if [ -f "./e2ereport.json" ] ; then
+              echo "error, did not find e2e report"
+              echo ::set-output name=upload::true
+          else
+              echo ::set-output name=upload::false
+          fi
+
+      - name: Upload e2e log
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ inputs.k8s_version }}-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 7
+
+      - name: Upload e2e report
+        if: ${{ steps.run_e2e.outputs.upload == 'true' && needs.get_ref.outputs.e2e_enabled == 'true' }}
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ inputs.k8s_version }}-e2ereport.json
+          path: e2ereport.json
+          retention-days: 1
+
+      - name: Show e2e Result
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        run: |
+          if ${{ steps.run_e2e.outputs.pass == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi

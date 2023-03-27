@@ -355,9 +355,16 @@ func initGCManager(ctx context.Context) {
 	}
 	controllerContext.GCManager = gcManager
 
-	if err := controllerContext.GCManager.Start(ctx); err != nil {
-		logger.Fatal(err.Error())
-	}
+	go func() {
+		errCh := controllerContext.GCManager.Start(ctx)
+		select {
+		case err := <-errCh:
+			logger.Fatal(err.Error())
+		case <-ctx.Done():
+			logger.Error("global ctx down!")
+			return
+		}
+	}()
 }
 
 func initSpiderControllerLeaderElect(ctx context.Context) {

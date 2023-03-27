@@ -14,6 +14,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
@@ -41,7 +42,7 @@ type GarbageCollectionConfig struct {
 var logger *zap.Logger
 
 type GCManager interface {
-	Start(ctx context.Context) error
+	Start(ctx context.Context) <-chan error
 	GetPodDatabase() PodDBer
 	TriggerGCAll()
 	Health() bool
@@ -67,6 +68,7 @@ type SpiderGC struct {
 	leader    election.SpiderLeaseElector
 
 	informerFactory informers.SharedInformerFactory
+	gcLimiter       limiter.Limiter
 }
 
 func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
@@ -114,16 +116,19 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 		podMgr:    podManager,
 		stsMgr:    stsManager,
 
-		leader: spiderControllerLeader,
+		leader:    spiderControllerLeader,
+		gcLimiter: limiter.NewLimiter(limiter.LimiterConfig{}),
 	}
 
 	return spiderGC, nil
 }
 
-func (s *SpiderGC) Start(ctx context.Context) error {
+func (s *SpiderGC) Start(ctx context.Context) <-chan error {
+	errCh := make(chan error)
+
 	if !s.gcConfig.EnableGCIP {
 		logger.Warn("IP garbage collection is forbidden")
-		return nil
+		return errCh
 	}
 
 	// start pod informer
@@ -139,8 +144,15 @@ func (s *SpiderGC) Start(ctx context.Context) error {
 		go s.releaseIPPoolIPExecutor(ctx, i)
 	}
 
+	go func() {
+		err := s.gcLimiter.Start(ctx)
+		if nil != err {
+			errCh <- err
+		}
+	}()
+
 	logger.Info("running IP garbage collection")
-	return nil
+	return errCh
 }
 
 // TODO(Icarus9913): implement me

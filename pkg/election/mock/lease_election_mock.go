@@ -38,6 +38,20 @@ func (m *MockSpiderLeaseElector) EXPECT() *MockSpiderLeaseElectorMockRecorder {
 	return m.recorder
 }
 
+// GetLeader mocks base method.
+func (m *MockSpiderLeaseElector) GetLeader() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLeader")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetLeader indicates an expected call of GetLeader.
+func (mr *MockSpiderLeaseElectorMockRecorder) GetLeader() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLeader", reflect.TypeOf((*MockSpiderLeaseElector)(nil).GetLeader))
+}
+
 // IsElected mocks base method.
 func (m *MockSpiderLeaseElector) IsElected() bool {
 	m.ctrl.T.Helper()

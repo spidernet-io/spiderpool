@@ -275,10 +275,10 @@ check_test_label:
 .PHONY: unitest-tests
 unitest-tests: check_test_label
 	@echo "run unitest-tests"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh   \
-		--cover --coverprofile=./coverage.out --covermode set  \
+	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
+		--cover --coverprofile=./coverage.out --covermode set \
 		--json-report unitestreport.json \
-		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p   --slow-spec-threshold=120s \
+		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 

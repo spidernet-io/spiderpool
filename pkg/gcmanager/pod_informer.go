@@ -59,6 +59,7 @@ func (s *SpiderGC) startPodInformer(ctx context.Context) {
 			innerCancel()
 			continue
 		}
+		s.informerFactory = informerFactory
 		informerFactory.Start(innerCtx.Done())
 
 		<-innerCtx.Done()

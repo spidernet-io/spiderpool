@@ -149,6 +149,10 @@ func DaemonMain() {
 			logger.Fatal(err.Error())
 		}
 	}()
+	waitForCacheSync := mgr.GetCache().WaitForCacheSync(controllerContext.InnerCtx)
+	if !waitForCacheSync {
+		logger.Fatal("failed to wait for syncing controller-runtime cache")
+	}
 
 	logger.Info("Begin to initialize OpenAPI HTTP server")
 	srv, err := newControllerOpenAPIServer()
@@ -212,7 +216,7 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize spiderpool-controller leader election")
-	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
+	initSpiderControllerLeaderElect(ctx)
 
 	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(
@@ -351,9 +355,16 @@ func initGCManager(ctx context.Context) {
 	}
 	controllerContext.GCManager = gcManager
 
-	if err := controllerContext.GCManager.Start(ctx); err != nil {
-		logger.Fatal(err.Error())
-	}
+	go func() {
+		errCh := controllerContext.GCManager.Start(ctx)
+		select {
+		case err := <-errCh:
+			logger.Fatal(err.Error())
+		case <-ctx.Done():
+			logger.Error("global ctx down!")
+			return
+		}
+	}()
 }
 
 func initSpiderControllerLeaderElect(ctx context.Context) {

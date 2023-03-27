@@ -157,6 +157,10 @@ func DaemonMain() {
 			logger.Fatal(err.Error())
 		}
 	}()
+	waitForCacheSync := mgr.GetCache().WaitForCacheSync(agentContext.InnerCtx)
+	if !waitForCacheSync {
+		logger.Fatal("failed to wait for syncing controller-runtime cache")
+	}
 
 	logger.Info("Begin to initialize spiderpool-agent OpenAPI HTTP server")
 	srv, err := newAgentOpenAPIHttpServer()

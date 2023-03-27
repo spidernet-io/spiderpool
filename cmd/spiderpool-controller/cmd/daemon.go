@@ -149,6 +149,10 @@ func DaemonMain() {
 			logger.Fatal(err.Error())
 		}
 	}()
+	waitForCacheSync := mgr.GetCache().WaitForCacheSync(controllerContext.InnerCtx)
+	if !waitForCacheSync {
+		logger.Fatal("failed to wait for syncing controller-runtime cache")
+	}
 
 	logger.Info("Begin to initialize OpenAPI HTTP server")
 	srv, err := newControllerOpenAPIServer()

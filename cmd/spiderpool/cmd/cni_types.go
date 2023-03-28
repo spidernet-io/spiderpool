@@ -27,10 +27,11 @@ const (
 	CniVersion030 = "0.3.0"
 	CniVersion031 = "0.3.1"
 	CniVersion040 = "0.4.0"
+	CniVersion100 = "1.0.0"
 )
 
 // SupportCNIVersions indicate the CNI version that spiderpool support.
-var SupportCNIVersions = []string{CniVersion030, CniVersion031, CniVersion040}
+var SupportCNIVersions = []string{CniVersion030, CniVersion031, CniVersion040, CniVersion100}
 
 const DefaultLogLevelStr = logutils.LogInfoLevelStr
 

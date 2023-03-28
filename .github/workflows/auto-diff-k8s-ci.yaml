@@ -1,4 +1,4 @@
-name: Auto Adapted K8s Matrix CI
+name: Nightly K8s Matrix
 
 permissions: write-all
 
@@ -8,7 +8,7 @@ env:
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "0 20 * * *"
 
   workflow_dispatch:
     inputs:

@@ -1,57 +1,27 @@
 # Pod annotation of multi-NIC
 
-*Spiderpool supports specifying the IP pools for each interface by Pod annotation in multi-NIC scenario.*
+when when assigning multiple NICs to a pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
 
->*Creating Pods with multiple interfaces depends on [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). Before reading this guide, please ensure that you have [installed Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#installation) and can [use it](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/how-to-use.md) skillfully.*
-
-## Set up Spiderpool
-
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+This feature supports to implement by annotation `ipam.spidernet.io/subnet` and `ipam.spidernet.io/ippool` 
 
 ## Get Started
 
-First, let's take a look at the [Multus CNI network configuration](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md) used in this example:
+The example will create two Multus CNI Configuration object and create two underlay subnets.
+Then run a pod with two NICs with IP in different subnets.
 
-```bash
-cat /etc/cni/net.d/00-multus.conf
-{
-  "cniVersion": "0.3.1",
-  "name": "multus-cni-network",
-  "type": "multus",
-  "confDir": "/etc/cni/net.d/" ,
-  "capabilities": {
-    "portMappings": true
-  },
-  "clusterNetwork": "macvlan-cni-default",
-  "multusNamespace": "kube-system",
-  "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
-}
-```
+### Set up Spiderpool
 
-We configure `macvlan-cni-default` as the default CNI network of the Kubernetes cluster, which is a combination of [macvlan CNI](https://www.cni.dev/plugins/current/main/macvlan/) and Spiderpool.
+follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/macvlan-cni-default.yaml
-```
+### Set up Multus Configuration
 
-```yaml
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: macvlan-cni-default
-  namespace: kube-system
-spec:
-  config: '{
-      "cniVersion": "0.3.1",
-      "type": "macvlan",
-      "mode": "bridge",
-      "master": "eth0",
-      "name": "macvlan-cni-default",
-      "ipam": {
-        "type": "spiderpool"
-      }
-    }'
-```
+TODO, create two network-attachment-definitions
+
+## multiple NICs by subnet
+
+TODO
+
+## multiple NICs by IPPool
 
 Create two IPPools to provide IP addresses for different interfaces.
 
@@ -85,6 +55,7 @@ spec:
   template:
     metadata:
       annotations:
+        v1.multus-cni.io/default-network: kube-system/macvlan-pod-network
         k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni-default
         ipam.spidernet.io/ippools: |-
           [{

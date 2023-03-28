@@ -33,9 +33,13 @@ markdown_extensions:
 nav:
   - README.md
   - Usage:
-      - usage/basic.md
       - usage/install.md
-      - usage/basic.md
+      - usage/get-started-macvlan.md
+      - usage/get-started-sriov.md
+      - usage/get-started-calico.md
+      - usage/get-started-weave.md
+      - usage/spider-subnet.md
+      - usage/multiple-subnet.md
       - usage/ippool-multi.md
       - usage/ippool-namespace.md
       - usage/ippool-affinity-namespace.md
@@ -43,12 +47,12 @@ nav:
       - usage/ippool-affinity-pod.md
       - usage/ipv6.md
       - usage/multi-interfaces-annotation.md
-      - usage/multi-interfaces-cni.md
       - usage/statefulset.md
       - usage/reserved-ip.md
-      - usage/spider-subnet.md
-      - usage/debug.md
       - usage/third-party-controller.md
+      - usage/gc.md
+      - usage/upgrade.md
+      - usage/debug.md
   - Concepts:
       - concepts/arch.md
       - concepts/allocation.md
@@ -68,6 +72,4 @@ nav:
       - develop/roadmap.md
       - develop/contributing.md
       - develop/release.md
-      - develop/swagger_openapi.md
-      - develop/changelog.md
       - develop/upgrade.md

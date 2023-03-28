@@ -60,15 +60,16 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 Here's the SpiderSubnet, SpiderIPPool, and Pod information.
 
 ```text
+$ kubectl get ss
 NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
 subnet-demo-v4      4         172.16.0.0/16             3                    200
 subnet-demo-v6      6         fc00:f853:ccd:e790::/64   3                    200
-------------------------------------------------------------------------------------------
+
 $ kubectl get sp
 NAME                                                                           VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
 auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e                4         172.16.0.0/16             1                    3                false
 auto-deployment-default-demo-deploy-subnet-v6-eth0-6b26cd19032e                6         fc00:f853:ccd:e790::/64   1                    3                false
-------------------------------------------------------------------------------------------
+
 $ kubectl get sp auto-deployment-default-demo-deploy-subnet-v4-eth0-6b26cd19032e -o yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
@@ -117,7 +118,7 @@ status:
       pod: demo-deploy-subnet-b454f5b69-vsc8d
   autoDesiredIPCount: 3
   totalIPCount: 3
-------------------------------------------------------------------------------------------
+
 $ kubectl get po -o wide 
 NAME                                 READY   STATUS    RESTARTS   AGE    IP            NODE            NOMINATED NODE   READINESS GATES
 demo-deploy-subnet-b454f5b69-vsc8d   1/1     Running   0          67s    172.16.41.2   spider-worker   <none>           <none>

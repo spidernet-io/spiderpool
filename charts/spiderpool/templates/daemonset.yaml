@@ -114,22 +114,21 @@ spec:
             path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
-          initialDelaySeconds: 60
+          initialDelaySeconds: 10
           periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.livenessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.livenessProbe.failureThreshold }}
-          timeoutSeconds: 5
+          timeoutSeconds: 1
         readinessProbe:
           httpGet:
             host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
-          initialDelaySeconds: 5
           periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.readinessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.readinessProbe.failureThreshold }}
-          timeoutSeconds: 5
+          timeoutSeconds: 1
         {{- with .Values.spiderpoolAgent.resources }}
         resources:
         {{- toYaml . | trim | nindent 10 }}

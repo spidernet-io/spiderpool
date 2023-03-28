@@ -120,9 +120,9 @@ Any CNI project that is compatible with third-party IPAM plugins can work well w
 
 * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
 
-## Quick start
+## Getting Started
 
-If you want to start some Pods with Spiderpool in minutes, refer to [Quick start](./docs/usage/basic.md).
+If you want to start some Pods with Spiderpool in minutes, refer to [Getting Started](./docs/usage/getting-started.md).
 
 ## Major features
 

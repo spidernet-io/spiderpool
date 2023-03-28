@@ -131,9 +131,9 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
 
-## 快速开始
+## 入门
 
-快速搭建 spiderpool，启动一个应用，可参考 [例子](./docs/usage/basic.md)
+快速搭建 spiderpool，启动一个应用，可参考 [入门](./docs/usage/getting-started-zh_CN.md)
 
 ## 核心功能
 

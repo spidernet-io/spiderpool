@@ -1,4 +1,4 @@
-# Quick Start
+# Getting Started Guide for Macvlan with Spiderpool 
 
 Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Macvlan](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：
 
@@ -80,7 +80,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 以下为创建 NetworkAttachmentDefinition 的配置
 
   ```shell
-  MACLVAN_MASTER_INTERFACE="eth0"
+  MACVLAN_MASTER_INTERFACE="eth0"
   SERVICE_CIDR="10.96.0.0/16"
 
   cat <<EOF | kubectl apply -f -
@@ -97,7 +97,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
           "plugins": [
               {
                   "type": "macvlan",
-                  "master": "${MACLVAN_MASTER_INTERFACE}",
+                  "master": "${MACVLAN_MASTER_INTERFACE}",
                   "mode": "bridge",
                   "ipam": {
                       "type": "spiderpool"

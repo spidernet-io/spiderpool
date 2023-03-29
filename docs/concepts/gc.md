@@ -33,7 +33,7 @@ For some CNIs, it runs an interval job to find the IP with this issue and not re
 For some CNIs, its IP CIDR is big enough, so the leaked IP issue is not urgent.
 For Spiderpool, all IP resources are managed by administrator, and an application will be bound to a fixed IP, so the IP reclaim can be finished in time.
 
-The spiderpool controller takes charge of this responsibility. For more details, please refer to [IP GC](https://github.com/spidernet-io/spiderpool/blob/main/pkg/gcmanager/README.md).
+The spiderpool controller takes charge of this responsibility. For more details, please refer to [IP GC](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/gc.md).
 
 ## SpiderIPPool garbage collection
 

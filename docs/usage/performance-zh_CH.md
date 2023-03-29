@@ -12,7 +12,7 @@
 
 ## 环境
 
-- Kubenetes: `v1.25.4`
+- Kubernetes: `v1.25.4`
 - container runtime: `containerd 1.6.12`
 - OS: `CentOS Linux 8`
 - kernel: `4.18.0-348.7.1.el8_5.x86_64`
@@ -46,14 +46,14 @@
 测试期间，我们会遵循如下约定：
 
 - IPv4/IPv6 双栈场景。
-- 测试 underlay IPAM CNI 插件时，最大可能的确保可用的 IP 地址数量与 Pod 数量为 1:1。例如，接下来我们计划创建 1000 个 Pod，那么应当控制可用的 IPv4/IPv6 地址数量均为 1000 个。
+- 测试 underlay IPAM CNI 插件时，尽最大可能的确保可用的 IP 地址数量与 Pod 数量为 **1:1**。例如，接下来我们计划创建 1000 个 Pod，那么应当限制可用的 IPv4/IPv6 地址数量均为 1000 个。
 
-具体的，我们会尝试以如下两种方式在上述 10 节点的 Kubenetes 集群上来启动总计 1000 个 Pod，并记录所有 Pod 均达到 `Running` 的耗时：
+具体的，我们会尝试以如下两种方式在上述 Kubenetes 集群上来启动总计 1000 个 Pod，并记录所有 Pod 均达到 `Running` 的耗时：
 
 - 仅创建一个 Deployment，其副本数为 1000。
 - 创建 100 个 Deployment，每个 Deployment 的副本数为 10。
 
-接下来，我们会使用如下命令一次性的删除这 1000 个 Pod，记录被重建的 1000 个 Pod 均达到 `Running` 的耗时：
+接下来，我们会使用如下命令一次性的删除这 1000 个 Pod，记录被重建的 1000 个 Pod 再次全部达到 `Running` 的耗时：
 
 ```bash
 kubectl get pod | grep "prefix" | awk '{print $1}' | xargs kubectl delete pod
@@ -72,7 +72,7 @@ kubectl get pod | grep "prefix" | awk '{print $1}' | xargs kubectl delete pod
 | Kube-OVN              | 3m55s  | 7m20s | 2m13s |
 | Calico + calico-ipam  | 1m56s  | 4m6s  | 1m36s |
 
-> 在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 `Running` 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 `Running` 状态。至于重建的场景，在 55 个 Pod 达到 `Running` 状态后，Whereabouts 就基本不运行了，耗时类比于正无穷。
+> 在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 `Running` 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 `Running` 状态。至于重建的场景，在 55 个 Pod 达到 `Running` 状态后，Whereabouts 就基本不工作了，耗时类比于正无穷。
 
 ### 100 个 10 副本的 Deployment
 

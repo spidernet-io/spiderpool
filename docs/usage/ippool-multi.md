@@ -1,20 +1,12 @@
-# Multiple IPPool
+# Backup IPPool
 
-Ippool contains ranges of IP address belonging to a subnet. It has some usages:
-
-* multiple application not requiring static IP could share a same ippool.
-
-* Multiple IP pools can be set for a pod for the usage of backup IP resources.
+Multiple IP pools can be set for a pod for the usage of backup IP resources.
 
 ## Get Started
 
 ### Set up Spiderpool
 
 follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
-
-### applications share a same ippool
-
-TODO
 
 ### backup ippool effect
 

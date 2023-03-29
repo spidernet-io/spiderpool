@@ -129,9 +129,9 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 ## 核心功能
 
-* 多子网实例设计
+* 对接多个 underlay 子网
 
-    管理员可创建多个子网，不同应用可指定使用不同子网的 IP 地址，满足 underlay 网络的各种复杂规划。可参考 [例子](./docs/usage/multiple-subnet.md)
+    管理员可创建多个子网，不同应用可指定使用不同子网的 IP 地址，满足 underlay 网络的各种复杂规划。可参考 [例子](./docs/usage/multi-interfaces-annotation.md)
 
 * 自动化 IP 池，帮助应用 IP 地址固定
 

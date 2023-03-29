@@ -51,7 +51,7 @@ Download and install the Veth binary on all nodes:
 
 ## Create Sriov Configmap that matches the NIC configuration
 
-* Check if the vendor, deviceID and driver information of the NIC are in Configmap.
+* Check the vendor, deviceID and driver information of the NIC:
 
     ```shell
     ~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info

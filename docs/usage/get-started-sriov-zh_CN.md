@@ -51,7 +51,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 ## 创建与网卡配置匹配的 Sriov Configmap
 
-* 查询网卡 vendor、deviceID 和 driver 信息是否在 Configmap 中
+* 查询网卡 vendor、deviceID 和 driver 信息：
 
     ```shell
     ~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info

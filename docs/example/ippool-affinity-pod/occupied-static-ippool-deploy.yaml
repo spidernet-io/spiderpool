@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: static-ippool-deploy
+  name: occupied-static-ippool-deploy
 spec:
   replicas: 2
   selector:
@@ -12,13 +12,13 @@ spec:
       annotations:
         ipam.spidernet.io/ippool: |-
           {
-            "ipv4": ["static-ipv4-ippool"]
+            "ipv4": ["occupied-static-ipv4-ippool"]
           }
       labels:
         app: static
     spec:
       containers:
-        - name: static-ippool-deploy
+        - name: occupied-static-ippool-deploy
           image: busybox
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

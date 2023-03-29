@@ -109,11 +109,7 @@ Any CNI project compatible with third-party IPAM plugins, can work well with spi
 [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
 [calico CNI](https://github.com/projectcalico/calico), 
-[weave CNI](https://github.com/weaveworks/weave),
-
-* [calico CNI](https://github.com/projectcalico/calico)
-
-* [weave CNI](https://github.com/weaveworks/weave)
+[weave CNI](https://github.com/weaveworks/weave)
 
 ## Quick start
 

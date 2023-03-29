@@ -140,13 +140,13 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
 
     ```text
     $ kubectl get sp | grep kruise
-    NAME                                                                           VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-    auto-unknown-default-custom-kruise-cloneset-v4-eth0-1f5d4dcf3251               4         172.18.0.0/16             3                    5                false
-    auto-unknown-default-custom-kruise-cloneset-v6-eth0-1f5d4dcf3251               6         fc00:f853:ccd:e793::/64   3                    5                false
-    
+    NAME                                               VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+    auto-custom-kruise-cloneset-v4-eth0-bcfbd5ac1a29   4         172.16.0.0/16             3                    5                false     false
+    auto-custom-kruise-cloneset-v6-eth0-bcfbd5ac1a29   6         fc00:f853:ccd:e790::/64   3                    5                false     false
+    ------------------------------------------------------------------------------------------
     $ kubectl get po -l app=custom-kruise-cloneset -o wide
-    NAME                           READY   STATUS    RESTARTS   AGE     IP              NODE            NOMINATED NODE   READINESS GATES
-    custom-kruise-cloneset-98q8r   1/1     Running   0          3m27s   172.18.40.8     spider-worker   <none>           2/2
-    custom-kruise-cloneset-gql4j   1/1     Running   0          3m27s   172.18.40.9     spider-worker   <none>           2/2
-    custom-kruise-cloneset-kzt5q   1/1     Running   0          3m27s   172.18.40.6     spider-worker   <none>           2/2
+    NAME                           READY   STATUS    RESTARTS   AGE   IP            NODE            NOMINATED NODE   READINESS GATES
+    custom-kruise-cloneset-9x7bf   1/1     Running   0          43s   172.16.41.2   spider-worker   <none>           2/2
+    custom-kruise-cloneset-rl4d6   1/1     Running   0          43s   172.16.41.3   spider-worker   <none>           2/2
+    custom-kruise-cloneset-t4nkm   1/1     Running   0          43s   172.16.41.5   spider-worker   <none>           2/2
     ```

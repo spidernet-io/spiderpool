@@ -115,6 +115,8 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
 [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
+[calico CNI](https://github.com/projectcalico/calico), 
+[weave CNI](https://github.com/weaveworks/weave)
 
 ## 快速开始
 

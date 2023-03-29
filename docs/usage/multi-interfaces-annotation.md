@@ -1,6 +1,6 @@
 # Pod annotation of multi-NIC
 
-when when assigning multiple NICs to a pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
+When assigning multiple NICs to a pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
 
 This feature supports to implement by annotation `ipam.spidernet.io/subnet` and `ipam.spidernet.io/ippool` 
 
@@ -11,7 +11,7 @@ Then run a pod with two NICs with IP in different subnets.
 
 ### Set up Spiderpool
 
-follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
+Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
 
 ### Set up Multus Configuration
 
@@ -77,7 +77,7 @@ spec:
 
 The Pod annotation `ipam.spidernet.io/ippools` specifies the [pool selection rules](TODO) for each interfaces in the form of an array, which means that executing the [CNI ADD command](https://www.cni.dev/docs/spec/#cni-operations) with the environment parameter `CNI_IFNAME` as `eth0` will get an IP allocation result from IPPool `eth0-ipv4-ippool`. The interface `net1` works in a similar way.
 
->As for the reason why the two interfaces are named `eth0` and `net1` respectively, it is because that is the convention of Multus CNI. Generally, the first interface (default interface) of a Pod will be named `eth0`, and the additional interfaces attached will be named `net1`, `net2`...
+> As for the reason why the two interfaces are named `eth0` and `net1` respectively, it is because that is the convention of Multus CNI. Generally, the first interface (default interface) of a Pod will be named `eth0`, and the additional interfaces attached will be named `net1`, `net2`...
 
 Finally, you can check the details of the IP allocation result.
 

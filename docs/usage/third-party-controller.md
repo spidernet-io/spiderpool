@@ -14,7 +14,7 @@ Operator is popularly used to implement customized controller. Spiderpool suppor
 
     This feature uses informer technology to watch application, parses its replicas number and manage spiderippool object, it works well with kubernetes-native controller like Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet.
 
-    This feature also support none kubernetes-native controller, but Spiderpool could not parse the object yaml of none kubernetes-native controller, has some limitations: 
+    This feature also support none kubernetes-native controller, but Spiderpool could not parse the object yaml of none kubernetes-native controller, has some limitations:
 
     * does not support automatically scale up and down the IP
 
@@ -39,7 +39,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
 
 ### Create pod by `Manual ippool` way
 
-1. create a custom IPPool.
+1. Create a custom IPPool.
 
     ```bash
     kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml
@@ -57,7 +57,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
         - 172.18.41.40-172.18.41.50
     ```
 
-2. create an OpenKruise CloneSet that has 3 replicas, and sepecify the ippool by annotations `ipam.spidernet.io/ippool`
+2. Create an OpenKruise CloneSet that has 3 replicas, and sepecify the ippool by annotations `ipam.spidernet.io/ippool`
 
     ```yaml
     apiVersion: apps.kruise.io/v1alpha1
@@ -98,7 +98,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
 
 ## Create pod by `Automatical ippool` way
 
-1. create an OpenKruise CloneSet that has 3 replicas, and specify the subnet by annotations `ipam.spidernet.io/subnet`
+1. Create an OpenKruise CloneSet that has 3 replicas, and specify the subnet by annotations `ipam.spidernet.io/subnet`
 
     ```yaml
     apiVersion: apps.kruise.io/v1alpha1
@@ -131,9 +131,9 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
     > 1. You must specify a fixed IP number for auto-created IPPool like `ipam.spidernet.io/ippool-ip-number: "5"`.
     >    Because Spiderpool has no idea about the replica number, so it does not support annotation like `ipam.spidernet.io/ippool-ip-number: "+5"`.
     > 2. Spiderpool does not watch third-party controller object, so it does not support automatically reclaim the auto-created IPPool, and the administrator has to delete it by hand.
-    >   So, annotation like `ipam.spidernet.io/ippool-reclaim: "true"` does not take effect, it always behave like `ipam.spidernet.io/ippool-reclaim: "false"`.
+    >    So, annotation like `ipam.spidernet.io/ippool-reclaim: "true"` does not take effect, it always behave like `ipam.spidernet.io/ippool-reclaim: "false"`.
 
-2. check status
+2. Check status
 
     As expected, Spiderpool will create auto-created IPPool from `default-v4-subnet` and `default-v6-subnet` objects.
     And Pods of OpenKruise CloneSet `custom-kruise-cloneset` will be assigned with IP addresses from the created IPPools.

@@ -5,6 +5,9 @@ permissions: write-all
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+    paths:
+      - '**.go'
+      - '**.sh'
 
 jobs:
   test:

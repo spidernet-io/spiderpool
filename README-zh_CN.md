@@ -153,6 +153,16 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 * IP 池可配置为全局可共享，也可实现同指定租户的绑定。可参考 [例子](./docs/usage/ippool-affinity-namespace.md)
 
+* spiderpool 提供了一个插件 [veth](https://github.com/spidernet-io/plugins)，用于解决如下问题:
+
+  * 帮助一些 CNI 解决 ClusterIP 访问、POD 的宿主机健康检测等问题，例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). 可参考 [例子](./get-started-macvlan.md)
+
+  * POD 被 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) 分配多网卡时，可帮助各个网卡之间协调策略路由。可参考 [例子](./docs/usage/multi-interfaces-annotation.md) 
+    
 * 合理的 IP 回收机制设计，可最大保证 IP 资源的可用性。可参考 [例子](./docs/usage/gc.md)
 
 * 管理员可以为 pod 添加额外的自定义路由， 可参考 [例子](./docs/usage/route.md)

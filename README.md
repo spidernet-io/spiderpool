@@ -148,6 +148,16 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * IP pools can be shared by whole cluster or bound to a specified namespace. See [example](./docs/usage/ippool-affinity-namespace.md) for details
 
+* An additional plugin [veth](https://github.com/spidernet-io/plugins) provided by spiderpool has features:
+
+  * help some CNI addons be able to access clusterIP and pod-healthy check , such as [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). See [example](./get-started-macvlan.md) for details.
+
+  * help coordinate routes of each NIC, for pods who has multiple NICs assigned by [Multus](https://github.com/k8snetworkplumbingwg/multus-cni). See [example](./docs/usage/multi-interfaces-annotation.md) for details
+
 * Private IPv4 address is rare, spiderpool provides a reasonable IP recycling mechanism, especially for running new pods when nodes or old pods are abnormal. See [example](./docs/usage/gc.md) for details
 
 * The administrator could specify customized route. See [example](./docs/usage/route.md) for details

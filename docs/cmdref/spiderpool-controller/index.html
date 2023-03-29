@@ -212,7 +212,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Overview
+        Spiderpool
       </a>
     </li>
   
@@ -252,20 +252,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/basic/" class="md-nav__link">
-        None
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../usage/install/" class="md-nav__link">
         Installation
       </a>
@@ -280,8 +266,78 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/basic/" class="md-nav__link">
-        Quick Start
+      <a href="../../usage/get-started-macvlan/" class="md-nav__link">
+        Macvlan Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-sriov/" class="md-nav__link">
+        SRIOV Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-calico/" class="md-nav__link">
+        Calico Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-weave/" class="md-nav__link">
+        Weave Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/spider-subnet/" class="md-nav__link">
+        SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/multiple-subnet.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -295,7 +351,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/ippool-multi/" class="md-nav__link">
-        Multiple IPPool
+        Backup IPPool
       </a>
     </li>
   
@@ -365,7 +421,7 @@
   
     <li class="md-nav__item">
       <a href="../../usage/ipv6/" class="md-nav__link">
-        Spiderpool IPv6 support
+        IPv6 support
       </a>
     </li>
   
@@ -380,20 +436,6 @@
     <li class="md-nav__item">
       <a href="../../usage/multi-interfaces-annotation/" class="md-nav__link">
         Pod annotation of multi-NIC
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/multi-interfaces-cni/" class="md-nav__link">
-        Multi-Interfaces-CNI
       </a>
     </li>
   
@@ -434,8 +476,36 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/spider-subnet/" class="md-nav__link">
-        SpiderSubnet
+      <a href="../../usage/third-party-controller/" class="md-nav__link">
+        Spiderpool supports third-party controllers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/gc/" class="md-nav__link">
+        Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/upgrade/" class="md-nav__link">
+        Upgrading Spiderpool Versions
       </a>
     </li>
   
@@ -450,20 +520,6 @@
     <li class="md-nav__item">
       <a href="../../usage/debug/" class="md-nav__link">
         Q&A
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/third-party-controller/" class="md-nav__link">
-        Spiderpool supports third-party controllers
       </a>
     </li>
   
@@ -870,8 +926,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/pullrequest/" class="md-nav__link">
-        Submit Pull Request
+      <a href="../../develop/roadmap/" class="md-nav__link">
+        roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/contributing/" class="md-nav__link">
+        contributing
       </a>
     </li>
   
@@ -898,50 +968,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/swagger_openapi/" class="md-nav__link">
-        SWAGGER OPENAPI
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/test/" class="md-nav__link">
-        test
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/changelog/" class="md-nav__link">
-        Changelog
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/upgrade/" class="md-nav__link">
-        Upgrading Spiderpool Versions
+      <a href="../../develop/upgrade.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -1088,9 +1116,9 @@
 <pre><code>    SPIDERPOOL_LOG_LEVEL                        log level (DEBUG|INFO|ERROR)
     SPIDERPOOL_ENABLED_METRIC                   enable metrics (true|false)
     SPIDERPOOL_METRIC_HTTP_PORT                 metric port (default to 5721)
-    SPIDERPOOL_GC_IPPOOL_ENABLED                enable GC ip in ippool, prior to other GC environment (true|false, default to true)
+    SPIDERPOOL_GC_IP_ENABLED                    enable GC ip in ippool, prior to other GC environment (true|false, default to true)
     SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED    enable GC ip of terminating pod whose graceful-time times out (true|false, default to true)
-    SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY      delay to GC ip after graceful-time times out (second, default to 0)
+    SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY        delay to GC ip after graceful-time times out (second, default to 0)
     SPIDERPOOL_HEALTH_PORT                      http port  (default to 5710)
     SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION     all intervals of GC (second, default to 600)
 </code></pre>

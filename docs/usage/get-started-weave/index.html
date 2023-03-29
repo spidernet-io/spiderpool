@@ -13,7 +13,7 @@
     
     
       
-        <title>Spiderpool Roadmap - spiderpool</title>
+        <title>Weave Quick Start - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#spiderpool-roadmap" class="md-skip">
+        <a href="#weave-quick-start" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Spiderpool Roadmap
+              Weave Quick Start
             
           </span>
         </div>
@@ -212,7 +212,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Overview
+        Spiderpool
       </a>
     </li>
   
@@ -224,12 +224,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
       
       
       
@@ -252,21 +254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/basic/" class="md-nav__link">
-        None
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -280,8 +268,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/basic/" class="md-nav__link">
-        Quick Start
+      <a href="../get-started-macvlan/" class="md-nav__link">
+        Macvlan Quick Start
       </a>
     </li>
   
@@ -294,8 +282,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-multi/" class="md-nav__link">
-        Multiple IPPool
+      <a href="../get-started-sriov/" class="md-nav__link">
+        SRIOV Quick Start
       </a>
     </li>
   
@@ -308,9 +296,85 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-namespace/" class="md-nav__link">
-        Namespace default IPPool
+      <a href="../get-started-calico/" class="md-nav__link">
+        Calico Quick Start
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Weave Quick Start
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Weave Quick Start
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    Install
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-weaves-ipam-to-spiderpool" class="md-nav__link">
+    Switch Weave's IPAM to Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-applications" class="md-nav__link">
+    Create applications
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -322,119 +386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ippool-affinity-namespace/" class="md-nav__link">
-        Namespace affinity of IPPool
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ippool-affinity-node/" class="md-nav__link">
-        Node affinity of IPPool
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ippool-affinity-pod/" class="md-nav__link">
-        Pod affinity of IPPool
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ipv6/" class="md-nav__link">
-        Spiderpool IPv6 support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/multi-interfaces-annotation/" class="md-nav__link">
-        Pod annotation of multi-NIC
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/multi-interfaces-cni/" class="md-nav__link">
-        Multi-Interfaces-CNI
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/statefulset/" class="md-nav__link">
-        StatefulSet
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/reserved-ip/" class="md-nav__link">
-        Reserved IP
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/spider-subnet/" class="md-nav__link">
+      <a href="../spider-subnet/" class="md-nav__link">
         SpiderSubnet
       </a>
     </li>
@@ -448,8 +400,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/debug/" class="md-nav__link">
-        Q&A
+      <a href="../multiple-subnet.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -462,8 +414,176 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/third-party-controller/" class="md-nav__link">
+      <a href="../ippool-multi/" class="md-nav__link">
+        Backup IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ippool-namespace/" class="md-nav__link">
+        Namespace default IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ippool-affinity-namespace/" class="md-nav__link">
+        Namespace affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ippool-affinity-node/" class="md-nav__link">
+        Node affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ippool-affinity-pod/" class="md-nav__link">
+        Pod affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ipv6/" class="md-nav__link">
+        IPv6 support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-interfaces-annotation/" class="md-nav__link">
+        Pod annotation of multi-NIC
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statefulset/" class="md-nav__link">
+        StatefulSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reserved-ip/" class="md-nav__link">
+        Reserved IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third-party-controller/" class="md-nav__link">
         Spiderpool supports third-party controllers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gc/" class="md-nav__link">
+        Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrade/" class="md-nav__link">
+        Upgrading Spiderpool Versions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debug/" class="md-nav__link">
+        Q&A
       </a>
     </li>
   
@@ -510,7 +630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../arch/" class="md-nav__link">
+      <a href="../../concepts/arch/" class="md-nav__link">
         Architecture
       </a>
     </li>
@@ -524,7 +644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../allocation/" class="md-nav__link">
+      <a href="../../concepts/allocation/" class="md-nav__link">
         IP Allocation
       </a>
     </li>
@@ -538,7 +658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../gc/" class="md-nav__link">
+      <a href="../../concepts/gc/" class="md-nav__link">
         Resource Reclaim
       </a>
     </li>
@@ -552,7 +672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../annotation/" class="md-nav__link">
+      <a href="../../concepts/annotation/" class="md-nav__link">
         Annotations
       </a>
     </li>
@@ -566,7 +686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+      <a href="../../concepts/config/" class="md-nav__link">
         Configuration
       </a>
     </li>
@@ -580,7 +700,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../metrics/" class="md-nav__link">
+      <a href="../../concepts/metrics/" class="md-nav__link">
         Metric
       </a>
     </li>
@@ -594,7 +714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spiderippool/" class="md-nav__link">
+      <a href="../../concepts/spiderippool/" class="md-nav__link">
         SpiderIPPool
       </a>
     </li>
@@ -608,7 +728,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spiderreservedip/" class="md-nav__link">
+      <a href="../../concepts/spiderreservedip/" class="md-nav__link">
         SpiderReservedIP
       </a>
     </li>
@@ -622,7 +742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spiderendpoint/" class="md-nav__link">
+      <a href="../../concepts/spiderendpoint/" class="md-nav__link">
         SpiderEndpoint
       </a>
     </li>
@@ -636,7 +756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spidersubnet/" class="md-nav__link">
+      <a href="../../concepts/spidersubnet/" class="md-nav__link">
         SpiderSubnet
       </a>
     </li>
@@ -760,8 +880,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/pullrequest/" class="md-nav__link">
-        Submit Pull Request
+      <a href="../../develop/roadmap/" class="md-nav__link">
+        roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/contributing/" class="md-nav__link">
+        contributing
       </a>
     </li>
   
@@ -788,50 +922,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/swagger_openapi/" class="md-nav__link">
-        SWAGGER OPENAPI
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/test/" class="md-nav__link">
-        test
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/changelog/" class="md-nav__link">
-        Changelog
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/upgrade/" class="md-nav__link">
-        Upgrading Spiderpool Versions
+      <a href="../../develop/upgrade.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -871,50 +963,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    Features
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#goals-of-april" class="md-nav__link">
-    Goals of April
+  <a href="#install" class="md-nav__link">
+    Install
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#goals-of-may" class="md-nav__link">
-    Goals of May
+  <a href="#switch-weaves-ipam-to-spiderpool" class="md-nav__link">
+    Switch Weave's IPAM to Spiderpool
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#goals-of-june" class="md-nav__link">
-    Goals of June
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#goals-of-july" class="md-nav__link">
-    Goals of July
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#goals-of-august" class="md-nav__link">
-    Goals of August
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#goals-of-september" class="md-nav__link">
-    Goals of September
+  <a href="#create-applications" class="md-nav__link">
+    Create applications
   </a>
   
 </li>
@@ -936,276 +1007,172 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/concepts/roadmap.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/get-started-weave.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="spiderpool-roadmap">Spiderpool Roadmap</h1>
-<h2 id="features">Features</h2>
-<hr />
+<h1 id="weave-quick-start">Weave Quick Start</h1>
+<p><strong>English</strong> | <a href="../get-started-weave-zh_CN/"><strong>简体中文</strong></a></p>
+<p><code>Weave</code>, an open-source network solution, provides network connectivity and policies for containers by creating a virtual network, automatically discovering and connecting containers. Also known as a Kubernetes Container Network Interface (CNI) solution, <code>Weave</code> utilizes the built-in <code>IPAM</code> to allocate IP addresses for Pods by default, with limited visibility and IPAM capabilities for Pods. This page demonstrates how <code>Weave</code> and <code>Spiderpool</code> can be integrated to extend <code>Weave</code>'s IPAM capabilities while preserving its original functions.</p>
+<h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li>
-<p>[ ] (alpha) a pod use multiple ippools, in case that an ippool is out of use</p>
-</li>
-<li>
-<p>[ ] (alpha) cooperate with macvlan</p>
-</li>
-<li>
-<p>[ ] (alpha) support pod / namespace annotations to customize ip</p>
-</li>
-<li>
-<p>[ ] (alpha) dual stack support. For ipv4-only, ipv6-only, dual-stack cluster,</p>
-</li>
-<li>[ ] assign ipv4/ipv6 ip to pod</li>
-<li>
-<p>[ ] all component could service on ipv4/ipv6 ip</p>
-</li>
-<li>
-<p>[ ] (alpha) ippool selector</p>
-</li>
-<li>[ ] select namespace. Each namespace could occupy non-shared ippool</li>
-<li>[ ] select pod. For deployment and statefulset case, pod could occupy some ip range</li>
-<li>[ ] select node. For different zone, pod have specified ip range</li>
+<li>A ready Kubernetes cluster without any CNI installed</li>
+<li>Helm, Kubectl and Jq (optional)</li>
 </ul>
-<hr />
-<ul>
+<h2 id="install">Install</h2>
+<ol>
 <li>
-<p>[ ] (beta) cooperate with multus. multus may call multiple CNI to assign different interface and assign ip</p>
+<p>Install Weave:</p>
+<p><code>shell
+kubectl apply -f  https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml</code></p>
+<p>Wait for Pod Running:</p>
+<p><code>shell
+[root@node1 ~]# kubectl get po -n kube-system  | grep weave
+weave-net-ck849                         2/2     Running     4     0   1m
+weave-net-vhmqx                         2/2     Running     4     0   1m</code></p>
 </li>
 <li>
-<p>[ ] (beta) fixed ip for application, especially for statefulset</p>
+<p>Install Spiderpool</p>
+<p><code>shell
+helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+helm install spiderpool spiderpool/spiderpool --namespace kube-system</code></p>
+<p>Wait for Pod Running and create a subnet for Pod (SpiderSubnet):</p>
+<p><code>shell
+ cat &lt;&lt; EOF | kubectl apply -f -
+ apiVersion: spiderpool.spidernet.io/v2beta1
+ kind: SpiderSubnet
+ metadata:
+   name: weave-subnet-v4
+   labels:  
+     ipam.spidernet.io/subnet-cidr: 10-32-0-0-12
+ spec:
+   ipVersion: 4
+   ips:
+   - 10.32.0.100-10.32.50.200
+   subnet: 10.32.0.0/12
+   vlan: 0
+ EOF</code></p>
+<blockquote>
+<p><code>Weave</code> uses <code>10.32.0.0/12</code> as the cluster's default subnet, and thus a SpiderSubnet with the same subnet needs to be created in this case</p>
+</blockquote>
 </li>
 <li>
-<p>[ ] (beta) health check</p>
+<p>Verify installation</p>
 </li>
-<li>
-<p>[ ] (beta) CLI for debug</p>
-</li>
-<li>
-<p>[ ] (beta) retrieve leaked ip</p>
-</li>
-<li>[ ] for graceful timeout of terminating state</li>
-<li>[ ] for finished job</li>
-<li>[ ] trigger by hand or automatically</li>
-<li>
-<p>[ ] trigger by pod event and happen at interval</p>
-</li>
-<li>
-<p>[ ] (beta) DCE5 integration</p>
-</li>
-</ul>
-<hr />
-<ul>
-<li>
-<p>[ ] (GA) metrics</p>
-</li>
-<li>
-<p>[ ] (GA) reserved ip</p>
-</li>
-<li>
-<p>[ ] (GA) administrator edit ip safely, preventing from race with IPAM CNI, and avoid ip conflicting between ippools</p>
-</li>
-<li>
-<p>[ ] (GA) good performance</p>
-</li>
-<li>[ ] take xxx second at most, to assign a ip</li>
-<li>
-<p>[ ] take xxx second at most, to assign 1000 ip</p>
-</li>
-<li>
-<p>[ ] (GA) good reliability</p>
-</li>
-<li>
-<p>[ ] (GA) cooperate with spiderflat</p>
-</li>
-</ul>
-<hr />
-<ul>
-<li>[ ] Unit-Test</li>
-<li>[ ] (alpha) 40% coverage at least</li>
-<li>[ ] (beta) 70% coverage at least</li>
-<li>
-<p>[ ] (GA) 90% coverage at least</p>
-</li>
-<li>
-<p>[ ] e2e test</p>
-</li>
-<li>[ ] (alpha) 30% coverage for test case of alpha feature</li>
-<li>[ ] (beta) 80% coverage for test case of  beta/alpha feature</li>
-<li>[ ] (GA) 100% coverage for test case of all feature</li>
-<li>
-<p>[ ] (GA) chaos test case, performance test case</p>
-</li>
-<li>
-<p>[ ] All CICD pipeline. nightly ci, auto release chart/image/release, code lint, doc lint, unitest, e2e test</p>
-</li>
-<li>[X] (alpha) 80% CICD pipeline</li>
-<li>
-<p>[ ] (GA) 100% CICD pipeline</p>
-</li>
-<li>
-<p>[ ] documentation</p>
-</li>
-<li>[ ] (alpha) architecture, contributing</li>
-<li>[ ] (beta) concept, get started, configuration</li>
-<li>[ ] (GA) command reference</li>
-</ul>
-<hr />
-<h2 id="goals-of-april">Goals of April</h2>
-<ul>
-<li>
-<p>[x] 第一个 Helm Release，可以一键部署（可持续 CICD）</p>
-</li>
-<li>
-<p>[x] 输出 Road Map，完成 6个月以上的规划</p>
-</li>
-<li>
-<p>[x] Unit-Test 覆盖率 10 %</p>
-</li>
-<li>
-<p>[x] 第一个 自动化的 e2e 测试（每天晚上都要自动跑）</p>
-</li>
-<li>
-<p>[x] OpenSSF(开源最佳实践) 完成度 10%</p>
-</li>
-<li>
-<p>[x] GitHub (Star) 100</p>
-</li>
-<li>
-<p>[x] webhook 精通及分享</p>
-</li>
-<li>
-<p>[ ] go builder 的 SDK 生成，所有的 client 都能工作，生成 CRD yaml。 能做到 CI 自动化 SDK 校验</p>
-</li>
-<li>
-<p>[x] 完成 openapi 接口和 SDK ，验证都能工作。能做到 CI 自动化 SDK 校验</p>
-</li>
-<li>
-<p>[x] 完成 spiderpool ipam plugin ，agent、 controller进程能够跑 ，确保 helm apply 能够部署（不要求能跑业务）</p>
-</li>
-<li>
-<p>[x] 搭建 e2e 框架</p>
-</li>
-<li>
-<p>[x] 精读 golang、ginkgo、开源项目 e2e， 以macvlan + whereabout 完成第一个e2e测试</p>
-</li>
-</ul>
-<hr />
-<h2 id="goals-of-may">Goals of May</h2>
-<ul>
-<li>
-<p>[ ] 完成 IPAM plug in</p>
-</li>
-<li>
-<p>[ ] 完成 Agent 主要代码，能分配出 ipv4/ipv6 地址</p>
-</li>
-<li>
-<p>[ ] 以 macvlan + whereabout 为方案，完成 50% alpha feature 的 E2E 用例</p>
-</li>
-<li>
-<p>[ ] 完成 100% alpha doc</p>
-</li>
-<li>
-<p>[ ] OpenSSF(开源最佳实践) 完成度 100%</p>
-</li>
-<li>
-<p>[ ] 5 个外部反馈用户，10个 ISSUE ?????</p>
-</li>
-<li>
-<p>[ ] 3个外部贡献者 ????</p>
-</li>
-<li>
-<p>[ ] GitHub (Star) 200 ???</p>
-</li>
-<li>
-<p>[ ] Unit-Test 覆盖率 30%</p>
-</li>
-<li>
-<p>[ ] 开放的 独立网站 和 下载，反馈。  ????</p>
-</li>
-<li>
-<p>[ ] 开发的 独立网站 QuickStart， 下载，反馈。 ???</p>
-</li>
-<li>
-<p>[ ] Spider Pool e2e 测试用例设计 (包括 自动升级，性能，可靠性，老化) 结合基线 和过往的 L3 事故。(评审会之前，开会review)</p>
-</li>
-<li>
-<p>[ ] 充分的 e2e 测试 设计(包括 自动升级，性能，可靠性，老化) 结合基线 和过往的 L3 事故  ??</p>
-</li>
-</ul>
-<hr />
-<h2 id="goals-of-june">Goals of June</h2>
-<ul>
-<li>
-<p>[ ] 完成所有满足 alpha feature 的业务代码</p>
-</li>
-<li>
-<p>[ ] 以 macvlan + spiderpool 为方案，完成 100% alpha feature 的 E2E 用例</p>
-</li>
-<li>
-<p>[ ] 收集 10个以上 alpha 用户的反馈，并解决其反馈的问题(刚性)</p>
-</li>
-<li>
-<p>[ ] Unit-Test 覆盖率 80%</p>
-</li>
-<li>
-<p>[ ] 性能测试，可靠性测试，???</p>
-</li>
-<li>
-<p>[ ]  充分的灾难场景测试。和 性能基准测试 ??</p>
-</li>
-<li>
-<p>[ ] 兼容性测试验证（涉及的开源软件：第五代产品开源项目 和各个公有云环境）</p>
-</li>
-<li>
-<p>[ ] 审视“L3事故”，确认不会出现之前发生过的事故</p>
-</li>
-<li>
-<p>[ ] 灾难恢复演练 ?? beta</p>
-</li>
-<li>
-<p>[ ] 完成 和 KubeGrid 的 会师 ?? beta</p>
-</li>
-<li>
-<p>[ ] 解决所有重大bug</p>
-</li>
-<li>
-<p>[ ] 合作伙伴 1 个，反馈用户 1个</p>
-</li>
-</ul>
-<hr />
-<h2 id="goals-of-july">Goals of July</h2>
-<ul>
-<li>
-<p>[ ] 完成所有满足 beta feature 的代码</p>
-</li>
-<li>
-<p>[ ] 完成 100% beta doc</p>
-</li>
-</ul>
-<hr />
-<h2 id="goals-of-august">Goals of August</h2>
-<ul>
-<li>
-<p>[ ] finish most of GA feature , wait for spiderflat ready to debug</p>
-</li>
-<li>
-<p>[ ] 收集 10 个以上 beta 用户的反馈，并解决其反馈的问题(刚性)</p>
-</li>
-<li>
-<p>[ ] 将所有已知 BUG 解决</p>
-</li>
-<li>
-<p>[ ] OpenSSF(开源最佳实践) 完成度 100 %</p>
-</li>
-</ul>
-<hr />
-<h2 id="goals-of-september">Goals of September</h2>
-<ul>
-<li>[ ] start spiderflat</li>
-</ul>
+</ol>
+<p><code>shell
+    [root@node1 ~]# kubectl get po -n kube-system | grep spiderpool
+    spiderpool-agent-lgdw7                  1/1     Running   0          65s
+    spiderpool-agent-x974l                  1/1     Running   0          65s
+    spiderpool-controller-9df44bc47-hbhbg   1/1     Running   0          65s
+    [root@node1 ~]# kubectl get ss
+    NAME               VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+    weave-subnet-v4    4         10.32.0.0/12   0                    12901            false</code></p>
+<h2 id="switch-weaves-ipam-to-spiderpool">Switch <code>Weave</code>'s <code>IPAM</code> to Spiderpool</h2>
+<p>Change the <code>ipam</code> field of <code>/etc/cni/net.d/10-weave.conflist</code> on each node:</p>
+<p>Change the following:</p>
+<p><code>shell
+  [root@node1 ~]# cat /etc/cni/net.d/10-weave.conflist
+  {
+      "cniVersion": "0.3.0",
+      "name": "weave",
+      "plugins": [
+          {
+              "name": "weave",
+              "type": "weave-net",
+              "hairpinMode": true
+          },
+          {
+              "type": "portmap",
+              "capabilities": {"portMappings": true},
+              "snat": true
+          }
+      ]
+  }</code></p>
+<p>To:</p>
+<p><code>json
+  {
+      "cniVersion": "0.3.0",
+      "name": "weave",
+      "plugins": [
+          {
+              "name": "weave",
+              "type": "weave-net",
+              "ipam": {
+                "type": "spiderpool"
+              },
+              "hairpinMode": true
+          },
+          {
+              "type": "portmap",
+              "capabilities": {"portMappings": true},
+              "snat": true
+          }
+      ]
+  }</code></p>
+<p>Alternatively, it can be changed with <code>jq</code> in one step. If <code>jq</code> is not installed, you can use the following command to install it:</p>
+<p><code>shell
+  # Take centos7 as an example
+  yum -y install jq</code></p>
+<p>Change the CNI configuration file:</p>
+<p><code>shell
+  cat &lt;&lt;&lt; $(jq '.plugins[0].ipam.type = "spiderpool" ' /etc/cni/net.d/10-weave.conflist) &gt; /etc/cni/net.d/10-weave.conflist</code></p>
+<blockquote>
+<p>Make sure execute at each node</p>
+</blockquote>
+<h2 id="create-applications">Create applications</h2>
+<p>Specify that the Pods will be allocated IPs from that SpiderSubnet via the annotation <code>ipam.spidernet.io/subnet</code>:</p>
+<p><code>shell
+  [root@node1 ~]# cat &lt;&lt; EOF | kubectl apply -f -
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: nginx
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: nginx
+    template:
+      metadata:
+        annotations:
+          ipam.spidernet.io/subnet: '{"ipv4":["weave-subnet-v4"]}'
+        labels:
+          app: nginx
+      spec:
+        containers:
+        - image: nginx
+          imagePullPolicy: IfNotPresent
+          lifecycle: {}
+          name: container-1
+  EOF</code></p>
+<blockquote>
+<p><em>spec.template.metadata.annotations.ipam.spidernet.io/subnet</em>: specifies that the Pods will be assigned IPs from SpiderSubnet: <code>weave-subnet-v4</code>.</p>
+</blockquote>
+<p>The Pods have been created and allocated IP addresses from Spiderpool Subnets:</p>
+<p><code>shell
+  [root@node1 ~]# kubectl get po  -o wide
+  NAME                     READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+  nginx-5745d9b5d7-2rvn7   1/1     Running   0          8s    10.32.22.190   node1   &lt;none&gt;           &lt;none&gt;
+  nginx-5745d9b5d7-5ssck   1/1     Running   0          8s    10.32.35.87    node2   &lt;none&gt;           &lt;none&gt;</code></p>
+<p>Spiderpool has automatically created an IP pool for the Nginx application named <code>auto-deployment-default-nginx-v4-a0ae75eb5d47</code>, with a pool size of 2 IP addresses:</p>
+<p><code>shell
+  [root@node1 ~]# kubectl get sp
+  NAME                                            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+  auto-deployment-default-nginx-v4-a0ae75eb5d47   4         10.32.0.0/12    2                    2                false</code></p>
+<p>To test connectivity, let's use inter-node communication between Pods as an example:</p>
+<p>```shell
+  [root@node1 ~]# kubectl exec  nginx-5745d9b5d7-2rvn7 -- ping 10.32.35.87 -c 2
+  PING 10.32.35.87 (10.32.35.87): 56 data bytes
+  64 bytes from 10.32.35.87: seq=0 ttl=64 time=4.561 ms
+  64 bytes from 10.32.35.87: seq=1 ttl=64 time=0.632 ms</p>
+<p>--- 10.32.35.87 ping statistics ---
+  2 packets transmitted, 2 packets received, 0% packet loss
+  round-trip min/avg/max = 0.632/2.596/4.561 ms
+  ```</p>
+<p>The test results indicate that IP allocation and network connectivity are normal. <code>Spiderpool</code> has extended the capabilities of Weave's IPAM. Next, you can go to <a href="https://spidernet-io.github.io/spiderpool/">Spiderpool</a> to explore other features of <code>Spiderpool</code>.</p>
 
 
 
@@ -1226,6 +1193,42 @@
       </main>
       
         <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../get-started-calico/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Calico Quick Start" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Calico Quick Start
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../spider-subnet/" class="md-footer__link md-footer__link--next" aria-label="Next: SpiderSubnet" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              SpiderSubnet
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

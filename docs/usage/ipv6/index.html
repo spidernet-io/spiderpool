@@ -13,7 +13,7 @@
     
     
       
-        <title>Spiderpool IPv6 support - spiderpool</title>
+        <title>IPv6 support - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#spiderpool-ipv6-support" class="md-skip">
+        <a href="#ipv6-support" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Spiderpool IPv6 support
+              IPv6 support
             
           </span>
         </div>
@@ -212,7 +212,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Overview
+        Spiderpool
       </a>
     </li>
   
@@ -254,20 +254,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../basic/" class="md-nav__link">
-        None
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../install/" class="md-nav__link">
         Installation
       </a>
@@ -282,8 +268,78 @@
   
   
     <li class="md-nav__item">
-      <a href="../basic/" class="md-nav__link">
-        Quick Start
+      <a href="../get-started-macvlan/" class="md-nav__link">
+        Macvlan Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-sriov/" class="md-nav__link">
+        SRIOV Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-calico/" class="md-nav__link">
+        Calico Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-weave/" class="md-nav__link">
+        Weave Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spider-subnet/" class="md-nav__link">
+        SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple-subnet.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -297,7 +353,7 @@
   
     <li class="md-nav__item">
       <a href="../ippool-multi/" class="md-nav__link">
-        Multiple IPPool
+        Backup IPPool
       </a>
     </li>
   
@@ -376,12 +432,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Spiderpool IPv6 support
+          IPv6 support
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Spiderpool IPv6 support
+        IPv6 support
       </a>
       
         
@@ -407,13 +463,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    Features
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#get-started" class="md-nav__link">
     Get Started
   </a>
@@ -422,15 +471,36 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#enable-ipv4-only" class="md-nav__link">
-    Enable IPv4 only
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#enable-dual-stack" class="md-nav__link">
-    Enable dual stack
+  <a href="#create-spidersubnet" class="md-nav__link">
+    Create SpiderSubnet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-deployment-by-subnet" class="md-nav__link">
+    Create Deployment By Subnet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-deployment-by-ippool" class="md-nav__link">
+    Create Deployment By IPPool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
   </a>
   
 </li>
@@ -457,20 +527,6 @@
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Pod annotation of multi-NIC
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../multi-interfaces-cni/" class="md-nav__link">
-        Multi-Interfaces-CNI
       </a>
     </li>
   
@@ -511,8 +567,36 @@
   
   
     <li class="md-nav__item">
-      <a href="../spider-subnet/" class="md-nav__link">
-        SpiderSubnet
+      <a href="../third-party-controller/" class="md-nav__link">
+        Spiderpool supports third-party controllers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gc/" class="md-nav__link">
+        Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrade/" class="md-nav__link">
+        Upgrading Spiderpool Versions
       </a>
     </li>
   
@@ -527,20 +611,6 @@
     <li class="md-nav__item">
       <a href="../debug/" class="md-nav__link">
         Q&A
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../third-party-controller/" class="md-nav__link">
-        Spiderpool supports third-party controllers
       </a>
     </li>
   
@@ -837,8 +907,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/pullrequest/" class="md-nav__link">
-        Submit Pull Request
+      <a href="../../develop/roadmap/" class="md-nav__link">
+        roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/contributing/" class="md-nav__link">
+        contributing
       </a>
     </li>
   
@@ -865,50 +949,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/swagger_openapi/" class="md-nav__link">
-        SWAGGER OPENAPI
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/test/" class="md-nav__link">
-        test
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/changelog/" class="md-nav__link">
-        Changelog
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/upgrade/" class="md-nav__link">
-        Upgrading Spiderpool Versions
+      <a href="../../develop/upgrade.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -955,13 +997,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    Features
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#get-started" class="md-nav__link">
     Get Started
   </a>
@@ -970,15 +1005,36 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#enable-ipv4-only" class="md-nav__link">
-    Enable IPv4 only
+  <a href="#set-up-spiderpool" class="md-nav__link">
+    Set up Spiderpool
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#enable-dual-stack" class="md-nav__link">
-    Enable dual stack
+  <a href="#create-spidersubnet" class="md-nav__link">
+    Create SpiderSubnet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-deployment-by-subnet" class="md-nav__link">
+    Create Deployment By Subnet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-deployment-by-ippool" class="md-nav__link">
+    Create Deployment By IPPool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
   </a>
   
 </li>
@@ -1011,32 +1067,176 @@
   </a>
 
 
-<h1 id="spiderpool-ipv6-support">Spiderpool IPv6 support</h1>
+<h1 id="ipv6-support">IPv6 support</h1>
 <h2 id="description">Description</h2>
-<p>This page describes how to configure and allocate IP addresses with Spiderpool by using dual stack, IPv4 only, or IPv6 only.</p>
-<h2 id="features">Features</h2>
 <p>Spiderpool supports:</p>
 <ul>
-<li><strong>Dual stack</strong> (default)</li>
-</ul>
+<li>
+<p><strong>Dual stack</strong></p>
 <p>Each workload can get IPv4 and IPv6 addresses, and can communicate over IPv4 or IPv6.</p>
-<ul>
-<li><strong>IPv4 only</strong></li>
-</ul>
+</li>
+<li>
+<p><strong>IPv4 only</strong></p>
 <p>Each workload can acquire IPv4 addresses, and can communicate over IPv4.</p>
-<ul>
-<li><strong>IPv6 only</strong></li>
-</ul>
+</li>
+<li>
+<p><strong>IPv6 only</strong></p>
 <p>Each workload can acquire IPv6 addresses, and can communicate over IPv6.</p>
+</li>
+</ul>
 <h2 id="get-started">Get Started</h2>
-<h3 id="enable-ipv4-only">Enable IPv4 only</h3>
-<p>Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer to <a href="../install/">install</a> for details</p>
-<p>Check whether the property <code>enableIPv4</code> of the configmap <code>spiderpool-conf</code> is already set to <code>true</code> and whether the property <code>enableIPv6</code> is set to <code>false</code>.</p>
-<pre><code class="language-shell">kubectl -n kube-system get configmap spiderpool-conf -o yaml
+<h3 id="set-up-spiderpool">Set up Spiderpool</h3>
+<p>follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> to install Spiderpool.</p>
+<h3 id="create-spidersubnet">Create SpiderSubnet</h3>
+<p>Create a SpiderSubnet and allocate IP addresses from the IPPool.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-subnet.yaml
+
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv6-subnet.yaml
 </code></pre>
-<p>If you want to update it with <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableIPv4=true --set feature.enableIPv6=false -n kube-system</code>.</p>
-<h3 id="enable-dual-stack">Enable dual stack</h3>
-<p>Same as the above, run <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableIPv4=true --set feature.enableIPv6=true -n kube-system</code>.</p>
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: custom-ipv4-subnet
+spec:
+  subnet: 172.18.41.0/24
+  ips:
+    - 172.18.41.40-172.18.41.50
+</code></pre>
+<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: custom-ipv6-subnet
+spec:
+  subnet: fd00:172:18::/64
+  ips:
+    - fd00:172:18::40-fd00:172:18::50
+
+</code></pre>
+<h3 id="create-deployment-by-subnet">Create Deployment By Subnet</h3>
+<p>create a Deployment whose Pods are setting the Pod annotation <code>ipam.spidernet.io/subnet</code> to  explicitly specify the subnet.</p>
+<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-dual-subnet-deploy.yaml
+</code></pre>
+<pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-dual-subnet-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: custom-dual-subnet-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/subnet: |-
+          {
+            &quot;ipv4&quot;: [&quot;custom-ipv4-subnet&quot;],&quot;ipv6&quot;: [&quot;custom-ipv6-subnet&quot;]
+          }
+      labels:
+        app: custom-dual-subnet-deploy
+    spec:
+      containers:
+        - name: custom-dual-subnet-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
+
+</code></pre>
+<p>The Pods are running.</p>
+<pre><code class="language-bash">kubectl get pod -l app=custom-dual-subnet-deploy -owide
+NAME                                         READY   STATUS    RESTARTS   AGE   IP             NODE                NOMINATED NODE   READINESS GATES
+custom-dual-subnet-deploy-7fdbccfbb8-h5l4d   1/1     Running   0          33s   172.18.41.41   controller-node-1   &lt;none&gt;           &lt;none&gt;
+custom-dual-subnet-deploy-7fdbccfbb8-rhdbd   1/1     Running   0          33s   172.18.41.42   controller-node-1   &lt;none&gt;           &lt;none&gt;
+custom-dual-subnet-deploy-7fdbccfbb8-t6m5c   1/1     Running   0          33s   172.18.41.40   controller-node-1   &lt;none&gt;           &lt;none&gt;
+</code></pre>
+<p>View all IPs of Pods</p>
+<pre><code class="language-bash">kubectl get pod -l app=custom-dual-subnet-deploy  -o go-template='{{range .items}}{{.metadata.name}}: {{range .status.podIPs}}{{.}} {{end}}{{&quot;\n&quot;}}{{end}}'
+custom-dual-subnet-deploy-7fdbccfbb8-h5l4d: map[ip:172.18.41.41] map[ip:fd00:172:18::42]
+custom-dual-subnet-deploy-7fdbccfbb8-rhdbd: map[ip:172.18.41.42] map[ip:fd00:172:18::41]
+custom-dual-subnet-deploy-7fdbccfbb8-t6m5c: map[ip:172.18.41.40] map[ip:fd00:172:18::40]
+</code></pre>
+<h3 id="create-deployment-by-ippool">Create Deployment By IPPool</h3>
+<ol>
+<li>
+<p>Create IPPool</p>
+<p>```bash
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml</p>
+<p>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv6-ippool.yaml
+```</p>
+<p><code>yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: custom-ipv4-ippool
+spec:
+  subnet: 172.18.41.0/24
+  ips:
+    - 172.18.41.40-172.18.41.50</code></p>
+<p><code>yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: custom-ipv6-ippool
+spec:
+  subnet: fd00:172:18::/64
+  ips:
+    - fd00:172:18::40-fd00:172:18::50</code></p>
+</li>
+<li>
+<p>Create Deployment</p>
+<p>create a Deployment whose Pods are setting the Pod annotation <code>ipam.spidernet.io/ippool</code> to  explicitly specify the pool.</p>
+<p><code>bash
+kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-dual-ippool-deploy.yaml</code></p>
+<p><code>yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-dual-ippool-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: custom-dual-ippool-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["custom-ipv4-ippool"],"ipv6": ["custom-ipv6-ippool"]
+          }
+      labels:
+        app: custom-dual-ippool-deploy
+    spec:
+      containers:
+        - name: custom-dual-ippool-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity &amp; wait"]</code></p>
+<p>The Pods are running.</p>
+<p><code>bash
+kubectl get pod -owide -l app=custom-dual-ippool-deploy
+NAME                                        READY   STATUS    RESTARTS   AGE   IP             NODE                NOMINATED NODE   READINESS GATES
+custom-dual-ippool-deploy-9bb6696c4-6wjnl   1/1     Running   0          76s   172.18.41.42   controller-node-1   &lt;none&gt;           &lt;none&gt;
+custom-dual-ippool-deploy-9bb6696c4-8vtpf   1/1     Running   0          76s   172.18.41.45   controller-node-1   &lt;none&gt;           &lt;none&gt;
+custom-dual-ippool-deploy-9bb6696c4-zbknv   1/1     Running   0          76s   172.18.41.43   controller-node-1   &lt;none&gt;           &lt;none&gt;</code></p>
+<p>View all IPs of Pods</p>
+<p><code>bash
+kubectl get pod -l app=custom-dual-ippool-deploy  -o go-template='{{range .items}}{{.metadata.name}}: {{range .status.podIPs}}{{.}} {{end}}{{"\n"}}{{end}}'
+custom-dual-ippool-deploy-9bb6696c4-6wjnl: map[ip:172.18.41.42] map[ip:fd00:172:18::4d]
+custom-dual-ippool-deploy-9bb6696c4-8vtpf: map[ip:172.18.41.45] map[ip:fd00:172:18::4e]
+custom-dual-ippool-deploy-9bb6696c4-zbknv: map[ip:172.18.41.43] map[ip:fd00:172:18::46]</code></p>
+</li>
+</ol>
+<h3 id="clean-up">Clean up</h3>
+<p>Clean the relevant resources so that you can run this tutorial again</p>
+<p><code>bash
+   kubectl delete \
+   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-subnet.yaml \
+   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv6-subnet.yaml \
+   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml \
+   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv6-ippool.yaml \
+   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-dual-ippool-deploy.yaml \
+   --ignore-not-found=true</code></p>
 
 
 

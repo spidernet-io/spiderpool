@@ -13,7 +13,7 @@
     
     
       
-        <title>Quick Start - spiderpool</title>
+        <title>SRIOV Quick Start - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#quick-start" class="md-skip">
+        <a href="#sriov-quick-start" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quick Start
+              SRIOV Quick Start
             
           </span>
         </div>
@@ -212,7 +212,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Overview
+        Spiderpool
       </a>
     </li>
   
@@ -254,8 +254,8 @@
   
   
     <li class="md-nav__item">
-      <a href="./" class="md-nav__link">
-        None
+      <a href="../install/" class="md-nav__link">
+        Installation
       </a>
     </li>
   
@@ -268,8 +268,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
-        Installation
+      <a href="../get-started-macvlan/" class="md-nav__link">
+        Macvlan Quick Start
       </a>
     </li>
   
@@ -292,12 +292,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Quick Start
+          SRIOV Quick Start
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Quick Start
+        SRIOV Quick Start
       </a>
       
         
@@ -316,6 +316,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-veth" class="md-nav__link">
+    Install Veth
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-sriov-configmap-that-matches-the-nic-configuration" class="md-nav__link">
+    Create Sriov Configmap that matches the NIC configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-sriov-vfs" class="md-nav__link">
+    Create Sriov VFs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-sriov-device-plugin" class="md-nav__link">
+    Install Sriov Device Plugin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-sriov-cni" class="md-nav__link">
+    Install Sriov CNI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-multus" class="md-nav__link">
+    Install Multus
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
   </a>
@@ -323,29 +372,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#update-cni-network-configuration" class="md-nav__link">
-    Update CNI network configuration
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#create-an-ippool" class="md-nav__link">
-    Create an IPPool
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#confirm-the-ippool-is-working" class="md-nav__link">
-    Confirm the IPPool is working
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#allocate-ip-addresses-from-the-custom-ippool" class="md-nav__link">
-    Allocate IP addresses from the custom IPPool
+  <a href="#create-applications" class="md-nav__link">
+    Create applications
   </a>
   
 </li>
@@ -365,8 +393,64 @@
   
   
     <li class="md-nav__item">
+      <a href="../get-started-calico/" class="md-nav__link">
+        Calico Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-weave/" class="md-nav__link">
+        Weave Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spider-subnet/" class="md-nav__link">
+        SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple-subnet.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-multi/" class="md-nav__link">
-        Multiple IPPool
+        Backup IPPool
       </a>
     </li>
   
@@ -436,7 +520,7 @@
   
     <li class="md-nav__item">
       <a href="../ipv6/" class="md-nav__link">
-        Spiderpool IPv6 support
+        IPv6 support
       </a>
     </li>
   
@@ -451,20 +535,6 @@
     <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Pod annotation of multi-NIC
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../multi-interfaces-cni/" class="md-nav__link">
-        Multi-Interfaces-CNI
       </a>
     </li>
   
@@ -505,8 +575,36 @@
   
   
     <li class="md-nav__item">
-      <a href="../spider-subnet/" class="md-nav__link">
-        SpiderSubnet
+      <a href="../third-party-controller/" class="md-nav__link">
+        Spiderpool supports third-party controllers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gc/" class="md-nav__link">
+        Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrade/" class="md-nav__link">
+        Upgrading Spiderpool Versions
       </a>
     </li>
   
@@ -521,20 +619,6 @@
     <li class="md-nav__item">
       <a href="../debug/" class="md-nav__link">
         Q&A
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../third-party-controller/" class="md-nav__link">
-        Spiderpool supports third-party controllers
       </a>
     </li>
   
@@ -831,8 +915,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/pullrequest/" class="md-nav__link">
-        Submit Pull Request
+      <a href="../../develop/roadmap/" class="md-nav__link">
+        roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/contributing/" class="md-nav__link">
+        contributing
       </a>
     </li>
   
@@ -859,50 +957,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../develop/swagger_openapi/" class="md-nav__link">
-        SWAGGER OPENAPI
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/test/" class="md-nav__link">
-        test
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/changelog/" class="md-nav__link">
-        Changelog
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../develop/upgrade/" class="md-nav__link">
-        Upgrading Spiderpool Versions
+      <a href="../../develop/upgrade.md" class="md-nav__link">
+        None
       </a>
     </li>
   
@@ -942,6 +998,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-veth" class="md-nav__link">
+    Install Veth
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-sriov-configmap-that-matches-the-nic-configuration" class="md-nav__link">
+    Create Sriov Configmap that matches the NIC configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-sriov-vfs" class="md-nav__link">
+    Create Sriov VFs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-sriov-device-plugin" class="md-nav__link">
+    Install Sriov Device Plugin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-sriov-cni" class="md-nav__link">
+    Install Sriov CNI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-multus" class="md-nav__link">
+    Install Multus
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
   </a>
@@ -949,29 +1054,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#update-cni-network-configuration" class="md-nav__link">
-    Update CNI network configuration
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#create-an-ippool" class="md-nav__link">
-    Create an IPPool
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#confirm-the-ippool-is-working" class="md-nav__link">
-    Confirm the IPPool is working
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#allocate-ip-addresses-from-the-custom-ippool" class="md-nav__link">
-    Allocate IP addresses from the custom IPPool
+  <a href="#create-applications" class="md-nav__link">
+    Create applications
   </a>
   
 </li>
@@ -993,122 +1077,352 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/basic.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/get-started-sriov.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="quick-start">Quick Start</h1>
-<p><em>Let's start some Pods with Spiderpool in approximately 5 minutes.</em></p>
-<h2 id="install-spiderpool">Install Spiderpool</h2>
-<p>Set up the Helm repository.</p>
-<pre><code class="language-bash">helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+<h1 id="sriov-quick-start">SRIOV Quick Start</h1>
+<p><strong>English</strong> | <a href="../get-started-sriov-zh_CN/"><strong>简体中文</strong></a></p>
+<p>Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan</a>, <a href="https://github.com/spidernet-io/plugins">Veth</a>, and <a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a>, which meets the following kinds of requirements:</p>
+<ul>
+<li>
+<p>Applications can be assigned static Underlay IP addresses through simple operations.</p>
+</li>
+<li>
+<p>Pods with multiple Underlay NICs connect to multiple Underlay subnets.</p>
+</li>
+<li>
+<p>Pods can communicate in various ways, such as Pod IP, clusterIP, and nodePort.</p>
+</li>
+</ul>
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+<li>Make sure a Kubernetes cluster is ready</li>
+<li><a href="https://helm.sh/docs/intro/install/">Helm</a> has already been installed</li>
+<li>
+<p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#supported-sr-iov-nics">A SR-IOV-enabled NIC</a></p>
+</li>
+<li>
+<p>Check the NIC's bus-info:</p>
+</li>
+</ol>
+<p><code>shell
+   ~# ethtool -i enp4s0f0np0 |grep bus-info
+   bus-info: 0000:04:00.0</code></p>
+<ul>
+<li>Check whether the NIC supports SR-IOV via bus-info. If the <code>Single Root I/O Virtualization (SR-IOV)</code> field appears, it means that SR-IOV is supported:</li>
+</ul>
+<p><code>shell
+   ~# lspci -s 0000:04:00.0 -v |grep SR-IOV
+   Capabilities: [180] Single Root I/O Virtualization (SR-IOV)</code></p>
+<h2 id="install-veth">Install Veth</h2>
+<p><a href="https://github.com/spidernet-io/plugins"><code>Veth</code></a> is a CNI plugin designed to resolve the following issues in other CNIs like Macvlan and SR-IOV:</p>
+<ul>
+<li>
+<p>Enable clusterIP communication for Pods in the Sriov CNI scenario</p>
+</li>
+<li>
+<p>Address communication issues in multiple NICs for Pods by automatically coordinating policy routing between NICs</p>
+</li>
+</ul>
+<p>Download and install the Veth binary on all nodes:</p>
+<pre><code class="language-shell">~# wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
+
+~# tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
+
+~# chmod +x /opt/cni/bin/veth
 </code></pre>
-<p>Set up the environment variables of the default IPv4 IPPool for the cluster.</p>
-<pre><code class="language-bash">export IPV4_SUBNET_YOU_EXPECT=&quot;172.18.40.0/24&quot;
-export IPV4_IPRANGES_YOU_EXPECT=&quot;172.18.40.40-172.18.40.200&quot;
-</code></pre>
+<h2 id="create-sriov-configmap-that-matches-the-nic-configuration">Create Sriov Configmap that matches the NIC configuration</h2>
+<ul>
+<li>
+<p>Check the vendor, deviceID and driver information of the NIC:</p>
+<p><code>shell
+~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info
+driver: mlx5_core
+bus-info: 0000:04:00.0
+~#
+~# lspci -s 0000:04:00.0 -n
+04:00.0 0200: 15b3:1018</code></p>
 <blockquote>
-<p>The default IPPool usually serves some components that need IP addresses when the Kubernetes cluster is initialized, such as CoreDNS.</p>
+<p>In this example, the vendor is 15b3, the deviceID is 1018, and the driver is mlx5_core.</p>
 </blockquote>
-<p>Deploy Spiderpool with the following command.</p>
-<pre><code class="language-bash">helm install spiderpool spiderpool/spiderpool --namespace kube-system \
-  --set spiderpoolController.tls.method=auto \
-  --set feature.enableIPv4=true \
-  --set feature.enableIPv6=false \
-  --set clusterDefaultPool.installIPv4IPPool=true  \
-  --set clusterDefaultPool.ipv4Subnet=${IPV4_SUBNET_YOU_EXPECT} \
-  --set clusterDefaultPool.ipv4IPRanges={${IPV4_IPRANGES_YOU_EXPECT}}
-</code></pre>
-<blockquote>
-<p>During the deployment, the necessary TLS certificates and custom resources will be automatically created. See more details about <a href="../install/">installation</a>.</p>
-<p>IPv6 is disabled in this case.</p>
-<p>If you want Spiderpool to work under dual stacks, set <code>feature.enableIPv6=true</code>.</p>
-<p>If you need to create a default IPv6 IPPool, set <code>clusterDefaultPool.installIPv6IPPool=true</code> and fill in the desired default IPv6 IPPool information in the <code>clusterDefaultPool.ipv6Subnet</code> and <code>clusterDefaultPool.ipv6IPRanges</code> parameters at the same time.</p>
-</blockquote>
-<p>See more details about <a href="https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/README.md#parameters">Spiderpool helm charts parameters</a>.</p>
-<h2 id="update-cni-network-configuration">Update CNI network configuration</h2>
-<p>After the installation, you should update the
-<a href="https://www.cni.dev/docs/spec/#section-1-network-configuration-format">CNI network configuration</a>
-under the default path <code>/etc/cni/net.d</code> on the Node where you want to use Spiderpool,
-so that the Main CNI can use Spiderpool IPAM CNI to allocate IP addresses.</p>
-<p>Replace the <code>ipam</code> object with the following to update it:</p>
-<pre><code class="language-json">&quot;ipam&quot;:{
-    &quot;type&quot;:&quot;spiderpool&quot;
-}
-</code></pre>
-<p>The following is an example configuration of <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan CNI</a>:</p>
-<pre><code class="language-json">{
-    &quot;cniVersion&quot;:&quot;0.4.0&quot;,
-    &quot;type&quot;:&quot;macvlan&quot;,
-    &quot;mode&quot;:&quot;bridge&quot;,
-    &quot;master&quot;:&quot;eth0&quot;,
-    &quot;name&quot;:&quot;macvlan&quot;,
-    &quot;ipam&quot;:{
-        &quot;type&quot;:&quot;spiderpool&quot;
+</li>
+<li>
+<p>Create Configmap</p>
+<p><code>shell
+vendor="15b3"
+deviceID="1018"
+driver="mlx5_core"
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: sriovdp-config
+    namespace: kube-system
+data:
+    config.json: |
+    {
+        "resourceList": [{
+                "resourceName": "mlnx_sriov",
+                "selectors": {
+                    "vendors": [ "$vendor" ],
+                    "devices": [ "$deviceID" ],
+                    "drivers": [ "$driver" ]
+                    }
+            }
+        ]
     }
-}
+EOF</code></p>
+<blockquote>
+<p>resourceName is the name of the Sriov resource, and after it is declared in Configmap, a Sriov resource named <code>intel.com/mlnx_sriov</code> will be generated on the node for Pods after the sriov-plugin takes effect. The prefix <code>intel.com</code> can be defined through the <code>resourcePrefix</code> field.
+Refer to <a href="https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations">Sriov Configmap</a> for more configuration rules.</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="create-sriov-vfs">Create Sriov VFs</h2>
+<ol>
+<li>
+<p>Check the current number of VFs:</p>
+<p><code>shell
+~# cat /sys/class/net/enp4s0f0np0/device/sriov_numvfs
+0</code></p>
+</li>
+<li>
+<p>Create 8 VFs</p>
+<p><code>shell
+~# echo 8 &gt; /sys/class/net/enp4s0f0np0/device/sriov_numvfs</code></p>
+<blockquote>
+<p>Refer to <a href="https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/blob/master/docs/vf-setup.md">Setting up Virtual Functions</a> for more details.</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="install-sriov-device-plugin">Install Sriov Device Plugin</h2>
+<pre><code class="language-shell">~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-network-device-plugin/v3.5.1/deployments/k8s-v1.16/sriovdp-daemonset.yaml
 </code></pre>
-<h2 id="create-an-ippool">Create an IPPool</h2>
-<p>Next, let's try to create a custom IPPool:</p>
-<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ipv4-ippool.yaml
-</code></pre>
-<p>The YAML file looks like:</p>
-<pre><code class="language-yaml">apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
+<p>Wait for the plugin to take effect After installation.</p>
+<ul>
+<li>
+<p>Check the Node and verify that the Sriov resource named <code>intel.com/mlnx_sriov</code> defined in Configmap has taken effect, with 8 as the number of VFs:</p>
+<p><code>shell
+~# kubectl get  node  master-11 -ojson |jq '.status.allocatable'
+{
+  "cpu": "24",
+  "ephemeral-storage": "94580335255",
+  "hugepages-1Gi": "0",
+  "hugepages-2Mi": "0",
+  "intel.com/mlnx_sriov": "8",
+  "memory": "16247944Ki",
+  "pods": "110"
+}</code></p>
+</li>
+</ul>
+<h2 id="install-sriov-cni">Install Sriov CNI</h2>
+<ol>
+<li>
+<p>Install Sriov CNI through manifest:</p>
+<p><code>shell
+~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cni/v2.7.0/images/k8s-v1.16/sriov-cni-daemonset.yaml</code></p>
+</li>
+</ol>
+<h2 id="install-multus">Install Multus</h2>
+<ol>
+<li>
+<p>Install Multus through manifest:</p>
+<p><code>shell
+~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml</code></p>
+</li>
+<li>
+<p>Create a NetworkAttachmentDefinition configuration for Sriov in Multus</p>
+</li>
+</ol>
+<p>To implement clusterIP communication using Veth, confirm the service CIDR of the cluster through a query command <code>kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service</code> or other methods:</p>
+<pre><code>```shell
+SERVICE_CIDR="10.43.0.0/16"
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
 metadata:
-  name: custom-ipv4-ippool
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov
+  name: sriov-test
+  namespace: kube-system
 spec:
-  ipVersion: 4
-  subnet: 172.18.41.0/24
-  ips:
-  - 172.18.41.40-172.18.41.50
+  config: |-
+    {
+        "cniVersion": "0.3.1",
+        "name": "sriov-test",
+        "plugins": [
+            {
+                "type": "sriov",
+                "ipam": {
+                    "type": "spiderpool"
+                }
+            },{
+                  "type": "veth",
+                  "service_cidr": ["${SERVICE_CIDR}"]
+              }
+        ]
+    }
 </code></pre>
-<p>You can replace <code>spec.subnet</code> and <code>spec.ips</code> as needed. See more details about <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderippool.md">SpiderIPPool CRD</a>.</p>
-<h2 id="confirm-the-ippool-is-working">Confirm the IPPool is working</h2>
-<p>To confirm the custom IPPool is working as expected, let's create a Deployment with 3 replicas:</p>
-<pre><code class="language-bash">kubectl create deployment my-dep --image=busybox --replicas=3 -- sleep infinity
-</code></pre>
-<p>Pods controlled by this Deployment will be assigned with IP addresses from the cluster's default IPPool and run as expected.</p>
-<p>Check IPs of these pods with the following command:</p>
-<pre><code class="language-bash">kubectl get po -l app=my-dep -o wide
-NAME                      READY   STATUS    RESTARTS   AGE     IP              NODE            NOMINATED NODE   READINESS GATES
-my-dep-864946ffd8-h5z27   1/1     Running   0          3m10s   172.18.40.42    spider-worker   &lt;none&gt;           &lt;none&gt;
-my-dep-864946ffd8-kdl86   1/1     Running   0          3m10s   172.18.40.200   spider-worker   &lt;none&gt;           &lt;none&gt;
-my-dep-864946ffd8-vhnsj   1/1     Running   0          3m10s   172.18.40.38    spider-worker   &lt;none&gt;           &lt;none&gt;
-</code></pre>
-<h2 id="allocate-ip-addresses-from-the-custom-ippool">Allocate IP addresses from the custom IPPool</h2>
-<p>In addition to the cluster's default IPPool, Spiderpool also supports allocating IP addresses from custom IPPools.</p>
-<p>You can use the following command and YAML file to specify the custom IPPool just created in the section <a href="#create-an-ippool">Create an IPPool</a> to allocate IP addresses through Pod annotation <code>ipam.spidernet.io/ippool</code>. See more details about <a href="TODO">pool selection rules</a>.</p>
-<pre><code class="language-bash">kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-ippool-deploy.yaml
-</code></pre>
-<pre><code class="language-yaml">apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: custom-ippool-deploy
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: custom-ippool-deploy
-  template:
-    metadata:
-      annotations:
-        ipam.spidernet.io/ippool: |-
-          {
-            &quot;ipv4&quot;: [&quot;custom-ipv4-ippool&quot;]
-          }
-      labels:
-        app: custom-ippool-deploy
-    spec:
-      containers:
-      - name: custom-ippool-deploy
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;trap : TERM INT; sleep infinity &amp; wait&quot;]
-</code></pre>
-<p>As expected, Pods of Deployment <code>custom-ippool-deploy</code> will be assigned with IP addresses from IPPool <code>custom-ipv4-ippool</code>.</p>
+<p>EOF
+    ```</p>
+<blockquote>
+<p><code>k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov</code>: the name of the Sriov resource to be used</p>
+</blockquote>
+<h2 id="install-spiderpool">Install Spiderpool</h2>
+<ol>
+<li>
+<p>Install Spiderpool CRD</p>
+<p><code>shell
+helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+helm repo update spiderpool
+helm install spiderpool spiderpool/spiderpool --namespace kube-system \
+    --set feature.enableIPv4=true --set feature.enableIPv6=false</code></p>
+</li>
+<li>
+<p>Create a SpiderSubnet instance.</p>
+</li>
+</ol>
+<p>The Pod will obtain an IP address from this subnet for underlying network communication, so the subnet needs to correspond to the underlying subnet that is being accessed.
+   Here is an example of creating a SpiderSubnet instance:：</p>
+<p><code>shell
+   cat &lt;&lt;EOF | kubectl apply -f -
+   apiVersion: spiderpool.spidernet.io/v2beta1
+   kind: SpiderSubnet
+   metadata:
+     name: subnet-test
+   spec:
+     ipVersion: 4
+     ips:
+     - "10.20.168.190-10.20.168.199"
+     subnet: 10.20.0.0/16
+     gateway: 10.20.0.1
+     vlan: 0
+   EOF</code></p>
+<h2 id="create-applications">Create applications</h2>
+<ol>
+<li>Create test Pods and Services via the command below：</li>
+</ol>
+<p>```shell
+   cat &lt;&lt;EOF | kubectl create -f -
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: sriov-deploy
+   spec:
+     replicas: 2
+     selector:
+       matchLabels:
+         app: sriov-deploy
+     template:
+       metadata:
+         annotations:
+           ipam.spidernet.io/subnet: |-
+             {
+               "ipv4": ["subnet-test"]
+             }
+           v1.multus-cni.io/default-network: kube-system/sriov-test
+         labels:
+           app: sriov-deploy
+       spec:
+         containers:
+         - name: sriov-deploy
+           image: nginx
+           imagePullPolicy: IfNotPresent
+           ports:
+           - name: http
+             containerPort: 80
+             protocol: TCP
+           resources:
+             requests:
+               intel.com/mlnx_sriov: '1' 
+             limits:
+               intel.com/mlnx_sriov: '1'  </p>
+<hr />
+<p>apiVersion: v1
+   kind: Service
+   metadata:
+     name: sriov-deploy-svc
+     labels:
+       app: sriov-deploy
+   spec:
+     type: ClusterIP
+     ports:
+       - port: 80
+         protocol: TCP
+         targetPort: 80
+     selector:
+       app: sriov-deploy 
+   EOF
+   ```</p>
+<p>Spec descriptions:</p>
+<blockquote>
+<p><code>intel.com/mlnx_sriov</code>: Sriov resources used.</p>
+<p><code>v1.multus-cni.io/default-network</code>: specifies the CNI configuration for Multus.</p>
+<p>For more information on Multus annotations, refer to <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md">Multus Quickstart</a>.</p>
+</blockquote>
+<ol>
+<li>Check the status of Pods:</li>
+</ol>
+<p><code>shell
+   ~# kubectl get pod -l app=sriov-deploy -owide
+   NAME                           READY   STATUS    RESTARTS   AGE     IP              NODE        NOMINATED NODE   READINESS GATES
+   sriov-deploy-9b4b9f6d9-mmpsm   1/1     Running   0          6m54s   10.20.168.191   worker-12   &lt;none&gt;           &lt;none&gt;
+   sriov-deploy-9b4b9f6d9-xfsvj   1/1     Running   0          6m54s   10.20.168.190   master-11   &lt;none&gt;           &lt;none&gt;</code></p>
+<ol>
+<li>Spiderpool has created fixed IP pools for applications, ensuring that the applications' IPs are automatically fixed within the defined ranges.</li>
+</ol>
+<p>```shell
+   ~# kubectl get spiderippool
+   NAME                                     VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+   auto-sriov-deploy-v4-eth0-f5488b112fd9   4         10.20.0.0/16   2                    2                false     false</p>
+<p>~#  kubectl get spiderendpoints
+   NAME                           INTERFACE   IPV4POOL                                 IPV4               IPV6POOL   IPV6   NODE
+   sriov-deploy-9b4b9f6d9-mmpsm   eth0        auto-sriov-deploy-v4-eth0-f5488b112fd9   10.20.168.191/16                     worker-12
+   sriov-deploy-9b4b9f6d9-xfsvj   eth0        auto-sriov-deploy-v4-eth0-f5488b112fd9   10.20.168.190/16                     master-11
+   ```</p>
+<ol>
+<li>Test the communication between Pods:</li>
+</ol>
+<p>```shell
+   ~# kubectl exec -it sriov-deploy-9b4b9f6d9-mmpsm -- ping 10.20.168.190 -c 3
+   PING 10.20.168.190 (10.20.168.190) 56(84) bytes of data.
+   64 bytes from 10.20.168.190: icmp_seq=1 ttl=64 time=0.162 ms
+   64 bytes from 10.20.168.190: icmp_seq=2 ttl=64 time=0.138 ms
+   64 bytes from 10.20.168.190: icmp_seq=3 ttl=64 time=0.191 ms</p>
+<p>--- 10.20.168.190 ping statistics ---
+   3 packets transmitted, 3 received, 0% packet loss, time 2051ms
+   rtt min/avg/max/mdev = 0.138/0.163/0.191/0.021 ms
+   ```</p>
+<ol>
+<li>
+<p>Test the communication between Pods and Services:</p>
+</li>
+<li>
+<p>Check Services' IPs：</p>
+</li>
+</ol>
+<p><code>shell
+   ~# kubectl get svc
+   NAME               TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)              AGE
+   kubernetes         ClusterIP   10.43.0.1      &lt;none&gt;        443/TCP              23d
+   sriov-deploy-svc   ClusterIP   10.43.54.100   &lt;none&gt;        80/TCP               20m</code></p>
+<ul>
+<li>Access its own service within the Pod:</li>
+</ul>
+<p><code>shell
+   ~# kubectl exec -it sriov-deploy-9b4b9f6d9-mmpsm -- curl 10.43.54.100 -I
+   HTTP/1.1 200 OK
+   Server: nginx/1.23.3
+   Date: Mon, 27 Mar 2023 08:22:39 GMT
+   Content-Type: text/html
+   Content-Length: 615
+   Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+   Connection: keep-alive
+   ETag: "6398a011-267"
+   Accept-Ranges: bytes</code></p>
 
 
 
@@ -1134,7 +1448,7 @@ spec:
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../install/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation" rel="prev">
+        <a href="../get-started-macvlan/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Macvlan Quick Start" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1143,20 +1457,20 @@ spec:
               <span class="md-footer__direction">
                 Previous
               </span>
-              Installation
+              Macvlan Quick Start
             </div>
           </div>
         </a>
       
       
         
-        <a href="../ippool-multi/" class="md-footer__link md-footer__link--next" aria-label="Next: Multiple IPPool" rel="next">
+        <a href="../get-started-calico/" class="md-footer__link md-footer__link--next" aria-label="Next: Calico Quick Start" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Multiple IPPool
+              Calico Quick Start
             </div>
           </div>
           <div class="md-footer__button md-icon">

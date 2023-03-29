@@ -135,7 +135,7 @@ kubectl delete -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main
 
 Another interesting question is that what happens if an IP address to be reserved has been allocated before ReservedIP is created? Of course, we dare not stop this running Pod and recycle its IP addresses, but ReservedIP will still ensure that when the Pod is terminated, no other Pods can continue to use the reserved IP address.
 
->Therefore, ReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.
+> Therefore, ReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.
 
 ### Clean up
 
@@ -181,7 +181,7 @@ spec:
   - 172.18.43.31-172.18.43.50
 ```
 
->Different IPPools allow to define the same field `subnet`, more details refer to [validation of IPPool](TODO).
+> Different IPPools allow to define the same field `subnet`, more details refer to [validation of IPPool](TODO).
 
 After a period of time, a Pod may be allocated with IP `172.18.43.31` from the IPPool `created-by-someone-else`, and then it holds the same IP address as your Redis node. After that, the Redis may not work as well.
 

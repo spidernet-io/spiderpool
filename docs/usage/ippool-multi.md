@@ -6,11 +6,11 @@ Multiple IP pools can be set for a pod for the usage of backup IP resources.
 
 ### Set up Spiderpool
 
-follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
+Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
 
-### backup ippool effect
+### Backup IPPool effect
 
-create two IPPools each containing 2 IP addresses.
+Create two IPPools each containing 2 IP addresses.
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/test-ipv4-ippools.yaml

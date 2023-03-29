@@ -69,9 +69,9 @@ There are two typical scenarios for underlay network solutions：clusters deploy
 
 5. IP conflict
 
-    Underlay networks are more prone to IP conflicts. For instance, PODs conflict with host IPs outside the cluster, or conflict with other clusters under the same subnet. But it is difficult for IPAM to discover these conflicting IP addresses externally unless CNI plugins is involved for real-time IP conflict detection.
+    Underlay networks are more prone to IP conflicts. For instance, PODs conflict with host IPs outside the cluster, or conflict with other clusters under the same subnet. But it is difficult for IPAM to discover these conflicting IP addresses externally unless CNI plugins are involved for real-time IP conflict detection.
 
-6. Release and recovery IP addresses
+6. Release and recover IP addresses
 
     Because of the scarcity of IP addresses in underlay networks and the static IP address requirements of applications, a newly launched POD may fail due to the lack of IP addresses owing to some IP addresses not released by abnormal Pods.
     This requires IPAMs to have a more accurate, efficient and timely IP recovery mechanism.
@@ -120,7 +120,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
     
 * Manual ippool for applications needing static ip but the administrator expects specify IP address by hand. See [example](./docs/usage/ippool-affinity-pod.md) for details
 
-* For applications not requiring static IP addresses, they can share an IP pool. See [example](./docs/usage/ippool-multi.md) for details
+* For applications not requiring static IP addresses, they can share an IP pool. See [example](./docs/usage/ippool-affinity-pod.md#shared-ippool) for details
 
 * For one application with pods running on nodes accessing different underlay subnet, spiderpool could assign IP addresses within different subnets. See [example](./docs/usage/ippool-affinity-node.md) for details
 
@@ -132,6 +132,16 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * IP pools can be shared by whole cluster or bound to a specified namespace. See [example](./docs/usage/ippool-affinity-namespace.md) for details
 
+* An additional plugin [veth](https://github.com/spidernet-io/plugins) provided by spiderpool has features:
+
+  * help some CNI addons be able to access clusterIP and pod-healthy check , such as [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). See [example](./docs/usage/get-started-macvlan.md) for details.
+
+  * help coordinate routes of each NIC, for pods who has multiple NICs assigned by [Multus](https://github.com/k8snetworkplumbingwg/multus-cni). See [example](./docs/usage/multi-interfaces-annotation.md) for details
+
 * Private IPv4 address is rare, spiderpool provides a reasonable IP recycling mechanism, especially for running new pods when nodes or old pods are abnormal. See [example](./docs/usage/gc.md) for details
 
 * The administrator could specify customized route. See [example](./docs/usage/route.md) for details
@@ -140,7 +150,9 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios. See [example](./docs/usage/ipv6.md) for details
 
-## Others
+* Good performance for assigning and release Pod IP, to guarantee the application release, to guarantee disaster recovery for the cluster. See [example](docs/usage/performance.md) for details
+
+## Other features
 
 * [Metrics](./docs/concepts/metrics.md)
 

@@ -1,4 +1,4 @@
-# Overview
+# Spiderpool
 
 ## Introduction
 
@@ -12,7 +12,7 @@ Hopefully, Spiderpool will be a new IPAM alternative for open source enthusiasts
 
 There are two technologies in cloud-native networking: "overlay network" and "underlay network".
 Despite no strict definition for underlay and overlay networks in cloud-native networking, we can simply abstract their characteristics from many CNI projects. The two technologies meet the needs of different scenarios.
-Spiderpool is designed for underlay networks, and the following comparison of the two solutions can better illustrate the features and usage scenarios of Spiderpool.
+ Spiderpool is designed for underlay networks, and the following comparison of the two solutions can better illustrate the features and usage scenarios of Spiderpool.
 
 ### Overlay network solution
 
@@ -22,21 +22,21 @@ These IPAM solutions has some characteristics:
 
 1. divide pod subnet into node-based IP block
 
-   In terms of a smaller subnet mask, the pod subnet is divided into smaller IP blocks, and each node is assigned one or more IP blocks depending on the actual IP allocation account.
+    In terms of a smaller subnet mask, the pod subnet is divided into smaller IP blocks, and each node is assigned one or more IP blocks depending on the actual IP allocation account.
 
-   First, since the IPAM plugin on each node only needs to allocate and release IP addresses in the local IP block, there is no IP allocation conflict with IPAM on other nodes, and achieve more efficient allocation.
-   Second, a specific IP address follows an IP block and is allocated within one node all the time, so it cannot be assigned on other nodes together with a bound POD.
+    First, since the IPAM plugin on each node only needs to allocate and release IP addresses in the local IP block, there is no IP allocation conflict with IPAM on other nodes, and achieve more efficient allocation.
+    Second, a specific IP address follows an IP block and is allocated within one node all the time, so it cannot be assigned on other nodes together with a bound POD.
 
 2. Sufficient IP address resources
 
-   subnets not overlapping with any CIDR, could be used by the cluster, so the cluster have enough IP address resources as long as NAT technology is used in an appropriate manner. As a result, IPAM components face less pressure to reclaim abnormal IP address.
+    subnets not overlapping with any CIDR, could be used by the cluster, so the cluster have enough IP address resources as long as NAT technology is used in an appropriate manner. As a result, IPAM components face less pressure to reclaim abnormal IP address.
 
 3. No requirement for static IP addresses
 
-   For the static IP address requirement, there is a difference between stateless application and stateful application. Regarding stateless application like deployment, the POD's name will change when the POD restarts, the business logic of the application itself is stateless, so static IP addresses means that all the POD replicas are fixed in a set of IP addresses; for stateful applications such as statefulset, considering both the fixed information including POD's names and stateful business logic, the strong binding of one POD and one specific IP address needs to be implemented for static IP addresses.
+    For the static IP address requirement, there is a difference between stateless application and stateful application. Regarding stateless application like deployment, the POD's name will change when the POD restarts, the business logic of the application itself is stateless, so static IP addresses means that all the POD replicas are fixed in a set of IP addresses; for stateful applications such as statefulset, considering both the fixed information including POD's names and stateful business logic, the strong binding of one POD and one specific IP address needs to be implemented for static IP addresses.
 
-   The "overlay network solution" mostly exposes the ingress and source addresses of services to the outside of the cluster with the help of NAT technology, and realizes the east-west communication through DNS, clusterIP and other technologies.
-   In addition, although the IP block of IPAM fixes the IP to one node, it does not guarantee the application replicas to follow the scheduling.Therefore, there is no scope for the static IP address capability. Most of the mainstream CNIs in the community have not yet supported "static IP addressed", or support it in a rough way.
+    The "overlay network solution" mostly exposes the ingress and source addresses of services to the outside of the cluster with the help of NAT technology, and realizes the east-west communication through DNS, clusterIP and other technologies.
+    In addition, although the IP block of IPAM fixes the IP to one node, it does not guarantee the application replicas to follow the scheduling.Therefore, there is no scope for the static IP address capability. Most of the mainstream CNIs in the community have not yet supported "static IP addressed", or support it in a rough way.
 
 The advantage of the "overlay network solution" is that the CNI plugins are highly compatible with any underlying network environment, and can provide independent subnets with sufficient IP addresses for PODs.
 
@@ -48,33 +48,33 @@ There are two typical scenarios for underlay network solutions：clusters deploy
 
 1. An IP address able to be assigned to any node
 
-   As the number of network devices in the data center increases and multi-cluster technology evolves, IPv4 address resources become scarce, thus requiring IPAM to improve the efficiency of IP usage.
-   As the POD replicas of the applications requiring "static IP addresses" could be scheduled to any node in the cluster and drift between nodes, IP addresses might drift together.
+    As the number of network devices in the data center increases and multi-cluster technology evolves, IPv4 address resources become scarce, thus requiring IPAM to improve the efficiency of IP usage.
+    As the POD replicas of the applications requiring "static IP addresses" could be scheduled to any node in the cluster and drift between nodes, IP addresses might drift together.
 
-   Therefore, an IP address should be able to be allocated to a POD on any node.
+    Therefore, an IP address should be able to be allocated to a POD on any node.
 
 2. Different replicas within one application could obtain IP addresses across subnets
 
-   Take as an example one node could access subnet 172.20.1.0/24 while another node just only access subnet 172.20.2.0/24. In this case, when the replicas within one application need be deployed across subnets, IPAM is required to be able to assign subnet-matched IP addresses to the application on different nodes.
+    Take as an example one node could access subnet 172.20.1.0/24 while another node just only access subnet 172.20.2.0/24. In this case, when the replicas within one application need be deployed across subnets, IPAM is required to be able to assign subnet-matched IP addresses to the application on different nodes.
 
 3. Static IP addresses
 
-   For some traditional applications, the source IPs or destination IPs needs to be sensed in the microservice. And network admins are used to enabling fine-grained network security control via firewalls and other means.
+    For some traditional applications, the source IPs or destination IPs needs to be sensed in the microservice. And network admins are used to enabling fine-grained network security control via firewalls and other means.
 
-   Therefore, in order to reduce the transformation chores after the applications move to the kubernetes, applications need static IP address.
+    Therefore, in order to reduce the transformation chores after the applications move to the kubernetes, applications need static IP address.
 
 4. Pods with Multiple NICs need IP addresses of different underlay subnets
 
-   Since the POD is connected to an underlay network, it has the need for multiple NICs to reach different underlay subnets.
+    Since the POD is connected to an underlay network, it has the need for multiple NICs to reach different underlay subnets.
 
 5. IP conflict
 
-   Underlay networks are more prone to IP conflicts. For instance, PODs conflict with host IPs outside the cluster, or conflict with other clusters under the same subnet. But it is difficult for IPAM to discover these conflicting IP addresses externally unless CNI plugins is involved for real-time IP conflict detection.
+    Underlay networks are more prone to IP conflicts. For instance, PODs conflict with host IPs outside the cluster, or conflict with other clusters under the same subnet. But it is difficult for IPAM to discover these conflicting IP addresses externally unless CNI plugins is involved for real-time IP conflict detection.
 
 6. Release and recovery IP addresses
 
-   Because of the scarcity of IP addresses in underlay networks and the static IP address requirements of applications, a newly launched POD may fail due to the lack of IP addresses owing to some IP addresses not released by abnormal Pods.
-   This requires IPAMs to have a more accurate, efficient and timely IP recovery mechanism.
+    Because of the scarcity of IP addresses in underlay networks and the static IP address requirements of applications, a newly launched POD may fail due to the lack of IP addresses owing to some IP addresses not released by abnormal Pods.
+    This requires IPAMs to have a more accurate, efficient and timely IP recovery mechanism.
 
 The advantages of the underlay network solution include: no need for network NAT mapping, which makes cloud-based network transformation for applications way more convenient; the underlying network firewall and other devices can achieve relatively fine control of POD communication; no tunneling technology contributes to improved throughput and latency performance of network communications.
 
@@ -86,21 +86,14 @@ For the architecture of spiderpool, refer to [Architecture](./docs/concepts/arch
 
 Any CNI project compatible with third-party IPAM plugins, can work well with spiderpool, such as:
 
-* [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
-
-* [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan)
-
-* [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
-
-* [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)
-
-* [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)
-
-* [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
-
-* [calico CNI](https://github.com/projectcalico/calico)
-
-* [weave CNI](https://github.com/weaveworks/weave)
+[macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
+[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
+[calico CNI](https://github.com/projectcalico/calico), 
+[weave CNI](https://github.com/weaveworks/weave)
 
 ## Quick start
 
@@ -110,21 +103,21 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Multiple subnet objects
 
-  The administrator can create multiple subnets objects mapping to each underlay CIDR, and applications can be assigned IP addresses within different subnets. to meet the complex planning of underlay networks. See [example](./docs/usage/multiple-subnet.md) for more details.
+    The administrator can create multiple subnets objects mapping to each underlay CIDR, and applications can be assigned IP addresses within different subnets. to meet the complex planning of underlay networks. See [example](./docs/usage/multi-interfaces-annotation.md) for more details.
 
 * Automatical ippool for applications needing static ip
 
-  To realize static IP addresses, some open source projects need hardcode IP addresses in the application's annotation, which is prone to operations accidents, manual operations of IP address conflicts, higher IP management costs caused by application scalability.
-  Spiderpool could automatically create, delete, scale up and down a dedicated ippool with static IP address just for one application, which could minimize operation efforts.
+    To realize static IP addresses, some open source projects need hardcode IP addresses in the application's annotation, which is prone to operations accidents, manual operations of IP address conflicts, higher IP management costs caused by application scalability.
+    Spiderpool could automatically create, delete, scale up and down a dedicated ippool with static IP address just for one application, which could minimize operation efforts.
 
   * For stateless applications, the IP address range can be automatically fixed and IP resources can be dynamically scaled according to the number of application replicas. See [example](./docs/usage/spider-subnet.md) for more details.
 
   * For stateful applications, IP addresses can be automatically fixed for each POD, and the overall IP scaling range can be fixed as well. And IP resources can be dynamically scaled according to the number of application replicas. See [example](./docs/usage/statefulset.md) for more details.
-
+    
   * The dedicated ippool could have keep some redundant IP address, which supports application to performance a rolling update when creating new pods. See [example](./docs/usage/????) for more details.
 
   * Support for third-party application controllers. See [example](./docs/usage/third-party-controller.md) for details
-
+    
 * Manual ippool for applications needing static ip but the administrator expects specify IP address by hand. See [example](./docs/usage/ippool-affinity-pod.md) for details
 
 * For applications not requiring static IP addresses, they can share an IP pool. See [example](./docs/usage/ippool-multi.md) for details

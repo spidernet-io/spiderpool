@@ -143,7 +143,7 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 * 手动 IP 池，管理员能够自定义固定 IP 地址，帮助应用固定 IP 地址。可参考 [例子](./docs/usage/ippool-affinity-pod.md)
 
-* 对于没有 IP 地址固定需求的应用，可共同使用一个共享 IP 池。可参考 [例子](./docs/usage/ippool-multi.md)
+* 对于没有 IP 地址固定需求的应用，可共同使用一个共享 IP 池。可参考 [例子](./docs/usage/ippool-affinity-pod.md#shared-ippool)
 
 * 对于一个跨子网部署的应用，支持为其不同副本分配不同子网的 IP 地址。可参考 [例子](./docs/usage/ippool-affinity-node.md)
 
@@ -161,7 +161,7 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
 [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). 可参考 [例子](./get-started-macvlan.md)
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). 可参考 [例子](./docs/usage/get-started-macvlan.md)
 
   * POD 被 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) 分配多网卡时，可帮助各个网卡之间协调策略路由。可参考 [例子](./docs/usage/multi-interfaces-annotation.md) 
     

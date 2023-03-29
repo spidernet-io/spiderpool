@@ -111,6 +111,8 @@ Any CNI project compatible with third-party IPAM plugins, can work well with spi
 [calico CNI](https://github.com/projectcalico/calico), 
 [weave CNI](https://github.com/weaveworks/weave)
 
+Additionally, Spiderpool could help some CNI addons be able to access clusterIP and pod-healthy check, like [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni).
+
 ## Quick start
 
 If you want to start some Pods with Spiderpool in minutes, refer to [Quick start](./docs/usage/install.md).

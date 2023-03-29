@@ -136,7 +136,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
     
 * Manual ippool for applications needing static ip but the administrator expects specify IP address by hand. See [example](./docs/usage/ippool-affinity-pod.md) for details
 
-* For applications not requiring static IP addresses, they can share an IP pool. See [example](./docs/usage/ippool-multi.md) for details
+* For applications not requiring static IP addresses, they can share an IP pool. See [example](./docs/usage/ippool-affinity-pod.md#shared-ippool) for details
 
 * For one application with pods running on nodes accessing different underlay subnet, spiderpool could assign IP addresses within different subnets. See [example](./docs/usage/ippool-affinity-node.md) for details
 
@@ -154,7 +154,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
 [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). See [example](./get-started-macvlan.md) for details.
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). See [example](./docs/usage/get-started-macvlan.md) for details.
 
   * help coordinate routes of each NIC, for pods who has multiple NICs assigned by [Multus](https://github.com/k8snetworkplumbingwg/multus-cni). See [example](./docs/usage/multi-interfaces-annotation.md) for details
 

@@ -128,7 +128,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Multiple subnet objects
 
-    The administrator can create multiple subnets objects mapping to each underlay CIDR, and applications can be assigned IP addresses within different subnets. to meet the complex planning of underlay networks. See [example](./docs/usage/multiple-subnet.md) for more details.
+    The administrator can create multiple subnets objects mapping to each underlay CIDR, and applications can be assigned IP addresses within different subnets. to meet the complex planning of underlay networks. See [example](./docs/usage/multi-interfaces-annotation.md) for more details.
 
 * Automatical ippool for applications needing static ip
 

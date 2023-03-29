@@ -2,7 +2,11 @@
 
 [**English**](./get-started-macvlan.md) | **简体中文**
 
-Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Macvlan](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：
+[**English**](./get-started-macvlan.md) | **简体中文**
+
+[**English**](./get-started-macvlan.md) | **简体中文**
+
+Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Macvlan](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：
 
 * 通过简易运维，应用可分配到固定的 Underlay IP 地址
 
@@ -14,11 +18,11 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 1. 准备一个 Kubernetes 集群
 
-2. [Helm](https://helm.sh/docs/intro/install/) 工具
+2. 已安装 [Helm](https://helm.sh/docs/intro/install/)
 
 ## 安装 Macvlan 
 
-[`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) 是 一个 CNI 插件项目，能够为 Pod 分配 Macvlan 虚拟网卡，可用于对接 Underlay 网络。
+[`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) 是一个 CNI 插件项目，能够为 Pod 分配 Macvlan 虚拟网卡，可用于对接 Underlay 网络。
 
 一些 Kubernetes 安装器项目，默认安装了 Macvlan 二进制文件，可确认节点上存在二进制文件 /opt/cni/bin/macvlan 。如果节点上不存在该二进制文件，可参考如下命令，在所有节点上下载安装：
 
@@ -69,53 +73,53 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     kube-system          kube-multus-ds-qm8j7                         1/1     Running   0   5m
     ```
 
-   确认节点上存在 Multus 的配置文件 `ls /etc/cni/net.d/00-multus.conf`
+    确认节点上存在 Multus 的配置文件 `ls /etc/cni/net.d/00-multus.conf`
 
-3. 为 Macvlan 创建 Multus 的 NetworkAttachmentDefinition 配置
+3. 为 Macvlan 创建 Multus 的 NetworkAttachmentDefinition 配置。
 
-   需要确认如下参数：
+    需要确认如下参数：
 
-   * 确认 Macvlan 所需的宿主机父接口，本例子以宿主机 eth0 网卡为例，从该网卡创建 Macvlan 子接口给 Pod 使用
+    * 确认 Macvlan 所需的宿主机父接口，本例子以宿主机 eth0 网卡为例，从该网卡创建 Macvlan 子接口给 Pod 使用
 
-   * 为使用 Veth 插件来实现 clusterIP 通信，需确认集群的 service CIDR，例如可基于命令 `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service` 查询
+    * 为使用 Veth 插件来实现 clusterIP 通信，需确认集群的 service CIDR，例如可基于命令 `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service` 查询
 
-以下为创建 NetworkAttachmentDefinition 的配置
+    以下为创建 NetworkAttachmentDefinition 的配置：
 
-  ```shell
-  MACLVAN_MASTER_INTERFACE="eth0"
-  SERVICE_CIDR="10.96.0.0/16"
+    ```shell
+    MACVLAN_MASTER_INTERFACE="eth0"
+    SERVICE_CIDR="10.96.0.0/16"
 
-  cat <<EOF | kubectl apply -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: macvlan-conf
-    namespace: kube-system
-  spec:
-    config: |-
-      {
-          "cniVersion": "0.3.1",
-          "name": "macvlan-conf",
-          "plugins": [
-              {
-                  "type": "macvlan",
-                  "master": "${MACLVAN_MASTER_INTERFACE}",
-                  "mode": "bridge",
-                  "ipam": {
-                      "type": "spiderpool"
+    cat <<EOF | kubectl apply -f -
+    apiVersion: k8s.cni.cncf.io/v1
+    kind: NetworkAttachmentDefinition
+    metadata:
+      name: macvlan-conf
+      namespace: kube-system
+    spec:
+      config: |-
+        {
+            "cniVersion": "0.3.1",
+            "name": "macvlan-conf",
+            "plugins": [
+                {
+                    "type": "macvlan",
+                    "master": "${MACLVAN_MASTER_INTERFACE}",
+                    "mode": "bridge",
+                    "ipam": {
+                        "type": "spiderpool"
+                    }
+                },{
+                      "type": "veth",
+                      "service_cidr": ["${SERVICE_CIDR}"]
                   }
-              },{
-                    "type": "veth",
-                    "service_cidr": ["${SERVICE_CIDR}"]
-                }
-          ]
-      }
-  EOF
-  ```
+            ]
+        }
+    EOF
+    ```
 
 ## 安装 Spiderpool
 
-1. 安装 Spiderpool CRD
+1. 安装 Spiderpool CRD。
 
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -128,8 +132,8 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 2. 创建 SpiderSubnet 实例。
 
-   Macvlan 是 以宿主机 eth0 为父接口，因此，需要创建 eth0 底层的 Underlay 子网供 Pod 使用。
-以下是创建相关的 SpiderSubnet 示例
+    Macvlan 是以宿主机 eth0 为父接口，因此，需要创建 eth0 底层的 Underlay 子网供 Pod 使用。
+    以下是创建相关的 SpiderSubnet 示例：
 
     ```shell
     cat <<EOF | kubectl apply -f -
@@ -199,14 +203,12 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     EOF
     ```
 
-   必要参数说明：
-   > `ipam.spidernet.io/subnet`：该 annotation 指定使用哪个 subnet 分配 IP 地址给 Pod
-   >
-   > 更多 Spiderpool 注解的使用请参考 [Spiderpool 注解](https://spidernet-io.github.io/spiderpool/concepts/annotation/)。
-   >
-   > `v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
-   >
-   > 更多 Multus 注解使用请参考 [Multus 注解](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)
+    必要参数说明：
+    * `ipam.spidernet.io/subnet`：该 annotation 指定使用哪个 subnet 分配 IP 地址给 Pod
+        > 更多 Spiderpool 注解的使用请参考 [Spiderpool 注解](https://spidernet-io.github.io/spiderpool/concepts/annotation/)。
+
+    * `v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
+        > 更多 Multus 注解使用请参考 [Multus 注解](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)。
 
 2. 查看 Pod 运行状态：
 
@@ -217,7 +219,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     test-app-f9f94688-8982v   1/1     Running   0          2m13s   172.18.30.138   ipv4-control-plane   <none>           <none>
     ```
 
-3. Spiderpool 自动为应用创建了 IP 固定池，应用的 IP 将会自动固定在该 IP 范围内
+3. Spiderpool 自动为应用创建了 IP 固定池，应用的 IP 将会自动固定在该 IP 范围内：
 
     ```bash
     ~# kubectl get spiderippool
@@ -231,7 +233,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     ```
 
 
-4. 测试 Pod 与 Pod 的通讯情况
+4. 测试 Pod 与 Pod 的通讯情况：
 
     ```shell
     ~# kubectl exec -ti test-app-f9f94688-2srj7 -- ping 172.18.30.138 -c 2
@@ -245,30 +247,30 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     round-trip min/avg/max = 0.194/0.859/1.524 ms
     ```
 
-5. 测试 Pod 与 service IP 的通讯情况
+5. 测试 Pod 与 service IP 的通讯情况：
 
-* 查看 service 的 IP：
+    * 查看 service 的 IP：
 
-    ```shell
-    ~# kubectl get service
+        ```shell
+        ~# kubectl get service
 
-    NAME           TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
-    kubernetes     ClusterIP   10.96.0.1     <none>        443/TCP   20h
-    test-app-svc   ClusterIP   10.96.190.4   <none>        80/TCP    109m
-    ```
+        NAME           TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+        kubernetes     ClusterIP   10.96.0.1     <none>        443/TCP   20h
+        test-app-svc   ClusterIP   10.96.190.4   <none>        80/TCP    109m
+        ```
 
-* Pod 内访问自身的 service ：
+    * Pod 内访问自身的 service ：
 
-  ```bash
-  ~# kubectl exec -ti  test-app-85cf87dc9c-7dm7m -- curl 10.96.190.4:80 -I
+        ```bash
+        ~# kubectl exec -ti  test-app-85cf87dc9c-7dm7m -- curl 10.96.190.4:80 -I
 
-  HTTP/1.1 200 OK
-  Server: nginx/1.23.1
-  Date: Thu, 23 Mar 2023 05:01:04 GMT
-  Content-Type: text/html
-  Content-Length: 4055
-  Last-Modified: Fri, 23 Sep 2022 02:53:30 GMT
-  Connection: keep-alive
-  ETag: "632d1faa-fd7"
-  Accept-Ranges: bytes
-  ```
+        HTTP/1.1 200 OK
+        Server: nginx/1.23.1
+        Date: Thu, 23 Mar 2023 05:01:04 GMT
+        Content-Type: text/html
+        Content-Length: 4055
+        Last-Modified: Fri, 23 Sep 2022 02:53:30 GMT
+        Connection: keep-alive
+        ETag: "632d1faa-fd7"
+        Accept-Ranges: bytes
+        ```

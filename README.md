@@ -85,9 +85,9 @@ There are two typical scenarios for underlay network solutions：clusters deploy
 
 5. IP conflict
 
-    Underlay networks are more prone to IP conflicts. For instance, PODs conflict with host IPs outside the cluster, or conflict with other clusters under the same subnet. But it is difficult for IPAM to discover these conflicting IP addresses externally unless CNI plugins is involved for real-time IP conflict detection.
+    Underlay networks are more prone to IP conflicts. For instance, PODs conflict with host IPs outside the cluster, or conflict with other clusters under the same subnet. But it is difficult for IPAM to discover these conflicting IP addresses externally unless CNI plugins are involved for real-time IP conflict detection.
 
-6. Release and recovery IP addresses
+6. Release and recover IP addresses
 
     Because of the scarcity of IP addresses in underlay networks and the static IP address requirements of applications, a newly launched POD may fail due to the lack of IP addresses owing to some IP addresses not released by abnormal Pods.
     This requires IPAMs to have a more accurate, efficient and timely IP recovery mechanism.
@@ -110,6 +110,10 @@ Any CNI project compatible with third-party IPAM plugins, can work well with spi
 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
 [calico CNI](https://github.com/projectcalico/calico), 
 [weave CNI](https://github.com/weaveworks/weave),
+
+* [calico CNI](https://github.com/projectcalico/calico)
+
+* [weave CNI](https://github.com/weaveworks/weave)
 
 ## Quick start
 
@@ -166,11 +170,11 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios. See [example](./docs/usage/ipv6.md) for details
 
-## Others
+* Good performance for assigning and release Pod IP, to guarantee the application release, to guarantee disaster recovery for the cluster. See [example](docs/usage/performance.md) for details
 
 * [Metrics](./docs/concepts/metrics.md)
 
-* Support AMD64 and ARM64
+## Other features
 
 * lots of design can avoid IP leaks, IP conflicts, in case of administrator's fault, concurrent operations and so on.
 

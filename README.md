@@ -102,21 +102,14 @@ For the architecture of spiderpool, refer to [Architecture](./docs/concepts/arch
 
 Any CNI project compatible with third-party IPAM plugins, can work well with spiderpool, such as:
 
-* [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
-
-* [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan)
-
-* [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
-
-* [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)
-
-* [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)
-
-* [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
-
-* [calico CNI](https://github.com/projectcalico/calico)
-
-* [weave CNI](https://github.com/weaveworks/weave)
+[macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
+[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
+[calico CNI](https://github.com/projectcalico/calico), 
+[weave CNI](https://github.com/weaveworks/weave),
 
 ## Quick start
 

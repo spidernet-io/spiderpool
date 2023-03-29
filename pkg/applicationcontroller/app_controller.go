@@ -463,7 +463,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 
 		ctx = logutils.IntoContext(ctx, log)
 		// check the difference between the two object and choose to reconcile or not
-		if sac.hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas) {
+		if hasSubnetConfigChanged(ctx, oldSubnetConfig, newSubnetConfig, oldAppReplicas, newAppReplicas) {
 			log.Debug("try to add app to application controller workequeue")
 			sac.enqueueApp(ctx, app, appKind, app.GetUID())
 		}
@@ -846,7 +846,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 
 // hasSubnetConfigChanged checks whether application subnet configuration changed and the application replicas changed or not.
 // The second parameter newSubnetConfig must not be nil.
-func (sac *SubnetAppController) hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig,
+func hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig,
 	oldAppReplicas, newAppReplicas int) bool {
 	// go to reconcile directly with new application
 	if oldSubnetConfig == nil {

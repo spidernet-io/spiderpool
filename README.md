@@ -2,14 +2,12 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/spidernet-io/spiderpool)](https://goreportcard.com/report/github.com/spidernet-io/spiderpool)
 [![CodeFactor](https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge)](https://www.codefactor.io/repository/github/spidernet-io/spiderpool)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=spidernet-io_spiderpool&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=spidernet-io_spiderpool)
 [![codecov](https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G)](https://codecov.io/gh/spidernet-io/spiderpool)
 [![Auto Version Release](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml)
 [![Auto Nightly CI](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6009/badge)](https://bestpractices.coreinfrastructure.org/projects/6009)
 [![Nightly K8s Matrix](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-diff-k8s-ci.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-diff-k8s-ci.yaml)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/7e54bfe38fec206e7710c74ad55a5139/raw/spiderpoolcodeline.json)
-![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/93b7ba26a4600fabe100ff640f9b3bd3/raw/spiderpoolcomment.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/e1d3c092d1b9f61f1c8e36f09d2809cb/raw/spiderpoole2e.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json)
@@ -104,17 +102,14 @@ For the architecture of spiderpool, refer to [Architecture](./docs/concepts/arch
 
 Any CNI project compatible with third-party IPAM plugins, can work well with spiderpool, such as:
 
-* [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
-
-* [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan)
-
-* [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
-
-* [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)
-
-* [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)
-
-* [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
+[macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
+[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
+[calico CNI](https://github.com/projectcalico/calico), 
+[weave CNI](https://github.com/weaveworks/weave),
 
 * [calico CNI](https://github.com/projectcalico/calico)
 
@@ -128,7 +123,7 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Multiple subnet objects
 
-    The administrator can create multiple subnets objects mapping to each underlay CIDR, and applications can be assigned IP addresses within different subnets. to meet the complex planning of underlay networks. See [example](./docs/usage/multiple-subnet.md) for more details.
+    The administrator can create multiple subnets objects mapping to each underlay CIDR, and applications can be assigned IP addresses within different subnets. to meet the complex planning of underlay networks. See [example](./docs/usage/multi-interfaces-annotation.md) for more details.
 
 * Automatical ippool for applications needing static ip
 
@@ -165,11 +160,11 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios. See [example](./docs/usage/ipv6.md) for details
 
-## Other features
+* Good performance for assigning and release Pod IP, to guarantee the application release, to guarantee disaster recovery for the cluster. See [example](docs/usage/performance.md) for details
 
 * [Metrics](./docs/concepts/metrics.md)
 
-* Support AMD64 and ARM64
+## Other features
 
 * lots of design can avoid IP leaks, IP conflicts, in case of administrator's fault, concurrent operations and so on.
 

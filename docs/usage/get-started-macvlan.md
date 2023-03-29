@@ -16,9 +16,9 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
 2. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
 
-## Install Macvlan 
+## Install Macvlan
 
-[`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) is a CNI plugin that allows pods to be assigned Macvlan virtual NICs for connecting to Underlay networks. 
+[`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) is a CNI plugin that allows pods to be assigned Macvlan virtual NICs for connecting to Underlay networks.
 
 Some Kubernetes installers include the Macvlan binary file by default that can be found at "/opt/cni/bin/macvlan" on your nodes. If the binary file is missing, you can download and install it on all nodes using the following command:
 
@@ -69,20 +69,20 @@ Download and install the Veth binary on all nodes:
     kube-system          kube-multus-ds-qm8j7                         1/1     Running   0   5m
     ```
 
-    Verify the existence of the Multus configuration files `ls /etc/cni/net.d/00-multus.conf` on the node.
+   Verify the existence of the Multus configuration files `ls /etc/cni/net.d/00-multus.conf` on the node.
 
 3. Create a NetworkAttachmentDefinition for Macvlan.
 
-    The following parameters need to be confirmed:
+   The following parameters need to be confirmed:
 
     * Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface ——eth0.
 
     * To implement clusterIP communication using Veth, confirm the service CIDR of the cluster through a query command `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service` or other methods.
 
-    The following is the configuration for creating a NetworkAttachmentDefinition:
+   The following is the configuration for creating a NetworkAttachmentDefinition:
 
     ```shell
-    MACVLAN_MASTER_INTERFACE="eth0"
+    MACLVAN_MASTER_INTERFACE="eth0"
     SERVICE_CIDR="10.96.0.0/16"
 
     cat <<EOF | kubectl apply -f -
@@ -128,8 +128,8 @@ Download and install the Veth binary on all nodes:
 
 2. Create a SpiderSubnet instance.
 
-    An Underlay subnet for eth0 needs to be created for Pods as Macvlan uses eth0 as the parent interface.
-    Here is an example of creating a SpiderSubnet instance:：
+   An Underlay subnet for eth0 needs to be created for Pods as Macvlan uses eth0 as the parent interface.
+   Here is an example of creating a SpiderSubnet instance:：
 
     ```shell
     cat <<EOF | kubectl apply -f -
@@ -199,12 +199,12 @@ Download and install the Veth binary on all nodes:
     EOF
     ```
 
-    Spec descriptions：
+   Spec descriptions：
     * `ipam.spidernet.io/subnet`: defines which subnets to be used to assign IP addresses to Pods.
-        > For more information on Spiderpool annotations, refer to [Spiderpool Annotations](https://spidernet-io.github.io/spiderpool/concepts/annotation/)。
+      > For more information on Spiderpool annotations, refer to [Spiderpool Annotations](https://spidernet-io.github.io/spiderpool/concepts/annotation/)。
 
     * `v1.multus-cni.io/default-network`：specifies the CNI configuration for Multus.
-        > For more information on Multus annotations, refer to [Multus Quickstart](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
+      > For more information on Multus annotations, refer to [Multus Quickstart](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
 
 2. Check the status of Pods:
 
@@ -244,28 +244,22 @@ Download and install the Veth binary on all nodes:
 
 5. Test the communication between Pods and service IP:
 
-    * Get service IP:
+    ```shell
+    ~# kubectl get service
+    
+    NAME           TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
+    kubernetes     ClusterIP   10.96.0.1     <none>        443/TCP   20h
+    test-app-svc   ClusterIP   10.96.190.4   <none>        80/TCP    109m
+    
+    ~# kubectl exec -ti  test-app-85cf87dc9c-7dm7m -- curl 10.96.190.4:80 -I
 
-        ```shell
-        ~# kubectl get service
-
-        NAME           TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
-        kubernetes     ClusterIP   10.96.0.1     <none>        443/TCP   20h
-        test-app-svc   ClusterIP   10.96.190.4   <none>        80/TCP    109m
-        ```
-
-    * Access its own service within the Pod:
-
-        ```bash
-        ~# kubectl exec -ti  test-app-85cf87dc9c-7dm7m -- curl 10.96.190.4:80 -I
-
-        HTTP/1.1 200 OK
-        Server: nginx/1.23.1
-        Date: Thu, 23 Mar 2023 05:01:04 GMT
-        Content-Type: text/html
-        Content-Length: 4055
-        Last-Modified: Fri, 23 Sep 2022 02:53:30 GMT
-        Connection: keep-alive
-        ETag: "632d1faa-fd7"
-        Accept-Ranges: bytes
-        ```
+    HTTP/1.1 200 OK
+    Server: nginx/1.23.1
+    Date: Thu, 23 Mar 2023 05:01:04 GMT
+    Content-Type: text/html
+    Content-Length: 4055
+    Last-Modified: Fri, 23 Sep 2022 02:53:30 GMT
+    Connection: keep-alive
+    ETag: "632d1faa-fd7"
+    Accept-Ranges: bytes
+    ```

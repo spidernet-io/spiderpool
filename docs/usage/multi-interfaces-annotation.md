@@ -1,156 +1,175 @@
 # Pod annotation of multi-NIC
 
-*Spiderpool supports specifying the IP pools for each interface by Pod annotation in multi-NIC scenario.*
+When assigning multiple NICs to a pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
 
->*Creating Pods with multiple interfaces depends on [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). Before reading this guide, please ensure that you have [installed Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#installation) and can [use it](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/how-to-use.md) skillfully.*
-
-## Set up Spiderpool
-
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+This feature supports to implement by annotation `ipam.spidernet.io/subnets` and `ipam.spidernet.io/ippools` 
 
 ## Get Started
 
-First, let's take a look at the [Multus CNI network configuration](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md) used in this example:
+The example will create two Multus CNI Configuration object and create two underlay subnets.
+Then run a pod with two NICs with IP in different subnets.
+
+### Set up Spiderpool
+
+Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool. And Spiderpool also provides a [Veth](https://github.com/spidernet-io/plugins) The plug-in can help some CNIs (such as Macvlan, SR-IOV, etc.) solve the following problems:
+
+* Help the main CNI achieve communication between the Pod and the host to solve issues such as Pod access to clusterIP, and Pod host health checks.
+
+* Automatic coordination of policy routing between multiple NICs in Pod multi-NIC scenarios to resolve multi-NIC communications
+
+### Set up Multus Configuration
+
+Create two network-attachment-definitions，The following parameters need to be confirmed:
+
+* Confirm the host machine parent interface required for Macvlan. This example takes the ens192 and ens224 network cards of the host machine as examples to create a Macvlan sub interface for Pod to use.
+
+* In order to use the Veth plugin for clusterIP communication, you need to confirm the serviceIP CIDR of the cluster service, e.g. by using the command `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service`.
+
+```shell
+~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/multus-conf.yaml
+
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system
+NAME                  AGE
+macvlan-conf-ens192   20s
+macvlan-conf-ens224   22s
+```
+
+## multiple NICs by subnet
+
+Create two Subnets to provide IP addresses for different interfaces.
+
+```shell
+~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-subnets.yaml
+
+~# kubectl get spidersubnet
+NAME                 VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
+subnet-test-ens192   4         10.6.0.1/16   0                    10
+subnet-test-ens224   4         10.7.0.1/16   0                    10
+```
+
+In the following example Yaml, 2 copies of the Deployment are created：
+
+```shell
+~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml.yaml
+```
+
+Eventually, when the Deployment is created, Spiderpool will select random IPs from the specified subnet to create two fixed IP pools to bind to each of the Deployment Pod's two NICs.
 
 ```bash
-cat /etc/cni/net.d/00-multus.conf
-{
-  "cniVersion": "0.3.1",
-  "name": "multus-cni-network",
-  "type": "multus",
-  "confDir": "/etc/cni/net.d/" ,
-  "capabilities": {
-    "portMappings": true
-  },
-  "clusterNetwork": "macvlan-cni-default",
-  "multusNamespace": "kube-system",
-  "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
-}
+~# kubectl get spiderippool
+NAME                                 VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+auto-test-app-v4-eth0-b1a361c7e9df   4         10.6.0.1/16   2                    3                false     false
+auto-test-app-v4-net1-b1a361c7e9df   4         10.7.0.1/16   2                    3                false     false
+
+~# kubectl get spiderippool auto-test-app-v4-eth0-b1a361c7e9df -o jsonpath='{.spec.ips}'
+["10.6.168.171-10.6.168.173"]
+
+~# kubectl get spiderippool auto-test-app-v4-net1-b1a361c7e9df -o jsonpath='{.spec.ips}'
+["10.7.168.171-10.7.168.173"]
+
+~# kubectl get po -l app=test-app -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+test-app-6f4594ff67-fkqbw   1/1     Running   0          40s   10.6.168.172   node2   <none>           <none>
+test-app-6f4594ff67-gwlx8   1/1     Running   0          40s   10.6.168.173   node1   <none>           <none>
+
+~# kubectl exec -ti test-app-6f4594ff67-fkqbw -- ip a
+3: eth0@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether ae:fa:5e:d9:79:11 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.6.168.172/16 brd 10.6.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+4: veth0@if13: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 26:6f:22:91:22:f9 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+5: net1@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether d6:4b:c2:6a:62:0f brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.7.168.173/16 brd 10.7.255.255 scope global net1
+       valid_lft forever preferred_lft forever
 ```
 
-We configure `macvlan-cni-default` as the default CNI network of the Kubernetes cluster, which is a combination of [macvlan CNI](https://www.cni.dev/plugins/current/main/macvlan/) and Spiderpool.
+The following command shows the multi-NIC routing information in the Pod. The Veth plug-in can automatically coordinate the policy routing between multiple NICs and solve the communication problems between multiple NICs.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/macvlan-cni-default.yaml
+~# kubectl exec -ti test-app-6f4594ff67-fkqbw -- ip rule show
+0:  from all lookup local
+32764:  from 10.7.168.173 lookup 100
+32765:  from all to 10.7.168.173/16 lookup 100
+32766:  from all lookup main
+32767:  from all lookup default
+
+~# kubectl exec -ti test-app-6f4594ff67-fkqbw -- ip r show main
+default via 10.6.0.1 dev eth0
+
+~# kubectl exec -ti test-app-6f4594ff67-fkqbw -- ip route show table 100
+default via 10.7.0.1 dev net1
+10.6.168.123 dev veth0 scope link
+10.7.0.0/16 dev net1 proto kernel scope link src 10.7.168.173
+10.96.0.0/12 via 10.6.168.123 dev veth0
 ```
 
-```yaml
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: macvlan-cni-default
-  namespace: kube-system
-spec:
-  config: '{
-      "cniVersion": "0.3.1",
-      "type": "macvlan",
-      "mode": "bridge",
-      "master": "eth0",
-      "name": "macvlan-cni-default",
-      "ipam": {
-        "type": "spiderpool"
-      }
-    }'
-```
+## multiple NICs by IPPool
 
 Create two IPPools to provide IP addresses for different interfaces.
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml
+```shell
+~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml
+
+~# kubectl get spiderippool
+NAME                   VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+ippool-test-ens192     4         10.6.0.1/16   0                    5                false     false
+ippool-test-ens224     4         10.7.0.1/16   0                    5                false     false
 ```
 
-```bash
-kubectl get sp
-NAME               VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-eth0-ipv4-ippool   4         172.18.41.0/24   0                    2                false
-net1-ipv4-ippool   4         172.18.42.0/24   0                    2                false
+In the following example Yaml, 2 copies of the Deployment are created：
+
+```shell
+~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml
 ```
 
-Then, create a Deployment whose Pod is [attached an additional interface](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#creating-a-pod-that-attaches-an-additional-interface) (macvlan) through the Multus annotation `k8s.v1.cni.cncf.io/networks`.
+Eventually, when the Deployment is created, Spiderpool randomly selects IPs from the two specified IPPools to form bindings to each of the two NICs.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/multi-macvlan-interfaces-deploy.yaml
-```
+~# kubectl get spiderippool
+NAME                   VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+ippool-test-ens192     4         10.6.0.1/16   1                    5                false     false
+ippool-test-ens224     4         10.7.0.1/16   1                    5                false     false
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: multi-macvlan-interfaces-deploy
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: multi-macvlan-interfaces-deploy
-  template:
-    metadata:
-      annotations:
-        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni-default
-        ipam.spidernet.io/ippools: |-
-          [{
-            "interface": "eth0",
-            "ipv4": ["eth0-ipv4-ippool"]
-          },{
-            "interface": "net1",
-            "ipv4": ["net1-ipv4-ippool"]
-          }]
-      labels:
-        app: multi-macvlan-interfaces-deploy
-    spec:
-      containers:
-      - name: multi-macvlan-interfaces-deploy
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
-```
+~# kubectl get po -l app=ippool-test-app -o wide
+NAME                               READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
+ippool-test-app-65f646574c-mpr47   1/1     Running   0          6m18s   10.6.168.175   node2   <none>           <none>
 
-The Pod annotation `ipam.spidernet.io/ippools` specifies the [pool selection rules](TODO) for each interfaces in the form of an array, which means that executing the [CNI ADD command](https://www.cni.dev/docs/spec/#cni-operations) with the environment parameter `CNI_IFNAME` as `eth0` will get an IP allocation result from IPPool `eth0-ipv4-ippool`. The interface `net1` works in a similar way.
-
->As for the reason why the two interfaces are named `eth0` and `net1` respectively, it is because that is the convention of Multus CNI. Generally, the first interface (default interface) of a Pod will be named `eth0`, and the additional interfaces attached will be named `net1`, `net2`...
-
-Finally, you can check the details of the IP allocation result.
-
-```bash
-kubectl get se multi-macvlan-interfaces-deploy-b99b55bd7-gvvqt -o jsonpath='{.status.current}' | jq
-{
-  "containerID": "57e7a0a713bc16bfeb2390969a43daef99d1625c8bebc841646a90fa854900f3",
-  "creationTime": "2022-11-24T05:22:19Z",
-  "ips": [
-    {
-      "interface": "eth0",
-      "ipv4": "172.18.41.41/24",
-      "ipv4Pool": "eth0-ipv4-ippool",
-      "vlan": 0
-    },
-    {
-      "interface": "net1",
-      "ipv4": "172.18.42.40/24",
-      "ipv4Pool": "net1-ipv4-ippool",
-      "vlan": 0
-    }
-  ],
-  "node": "spider-worker"
-}
-```
-
-Inspect the container.
-
-```bash
-kubectl exec -it multi-macvlan-interfaces-deploy-b99b55bd7-gvvqt -- ip a
+~#  kubectl exec -ti ippool-test-app-65f646574c-mpr47 -- ip a
 ...
-4: eth0@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
-    link/ether 46:34:cc:2e:70:2c brd ff:ff:ff:ff:ff:ff
-    inet 172.18.41.41/24 brd 172.18.41.255 scope global eth0
+3: eth0@tunl0: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue
+    link/ether 2a:ca:ce:06:1e:91 brd ff:ff:ff:ff:ff:ff
+    inet 10.6.168.175/16 brd 10.6.255.255 scope global eth0
        valid_lft forever preferred_lft forever
-    inet6 fe80::4434:ccff:fe2e:702c/64 scope link 
-       valid_lft forever preferred_lft forever
-5: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
-    link/ether aa:e3:32:27:75:01 brd ff:ff:ff:ff:ff:ff
-    inet 172.18.42.40/24 brd 172.18.42.255 scope global net1
-       valid_lft forever preferred_lft forever
-    inet6 fe80::a8e3:32ff:fe27:7501/64 scope link 
+4: veth0@if15: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue
+    link/ether 86:ba:6f:97:ae:1b brd ff:ff:ff:ff:ff:ff
+5: net1@eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue
+    link/ether f2:12:b5:8c:ff:4f brd ff:ff:ff:ff:ff:ff
+    inet 10.7.168.177/16 brd 10.7.255.255 scope global net1
        valid_lft forever preferred_lft forever
 ```
+
+The following command shows the multi-NIC routing information in the Pod. The Veth plug-in can automatically coordinate the policy routing between multiple NICs and solve the communication problems between multiple NICs.
+
+```bash
+~# kubectl exec -ti ippool-test-app-65f646574c-mpr47 -- ip rule show
+0: from all lookup local
+32764: from 10.7.168.177 lookup 100
+32765: from all to 10.7.168.177/16 lookup 100
+32766: from all lookup main
+32767: from all lookup default
+
+~# kubectl exec -ti ippool-test-app-65f646574c-mpr47 -- ip r show main
+default via 10.6.0.1 dev eth0
+
+~# kubectl exec -ti ippool-test-app-65f646574c-mpr47 -- ip r show table 100
+default via 10.7.0.1 dev net1
+10.6.168.123 dev veth0 scope link
+10.7.0.0/16 dev net1 scope link  src 10.7.168.177
+10.96.0.0/12 via 10.6.168.123 dev veth0
+```
+
 
 ## Clean up
 
@@ -158,7 +177,11 @@ Clean the relevant resources so that you can run this tutorial again.
 
 ```bash
 kubectl delete \
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml \
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/macvlan-cni-default.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/multus-conf.yaml \
+-f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-subnets.yaml \
+-f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml.yaml \
+-f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-dual-ippool-deploy.yaml \
+-f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml \
 --ignore-not-found=true
 ```

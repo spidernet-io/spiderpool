@@ -149,6 +149,10 @@ func DaemonMain() {
 			logger.Fatal(err.Error())
 		}
 	}()
+	waitForCacheSync := mgr.GetCache().WaitForCacheSync(controllerContext.InnerCtx)
+	if !waitForCacheSync {
+		logger.Fatal("failed to wait for syncing controller-runtime cache")
+	}
 
 	logger.Info("Begin to initialize OpenAPI HTTP server")
 	srv, err := newControllerOpenAPIServer()
@@ -212,7 +216,7 @@ func WatchSignal(sigCh chan os.Signal) {
 
 func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize spiderpool-controller leader election")
-	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
+	initSpiderControllerLeaderElect(ctx)
 
 	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(
@@ -336,8 +340,8 @@ func initControllerServiceManagers(ctx context.Context) {
 func initGCManager(ctx context.Context) {
 	// EnableStatefulSet was determined by Configmap.
 	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
+	gcIPConfig.LeaderRetryElectGap = time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
 	gcManager, err := gcmanager.NewGCManager(
-		ctx,
 		controllerContext.ClientSet,
 		gcIPConfig,
 		controllerContext.EndpointManager,
@@ -351,9 +355,16 @@ func initGCManager(ctx context.Context) {
 	}
 	controllerContext.GCManager = gcManager
 
-	if err := controllerContext.GCManager.Start(ctx); err != nil {
-		logger.Fatal(err.Error())
-	}
+	go func() {
+		errCh := controllerContext.GCManager.Start(ctx)
+		select {
+		case err := <-errCh:
+			logger.Fatal(err.Error())
+		case <-ctx.Done():
+			logger.Error("global ctx down!")
+			return
+		}
+	}()
 }
 
 func initSpiderControllerLeaderElect(ctx context.Context) {
@@ -445,6 +456,7 @@ func setupInformers() {
 		logger.Info("Begin to set up auto-created IPPool controller")
 		subnetAppController, err := applicationcontroller.NewSubnetAppController(
 			controllerContext.CRDManager.GetClient(),
+			controllerContext.CRDManager.GetAPIReader(),
 			controllerContext.SubnetManager,
 			applicationcontroller.SubnetAppControllerConfig{
 				EnableIPv4:                    controllerContext.Cfg.EnableIPv4,

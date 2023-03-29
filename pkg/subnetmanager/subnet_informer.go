@@ -160,6 +160,12 @@ func (sc *SubnetController) addEventHandlers(subnetInformer informers.SpiderSubn
 	_, err = ipPoolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: sc.enqueueSubnetOnIPPoolChange,
 		UpdateFunc: func(old, new interface{}) {
+			oldIPPool := old.(*spiderpoolv2beta1.SpiderIPPool)
+			newIPPool := new.(*spiderpoolv2beta1.SpiderIPPool)
+			if reflect.DeepEqual(newIPPool.Spec.IPs, oldIPPool.Spec.IPs) &&
+				reflect.DeepEqual(newIPPool.Spec.ExcludeIPs, oldIPPool.Spec.ExcludeIPs) {
+				return
+			}
 			sc.enqueueSubnetOnIPPoolChange(new)
 		},
 		DeleteFunc: sc.enqueueSubnetOnIPPoolChange,
@@ -392,8 +398,11 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			}
 
 			if !exist {
-				logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
-				continue
+				_, err := sc.IPPoolsLister.Get(poolName)
+				if apierrors.IsNotFound(err) {
+					logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
+					continue
+				}
 			}
 
 			autoIPPoolIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)

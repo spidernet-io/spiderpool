@@ -253,49 +253,30 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		})
 
 		Describe("RemoveFinalizer", func() {
-			It("removes the finalizer for non-existent Endpoint", func() {
-				err := endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
-				Expect(err).NotTo(HaveOccurred())
+			It("inputs nil Endpoint", func() {
+				err := endpointManager.RemoveFinalizer(ctx, nil)
+				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
 			It("removes the finalizer that does not exit on the Endpoint", func() {
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
-				err = tracker.Add(endpointT)
-				Expect(err).NotTo(HaveOccurred())
 
-				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
+				err = endpointManager.RemoveFinalizer(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("failed to update Endpoint due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+			It("failed to patch Endpoint due to some unknown errors", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Patch", constant.ErrUnknown)
 				defer patches.Reset()
 
 				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
 
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
-				err = tracker.Add(endpointT)
-				Expect(err).NotTo(HaveOccurred())
 
-				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
+				err = endpointManager.RemoveFinalizer(ctx, endpointT)
 				Expect(err).To(MatchError(constant.ErrUnknown))
-			})
-
-			It("runs out of retries to update Endpoint, but conflicts still occur", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
-				defer patches.Reset()
-
-				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
-
-				err := fakeClient.Create(ctx, endpointT)
-				Expect(err).NotTo(HaveOccurred())
-				err = tracker.Add(endpointT)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
-				Expect(err).To(MatchError(constant.ErrRetriesExhausted))
 			})
 
 			It("removes the Endpoint's finalizer", func() {
@@ -303,10 +284,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
-				err = tracker.Add(endpointT)
-				Expect(err).NotTo(HaveOccurred())
 
-				err = endpointManager.RemoveFinalizer(ctx, namespace, endpointName)
+				err = endpointManager.RemoveFinalizer(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
 				var endpoint spiderpoolv2beta1.SpiderEndpoint

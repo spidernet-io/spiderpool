@@ -118,22 +118,21 @@ spec:
             path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
-          initialDelaySeconds: 60
+          initialDelaySeconds: 10
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.livenessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.spiderpoolController.healthChecking.livenessProbe.failureThreshold }}
-          timeoutSeconds: 5
+          timeoutSeconds: 1
         readinessProbe:
           httpGet:
             host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
-          initialDelaySeconds: 5
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.readinessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.spiderpoolController.healthChecking.readinessProbe.failureThreshold }}
-          timeoutSeconds: 5
+          timeoutSeconds: 1
         {{- with .Values.spiderpoolController.resources }}
         resources:
         {{- toYaml . | trim | nindent 10 }}
@@ -161,7 +160,7 @@ spec:
           value: {{ .Values.feature.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
           value: {{ .Values.feature.gc.GcDeletingTimeOutPod.enabled | quote }}
-        - name: SPIDERPOOL_GC_TERMINATING_POD_IP_DELAY
+        - name: SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY
           value: {{ .Values.feature.gc.GcDeletingTimeOutPod.delay | quote }}
         - name: SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION
           value: {{ .Values.feature.gc.gcAll.intervalInSecond | quote }}

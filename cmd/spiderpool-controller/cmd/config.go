@@ -69,13 +69,13 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_TRACE_POD_GAP_DURATION", "5", true, nil, nil, &gcIPConfig.TracePodGapDuration},
 	{"SPIDERPOOL_GC_SIGNAL_TIMEOUT_DURATION", "3", true, nil, nil, &gcIPConfig.GCSignalTimeoutDuration},
 	{"SPIDERPOOL_GC_HTTP_REQUEST_TIME_GAP", "1", true, nil, nil, &gcIPConfig.GCSignalGapDuration},
-	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "5", true, nil, nil, &gcIPConfig.AdditionalGraceDelay},
+	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "0", true, nil, nil, &gcIPConfig.AdditionalGraceDelay},
 	{"SPIDERPOOL_POD_NAMESPACE", "", true, &controllerContext.Cfg.ControllerPodNamespace, nil, nil},
 	{"SPIDERPOOL_POD_NAME", "", true, &controllerContext.Cfg.ControllerPodName, nil, nil},
-	{"SPIDERPOOL_GC_LEADER_DURATION", "15", true, nil, nil, &controllerContext.Cfg.LeaseDuration},
-	{"SPIDERPOOL_GC_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
-	{"SPIDERPOOL_GC_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
-	{"SPIDERPOOL_GC_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
+	{"SPIDERPOOL_LEADER_DURATION", "15", true, nil, nil, &controllerContext.Cfg.LeaseDuration},
+	{"SPIDERPOOL_LEADER_RENEW_DEADLINE", "10", true, nil, nil, &controllerContext.Cfg.LeaseRenewDeadline},
+	{"SPIDERPOOL_LEADER_RETRY_PERIOD", "2", true, nil, nil, &controllerContext.Cfg.LeaseRetryPeriod},
+	{"SPIDERPOOL_LEADER_RETRY_GAP", "1", true, nil, nil, &controllerContext.Cfg.LeaseRetryGap},
 
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 

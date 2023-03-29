@@ -1,14 +1,16 @@
-# Multiple IPPool
+# Backup IPPool
 
-*Spiderpool can specify multiple alternative IP pools for one IP allocation.*
-
-## Set up Spiderpool
-
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+Multiple IP pools can be set for a pod for the usage of backup IP resources.
 
 ## Get Started
 
-First, create two IPPools each containing 2 IP addresses.
+### Set up Spiderpool
+
+Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
+
+### Backup IPPool effect
+
+Create two IPPools each containing 2 IP addresses.
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-multi/test-ipv4-ippools.yaml
@@ -74,7 +76,7 @@ multi-ippool-deploy-669bf7cf79-4x88m   eth0        default-ipv4-ippool   172.18.
 multi-ippool-deploy-669bf7cf79-k7zkk   eth0        backup-ipv4-ippool    172.18.42.41/24                     spider-worker   2m31s
 ```
 
-## Clean up
+### Clean up
 
 Clean the relevant resources so that you can run this tutorial again.
 

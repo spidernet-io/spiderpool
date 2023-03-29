@@ -124,7 +124,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 	}
 
 	logger.Info("Clean Endpoint")
-	if err := i.endpointManager.RemoveFinalizer(ctx, endpoint.Namespace, endpoint.Name); err != nil {
+	if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
 		return fmt.Errorf("failed to clean Endpoint: %v", err)
 	}
 

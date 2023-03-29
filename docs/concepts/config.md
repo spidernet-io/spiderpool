@@ -67,7 +67,7 @@ data:
 
 - `ipamUnixSocketPath` (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.
 - `networkMode`:
-  - `legacy`: Applicable to the traditional physical machine network.
+  - `legacy`: Applicable to the traditional network consisting of physical machines.
 - `enableIPv4` (bool):
   - `true`: Enable IPv4 IP allocation capability of Spiderpool.
   - `false`: Disable IPv4 IP allocation capability of Spiderpool.

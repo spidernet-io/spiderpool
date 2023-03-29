@@ -24,6 +24,10 @@ In the future, spiderpool may support all operation of automatical ippool.
 * when multi-cluster use Spiderpool to manager underlay IP address, leader cluster could
     synchronize all Spiderpool resource from member clusters, which help manager all underlay IP address
 
+## strengthen veth
+
+* support to detect IP conflict when setting up the network of pod 
+
 ## integrate more CNI 
 
 * integrate more CNI addon to solve underlay network needs 

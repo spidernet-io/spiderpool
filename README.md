@@ -168,9 +168,11 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * Good performance for assigning and release Pod IP, to guarantee the application release, to guarantee disaster recovery for the cluster. See [example](docs/usage/performance.md) for details
 
+## Other features
+
 * [Metrics](./docs/concepts/metrics.md)
 
-## Other features
+* Support AMD64 and ARM64
 
 * lots of design can avoid IP leaks, IP conflicts, in case of administrator's fault, concurrent operations and so on.
 

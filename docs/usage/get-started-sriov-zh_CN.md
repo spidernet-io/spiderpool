@@ -1,5 +1,7 @@
 # Quick Start
 
+[**English**](./get-started-sriov.md) | **简体中文**
+
 Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：
 
 * 通过简易运维，应用可分配到固定的 Underlay IP 地址
@@ -14,14 +16,14 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 2. [Helm 工具](https://helm.sh/docs/intro/install/)
 3. [支持 SR-IOV 功能的网卡](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#supported-sr-iov-nics)
    
-   * 查询网卡 bus-info
+   * 查询网卡 bus-info：
 
    ```shell
    ~# ethtool -i enp4s0f0np0 |grep bus-info
    bus-info: 0000:04:00.0
    ```
    
-   * 通过 bus-info 查询网卡是否支持 SR-IOV 功能，出现 `Single Root I/O Virtualization (SR-IOV)` 字段表示网卡支持 SR-IOV 功能
+   * 通过 bus-info 查询网卡是否支持 SR-IOV 功能，出现 `Single Root I/O Virtualization (SR-IOV)` 字段表示网卡支持 SR-IOV 功能：
    
    ```shell
    ~# lspci -s 0000:04:00.0 -v |grep SR-IOV
@@ -49,49 +51,49 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 ## 创建与网卡配置匹配的 Sriov Configmap
 
-* 查询网卡 vendor、deviceID 和 driver 信息是否在 Configmap 中
+* 查询网卡 vendor、deviceID 和 driver 信息：
 
-```shell
-~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info
-driver: mlx5_core
-bus-info: 0000:04:00.0
-~#
-~# lspci -s 0000:04:00.0 -n
-04:00.0 0200: 15b3:1018
-```
+    ```shell
+    ~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info
+    driver: mlx5_core
+    bus-info: 0000:04:00.0
+    ~#
+    ~# lspci -s 0000:04:00.0 -n
+    04:00.0 0200: 15b3:1018
+    ```
 
-> 本示例中，vendor 为 15b3，deviceID 为 1018，driver 为 mlx5_core
+    > 本示例中，vendor 为 15b3，deviceID 为 1018，driver 为 mlx5_core
 
 * 创建 Configmap
 
-```shell
-vendor="15b3"
-deviceID="1018"
-driver="mlx5_core"
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-   name: sriovdp-config
-   namespace: kube-system
-data:
-   config.json: |
-      {
-          "resourceList": [{
-                "resourceName": "mlnx_sriov",
-                "selectors": {
-                      "vendors": [ "$vendor" ],
-                      "devices": [ "$deviceID" ],
-                      "drivers": [ "$driver" ]
-                    }
-            }
-          ]
-      }
-EOF
-```
+    ```shell
+    vendor="15b3"
+    deviceID="1018"
+    driver="mlx5_core"
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+        name: sriovdp-config
+        namespace: kube-system
+    data:
+        config.json: |
+        {
+            "resourceList": [{
+                    "resourceName": "mlnx_sriov",
+                    "selectors": {
+                        "vendors": [ "$vendor" ],
+                        "devices": [ "$deviceID" ],
+                        "drivers": [ "$driver" ]
+                        }
+                }
+            ]
+        }
+    EOF
+    ```
 
-> resourceName 为 sriov 资源名称，在 configmap 声明后，在 sriov-plugin 生效后，会在 node 上产生一个名为 `intel.com/mlnx_sriov` 的 sriov 资源供 Pod 使用，前缀 `intel.com` 可通过 `resourcePrefix` 字段定义
->具体配置规则参考 [Sriov Configmap](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations)
+    > resourceName 为 sriov 资源名称，在 configmap 声明后，在 sriov-plugin 生效后，会在 node 上产生一个名为 `intel.com/mlnx_sriov` 的 sriov 资源供 Pod 使用，前缀 `intel.com` 可通过 `resourcePrefix` 字段定义
+    >具体配置规则参考 [Sriov Configmap](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations)
 
 
 ## 创建 Sriov VF
@@ -119,20 +121,20 @@ EOF
 
 安装完成后，等待插件生效。
 
-* 查看 Node 发现在 configmap 中定义的名为 `intel.com/mlnx_sriov` 的 sriov 资源已经生效，其中 8 为 VF 的数量
+* 查看 Node 发现在 configmap 中定义的名为 `intel.com/mlnx_sriov` 的 sriov 资源已经生效，其中 8 为 VF 的数量：
 
-```shell
-~# kubectl get  node  master-11 -ojson |jq '.status.allocatable'
-{
-  "cpu": "24",
-  "ephemeral-storage": "94580335255",
-  "hugepages-1Gi": "0",
-  "hugepages-2Mi": "0",
-  "intel.com/mlnx_sriov": "8",
-  "memory": "16247944Ki",
-  "pods": "110"
-}
-```
+    ```shell
+    ~# kubectl get  node  master-11 -ojson |jq '.status.allocatable'
+    {
+      "cpu": "24",
+      "ephemeral-storage": "94580335255",
+      "hugepages-1Gi": "0",
+      "hugepages-2Mi": "0",
+      "intel.com/mlnx_sriov": "8",
+      "memory": "16247944Ki",
+      "pods": "110"
+    }
+    ```
 
 ## 安装 Sriov CNI
 

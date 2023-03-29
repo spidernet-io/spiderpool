@@ -109,17 +109,12 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 任何支持第三方 IPAM 插件的 CNI 项目，都可以配合 spiderpool，例如：
 
-* [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
-
-* [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan)
-
-* [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
-
-* [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)
-
-* [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)
-
-* [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
+[macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
+[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
 
 ## 快速开始
 

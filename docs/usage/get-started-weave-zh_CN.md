@@ -1,6 +1,8 @@
 # Weave Quick Start
 
-`Weave` 是一款开源的网络解决方案, 它通过创建一个虚拟网络、自动发现和连接不同的容器, 为容器提供网络连通和网络策略等能力。同时它可作为 Kubernetes 容器网络解决方案(CNI)的一种选择，`Weave` 默认使用内置的 `IPAM` 为 Pod 提供 IP 分配能力, 其 `IPAM` 能力对用户并不可见，缺乏 Pod IP 地址的管理分配能力。 本文将介绍 SpiderPool 搭配 `Weave`, 在保留 `Weave` 原有功能的基础上, 结合 `SpiderPool` 扩展 `Weave` 的 `IPAM` 能力。
+[**English**](./get-started-weave.md) | **简体中文**
+
+`Weave` 是一款开源的网络解决方案, 它通过创建一个虚拟网络、自动发现和连接不同的容器, 为容器提供网络连通和网络策略等能力。同时它可作为 Kubernetes 容器网络解决方案(CNI)的一种选择，`Weave` 默认使用内置的 `IPAM` 为 Pod 提供 IP 分配能力, 其 `IPAM` 能力对用户并不可见，缺乏 Pod IP 地址的管理分配能力。 本文将介绍 Spiderpool 搭配 `Weave`, 在保留 `Weave` 原有功能的基础上, 结合 `Spiderpool` 扩展 `Weave` 的 `IPAM` 能力。
 
 ## 先决条件
 
@@ -23,7 +25,7 @@
     weave-net-vhmqx                         2/2     Running     4     0   1m
     ```
 
-2. 安装 SpiderPool
+2. 安装 Spiderpool
 
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -49,7 +51,7 @@
      EOF
      ```
 
-     > 注: Weave 默认使用 `10.32.0.0/12` 作为集群默认子网。所以这里需要创建一个相同子网的 SpiderSubnet
+     > `Weave` 使用 `10.32.0.0/12` 作为集群默认子网。所以这里需要创建一个相同子网的 SpiderSubnet
 
 3. 验证安装
 
@@ -63,7 +65,7 @@
     weave-subnet-v4    4         10.32.0.0/12   0                    12901            false
    ```
 
-## 切换 `Weave` 的 `IPAM` 为 `SpiderPool`
+## 切换 `Weave` 的 `IPAM` 为 `Spiderpool`
 
 修改每个节点上: `/etc/cni/net.d/10-weave.conflist` 的 `ipam`字段:
 
@@ -156,9 +158,9 @@
   EOF
   ```
 
-> _spec.template.metadata.annotations.ipam.spidernet.io/subnet_ 指定 Pod 从 SpiderSubnet:  `weave-subnet-v4` 中分配 IP
+> _spec.template.metadata.annotations.ipam.spidernet.io/subnet_：指定 Pod 从 SpiderSubnet:  `weave-subnet-v4` 中分配 IP
 
-Pod 成功创建, 并且从 SpiderPool Subnet 中分配 IP 地址:
+Pod 成功创建, 并且从 Spiderpool Subnet 中分配 IP 地址:
 
   ```shell
   [root@node1 ~]# kubectl get po  -o wide
@@ -167,7 +169,7 @@ Pod 成功创建, 并且从 SpiderPool Subnet 中分配 IP 地址:
   nginx-5745d9b5d7-5ssck   1/1     Running   0          8s    10.32.35.87    node2   <none>           <none>
   ```
 
-SpiderPool 为该 Nginx 应用自动创建了一个 IP 池: `auto-deployment-default-nginx-v4-a0ae75eb5d47`, 池的 IP 数量为 2:
+Spiderpool 为该 Nginx 应用自动创建了一个 IP 池: `auto-deployment-default-nginx-v4-a0ae75eb5d47`, 池的 IP 数量为 2:
 
   ```shell
   [root@node1 ~]# kubectl get sp
@@ -188,4 +190,4 @@ SpiderPool 为该 Nginx 应用自动创建了一个 IP 池: `auto-deployment-def
   round-trip min/avg/max = 0.632/2.596/4.561 ms
   ```
 
-IP 分配正常、网络连接正常。 通过`SpiderPool`, 确实扩展了 `Weave` 的 `ipam` 能力，接下来可以体验 `SpiderPool` 其他的功能， 参考[SpiderPool 使用](https://spidernet-io.github.io/spiderpool/)
+测试结果表明，IP 分配正常、网络连接正常。 通过`Spiderpool`, 确实扩展了 `Weave` 的 `IPAM` 能力。接下来，你可以参考 [Spiderpool 使用](https://spidernet-io.github.io/spiderpool/)，体验 `Spiderpool` 其他的功能。

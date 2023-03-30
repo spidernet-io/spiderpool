@@ -29,6 +29,7 @@ type GarbageCollectionConfig struct {
 	ReleaseIPWorkerNum     int
 	GCIPChannelBuffer      int
 	MaxPodEntryDatabaseCap int
+	WorkQueueMaxRetries    int
 
 	DefaultGCIntervalDuration int
 	TracePodGapDuration       int

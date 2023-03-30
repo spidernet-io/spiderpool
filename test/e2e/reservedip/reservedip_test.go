@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
-	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -21,11 +21,11 @@ import (
 var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 	var nsName, manualDeployName, autoDeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName string
 	var v4PoolNameList, v6PoolNameList []string
-	var iPv4PoolObj, iPv6PoolObj *v1.SpiderIPPool
-	var v4ReservedIpObj, v6ReservedIpObj *v1.SpiderReservedIP
+	var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
+	var v4ReservedIpObj, v6ReservedIpObj *spiderpoolv2beta1.SpiderReservedIP
 	var err error
 	var v4SubnetName, v6SubnetName string
-	var v4SubnetObject, v6SubnetObject *v1.SpiderSubnet
+	var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
 
 	BeforeEach(func() {
 		if frame.Info.SpiderSubnetEnabled {

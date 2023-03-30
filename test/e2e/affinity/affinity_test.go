@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -21,7 +21,7 @@ import (
 var _ = Describe("test Affinity", Label("affinity"), func() {
 	var namespace string
 	var v4SubnetName, v6SubnetName string
-	var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
+	var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
 
 	BeforeEach(func() {
 		if frame.Info.SpiderSubnetEnabled {
@@ -66,8 +66,8 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			matchedNode, unMatchedNode           *corev1.Node
 			v4PoolName                           string
 			v6PoolName                           string
-			v4Pool                               *spiderpoolv1.SpiderIPPool
-			v6Pool                               *spiderpoolv1.SpiderIPPool
+			v4Pool                               *spiderpoolv2beta1.SpiderIPPool
+			v6Pool                               *spiderpoolv2beta1.SpiderIPPool
 			v4PoolNameList, v6PoolNameList       []string
 		)
 
@@ -350,7 +350,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 
 	Context("Support Statefulset pod who will be always assigned same IP addresses.", func() {
 		var v4PoolName, v6PoolName, defaultV4PoolName, defaultV6PoolName, statefulSetName string
-		var v4PoolObj, v6PoolObj, defaultV4PoolObj, defaultV6PoolObj *spiderpoolv1.SpiderIPPool
+		var v4PoolObj, v6PoolObj, defaultV4PoolObj, defaultV6PoolObj *spiderpoolv2beta1.SpiderIPPool
 		var newPodList *corev1.PodList
 		var defaultV4PoolNameList, defaultV6PoolNameList []string
 		const stsOriginialNum = int(1)
@@ -540,7 +540,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 
 	Context("one IPPool can be used by multiple namespace", func() {
 		var v4PoolName, v6PoolName, nsName1 string
-		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
+		var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
 		var v4PoolNameList, v6PoolNameList []string
 		nsName1 = "ns1" + tools.RandomName()
 

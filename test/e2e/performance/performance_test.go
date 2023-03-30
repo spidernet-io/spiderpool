@@ -79,11 +79,10 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				}
 			}
 			// Generate Pod.IPPool annotations string and create IPv4Pool and IPV6Pool
-			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-			defer cancel()
+			ctx := context.TODO()
 			if frame.Info.IpV4Enabled {
-				GinkgoWriter.Printf("try to create IPv4pool: %v \n", v4PoolName)
 				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(int(replicas))
+				GinkgoWriter.Printf("try to create IPv4pool: %v \n", v4PoolName)
 				if frame.Info.SpiderSubnetEnabled {
 					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, int(replicas))
 					Expect(err).NotTo(HaveOccurred())

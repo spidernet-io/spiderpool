@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/kubectl/pkg/util/podutils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -348,7 +349,7 @@ OUTER:
 		}
 
 		for _, newPod := range podListWithLabel.Items {
-			if newPod.Status.Phase != corev1.PodRunning || newPod.DeletionTimestamp != nil {
+			if !podutils.IsPodReady(&newPod) {
 				continue OUTER
 			}
 			for _, oldPod := range podList.Items {

@@ -32,44 +32,48 @@ markdown_extensions:
 
 nav:
   - README.md
+  - Quick Start:
+      - Macvlan CNI: usage/get-started-macvlan.md
+      - SRIOV CNI: usage/get-started-sriov.md
+      - Calico CNI: usage/get-started-calico.md
+      - Weave CNI: usage/get-started-weave.md
+      - Multus CNI: usage/multi-interfaces-annotation.md
+  - Installation:
+      - Installation: usage/install.md
+      - Upgrading: usage/upgrade.md
+      - Certificates: usage/certificate.md
   - Usage:
-      - usage/install.md
-      - usage/get-started-macvlan.md
-      - usage/get-started-sriov.md
-      - usage/get-started-calico.md
-      - usage/get-started-weave.md
-      - usage/spider-subnet.md
-      - usage/multiple-subnet.md
-      - usage/ippool-multi.md
-      - usage/ippool-namespace.md
-      - usage/ippool-affinity-namespace.md
-      - usage/ippool-affinity-node.md
-      - usage/ippool-affinity-pod.md
-      - usage/ipv6.md
-      - usage/multi-interfaces-annotation.md
-      - usage/statefulset.md
-      - usage/reserved-ip.md
-      - usage/third-party-controller.md
-      - usage/gc.md
-      - usage/upgrade.md
-      - usage/debug.md
+      - SpiderSubnet: usage/spider-subnet.md
+      - Default IPPool at namespace: usage/ippool-namespace.md
+      - Back up IPPool: usage/ippool-multi.md
+      - Namespace affinity of IPPool: usage/ippool-affinity-namespace.md
+      - Node affinity of IPPool: usage/ippool-affinity-node.md
+      - Pod affinity of IPPool: usage/ippool-affinity-pod.md
+      - IPv6 support: usage/ipv6.md
+      - StatefulSet: usage/statefulset.md
+      - Reserved IP: usage/reserved-ip.md
+      - Third-party controllers: usage/third-party-controller.md
+      - Reclaim IP: usage/gc.md
+      - Spiderpool Performance Testing: usage/performance.md
+      - FAQ: usage/debug.md
   - Concepts:
-      - concepts/arch.md
-      - concepts/allocation.md
-      - concepts/gc.md
-      - concepts/annotation.md
-      - concepts/config.md
-      - concepts/metrics.md
-      - concepts/spiderippool.md
-      - concepts/spiderreservedip.md
-      - concepts/spiderendpoint.md
-      - concepts/spidersubnet.md
-  - Reference:
-      - cmdref/spiderpoolctl.md
-      - cmdref/spiderpool-controller.md
-      - cmdref/spiderpool-agent.md
+      - Annotations: concepts/annotation.md
+      - Architecture: concepts/arch.md
+      - Configuration: concepts/config.md
+      - IP Allocation: concepts/allocation.md
+      - Metrics: concepts/metrics.md
+      - Resource Reclaim: concepts/gc.md
+      - SpiderEndpoint: concepts/spiderendpoint.md
+      - SpiderIPPool: concepts/spiderippool.md
+      - SpiderReservedIP: concepts/spiderreservedip.md
+      - SpiderSubnet: concepts/spidersubnet.md
+  - CLI Reference:
+      - spiderpoolctl: cmdref/spiderpoolctl.md
+      - spiderpool-controller: cmdref/spiderpool-controller.md
+      - spiderpool-agent: cmdref/spiderpool-agent.md
   - Development:
-      - develop/roadmap.md
-      - develop/contributing.md
-      - develop/release.md
-      - develop/upgrade.md
+      - Contribution Guide: develop/contributing.md
+      - Code of Conduct: develop/contributing.md
+      - Release workflow: develop/release.md
+      - Roadmap: develop/roadmap.md
+      - Swagger OpenAPI: develop/swagger_openapi.md

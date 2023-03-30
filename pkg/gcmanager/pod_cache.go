@@ -29,13 +29,13 @@ type PodEntry struct {
 	Namespace string
 	NodeName  string
 
-	EntryUpdateTime time.Time
-
+	EntryUpdateTime     time.Time
 	TracingStartTime    time.Time
 	TracingGracefulTime time.Duration
 	TracingStopTime     time.Time
 
 	PodTracingReason types.PodStatus
+	NumRequeues      int
 }
 
 // PodDatabase represents controller PodEntry database
@@ -108,7 +108,8 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 	if podCache.TracingStartTime != podEntry.TracingStartTime ||
 		podCache.TracingGracefulTime != podEntry.TracingGracefulTime ||
 		podCache.TracingStopTime != podEntry.TracingStopTime ||
-		podCache.PodTracingReason != podEntry.PodTracingReason {
+		podCache.PodTracingReason != podEntry.PodTracingReason ||
+		podCache.NumRequeues != podEntry.NumRequeues {
 		p.pods[ktypes.NamespacedName{Namespace: podCache.Namespace, Name: podCache.PodName}] = *podEntry
 		p.Unlock()
 		logger.Sugar().Debugf("podEntry '%s/%s' has changed, the old '%+v' and the new is '%+v'",

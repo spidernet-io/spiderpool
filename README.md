@@ -18,11 +18,21 @@
 
 ## Introduction
 
-spiderpool: An IP Address Management (IPAM) CNI plugin of Kubernetes for managing static ip for underlay network. Spiderpool can work well with any CNI project that is compatible with third-party IPAM plugins.
+Spiderpool:an IP Address Management (IPAM) CNI plugin of Kubernetes for managing static ip for underlay network. Spiderpool can work well with any CNI project that is compatible with third-party IPAM plugins.
 
-Why Spiderpool? Given that there has not yet been a comprehensive, user-friendly and intelligent open source solution for what underlay networks' IPAMs need, Spiderpool comes in to eliminate the complexity of allocating IP addresses to underlay networks.
-With the hope of the operations of IP allocation being as simple as some overlay-network CNI, Spiderpool supports many features, such as static application IP addresses, dynamic scalability of IP addresses, multi-NIC, dual-stack support, etc.
-Hopefully, Spiderpool will be a new IPAM alternative for open source enthusiasts.
+Why Spiderpool? There has not yet been a comprehensive, user-friendly and intelligent open source solution for what underlay networks' IPAMs needs:
+
+* IPAM projects are rare in the open source community, let alone CRD-based projects fulfilling the IPAM needs of underlay networks.
+
+* Some real scenarios such as the data center construction of financial institutions having high demands for network security employ firewalls to control underlay network traffic. However, unfixed Pod IPs might lead to the high operation cost for firewall policies.
+
+* Scarcity of IPv4 addresses in data centers requires efficient and timely allocation and release of Pod IPs, without IP conflicts or leaks.
+
+* Different PODs of a deployment need to be assigned IP addresses of multiple underlay subnets when different nodes under the same cluster are distributed across network zones, which has not yet been supported by the open source community.
+
+* CNIs are not able to automatically coordinate policy-based routing between multiple NICs when a POD is connected to multiple underlay NICs, perhaps resulting in inconsistent network requests and reply data of forwarding routing, and failed network access.
+
+This is where Spiderpool comes to play to eliminate the complexity of allocating IP addresses to underlay networks. With the hope of the operations of IP allocation being as simple as some overlay-network CNIs, Spiderpool will be a new IPAM alternative for open source enthusiasts.
 
 ## IPAM for underlay and overlay network
 

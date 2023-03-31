@@ -24,7 +24,7 @@ Why Spiderpool? There has not yet been a comprehensive, user-friendly and intell
 
 * IPAM projects are rare in the open source community, let alone CRD-based projects fulfilling the IPAM needs of underlay networks.
 
-* Some real scenarios such as the data center construction of financial institutions having high demands for network security employ firewalls to control underlay network traffic. However, unfixed Pod IPs might lead to the high operation cost for firewall policies.
+* The data center of some special institutions having high demands for network security employs firewalls to control underlay network traffic. However, unfixed Pod IPs might lead to the high operation cost for firewall policies.
 
 * Scarcity of IPv4 addresses in data centers requires efficient and timely allocation and release of Pod IPs, without IP conflicts or leaks.
 

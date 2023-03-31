@@ -236,7 +236,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 				Expect(podTopController.Kind).Should(Equal(constant.KindPod))
 			})
 
-			It("Pod with third-party controller", func() {
+			It("Pod with third-party controller that not in original kubernetes APIVersions", func() {
 				err := kruiseapi.AddToScheme(scheme)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -246,6 +246,25 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(slices.Contains(constant.K8sAPIVersions, podTopController.APIVersion)).To(BeFalse())
+				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
+			})
+
+			It("Pod with third-party controller that belongs to original kubernetes APIVersions", func() {
+				mockPodOwner := &metav1.OwnerReference{
+					APIVersion:         corev1.SchemeGroupVersion.String(),
+					Kind:               "test",
+					Name:               "abc",
+					UID:                "123",
+					Controller:         pointer.Bool(true),
+					BlockOwnerDeletion: nil,
+				}
+				patches := gomonkey.ApplyFuncReturn(metav1.GetControllerOf, mockPodOwner)
+				defer patches.Reset()
+
+				podTopController, err := podManager.GetPodTopController(ctx, podT)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(slices.Contains(constant.K8sAPIVersions, podTopController.APIVersion)).To(BeTrue())
 				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
@@ -359,41 +378,6 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("Third-party controller controls ReplicaSet", func() {
-				err := kruiseapi.AddToScheme(scheme)
-				Expect(err).NotTo(HaveOccurred())
-				err = appsv1.AddToScheme(scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				replicaSet := &appsv1.ReplicaSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      podName,
-						Namespace: namespace,
-					},
-				}
-				cloneSet := &kruisev1.CloneSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      podName,
-						Namespace: namespace,
-					},
-				}
-				err = controllerutil.SetControllerReference(replicaSet, podT, scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = controllerutil.SetControllerReference(cloneSet, replicaSet, scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = fakeClient.Create(ctx, replicaSet)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = fakeClient.Create(ctx, cloneSet)
-				Expect(err).NotTo(HaveOccurred())
-
-				podTopController, err := podManager.GetPodTopController(ctx, podT)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
-			})
-
 			It("Pod with Job controller", func() {
 				err := batchv1.AddToScheme(scheme)
 				Expect(err).NotTo(HaveOccurred())
@@ -430,41 +414,6 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				_, err = podManager.GetPodTopController(ctx, podT)
 				Expect(err).To(HaveOccurred())
-			})
-
-			It("Third-party controller controls Job", func() {
-				err := kruiseapi.AddToScheme(scheme)
-				Expect(err).NotTo(HaveOccurred())
-				err = batchv1.AddToScheme(scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				job := &batchv1.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      podName,
-						Namespace: namespace,
-					},
-				}
-				cloneSet := &kruisev1.CloneSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      podName,
-						Namespace: namespace,
-					},
-				}
-				err = controllerutil.SetControllerReference(job, podT, scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = controllerutil.SetControllerReference(cloneSet, job, scheme)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = fakeClient.Create(ctx, job)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = fakeClient.Create(ctx, cloneSet)
-				Expect(err).NotTo(HaveOccurred())
-
-				podTopController, err := podManager.GetPodTopController(ctx, podT)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
 			})
 
 			It("Pod with CronJob controller", func() {

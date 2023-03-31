@@ -26,7 +26,7 @@ Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网�
 
 * 数据中心的 IPv4 地址稀缺，这要求 POD IP 能够高效、及时的分配和释放，并避免 IP 冲突或者泄露，这些挑战很大。
 
-* 当同一集群下的不同 node 跨网络 zone 分布时，因此一个 deployment 的不同 POD 会要求分配到不同 underlay 子网的 IP 地址，当前开源社区找不到这种能力的解决方案。
+* 当同一集群下的不同 node 跨网络 zone 分布时，一个 deployment 的不同 POD 会要求分配到不同 underlay 子网的 IP 地址。当前开源社区找不到这种能力的解决方案。
 
 * 当 POD 接入多个 underlay 网卡时，CNI 不会自动协调多网卡间的策略路由，这会导致网络请求和回复数据的转发路由不一致，而网络访问失败。
 

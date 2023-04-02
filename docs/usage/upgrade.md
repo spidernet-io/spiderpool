@@ -23,15 +23,15 @@ Please consult the segments from your current release until now before upgrading
 
 2. Replace their label, just like this:
 
-   ```shell
+    ```shell
     kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/owner-application": ${AppLabelValue}}}}'
-   ```
+    ```
 
 3. Add one more label
 
-   ```shell
+    ```shell
     kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/interface": "eth0"}}}}'
-   ```
+    ```
 
 4. Update your Spiderpool components version and restart them all.
 

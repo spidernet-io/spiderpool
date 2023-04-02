@@ -55,7 +55,7 @@
 
 3. Verify installation
 
-   ```shell
+    ```shell
     [root@node1 ~]# kubectl get po -n kube-system | grep spiderpool
     spiderpool-agent-lgdw7                  1/1     Running   0          65s
     spiderpool-agent-x974l                  1/1     Running   0          65s
@@ -63,7 +63,7 @@
     [root@node1 ~]# kubectl get ss
     NAME               VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
     weave-subnet-v4    4         10.32.0.0/12   0                    12901            false
-   ```
+    ```
 
 ## Switch `Weave`'s `IPAM` to Spiderpool
 
@@ -117,18 +117,18 @@ To:
 
 Alternatively, it can be changed with `jq` in one step. If `jq` is not installed, you can use the following command to install it:
 
-  ```shell
-  # Take centos7 as an example
-  yum -y install jq
-  ```
+```shell
+# Take centos7 as an example
+yum -y install jq
+```
 
 Change the CNI configuration file:
 
-  ```shell
-  cat <<< $(jq '.plugins[0].ipam.type = "spiderpool" ' /etc/cni/net.d/10-weave.conflist) > /etc/cni/net.d/10-weave.conflist
-  ```
+```shell
+cat <<< $(jq '.plugins[0].ipam.type = "spiderpool" ' /etc/cni/net.d/10-weave.conflist) > /etc/cni/net.d/10-weave.conflist
+```
 
-> Make sure execute at each node
+> Make sure to run this command at each node
 
 ## Create applications
 

@@ -1,5 +1,7 @@
 # Calico Quick Start
 
+[**English**](./get-started-calico.md) | **简体中文**
+
 Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等类型应用提供固定 IP 功能的一种解决方案。 本文将介绍在 Calico + BGP 模式下: 搭建一套完整的 Underlay 网络环境，搭配 Spiderpool 实现应用的固定 IP 功能，该方案可满足:
 
 * 应用分配到固定的 IP 地址

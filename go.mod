@@ -50,7 +50,7 @@ require (
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spidernet-io/e2eframework v0.0.0-20230403061847-445757b963b3
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.11.0
 )
 
 require (

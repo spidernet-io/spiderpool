@@ -17,7 +17,7 @@ require (
 	github.com/google/gops v0.3.27
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo/v2 v2.9.2
-	github.com/onsi/gomega v1.27.4
+	github.com/onsi/gomega v1.27.6
 	github.com/pyroscope-io/client v0.6.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.6.1

@@ -1,8 +1,8 @@
-# Quick Start
+# SRIOV Quick Start
 
 [**English**](./get-started-sriov.md) | **简体中文**
 
-Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：
+Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 Underlay 网络解决方案，该方案能够满足以下各种功能需求：
 
 * 通过简易运维，应用可分配到固定的 Underlay IP 地址
 
@@ -90,7 +90,7 @@ chmod +x /opt/cni/bin/veth
     ```
 
     > resourceName 为 sriov 资源名称，在 configmap 声明后，在 sriov-plugin 生效后，会在 node 上产生一个名为 `intel.com/mlnx_sriov` 的 sriov 资源供 Pod 使用，前缀 `intel.com` 可通过 `resourcePrefix` 字段定义
-    >具体配置规则参考 [Sriov Configmap](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations)
+    > 具体配置规则参考 [Sriov Configmap](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations)
 
 ## 创建 Sriov VF
 
@@ -107,7 +107,7 @@ chmod +x /opt/cni/bin/veth
     echo 8 > /sys/class/net/enp4s0f0np0/device/sriov_numvfs
     ```
 
-    >具体配置参考 sriov 官方文档 [Setting up Virtual Functions](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/blob/master/docs/vf-setup.md)
+    > 具体配置参考 sriov 官方文档 [Setting up Virtual Functions](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/blob/master/docs/vf-setup.md)
 
 ## 安装 Sriov Device Plugin
 
@@ -182,7 +182,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     EOF
     ```
 
-    > `k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov` 该annotations 表示要使用的 sriov 资源名称
+    > `k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov` 该 annotations 表示要使用的 sriov 资源名称.
 
 ## 安装 Spiderpool
 
@@ -191,9 +191,10 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system \
-        --set feature.enableIPv4=true --set feature.enableIPv6=false 
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
+
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 2. 创建 SpiderSubnet 实例。
    
@@ -277,7 +278,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
 
     > `intel.com/mlnx_sriov`: 该参数表示使用 Sriov 资源。
     > 
-    >`v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
+    > `v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
     >
     > 更多 Multus 注解使用请参考 [Multus 注解](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)
 

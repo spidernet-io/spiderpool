@@ -191,8 +191,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system \
-        --set feature.enableIPv4=true --set feature.enableIPv6=false 
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
 
 2. Create a SpiderSubnet instance.

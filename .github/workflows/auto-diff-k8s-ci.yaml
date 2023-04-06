@@ -108,7 +108,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [v1.22.0, v1.23.0, v1.24.0, v1.25.0, v1.26.0]
+        # Synchronise with the latest releases of each version
+        version: [v1.22.7, v1.23.5, v1.24.4, v1.25.3, v1.26.2]
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.default_k8s_version == 'true' && needs.get_ref.outputs.inputs_k8s_version == 'false' }}
     runs-on: ubuntu-latest
@@ -235,6 +236,26 @@ jobs:
               exit 1
           fi
 
+  creat_issue:
+    runs-on: ubuntu-latest
+    needs: [call_k8s_matrix, lint_chart_against_release_image]
+    if: ${{ always() && needs.call_k8s_matrix.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' }}
+    steps:
+      - name: echo
+        run: |
+          echo ${{ github.repository }}
+          echo ${{ github.repository_owner }}
+          echo "TIMESTAMP=`date +%Y-%m-%d`" >> $GITHUB_ENV
+
+      - name: create an issue
+        uses: dacbd/create-issue-action@v1.2.1
+        with:
+          token: ${{ secrets.WELAN_PAT }}
+          title: "Nightly K8s Matrix CI ${{ ENV.TIMESTAMP }}: Failed"
+          body: |
+            action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          labels: "kind/ci-bug"
+          assignees: "iiiceoo,Icarus9913"
 
   call_inputs_k8s:
     # workflow_dispatch event flow triggered by running the input k8s version

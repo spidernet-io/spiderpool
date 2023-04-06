@@ -36,22 +36,23 @@ type _httpGetControllerReadiness struct {
 // Handle handles GET requests for k8s readiness probe.
 func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	if err := WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort); err != nil {
-		logger.Sugar().Errorf("failed to check spiderpool controller readiness probe, error: %v", err)
+		logger.Sugar().Errorf("failed to check spiderpool-controller readiness probe, error: %v", err)
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 
 	if len(g.Leader.GetLeader()) == 0 {
-		logger.Warn("there's not leader in the current cluster, please wait for a while")
+		logger.Warn("failed to check spiderpool-controller readiness probe: there's not leader in the current cluster, please wait for a while")
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 
 	if g.Leader.IsElected() {
 		if !g.GCManager.Health() {
-			logger.Sugar().Warnf("the IP GC is still not ready, please wait for a while")
+			logger.Warn("failed to check spiderpool-controller readiness probe: the IP GC is still not ready, please wait for a while")
 			return runtime.NewGetRuntimeReadinessInternalServerError()
 		}
 	}
 
+	logger.Info("check spiderpool-controller readiness probe successfully")
 	return runtime.NewGetRuntimeReadinessOK()
 }
 

@@ -27,6 +27,7 @@ func (g *_httpGetAgentStartup) Handle(params runtime.GetRuntimeStartupParams) mi
 		return runtime.NewGetRuntimeStartupInternalServerError()
 	}
 
+	logger.Info("check spiderpool-agent startup probe successfully")
 	return runtime.NewGetRuntimeStartupOK()
 }
 
@@ -38,10 +39,11 @@ type _httpGetAgentReadiness struct {
 func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	_, err := g.unixClient.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
-		logger.Error(err.Error())
+		logger.Sugar().Errorf("failed to check spiderpool-agent readiness probe, error: %v", err)
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 
+	logger.Info("check spiderpool-agent readiness probe successfully")
 	return runtime.NewGetRuntimeReadinessOK()
 }
 

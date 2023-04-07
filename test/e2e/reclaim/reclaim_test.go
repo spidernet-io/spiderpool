@@ -567,7 +567,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					Expect(record).To(Equal(*dirtyIPv6Record))
 				}
 				// restart spiderpool controller to trigger gc
-				GinkgoWriter.Println("restart spiderpool controller")
+				GinkgoWriter.Printf("now time: %s, restart spiderpool controller \n", time.Now().Format(time.RFC3339Nano))
 				spiderpoolControllerPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": "spiderpool-controller"})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList \n")
@@ -576,7 +576,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart \n")
 				Expect(spiderpoolControllerPodList.Items).NotTo(HaveLen(0), "failed to get spiderpool controller podList \n")
-				GinkgoWriter.Println("succeed to restart spiderpool controller pods")
+				GinkgoWriter.Printf("now time: %s, succeed to restart spiderpool controller pods \n", time.Now().Format(time.RFC3339Nano))
 
 				// check the real pod ip should be recorded in spiderpool, the dirty ip record should be reclaimed from spiderpool
 				GinkgoWriter.Printf("check if the pod %v/%v ip recorded in ippool, check if the dirty ip record reclaimed from ippool\n", namespace, podName)

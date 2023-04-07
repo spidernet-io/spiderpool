@@ -35,6 +35,8 @@ rules:
   - '*'
   verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - apps
   resources:

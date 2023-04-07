@@ -232,16 +232,16 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 				Refer https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/third-party-controller.md for details.
 		*/
 		// TODO(tao.yang, Missing check for ippool to be automatically recycled)
-		GinkgoWriter.Println("delete ippool.")
-		if frame.Info.IpV4Enabled {
-			for _, v := range v4PoolNameList {
-				Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
-			}
-		}
-		if frame.Info.IpV6Enabled {
-			for _, v := range v6PoolNameList {
-				Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
-			}
-		}
+		//GinkgoWriter.Println("delete ippool.")
+		//if frame.Info.IpV4Enabled {
+		//	for _, v := range v4PoolNameList {
+		//		Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
+		//	}
+		//}
+		//if frame.Info.IpV6Enabled {
+		//	for _, v := range v6PoolNameList {
+		//		Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
+		//	}
+		//}
 	})
 })

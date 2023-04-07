@@ -128,7 +128,7 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 [calico CNI](https://github.com/projectcalico/calico), 
 [weave CNI](https://github.com/weaveworks/weave)
 
-并且, Spiderpool 能够帮助一些 CNI 实现  clusterIP 的访问和节点的健康检查, 例如 like [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)等。
+并且, Spiderpool 能够帮助一些 CNI 实现  clusterIP 的访问和节点的健康检查, 例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)等。
 
 
 ## 快速开始

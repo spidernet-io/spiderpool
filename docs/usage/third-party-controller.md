@@ -128,10 +128,10 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
 
     > NOTICE:
     >
-    > 1. You must specify a fixed IP number for auto-created IPPool like `ipam.spidernet.io/ippool-ip-number: "5"`.
-    >    Because Spiderpool has no idea about the replica number, so it does not support annotation like `ipam.spidernet.io/ippool-ip-number: "+5"`.
+    > 1. You must specify a fixed IP number for auto-created IPPool like `ipam.spidernet.io/ippool-ip-number: "5"`. 
+      Because Spiderpool has no idea about the replica number, so it does not support annotation like `ipam.spidernet.io/ippool-ip-number: "+5"`.
     > 2. Spiderpool does not watch third-party controller object, so it does not support automatically reclaim the auto-created IPPool, and the administrator has to delete it by hand.
-    >    So, annotation like `ipam.spidernet.io/ippool-reclaim: "true"` does not take effect, it always behave like `ipam.spidernet.io/ippool-reclaim: "false"`.
+      So, annotation like `ipam.spidernet.io/ippool-reclaim: "true"` does not take effect, it always behave like `ipam.spidernet.io/ippool-reclaim: "false"`.
 
 2. Check status
 

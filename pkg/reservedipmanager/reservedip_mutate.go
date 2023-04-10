@@ -49,8 +49,9 @@ func (rw *ReservedIPWebhook) mutateReservedIP(ctx context.Context, rIP *spiderpo
 			return fmt.Errorf("failed to merge 'spec.ips': %v", err)
 		}
 
+		ips := rIP.Spec.IPs
 		rIP.Spec.IPs = mergedIPs
-		logger.Sugar().Debugf("Merge 'spec.ips':\n%v\n\nto:\n\n%v", rIP.Spec.IPs, mergedIPs)
+		logger.Sugar().Debugf("Merge 'spec.ips' %v to %v", ips, mergedIPs)
 	}
 
 	return nil

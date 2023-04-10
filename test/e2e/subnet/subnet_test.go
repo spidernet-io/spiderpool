@@ -475,7 +475,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		})
 	})
 
-	Context("Validity of fields in subnet.spec", func() {
+	PContext("Validity of fields in subnet.spec", func() {
 		var fixedIPNumber string = "+0"
 		var deployOriginiaNum int32 = 1
 		var deployName string

@@ -41,7 +41,7 @@ func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessP
 	}
 
 	if len(g.Leader.GetLeader()) == 0 {
-		logger.Warn("failed to check spiderpool-controller readiness probe: there's not leader in the current cluster, please wait for a while")
+		logger.Warn("failed to check spiderpool-controller readiness probe: there's no leader in the current cluster, please wait for a while")
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 
@@ -52,7 +52,6 @@ func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessP
 		}
 	}
 
-	logger.Info("check spiderpool-controller readiness probe successfully")
 	return runtime.NewGetRuntimeReadinessOK()
 }
 

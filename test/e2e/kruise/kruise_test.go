@@ -15,6 +15,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -223,25 +224,23 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		/*
-			Notice:
-				IPPool reclaim for third party controllers is not currently supported.
-				So, setting the annotation ipam.spidernet.io/ippool-reclaim: "true" does not take effect.
-				And you need to delete the corresponding auto-created IPPool by yourself once you clean up the third-party controller application.
-
-				Refer https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/third-party-controller.md for details.
-		*/
-		// TODO(tao.yang, Missing check for ippool to be automatically recycled)
-		//GinkgoWriter.Println("delete ippool.")
-		//if frame.Info.IpV4Enabled {
-		//	for _, v := range v4PoolNameList {
-		//		Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
-		//	}
-		//}
-		//if frame.Info.IpV6Enabled {
-		//	for _, v := range v6PoolNameList {
-		//		Expect(common.DeleteIPPoolByName(frame, v)).NotTo(HaveOccurred())
-		//	}
-		//}
+		// Check if the automatic pool of third party controllers has been removed.
+		Eventually(func() bool {
+			if frame.Info.IpV4Enabled {
+				for _, v := range v4PoolNameList {
+					if _, err = common.GetIppoolByName(frame, v); !api_errors.IsNotFound(err) {
+						return false
+					}
+				}
+			}
+			if frame.Info.IpV6Enabled {
+				for _, v := range v6PoolNameList {
+					if _, err = common.GetIppoolByName(frame, v); !api_errors.IsNotFound(err) {
+						return false
+					}
+				}
+			}
+			return true
+		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 	})
 })

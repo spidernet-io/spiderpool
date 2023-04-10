@@ -608,6 +608,50 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.routes'", func() {
+				It("inputs default route", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "0.0.0.0/0",
+							Gw:  "172.18.40.1",
+						},
+					)
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("inputs duplicate routes", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.1",
+						},
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.2",
+						},
+					)
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
 				It("inputs invalid destination", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
@@ -904,6 +948,56 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.routes'", func() {
+				It("appends default route", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+
+					newSubnetT := subnetT.DeepCopy()
+					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "0.0.0.0/0",
+							Gw:  "172.18.40.1",
+						},
+					)
+
+					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("appends default route", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+					subnetT.Spec.Routes = append(subnetT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.1",
+						},
+					)
+
+					newSubnetT := subnetT.DeepCopy()
+					newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.2",
+						},
+					)
+
+					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
 				It("appends route with invalid destination", func() {
 					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"

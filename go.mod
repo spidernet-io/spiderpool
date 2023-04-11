@@ -20,7 +20,7 @@ require (
 	github.com/onsi/gomega v1.27.6
 	github.com/pyroscope-io/client v0.6.0
 	github.com/sasha-s/go-deadlock v0.3.1
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	go.opentelemetry.io/otel v1.13.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.36.0
@@ -87,7 +87,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 // indirect

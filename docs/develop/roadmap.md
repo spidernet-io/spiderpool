@@ -46,3 +46,5 @@ In the future, spiderpool may support all operation of automatical ippool.
 
 * continually improve the performance in kinds of scenes
 
+## assign IP on public cloud platform
+

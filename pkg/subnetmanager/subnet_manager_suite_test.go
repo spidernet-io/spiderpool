@@ -4,6 +4,7 @@
 package subnetmanager_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -16,8 +17,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	reservedipmanagermock "github.com/spidernet-io/spiderpool/pkg/reservedipmanager/mock"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 )
@@ -42,8 +45,13 @@ func TestSubnetManager(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	_, err := metric.InitMetric(context.TODO(), constant.SpiderpoolController, false, false)
+	Expect(err).NotTo(HaveOccurred())
+	err = metric.InitSpiderpoolControllerMetrics(context.TODO())
+	Expect(err).NotTo(HaveOccurred())
+
 	scheme = runtime.NewScheme()
-	err := spiderpoolv2beta1.AddToScheme(scheme)
+	err = spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	fakeClient = fake.NewClientBuilder().

@@ -46,7 +46,7 @@ func TestIPPoolManager(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	_, err := metric.InitMetricController(context.TODO(), constant.SpiderpoolAgent, false)
+	_, err := metric.InitMetric(context.TODO(), constant.SpiderpoolAgent, false, false)
 	Expect(err).NotTo(HaveOccurred())
 	err = metric.InitSpiderpoolAgentMetrics(context.TODO())
 	Expect(err).NotTo(HaveOccurred())

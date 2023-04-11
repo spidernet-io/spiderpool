@@ -5,11 +5,11 @@ package ippoolmanager
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -31,6 +31,7 @@ import (
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 var informerLogger *zap.Logger
@@ -262,7 +263,15 @@ func (ic *IPPoolController) processNextWorkItem() bool {
 	return true
 }
 
-func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) error {
+func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) (err error) {
+	defer func() {
+		if err == nil {
+			attr := attribute.String(constant.KindSpiderIPPool, pool.Name)
+			metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
+			metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), attr)
+		}
+	}()
+
 	// checkout the Auto-created IPPools whether need to scale or clean up legacies
 	if ic.EnableSpiderSubnet && IsAutoCreatedIPPool(pool) {
 		err := ic.cleanAutoIPPoolLegacy(ctx, pool)
@@ -272,7 +281,7 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 	}
 
 	// update the IPPool status properties
-	err := ic.syncHandler(ctx, pool)
+	err = ic.syncHandler(ctx, pool)
 	if nil != err {
 		return err
 	}
@@ -280,64 +289,44 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 	return nil
 }
 
-// syncHandleAllIPPool will calculate and update the provided SpiderIPPool status AllocatedIPCount or TotalIPCount.
+// syncHandler will calculate and update the provided SpiderIPPool status AllocatedIPCount or TotalIPCount.
 // And it will also remove finalizer once the IPPool is dying and no longer being used.
 func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) error {
-	if pool.DeletionTimestamp != nil {
-		//remove finalizer to delete the dying IPPool when the IPPool is no longer being used
-		var shouldDelete bool
-		if pool.Status.AllocatedIPs == nil {
-			shouldDelete = true
-		} else {
-			var poolAllocatedIPs spiderpoolv2beta1.PoolIPAllocations
-			err := json.Unmarshal([]byte(*pool.Status.AllocatedIPs), &poolAllocatedIPs)
-			if nil != err {
-				return fmt.Errorf("%w: failed to parse IPPool %s Status AllocatedIPs: %v",
-					constant.ErrWrongInput, pool.Name, err)
-			}
-			if len(poolAllocatedIPs) == 0 {
-				shouldDelete = true
-			}
+	//remove finalizer to delete the dying IPPool when the IPPool is no longer being used
+	if pool.DeletionTimestamp != nil && pool.Status.AllocatedIPs == nil {
+		err := ic.removeFinalizer(ctx, pool)
+		if client.IgnoreNotFound(err) != nil {
+			return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer: %w", pool.Name, err)
 		}
 
-		if shouldDelete {
-			err := ic.removeFinalizer(ctx, pool)
-			if nil != err {
-				if apierrors.IsNotFound(err) {
-					informerLogger.Sugar().Debugf("SpiderIPPool '%s' is already deleted", pool.Name)
-					return nil
-				}
-				return fmt.Errorf("failed to remove SpiderIPPool '%s' finalizer: %w", pool.Name, err)
-			}
+		informerLogger.Sugar().Infof("remove SpiderIPPool '%s' finalizer successfully", pool.Name)
+		return nil
+	}
 
-			informerLogger.Sugar().Infof("remove SpiderIPPool '%s' finalizer successfully", pool.Name)
-		}
-	} else {
-		needUpdate := false
-		// initial the original data
-		if pool.Status.AllocatedIPCount == nil {
-			needUpdate = true
-			pool.Status.AllocatedIPCount = pointer.Int64(0)
-			informerLogger.Sugar().Infof("initial SpiderIPPool '%s' status AllocatedIPCount to 0", pool.Name)
-		}
+	needUpdate := false
+	// initial the original data
+	if pool.Status.AllocatedIPCount == nil {
+		needUpdate = true
+		pool.Status.AllocatedIPCount = pointer.Int64(0)
+		informerLogger.Sugar().Infof("initial SpiderIPPool '%s' status AllocatedIPCount to 0", pool.Name)
+	}
 
-		totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	if nil != err {
+		return fmt.Errorf("%w: failed to calculate SpiderIPPool '%s' total IP count, error: %v", constant.ErrWrongInput, pool.Name, err)
+	}
+
+	if pool.Status.TotalIPCount == nil || *pool.Status.TotalIPCount != int64(len(totalIPs)) {
+		needUpdate = true
+		pool.Status.TotalIPCount = pointer.Int64(int64(len(totalIPs)))
+	}
+
+	if needUpdate {
+		err = ic.client.Status().Update(ctx, pool)
 		if nil != err {
-			return fmt.Errorf("%w: failed to calculate SpiderIPPool '%s' total IP count, error: %v", constant.ErrWrongInput, pool.Name, err)
+			return fmt.Errorf("failed to update pool: %w", err)
 		}
-
-		if pool.Status.TotalIPCount == nil || *pool.Status.TotalIPCount != int64(len(totalIPs)) {
-			needUpdate = true
-			pool.Status.TotalIPCount = pointer.Int64(int64(len(totalIPs)))
-		}
-
-		if needUpdate {
-			err = ic.client.Status().Update(ctx, pool)
-			if nil != err {
-				return fmt.Errorf("failed to update pool: %w", err)
-			}
-			informerLogger.Sugar().Debugf("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, *pool.Status.TotalIPCount)
-		}
+		informerLogger.Sugar().Debugf("update SpiderIPPool '%s' status TotalIPCount to '%d' successfully", pool.Name, *pool.Status.TotalIPCount)
 	}
 
 	return nil

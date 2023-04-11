@@ -154,6 +154,7 @@ jobs:
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
           push: ${{ steps.tag.outputs.push }}
+          provenance: false
           platforms: linux/amd64,linux/arm64
           github-token: ${{ secrets.WELAN_PAT }}
           tags: |
@@ -205,6 +206,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: ${{ steps.tag.outputs.push }}
+          provenance: false
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: linux/amd64,linux/arm64
           tags: |

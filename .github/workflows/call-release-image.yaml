@@ -89,6 +89,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           github-token: ${{ secrets.WELAN_PAT }}
           push: true
+          provenance: false
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.imagetag }}

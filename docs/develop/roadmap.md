@@ -4,7 +4,7 @@ The following features are considered for the near future
 
 ## support CLI 
 
-provider a CLI tool to debug and operate
+provide a CLI tool to debug and operate
 
 * check which pod an IP is taken by 
 

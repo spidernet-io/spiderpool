@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
@@ -133,7 +134,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	// deleted pod
 	if deleted {
 		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
-		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
+		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
 			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
 			if nil != err {
 				return nil, err
@@ -160,7 +161,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return podEntry, nil
 	} else {
 		// no need to trace Terminating StatefulSet pod.
-		if ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
+		if ownerRef != nil && ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
 			return nil, nil
 		}
 
@@ -238,7 +239,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 				PodTracingReason: podStatus,
 			}
 
-			startTime, _, gracefulTime, err := s.computeSucceededOrFailedPodTerminatingTime(currentPod)
+			startTime, stopTime, gracefulTime, err := s.computeSucceededOrFailedPodTerminatingTime(currentPod)
 			if nil != err {
 				return nil, err
 			}
@@ -248,7 +249,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 			podEntry.TracingGracefulTime = gracefulTime
 
 			// stop time
-			podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
+			podEntry.TracingStopTime = stopTime
 
 			return podEntry, nil
 		} else {

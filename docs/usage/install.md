@@ -32,6 +32,8 @@ The following examples are guides to install spiderpool with different CNI:
 
 * [spiderpool with weave CNI](./get-started-weave.md)
 
+* [spiderpool with ovs CNI](./get-started-ovs.md)
+
 ## Uninstall
 
 Generally, you can uninstall Spiderpool release in this way:

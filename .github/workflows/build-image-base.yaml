@@ -113,6 +113,7 @@ jobs:
           context: ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }}
           file: ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }}/Dockerfile
           push: true
+          provenance: false
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |

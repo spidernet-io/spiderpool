@@ -43,7 +43,6 @@ func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 
-	logger.Info("check spiderpool-agent readiness probe successfully")
 	return runtime.NewGetRuntimeReadinessOK()
 }
 

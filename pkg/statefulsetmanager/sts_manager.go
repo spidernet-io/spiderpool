@@ -85,6 +85,16 @@ func (sm *statefulSetManager) IsValidStatefulSetPod(ctx context.Context, namespa
 		return false, client.IgnoreNotFound(err)
 	}
 
+	// Ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#start-ordinal
+	if sts.Spec.Ordinals != nil {
+		startIndex := int(sts.Spec.Ordinals.Start)
+		endIndex := startIndex + int(*sts.Spec.Replicas) - 1
+		if startIndex <= replicas && replicas <= endIndex {
+			return true, nil
+		}
+		return false, nil
+	}
+
 	// The Pod controlled by StatefulSet is created or re-created.
 	if replicas <= int(*sts.Spec.Replicas)-1 {
 		return true, nil

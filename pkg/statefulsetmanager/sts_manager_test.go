@@ -278,6 +278,30 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(valid).To(BeTrue())
 			})
+
+			It("invalid pod mismatches the StatefulSet start ordinal", func() {
+				stsT.Spec.Replicas = pointer.Int32(1)
+				stsT.Spec.Ordinals = &appsv1.StatefulSetOrdinals{Start: 2}
+
+				err := tracker.Add(stsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 0), constant.KindStatefulSet)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(valid).To(BeFalse())
+			})
+
+			It("a valid pod matches the StatefulSet start ordinal", func() {
+				stsT.Spec.Replicas = pointer.Int32(1)
+				stsT.Spec.Ordinals = &appsv1.StatefulSetOrdinals{Start: 2}
+
+				err := tracker.Add(stsT)
+				Expect(err).NotTo(HaveOccurred())
+
+				valid, err := stsManager.IsValidStatefulSetPod(ctx, stsT.Namespace, fmt.Sprintf("%s-%d", stsName, 2), constant.KindStatefulSet)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(valid).To(BeTrue())
+			})
 		})
 	})
 })

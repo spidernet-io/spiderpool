@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -92,22 +94,8 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 	if autoPoolProperty.DesiredIPNumber < 0 {
 		return nil, fmt.Errorf("%w: the required IP numbers '%d' is invalid", constant.ErrWrongInput, autoPoolProperty.DesiredIPNumber)
 	}
+
 	log := logutils.FromContext(ctx)
-
-	// check if the pool needs to be created
-	operationCreate := pool == nil
-
-	// check if the given pool's IPs numbers are equal with the desired IP number counts
-	if !operationCreate {
-		poolIPs, err := spiderpoolip.ParseIPRanges(autoPoolProperty.IPVersion, pool.Spec.IPs)
-		if nil != err {
-			return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec IPs %s: %v", constant.ErrWrongInput, pool.Name, pool.Spec.IPs, err)
-		}
-		if len(poolIPs) == autoPoolProperty.DesiredIPNumber {
-			log.Sugar().Debugf("Auto-created IPPool %s matches the desired IP number %d, no need to reconcile", pool.Name, autoPoolProperty.DesiredIPNumber)
-			return pool, nil
-		}
-	}
 
 	subnet, err := sm.GetSubnetByName(ctx, subnetName, constant.IgnoreCache)
 	if nil != err {
@@ -117,7 +105,26 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 		return nil, fmt.Errorf("%w: SpiderSubnet '%s' is terminating, we can't reconcile an auto-created IPPool from it", constant.ErrWrongInput, subnet.Name)
 	}
 
-	if operationCreate {
+	// check if the pool needs to be created
+	operationCreate := pool == nil
+
+	// check if the given pool's IPs numbers are equal with the desired IP number counts
+	if !operationCreate {
+		if pool.Spec.Subnet != subnet.Spec.Subnet {
+			event.EventRecorder.Eventf(pool, corev1.EventTypeWarning, "ApplicationSubnetChanged",
+				"the corresponding application specified SpiderSubnet changed from %s to %s", pool.Labels[constant.LabelIPPoolOwnerSpiderSubnet], subnetName)
+			return nil, fmt.Errorf("%w: it's invalid to change recoincile auto-created IPPool %s with different subnet SpiderSubnet %s", constant.ErrWrongInput, pool.Name, subnetName)
+		}
+
+		poolIPs, err := spiderpoolip.ParseIPRanges(autoPoolProperty.IPVersion, pool.Spec.IPs)
+		if nil != err {
+			return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec IPs %s: %v", constant.ErrWrongInput, pool.Name, pool.Spec.IPs, err)
+		}
+		if len(poolIPs) == autoPoolProperty.DesiredIPNumber {
+			log.Sugar().Debugf("Auto-created IPPool %s matches the desired IP number %d, no need to reconcile", pool.Name, autoPoolProperty.DesiredIPNumber)
+			return pool, nil
+		}
+	} else {
 		pool = &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: applicationinformers.SubnetPoolName(podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),

@@ -173,7 +173,7 @@ EOF
 我们需要创建一个与 Spiderpool 子网 CIDR 相同的 Calico IP 池, 否则 Calico 不会宣告 Spiderpool 子网的路由:
 
 ```shell
-[root@master1 ~]# cat << EOF | calicoctl apply -f -
+cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
@@ -185,6 +185,7 @@ spec:
   natOutgoing: false
   nodeSelector: all()
   vxlanMode: Never
+EOF
 ```
 
 > cidr 需要对应 Spiderpool 的子网: `10.244.0.0/16`
@@ -232,6 +233,7 @@ spec:
         - name: http
           containerPort: 80
           protocol: TCP
+EOF
 ```
 
 > `ipam.spidernet.io/subnet`: 从 "nginx-subnet-v4" SpiderSubnet 中分配固定 IP

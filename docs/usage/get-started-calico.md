@@ -175,7 +175,7 @@ The network topology is as follows:
 Create a Calico IP pool with the same CIDR as the Spiderpool subnet, otherwise Calico won't advertise the route of the Spiderpool subnet:
 
 ```shell
-[root@master1 ~]# cat << EOF | calicoctl apply -f -
+cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
@@ -187,6 +187,7 @@ spec:
   natOutgoing: false
   nodeSelector: all()
   vxlanMode: Never
+EOF
 ```
 
 > The CIDR needs to correspond to the subnet of Spiderpool: `10.244.0.0/16`
@@ -234,6 +235,7 @@ spec:
         - name: http
           containerPort: 80
           protocol: TCP
+EOF
 ```
 
 > `ipam.spidernet.io/subnet`: Assign static IPs from "nginx-subnet-v4" SpiderSubnet

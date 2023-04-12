@@ -14,7 +14,7 @@ import (
 
 // startPodInformer will set up k8s pod informer in circle
 func (s *SpiderGC) startPodInformer(ctx context.Context) {
-	logger.Sugar().Infof("register pod informer")
+	logger.Sugar().Infof("try to register pod informer")
 
 	for {
 		select {

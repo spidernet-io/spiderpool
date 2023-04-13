@@ -16,7 +16,7 @@
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网络的 IP 地址管理需求而设计，能够为任何兼容第三方 IPAM 插件的 CNI 项目所使用。
+Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网络的 IP 地址管理需求而设计，为开源社区中的其它 CNI 项目提供了完整的 underlay 网络解决方案。
 
 为什么希望研发 Spiderpool ? 面对 underlay 网络的很多 IPAM 需求，当前开源社区中并未提供全面、友好、智能的开源解决方案，例如：
 

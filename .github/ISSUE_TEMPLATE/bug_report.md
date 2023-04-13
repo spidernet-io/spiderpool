@@ -17,7 +17,7 @@ version about:
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-**Hwo To Reproduce**
+**How To Reproduce**
 Steps to reproduce the issue:
 
 **Expected behavior**

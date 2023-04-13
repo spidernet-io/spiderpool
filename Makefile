@@ -296,6 +296,8 @@ e2e_init:
 	for NAME in $(SPIDERPOOL_IMAGES); do \
 			$(CONTAINER_ENGINE) images $${NAME}:$(TEST_IMAGE_TAG) | grep "$(TEST_IMAGE_TAG)" &>/dev/null  ; \
 			(($$?==0)) && continue ;  \
+			$(CONTAINER_ENGINE) pull  $${NAME}:$(TEST_IMAGE_TAG)   ; \
+			(($$?==0)) && continue ;  \
 			echo "error, failed to find $${NAME}:$(TEST_IMAGE_TAG), please run 'make build_image' firstly " >&2 && false ; \
 		 done
 	$(QUIET)  make -C test kind-init

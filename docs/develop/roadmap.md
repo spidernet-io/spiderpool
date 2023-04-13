@@ -46,5 +46,7 @@ In the future, spiderpool may support all operation of automatical ippool.
 
 * continually improve the performance in kinds of scenes
 
+## egress gateway for underlay solution 
+
 ## assign IP on public cloud platform
 

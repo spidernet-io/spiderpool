@@ -14,7 +14,6 @@ kind: SpiderIPPool
 metadata:
   name: not-use-excludeips
 spec:
-  ipVersion: 4
   subnet: 172.18.41.0/24
   ips:
   - 172.18.41.40-172.18.41.44
@@ -29,7 +28,6 @@ kind: SpiderIPPool
 metadata:
   name: use-excludeips
 spec:
-  ipVersion: 4
   subnet: 172.18.41.0/24
   ips:
   - 172.18.41.40-172.18.41.50
@@ -61,7 +59,6 @@ kind: SpiderReservedIP
 metadata:
   name: test-ipv4-reservedip
 spec:
-  ipVersion: 4
   ips:
   - 172.18.42.41-172.18.42.49
 ```
@@ -78,7 +75,6 @@ kind: SpiderIPPool
 metadata:
   name: test-ipv4-ippool
 spec:
-  ipVersion: 4
   subnet: 172.18.42.0/24
   ips:
   - 172.18.42.41-172.18.42.50
@@ -159,7 +155,6 @@ kind: SpiderIPPool
 metadata:
   name: already-in-use
 spec:
-  ipVersion: 4
   subnet: 172.18.43.0/24
   ips:
   - 172.18.43.1-172.18.43.31
@@ -175,7 +170,6 @@ kind: SpiderIPPool
 metadata:
   name: created-by-someone-else
 spec:
-  ipVersion: 4
   subnet: 172.18.43.0/24
   ips:
   - 172.18.43.31-172.18.43.50

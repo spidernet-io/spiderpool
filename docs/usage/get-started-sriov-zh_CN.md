@@ -186,7 +186,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
 
 ## 安装 Spiderpool
 
-1. 安装 Spiderpool CRD
+1. 安装 Spiderpool。
 
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -208,12 +208,10 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     metadata:
       name: subnet-test
     spec:
-      ipVersion: 4
       ips:
       - "10.20.168.190-10.20.168.199"
       subnet: 10.20.0.0/16
       gateway: 10.20.0.1
-      vlan: 0
     EOF
     ```
 

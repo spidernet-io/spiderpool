@@ -64,6 +64,7 @@ nav:
       - Reserved IP: usage/reserved-ip.md
       - Third-party controllers: usage/third-party-controller.md
       - Reclaim IP: usage/gc.md
+      - Route support: usage/route.md
       - Spiderpool Performance Testing: usage/performance.md
       - FAQ: usage/debug.md
   - Concepts:

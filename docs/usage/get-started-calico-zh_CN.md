@@ -42,7 +42,6 @@ metadata:
   labels:  
     ipam.spidernet.io/subnet-cidr: 10-244-0-0-16
 spec:
-  ipVersion: 4
   ips:
   - 10.244.100.0-10.244.200.1
   subnet: 10.244.0.0/16

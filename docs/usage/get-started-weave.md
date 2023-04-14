@@ -43,11 +43,9 @@
        labels:  
          ipam.spidernet.io/subnet-cidr: 10-32-0-0-12
      spec:
-       ipVersion: 4
        ips:
        - 10.32.0.100-10.32.50.200
        subnet: 10.32.0.0/12
-       vlan: 0
      EOF
      ```
 

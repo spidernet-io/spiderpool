@@ -3,7 +3,6 @@ kind: SpiderIPPool
 metadata:
   name: ippool-test-ens192
 spec:
-  ipVersion: 4
   ips:
     - 10.6.168.176-10.6.168.180
   subnet: 10.6.0.1/16
@@ -14,7 +13,6 @@ kind: SpiderIPPool
 metadata:
   name: ippool-test-ens224
 spec:
-  ipVersion: 4
   ips:
     - 10.7.168.176-10.7.168.180
   subnet: 10.7.0.1/16

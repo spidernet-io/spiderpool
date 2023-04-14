@@ -178,8 +178,6 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios. See [example](./docs/usage/ipv6.md) for details
 
-* Good performance for assigning and release Pod IP, to guarantee the application release, to guarantee disaster recovery for the cluster. See [example](docs/usage/performance.md) for details
-
 ## Other features
 
 * [Metrics](./docs/concepts/metrics.md)

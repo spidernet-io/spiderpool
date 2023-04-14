@@ -605,6 +605,37 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
+
+				It("duplicate with 'spec.ips'", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+					subnetT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("excludes gateway address through 'spec.excludeIPs'", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+					subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.40.1")
+					subnetT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(err).NotTo(HaveOccurred())
+				})
 			})
 
 			When("Validating 'spec.routes'", func() {
@@ -915,11 +946,10 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
-							"172.18.40.2-172.18.40.3",
+							"172.18.40.1-172.18.40.2",
 							"172.18.40.10",
 						}...,
 					)
-					subnetT.Spec.Gateway = pointer.String("172.18.40.1")
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Gateway = pointer.String(constant.InvalidIP)
@@ -933,17 +963,51 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
-							"172.18.40.2-172.18.40.3",
+							"172.18.40.1-172.18.40.2",
 							"172.18.40.10",
 						}...,
 					)
-					subnetT.Spec.Gateway = pointer.String("172.18.40.1")
 
 					newSubnetT := subnetT.DeepCopy()
 					newSubnetT.Spec.Gateway = pointer.String("172.18.41.1")
 
 					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("duplicate with 'spec.ips'", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+
+					newSubnetT := subnetT.DeepCopy()
+					newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("excludes gateway address through 'spec.excludeIPs'", func() {
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+					subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.40.1")
+
+					newSubnetT := subnetT.DeepCopy()
+					newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 

@@ -60,13 +60,13 @@ func (p *PodDatabase) DeletePodEntry(namespace, podName string) {
 	if !ok {
 		// already deleted
 		p.Unlock()
-		logger.Sugar().Debugf("PodDatabase already deleted %s", podName)
+		logger.Sugar().Debugf("PodDatabase already deleted %s/%s", namespace, podName)
 		return
 	}
 
 	delete(p.pods, ktypes.NamespacedName{Namespace: namespace, Name: podName})
 	p.Unlock()
-	logger.Sugar().Debugf("delete %s pod cache successfully", podName)
+	logger.Sugar().Debugf("delete %s/%s pod cache successfully", namespace, podName)
 }
 
 func (p *PodDatabase) ListAllPodEntries() []PodEntry {

@@ -173,17 +173,11 @@ func (s *SpiderGC) TriggerGCAll() {
 const waitForCacheSyncTimeout = 5 * time.Second
 
 func (s *SpiderGC) Health() bool {
-	isHealth := true
-
 	ctx, cancelFunc := context.WithTimeout(context.TODO(), waitForCacheSyncTimeout)
 	defer cancelFunc()
 
-	if len(s.leader.GetLeader()) == 0 {
-		logger.Warn("no leader in the current cluster, the IP-GC manager is still not started")
-		return false
-	}
-
 	if s.leader.IsElected() {
+		logger.Debug("try to check pod informer cache sync")
 		if s.informerFactory == nil {
 			logger.Warn("the IP-GC manager pod informer is not ready")
 			return false
@@ -192,10 +186,10 @@ func (s *SpiderGC) Health() bool {
 		waitForCacheSync := s.informerFactory.WaitForCacheSync(ctx.Done())
 		for _, isCacheSync := range waitForCacheSync {
 			if !isCacheSync {
-				isHealth = false
+				return false
 			}
 		}
 	}
 
-	return isHealth
+	return true
 }

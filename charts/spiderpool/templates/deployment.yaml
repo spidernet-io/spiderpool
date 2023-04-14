@@ -129,6 +129,7 @@ spec:
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
+          initialDelaySeconds: 15
           periodSeconds: {{ .Values.spiderpoolController.healthChecking.readinessProbe.periodSeconds }}
           successThreshold: 1
           failureThreshold: {{ .Values.spiderpoolController.healthChecking.readinessProbe.failureThreshold }}

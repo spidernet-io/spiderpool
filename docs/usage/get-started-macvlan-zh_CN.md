@@ -122,9 +122,10 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
     helm repo update spiderpool
 
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system \
-        --set feature.enableIPv4=true --set feature.enableIPv6=false 
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
+
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 2. 创建 SpiderSubnet 实例。
 

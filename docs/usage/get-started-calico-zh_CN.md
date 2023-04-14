@@ -28,6 +28,8 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 ```
 
 > Spiderpool 默认 IPv4-Only, 如需启用 IPv6 请参考 [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md)
+> 
+> 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 创建 Pod 的子网(SpiderSubnet):
 

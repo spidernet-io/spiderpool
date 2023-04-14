@@ -31,6 +31,8 @@
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system 
     ```
+    
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
     等待 Pod Running， 创建 Pod 的子网(SpiderSubnet):
 

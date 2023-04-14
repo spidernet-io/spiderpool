@@ -11,15 +11,11 @@ Then run a pod with two NICs with IP in different subnets.
 
 ### Set up Spiderpool
 
-Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool. And Spiderpool also provides a [Veth](https://github.com/spidernet-io/plugins) The plug-in can help some CNIs (such as Macvlan, SR-IOV, etc.) solve the following problems:
-
-* Help the main CNI achieve communication between the Pod and the host to solve issues such as Pod access to clusterIP, and Pod host health checks.
-
-* Automatic coordination of policy routing between multiple NICs in Pod multi-NIC scenarios to resolve multi-NIC communications
+Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/get-started-macvlan.md) to install Spiderpool. 
 
 ### Set up Multus Configuration
 
-Create two network-attachment-definitions，The following parameters need to be confirmed:
+In this example, Macvlan will be used as the main CNI, Create two network-attachment-definitions，The following parameters need to be confirmed:
 
 * Confirm the host machine parent interface required for Macvlan. This example takes the ens192 and ens224 network cards of the host machine as examples to create a Macvlan sub interface for Pod to use.
 
@@ -50,7 +46,7 @@ subnet-test-ens224   4         10.7.0.1/16   0                    10
 In the following example Yaml, 2 copies of the Deployment are created：
 
 ```shell
-~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml.yaml
+~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml
 ```
 
 Eventually, when the Deployment is created, Spiderpool will select random IPs from the specified subnet to create two fixed IP pools to bind to each of the Deployment Pod's two NICs.
@@ -118,7 +114,7 @@ ippool-test-ens192     4         10.6.0.1/16   0                    5           
 ippool-test-ens224     4         10.7.0.1/16   0                    5                false     false
 ```
 
-In the following example Yaml, 2 copies of the Deployment are created：
+In the following example Yaml, 1 copies of the Deployment are created：
 
 ```shell
 ~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml
@@ -170,7 +166,6 @@ default via 10.7.0.1 dev net1
 10.96.0.0/12 via 10.6.168.123 dev veth0
 ```
 
-
 ## Clean up
 
 Clean the relevant resources so that you can run this tutorial again.
@@ -178,10 +173,10 @@ Clean the relevant resources so that you can run this tutorial again.
 ```bash
 kubectl delete \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/multus-conf.yaml \
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-subnets.yaml \
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml.yaml \
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-subnets.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-dual-ippool-deploy.yaml \
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml \
 --ignore-not-found=true
 ```

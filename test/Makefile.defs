@@ -50,8 +50,10 @@ E2E_GINKGO_PROCS ?= 4
 E2E_SPIDERPOOL_ENABLE_SUBNET ?= true
 
 #============Image version===========
-IMAGE_MULTUS_NAME := ghcr.io/k8snetworkplumbingwg/multus-cni:v3.8-$(ARCH)
-IMAGE_WHEREABOUTS_NAME := ghcr.io/k8snetworkplumbingwg/whereabouts:latest-$(ARCH)
+IMAGE_MULTUS_REPO ?= ghcr.io
+IMAGE_MULTUS_NAME := ${IMAGE_MULTUS_REPO}/k8snetworkplumbingwg/multus-cni:v3.8-$(ARCH)
+IMAGE_WHEREABOUTS_REPO ?= ghcr.io
+IMAGE_WHEREABOUTS_NAME := ${IMAGE_WHEREABOUTS_REPO}/k8snetworkplumbingwg/whereabouts:latest-$(ARCH)
 TEST_IMAGE_NAME := alpine:latest
 
 #USE_TLS_METHOD := certmanager

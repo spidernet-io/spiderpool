@@ -22,6 +22,8 @@ Any CNI project compatible with third-party IPAM plugins, can work well with spi
 
 The following examples are guides to install spiderpool with different CNI:
 
+* [spiderpool with macvlan in Kind](./get-started-kind.md)
+
 * [spiderpool with macvlan CNI](./get-started-macvlan.md)
 
 * [spiderpool with SRIOV CNI](./get-started-sriov.md)

@@ -28,10 +28,10 @@ GO_IMAGE_VERSION := $(shell awk -F. '{ z=$$3; if (z == "") z=0; print $$1 "." $$
 CONTAINER_ENGINE?=docker
 
 #----------build-image--------
-REGISTER ?= ghcr.io
+SPIDERPOOL_REGISTER ?= ghcr.io
 GIT_REPO ?= spidernet-io/spiderpool
-SPIDERPOOL_AGENT_IMAGE_NAME := ${REGISTER}/${GIT_REPO}/spiderpool-agent
-SPIDERPOOL_CONTROLLER_IMAGE_NAME := ${REGISTER}/${GIT_REPO}/spiderpool-controller
+SPIDERPOOL_AGENT_IMAGE_NAME := ${SPIDERPOOL_REGISTER}/${GIT_REPO}/spiderpool-agent
+SPIDERPOOL_CONTROLLER_IMAGE_NAME := ${SPIDERPOOL_REGISTER}/${GIT_REPO}/spiderpool-controller
 SPIDERPOOL_IMAGES := $(SPIDERPOOL_AGENT_IMAGE_NAME) ${SPIDERPOOL_CONTROLLER_IMAGE_NAME}
 
 VERSION = $(shell cat $(dir $(lastword $(MAKEFILE_LIST)))/VERSION)

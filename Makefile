@@ -294,17 +294,21 @@ e2e:
 .PHONY: e2e_init
 e2e_init:
 	for NAME in $(SPIDERPOOL_IMAGES); do \
-			$(CONTAINER_ENGINE) images $${NAME}:$(TEST_IMAGE_TAG) | grep "$(TEST_IMAGE_TAG)" &>/dev/null  ; \
-			(($$?==0)) && continue ;  \
+			if $(CONTAINER_ENGINE) images $${NAME}:$(TEST_IMAGE_TAG) | grep -q "$(TEST_IMAGE_TAG)" &>/dev/null ; then \
+				echo "test's image $${NAME}:$(TEST_IMAGE_TAG) found" && continue ; \
+			fi ; \
+			if $(CONTAINER_ENGINE) pull $${NAME}:$(TEST_IMAGE_TAG) ; then \
+				echo "Successfully pulled test image $${NAME}:$(TEST_IMAGE_TAG)" && continue ; \
+			fi ; \
 			echo "error, failed to find $${NAME}:$(TEST_IMAGE_TAG), please run 'make build_image' firstly " >&2 && false ; \
 		 done
 	$(QUIET)  make -C test kind-init
 
 
+
 .PHONY: e2e_test
 e2e_test:
 	$(QUIET)  make -C test e2e_test
-
 
 
 .PHONY: preview_doc

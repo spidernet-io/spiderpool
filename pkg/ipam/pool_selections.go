@@ -121,7 +121,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 
 	// This only serves for orphan pod or third party controller application, because we'll create or scale the auto-created IPPool here.
 	// For those kubernetes applications(such as deployment and replicaset), the spiderpool-controller will create or scale the auto-created IPPool asynchronously.
-	poolIPNum, err := getAutoPoolIPNumberAndSelector(pod, podController)
+	poolIPNum, err := getAutoPoolIPNumber(pod, podController)
 	if nil != err {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 				pool, err = i.applyThirdControllerAutoPool(ctx, subnetName, poolName, podController, types.AutoPoolProperty{
 					DesiredIPNumber: poolIPNum,
 					IPVersion:       ipVersion,
-					IsReclaimIPPool: false,
+					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
 					IfName:          nic,
 					PodSelector:     nil,
 				})
@@ -257,9 +257,10 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName, poo
 			if nil != err {
 				return nil, err
 			}
-		} else {
-			return nil, err
+			return tmpPool, nil
 		}
+
+		return nil, err
 	}
 
 	// check whether the auto IPPool need to scale its desiredIPNumber or not

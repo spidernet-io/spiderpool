@@ -488,5 +488,5 @@ jobs:
           title: "Night CI ${{ ENV.TIMESTAMP }}: Failed"
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          labels: "kind/bug"
+          labels: "kind/ci-bug"
           assignees: "iiiceoo,Icarus9913"

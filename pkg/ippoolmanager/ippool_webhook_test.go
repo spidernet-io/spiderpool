@@ -11,6 +11,7 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,11 +23,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
@@ -878,6 +881,50 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.routes'", func() {
+				It("inputs default route", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+					ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "0.0.0.0/0",
+							Gw:  "172.18.40.1",
+						},
+					)
+
+					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("inputs duplicate routes", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+					ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.1",
+						},
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.2",
+						},
+					)
+
+					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
 				It("inputs invalid destination", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
@@ -1408,6 +1455,56 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.routes'", func() {
+				It("appends default route", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+
+					newIPPoolT := ipPoolT.DeepCopy()
+					newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "0.0.0.0/0",
+							Gw:  "172.18.40.1",
+						},
+					)
+
+					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("appends duplicate route", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.2-172.18.40.3",
+							"172.18.40.10",
+						}...,
+					)
+					ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.1",
+						},
+					)
+
+					newIPPoolT := ipPoolT.DeepCopy()
+					newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
+						spiderpoolv2beta1.Route{
+							Dst: "192.168.40.0/24",
+							Gw:  "172.18.40.2",
+						},
+					)
+
+					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
 				It("appends route with invalid destination", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
@@ -1592,6 +1689,82 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("update auto-created IPPool by hand", func() {
+					subnetT.SetUID(uuid.NewUUID())
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
+
+					autoPool := ipPoolT.DeepCopy()
+					autoPool.Annotations = map[string]string{constant.AnnoSpiderSubnetPoolApp: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+						APIVersion: appsv1.SchemeGroupVersion.String(),
+						Kind:       constant.KindDeployment,
+						Namespace:  autoPool.Namespace,
+						Name:       autoPool.Name,
+					})}
+					autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					autoPool.Spec.Subnet = "172.18.40.0/24"
+					autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
+
+					err := controllerutil.SetControllerReference(subnetT, autoPool, scheme)
+					Expect(err).NotTo(HaveOccurred())
+					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
+						IPs:         []string{"172.18.40.1"},
+						Application: pointer.String(autoPool.Annotations[constant.AnnoSpiderSubnetPoolApp]),
+					}}
+					subnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(poolIPPreAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = subnetAllocatedIPPools
+
+					err = tracker.Add(subnetT)
+					Expect(err).NotTo(HaveOccurred())
+
+					newAutoPool := autoPool.DeepCopy()
+					newAutoPool.Spec.IPs = append(newAutoPool.Spec.IPs, "172.18.40.2")
+
+					err = ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("update auto-created IPPool annotation", func() {
+					subnetT.SetUID(uuid.NewUUID())
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
+
+					autoPool := ipPoolT.DeepCopy()
+					autoPool.Annotations = map[string]string{constant.AnnoSpiderSubnetPoolApp: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+						APIVersion: appsv1.SchemeGroupVersion.String(),
+						Kind:       constant.KindDeployment,
+						Namespace:  autoPool.Namespace,
+						Name:       autoPool.Name,
+					})}
+					autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					autoPool.Spec.Subnet = "172.18.40.0/24"
+					autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
+
+					err := controllerutil.SetControllerReference(subnetT, autoPool, scheme)
+					Expect(err).NotTo(HaveOccurred())
+					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
+						IPs:         []string{"172.18.40.1"},
+						Application: pointer.String(autoPool.Annotations[constant.AnnoSpiderSubnetPoolApp]),
+					}}
+					subnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(poolIPPreAllocations)
+					Expect(err).NotTo(HaveOccurred())
+					subnetT.Status.ControlledIPPools = subnetAllocatedIPPools
+
+					err = tracker.Add(subnetT)
+					Expect(err).NotTo(HaveOccurred())
+
+					newAutoPool := autoPool.DeepCopy()
+					anno := newAutoPool.GetAnnotations()
+					anno["aaa"] = "test"
+					newAutoPool.Annotations = anno
+
+					err = ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 

@@ -22,14 +22,11 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
 Some Kubernetes installers include the Macvlan binary file by default that can be found at "/opt/cni/bin/macvlan" on your nodes. If the binary file is missing, you can download and install it on all nodes using the following command:
 
+```bash
+wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz 
+tar xvfzp ./cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
+chmod +x /opt/cni/bin/macvlan
 ```
-~# wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz 
-
-~# tar xvfzp ./cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
-
-~# chmod +x /opt/cni/bin/macvlan
-```
-
 
 ## Install Veth
 
@@ -43,12 +40,10 @@ Some Kubernetes installers include the Macvlan binary file by default that can b
 
 Download and install the Veth binary on all nodes:
 
-```
-~# wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
-
-~# tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
-
-~# chmod +x /opt/cni/bin/veth
+```bash
+wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
+tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
+chmod +x /opt/cni/bin/veth
 ```
 
 ## Install Multus
@@ -58,7 +53,7 @@ Download and install the Veth binary on all nodes:
 1. Install Multus via the manifest:
 
     ```bash
-    ~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
+    kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
     ```
 
 2. Confirm the operational status of Multus:
@@ -69,19 +64,19 @@ Download and install the Veth binary on all nodes:
     kube-system          kube-multus-ds-qm8j7                         1/1     Running   0   5m
     ```
 
-   Verify the existence of the Multus configuration files `ls /etc/cni/net.d/00-multus.conf` on the node.
+    Verify the existence of the Multus configuration files `ls /etc/cni/net.d/00-multus.conf` on the node.
 
 3. Create a NetworkAttachmentDefinition for Macvlan.
 
-   The following parameters need to be confirmed:
+    The following parameters need to be confirmed:
 
-    * Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface ——eth0.
+    * Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface --eth0.
 
     * To implement clusterIP communication using Veth, confirm the service CIDR of the cluster through a query command `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service` or other methods.
 
-   The following is the configuration for creating a NetworkAttachmentDefinition:
+    The following is the configuration for creating a NetworkAttachmentDefinition:
 
-    ```shell
+    ```bash
     MACLVAN_MASTER_INTERFACE="eth0"
     SERVICE_CIDR="10.96.0.0/16"
 
@@ -119,19 +114,17 @@ Download and install the Veth binary on all nodes:
 
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-
     helm repo update spiderpool
-
     helm install spiderpool spiderpool/spiderpool --namespace kube-system \
         --set feature.enableIPv4=true --set feature.enableIPv6=false 
     ```
 
 2. Create a SpiderSubnet instance.
 
-   An Underlay subnet for eth0 needs to be created for Pods as Macvlan uses eth0 as the parent interface.
-   Here is an example of creating a SpiderSubnet instance:：
+    An Underlay subnet for eth0 needs to be created for Pods as Macvlan uses eth0 as the parent interface.
+    Here is an example of creating a SpiderSubnet instance:：
 
-    ```shell
+    ```bash
     cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderSubnet
@@ -151,7 +144,7 @@ Download and install the Veth binary on all nodes:
 
 1. Create test Pods and service via the command below：
 
-    ```shell
+    ```bash
     cat <<EOF | kubectl create -f -
     apiVersion: apps/v1
     kind: Deployment
@@ -199,12 +192,15 @@ Download and install the Veth binary on all nodes:
     EOF
     ```
 
-   Spec descriptions：
+    Spec descriptions：
+
     * `ipam.spidernet.io/subnet`: defines which subnets to be used to assign IP addresses to Pods.
-      > For more information on Spiderpool annotations, refer to [Spiderpool Annotations](https://spidernet-io.github.io/spiderpool/concepts/annotation/)。
+
+        > For more information on Spiderpool annotations, refer to [Spiderpool Annotations](../concepts/annotation.md).
 
     * `v1.multus-cni.io/default-network`：specifies the CNI configuration for Multus.
-      > For more information on Multus annotations, refer to [Multus Quickstart](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
+
+        > For more information on Multus annotations, refer to [Multus Quickstart](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
 
 2. Check the status of Pods:
 

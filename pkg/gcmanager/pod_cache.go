@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
@@ -29,13 +30,13 @@ type PodEntry struct {
 	Namespace string
 	NodeName  string
 
-	EntryUpdateTime time.Time
-
+	EntryUpdateTime     time.Time
 	TracingStartTime    time.Time
 	TracingGracefulTime time.Duration
 	TracingStopTime     time.Time
 
 	PodTracingReason types.PodStatus
+	NumRequeues      int
 }
 
 // PodDatabase represents controller PodEntry database
@@ -59,13 +60,13 @@ func (p *PodDatabase) DeletePodEntry(namespace, podName string) {
 	if !ok {
 		// already deleted
 		p.Unlock()
-		logger.Sugar().Debugf("PodDatabase already deleted %s", podName)
+		logger.Sugar().Debugf("PodDatabase already deleted %s/%s", namespace, podName)
 		return
 	}
 
 	delete(p.pods, ktypes.NamespacedName{Namespace: namespace, Name: podName})
 	p.Unlock()
-	logger.Sugar().Debugf("delete %s pod cache successfully", podName)
+	logger.Sugar().Debugf("delete %s/%s pod cache successfully", namespace, podName)
 }
 
 func (p *PodDatabase) ListAllPodEntries() []PodEntry {
@@ -108,7 +109,8 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 	if podCache.TracingStartTime != podEntry.TracingStartTime ||
 		podCache.TracingGracefulTime != podEntry.TracingGracefulTime ||
 		podCache.TracingStopTime != podEntry.TracingStopTime ||
-		podCache.PodTracingReason != podEntry.PodTracingReason {
+		podCache.PodTracingReason != podEntry.PodTracingReason ||
+		podCache.NumRequeues != podEntry.NumRequeues {
 		p.pods[ktypes.NamespacedName{Namespace: podCache.Namespace, Name: podCache.PodName}] = *podEntry
 		p.Unlock()
 		logger.Sugar().Debugf("podEntry '%s/%s' has changed, the old '%+v' and the new is '%+v'",
@@ -132,7 +134,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	// deleted pod
 	if deleted {
 		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
-		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
+		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
 			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
 			if nil != err {
 				return nil, err
@@ -159,7 +161,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return podEntry, nil
 	} else {
 		// no need to trace Terminating StatefulSet pod.
-		if ownerRef != nil && ownerRef.Kind == constant.KindStatefulSet {
+		if ownerRef != nil && ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
 			return nil, nil
 		}
 
@@ -237,7 +239,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 				PodTracingReason: podStatus,
 			}
 
-			startTime, _, gracefulTime, err := s.computeSucceededOrFailedPodTerminatingTime(currentPod)
+			startTime, stopTime, gracefulTime, err := s.computeSucceededOrFailedPodTerminatingTime(currentPod)
 			if nil != err {
 				return nil, err
 			}
@@ -247,7 +249,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 			podEntry.TracingGracefulTime = gracefulTime
 
 			// stop time
-			podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
+			podEntry.TracingStopTime = stopTime
 
 			return podEntry, nil
 		} else {

@@ -64,8 +64,9 @@ func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv2b
 			return fmt.Errorf("failed to merge 'spec.ips': %v", err)
 		}
 
+		ips := subnet.Spec.IPs
 		subnet.Spec.IPs = mergedIPs
-		logger.Sugar().Debugf("Merge 'spec.ips':\n%v\n\nto:\n\n%v", subnet.Spec.IPs, mergedIPs)
+		logger.Sugar().Debugf("Merge 'spec.ips' %v to %v", ips, mergedIPs)
 	}
 
 	if len(subnet.Spec.ExcludeIPs) > 1 {
@@ -74,8 +75,9 @@ func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv2b
 			return fmt.Errorf("failed to merge 'spec.excludeIPs': %v", err)
 		}
 
+		excludeIPs := subnet.Spec.ExcludeIPs
 		subnet.Spec.ExcludeIPs = mergedExcludeIPs
-		logger.Sugar().Debugf("Merge 'spec.excludeIPs':\n%v\n\nto:\n\n%v", subnet.Spec.ExcludeIPs, mergedExcludeIPs)
+		logger.Sugar().Debugf("Merge 'spec.excludeIPs' %v to  %v", excludeIPs, mergedExcludeIPs)
 	}
 
 	return nil

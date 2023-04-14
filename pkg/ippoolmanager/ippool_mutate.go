@@ -74,8 +74,9 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 			return fmt.Errorf("failed to merge 'spec.ips': %v", err)
 		}
 
+		ips := ipPool.Spec.IPs
 		ipPool.Spec.IPs = mergedIPs
-		logger.Sugar().Debugf("Merge 'spec.ips':\n%v\n\nto:\n\n%v", ipPool.Spec.IPs, mergedIPs)
+		logger.Sugar().Debugf("Merge 'spec.ips' %v to %v", ips, mergedIPs)
 	}
 
 	if len(ipPool.Spec.ExcludeIPs) > 1 {
@@ -84,8 +85,9 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 			return fmt.Errorf("failed to merge 'spec.excludeIPs': %v", err)
 		}
 
+		excludeIPs := ipPool.Spec.ExcludeIPs
 		ipPool.Spec.ExcludeIPs = mergedExcludeIPs
-		logger.Sugar().Debugf("Merge 'spec.excludeIPs':\n%v\n\nto:\n\n%v", ipPool.Spec.ExcludeIPs, mergedExcludeIPs)
+		logger.Sugar().Debugf("Merge 'spec.excludeIPs' %v to %v", excludeIPs, mergedExcludeIPs)
 	}
 
 	return nil

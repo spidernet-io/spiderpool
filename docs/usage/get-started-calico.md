@@ -51,12 +51,13 @@ Verify the installation：
 
 ```shell
 [root@master ~]# kubectl get po -n kube-system  | grep spiderpool
-  spiderpool-agent-27fr2                     1/1     Running     0          2m
-  spiderpool-agent-8vwxj                     1/1     Running     0          2m
-  spiderpool-controller-bc8d67b5f-xwsql      1/1     Running     0          2m
-  [root@master ~]# kubectl get ss
-  NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-  nginx-subnet-v4   4         10.244.0.0/16   0                    25602
+spiderpool-agent-27fr2                     1/1     Running     0          2m
+spiderpool-agent-8vwxj                     1/1     Running     0          2m
+spiderpool-controller-bc8d67b5f-xwsql      1/1     Running     0          2m
+
+[root@master ~]# kubectl get ss
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
+nginx-subnet-v4   4         10.244.0.0/16   0                    25602
 ```
 
 ## Configure Calico BGP [optional]
@@ -101,7 +102,7 @@ The network topology is as follows:
     > * The AS on the router side is `23000`, and the AS on the cluster node side is `64512`. The BGP neighbor relationship between the router and the node is ebgp, while the relationship between the nodes is ibgp.
     > * `ebgp-requires-policy` needs to be disabled, otherwise the BGP session cannot be established.
     > * 172.16.13.11/21 is the IP address of the cluster node.
-    >     
+    >
     > For more information, refer to [frrouting](https://docs.frrouting.org/en/latest/bgp.html).
 
 2. Configure BGP neighbor for Calico
@@ -147,7 +148,7 @@ The network topology is as follows:
     ```
 
     > peerIP is the IP address of BGP Router
-    > 
+    >
     > asNumber is the AS number of BGP Router
 
     Check if the BGP session is established:
@@ -174,7 +175,7 @@ The network topology is as follows:
 Create a Calico IP pool with the same CIDR as the Spiderpool subnet, otherwise Calico won't advertise the route of the Spiderpool subnet:
 
 ```shell
-[root@master1 ~]# cat << EOF | calicoctl apply -f -
+cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
@@ -186,10 +187,11 @@ spec:
   natOutgoing: false
   nodeSelector: all()
   vxlanMode: Never
+EOF
 ```
 
 > The CIDR needs to correspond to the subnet of Spiderpool: `10.244.0.0/16`
-> 
+>
 > Set ipipMode and vxlanMode to: Never
 
 ## Switch Calico's `IPAM` to Spiderpool
@@ -233,10 +235,11 @@ spec:
         - name: http
           containerPort: 80
           protocol: TCP
+EOF
 ```
 
 > `ipam.spidernet.io/subnet`: Assign static IPs from "nginx-subnet-v4" SpiderSubnet
-> 
+>
 > `ipam.spidernet.io/ippool-ip-number`: '+3' means the number of static IPs allocated to the application is three more than the number of its replicas, guaranteeing available temporary IPs during application rolling updates.
 
 When a Pod is created, Spiderpool automatically creates an IP pool named `auto-nginx-v4-eth0-452e737e5e12` from `subnet: nginx-subnet-v4` specified in the annotations and binds it to the Pod. The IP range is `10.244.100.90-10.244.100.95`, and the number of IPs in the pool is `5`:
@@ -245,6 +248,7 @@ When a Pod is created, Spiderpool automatically creates an IP pool named `auto-n
 [root@master1 ~]# kubectl get sp
 NAME                              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
 auto-nginx-v4-eth0-452e737e5e12   4         10.244.0.0/16   2                    5                false     false
+
 [root@master ~]# kubectl get sp auto-nginx-v4-eth0-452e737e5e12 -o jsonpath='{.spec.ips}' 
 ["10.244.100.90-10.244.100.95"]
 ```
@@ -263,6 +267,7 @@ When the replica count increases to `3`, the IP address of the new replica is st
 ```shell
 [root@master1 ~]# kubectl scale deploy nginx --replicas 3  # scale pods
 deployment.apps/nginx scaled
+
 [root@master1 ~]# kubectl get po -o wide
 NAME                     READY   STATUS        RESTARTS   AGE     IP              NODE      NOMINATED NODE   READINESS GATES
 nginx-644659db67-szgcg   1/1     Running       0          1m     10.244.100.90    worker5   <none>           <none>

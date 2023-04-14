@@ -2,6 +2,16 @@
 
 The following features are considered for the near future
 
+## support CLI 
+
+provide a CLI tool to debug and operate
+
+* check which pod an IP is taken by 
+
+* check IP usage
+
+* trigger GC 
+
 ## support none kubernetes-native controller
 
 Spiderpool support to automatically manage ippool for application, it could create, delete, scale up and down a dedicated spiderippool object with static IP address just for one application.
@@ -35,4 +45,8 @@ In the future, spiderpool may support all operation of automatical ippool.
 ## improve performance  
 
 * continually improve the performance in kinds of scenes
+
+## egress gateway for underlay solution 
+
+## assign IP on public cloud platform
 

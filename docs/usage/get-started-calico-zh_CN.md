@@ -1,5 +1,7 @@
 # Calico Quick Start
 
+[**English**](./get-started-calico.md) | **简体中文**
+
 Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等类型应用提供固定 IP 功能的一种解决方案。 本文将介绍在 Calico + BGP 模式下: 搭建一套完整的 Underlay 网络环境，搭配 Spiderpool 实现应用的固定 IP 功能，该方案可满足:
 
 * 应用分配到固定的 IP 地址
@@ -171,7 +173,7 @@ EOF
 我们需要创建一个与 Spiderpool 子网 CIDR 相同的 Calico IP 池, 否则 Calico 不会宣告 Spiderpool 子网的路由:
 
 ```shell
-[root@master1 ~]# cat << EOF | calicoctl apply -f -
+cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
@@ -183,6 +185,7 @@ spec:
   natOutgoing: false
   nodeSelector: all()
   vxlanMode: Never
+EOF
 ```
 
 > cidr 需要对应 Spiderpool 的子网: `10.244.0.0/16`
@@ -230,6 +233,7 @@ spec:
         - name: http
           containerPort: 80
           protocol: TCP
+EOF
 ```
 
 > `ipam.spidernet.io/subnet`: 从 "nginx-subnet-v4" SpiderSubnet 中分配固定 IP

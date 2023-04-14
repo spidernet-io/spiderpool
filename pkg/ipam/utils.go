@@ -77,9 +77,9 @@ func groupCustomRoutes(ctx context.Context, customRoutes []*models.Route, result
 	return nil
 }
 
-// getAutoPoolIPNumberAndSelector calculates the auto-created IPPool IP number with the given params pod and pod top controller.
+// getAutoPoolIPNumber calculates the auto-created IPPool IP number with the given params pod and pod top controller.
 // If it's an orphan pod, it will return 1.
-func getAutoPoolIPNumberAndSelector(pod *corev1.Pod, podController types.PodTopController) (int, error) {
+func getAutoPoolIPNumber(pod *corev1.Pod, podController types.PodTopController) (int, error) {
 	var appReplicas int
 	var isThirdPartyController bool
 

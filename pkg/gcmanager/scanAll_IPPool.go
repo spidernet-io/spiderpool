@@ -131,13 +131,11 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							if s.gcConfig.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
 								isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, podNS, podName, constant.KindStatefulSet)
 								if nil != err {
-									scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod '%s/%s' IP '%s' should be cleaned or not, error: %v",
-										podNS, podName, poolIP, err)
+									scanAllLogger.Sugar().Errorf("failed to check StatefulSet pod IP '%s' should be cleaned or not, error: %v", poolIP, err)
 									continue
 								}
 								if isValidStsPod {
-									scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod '%s/%s'",
-										poolIP, podNS, podName)
+									scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod ", poolIP)
 									continue
 								}
 							}
@@ -147,9 +145,8 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						err = s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
 						if nil != err {
 							wrappedLog.Error(err.Error())
-							continue
 						}
-						// clean up single IP and remove its corresponding SpiderEndpoint successfully, just continue to the next poolIP
+						// no matter whether succeed to clean up IPPool IP and SpiderEndpoint, just continue to the next poolIP
 						continue
 					}
 
@@ -160,7 +157,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				// check pod status phase with its yaml
 				podEntry, err := s.buildPodEntry(nil, podYaml, false)
 				if nil != err {
-					scanAllLogger.Sugar().Errorf("failed to build podEntry '%s/%s' in scanAll, error: %v", podNS, podName, err)
+					scanAllLogger.Sugar().Errorf("failed to build podEntry in scanAll, error: %v", err)
 					continue
 				}
 

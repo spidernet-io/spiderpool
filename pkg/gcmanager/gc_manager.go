@@ -29,6 +29,7 @@ type GarbageCollectionConfig struct {
 	ReleaseIPWorkerNum     int
 	GCIPChannelBuffer      int
 	MaxPodEntryDatabaseCap int
+	WorkQueueMaxRetries    int
 
 	DefaultGCIntervalDuration int
 	TracePodGapDuration       int
@@ -172,19 +173,23 @@ func (s *SpiderGC) TriggerGCAll() {
 const waitForCacheSyncTimeout = 5 * time.Second
 
 func (s *SpiderGC) Health() bool {
-	isHealth := true
-
 	ctx, cancelFunc := context.WithTimeout(context.TODO(), waitForCacheSyncTimeout)
 	defer cancelFunc()
 
-	if s.informerFactory != nil {
+	if s.leader.IsElected() {
+		logger.Debug("try to check pod informer cache sync")
+		if s.informerFactory == nil {
+			logger.Warn("the IP-GC manager pod informer is not ready")
+			return false
+		}
+
 		waitForCacheSync := s.informerFactory.WaitForCacheSync(ctx.Done())
 		for _, isCacheSync := range waitForCacheSync {
 			if !isCacheSync {
-				isHealth = false
+				return false
 			}
 		}
 	}
 
-	return isHealth
+	return true
 }

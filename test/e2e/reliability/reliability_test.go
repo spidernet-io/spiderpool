@@ -99,8 +99,9 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			GinkgoWriter.Printf("the %v pod number is: %v \n", componentName, expectPodNum)
 
 			// delete component pod
-			GinkgoWriter.Printf("restart %v %v pod  \n", expectPodNum, componentName)
+			GinkgoWriter.Printf("now time: %s, restart %v %v pod  \n", time.Now().Format(time.RFC3339Nano), expectPodNum, componentName)
 			podList, e = frame.DeletePodListUntilReady(podList, startupTimeRequired)
+			GinkgoWriter.Printf("pod %v recovery time: %s \n", componentName, time.Now().Format(time.RFC3339Nano))
 			Expect(e).NotTo(HaveOccurred())
 			Expect(podList).NotTo(BeNil())
 
@@ -117,8 +118,9 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 				defer GinkgoRecover()
 				// delete component pod
 				startT1 := time.Now()
-				GinkgoWriter.Printf("restart %v %v pod  \n", expectPodNum, componentName)
+				GinkgoWriter.Printf("now time: %s, restart %v %v pod \n", time.Now().Format(time.RFC3339Nano), expectPodNum, componentName)
 				podList, e1 := frame.DeletePodListUntilReady(podList, startupTimeRequired)
+				GinkgoWriter.Printf("pod %v recovery time: %s \n", componentName, time.Now().Format(time.RFC3339Nano))
 				Expect(e1).NotTo(HaveOccurred())
 				Expect(podList).NotTo(BeNil())
 				endT1 := time.Since(startT1)

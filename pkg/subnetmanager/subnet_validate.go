@@ -244,7 +244,30 @@ func validateSubnetGateway(version types.IPVersion, subnet string, gateway *stri
 }
 
 func validateSubnetRoutes(version types.IPVersion, subnet string, routes []spiderpoolv2beta1.Route) *field.Error {
+	if len(routes) == 0 {
+		return nil
+	}
+
+	dstSet := make(map[string]bool, len(routes))
 	for i, r := range routes {
+		if version == constant.IPv4 && r.Dst == "0.0.0.0/0" ||
+			version == constant.IPv6 && r.Dst == "::/0" {
+			return field.Invalid(
+				routesField.Index(i).Child("dst"),
+				r.Dst,
+				"please specify 'spec.gateway' to configure the default route",
+			)
+		}
+
+		if _, ok := dstSet[r.Dst]; ok {
+			return field.Invalid(
+				routesField.Index(i).Child("dst"),
+				r.Dst,
+				"duplicate route with the same dst",
+			)
+		}
+		dstSet[r.Dst] = true
+
 		if err := spiderpoolip.IsCIDR(version, r.Dst); err != nil {
 			return field.Invalid(
 				routesField.Index(i).Child("dst"),

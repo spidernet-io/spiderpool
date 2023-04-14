@@ -14,7 +14,7 @@ import (
 
 // startPodInformer will set up k8s pod informer in circle
 func (s *SpiderGC) startPodInformer(ctx context.Context) {
-	logger.Sugar().Infof("register pod informer")
+	logger.Sugar().Infof("try to register pod informer")
 
 	for {
 		select {
@@ -61,6 +61,17 @@ func (s *SpiderGC) startPodInformer(ctx context.Context) {
 		}
 		s.informerFactory = informerFactory
 		informerFactory.Start(innerCtx.Done())
+
+		// Let the leader trigger IP GC scan all.
+		// When the spiderpool-controller restarted, it will trigger IP GC scan all first.
+		// If the pod informer not starts and the user delete some pods, this will lead to IP leakage.
+		logger.Debug("try to trigger scan all with leader elected")
+		cacheSync := cache.WaitForCacheSync(innerCtx.Done())
+		if !cacheSync {
+			innerCancel()
+			continue
+		}
+		s.gcSignal <- struct{}{}
 
 		<-innerCtx.Done()
 		logger.Error("k8s pod informer broken")
@@ -122,7 +133,7 @@ func (s *SpiderGC) onPodDel(obj interface{}) {
 	}
 
 	pod := obj.(*corev1.Pod)
-	logger.Sugar().Infof("onPodDel: receive pod '%s/%s' deleted event", pod.Namespace, pod.Name)
+	logger.Sugar().Debugf("onPodDel: receive pod '%s/%s' deleted event", pod.Namespace, pod.Name)
 	podEntry, err := s.buildPodEntry(nil, pod, true)
 	if nil != err {
 		logger.Sugar().Errorf("onPodDel: failed to build Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)

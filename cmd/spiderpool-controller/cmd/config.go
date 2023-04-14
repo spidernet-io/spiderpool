@@ -70,6 +70,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_GC_SIGNAL_TIMEOUT_DURATION", "3", true, nil, nil, &gcIPConfig.GCSignalTimeoutDuration},
 	{"SPIDERPOOL_GC_HTTP_REQUEST_TIME_GAP", "1", true, nil, nil, &gcIPConfig.GCSignalGapDuration},
 	{"SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY", "0", true, nil, nil, &gcIPConfig.AdditionalGraceDelay},
+	{"SPIDERPOOL_GC_PODENTRY_MAX_RETRIES", "5", true, nil, nil, &gcIPConfig.WorkQueueMaxRetries},
 	{"SPIDERPOOL_POD_NAMESPACE", "", true, &controllerContext.Cfg.ControllerPodNamespace, nil, nil},
 	{"SPIDERPOOL_POD_NAME", "", true, &controllerContext.Cfg.ControllerPodName, nil, nil},
 	{"SPIDERPOOL_LEADER_DURATION", "15", true, nil, nil, &controllerContext.Cfg.LeaseDuration},

@@ -16,11 +16,21 @@
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网络的 IP 地址管理需求而设计，能够为任何兼容第三方 IPAM 插件的 CNI 项目所使用。
+Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网络的 IP 地址管理需求而设计，为开源社区中的其它 CNI 项目提供了完整的 underlay 网络解决方案。
 
-为什么希望研发 Spiderpool ? 面对 underlay 网络的很多 IPAM 需求，当前开源社区中并未提供全面、友好、智能的开源解决方案，因此，Spiderpool 克服了 underlay 网络分配 IP 地址的复杂性，
-希望 IP 分配的运维工作像一些 overlay 网络模型一样简单，它包括应用 IP 地址固定、IP 地址自动弹性扩缩容、 多网卡支持、双栈支持等特点，
-本项目希望能够给开源爱好者一个新的 IPAM 选择。
+为什么希望研发 Spiderpool ? 面对 underlay 网络的很多 IPAM 需求，当前开源社区中并未提供全面、友好、智能的开源解决方案，例如：
+
+* 当前，开源社区的 IPAM 项目很少，更是难以找到基于 CRD 化管理的 IPAM 项目以满足 underlay 网络需求。
+
+* 一些特殊行业的数据中心建设，对网络安全要求很高，会使用防火墙来管控 underlay 网络流量，POD IP 若不相对固定，会导致防火墙策略的维护成本很高。
+
+* 数据中心的 IPv4 地址稀缺，这要求 POD IP 能够高效、及时的分配和释放，并避免 IP 冲突或者泄露，这些挑战很大。
+
+* 当同一集群下的不同 node 跨网络 zone 分布时，一个 deployment 的不同 POD 会要求分配到不同 underlay 子网的 IP 地址。当前开源社区找不到这种能力的解决方案。
+
+* 当 POD 接入多个 underlay 网卡时，CNI 不会自动协调多网卡间的策略路由，这会导致网络请求和回复数据的转发路由不一致，而网络访问失败。
+
+因此，Spiderpool 为了解决 underlay 网络分配 IP 地址的复杂性， 希望 IP 分配的运维工作像一些 overlay 网络模型一样简单，希望能够给开源爱好者一个新的 IPAM 选择。
 
 ## underlay 网络 和 overlay 网络场景的 IPAM 
 
@@ -117,6 +127,9 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
 [calico CNI](https://github.com/projectcalico/calico), 
 [weave CNI](https://github.com/weaveworks/weave)
+
+并且, Spiderpool 能够帮助一些 CNI 实现  clusterIP 的访问和节点的健康检查, 例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)等。
+
 
 ## 快速开始
 

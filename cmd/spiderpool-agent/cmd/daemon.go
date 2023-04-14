@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,6 +17,9 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/pyroscope-io/client/pyroscope"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
@@ -106,6 +110,10 @@ func DaemonMain() {
 	}
 
 	agentContext.InnerCtx, agentContext.InnerCancel = context.WithCancel(context.Background())
+	if err := waitAPIServerReady(agentContext.InnerCtx); err != nil {
+		logger.Fatal(err.Error())
+	}
+
 	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
 	initAgentMetricsServer(agentContext.InnerCtx)
 
@@ -245,6 +253,47 @@ func WatchSignal(sigCh chan os.Signal) {
 		// others...
 
 	}
+}
+
+func waitAPIServerReady(ctx context.Context) error {
+	config := ctrl.GetConfigOrDie()
+	config.APIPath = ""
+	config.GroupVersion = nil
+
+	// This client does not query any Kubernetes resources, it is only used
+	// to detect whether the API Server's readiness probe is ready, so there
+	// is no need to add any decoder.
+	config.NegotiatedSerializer = apiruntime.NewSimpleNegotiatedSerializer(apiruntime.SerializerInfo{})
+
+	// Request API Server every 2 seconds until API Server is ready or all 15
+	// retries have timed out. (total cost: 2 * 15 = 30s)
+	config.Timeout = 2 * time.Second
+
+	client, err := rest.UnversionedRESTClientFor(config)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < 15; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		err := client.Get().
+			AbsPath("/readyz").
+			Do(ctx).
+			Error()
+		if err != nil {
+			logger.Sugar().Debugf("API Server not ready: %v", err)
+			continue
+		}
+
+		return nil
+	}
+
+	return errors.New("failed to talk to API Server")
 }
 
 func initAgentServiceManagers(ctx context.Context) {

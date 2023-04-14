@@ -62,6 +62,17 @@ func (s *SpiderGC) startPodInformer(ctx context.Context) {
 		s.informerFactory = informerFactory
 		informerFactory.Start(innerCtx.Done())
 
+		// Let the leader trigger IP GC scan all.
+		// When the spiderpool-controller restarted, it will trigger IP GC scan all first.
+		// If the pod informer not starts and the user delete some pods, this will lead to IP leakage.
+		logger.Debug("try to trigger scan all with leader elected")
+		cacheSync := cache.WaitForCacheSync(innerCtx.Done())
+		if !cacheSync {
+			innerCancel()
+			continue
+		}
+		s.gcSignal <- struct{}{}
+
 		<-innerCtx.Done()
 		logger.Error("k8s pod informer broken")
 	}

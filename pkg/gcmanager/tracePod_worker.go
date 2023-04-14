@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
@@ -109,7 +110,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 							podCache.Namespace, podCache.PodName, ips, poolName)
 
 						err := s.ippoolMgr.ReleaseIP(ctx, poolName, ips)
-						if nil != err {
+						if client.IgnoreNotFound(err) != nil {
 							isReleaseFailed.Store(true)
 							metric.IPGCFailureCounts.Add(ctx, 1)
 							log.Sugar().Errorf("failed to release pool '%s' IPs '%+v' in SpiderEndpoint '%s/%s', error: %v",

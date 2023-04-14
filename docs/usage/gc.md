@@ -8,8 +8,6 @@ The spiderpool owns an IP garbage collection mechanism, it helps to clean up lea
 
 Check k8s deployment `spiderpool-controller` environment property `SPIDERPOOL_GC_IP_ENABLED` whether is already set to `true` or not. (It would be enabled by default)
 
-We can also control whether to trace `Terminating` status phase Pod or not with environment `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. (It would be enabled by default)
-
 ```shell
 kubectl edit deploy spiderpool-controller -n kube-system
 ```
@@ -24,7 +22,10 @@ Here are several cases that we will release IP:
 
 * pod was `deleted`, except StatefulSet restarts its pod situation.
 
-* pod is `Terminating`, `Succeeded` or `Failed` phase, we'll clean the pod's IPs after `pod DeletionGracePeriodSeconds` + `AdditionalGraceDelay`(default 0 seconds).
+* pod is `Terminating`, we will release its IPs after `pod.DeletionGracePeriodSeconds`, you can set environment `AdditionalGraceDelay`(default 0 seconds) to add delay duration. you can also determine whether gc `Terminating` status pod or not with environment `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. (It would be enabled by default).
+ There are 2 situation that this env may help: 1. If one node downtime in your cluster, you must reply on the IP GC to release the IPs. 2. In some underlay mode, if you do not release one IP with terminating pod and the new pod cannot fetch available IP to start because of the IP resources shortage.
+
+* pod is `Succeeded` or `Failed` phase, we'll clean the pod's IPs after `pod.DeletionGracePeriodSeconds`, you can set environment `AdditionalGraceDelay`(default 0 seconds) to add delay duration.
 
 * SpiderIPPool allocated IP corresponding pod is not exist in the Kubernetes, except StatefulSet restarts its pod situation.
 

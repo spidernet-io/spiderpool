@@ -131,21 +131,23 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	// TODO(Icarus9913): Replace with method GetPodTopController.
 	ownerRef := metav1.GetControllerOf(currentPod)
 
-	// deleted pod
-	if deleted {
-		// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
-		if s.gcConfig.EnableStatefulSet && ownerRef != nil && ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
-			isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
-			if nil != err {
-				return nil, err
-			}
-
-			// StatefulSet pod restarted, no need to trace it.
-			if isValidStsPod {
-				return nil, nil
-			}
+	// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
+	if s.gcConfig.EnableStatefulSet && ownerRef != nil &&
+		ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
+		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
+		if nil != err {
+			return nil, err
 		}
 
+		// StatefulSet pod restarted, no need to trace it.
+		if isValidStsPod {
+			logger.Sugar().Debugf("the StatefulSet pod '%s/%s' just restarts, keep its IPs", currentPod.Namespace, currentPod.Name)
+			return nil, nil
+		}
+	}
+
+	// deleted pod
+	if deleted {
 		podEntry := &PodEntry{
 			PodName:             currentPod.Name,
 			Namespace:           currentPod.Namespace,
@@ -160,11 +162,6 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		podEntry.TracingStopTime = podEntry.TracingStartTime.Add(podEntry.TracingGracefulTime)
 		return podEntry, nil
 	} else {
-		// no need to trace Terminating StatefulSet pod.
-		if ownerRef != nil && ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
-			return nil, nil
-		}
-
 		var podStatus types.PodStatus
 		var isBuildTerminatingPodEntry, isBuildSucceededOrFailedPodEntry bool
 		switch {
@@ -207,7 +204,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		if isBuildTerminatingPodEntry {
 			// disable for gc terminating pod
 			if !s.gcConfig.EnableGCForTerminatingPod {
-				logger.Sugar().Debugf("IP gc already turn off 'EnableGCForTerminatingPod' configuration, disacrd pod '%s/%s'", currentPod.Namespace, currentPod.Name)
+				logger.Sugar().Debugf("IP gc already turn off 'EnableGCForTerminatingPod' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
 				return nil, nil
 			}
 

@@ -10,7 +10,7 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
 
 2. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
 
-3. [Open vSwitch](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages) must be installed and running on the host.
+3. Open vSwitch must be installed and running on the host. It could refer to [Installation](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages).
 
     The following examples are based on Ubuntu 22.04.1. installation may vary depending on the host system.
 

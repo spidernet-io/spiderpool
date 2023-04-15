@@ -10,7 +10,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 2. [Helm 工具](https://helm.sh/docs/intro/install/)
 
-3. 必须在主机上安装并运行 [Open vSwitch](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages)
+3. 必须在主机上安装并运行 Open vSwitch，可参考[官方安装说明](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages)
     
     以下示例是基于 Ubuntu 22.04.1。主机系统不同，安装方式可能不同。
 

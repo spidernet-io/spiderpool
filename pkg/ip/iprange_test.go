@@ -284,6 +284,64 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 		})
 	})
 
+	Describe("Test IPRangeContainsIP", func() {
+		When("Verifying", func() {
+			It("inputs invalid IP version", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.InvalidIPVersion, "172.18.40.1-172.18.40.2", "172.18.40.1")
+				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPVersion))
+				Expect(contains).To(BeFalse())
+			})
+
+			It("inputs invalid IP range", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.IPv4, constant.InvalidIPRange, "172.18.40.1")
+				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPRangeFormat))
+				Expect(contains).To(BeFalse())
+			})
+
+			It("inputs invalid IP", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.IPv4, "172.18.40.1-172.18.40.2", constant.InvalidIP)
+				Expect(err).To(MatchError(spiderpoolip.ErrInvalidIPFormat))
+				Expect(contains).To(BeFalse())
+			})
+		})
+
+		When("IPv4", func() {
+			It("tests that a IP range contains the IP", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.IPv4, "172.18.40.1", "172.18.40.1")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(contains).To(BeTrue())
+
+				contains, err = spiderpoolip.IPRangeContainsIP(constant.IPv4, "172.18.40.1-172.18.40.2", "172.18.40.1")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(contains).To(BeTrue())
+			})
+
+			It("test that a IP range does not contain the IP", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.IPv4, "172.18.40.1-172.18.40.2", "172.18.40.10")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(contains).To(BeFalse())
+			})
+		})
+
+		When("IPv6", func() {
+			It("tests that a IP range contains the IP", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.IPv6, "abcd:1234::1", "abcd:1234::1")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(contains).To(BeTrue())
+
+				contains, err = spiderpoolip.IPRangeContainsIP(constant.IPv6, "abcd:1234::1-abcd:1234::2", "abcd:1234::1")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(contains).To(BeTrue())
+			})
+
+			It("test that a IP range does not contain the IP", func() {
+				contains, err := spiderpoolip.IPRangeContainsIP(constant.IPv6, "abcd:1234::1-abcd:1234::2", "abcd:1234::a")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(contains).To(BeFalse())
+			})
+		})
+	})
+
 	Describe("Test IsIPRangeOverlap", func() {
 		When("Verifying", func() {
 			It("inputs invalid IP version", func() {

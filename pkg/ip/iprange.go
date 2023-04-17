@@ -141,6 +141,33 @@ func ContainsIPRange(version types.IPVersion, subnet string, ipRange string) (bo
 	return ipNet.Contains(ips[0]) && ipNet.Contains(ips[n-1]), nil
 }
 
+// IPRangeContainsIP reports whether the IP range includes the IP address.
+// Both must belongto the same IP version.
+func IPRangeContainsIP(version types.IPVersion, ipRange string, ip string) (bool, error) {
+	if err := IsIPRange(version, ipRange); err != nil {
+		return false, err
+	}
+	if err := IsIP(version, ip); err != nil {
+		return false, err
+	}
+
+	ips := strings.Split(ipRange, "-")
+	n := len(ips)
+
+	if n == 1 {
+		return ipRange == ip, nil
+	}
+
+	if n == 2 {
+		if Cmp(net.ParseIP(ips[0]), net.ParseIP(ip)) == 1 ||
+			Cmp(net.ParseIP(ips[1]), net.ParseIP(ip)) == -1 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 // IsIPRangeOverlap reports whether the IP address slices of specific IP
 // version parsed from two IP ranges overlap.
 func IsIPRangeOverlap(version types.IPVersion, ipRange1, ipRange2 string) (bool, error) {

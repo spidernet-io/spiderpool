@@ -878,6 +878,37 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
+
+				It("duplicate with 'spec.ips'", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("excludes gateway address through 'spec.excludeIPs'", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.1")
+					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+				})
 			})
 
 			When("Validating 'spec.routes'", func() {
@@ -1422,11 +1453,10 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
-							"172.18.40.2-172.18.40.3",
+							"172.18.40.1-172.18.40.2",
 							"172.18.40.10",
 						}...,
 					)
-					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Gateway = pointer.String(constant.InvalidIP)
@@ -1440,17 +1470,51 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
-							"172.18.40.2-172.18.40.3",
+							"172.18.40.1-172.18.40.2",
 							"172.18.40.10",
 						}...,
 					)
-					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Gateway = pointer.String("172.18.41.1")
 
 					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("duplicate with 'spec.ips'", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+
+					newIPPoolT := ipPoolT.DeepCopy()
+					newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("excludes gateway address through 'spec.excludeIPs'", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.1")
+
+					newIPPoolT := ipPoolT.DeepCopy()
+					newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+
+					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 

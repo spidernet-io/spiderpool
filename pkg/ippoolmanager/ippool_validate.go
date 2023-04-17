@@ -100,7 +100,7 @@ func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	if err := iw.validateIPPoolAvailableIPs(ctx, ipPool); err != nil {
 		return err
 	}
-	if err := validateIPPoolGateway(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Gateway); err != nil {
+	if err := validateIPPoolGateway(ipPool); err != nil {
 		return err
 	}
 
@@ -318,9 +318,31 @@ func validateIPPoolExcludeIPs(version types.IPVersion, subnet string, excludeIPs
 	return nil
 }
 
-func validateIPPoolGateway(version types.IPVersion, subnet string, gateway *string) *field.Error {
-	if gateway != nil {
-		return ValidateContainsIP(gatewayField, version, subnet, *gateway)
+func validateIPPoolGateway(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	if ipPool.Spec.Gateway == nil {
+		return nil
+	}
+
+	if err := ValidateContainsIP(gatewayField, *ipPool.Spec.IPVersion, ipPool.Spec.Subnet, *ipPool.Spec.Gateway); err != nil {
+		return err
+	}
+
+	for _, r := range ipPool.Spec.ExcludeIPs {
+		contains, _ := spiderpoolip.IPRangeContainsIP(*ipPool.Spec.IPVersion, r, *ipPool.Spec.Gateway)
+		if contains {
+			return nil
+		}
+	}
+
+	for i, r := range ipPool.Spec.IPs {
+		contains, _ := spiderpoolip.IPRangeContainsIP(*ipPool.Spec.IPVersion, r, *ipPool.Spec.Gateway)
+		if contains {
+			return field.Invalid(
+				ipsField.Index(i),
+				r,
+				fmt.Sprintf("conflicts with 'spec.gateway' %s, add the gateway IP address to 'spec.excludeIPs' or remove it from 'spec.ips'", *ipPool.Spec.Gateway),
+			)
+		}
 	}
 
 	return nil

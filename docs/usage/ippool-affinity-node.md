@@ -24,7 +24,6 @@ kind: SpiderIPPool
 metadata:
   name: master-ipv4-ippool
 spec:
-  ipVersion: 4
   subnet: 172.18.41.0/24
   ips:
   - 172.18.41.40
@@ -45,7 +44,6 @@ kind: SpiderIPPool
 metadata:
   name: worker-ipv4-ippool
 spec:
-  ipVersion: 4
   subnet: 172.18.42.0/24
   ips:
   - 172.18.42.40

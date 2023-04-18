@@ -110,7 +110,7 @@ chmod +x /opt/cni/bin/veth
 
 ## Install Spiderpool
 
-1. Install Spiderpool CRD.
+1. Install Spiderpool.
 
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -130,12 +130,10 @@ chmod +x /opt/cni/bin/veth
     metadata:
       name: subnet-test
     spec:
-      ipVersion: 4
       ips:
       - "172.18.30.131-172.18.30.140"
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
-      vlan: 0
     EOF
     ```
 

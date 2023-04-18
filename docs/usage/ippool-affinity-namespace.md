@@ -28,7 +28,6 @@ kind: SpiderIPPool
 metadata:
   name: test-ns-ipv4-ippool
 spec:
-  ipVersion: 4
   subnet: 172.18.41.0/24
   ips:
   - 172.18.41.40-172.18.41.41

@@ -73,6 +73,12 @@ jobs:
         run: |
           make lint_dockerfile_trivy
 
+      - name: Install Cosign
+        if: ${{ env.RUN_PUSH == 'true' }}
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.1' #do not upgrade, or else go error
+
       - name: Getting Build Arg
         id: arg
         run: |
@@ -97,6 +103,44 @@ jobs:
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
             VERSION=${{ steps.ref.outputs.ref }}
+
+      - name: Sign Container Images
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          DIGEST=${{ steps.docker_build_release.outputs.digest }}
+          cosign sign -y ${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
+
+      - name: Generate SBOM
+        shell: bash
+        run: |
+          set -x
+          #curl -L https://github.com/kubernetes-sigs/bom/releases/download/v0.5.1/bom-amd64-linux -o bom
+          #chmod +x  ./bom
+          DIGEST=${{ steps.docker_build_release.outputs.digest }}
+          #./bom generate -o ${{ matrix.name }}_${DIGEST}.spdx \
+          #      --image=${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ env.RUN_IMAGE_TAG }}@${DIGEST}
+          wget https://github.com/anchore/syft/releases/download/v0.77.0/syft_0.77.0_linux_amd64.tar.gz
+          tar xzvf syft_0.77.0_linux_amd64.tar.gz
+          chmod +x syft
+          ./syft -o spdx ${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST} > ${{ matrix.name }}_${DIGEST}.spdx
+
+      - name: Attach SBOM to Container Images
+        run: |
+          set -x
+          DIGEST=${{ steps.docker_build_release.outputs.digest }}
+          cosign attach sbom --sbom ${{ matrix.name }}_${DIGEST}.spdx  \
+                ${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
+
+      - name: Sign SBOM Images
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          set -x
+          DIGEST=${{ steps.docker_build_release.outputs.digest }}
+          image_name="${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${DIGEST/:/-}.sbom"
+          sbom_digest="sha256:$(docker buildx imagetools inspect --raw ${image_name} | sha256sum | head -c 64)"
+          cosign sign -y "${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${sbom_digest}"
 
       - name: Image Release Digest
         shell: bash

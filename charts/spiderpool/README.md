@@ -112,17 +112,21 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### feature parameters
 
-| Name                                      | Description                                                              | Value    |
-| ----------------------------------------- | ------------------------------------------------------------------------ | -------- |
-| `feature.enableIPv4`                      | enable ipv4                                                              | `true`   |
-| `feature.enableIPv6`                      | enable ipv6                                                              | `false`  |
-| `feature.networkMode`                     | the network mode                                                         | `legacy` |
-| `feature.enableStatefulSet`               | the network mode                                                         | `true`   |
-| `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                               | `true`   |
-| `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                    | `true`   |
-| `feature.gc.gcAll.intervalInSecond`       | the gc all interval duration                                             | `600`    |
-| `feature.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period | `true`   |
-| `feature.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period | `0`      |
+| Name                                      | Description                                                                                      | Value    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
+| `feature.enableIPv4`                      | enable ipv4                                                                                      | `true`   |
+| `feature.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
+| `feature.networkMode`                     | the network mode                                                                                 | `legacy` |
+| `feature.enableStatefulSet`               | the network mode                                                                                 | `true`   |
+| `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`   |
+| `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`   |
+| `feature.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`    |
+| `feature.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`   |
+| `feature.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`      |
+| `feature.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false`  |
+| `feature.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`     |
+| `feature.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`     |
+| `feature.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`     |
 
 
 ### clusterDefaultPool parameters
@@ -195,10 +199,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMHighAllocationDurations` | the additional rule of spiderpoolAgent prometheusRule                                            | `true`                                     |
 | `spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMReleaseFailure`          | the additional rule of spiderpoolAgent prometheusRule                                            | `true`                                     |
 | `spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMReleaseOverTime`         | the additional rule of spiderpoolAgent prometheusRule                                            | `true`                                     |
-| `spiderpoolAgent.prometheus.grafanaDashboard.install`                                | install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available | `false`                                    |
-| `spiderpoolAgent.prometheus.grafanaDashboard.namespace`                              | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`                                       |
-| `spiderpoolAgent.prometheus.grafanaDashboard.annotations`                            | the additional annotations of spiderpoolAgent grafanaDashboard                                   | `{}`                                       |
-| `spiderpoolAgent.prometheus.grafanaDashboard.labels`                                 | the additional label of spiderpoolAgent grafanaDashboard                                         | `{}`                                       |
 | `spiderpoolAgent.debug.logLevel`                                                     | the log level of spiderpool agent [debug, info, warn, error, fatal, panic]                       | `info`                                     |
 | `spiderpoolAgent.debug.gopsPort`                                                     | the gops port of spiderpool agent                                                                | `5712`                                     |
 
@@ -256,10 +256,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolController.prometheus.prometheusRule.annotations`                    | the additional annotations of spiderpoolController prometheusRule                                                                 | `{}`                                            |
 | `spiderpoolController.prometheus.prometheusRule.labels`                         | the additional label of spiderpoolController prometheusRule                                                                       | `{}`                                            |
 | `spiderpoolController.prometheus.prometheusRule.enableWarningIPGCFailureCounts` | the additional rule of spiderpoolController prometheusRule                                                                        | `true`                                          |
-| `spiderpoolController.prometheus.grafanaDashboard.install`                      | install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available                                  | `false`                                         |
-| `spiderpoolController.prometheus.grafanaDashboard.namespace`                    | the grafanaDashboard namespace. Default to the namespace of helm instance                                                         | `""`                                            |
-| `spiderpoolController.prometheus.grafanaDashboard.annotations`                  | the additional annotations of spiderpoolController grafanaDashboard                                                               | `{}`                                            |
-| `spiderpoolController.prometheus.grafanaDashboard.labels`                       | the additional label of spiderpoolController grafanaDashboard                                                                     | `{}`                                            |
 | `spiderpoolController.debug.logLevel`                                           | the log level of spiderpool Controller [debug, info, warn, error, fatal, panic]                                                   | `info`                                          |
 | `spiderpoolController.debug.gopsPort`                                           | the gops port of spiderpool Controller                                                                                            | `5724`                                          |
 | `spiderpoolController.tls.method`                                               | the method for generating TLS certificates. [ provided , certmanager , auto]                                                      | `auto`                                          |

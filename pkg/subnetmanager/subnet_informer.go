@@ -347,13 +347,21 @@ func (sc *SubnetController) processDynamicNextWorkItem(ctx context.Context) bool
 	return true
 }
 
-func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) error {
+func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) (err error) {
 	subnet, err := sc.SubnetsLister.Get(subnetName)
 	if err != nil {
 		return client.IgnoreNotFound(err)
 	}
 
 	subnetCopy := subnet.DeepCopy()
+	defer func() {
+		if err == nil {
+			attr := attribute.String(constant.KindSpiderSubnet, subnetName)
+			metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
+			metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), attr)
+		}
+	}()
+
 	if err := sc.syncMetadata(ctx, subnetCopy); err != nil {
 		return fmt.Errorf("failed to sync metadata of Subnet: %v", err)
 	}

@@ -184,6 +184,8 @@ func DaemonMain() {
 
 	setupInformers()
 
+	monitorMetrics(controllerContext.InnerCtx)
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	WatchSignal(sigCh)

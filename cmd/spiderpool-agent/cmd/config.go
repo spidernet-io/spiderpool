@@ -54,7 +54,8 @@ var envInfo = []envConf{
 	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &agentContext.Cfg.GoMaxProcs},
 
 	{"SPIDERPOOL_LOG_LEVEL", logutils.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil, nil},
-	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnabledMetric, nil},
+	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnableMetric, nil},
+	{"SPIDERPOOL_ENABLED_DEBUG_METRIC", "false", false, nil, &agentContext.Cfg.EnableDebugLevelMetric, nil},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
@@ -75,8 +76,9 @@ type Config struct {
 	ConfigPath string
 
 	// env
-	LogLevel      string
-	EnabledMetric bool
+	LogLevel               string
+	EnableMetric           bool
+	EnableDebugLevelMetric bool
 
 	HttpPort         string
 	MetricHttpPort   string

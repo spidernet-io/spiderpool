@@ -14,7 +14,8 @@ import (
 
 // initAgentMetricsServer will start an opentelemetry http server for spiderpool agent.
 func initAgentMetricsServer(ctx context.Context) {
-	metricController, err := metric.InitMetricController(ctx, constant.SpiderpoolAgent, agentContext.Cfg.EnabledMetric)
+	metricController, err := metric.InitMetric(ctx, constant.SpiderpoolAgent,
+		agentContext.Cfg.EnableMetric, agentContext.Cfg.EnableDebugLevelMetric)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -24,7 +25,7 @@ func initAgentMetricsServer(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
-	if agentContext.Cfg.EnabledMetric {
+	if agentContext.Cfg.EnableMetric {
 		metricsSrv := &http.Server{
 			Addr:    fmt.Sprintf(":%s", agentContext.Cfg.MetricHttpPort),
 			Handler: metricController,

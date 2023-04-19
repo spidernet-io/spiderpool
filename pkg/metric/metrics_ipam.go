@@ -9,7 +9,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 )
 
-// AllocDurationConstruct is Singleton
+// IPAMDurationConstruct is Singleton
 var IPAMDurationConstruct = new(ipamDurationConstruct)
 
 type ipamDurationConstruct struct {

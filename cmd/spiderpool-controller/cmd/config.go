@@ -53,7 +53,9 @@ var envInfo = []envConf{
 	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &controllerContext.Cfg.GoMaxProcs},
 
 	{"SPIDERPOOL_LOG_LEVEL", logutils.LogInfoLevelStr, true, &controllerContext.Cfg.LogLevel, nil, nil},
-	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnabledMetric, nil},
+	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnableMetric, nil},
+	{"SPIDERPOOL_ENABLED_DEBUG_METRIC", "false", false, nil, &controllerContext.Cfg.EnableDebugLevelMetric, nil},
+	{"SPIDERPOOL_METRIC_RENEW_PERIOD", "120", true, nil, nil, &controllerContext.Cfg.MetricRenewPeriod},
 	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil, nil},
 	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil, nil},
@@ -104,8 +106,10 @@ type Config struct {
 	TlsServerKeyPath  string
 
 	// env
-	LogLevel      string
-	EnabledMetric bool
+	LogLevel               string
+	EnableMetric           bool
+	EnableDebugLevelMetric bool
+	MetricRenewPeriod      int
 
 	HttpPort         string
 	MetricHttpPort   string

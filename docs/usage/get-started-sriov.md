@@ -193,6 +193,8 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     helm repo update spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
+    
+    > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
 
 2. Create a SpiderSubnet instance.
 

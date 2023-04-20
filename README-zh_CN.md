@@ -22,13 +22,13 @@ Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网�
 
 * 当前，开源社区的 IPAM 项目很少，更是难以找到基于 CRD 化管理的 IPAM 项目以满足 underlay 网络需求。
 
-* 一些特殊行业的数据中心建设，对网络安全要求很高，会使用防火墙来管控 underlay 网络流量，POD IP 若不相对固定，会导致防火墙策略的维护成本很高。
+* 一些特殊行业的数据中心建设，对网络安全要求很高，会使用防火墙来管控 underlay 网络流量，Pod IP 若不相对固定，会导致防火墙策略的维护成本很高。
 
-* 数据中心的 IPv4 地址稀缺，这要求 POD IP 能够高效、及时的分配和释放，并避免 IP 冲突或者泄露，这些挑战很大。
+* 数据中心的 IPv4 地址稀缺，这要求 Pod IP 能够高效、及时的分配和释放，并避免 IP 冲突或者泄露，这些挑战很大。
 
-* 当同一集群下的不同 node 跨网络 zone 分布时，一个 deployment 的不同 POD 会要求分配到不同 underlay 子网的 IP 地址。当前开源社区找不到这种能力的解决方案。
+* 当同一集群下的不同 node 跨网络 zone 分布时，一个 deployment 的不同 Pod 会要求分配到不同 underlay 子网的 IP 地址。当前开源社区找不到这种能力的解决方案。
 
-* 当 POD 接入多个 underlay 网卡时，CNI 不会自动协调多网卡间的策略路由，这会导致网络请求和回复数据的转发路由不一致，而网络访问失败。
+* 当 Pod 接入多个 underlay 网卡时，CNI 不会自动协调多网卡间的策略路由，这会导致网络请求和回复数据的转发路由不一致，而网络访问失败。
 
 因此，Spiderpool 为了解决 underlay 网络分配 IP 地址的复杂性， 希望 IP 分配的运维工作像一些 overlay 网络模型一样简单，希望能够给开源爱好者一个新的 IPAM 选择。
 
@@ -36,56 +36,57 @@ Spiderpool 是一个 kubernetes 的 IPAM 插件项目， 其针对 underlay 网�
 
 云原生网络中出现了两种技术类别，" overlay 网络方案" 和 " underlay网络方案"，
 云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。
- Spiderpool 是为 underlay 网络特点而设计，以下对两种方案进行比较，能够更好说明 Spiderpool 的特点和使用场景。
+
+Spiderpool 是为 underlay 网络特点而设计，以下对两种方案进行比较，能够更好说明 Spiderpool 的特点和使用场景。
 
 ### overlay 网络方案
 
-本方案实现了 POD 网络同宿主机网络的解耦，例如 [Calico](https://github.com/projectcalico/calico) , [Cilium](https://github.com/cilium/cilium) 等 CNI 插件，
+本方案实现了 Pod 网络同宿主机网络的解耦，例如 [Calico](https://github.com/projectcalico/calico) , [Cilium](https://github.com/cilium/cilium) 等 CNI 插件，
 这些插件多数使用了 vxlan 等隧道技术，搭建起一个 overlay 网络平面，再借用 NAT 技术实现南北向的通信。
 
 这类技术流派的 IPAM 分配特点是：
 
 1. Pod 子网中的 IP 地址按照节点进行了分割
 
-    以一个更小子网掩码长度为单位，把 pod subnet 分割出更小的 IP block 集合，依据 IP 使用的用量情况，每个 node 都会获取到一个或者多个 IP block。
+    以一个更小子网掩码长度为单位，把 Pod subnet 分割出更小的 IP block 集合，依据 IP 使用的用量情况，每个 node 都会获取到一个或者多个 IP block。
 
     这意味着两个特点：第一，每个 node 上的 IPAM 插件只需要在本地的 IP block 中分配和释放 IP 地址时，与其它 node 上的 IPAM 无 IP 分配冲突，IPAM 分配效率更高。
-    第二，某个具体的 IP 地址跟随 IP block 集合，会相对固定的一直在某个 node 上被分配，没法随同 POD 一起被调度漂移。
+    第二，某个具体的 IP 地址跟随 IP block 集合，会相对固定的一直在某个 node 上被分配，没法随同 Pod 一起被调度漂移。
 
 2. IP 地址资源充沛
 
-    只要 POD 子网不与相关网络重叠，再能够合理利用 NAT 技术，kubernetes 单个集群可以拥有充沛的 IP 地址资源。
+    只要 Pod 子网不与相关网络重叠，再能够合理利用 NAT 技术，kubernetes 单个集群可以拥有充沛的 IP 地址资源。
     因此，应用不会因为 IP 不够而启动失败，IPAM 组件面临的异常 IP 回收压力较小。
 
 3. 没有应用" IP 地址固定"需求
 
-    对于应用 IP 地址固定需求，有无状态应用和有状态应用的区别：对于 deployment 这类无状态应用，因为 POD name 会随着 POD 重启而变化，
-    应用本身的业务逻辑也是无状态的，因此对于" IP 地址固定" 的需求，只能让所有 POD 副本固定在一个 IP 地址的集合内；对于 statefulset 这
-    类有状态应用，因为 POD name 等信息都是固定的，应用本身的业务逻辑也是有状态的，因此对于" IP 地址固定"需求，要实现单个 POD 和具体 IP 地址的强绑定。
+    对于应用 IP 地址固定需求，有无状态应用和有状态应用的区别：对于 deployment 这类无状态应用，因为 Pod name 会随着 Pod 重启而变化，
+    应用本身的业务逻辑也是无状态的，因此对于" IP 地址固定" 的需求，只能让所有 Pod 副本固定在一个 IP 地址的集合内；对于 statefulset 这
+    类有状态应用，因为 Pod name 等信息都是固定的，应用本身的业务逻辑也是有状态的，因此对于" IP 地址固定"需求，要实现单个 Pod 和具体 IP 地址的强绑定。
 
     在" overlay 网络方案"方案下，多是借助了 NAT 技术向集群外部暴露服务的入口和源地址，借助 DNS、clusterIP 等技术来实现集群东西向通信。
     其次，IPAM 的 IP block 方式把 IP 相对固定到某个节点上，而不能保证应用副本的跟随调度。
     因此，应用的" IP 地址固定"能力无用武之地，当前社区的主流 CNI 多数不支持" IP 地址固定"，或者支持方法较为简陋。
 
-这个方案的优点是，无论集群部署在什么样的底层网络环境上，CNI 插件的兼容性都非常好，且都能够为 POD 提供子网独立、IP 地址资源充沛的网络。
+这个方案的优点是，无论集群部署在什么样的底层网络环境上，CNI 插件的兼容性都非常好，且都能够为 Pod 提供子网独立、IP 地址资源充沛的网络。
 
 ### underlay 网络方案
 
-本方案实现了 POD 共享宿主机的底层网络，即 POD 直接获取宿主机网络中的 IP 地址，这样，应用可直接使用自己的 IP 地址进行东西向和南北向通信。
+本方案实现了 Pod 共享宿主机的底层网络，即 Pod 直接获取宿主机网络中的 IP 地址，这样，应用可直接使用自己的 IP 地址进行东西向和南北向通信。
 
 underlay 网络方案的实施，有两种典型的场景，一种是集群部署实施在"传统网络"上，一种是集群部署在 IAAS 环境上，例如公有云。以下总结了"传统网络场景"的 IPAM 特点：
 
 1. 单个 IP 地址应该能够在任一节点上被分配
 
     这个需求有多方面的原因：随着数据中心的网络设备增加、多集群技术的发展，IPv4 地址资源稀缺，要求 IPAM 提高 IP 资源的使用效率；
-    对于有" IP 地址固定"需求的应用，其 POD 副本可能会调度到集群的任意一个节点上，并且，在故障场景下还会发生节点间的漂移，要求 IP 地址一起漂移。
+    对于有" IP 地址固定"需求的应用，其 Pod 副本可能会调度到集群的任意一个节点上，并且，在故障场景下还会发生节点间的漂移，要求 IP 地址一起漂移。
 
-    因此，在集群中的任意一个节点上，一个 IP 地址应该具备能够被分配给 POD 使用的可能。
+    因此，在集群中的任意一个节点上，一个 IP 地址应该具备能够被分配给 Pod 使用的可能。
 
 2. 同一应用的不同副本，能实现跨子网获取 IP 地址
 
     例如，一个集群中，宿主机1的区域只能使用子网 172.20.1.0/24，而宿主机2的区域只能使用子网 172.20.2.0/24， 在此背景下，
-    当一个应用跨子网部署副本时，要求 IPAM 能够在不同的节点上，为同一个应用下的不同 POD 分配出子网匹配的 IP 地址。
+    当一个应用跨子网部署副本时，要求 IPAM 能够在不同的节点上，为同一个应用下的不同 Pod 分配出子网匹配的 IP 地址。
 
 3. 应用 IP 地址固定
 
@@ -94,21 +95,21 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
     因此，应用上云后，无状态应用希望能够实现 IP 范围的固定，有状态应用希望能够实现 IP 地址的唯一对应，这样，能够减少对微服务架构的改造工作。
 
-4. 一个 POD 的多网卡获取不同子网的 IP 地址
+4. 一个 Pod 的多网卡获取不同子网的 IP 地址
 
-    既然是对接 underlay 网络，POD 就会有多网卡需求，以使其通达不同的 underlay 子网，这要求 IPAM 能够给应用的不同网卡分配不同子网下的 IP 地址。
+    既然是对接 underlay 网络，Pod 就会有多网卡需求，以使其通达不同的 underlay 子网，这要求 IPAM 能够给应用的不同网卡分配不同子网下的 IP 地址。
 
 5. IP 地址冲突
 
-    在 underlay 网络中，更加容易出现 IP 冲突，例如，POD 与集群外部的主机 IP 发生了冲突，与其它对接了相同子网的集群冲突，
+    在 underlay 网络中，更加容易出现 IP 冲突，例如，Pod 与集群外部的主机 IP 发生了冲突，与其它对接了相同子网的集群冲突，
     而 IPAM 组件很难感知外部这些冲突的 IP 地址，多需要借助 CNI 插件进行实时的 IP 冲突检测。
 
 6. 已用 IP 地址的释放回收
 
-    因为 underlay 网络 IP 地址资源的稀缺性，且应用有 IP 地址固定需求，所以，"应当"被释放的 IP 地址若未被 IPAM 组件回收，新启动的 POD 可能会因为缺少 IP 地址而失败。
+    因为 underlay 网络 IP 地址资源的稀缺性，且应用有 IP 地址固定需求，所以，"应当"被释放的 IP 地址若未被 IPAM 组件回收，新启动的 Pod 可能会因为缺少 IP 地址而失败。
     这就要求 IPAM 组件拥有更加精准、高效、及时的 IP 回收机制。
 
-这个方案的优势有：无需网络 NAT 映射的引入，对应用的云化网络改造，提出了最大的便利；底层网络的火墙等设备，可对 POD 通信实现相对较为精细的管控；无需隧道技术，
+这个方案的优势有：无需网络 NAT 映射的引入，对应用的云化网络改造，提出了最大的便利；底层网络的火墙等设备，可对 Pod 通信实现相对较为精细的管控；无需隧道技术，
 网络通信的吞吐量和延时性能也相对的提高了。
 
 ## 架构
@@ -148,9 +149,9 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
   * 对无状态应用，可实现自动固定 IP 地址范围，且能够自动跟随应用副本数进行 IP 资源扩缩容和删除。可参考 [例子](./docs/usage/spider-subnet.md)
 
-  * 对有状态应用，可自动为每个 POD 固定 IP 地址，并且也可固定整体的 IP 扩缩容范围。可参考 [例子](./docs/usage/statefulset.md)
+  * 对有状态应用，可自动为每个 Pod 固定 IP 地址，并且也可固定整体的 IP 扩缩容范围。可参考 [例子](./docs/usage/statefulset.md)
 
-  * 自动化 IP 池能够保持一定数量的冗余 IP 地址，以确保应用在滚动发布时，新启动 pod 能够有临时 IP 地址可用。 可参考 [例子](./docs/usage/spider-subnet.md)
+  * 自动化 IP 池能够保持一定数量的冗余 IP 地址，以确保应用在滚动发布时，新启动 Pod 能够有临时 IP 地址可用。 可参考 [例子](./docs/usage/spider-subnet.md)
 
   * 支持基于operator等机制实现的第三方应用控制器. 可参考 [例子](./docs/usage/third-party-controller.md)
 
@@ -164,23 +165,23 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 * 设置全局的 IP 预留，使得集群不会分配出这些 IP 地址，这样能避免与集群外部的已用 IP 冲突。可参考 [例子](./docs/usage/reserved-ip.md)
 
-* 能够为一个具备多网卡的 POD 分配不同子网下的 IP 地址。可参考 [例子](./docs/usage/multi-interfaces-annotation.md)
+* 能够为一个具备多网卡的 Pod 分配不同子网下的 IP 地址。可参考 [例子](./docs/usage/multi-interfaces-annotation.md)
 
 * IP 池可配置为全局可共享，也可实现同指定租户的绑定。可参考 [例子](./docs/usage/ippool-affinity-namespace.md)
 
 * spiderpool 提供了一个插件 [veth](https://github.com/spidernet-io/plugins)，用于解决如下问题:
 
-  * 帮助一些 CNI 解决 ClusterIP 访问、POD 的宿主机健康检测等问题，例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
+  * 帮助一些 CNI 解决 ClusterIP 访问、Pod 的宿主机健康检测等问题，例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
 [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
 [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). 可参考 [例子](./docs/usage/get-started-macvlan.md)
 
-  * POD 被 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) 分配多网卡时，可帮助各个网卡之间协调策略路由。可参考 [例子](./docs/usage/multi-interfaces-annotation.md) 
+  * Pod 被 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) 分配多网卡时，可帮助各个网卡之间协调策略路由。可参考 [例子](./docs/usage/multi-interfaces-annotation.md) 
     
 * 合理的 IP 回收机制设计，可最大保证 IP 资源的可用性。可参考 [例子](./docs/usage/gc.md)
 
-* 管理员可以为 pod 添加额外的自定义路由， 可参考 [例子](./docs/usage/route.md)
+* 管理员可以为 Pod 添加额外的自定义路由， 可参考 [例子](./docs/usage/route.md)
 
 * 分配和释放 IP 地址的高效性能，以确保应用的快速发布和删除, 且确保了集群在容灾场景下的快速回复. [例子](docs/usage/performance-zh_CH.md)
 

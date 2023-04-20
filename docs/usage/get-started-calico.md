@@ -28,6 +28,8 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 ```
 
 > Spiderpool is IPv4-Only by default. If you want to enable IPv6, refer to [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md).
+>
+> If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
 
 Create a subnet for a Pod (SpiderSubnet):
 

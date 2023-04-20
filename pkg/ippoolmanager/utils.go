@@ -8,7 +8,6 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
-// TODO(Icarus9913): Deprecated.
 func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	// only the auto-created IPPool owns the annotation "ipam.spidernet.io/application"
 	poolAnno := pool.GetAnnotations()

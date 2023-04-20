@@ -362,7 +362,7 @@ func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spi
 	}
 
 	if pool.Status.AllocatedIPs == nil {
-		// 	// unpack the IPPool corresponding application type,namespace and name
+		// unpack the IPPool corresponding application type,namespace and name
 		appNamespacedNameStr := pool.Annotations[constant.AnnoSpiderSubnetPoolApp]
 		appNamespacedName, isMatch := applicationinformers.ParseApplicationNamespacedName(appNamespacedNameStr)
 		if !isMatch {

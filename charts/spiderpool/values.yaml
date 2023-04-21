@@ -64,6 +64,19 @@ feature:
       ## @param feature.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
 
+  grafanaDashboard:
+    ## @param feature.grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
+    install: false
+
+    ## @param feature.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
+    namespace: ""
+
+    ## @param feature.grafanaDashboard.annotations the additional annotations of spiderpool grafanaDashboard
+    annotations: {}
+
+    ## @param feature.grafanaDashboard.labels the additional label of spiderpool grafanaDashboard
+    labels: {}
+
 ## @section clusterDefaultPool parameters
 ##
 clusterDefaultPool:
@@ -302,19 +315,6 @@ spiderpoolAgent:
       ## @param spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMReleaseOverTime the additional rule of spiderpoolAgent prometheusRule
       enableWarningIPAMReleaseOverTime: true
 
-    grafanaDashboard:
-      ## @param spiderpoolAgent.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available
-      install: false
-
-      ## @param spiderpoolAgent.prometheus.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
-      namespace: ""
-
-      ## @param spiderpoolAgent.prometheus.grafanaDashboard.annotations the additional annotations of spiderpoolAgent grafanaDashboard
-      annotations: {}
-
-      ## @param spiderpoolAgent.prometheus.grafanaDashboard.labels the additional label of spiderpoolAgent grafanaDashboard
-      labels: {}
-
   debug:
     ## @param spiderpoolAgent.debug.logLevel the log level of spiderpool agent [debug, info, warn, error, fatal, panic]
     logLevel: "info"
@@ -522,19 +522,6 @@ spiderpoolController:
 
       ## @param spiderpoolController.prometheus.prometheusRule.enableWarningIPGCFailureCounts the additional rule of spiderpoolController prometheusRule
       enableWarningIPGCFailureCounts: true
-
-    grafanaDashboard:
-      ## @param spiderpoolController.prometheus.grafanaDashboard.install install grafanaDashboard for spiderpool agent. This requires the prometheus CRDs to be available
-      install: false
-
-      ## @param spiderpoolController.prometheus.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
-      namespace: ""
-
-      ## @param spiderpoolController.prometheus.grafanaDashboard.annotations the additional annotations of spiderpoolController grafanaDashboard
-      annotations: {}
-
-      ## @param spiderpoolController.prometheus.grafanaDashboard.labels the additional label of spiderpoolController grafanaDashboard
-      labels: {}
 
   debug:
     ## @param spiderpoolController.debug.logLevel the log level of spiderpool Controller [debug, info, warn, error, fatal, panic]

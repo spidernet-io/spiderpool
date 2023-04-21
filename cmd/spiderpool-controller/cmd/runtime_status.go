@@ -46,7 +46,6 @@ func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessP
 	}
 
 	if g.Leader.IsElected() {
-		logger.Debug("try to check whether IP GC is healthy")
 		if !g.GCManager.Health() {
 			logger.Warn("failed to check spiderpool-controller readiness probe: the IP GC is still not ready, please wait for a while")
 			return runtime.NewGetRuntimeReadinessInternalServerError()

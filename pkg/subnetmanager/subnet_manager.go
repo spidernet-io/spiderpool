@@ -389,7 +389,6 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 	return allocateIPRange, nil
 }
 
-// TODO(Icarus9913): remove it
 func subnetStatusCount(subnet *spiderpoolv2beta1.SpiderSubnet) (totalCount, allocatedCount int64) {
 	// total IP Count
 	subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)

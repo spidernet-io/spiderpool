@@ -173,7 +173,6 @@ func DaemonMain() {
 	logger.Info("Begin to initialize IP GC Manager")
 	initGCManager(controllerContext.InnerCtx)
 
-	// TODO (Icarus9913): improve k8s StartupProbe
 	logger.Info("Set spiderpool-controller Startup probe ready")
 	controllerContext.IsStartupProbe.Store(true)
 
@@ -195,8 +194,6 @@ func DaemonMain() {
 func WatchSignal(sigCh chan os.Signal) {
 	for sig := range sigCh {
 		logger.Sugar().Warnw("received shutdown", "signal", sig)
-
-		// TODO (Icarus9913):  filter some signals
 
 		// Cancel the internal context of spiderpool-controller.
 		// This stops things like the runtime manager, GC, etc.
@@ -484,7 +481,6 @@ func setupInformers() {
 func checkWebhookReady() {
 	controllerContext.webhookClient = newWebhookHealthCheckClient()
 
-	// TODO(Icarus9913): [Refactor] give a variable rather than hard code 100
 	for i := 1; i <= 100; i++ {
 		if i == 100 {
 			logger.Fatal("out of the max wait duration for webhook ready in process starting phase")

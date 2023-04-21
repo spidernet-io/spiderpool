@@ -214,7 +214,6 @@ func DaemonMain() {
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
-	// TODO (Icarus9913): improve k8s StartupProbe
 	logger.Info("Set spiderpool-agent startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
 
@@ -227,8 +226,6 @@ func DaemonMain() {
 func WatchSignal(sigCh chan os.Signal) {
 	for sig := range sigCh {
 		logger.Sugar().Warnw("Received shutdown", "signal", sig)
-
-		// TODO (Icarus9913): filter some signals
 
 		// Cancel the internal context of spiderpool-agent.
 		// This stops things like the runtime manager, GC, etc.

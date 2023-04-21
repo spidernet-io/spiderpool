@@ -115,8 +115,6 @@ type _unixPostAgentIpamIps struct{}
 
 // Handle handles POST requests for /ipam/ips.
 func (g *_unixPostAgentIpamIps) Handle(params daemonset.PostIpamIpsParams) middleware.Responder {
-	// TODO (Icarus9913): return the http status code with logic.
-
 	return daemonset.NewPostIpamIpsOK()
 }
 
@@ -124,8 +122,6 @@ type _unixDeleteAgentIpamIps struct{}
 
 // Handle handles DELETE requests for /ipam/ips.
 func (g *_unixDeleteAgentIpamIps) Handle(params daemonset.DeleteIpamIpsParams) middleware.Responder {
-	// TODO (Icarus9913): return the http status code with logic.
-
 	return daemonset.NewDeleteIpamIpsOK()
 }
 

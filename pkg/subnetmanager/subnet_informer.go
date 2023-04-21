@@ -354,13 +354,6 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	}
 
 	subnetCopy := subnet.DeepCopy()
-	defer func() {
-		if err == nil {
-			attr := attribute.String(constant.KindSpiderSubnet, subnetName)
-			metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
-			metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), attr)
-		}
-	}()
 
 	if err := sc.syncMetadata(ctx, subnetCopy); err != nil {
 		return fmt.Errorf("failed to sync metadata of Subnet: %v", err)
@@ -379,6 +372,10 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 			return fmt.Errorf("failed to remove finalizer: %v", err)
 		}
 	}
+
+	attr := attribute.String(constant.KindSpiderSubnet, subnetName)
+	metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
+	metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), attr)
 
 	return nil
 }

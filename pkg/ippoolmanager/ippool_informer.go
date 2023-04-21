@@ -264,14 +264,6 @@ func (ic *IPPoolController) processNextWorkItem() bool {
 }
 
 func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) (err error) {
-	defer func() {
-		if err == nil {
-			attr := attribute.String(constant.KindSpiderIPPool, pool.Name)
-			metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
-			metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), attr)
-		}
-	}()
-
 	// checkout the Auto-created IPPools whether need to scale or clean up legacies
 	if ic.EnableSpiderSubnet && IsAutoCreatedIPPool(pool) {
 		err := ic.cleanAutoIPPoolLegacy(ctx, pool)
@@ -285,6 +277,10 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 	if nil != err {
 		return err
 	}
+
+	attr := attribute.String(constant.KindSpiderIPPool, pool.Name)
+	metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
+	metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), attr)
 
 	return nil
 }

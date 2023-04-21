@@ -239,7 +239,6 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_counts, err)
 	}
 	IpamAllocationTotalCounts = allocationTotalCounts
-	IpamAllocationTotalCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam allocation failure counts, metric type "int64 counter"
 	allocationFailureCounts, err := NewMetricInt64Counter(ipam_allocation_failure_counts, "spiderpool agent ipam allocation failure counts")
@@ -247,7 +246,6 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_failure_counts, err)
 	}
 	IpamAllocationFailureCounts = allocationFailureCounts
-	IpamAllocationFailureCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam allocation update IPPool conflict counts, metric type "int64 counter"
 	allocationUpdateIPPoolConflictCounts, err := NewMetricInt64Counter(ipam_allocation_update_ippool_conflict_counts, "spiderpool agent ipam allocation update IPPool conflict counts")
@@ -357,7 +355,6 @@ func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_counts, err)
 	}
 	IpamReleaseTotalCounts = releaseTotalCounts
-	IpamReleaseTotalCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam release failure counts, metric type "int64 counter"
 	releaseFailureCounts, err := NewMetricInt64Counter(ipam_release_failure_counts, "spiderpool agent ipam release failure counts")
@@ -365,7 +362,6 @@ func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_failure_counts, err)
 	}
 	IpamReleaseFailureCounts = releaseFailureCounts
-	IpamReleaseFailureCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam release update IPPool conflict counts, metric type "int64 counter"
 	releaseUpdateIPPoolConflictCounts, err := NewMetricInt64Counter(ipam_release_update_ippool_conflict_counts, "spiderpool agent ipam release update IPPool conflict counts")

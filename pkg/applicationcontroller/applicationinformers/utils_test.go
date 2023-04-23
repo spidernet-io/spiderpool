@@ -11,6 +11,8 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kruisev1 "github.com/openkruise/kruise-api/apps/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
@@ -24,48 +26,88 @@ import (
 )
 
 var _ = Describe("Utils", func() {
-	It("SubnetPoolName", Label("unitest", "SubnetPoolName"), func() {
+	Context("test AutoPoolName", func() {
 		controllerName := "test-name"
-		ipVersion := types.IPVersion(4)
+		ipVersion := constant.IPv4
 		ifName := "test-nic"
-		controllerUID := apitypes.UID("a-b-c-d")
-		lastOne := "d"
-		expectRes := fmt.Sprintf("auto-%s-v%d-%s-%s",
-			strings.ToLower(controllerName), ipVersion, ifName, strings.ToLower(lastOne))
 
-		result := SubnetPoolName(controllerName, ipVersion, ifName, controllerUID)
-		Expect(result).To(Equal(expectRes))
+		It("normal controller name and uid", Label("unitest", "AutoPoolName"), func() {
+			controllerUID := apitypes.UID("a-b-c-d")
+			lastOne := "d"
+			expectRes := fmt.Sprintf("auto%d-%s-%s-%s",
+				ipVersion, strings.ToLower(controllerName), strings.ToLower(ifName), strings.ToLower(lastOne))
+
+			result := AutoPoolName(controllerName, ipVersion, ifName, controllerUID)
+			Expect(result).To(Equal(expectRes))
+		})
+
+		It("controller uid out of length", Label("unitest", "AutoPoolName"), func() {
+			controllerUID := apitypes.UID("a-b-c-defghi")
+			lastOne := "defgh"
+			expectRes := fmt.Sprintf("auto%d-%s-%s-%s",
+				ipVersion, strings.ToLower(controllerName), strings.ToLower(ifName), strings.ToLower(lastOne))
+
+			result := AutoPoolName(controllerName, ipVersion, ifName, controllerUID)
+			Expect(result).To(Equal(expectRes))
+		})
 	})
 
-	It("ApplicationNamespacedName", Label("unitest", "AppLabelValue"), func() {
-		apiVersion := corev1.SchemeGroupVersion.String()
+	Context("test corev1", func() {
 		appKind := "test-kind"
 		appNS := "test-ns"
 		appName := "test-name"
-		expectResult := fmt.Sprintf("%s:%s:%s:%s", apiVersion, appKind, appNS, appName)
 
-		appNamespacedName := types.AppNamespacedName{
-			APIVersion: apiVersion,
-			Kind:       appKind,
-			Namespace:  appNS,
-			Name:       appName,
-		}
-		result := ApplicationNamespacedName(appNamespacedName)
+		var appNamespacedName types.AppNamespacedName
+		BeforeEach(func() {
+			appNamespacedName.Kind = appKind
+			appNamespacedName.Namespace = appNS
+			appNamespacedName.Name = appName
+		})
 
-		Expect(result).To(Equal(expectResult))
+		It("no API Group", Label("unitest", "AppLabelValue"), func() {
+			// the corev1 only has API Version, its API Group is empty
+			apiVersion := corev1.SchemeGroupVersion.String()
+			expectResult := fmt.Sprintf("%s_%s_%s_%s", corev1.SchemeGroupVersion.Version, appKind, appNS, appName)
+
+			appNamespacedName.APIVersion = apiVersion
+			result := ApplicationNamespacedName(appNamespacedName)
+
+			Expect(result).To(Equal(expectResult))
+		})
+
+		It("test appsv1", Label("unitest", "AppLabelValue"), func() {
+			apiVersion := appsv1.SchemeGroupVersion.String()
+			expectResult := fmt.Sprintf("%s_%s_%s_%s_%s", appsv1.SchemeGroupVersion.Group, appsv1.SchemeGroupVersion.Version, appKind, appNS, appName)
+
+			appNamespacedName.APIVersion = apiVersion
+			result := ApplicationNamespacedName(appNamespacedName)
+
+			Expect(result).To(Equal(expectResult))
+		})
 	})
 
 	Context("ParseApplicationNamespacedName", Label("unitest", "ParseApplicationNamespacedName"), func() {
-		It("match", func() {
-			apiVersion := corev1.SchemeGroupVersion.String()
-			appKind := "test-kind"
-			appNS := "test-ns"
-			appName := "test-name"
-			appNamespacedNameKey := fmt.Sprintf("%s:%s:%s:%s", apiVersion, appKind, appNS, appName)
+		appKind := "test-kind"
+		appNS := "test-ns"
+		appName := "test-name"
+
+		It("match appsv1 appNamespacedName", func() {
+			appNamespacedNameKey := fmt.Sprintf("%s_%s_%s_%s_%s", appsv1.SchemeGroupVersion.Group, appsv1.SchemeGroupVersion.Version, appKind, appNS, appName)
 
 			appNamespacedName, isMatch := ParseApplicationNamespacedName(appNamespacedNameKey)
 			Expect(isMatch).To(BeTrue())
-			Expect(appNamespacedName.APIVersion).Should(Equal(apiVersion))
+			Expect(appNamespacedName.APIVersion).Should(Equal(appsv1.SchemeGroupVersion.String()))
+			Expect(appNamespacedName.Kind).Should(Equal(appKind))
+			Expect(appNamespacedName.Namespace).Should(Equal(appNS))
+			Expect(appNamespacedName.Name).Should(Equal(appName))
+		})
+
+		It("match corev1 appNamespacedName", func() {
+			appNamespacedNameKey := fmt.Sprintf("%s_%s_%s_%s", corev1.SchemeGroupVersion.Version, appKind, appNS, appName)
+
+			appNamespacedName, isMatch := ParseApplicationNamespacedName(appNamespacedNameKey)
+			Expect(isMatch).To(BeTrue())
+			Expect(appNamespacedName.APIVersion).Should(Equal(corev1.SchemeGroupVersion.String()))
 			Expect(appNamespacedName.Kind).Should(Equal(appKind))
 			Expect(appNamespacedName.Namespace).Should(Equal(appNS))
 			Expect(appNamespacedName.Name).Should(Equal(appName))
@@ -458,6 +500,76 @@ var _ = Describe("Utils", func() {
 		It("wrong input", func() {
 			_, _, err := GetPoolIPNumber("++5")
 			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Context("GenerateGVR", Labels{"unitest", "GenerateGVR"}, func() {
+		It("appsv1-deployment", func() {
+			appNamespacedName := types.AppNamespacedName{
+				APIVersion: appsv1.SchemeGroupVersion.String(),
+				Kind:       constant.KindDeployment,
+				Namespace:  "test-ns",
+				Name:       "test-name",
+			}
+			gvr, err := GenerateGVR(appNamespacedName)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gvr.Group).To(Equal(appsv1.SchemeGroupVersion.Group))
+			Expect(gvr.Version).To(Equal(appsv1.SchemeGroupVersion.Version))
+			Expect(gvr.Resource).To(Equal("deployments"))
+		})
+
+		It("corev1-pod", func() {
+			appNamespacedName := types.AppNamespacedName{
+				APIVersion: corev1.SchemeGroupVersion.String(),
+				Kind:       constant.KindPod,
+				Namespace:  "test-ns",
+				Name:       "test-name",
+			}
+			gvr, err := GenerateGVR(appNamespacedName)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gvr.Group).To(BeEmpty())
+			Expect(gvr.Version).To(Equal(corev1.SchemeGroupVersion.Version))
+			Expect(gvr.Resource).To(Equal("pods"))
+		})
+
+		It("wrong APIVersion input", func() {
+			appNamespacedName := types.AppNamespacedName{
+				APIVersion: "/v1/",
+				Kind:       constant.KindPod,
+				Namespace:  "test-ns",
+				Name:       "test-name",
+			}
+			_, err := GenerateGVR(appNamespacedName)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Context("IsThirdController", Label("unitest", "IsThirdController"), func() {
+		var appNamespacedName types.AppNamespacedName
+		BeforeEach(func() {
+			appNamespacedName.Namespace = "test-ns"
+			appNamespacedName.Name = "test-name"
+		})
+
+		It("appsv1-deployment", func() {
+			appNamespacedName.APIVersion = appsv1.SchemeGroupVersion.String()
+			appNamespacedName.Kind = constant.KindDeployment
+			isThirdController := IsThirdController(appNamespacedName)
+			Expect(isThirdController).To(BeFalse())
+		})
+
+		It("openkruise-clonset", func() {
+			appNamespacedName.APIVersion = kruisev1.SchemeGroupVersion.String()
+			appNamespacedName.Kind = "CloneSet"
+			isThirdController := IsThirdController(appNamespacedName)
+			Expect(isThirdController).To(BeTrue())
+		})
+
+		It("appsv1-ClonsSet", func() {
+			appNamespacedName.APIVersion = appsv1.SchemeGroupVersion.String()
+			appNamespacedName.Kind = "ClonsSet"
+			isThirdController := IsThirdController(appNamespacedName)
+			Expect(isThirdController).To(BeTrue())
 		})
 	})
 })

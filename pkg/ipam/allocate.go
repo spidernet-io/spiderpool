@@ -18,6 +18,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
@@ -261,7 +262,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 
 	logger.Debug("Filter out IPPool candidates")
 	for _, t := range preliminary {
-		if err := i.filterPoolCandidates(ctx, t, pod); err != nil {
+		if err := i.filterPoolCandidates(ctx, t, pod, podController); err != nil {
 			return nil, err
 		}
 	}
@@ -409,7 +410,7 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 	return nil
 }
 
-func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *corev1.Pod) error {
+func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *corev1.Pod, podTopController types.PodTopController) error {
 	logger := logutils.FromContext(ctx)
 
 	for _, c := range t.PoolCandidates {
@@ -419,7 +420,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		var errs []error
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
-			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod); err != nil {
+			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController); err != nil {
 				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
 				errs = append(errs, err)
 
@@ -437,7 +438,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 	return nil
 }
 
-func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod) error {
+func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController) error {
 	if ipPool.DeletionTimestamp != nil {
 		return fmt.Errorf("terminating IPPool %s", ipPool.Name)
 	}
@@ -479,6 +480,14 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 	}
 
 	if ipPool.Spec.PodAffinity != nil {
+		if ippoolmanager.IsAutoCreatedIPPool(ipPool) {
+			if !ippoolmanager.IsMatchAutoPoolAffinity(ipPool.Spec.PodAffinity, podTopController) {
+				return fmt.Errorf("unmatched Pod annifity of auto-created IPool %s", ipPool.Name)
+			}
+
+			return nil
+		}
+
 		selector, err := metav1.LabelSelectorAsSelector(ipPool.Spec.PodAffinity)
 		if err != nil {
 			return err

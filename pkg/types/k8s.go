@@ -104,5 +104,4 @@ type AutoPoolProperty struct {
 	IPVersion       IPVersion
 	IsReclaimIPPool bool
 	IfName          string
-	PodSelector     *metav1.LabelSelector
 }

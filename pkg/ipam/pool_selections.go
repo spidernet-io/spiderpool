@@ -6,7 +6,6 @@ package ipam
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -23,7 +22,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -119,77 +117,11 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		CleanGateway: cleanGateway,
 	}
 
-	// This only serves for orphan pod or third party controller application, because we'll create or scale the auto-created IPPool here.
+	// This only serves for third party controller application, because we'll create or scale the auto-created IPPool here.
 	// For those kubernetes applications(such as deployment and replicaset), the spiderpool-controller will create or scale the auto-created IPPool asynchronously.
 	poolIPNum, err := getAutoPoolIPNumber(pod, podController)
 	if nil != err {
 		return nil, err
-	}
-
-	// This function will find the IPPool with the assembled IPPool name
-	// If the application is an orphan pod and do not find any IPPool, it will return immediately to inform you to create IPPool.
-	findSubnetIPPool := func(subnetName string, ipVersion types.IPVersion) (*spiderpoolv2beta1.SpiderIPPool, error) {
-		poolName := subnetmanagercontrollers.SubnetPoolName(podController.Name, ipVersion, nic, podController.UID)
-		var isRetried bool
-		defer func() {
-			if isRetried {
-				metric.AutoPoolWaitedForAvailableCounts.Add(ctx, 1)
-			}
-		}()
-
-		var pool *spiderpoolv2beta1.SpiderIPPool
-		var err error
-		for j := 1; j <= i.config.OperationRetries; j++ {
-			if j > 1 {
-				isRetried = true
-			}
-			// third-party controller applications
-			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
-				pool, err = i.applyThirdControllerAutoPool(ctx, subnetName, poolName, podController, types.AutoPoolProperty{
-					DesiredIPNumber: poolIPNum,
-					IPVersion:       ipVersion,
-					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
-					IfName:          nic,
-					PodSelector:     nil,
-				})
-			} else {
-				pool, err = i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
-			}
-
-			if nil != err {
-				if apierrors.IsNotFound(err) {
-					logger.Sugar().Warnf("fetch SubnetIPPool %d times: no '%s' IPPool retrieved from SpiderSubnet '%s', wait for a second and get a retry", j, poolName, subnetName)
-					time.Sleep(i.config.OperationGapDuration)
-					continue
-				}
-
-				if apierrors.IsConflict(err) || apierrors.IsAlreadyExists(err) || errors.Is(err, constant.ErrFreeIPsNotEnough) {
-					logger.Sugar().Warnf("fetch SubnetIPPool %d times: apply auto-created IPPool conflict: %v", j, err)
-					time.Sleep(i.config.OperationGapDuration)
-					continue
-				}
-
-				// we should just return error directly if we meet other errors
-				return nil, err
-			}
-
-			// found
-			logger.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%v' ", subnetName, pool)
-
-			// TODO(Icarus9913): If shrink failed, it'll cost the whole loop
-			// we fetched Auto-created IPPool but it doesn't have any IPs, just wait for a while and let the IPPool informer to allocate IPs for it
-			if !isPoolIPsDesired(pool, poolIPNum) {
-				logger.Sugar().Warnf("fetch SubnetIPPool %d times: retrieved IPPool '%s' but doesn't have the desiredIPNumber IPs, wait for a second and get a retry", j, poolName)
-				time.Sleep(i.config.OperationGapDuration)
-				continue
-			}
-			break
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("auto-created IPPool '%s' is not available, please check it whether exists or has the desiredIPNumber IPs: %v", poolName, err)
-		}
-		return pool, nil
 	}
 
 	var v4PoolCandidate, v6PoolCandidate *spiderpoolv2beta1.SpiderIPPool
@@ -202,7 +134,12 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		go func() {
 			defer wg.Done()
 
-			v4PoolCandidate, errV4 = findSubnetIPPool(subnetItem.IPv4[0], constant.IPv4)
+			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
+				v4PoolCandidate, errV4 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv4[0], constant.IPv4, nic, poolIPNum, podController)
+			} else {
+				v4PoolCandidate, errV4 = i.findAppAutoPool(ctx, subnetItem.IPv4[0], nic, constant.LabelValueIPVersionV4, poolIPNum, podController)
+			}
+
 			if nil != errV4 {
 				return
 			}
@@ -215,7 +152,12 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		go func() {
 			defer wg.Done()
 
-			v6PoolCandidate, errV6 = findSubnetIPPool(subnetItem.IPv6[0], constant.IPv6)
+			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
+				v6PoolCandidate, errV6 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv6[0], constant.IPv6, nic, poolIPNum, podController)
+			} else {
+				v6PoolCandidate, errV6 = i.findAppAutoPool(ctx, subnetItem.IPv6[0], nic, constant.LabelValueIPVersionV6, poolIPNum, podController)
+			}
+
 			if nil != errV6 {
 				return
 			}
@@ -248,27 +190,111 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	return result, nil
 }
 
-func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName, poolName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
-	tmpPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
-	if nil != err {
-		if apierrors.IsNotFound(err) {
-			// create one auto-created IPPool for third-party controller application
-			tmpPool, err = i.subnetManager.ReconcileAutoIPPool(ctx, nil, subnetName, podController, autoPoolProperty)
-			if nil != err {
-				return nil, err
-			}
-			return tmpPool, nil
+// findAppAutoPool only fetches kubernetes basic controller(like Deployment, StatefulSet etc...) corresponding auto-created IPPools.
+func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPPoolIPVersionValue string, desiredIPNumber int, podController types.PodTopController) (*spiderpoolv2beta1.SpiderIPPool, error) {
+	log := logutils.FromContext(ctx)
+
+	var pool *spiderpoolv2beta1.SpiderIPPool
+	matchLabels := client.MatchingLabels{
+		constant.LabelIPPoolOwnerSpiderSubnet:   subnetName,
+		constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.ApplicationNamespacedName(podController.AppNamespacedName),
+		constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+		constant.LabelIPPoolInterface:           ifName,
+		constant.LabelIPPoolIPVersion:           labelIPPoolIPVersionValue,
+	}
+	for j := 1; j <= i.config.OperationRetries; j++ {
+		poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabels)
+		if nil != err {
+			return nil, fmt.Errorf("failed to get auto-created IPPoolList with labels '%v', error: %w", matchLabels, err)
 		}
 
-		return nil, err
+		if len(poolList.Items) == 0 {
+			log.Sugar().Warnf("fetch SubnetIPPool %d times: no IPPool retrieved from SpiderSubnet '%s' with matchLabel '%v', wait for a second and get a retry",
+				j, subnetName, matchLabels)
+			time.Sleep(i.config.OperationGapDuration)
+		} else if len(poolList.Items) == 1 {
+			pool = poolList.Items[0].DeepCopy()
+			log.Sugar().Debugf("found SpiderSubnet '%s' IPPool '%s' with matchLabel '%v'", subnetName, pool.Name, matchLabels)
+
+			// we fetched Auto-created IPPool but it doesn't have any IPs, just wait for a while and let the IPPool informer to allocate IPs for it
+			if !isPoolIPsDesired(pool, desiredIPNumber) {
+				log.Sugar().Warnf("fetch SubnetIPPool %d times: retrieved IPPool '%s' but doesn't have the desiredIPNumber IPs, wait for a second and get a retry", j, pool.Name)
+				time.Sleep(i.config.OperationGapDuration)
+				continue
+			}
+			break
+		} else {
+			return nil, fmt.Errorf("it's invalid for '%s/%s/%s' corresponding SpiderSubnet '%s' owns multiple matchLables '%v' corresponding IPPools '%v' for one specify application",
+				podController.Kind, podController.Namespace, podController.Name, subnetName, matchLabels, poolList.Items)
+		}
+	}
+	if pool == nil {
+		return nil, fmt.Errorf("no matching auto-created IPPool candidate with matchLables '%v'", matchLabels)
 	}
 
-	// check whether the auto IPPool need to scale its desiredIPNumber or not
-	pool, err := i.subnetManager.ReconcileAutoIPPool(ctx, tmpPool, subnetName, podController, autoPoolProperty)
-	if nil != err {
-		return nil, err
+	return pool, nil
+}
+
+// applyThirdControllerAutoPool will fetch or reconcile third-party controller corresponding auto-created IPPools,
+// and the kubernetes basic controller like Deployment,StatefulSet etc... We'll reconcile their auto-created IPPools in spiderpool-controller component.
+func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, ipVersion types.IPVersion, ifName string, desiredIPNumber int, podController types.PodTopController) (*spiderpoolv2beta1.SpiderIPPool, error) {
+	log := logutils.FromContext(ctx)
+
+	var labelIPPoolIPVersionValue string
+	if ipVersion == constant.IPv4 {
+		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV4
+	} else {
+		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV6
 	}
 
+	var pool *spiderpoolv2beta1.SpiderIPPool
+	matchLabels := client.MatchingLabels{
+		constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
+		constant.LabelIPPoolOwnerApplication:  subnetmanagercontrollers.ApplicationNamespacedName(podController.AppNamespacedName),
+		constant.LabelIPPoolIPVersion:         labelIPPoolIPVersionValue,
+		constant.LabelIPPoolInterface:         ifName,
+	}
+	for j := 1; j <= i.config.OperationRetries; j++ {
+		poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabels)
+		if nil != err {
+			return nil, fmt.Errorf("failed to get third-party auto-created IPPoolList with matchLabels %v, error: %w", matchLabels, err)
+		}
+
+		if len(poolList.Items) == 0 {
+			pool = nil
+		} else {
+			for k := range poolList.Items {
+				labels := poolList.Items[k].GetLabels()
+				if labels[constant.LabelIPPoolReclaimIPPool] == constant.True && labels[constant.LabelIPPoolOwnerApplicationUID] != string(podController.UID) {
+					log.Sugar().Debugf("found the previous same app auto-created IPPool %s", poolList.Items[k].Name)
+					continue
+				}
+
+				pool = poolList.Items[k].DeepCopy()
+				log.Sugar().Infof("found reuse app auto-created IPPool %s", pool.Name)
+				break
+			}
+		}
+
+		pool, err = i.subnetManager.ReconcileAutoIPPool(ctx, pool, subnetName, podController, types.AutoPoolProperty{
+			DesiredIPNumber: desiredIPNumber,
+			IPVersion:       ipVersion,
+			IsReclaimIPPool: false,
+			IfName:          ifName,
+		})
+		if nil != err {
+			if apierrors.IsConflict(err) || apierrors.IsAlreadyExists(err) {
+				log.Sugar().Warnf("fetch SubnetIPPool %d times: apply auto-created IPPool conflict: %v", j, err)
+				time.Sleep(i.config.OperationGapDuration)
+				continue
+			}
+			return nil, fmt.Errorf("failed to check SpiderSubnet %s third-party controller auto-created IPPool whether need to be scaled: %w", subnetName, err)
+		}
+		break
+	}
+	if pool == nil {
+		return nil, fmt.Errorf("no matching third-party controller auto-created IPPool candidate with matchLables '%v'", matchLabels)
+	}
 	return pool, nil
 }
 

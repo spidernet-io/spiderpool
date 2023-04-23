@@ -44,6 +44,11 @@ spec:
       jsonPath: .spec.disable
       name: DISABLE
       type: boolean
+    - description: AppNamespace
+      jsonPath: .spec.podAffinity.matchLabels['ipam\.spidernet\.io/app\-namespace']
+      name: APP-NAMESPACE
+      priority: 10
+      type: string
     name: v2beta1
     schema:
       openAPIV3Schema:

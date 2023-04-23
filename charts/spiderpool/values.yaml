@@ -268,6 +268,9 @@ spiderpoolAgent:
     ## @param spiderpoolAgent.prometheus.enabled enable spiderpool agent to collect metrics
     enabled: false
 
+    ## @param spiderpoolAgent.prometheus.enabledDebugMetric enable spiderpool agent to collect debug level metrics
+    enabledDebugMetric: false
+
     ## @param spiderpoolAgent.prometheus.port the metrics port of spiderpool agent
     port: 5711
 
@@ -487,6 +490,9 @@ spiderpoolController:
   prometheus:
     ## @param spiderpoolController.prometheus.enabled enable spiderpool Controller to collect metrics
     enabled: false
+
+    ## @param spiderpoolController.prometheus.enabledDebugMetric enable spiderpool Controller to collect debug level metrics
+    enabledDebugMetric: false
 
     ## @param spiderpoolController.prometheus.port the metrics port of spiderpool Controller
     port: 5721

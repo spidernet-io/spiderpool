@@ -149,6 +149,8 @@ spec:
           value: {{ .Values.spiderpoolController.debug.logLevel | quote }}
         - name: SPIDERPOOL_ENABLED_METRIC
           value: {{ .Values.spiderpoolController.prometheus.enabled | quote }}
+        - name: SPIDERPOOL_ENABLED_DEBUG_METRIC
+          value: {{ .Values.spiderpoolController.prometheus.enabledDebugMetric | quote }}
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolController.prometheus.port | quote }}
         - name: SPIDERPOOL_GOPS_LISTEN_PORT

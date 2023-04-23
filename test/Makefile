@@ -195,6 +195,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=true" ; \
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabled=true --set spiderpoolController.prometheus.enabled=true " ; \
+		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabledDebugMetric=true --set spiderpoolController.prometheus.enabledDebugMetric=true " ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
         			docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \
         			docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null || true ; \

@@ -278,9 +278,16 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 		return err
 	}
 
-	attr := attribute.String(constant.KindSpiderIPPool, pool.Name)
-	metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
-	metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), attr)
+	// metrics
+	if pool.Status.TotalIPCount != nil {
+		attr := attribute.String(constant.KindSpiderIPPool, pool.Name)
+		metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
+		if pool.Status.AllocatedIPCount != nil {
+			metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), attr)
+		} else {
+			metric.IPPoolAvailableIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
+		}
+	}
 
 	return nil
 }

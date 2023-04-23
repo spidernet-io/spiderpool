@@ -148,6 +148,8 @@ spec:
           value: {{ .Values.spiderpoolAgent.debug.logLevel | quote }}
         - name: SPIDERPOOL_ENABLED_METRIC
           value: {{ .Values.spiderpoolAgent.prometheus.enabled | quote }}
+        - name: SPIDERPOOL_ENABLED_DEBUG_METRIC
+          value: {{ .Values.spiderpoolAgent.prometheus.enabledDebugMetric | quote }}
         - name: SPIDERPOOL_METRIC_HTTP_PORT
           value: {{ .Values.spiderpoolAgent.prometheus.port | quote }}
         - name: SPIDERPOOL_HEALTH_PORT

@@ -373,9 +373,15 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 		}
 	}
 
-	attr := attribute.String(constant.KindSpiderSubnet, subnetName)
-	metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
-	metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), attr)
+	if subnetCopy.Status.TotalIPCount != nil {
+		attr := attribute.String(constant.KindSpiderSubnet, subnetName)
+		metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
+		if subnetCopy.Status.AllocatedIPCount != nil {
+			metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), attr)
+		} else {
+			metric.SubnetAvailableIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
+		}
+	}
 
 	return nil
 }

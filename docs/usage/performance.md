@@ -87,7 +87,7 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
 
 ### IPv4 stack
 
-- 1 Deployment with 1000 replicas: 
+- 1 Deployment with 1000 replicas : 
 
   | CNI                   | Creation | Re-creation | Deletion |
   | --------------------- | -------- | ----------- | -------- |
@@ -97,7 +97,7 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
   | Calico + calico-ipam  | 1m41s    | 3m33s       | 1m27s    |
 
 
-- 100 Deployments with 10 replicas: 
+- 100 Deployments and 10 replicas for each deployment : 
 
   | CNI                   | Creation | Re-creation | Deletion |
   | --------------------- | -------- | ----------- | -------- |

@@ -183,7 +183,11 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 
 * 管理员可以为 Pod 添加额外的自定义路由， 可参考 [例子](./docs/usage/route.md)
 
-* 分配和释放 IP 地址的高效性能，以确保应用的快速发布和删除, 且确保了集群在容灾场景下的快速回复. [例子](docs/usage/performance-zh_CH.md)
+* 分配和释放 IP 地址的高效性能，[报告](docs/usage/performance-zh_CH.md)以其它开源项目为比较，测试了多个场景，涵盖了 IPv4 和 IPv6 场景：
+
+    1. 应用大批量创建、重启、删除，能确保快速的静态 IP 分配和释放
+
+    2. 集群主机断电故障后重启，应用快速获取 IP 自愈
 
 * 以上所有的功能，都能够在 ipv4-only、ipv6-only、dual-stack 场景下工作. [例子](./docs/usage/ipv6.md)
 

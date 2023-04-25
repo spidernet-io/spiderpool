@@ -45,7 +45,7 @@
 
 测试期间，我们会遵循如下约定：
 
-- IPv4/IPv6 双栈场景。
+- 测试 IPv4 单栈和 IPv4/IPv6 双栈场景。
 - 测试 underlay IPAM CNI 插件时，尽最大可能的确保可用的 IP 地址数量与 Pod 数量为 **1:1**。例如，接下来我们计划创建 1000 个 Pod，那么应当限制可用的 IPv4/IPv6 地址数量均为 1000 个。
 
 具体的，我们会尝试以如下两种方式在上述 Kubenetes 集群上来启动总计 1000 个 Pod，并记录所有 Pod 均达到 `Running` 的耗时：
@@ -63,25 +63,48 @@ kubectl get pod | grep "prefix" | awk '{print $1}' | xargs kubectl delete pod
 
 ## 结果
 
-### 单个 1000 副本的 Deployment
+### IPv4/IPv6 双栈
 
-| CNI                   | 创建   | 重建  | 删除  |
-| --------------------- | ------ | ----- | ----- |
-| macvlan + Spiderpool  | 2m35s  | 9m50s | 1m50s |
-| macvlan + Whereabouts | 25m18s | 失败  | 3m5s  |
-| Kube-OVN              | 3m55s  | 7m20s | 2m13s |
-| Calico + calico-ipam  | 1m56s  | 4m6s  | 1m36s |
+- 单个 1000 副本的 Deployment：
 
-> 在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 `Running` 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 `Running` 状态。至于重建的场景，在 55 个 Pod 达到 `Running` 状态后，Whereabouts 就基本不工作了，耗时类比于正无穷。
+  | CNI                   | 创建   | 重建  | 删除  |
+  | --------------------- | ------ | ----- | ----- |
+  | macvlan + Spiderpool  | 2m35s  | 9m50s | 1m50s |
+  | macvlan + Whereabouts | 25m18s | 失败  | 3m5s  |
+  | Kube-OVN              | 3m55s  | 7m20s | 2m13s |
+  | Calico + calico-ipam  | 1m56s  | 4m6s  | 1m36s |
 
-### 100 个 10 副本的 Deployment
+  > 在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 `Running` 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 `Running` 状态。至于重建的场景，在 55 个 Pod 达到 `Running` 状态后，Whereabouts 就基本不工作了，耗时类比于正无穷。
 
-| CNI                   | 创建   | 重建  | 删除  |
-| --------------------- | ------ | ----- | ----- |
-| macvlan + Spiderpool  | 1m37s  | 3m27s | 1m22s |
-| macvlan + Whereabouts | 21m49s | 失败  | 2m9s  |
-| Kube-OVN              | 4m6s   | 7m46s | 2m8s  |
-| Calico + calico-ipam  | 1m57s  | 3m58s | 1m35s |
+- 100 个 10 副本的 Deployment：
+
+  | CNI                   | 创建   | 重建  | 删除  |
+  | --------------------- | ------ | ----- | ----- |
+  | macvlan + Spiderpool  | 1m37s  | 3m27s | 1m22s |
+  | macvlan + Whereabouts | 21m49s | 失败  | 2m9s  |
+  | Kube-OVN              | 4m6s   | 7m46s | 2m8s  |
+  | Calico + calico-ipam  | 1m57s  | 3m58s | 1m35s |
+
+### IPv4 单栈
+
+- 单个 1000 副本的 Deployment：
+
+  | CNI                   | 创建  | 重建  | 删除  |
+  | --------------------- | ----- | ----- | ----- |
+  | macvlan + Spiderpool  | 2m18s | 6m41s | 1m37s |
+  | macvlan + Whereabouts | 8m16s | 失败  | 2m7s  |
+  | Kube-OVN              | 3m32s | 7m7s  | 1m47s |
+  | Calico + calico-ipam  | 1m41s | 3m33s | 1m27s |
+
+
+- 100 个 10 副本的 Deployment：
+
+  | CNI                   | 创建  | 重建  | 删除  |
+  | --------------------- | ----- | ----- | ----- |
+  | macvlan + Spiderpool  | 1m4s  | 3m23s | 1m23s |
+  | macvlan + Whereabouts | 8m13s | 失败  | 2m7s  |
+  | Kube-OVN              | 3m36s | 7m14s | 1m41s |
+  | Calico + calico-ipam  | 1m39s | 3m25s | 1m27s |
 
 ## 小结
 

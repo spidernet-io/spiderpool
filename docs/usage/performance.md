@@ -45,7 +45,7 @@ This test is based on the [CNI Specification](https://www.cni.dev/docs/spec/) `0
 
 During the testing, we will follow the following agreement:
 
-- IPv4/IPv6 dual-stack.
+- Testing under IPv4 stack and IPv4/IPv6 dual-stack.
 - When testing the underlay IPAM CNI plugins, ensure that the number of available IP addresses is **1:1** to the number of Pods as much as possible. For example, if we plan to create 1000 Pods in the next step, we should limit the number of available IPv4/IPv6 addresses to 1000.
 
 Specifically, we will attempt to create a total of 1000 Pods on the Kubernetes cluster in the following two ways, and record the time taken for all Pods to become `Running`:
@@ -63,25 +63,48 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
 
 ## Result
 
-### 1 Deployment with 1000 replicas
+### IPv4/IPv6 dual-stack
 
-| CNI                   | Creation | Re-creation | Deletion |
-| --------------------- | -------- | ----------- | -------- |
-| macvlan + Spiderpool  | 2m35s    | 9m50s       | 1m50s    |
-| macvlan + Whereabouts | 25m18s   | failure     | 3m5s     |
-| Kube-OVN              | 3m55s    | 7m20s       | 2m13s    |
-| Calico + calico-ipam  | 1m56s    | 4m6s        | 1m36s    |
+- 1 Deployment with 1000 replicas: 
 
-> During the testing of macvlan + Whereabouts, in the creation scenario, 922 Pods became `Running` at a relatively uniform rate within 14m25s. After that, the growth rate of Pods significantly decreased, and ultimately it took 25m18s for 1000 Pods to become `Running`. As for the re-creation scenario, after 55 Pods became `Running`, Whereabouts basically stopped working, and the time consumption was close to infinity.
+  | CNI                   | Creation | Re-creation | Deletion |
+  | --------------------- | -------- | ----------- | -------- |
+  | macvlan + Spiderpool  | 2m35s    | 9m50s       | 1m50s    |
+  | macvlan + Whereabouts | 25m18s   | failure     | 3m5s     |
+  | Kube-OVN              | 3m55s    | 7m20s       | 2m13s    |
+  | Calico + calico-ipam  | 1m56s    | 4m6s        | 1m36s    |
 
-### 100 Deployments with 10 replicas
+  > During the testing of macvlan + Whereabouts, in the creation scenario, 922 Pods became `Running` at a relatively uniform rate within 14m25s. After that, the growth rate of Pods significantly decreased, and ultimately it took 25m18s for 1000 Pods to become `Running`. As for the re-creation scenario, after 55 Pods became `Running`, Whereabouts basically stopped working, and the time consumption was close to infinity.
 
-| CNI                   | Creation | Re-creation | Deletion |
-| --------------------- | -------- | ----------- | -------- |
-| macvlan + Spiderpool  | 1m37s    | 3m27s       | 1m22s    |
-| macvlan + Whereabouts | 21m49s   | failure     | 2m9s     |
-| Kube-OVN              | 4m6s     | 7m46s       | 2m8s     |
-| Calico + calico-ipam  | 1m57s    | 3m58s       | 1m35s    |
+- 100 Deployments with 10 replicas: 
+
+  | CNI                   | Creation | Re-creation | Deletion |
+  | --------------------- | -------- | ----------- | -------- |
+  | macvlan + Spiderpool  | 1m37s    | 3m27s       | 1m22s    |
+  | macvlan + Whereabouts | 21m49s   | failure     | 2m9s     |
+  | Kube-OVN              | 4m6s     | 7m46s       | 2m8s     |
+  | Calico + calico-ipam  | 1m57s    | 3m58s       | 1m35s    |
+
+### IPv4 stack
+
+- 1 Deployment with 1000 replicas: 
+
+  | CNI                   | Creation | Re-creation | Deletion |
+  | --------------------- | -------- | ----------- | -------- |
+  | macvlan + Spiderpool  | 2m18s    | 6m41s       | 1m37s    |
+  | macvlan + Whereabouts | 8m16s    | failure     | 2m7s     |
+  | Kube-OVN              | 3m32s    | 7m7s        | 1m47s    |
+  | Calico + calico-ipam  | 1m41s    | 3m33s       | 1m27s    |
+
+
+- 100 Deployments with 10 replicas: 
+
+  | CNI                   | Creation | Re-creation | Deletion |
+  | --------------------- | -------- | ----------- | -------- |
+  | macvlan + Spiderpool  | 1m4s     | 3m23s       | 1m23s    |
+  | macvlan + Whereabouts | 8m13s    | failure     | 2m7s     |
+  | Kube-OVN              | 3m36s    | 7m14s       | 1m41s    |
+  | Calico + calico-ipam  | 1m39s    | 3m25s       | 1m27s    |
 
 ## Summary
 

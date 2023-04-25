@@ -174,7 +174,11 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * The administrator could specify customized route. See [example](./docs/usage/route.md) for details
 
-* Good performance for assigning and release Pod IP, to guarantee the application release, to guarantee disaster recovery for the cluster. See [example](docs/usage/performance.md) for details
+* By comparison with other open source projects in the community, outstanding performance for assigning and releasing Pod IPs is showcased in the [test report](docs/usage/performance.md) covering multiple scenarios of IPv4 and IPv6:
+
+  * Enable fast allocation and release of static IPs for large-scale creation, restart, and deletion of applications
+
+  * Enable applications to quickly obtain IP addresses for self-recovery after downtime or a cluster host reboot
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios. See [example](./docs/usage/ipv6.md) for details
 

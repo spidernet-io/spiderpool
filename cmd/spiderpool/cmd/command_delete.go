@@ -106,7 +106,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	logger.Debug("Send IPAM request")
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(params)
 	if nil != err {
-		logger.Sugar().Errorf("%w: %v", ErrDeleteIPAM, err)
+		logger.Sugar().Errorf("%v: %v", ErrDeleteIPAM, err)
 		return nil
 	}
 

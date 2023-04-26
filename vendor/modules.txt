@@ -31,6 +31,10 @@ github.com/containernetworking/cni/pkg/types/create
 github.com/containernetworking/cni/pkg/types/internal
 github.com/containernetworking/cni/pkg/utils
 github.com/containernetworking/cni/pkg/version
+# github.com/containernetworking/plugins v1.2.0
+## explicit; go 1.17
+github.com/containernetworking/plugins/pkg/ns
+github.com/containernetworking/plugins/pkg/testutils
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
@@ -291,6 +295,7 @@ github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/gbytes
 github.com/onsi/gomega/gexec
+github.com/onsi/gomega/ghttp
 github.com/onsi/gomega/internal
 github.com/onsi/gomega/internal/gutil
 github.com/onsi/gomega/matchers

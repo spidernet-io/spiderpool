@@ -1,21 +1,6 @@
 
 # v0.4.1
 
-***
-
-## Feature
-
-* make IP GC pod informer mechanism requeue if it failed to release IP : [PR 1591](https://github.com/spidernet-io/spiderpool/pull/1591)
-
-* support third-party auto-created pool delete : [PR 1619](https://github.com/spidernet-io/spiderpool/pull/1619)
-
-* title:	add kubernetes StatefulSet Start ordinal support : [PR 1668](https://github.com/spidernet-io/spiderpool/pull/1668)
-
-* title:	add grafana dashaboard : [PR 1684](https://github.com/spidernet-io/spiderpool/pull/1684)
-
-
-
-***
 
 ## Fix
 

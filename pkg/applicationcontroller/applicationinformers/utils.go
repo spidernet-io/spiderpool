@@ -4,7 +4,6 @@
 package applicationinformers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -13,19 +12,8 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
-	"k8s.io/utils/strings/slices"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
@@ -349,86 +337,4 @@ func ShouldReclaimIPPool(anno map[string]string) (bool, error) {
 
 	// no specified reclaim-IPPool, default to set it true
 	return true, nil
-}
-
-// IsAppExist will check the application whether exists or not. If it exists, it will return the application corresponding UID
-func IsAppExist(ctx context.Context, cacheClient client.Client, dynamicClient dynamic.Interface, appNamespacedName types.AppNamespacedName) (isExist bool, appUID apitypes.UID, err error) {
-	var object client.Object
-	isThird := false
-
-	if slices.Contains(constant.K8sAPIVersions, appNamespacedName.APIVersion) {
-		switch appNamespacedName.Kind {
-		case constant.KindPod:
-			object = &corev1.Pod{}
-		case constant.KindDeployment:
-			object = &appsv1.Deployment{}
-		case constant.KindReplicaSet:
-			object = &appsv1.ReplicaSet{}
-		case constant.KindDaemonSet:
-			object = &appsv1.DaemonSet{}
-		case constant.KindStatefulSet:
-			object = &appsv1.StatefulSet{}
-		case constant.KindJob:
-			object = &batchv1.Job{}
-		case constant.KindCronJob:
-			object = &batchv1.CronJob{}
-		default:
-			isThird = true
-		}
-	} else {
-		isThird = true
-	}
-
-	var unstructuredObject *unstructured.Unstructured
-	if isThird {
-		gvr, e := GenerateGVR(appNamespacedName)
-		if nil != e {
-			return false, "", e
-		}
-		unstructuredObject, err = dynamicClient.Resource(gvr).Namespace(appNamespacedName.Namespace).Get(ctx, appNamespacedName.Name, metav1.GetOptions{})
-	} else {
-		err = cacheClient.Get(ctx, apitypes.NamespacedName{Namespace: appNamespacedName.Namespace, Name: appNamespacedName.Name}, object)
-	}
-
-	if nil != err {
-		// if the application is no longer exist, we should delete the IPPool
-		if apierrors.IsNotFound(err) {
-			return false, "", nil
-		}
-
-		return false, "", err
-	}
-
-	if unstructuredObject != nil {
-		appUID = unstructuredObject.GetUID()
-	} else {
-		appUID = object.GetUID()
-	}
-
-	return true, appUID, nil
-}
-
-func GenerateGVR(appNamespacedName types.AppNamespacedName) (schema.GroupVersionResource, error) {
-	gv, err := schema.ParseGroupVersion(appNamespacedName.APIVersion)
-	if nil != err {
-		return schema.GroupVersionResource{}, err
-	}
-
-	gvk := gv.WithKind(appNamespacedName.Kind)
-	gvrPlural, _ := meta.UnsafeGuessKindToResource(gvk)
-
-	return gvrPlural, nil
-}
-
-func IsThirdController(appNamespacedName types.AppNamespacedName) bool {
-	isThird := false
-	if slices.Contains(constant.K8sAPIVersions, appNamespacedName.APIVersion) {
-		if !slices.Contains(constant.K8sKinds, appNamespacedName.Kind) {
-			isThird = true
-		}
-	} else {
-		isThird = true
-	}
-
-	return isThird
 }

@@ -7,22 +7,25 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -51,8 +54,9 @@ const (
 var InformerLogger *zap.Logger
 
 type SubnetController struct {
-	Client    client.Client
-	APIReader client.Reader
+	Client        client.Client
+	APIReader     client.Reader
+	DynamicClient dynamic.Interface
 
 	SubnetsLister listers.SpiderSubnetLister
 	IPPoolsLister listers.SpiderIPPoolLister
@@ -69,16 +73,6 @@ type SubnetController struct {
 	ResyncPeriod            time.Duration
 	SubnetControllerWorkers int
 	MaxWorkqueueLength      int
-
-	DynamicClient    dynamic.Interface
-	dynamicFactory   dynamicinformer.DynamicSharedInformerFactory
-	dynamicWorkqueue workqueue.RateLimitingInterface
-	recordedResource sync.Map
-}
-
-type thirdControllerKey struct {
-	MetaNamespaceKey string
-	AppUID           types.UID
 }
 
 func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.Interface, leader election.SpiderLeaseElector) error {
@@ -121,10 +115,6 @@ func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.
 					time.Sleep(sc.LeaderRetryElectGap)
 				}
 			}()
-
-			InformerLogger.Info("Initialize Dynamic informer")
-			sc.dynamicFactory = dynamicinformer.NewDynamicSharedInformerFactory(sc.DynamicClient, 0)
-			sc.dynamicWorkqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Dynamic-Objects")
 
 			InformerLogger.Info("Initialize Subnet informer")
 			informerFactory := externalversions.NewSharedInformerFactory(client, sc.ResyncPeriod)
@@ -244,7 +234,6 @@ func (sc *SubnetController) enqueueSubnetOnIPPoolChange(obj interface{}) {
 func (sc *SubnetController) run(ctx context.Context, workers int) error {
 	defer utilruntime.HandleCrash()
 	defer sc.Workqueue.ShutDown()
-	defer sc.dynamicWorkqueue.ShutDown()
 
 	logger := logutils.FromContext(ctx)
 	logger.Info("Starting Subnet informer")
@@ -258,9 +247,6 @@ func (sc *SubnetController) run(ctx context.Context, workers int) error {
 	for i := 0; i < workers; i++ {
 		go wait.UntilWithContext(ctx, sc.runWorker, time.Second)
 	}
-
-	logger.Info("Starting dynamic informer worker")
-	go wait.UntilWithContext(ctx, sc.runDynamicWorker, time.Second)
 
 	logger.Info("Started workers")
 	<-ctx.Done()
@@ -294,55 +280,6 @@ func (sc *SubnetController) processNextWorkItem(ctx context.Context) bool {
 	logger.Info("Succeed to SYNC")
 
 	sc.Workqueue.Forget(obj)
-
-	return true
-}
-
-func (sc *SubnetController) runDynamicWorker(ctx context.Context) {
-	for sc.processDynamicNextWorkItem(ctx) {
-	}
-}
-
-func (sc *SubnetController) processDynamicNextWorkItem(ctx context.Context) bool {
-	obj, shutdown := sc.dynamicWorkqueue.Get()
-	if shutdown {
-		return false
-	}
-
-	log := logutils.FromContext(ctx)
-	process := func(obj interface{}) error {
-		defer sc.dynamicWorkqueue.Done(obj)
-
-		key, ok := obj.(thirdControllerKey)
-		if !ok {
-			sc.dynamicWorkqueue.Forget(obj)
-			return fmt.Errorf("expected thirdControllerKey in workQueue but got '%+v'", obj)
-		}
-
-		err := sc.Client.DeleteAllOf(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
-			constant.LabelIPPoolOwnerApplicationUID: string(key.AppUID),
-			constant.LabelIPPoolReclaimIPPool:       constant.True,
-		})
-		if nil != err {
-			if apierrors.IsNotFound(err) {
-				log.Sugar().Debugf("third-party controller %+v corresponding auto-created IPPools already deleted", key)
-				sc.dynamicWorkqueue.Forget(obj)
-				return nil
-			}
-
-			sc.dynamicWorkqueue.AddRateLimited(obj)
-			return fmt.Errorf("error deleting third-party controller %+v corresponding auto-created IPPools: %w, requeuing", key, err)
-		}
-
-		sc.dynamicWorkqueue.Forget(obj)
-		log.Sugar().Infof("delete third-party controller %+v corresponding auto-created IPPools successfully", key)
-		return nil
-	}
-
-	err := process(obj)
-	if nil != err {
-		log.Error(err.Error())
-	}
 
 	return true
 }
@@ -452,28 +389,18 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			appNamespacedName, isMatch := applicationinformers.ParseApplicationNamespacedName(*preAllocation.Application)
 			if !isMatch {
 				logger.Sugar().Errorf("Invalid application record %s of IPPool %s, remove the pre-allocation from Subnet", *preAllocation.Application, poolName)
-				// discard this invalid allocation for subnet.status
 				continue
 			}
 
-			exist, _, err := applicationinformers.IsAppExist(ctx, sc.Client, sc.DynamicClient, appNamespacedName)
+			exist, err := sc.isAppExist(ctx, appNamespacedName)
 			if err != nil {
-				return fmt.Errorf("failed to check whether the application %v corresponding to the auto-created IPPool %s exists: %w", appNamespacedName, poolName, err)
+				return fmt.Errorf("failed to check whether the application %v corresponding to the auto-created IPPool %s exists: %v", appNamespacedName, poolName, err)
 			}
 
-			if exist {
-				// if it's a third-party controller, we'll watch its deletion hook function to GC SpiderSubnet.status
-				if applicationinformers.IsThirdController(appNamespacedName) {
-					err := sc.monitorThirdController(ctx, appNamespacedName)
-					if nil != err {
-						return fmt.Errorf("failed to monitor third-party application %v for auto-created IPPool %s: %w", appNamespacedName, poolName, err)
-					}
-				}
-			} else {
+			if !exist {
 				_, err := sc.IPPoolsLister.Get(poolName)
 				if apierrors.IsNotFound(err) {
 					logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
-					// discard the legacy allocation for subnet.status
 					continue
 				}
 			}
@@ -481,7 +408,6 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			autoIPPoolIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
 			if err != nil {
 				logger.Sugar().Errorf("Invalid IP ranges of IPPool %s, remove the pre-allocation from Subnet", poolName)
-				// discard this invalid allocation
 				continue
 			}
 			tmpCount += len(autoIPPoolIPs)
@@ -583,46 +509,64 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 	return nil
 }
 
-func (sc *SubnetController) monitorThirdController(ctx context.Context, appNamespacedName spiderpooltypes.AppNamespacedName) error {
-	log := logutils.FromContext(ctx)
+func (sc *SubnetController) isAppExist(ctx context.Context, appNamespacedName spiderpooltypes.AppNamespacedName) (bool, error) {
+	var object client.Object
+	isThirdController := false
 
-	gvr, err := applicationinformers.GenerateGVR(appNamespacedName)
-	if nil != err {
-		return err
-	}
-
-	_, ok := sc.recordedResource.Load(gvr)
-	if !ok {
-		log.Sugar().Infof("try to watch third-party controller %v delete hook for corresponding auto-created IPPools", appNamespacedName)
-		informer := sc.dynamicFactory.ForResource(gvr).Informer()
-		_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			DeleteFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if nil != err {
-					log.Sugar().Errorf("failed to parse object '%+v' meta key", obj)
-					return
-				}
-				log.Sugar().Infof("received third-party controller %s delete event, enqueue it", key)
-				sc.dynamicWorkqueue.Add(thirdControllerKey{
-					MetaNamespaceKey: key,
-					AppUID:           obj.(*unstructured.Unstructured).GetUID(),
-				})
-			},
-		})
-		if nil != err {
-			return err
+	if slices.Contains(constant.K8sAPIVersions, appNamespacedName.APIVersion) {
+		switch appNamespacedName.Kind {
+		case constant.KindPod:
+			object = &corev1.Pod{}
+		case constant.KindDeployment:
+			object = &appsv1.Deployment{}
+		case constant.KindReplicaSet:
+			object = &appsv1.ReplicaSet{}
+		case constant.KindDaemonSet:
+			object = &appsv1.DaemonSet{}
+		case constant.KindStatefulSet:
+			object = &appsv1.StatefulSet{}
+		case constant.KindJob:
+			object = &batchv1.Job{}
+		case constant.KindCronJob:
+			object = &batchv1.CronJob{}
+		default:
+			isThirdController = true
 		}
-
-		sc.recordedResource.Store(gvr, struct{}{})
-		go func() {
-			log.Sugar().Debugf("start third-party controller %v informer", appNamespacedName)
-			informer.Run(ctx.Done())
-
-			// if stopped, let's clean up the cache directly
-			log.Sugar().Errorf("the third-party controller %v informer stopped")
-			sc.recordedResource.Delete(gvr)
-		}()
+	} else {
+		isThirdController = true
 	}
 
-	return nil
+	var err error
+	if isThirdController {
+		gvr, e := generateGVR(appNamespacedName)
+		if nil != e {
+			return false, e
+		}
+		_, err = sc.DynamicClient.Resource(gvr).Namespace(appNamespacedName.Namespace).Get(ctx, appNamespacedName.Name, metav1.GetOptions{})
+	} else {
+		err = sc.Client.Get(ctx, types.NamespacedName{Namespace: appNamespacedName.Namespace, Name: appNamespacedName.Name}, object)
+	}
+
+	if nil != err {
+		// if the application is no longer exist, we should delete the IPPool
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
+func generateGVR(appNamespacedName spiderpooltypes.AppNamespacedName) (schema.GroupVersionResource, error) {
+	gv, err := schema.ParseGroupVersion(appNamespacedName.APIVersion)
+	if nil != err {
+		return schema.GroupVersionResource{}, err
+	}
+
+	gvk := gv.WithKind(appNamespacedName.Kind)
+	gvrPlural, _ := meta.UnsafeGuessKindToResource(gvk)
+
+	return gvrPlural, nil
 }

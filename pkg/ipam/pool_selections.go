@@ -148,7 +148,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 				pool, err = i.applyThirdControllerAutoPool(ctx, subnetName, poolName, podController, types.AutoPoolProperty{
 					DesiredIPNumber: poolIPNum,
 					IPVersion:       ipVersion,
-					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
+					IsReclaimIPPool: false,
 					IfName:          nic,
 					PodSelector:     nil,
 				})

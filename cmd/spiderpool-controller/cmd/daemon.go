@@ -433,7 +433,6 @@ func setupInformers() {
 			ResyncPeriod:                  time.Duration(controllerContext.Cfg.IPPoolInformerResyncPeriod) * time.Second,
 		},
 		controllerContext.CRDManager.GetClient(),
-		controllerContext.DynamicClient,
 	)
 	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
 	if nil != err {
@@ -445,11 +444,11 @@ func setupInformers() {
 		if err := (&subnetmanager.SubnetController{
 			Client:                  controllerContext.CRDManager.GetClient(),
 			APIReader:               controllerContext.CRDManager.GetAPIReader(),
+			DynamicClient:           controllerContext.DynamicClient,
 			LeaderRetryElectGap:     time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			ResyncPeriod:            time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
 			SubnetControllerWorkers: controllerContext.Cfg.SubnetInformerWorkers,
 			MaxWorkqueueLength:      controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
-			DynamicClient:           controllerContext.DynamicClient,
 		}).SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader); err != nil {
 			logger.Fatal(err.Error())
 		}

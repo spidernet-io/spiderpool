@@ -154,8 +154,6 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 		poolLabels[constant.LabelIPPoolCIDR] = cidrLabelValue
 		if autoPoolProperty.IsReclaimIPPool {
 			poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
-		} else {
-			poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.False
 		}
 		pool.Labels = poolLabels
 		pool.Annotations = poolAnno

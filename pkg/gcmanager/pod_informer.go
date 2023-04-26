@@ -133,7 +133,7 @@ func (s *SpiderGC) onPodDel(obj interface{}) {
 	}
 
 	pod := obj.(*corev1.Pod)
-	logger.Sugar().Debugf("onPodDel: receive pod '%s/%s' deleted event", pod.Namespace, pod.Name)
+	logger.Sugar().Infof("onPodDel: receive pod '%s/%s' deleted event", pod.Namespace, pod.Name)
 	podEntry, err := s.buildPodEntry(nil, pod, true)
 	if nil != err {
 		logger.Sugar().Errorf("onPodDel: failed to build Pod Entry '%s/%s', error: %v", pod.Namespace, pod.Name, err)

@@ -74,7 +74,6 @@ jobs:
           make lint_dockerfile_trivy
 
       - name: Install Cosign
-        if: ${{ env.RUN_PUSH == 'true' }}
         uses: sigstore/cosign-installer@main
         with:
           cosign-release: 'v2.0.1' #do not upgrade, or else go error

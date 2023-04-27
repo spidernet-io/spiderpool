@@ -36,7 +36,7 @@ This test is based on the [CNI Specification](https://www.cni.dev/docs/spec/) `0
 
 | Main CNI            | Main CNI Version | IPAM CNI                  | IPAM CNI Version | Features                                                     |
 | ------------------- | ---------------- | ------------------------- | ---------------- | ------------------------------------------------------------ |
-| macvlan             | `v1.1.1`         | Spiderpool                | `v0.4.0`         | There are multiple IP pools in a cluster, and the IP addresses in each pool can be used by Pods on any Node in the cluster. Competition occurs when multiple Pods in a cluster allocate IP addresses from the same pool. Support hosting the entire lifecycle of an IP pool, synchronizing it with workload creation, scaling, deletion, and reducing concurrency or storage issues caused by overly large shared pools. |
+| macvlan             | `v1.1.1`         | Spiderpool                | `v0.4.1`         | There are multiple IP pools in a cluster, and the IP addresses in each pool can be used by Pods on any Node in the cluster. Competition occurs when multiple Pods in a cluster allocate IP addresses from the same pool. Support hosting the entire lifecycle of an IP pool, synchronizing it with workload creation, scaling, deletion, and reducing concurrency or storage issues caused by overly large shared pools. |
 | macvlan             | `v1.1.1`         | Whereabouts (CRD backend) | `v0.6.1`         | Each Node can define its own available IP pool ranges. If there are duplicate IP addresses defined between Nodes, these IP addresses are promoted as a shared resource. |
 | Kube-OVN (underlay) | `v1.11.3`        | Kube-OVN                  | `v1.11.3`        | IP addresses are organized by Subnet. Each Namespace can belong to a specific Subnet. Pods under the Namespace will automatically obtain IP addresses from the Subnet they belong to. Subnets are also a cluster resource, and the IP addresses of the same Subnet can be distributed on any Node. |
 | Calico              | `v3.23.3`        | calico-ipam (CRD backend) | `v3.23.3`        | Each Node has one or more IP blocks exclusively, and the Pods on each Node only use the IP addresses in the local IP block. There is no competition or conflict between Nodes, and the allocation efficiency is very high. |
@@ -53,11 +53,13 @@ Specifically, we will attempt to create a total of 1000 Pods on the Kubernetes c
 - Create only one Deployment with 1000 replicas.
 - Create 100 Deployments with 10 replicas per Deployment.
 
-Next, we will use the following command to delete these 1000 Pods at once, and record the time it took for all Pods to become `Running` again:
+Then, we will use the following command to delete these 1000 Pods at once, and record the time it took for all Pods to become `Running`:
 
 ```bash
 kubectl get pod | grep "prefix" | awk '{print $1}' | xargs kubectl delete pod
 ```
+
+Next, power down all nodes and then power up, simulate fault recovery, and record the time it took for all Pods to become `Running` again.
 
 Finally, we delete all Deployments and record the time taken for all Pods to completely disappear.
 
@@ -67,44 +69,44 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
 
 - 1 Deployment with 1000 replicas: 
 
-  | CNI                   | Creation | Re-creation | Deletion |
-  | --------------------- | -------- | ----------- | -------- |
-  | macvlan + Spiderpool  | 2m35s    | 9m50s       | 1m50s    |
-  | macvlan + Whereabouts | 25m18s   | failure     | 3m5s     |
-  | Kube-OVN              | 3m55s    | 7m20s       | 2m13s    |
-  | Calico + calico-ipam  | 1m56s    | 4m6s        | 1m36s    |
+  | CNI                   | Creation | Re-creation | Recovery | Deletion |
+  | --------------------- | -------- | ----------- | -------- | -------- |
+  | macvlan + Spiderpool  | 2m35s    | 9m50s       | 3m4s     | 1m50s    |
+  | macvlan + Whereabouts | 25m18s   | failure     | failure  | 3m5s     |
+  | Kube-OVN              | 3m55s    | 7m20s       | 11m6s    | 2m13s    |
+  | Calico + calico-ipam  | 1m56s    | 4m6s        | 3m42s    | 1m36s    |
 
   > During the testing of macvlan + Whereabouts, in the creation scenario, 922 Pods became `Running` at a relatively uniform rate within 14m25s. After that, the growth rate of Pods significantly decreased, and ultimately it took 25m18s for 1000 Pods to become `Running`. As for the re-creation scenario, after 55 Pods became `Running`, Whereabouts basically stopped working, and the time consumption was close to infinity.
 
 - 100 Deployments with 10 replicas: 
 
-  | CNI                   | Creation | Re-creation | Deletion |
-  | --------------------- | -------- | ----------- | -------- |
-  | macvlan + Spiderpool  | 1m37s    | 3m27s       | 1m22s    |
-  | macvlan + Whereabouts | 21m49s   | failure     | 2m9s     |
-  | Kube-OVN              | 4m6s     | 7m46s       | 2m8s     |
-  | Calico + calico-ipam  | 1m57s    | 3m58s       | 1m35s    |
+  | CNI                   | Creation | Re-creation | Recovery | Deletion |
+  | --------------------- | -------- | ----------- | -------- | -------- |
+  | macvlan + Spiderpool  | 1m37s    | 3m27s       | 3m3s     | 1m22s    |
+  | macvlan + Whereabouts | 21m49s   | failure     | failure  | 2m9s     |
+  | Kube-OVN              | 4m6s     | 7m46s       | 10m22s   | 2m8s     |
+  | Calico + calico-ipam  | 1m57s    | 3m58s       | 4m16s    | 1m35s    |
 
 ### IPv4 stack
 
-- 1 Deployment with 1000 replicas : 
+- 1 Deployment with 1000 replicas: 
 
-  | CNI                   | Creation | Re-creation | Deletion |
-  | --------------------- | -------- | ----------- | -------- |
-  | macvlan + Spiderpool  | 2m18s    | 6m41s       | 1m37s    |
-  | macvlan + Whereabouts | 8m16s    | failure     | 2m7s     |
-  | Kube-OVN              | 3m32s    | 7m7s        | 1m47s    |
-  | Calico + calico-ipam  | 1m41s    | 3m33s       | 1m27s    |
+  | CNI                   | Creation | Re-creation | Recovery | Deletion |
+  | --------------------- | -------- | ----------- | -------- | -------- |
+  | macvlan + Spiderpool  | 2m18s    | 6m41s       | 3m1s     | 1m37s    |
+  | macvlan + Whereabouts | 8m16s    | failure     | failure  | 2m7s     |
+  | Kube-OVN              | 3m32s    | 7m7s        | 9m41s    | 1m47s    |
+  | Calico + calico-ipam  | 1m41s    | 3m33s       | 3m42s    | 1m27s    |
 
 
-- 100 Deployments and 10 replicas for each deployment : 
+- 100 Deployments with 10 replicas per Deployment: 
 
-  | CNI                   | Creation | Re-creation | Deletion |
-  | --------------------- | -------- | ----------- | -------- |
-  | macvlan + Spiderpool  | 1m4s     | 3m23s       | 1m23s    |
-  | macvlan + Whereabouts | 8m13s    | failure     | 2m7s     |
-  | Kube-OVN              | 3m36s    | 7m14s       | 1m41s    |
-  | Calico + calico-ipam  | 1m39s    | 3m25s       | 1m27s    |
+  | CNI                   | Creation | Re-creation | Recovery | Deletion |
+  | --------------------- | -------- | ----------- | -------- | -------- |
+  | macvlan + Spiderpool  | 1m4s     | 3m23s       | 3m3s     | 1m23s    |
+  | macvlan + Whereabouts | 8m13s    | failure     | failure  | 2m7s     |
+  | Kube-OVN              | 3m36s    | 7m14s       | 8m52s    | 1m41s    |
+  | Calico + calico-ipam  | 1m39s    | 3m25s       | 4m24s    | 1m27s    |
 
 ## Summary
 

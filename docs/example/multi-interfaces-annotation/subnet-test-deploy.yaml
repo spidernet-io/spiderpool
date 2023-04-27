@@ -24,6 +24,7 @@ spec:
               ]
             }
          ]
+        ipam.spidernet.io/ippool-ip-number: '+1'
         v1.multus-cni.io/default-network: kube-system/macvlan-conf-ens192
         k8s.v1.cni.cncf.io/networks: kube-system/macvlan-conf-ens224
       labels:

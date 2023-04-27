@@ -316,6 +316,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -574,6 +602,20 @@
     <li class="md-nav__item">
       <a href="../gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1031,15 +1073,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1000-deployment" class="md-nav__link">
-    单个 1000 副本的 Deployment
+  <a href="#ipv4ipv6" class="md-nav__link">
+    IPv4/IPv6 双栈
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#100-10-deployment" class="md-nav__link">
-    100 个 10 副本的 Deployment
+  <a href="#ipv4" class="md-nav__link">
+    IPv4 单栈
   </a>
   
 </li>
@@ -1184,7 +1226,7 @@
 <td>macvlan</td>
 <td><code>v1.1.1</code></td>
 <td>Spiderpool</td>
-<td><code>v0.4.0</code></td>
+<td><code>v0.4.1</code></td>
 <td>集群中存在多个 IP 池，每个池中的 IP 地址都可以被集群中的任意一个节点上的 Pod 所使用，当集群中的多个 Pod 并发的从同一个池中分配 IP 地址时，存在竞争。支持托管 IP 池的全生命流程，使其同步的与工作负载创建、扩缩容、删除，弱化了过大的共享池所带来的并发或存储问题。</td>
 </tr>
 <tr>
@@ -1213,7 +1255,7 @@
 <h2 id="_4">方案</h2>
 <p>测试期间，我们会遵循如下约定：</p>
 <ul>
-<li>IPv4/IPv6 双栈场景。</li>
+<li>测试 IPv4 单栈和 IPv4/IPv6 双栈场景。</li>
 <li>测试 underlay IPAM CNI 插件时，尽最大可能的确保可用的 IP 地址数量与 Pod 数量为 <strong>1:1</strong>。例如，接下来我们计划创建 1000 个 Pod，那么应当限制可用的 IPv4/IPv6 地址数量均为 1000 个。</li>
 </ul>
 <p>具体的，我们会尝试以如下两种方式在上述 Kubenetes 集群上来启动总计 1000 个 Pod，并记录所有 Pod 均达到 <code>Running</code> 的耗时：</p>
@@ -1221,18 +1263,23 @@
 <li>仅创建一个 Deployment，其副本数为 1000。</li>
 <li>创建 100 个 Deployment，每个 Deployment 的副本数为 10。</li>
 </ul>
-<p>接下来，我们会使用如下命令一次性的删除这 1000 个 Pod，记录被重建的 1000 个 Pod 再次全部达到 <code>Running</code> 的耗时：</p>
+<p>然后，我们会使用如下命令一次性的删除这 1000 个 Pod，记录被重建的 1000 个 Pod 全部 <code>Running</code> 的耗时：</p>
 <div class="highlight"><pre><span></span><code>kubectl get pod <span class="p">|</span> grep <span class="s2">&quot;prefix&quot;</span> <span class="p">|</span> awk <span class="s1">&#39;{print $1}&#39;</span> <span class="p">|</span> xargs kubectl delete pod
 </code></pre></div>
+<p>接下来，将所有节点下电后再上电，模拟故障恢复，记录 1000 个 Pod 再次达到 <code>Running</code> 的耗时。</p>
 <p>最后，我们删除所有的 Deployment，记录所有 Pod 完全消失的耗时。</p>
 <h2 id="_5">结果</h2>
-<h3 id="1000-deployment">单个 1000 副本的 Deployment</h3>
+<h3 id="ipv4ipv6">IPv4/IPv6 双栈</h3>
+<ul>
+<li>单个 1000 副本的 Deployment：</li>
+</ul>
 <table>
 <thead>
 <tr>
 <th>CNI</th>
 <th>创建</th>
 <th>重建</th>
+<th>故障恢复</th>
 <th>删除</th>
 </tr>
 </thead>
@@ -1241,11 +1288,13 @@
 <td>macvlan + Spiderpool</td>
 <td>2m35s</td>
 <td>9m50s</td>
+<td>3m4s</td>
 <td>1m50s</td>
 </tr>
 <tr>
 <td>macvlan + Whereabouts</td>
 <td>25m18s</td>
+<td>失败</td>
 <td>失败</td>
 <td>3m5s</td>
 </tr>
@@ -1253,12 +1302,14 @@
 <td>Kube-OVN</td>
 <td>3m55s</td>
 <td>7m20s</td>
+<td>11m6s</td>
 <td>2m13s</td>
 </tr>
 <tr>
 <td>Calico + calico-ipam</td>
 <td>1m56s</td>
 <td>4m6s</td>
+<td>3m42s</td>
 <td>1m36s</td>
 </tr>
 </tbody>
@@ -1266,13 +1317,16 @@
 <blockquote>
 <p>在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 <code>Running</code> 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 <code>Running</code> 状态。至于重建的场景，在 55 个 Pod 达到 <code>Running</code> 状态后，Whereabouts 就基本不工作了，耗时类比于正无穷。</p>
 </blockquote>
-<h3 id="100-10-deployment">100 个 10 副本的 Deployment</h3>
+<ul>
+<li>100 个 10 副本的 Deployment：</li>
+</ul>
 <table>
 <thead>
 <tr>
 <th>CNI</th>
 <th>创建</th>
 <th>重建</th>
+<th>故障恢复</th>
 <th>删除</th>
 </tr>
 </thead>
@@ -1281,11 +1335,13 @@
 <td>macvlan + Spiderpool</td>
 <td>1m37s</td>
 <td>3m27s</td>
+<td>3m3s</td>
 <td>1m22s</td>
 </tr>
 <tr>
 <td>macvlan + Whereabouts</td>
 <td>21m49s</td>
+<td>失败</td>
 <td>失败</td>
 <td>2m9s</td>
 </tr>
@@ -1293,13 +1349,104 @@
 <td>Kube-OVN</td>
 <td>4m6s</td>
 <td>7m46s</td>
+<td>10m22s</td>
 <td>2m8s</td>
 </tr>
 <tr>
 <td>Calico + calico-ipam</td>
 <td>1m57s</td>
 <td>3m58s</td>
+<td>4m16s</td>
 <td>1m35s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ipv4">IPv4 单栈</h3>
+<ul>
+<li>单个 1000 副本的 Deployment：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>CNI</th>
+<th>创建</th>
+<th>重建</th>
+<th>故障恢复</th>
+<th>删除</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macvlan + Spiderpool</td>
+<td>2m18s</td>
+<td>6m41s</td>
+<td>3m1s</td>
+<td>1m37s</td>
+</tr>
+<tr>
+<td>macvlan + Whereabouts</td>
+<td>8m16s</td>
+<td>失败</td>
+<td>失败</td>
+<td>2m7s</td>
+</tr>
+<tr>
+<td>Kube-OVN</td>
+<td>3m32s</td>
+<td>7m7s</td>
+<td>9m41s</td>
+<td>1m47s</td>
+</tr>
+<tr>
+<td>Calico + calico-ipam</td>
+<td>1m41s</td>
+<td>3m33s</td>
+<td>3m42s</td>
+<td>1m27s</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>100 个 10 副本的 Deployment：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>CNI</th>
+<th>创建</th>
+<th>重建</th>
+<th>故障恢复</th>
+<th>删除</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macvlan + Spiderpool</td>
+<td>1m4s</td>
+<td>3m23s</td>
+<td>3m3s</td>
+<td>1m23s</td>
+</tr>
+<tr>
+<td>macvlan + Whereabouts</td>
+<td>8m13s</td>
+<td>失败</td>
+<td>失败</td>
+<td>2m7s</td>
+</tr>
+<tr>
+<td>Kube-OVN</td>
+<td>3m36s</td>
+<td>7m14s</td>
+<td>8m52s</td>
+<td>1m41s</td>
+</tr>
+<tr>
+<td>Calico + calico-ipam</td>
+<td>1m39s</td>
+<td>3m25s</td>
+<td>4m24s</td>
+<td>1m27s</td>
 </tr>
 </tbody>
 </table>

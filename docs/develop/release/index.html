@@ -316,6 +316,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -574,6 +602,20 @@
     <li class="md-nav__item">
       <a href="../../usage/gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1097,7 +1139,18 @@
 
 <h1 id="workflow-for-release">workflow for release</h1>
 <h2 id="pre-steps">pre-steps</h2>
-<p>submit a PR , which should modify version in 'VERSION' and 'charts/spiderpool/Chart.yaml'</p>
+<ul>
+<li>update 'version' and 'appVersion' filed in 'charts/*/Chart.yaml'</li>
+<li>update version in '/VERSION'</li>
+<li>a version tag should be set on right branch. The version should go with </li>
+<li>v0.1.0-rc0</li>
+<li>v0.1.0-rc1</li>
+<li>v0.1.0</li>
+<li>v0.1.1</li>
+<li>v0.1.2</li>
+<li>v0.2.0-rc0</li>
+<li>v0.2.0</li>
+</ul>
 <h2 id="push-a-version-tag">push a version tag</h2>
 <p>If a tag vx.x.x is pushed , the following steps will automatically run:</p>
 <ol>

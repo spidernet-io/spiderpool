@@ -380,6 +380,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -638,6 +666,20 @@
     <li class="md-nav__item">
       <a href="../gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1134,6 +1176,9 @@ weave-net-vhmqx                         <span class="m">2</span>/2     Running  
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 helm install spiderpool spiderpool/spiderpool --namespace kube-system 
 </code></pre></div>
+<blockquote>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+</blockquote>
 <p>Wait for Pod Running and create a subnet for Pod (SpiderSubnet):</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
@@ -1143,11 +1188,9 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 <span class="s">  labels:  </span>
 <span class="s">    ipam.spidernet.io/subnet-cidr: 10-32-0-0-12</span>
 <span class="s">spec:</span>
-<span class="s">  ipVersion: 4</span>
 <span class="s">  ips:</span>
 <span class="s">  - 10.32.0.100-10.32.50.200</span>
 <span class="s">  subnet: 10.32.0.0/12</span>
-<span class="s">  vlan: 0</span>
 <span class="s">EOF</span>
 </code></pre></div>
 <blockquote>

@@ -415,6 +415,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -673,6 +701,20 @@
     <li class="md-nav__item">
       <a href="../gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1181,7 +1223,7 @@
 
 <h1 id="sriov-quick-start">SRIOV Quick Start</h1>
 <p><strong>English</strong> | <a href="../get-started-sriov-zh_CN/"><strong>简体中文</strong></a></p>
-<p>Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan</a>, <a href="https://github.com/spidernet-io/plugins">Veth</a>, and <a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a>, which meets the following kinds of requirements:</p>
+<p>Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">Sriov</a>, <a href="https://github.com/spidernet-io/plugins">Veth</a>, and <a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a>, which meets the following kinds of requirements:</p>
 <ul>
 <li>
 <p>Applications can be assigned static Underlay IP addresses through simple operations.</p>
@@ -1364,12 +1406,14 @@ cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
-<p>Install Spiderpool CRD</p>
+<p>Install Spiderpool.</p>
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system <span class="se">\</span>
-    --set feature.enableIPv4<span class="o">=</span><span class="nb">true</span> --set feature.enableIPv6<span class="o">=</span><span class="nb">false</span> 
+helm install spiderpool spiderpool/spiderpool --namespace kube-system
 </code></pre></div>
+<blockquote>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+</blockquote>
 </li>
 <li>
 <p>Create a SpiderSubnet instance.</p>
@@ -1381,12 +1425,10 @@ Here is an example of creating a SpiderSubnet instance:：</p>
 <span class="s">metadata:</span>
 <span class="s">  name: subnet-test</span>
 <span class="s">spec:</span>
-<span class="s">  ipVersion: 4</span>
 <span class="s">  ips:</span>
 <span class="s">  - &quot;10.20.168.190-10.20.168.199&quot;</span>
 <span class="s">  subnet: 10.20.0.0/16</span>
 <span class="s">  gateway: 10.20.0.1</span>
-<span class="s">  vlan: 0</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>

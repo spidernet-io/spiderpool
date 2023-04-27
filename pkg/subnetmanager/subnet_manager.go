@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
@@ -120,14 +121,19 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 		if nil != err {
 			return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec IPs %s: %v", constant.ErrWrongInput, pool.Name, pool.Spec.IPs, err)
 		}
-		if len(poolIPs) == autoPoolProperty.DesiredIPNumber {
+		if len(poolIPs) == autoPoolProperty.DesiredIPNumber && pool.Labels[constant.LabelIPPoolOwnerApplicationUID] == string(podController.UID) {
 			log.Sugar().Debugf("Auto-created IPPool %s matches the desired IP number %d, no need to reconcile", pool.Name, autoPoolProperty.DesiredIPNumber)
 			return pool, nil
 		}
+
+		// refresh the label "ipam.spidernet.io/owner-application-uid"
+		labels := pool.GetLabels()
+		labels[constant.LabelIPPoolOwnerApplicationUID] = string(podController.UID)
+		pool.SetLabels(labels)
 	} else {
 		pool = &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: applicationinformers.SubnetPoolName(podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),
+				Name: applicationinformers.AutoPoolName(podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),
 			},
 			Spec: spiderpoolv2beta1.IPPoolSpec{
 				IPVersion:   pointer.Int64(autoPoolProperty.IPVersion),
@@ -135,30 +141,36 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 				Gateway:     subnet.Spec.Gateway,
 				Vlan:        subnet.Spec.Vlan,
 				Routes:      subnet.Spec.Routes,
-				PodAffinity: autoPoolProperty.PodSelector,
+				PodAffinity: ippoolmanager.NewAutoPoolPodAffinity(podController),
 			},
 		}
 
-		poolLabels := map[string]string{
-			constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
-			constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+		{
+			poolLabels := map[string]string{
+				constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
+				constant.LabelIPPoolOwnerApplication:    applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
+				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
+				constant.LabelIPPoolInterface:           autoPoolProperty.IfName,
+			}
+			// label IPPoolCIDR
+			cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*pool.Spec.IPVersion, pool.Spec.Subnet)
+			if nil != err {
+				return nil, fmt.Errorf("failed to parse '%s' when allocating empty Auto-created IPPool '%v'", pool.Spec.Subnet, pool)
+			}
+			poolLabels[constant.LabelIPPoolCIDR] = cidrLabelValue
+			if autoPoolProperty.IsReclaimIPPool {
+				poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
+			} else {
+				poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.False
+			}
+			// label IPVersion
+			if autoPoolProperty.IPVersion == constant.IPv4 {
+				poolLabels[constant.LabelIPPoolIPVersion] = constant.LabelValueIPVersionV4
+			} else {
+				poolLabels[constant.LabelIPPoolIPVersion] = constant.LabelValueIPVersionV6
+			}
+			pool.Labels = poolLabels
 		}
-		poolAnno := map[string]string{
-			constant.AnnoSpiderSubnetPoolApp: applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
-		}
-
-		cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*pool.Spec.IPVersion, pool.Spec.Subnet)
-		if nil != err {
-			return nil, fmt.Errorf("failed to parse '%s' when allocating empty Auto-created IPPool '%v'", pool.Spec.Subnet, pool)
-		}
-		poolLabels[constant.LabelIPPoolCIDR] = cidrLabelValue
-		if autoPoolProperty.IsReclaimIPPool {
-			poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
-		} else {
-			poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.False
-		}
-		pool.Labels = poolLabels
-		pool.Annotations = poolAnno
 
 		// set owner reference
 		err = ctrl.SetControllerReference(subnet, pool, sm.client.Scheme())

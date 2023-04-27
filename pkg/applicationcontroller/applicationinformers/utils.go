@@ -37,31 +37,67 @@ var errInvalidInput = func(str string) error {
 	return fmt.Errorf("invalid input '%s'", str)
 }
 
-func SubnetPoolName(controllerName string, ipVersion types.IPVersion, ifName string, controllerUID apitypes.UID) string {
+const (
+	maxNameLength = 63
+	randomLength  = 5
+)
+
+func AutoPoolName(controllerName string, ipVersion types.IPVersion, ifName string, appUID apitypes.UID) string {
 	// the format of uuid is "xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 	// ref: https://github.com/google/uuid/blob/44b5fee7c49cf3bcdf723f106b36d56ef13ccc88/uuid.go#L185
-	splits := strings.Split(string(controllerUID), "-")
+	splits := strings.Split(string(appUID), "-")
 	lastOne := splits[len(splits)-1]
+	// we constrain the max random length to 5
+	if len(lastOne) > randomLength {
+		lastOne = lastOne[:randomLength]
+	}
 
-	return fmt.Sprintf("auto-%s-v%d-%s-%s", strings.ToLower(controllerName), ipVersion, ifName, strings.ToLower(lastOne))
+	// 7 means "auto${IPVersion}" prefix and 2 bound symbol "-" length
+	maxCustomNameLength := maxNameLength - len(lastOne) - 7
+	if len(controllerName+ifName) > maxCustomNameLength {
+		controllerName = controllerName[:maxCustomNameLength-len(ifName)]
+	}
+
+	return fmt.Sprintf("auto%d-%s-%s-%s", ipVersion, strings.ToLower(controllerName), strings.ToLower(ifName), strings.ToLower(lastOne))
 }
 
 // ApplicationNamespacedName will joint the application apiVersion, application type, namespace and name as a string, then we need unpack it for tracing
 // [ns and object name constraint Ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 // We set format is "{apiVersion}:{appKind}:{appNS}:{appName}"
 func ApplicationNamespacedName(appNamespacedName types.AppNamespacedName) string {
-	return fmt.Sprintf("%s:%s:%s:%s", appNamespacedName.APIVersion, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
+	// Kubernetes API Group might be empty, ref: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#api-versions
+	first, second, hasGroup := strings.Cut(appNamespacedName.APIVersion, "/")
+	if hasGroup {
+		return fmt.Sprintf("%s_%s_%s_%s_%s", first, second, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
+	}
+
+	return fmt.Sprintf("%s_%s_%s_%s", first, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
 }
 
 // ParseApplicationNamespacedName will unpack the appNamespacedNameKey, its corresponding function is ApplicationNamespacedName
 func ParseApplicationNamespacedName(appNamespacedNameKey string) (appNamespacedName types.AppNamespacedName, isMatch bool) {
-	split := strings.Split(appNamespacedNameKey, ":")
+	split := strings.Split(appNamespacedNameKey, "_")
+
+	// no API Group
 	if len(split) == 4 {
 		return types.AppNamespacedName{
-			APIVersion: split[0],
-			Kind:       split[1],
-			Namespace:  split[2],
-			Name:       split[3],
+			APIVersion: schema.GroupVersion{
+				Group:   "",
+				Version: split[0],
+			}.String(),
+			Kind:      split[1],
+			Namespace: split[2],
+			Name:      split[3],
+		}, true
+	} else if len(split) == 5 {
+		return types.AppNamespacedName{
+			APIVersion: schema.GroupVersion{
+				Group:   split[0],
+				Version: split[1],
+			}.String(),
+			Kind:      split[2],
+			Namespace: split[3],
+			Name:      split[4],
 		}, true
 	}
 

@@ -177,7 +177,6 @@ func (s *SpiderGC) Health() bool {
 	defer cancelFunc()
 
 	if s.leader.IsElected() {
-		logger.Debug("try to check pod informer cache sync")
 		if s.informerFactory == nil {
 			logger.Warn("the IP-GC manager pod informer is not ready")
 			return false

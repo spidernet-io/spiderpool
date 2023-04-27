@@ -1762,7 +1762,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					autoPool := ipPoolT.DeepCopy()
-					autoPool.Annotations = map[string]string{constant.AnnoSpiderSubnetPoolApp: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+					autoPool.Labels = map[string]string{constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
 						APIVersion: appsv1.SchemeGroupVersion.String(),
 						Kind:       constant.KindDeployment,
 						Namespace:  autoPool.Namespace,
@@ -1776,7 +1776,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
 						IPs:         []string{"172.18.40.1"},
-						Application: pointer.String(autoPool.Annotations[constant.AnnoSpiderSubnetPoolApp]),
+						Application: pointer.String(autoPool.Labels[constant.LabelIPPoolOwnerApplication]),
 					}}
 					subnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(poolIPPreAllocations)
 					Expect(err).NotTo(HaveOccurred())
@@ -1799,7 +1799,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					autoPool := ipPoolT.DeepCopy()
-					autoPool.Annotations = map[string]string{constant.AnnoSpiderSubnetPoolApp: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+					autoPool.Labels = map[string]string{constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
 						APIVersion: appsv1.SchemeGroupVersion.String(),
 						Kind:       constant.KindDeployment,
 						Namespace:  autoPool.Namespace,
@@ -1813,7 +1813,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
 						IPs:         []string{"172.18.40.1"},
-						Application: pointer.String(autoPool.Annotations[constant.AnnoSpiderSubnetPoolApp]),
+						Application: pointer.String(autoPool.Labels[constant.LabelIPPoolOwnerApplication]),
 					}}
 					subnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(poolIPPreAllocations)
 					Expect(err).NotTo(HaveOccurred())
@@ -1824,6 +1824,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 					newAutoPool := autoPool.DeepCopy()
 					anno := newAutoPool.GetAnnotations()
+					if anno == nil {
+						anno = make(map[string]string)
+					}
 					anno["aaa"] = "test"
 					newAutoPool.Annotations = anno
 

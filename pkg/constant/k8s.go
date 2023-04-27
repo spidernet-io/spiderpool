@@ -61,14 +61,26 @@ const (
 	AnnoSpiderSubnets             = AnnotationPre + "/subnets"
 	AnnoSpiderSubnetPoolIPNumber  = AnnotationPre + "/ippool-ip-number"
 	AnnoSpiderSubnetReclaimIPPool = AnnotationPre + "/ippool-reclaim"
-	AnnoSpiderSubnetPoolApp       = AnnotationPre + "/application"
 
-	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
-	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
 	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
+	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
+	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"
+	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
+	LabelIPPoolInterface           = AnnotationPre + "/interface"
+	LabelIPPoolIPVersion           = AnnotationPre + "/ip-version"
+	LabelValueIPVersionV4          = "IPv4"
+	LabelValueIPVersionV6          = "IPv6"
 
 	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"
+
+	// auto pool special pod affinity matchLabels key
+	AutoPoolPodAffinityAppPrefix     = AnnotationPre
+	AutoPoolPodAffinityAppAPIGroup   = AutoPoolPodAffinityAppPrefix + "/app-api-group"
+	AutoPoolPodAffinityAppAPIVersion = AutoPoolPodAffinityAppPrefix + "/app-api-version"
+	AutoPoolPodAffinityAppKind       = AutoPoolPodAffinityAppPrefix + "/app-kind"
+	AutoPoolPodAffinityAppNS         = AutoPoolPodAffinityAppPrefix + "/app-namespace"
+	AutoPoolPodAffinityAppName       = AutoPoolPodAffinityAppPrefix + "/app-name"
 )
 
 const (

@@ -366,10 +366,10 @@ func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spi
 
 	if pool.Status.AllocatedIPs == nil {
 		// unpack the IPPool corresponding application type,namespace and name
-		appNamespacedNameStr := pool.Annotations[constant.AnnoSpiderSubnetPoolApp]
+		appNamespacedNameStr := poolLabels[constant.LabelIPPoolOwnerApplication]
 		appNamespacedName, isMatch := applicationinformers.ParseApplicationNamespacedName(appNamespacedNameStr)
 		if !isMatch {
-			return fmt.Errorf("%w: invalid IPPool annotation '%s' value '%s'", constant.ErrWrongInput, constant.AnnoSpiderSubnetPoolApp, appNamespacedNameStr)
+			return fmt.Errorf("%w: invalid IPPool label '%s' value '%s'", constant.ErrWrongInput, constant.LabelIPPoolOwnerApplication, appNamespacedNameStr)
 		}
 
 		enableDelete := false

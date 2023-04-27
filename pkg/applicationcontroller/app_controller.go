@@ -609,7 +609,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 	var app metav1.Object
 	var subnetConfig *types.PodSubnetAnnoConfig
 	var podAnno map[string]string
-	var podSelector *metav1.LabelSelector
 	var appReplicas int
 	var apiVersion string
 
@@ -625,7 +624,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		}
 
 		podAnno = deployment.Spec.Template.Annotations
-		podSelector = deployment.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(deployment.Spec.Replicas)
 		app = deployment.DeepCopy()
 		// deployment.APIVersion is empty string
@@ -642,7 +640,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		}
 
 		podAnno = replicaSet.Spec.Template.Annotations
-		podSelector = replicaSet.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(replicaSet.Spec.Replicas)
 		app = replicaSet.DeepCopy()
 		// replicaSet.APIVersion is empty string
@@ -659,7 +656,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		}
 
 		podAnno = daemonSet.Spec.Template.Annotations
-		podSelector = daemonSet.Spec.Selector
 		appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
 		app = daemonSet.DeepCopy()
 		// daemonSet.APIVersion is empty string
@@ -676,7 +672,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		}
 
 		podAnno = statefulSet.Spec.Template.Annotations
-		podSelector = statefulSet.Spec.Selector
 		appReplicas = applicationinformers.GetAppReplicas(statefulSet.Spec.Replicas)
 		app = statefulSet.DeepCopy()
 		// statefulSet.APIVersion is empty string
@@ -693,7 +688,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		}
 
 		podAnno = job.Spec.Template.Annotations
-		podSelector = job.Spec.Selector
 		appReplicas = applicationinformers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
 		app = job.DeepCopy()
 		// job.APIVersion is empty string
@@ -710,7 +704,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 		}
 
 		podAnno = cronJob.Spec.JobTemplate.Spec.Template.Annotations
-		podSelector = cronJob.Spec.JobTemplate.Spec.Selector
 		appReplicas = applicationinformers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
 		app = cronJob.DeepCopy()
 		// cronJob.APIVersion is empty string
@@ -738,7 +731,6 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 			UID: app.GetUID(),
 			APP: app,
 		},
-		podSelector,
 		appReplicas)
 	if nil != err {
 		return fmt.Errorf("failed to create or scale IPPool: %w", err)
@@ -749,18 +741,49 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 // applyAutoIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
 func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig,
-	podController types.PodTopController, podSelector *metav1.LabelSelector, appReplicas int) error {
+	podController types.PodTopController, appReplicas int) error {
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
-	fn := func(poolName string, subnetName string, ipVersion types.IPVersion, ifName string) (err error) {
-		tmpPool := &spiderpoolv2beta1.SpiderIPPool{}
-		err = sac.apiReader.Get(ctx, k8types.NamespacedName{Name: poolName}, tmpPool)
+	fn := func(subnetName string, ipVersion types.IPVersion, ifName string) error {
+		var ipVersionStr string
+		if ipVersion == constant.IPv4 {
+			ipVersionStr = constant.LabelValueIPVersionV4
+		} else {
+			ipVersionStr = constant.LabelValueIPVersionV6
+		}
+
+		var tmpPool *spiderpoolv2beta1.SpiderIPPool
+		tmpPoolList := &spiderpoolv2beta1.SpiderIPPoolList{}
+		matchLabels := client.MatchingLabels{
+			constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
+			constant.LabelIPPoolOwnerApplication:  applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
+			constant.LabelIPPoolIPVersion:         ipVersionStr,
+			constant.LabelIPPoolInterface:         ifName,
+		}
+
+		err := sac.apiReader.List(ctx, tmpPoolList, matchLabels)
 		if nil != err {
-			if apierrors.IsNotFound(err) {
-				tmpPool = nil
-			} else {
-				return fmt.Errorf("failed to get auto-created IPPool '%s': %w", poolName, err)
+			return fmt.Errorf("failed to get auto-created IPPoolList with matchLabels %v, error: %w", matchLabels, err)
+		}
+
+		if len(tmpPoolList.Items) == 0 {
+			tmpPool = nil
+		} else {
+			for i := range tmpPoolList.Items {
+				// We need to ignore the previous same NamespacedName application corresponding auto-created IPPool.
+				// Because this auto-created IPPool will be deleted by the system with 'ippool-reclaim'
+				labels := tmpPoolList.Items[i].GetLabels()
+				if labels[constant.LabelIPPoolReclaimIPPool] == constant.True && labels[constant.LabelIPPoolOwnerApplicationUID] != string(podController.UID) {
+					log.Sugar().Debugf("found the previous same app auto-created IPPool %s", tmpPoolList.Items[i].Name)
+					continue
+				}
+
+				// If 'ippool-reclaim' is true, we'll go to scale the auto-created IPPool because of the same application UID.
+				// If 'ippool-reclaim' is false, we'll reuse this auto-crated IPPool and refresh its application UID label.
+				tmpPool = tmpPoolList.Items[i].DeepCopy()
+				log.Sugar().Debugf("found reuse app auto-created IPPool %s", tmpPool.Name)
+				break
 			}
 		}
 
@@ -771,17 +794,19 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			desiredIPNumber = podSubnetConfig.AssignIPNum
 		}
 
-		log.Sugar().Infof("try to reconcile auto-created IPPool %s", poolName)
-
-		_, err = sac.subnetMgr.ReconcileAutoIPPool(ctx, tmpPool.DeepCopy(), subnetName, podController, types.AutoPoolProperty{
+		log.Sugar().Infof("try to reconcile auto-created IPv%d IPPool for Interface %s by SpiderSubnet %s with application controller %v",
+			ipVersion, ifName, subnetName, podController.AppNamespacedName)
+		_, err = sac.subnetMgr.ReconcileAutoIPPool(ctx, tmpPool, subnetName, podController, types.AutoPoolProperty{
 			DesiredIPNumber: desiredIPNumber,
 			IPVersion:       ipVersion,
 			IsReclaimIPPool: podSubnetConfig.ReclaimIPPool,
 			IfName:          ifName,
-			PodSelector:     podSelector,
 		})
+		if nil != err {
+			return err
+		}
 
-		return
+		return nil
 	}
 
 	processNext := func(item types.AnnoSubnetItem) error {
@@ -798,19 +823,14 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
-				v4PoolName := applicationinformers.SubnetPoolName(podController.Name, constant.IPv4, item.Interface, podController.UID)
-				errV4 = fn(v4PoolName, item.IPv4[0], constant.IPv4, item.Interface)
+				errV4 = fn(item.IPv4[0], constant.IPv4, item.Interface)
 			}()
 		}
-
 		if sac.EnableIPv6 && len(item.IPv6) != 0 {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
-				v6PoolName := applicationinformers.SubnetPoolName(podController.Name, constant.IPv6, item.Interface, podController.UID)
-				errV6 = fn(v6PoolName, item.IPv6[0], constant.IPv6, item.Interface)
+				errV6 = fn(item.IPv6[0], constant.IPv6, item.Interface)
 			}()
 		}
 

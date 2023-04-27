@@ -108,7 +108,7 @@ jobs:
           COSIGN_EXPERIMENTAL: "true"
         run: |
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
-          cosign sign -y ${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
+          cosign sign -y ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
 
       - name: Generate SBOM
         shell: bash
@@ -118,18 +118,18 @@ jobs:
           #chmod +x  ./bom
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
           #./bom generate -o ${{ matrix.name }}_${DIGEST}.spdx \
-          #      --image=${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ env.RUN_IMAGE_TAG }}@${DIGEST}
+          #      --image=${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ env.RUN_IMAGE_TAG }}@${DIGEST}
           wget https://github.com/anchore/syft/releases/download/v0.77.0/syft_0.77.0_linux_amd64.tar.gz
           tar xzvf syft_0.77.0_linux_amd64.tar.gz
           chmod +x syft
-          ./syft -o spdx ${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST} > ${{ matrix.name }}_${DIGEST}.spdx
+          ./syft -o spdx ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST} > ${{ matrix.name }}_${DIGEST}.spdx
 
       - name: Attach SBOM to Container Images
         run: |
           set -x
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
           cosign attach sbom --sbom ${{ matrix.name }}_${DIGEST}.spdx  \
-                ${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
+                ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
 
       - name: Sign SBOM Images
         env:
@@ -137,9 +137,9 @@ jobs:
         run: |
           set -x
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
-          image_name="${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${DIGEST/:/-}.sbom"
+          image_name="${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${DIGEST/:/-}.sbom"
           sbom_digest="sha256:$(docker buildx imagetools inspect --raw ${image_name} | sha256sum | head -c 64)"
-          cosign sign -y "${{ env.ONLINE_REGISTER }}/${{ github.repository }}-${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${sbom_digest}"
+          cosign sign -y "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${sbom_digest}"
 
       - name: Image Release Digest
         shell: bash

@@ -66,7 +66,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	k8sArgs := K8sArgs{}
 	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		err := fmt.Errorf("failed to load CNI ENV args: %v", err)
+		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
 		logger.Error(err.Error())
 		return err
 	}
@@ -80,7 +80,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IPAMUnixSocketPath)
 	if nil != err {
-		err := fmt.Errorf("failed to create spiderpool-agent client: %v", err)
+		err := fmt.Errorf("failed to create spiderpool-agent client: %w", err)
 		logger.Error(err.Error())
 		return err
 	}

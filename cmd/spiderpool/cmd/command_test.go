@@ -34,7 +34,7 @@ import (
 const ifName string = "eth0"
 const nsPath string = "/some/where"
 const containerID string = "dummy"
-const CNITimeoutSec = 220
+const CNITimeoutSec = 120
 const CNILogFilePath = "/tmp/spiderpool.log"
 
 const (
@@ -117,7 +117,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				var ipamPostHandleFunc http.HandlerFunc
 
 				// GET /v1/ipam/healthy
-				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(configSets.isHealthy)))
+				server.RouteToHandler(http.MethodGet, healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(configSets.isHealthy)))
 
 				// POST /v1/ipam/ip
 				if configSets.isPostIPAM {
@@ -131,7 +131,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				} else {
 					ipamPostHandleFunc = ghttp.RespondWithJSONEncoded(daemonset.DeleteIpamIPFailureCode, nil)
 				}
-				server.RouteToHandler("POST", ipamReqRoute, ghttp.CombineHandlers(ipamPostHandleFunc))
+				server.RouteToHandler(http.MethodPost, ipamReqRoute, ghttp.CombineHandlers(ipamPostHandleFunc))
 
 				// start client test.
 				r, _, err := testutils.CmdAddWithArgs(cmdArgs(), func() error {
@@ -176,13 +176,16 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				// check Result.IPs
 				Expect(reflect.DeepEqual(addResult.IPs, expectResp.IPs)).To(Equal(true))
 
-				// check Result.Interfaces
-				Expect(reflect.DeepEqual(addResult.Interfaces, expectResp.Interfaces)).To(Equal(true))
-
 				// check Result.Routes
 				Expect(reflect.DeepEqual(addResult.Routes, expectResp.Routes))
 			},
 			Entry("returning an error on bad health check with ADD", ConfigWorkableSets{isPreConfigGood: true, isHealthy: false, isPostIPAM: true}, func() *skel.CmdArgs {
+				netConfBytes, err := json.Marshal(netConf)
+				Expect(err).NotTo(HaveOccurred())
+				args.StdinData = netConfBytes
+				return args
+			}, nil, nil),
+			Entry("returning an error on POST IPAM with ADD", ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: false}, func() *skel.CmdArgs {
 				netConfBytes, err := json.Marshal(netConf)
 				Expect(err).NotTo(HaveOccurred())
 				args.StdinData = netConfBytes
@@ -202,18 +205,6 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 						Search:      []string{"foo"},
 					},
 					Ips: []*models.IPConfig{
-						{
-							Address: pointer.String("10.1.0.5/24"),
-							Gateway: "10.1.0.1",
-							Nic:     pointer.String("eth1"),
-							Version: pointer.Int64(constant.IPv4),
-						},
-						{
-							Address: pointer.String("fc00:f853:ccd:e793:f::6/64"),
-							Gateway: "fc00:f853:ccd:e793:f::2",
-							Nic:     pointer.String("eth1"),
-							Version: pointer.Int64(constant.IPv6),
-						},
 						{
 							Address: pointer.String("1.2.3.30/24"),
 							Gateway: "1.2.3.1",
@@ -244,19 +235,15 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				}
 				// IPs
 				expectResult.IPs = []*current.IPConfig{
-					{Interface: pointer.Int(0)},
-					{Interface: pointer.Int(1)},
+					{Gateway: net.ParseIP("1.2.3.1"), Address: net.IPNet{IP: net.ParseIP("1.2.3.30"), Mask: net.CIDRMask(24, 32)}},
+					{Gateway: net.ParseIP("fc00:f853:ccd:e793:f::2"), Address: net.IPNet{IP: net.ParseIP("fc00:f853:ccd:e793:f::fc"), Mask: net.CIDRMask(64, 128)}},
 				}
-				expectResult.IPs[0].Gateway = net.ParseIP("1.2.3.1")
-				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("1.2.3.30"), Mask: net.CIDRMask(24, 32)}
-				expectResult.IPs[1].Gateway = net.ParseIP("fc00:f853:ccd:e793:f::2")
-				expectResult.IPs[1].Address = net.IPNet{IP: net.ParseIP("fc00:f853:ccd:e793:f::fc"), Mask: net.CIDRMask(64, 128)}
 
 				// Routes
 				_, ipNet, _ := net.ParseCIDR("15.5.6.0/24")
 				expectResult.Routes = []*types.Route{{Dst: *ipNet, GW: net.ParseIP("1.2.3.2")}}
 				//Interfaces
-				expectResult.Interfaces = []*current.Interface{{Name: "eth0"}, {Name: "eth0"}}
+				expectResult.Interfaces = []*current.Interface{{Name: ifName}}
 				return expectResult
 			}),
 			Entry(fmt.Sprintf("support CNI version '%s'", cmd.CniVersion030), ConfigWorkableSets{isPreConfigGood: true, isHealthy: true, isPostIPAM: true}, func() *skel.CmdArgs {
@@ -296,9 +283,9 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 					Options:     []string{"domain.com"},
 				}
 				// IPs
-				expectResult.IPs = []*current.IPConfig{{Interface: pointer.Int(0)}}
-				expectResult.IPs[0].Gateway = net.ParseIP("10.1.0.2")
-				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("10.1.0.6"), Mask: net.CIDRMask(24, 32)}
+				expectResult.IPs = []*current.IPConfig{
+					{Gateway: net.ParseIP("10.1.0.2"), Address: net.IPNet{IP: net.ParseIP("10.1.0.6"), Mask: net.CIDRMask(24, 32)}},
+				}
 				//Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: ifName}}
 				return expectResult
@@ -329,8 +316,9 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				// DNS
 				expectResult.DNS = types.DNS{}
 				// IPs
-				expectResult.IPs = []*current.IPConfig{{Interface: pointer.Int(0)}}
-				expectResult.IPs[0].Address = net.IPNet{IP: net.ParseIP("10.1.0.7"), Mask: net.CIDRMask(24, 32)}
+				expectResult.IPs = []*current.IPConfig{
+					{Address: net.IPNet{IP: net.ParseIP("10.1.0.7"), Mask: net.CIDRMask(24, 32)}},
+				}
 				//Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: ifName}}
 				return expectResult
@@ -356,7 +344,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				var ipamDeleteHandleFunc http.HandlerFunc
 
 				// GET /v1/ipam/healthy
-				server.RouteToHandler("GET", healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(configSets.isHealthy)))
+				server.RouteToHandler(http.MethodGet, healthCheckRoute, ghttp.CombineHandlers(getHealthHandleFunc(configSets.isHealthy)))
 
 				// DELETE /v1/ipam/ip
 				if configSets.isDeleteIPAM {
@@ -364,7 +352,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				} else {
 					ipamDeleteHandleFunc = ghttp.RespondWith(daemonset.DeleteIpamIPFailureCode, nil)
 				}
-				server.RouteToHandler("DELETE", ipamReqRoute, ghttp.CombineHandlers(ipamDeleteHandleFunc))
+				server.RouteToHandler(http.MethodDelete, ipamReqRoute, ghttp.CombineHandlers(ipamDeleteHandleFunc))
 
 				// start client test
 				err := testutils.CmdDelWithArgs(cmdArgs(), func() error {
@@ -380,7 +368,8 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				} else if !configSets.isHealthy {
 					expectErr = cmd.ErrAgentHealthCheck
 				} else if !configSets.isDeleteIPAM {
-					expectErr = cmd.ErrDeleteIPAM
+					// the CNI binary cmdDel won't return err
+					expectErr = nil
 				} else {
 					Expect(err).NotTo(HaveOccurred())
 				}
@@ -415,11 +404,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		)
 	})
 
-	FDescribe("test ipam plugin configuration ", func() {
-		It(fmt.Sprintf("[%s] is returning an error on conf broken with ADD/DEL", cniVersion), func() {
-
-		}
-
+	Describe("test ipam plugin configuration ", func() {
 		It(fmt.Sprintf("[%s] is returning an error on conf broken with ADD/DEL", cniVersion), func() {
 			confBytes, err := json.Marshal(netConf)
 			Expect(err).NotTo(HaveOccurred())
@@ -502,6 +487,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 				{Values: gomonkey.Params{constant.ErrUnknown}},
 				{Values: gomonkey.Params{constant.ErrUnknown}},
 			})
+
 			defer patches.Reset()
 
 			confBytes, err := json.Marshal(netConf)

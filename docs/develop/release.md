@@ -2,7 +2,25 @@
 
 ## pre-steps
 
-submit a PR , which should modify version in 'VERSION' and 'charts/spiderpool/Chart.yaml'
+* update 'version' and 'appVersion' filed in 'charts/*/Chart.yaml'
+
+* update version in '/VERSION'
+
+* a version tag should be set on right branch. The version should go with 
+
+    * v0.1.0-rc0
+
+    * v0.1.0-rc1
+
+    * v0.1.0
+  
+    * v0.1.1
+  
+    * v0.1.2
+  
+    * v0.2.0-rc0
+  
+    * v0.2.0
 
 ## push a version tag
 

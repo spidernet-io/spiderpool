@@ -394,6 +394,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -652,6 +680,20 @@
     <li class="md-nav__item">
       <a href="../gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1248,12 +1290,14 @@ cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
-<p>Install Spiderpool CRD.</p>
+<p>Install Spiderpool.</p>
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system <span class="se">\</span>
-    --set feature.enableIPv4<span class="o">=</span><span class="nb">true</span> --set feature.enableIPv6<span class="o">=</span><span class="nb">false</span> 
+helm install spiderpool spiderpool/spiderpool --namespace kube-system
 </code></pre></div>
+<blockquote>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+</blockquote>
 </li>
 <li>
 <p>Create a SpiderSubnet instance.</p>
@@ -1265,12 +1309,10 @@ Here is an example of creating a SpiderSubnet instance:：</p>
 <span class="s">metadata:</span>
 <span class="s">  name: subnet-test</span>
 <span class="s">spec:</span>
-<span class="s">  ipVersion: 4</span>
 <span class="s">  ips:</span>
 <span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
 <span class="s">  subnet: 172.18.0.0/16</span>
 <span class="s">  gateway: 172.18.0.1</span>
-<span class="s">  vlan: 0</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>

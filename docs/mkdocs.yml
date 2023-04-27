@@ -47,6 +47,8 @@ nav:
       - Calico CNI: usage/get-started-calico.md
       - Weave CNI: usage/get-started-weave.md
       - Multus CNI: usage/multi-interfaces-annotation.md
+      - Kind: usage/get-started-kind.md
+      - Ovs CNI: usage/get-started-ovs.md
   - Installation:
       - Installation: usage/install.md
       - Upgrading: usage/upgrade.md
@@ -63,6 +65,7 @@ nav:
       - Reserved IP: usage/reserved-ip.md
       - Third-party controllers: usage/third-party-controller.md
       - Reclaim IP: usage/gc.md
+      - Route support: usage/route.md
       - Spiderpool Performance Testing: usage/performance.md
       - FAQ: usage/debug.md
   - Concepts:

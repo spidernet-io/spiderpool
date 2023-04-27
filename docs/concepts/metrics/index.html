@@ -316,6 +316,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -574,6 +602,20 @@
     <li class="md-nav__item">
       <a href="../../usage/gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1195,6 +1237,11 @@ And spiderpool metrics provide the insight of Spiderpool Agent and Spiderpool Co
 <td>false</td>
 </tr>
 <tr>
+<td>SPIDERPOOL_ENABLED_DEBUG_METRIC</td>
+<td>enable debug level metrics</td>
+<td>false</td>
+</tr>
+<tr>
 <td>SPIDERPOOL_METRIC_HTTP_PORT</td>
 <td>metrics port</td>
 <td>5721</td>
@@ -1218,9 +1265,14 @@ And spiderpool metrics provide the insight of Spiderpool Agent and Spiderpool Co
 <td>false</td>
 </tr>
 <tr>
+<td>SPIDERPOOL_ENABLED_DEBUG_METRIC</td>
+<td>enable debug level metrics</td>
+<td>false</td>
+</tr>
+<tr>
 <td>SPIDERPOOL_METRIC_HTTP_PORT</td>
 <td>metrics port</td>
-<td>5721</td>
+<td>5711</td>
 </tr>
 </tbody>
 </table>
@@ -1375,8 +1427,8 @@ For example, let's enable spiderpool agent metrics by running <code>helm upgrade
 <td>Histogram of IPAM release queuing duration in seconds, prometheus type: histogram</td>
 </tr>
 <tr>
-<td>spiderpool_auto_pool_waited_for_available_counts</td>
-<td>Number of Spiderpool Agent IPAM allocation wait for auto-created IPPool available, prometheus type: counter</td>
+<td>spiderpool_debug_auto_pool_waited_for_available_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation wait for auto-created IPPool available, prometheus type: counter. (debug level metric)</td>
 </tr>
 </tbody>
 </table>
@@ -1392,15 +1444,43 @@ For example, let's enable spiderpool agent metrics by running <code>helm upgrade
 <tbody>
 <tr>
 <td>spiderpool_ip_gc_counts</td>
-<td>Number of Spiderpool Controller IP garbage collection, prometheus type: counter</td>
+<td>Number of Spiderpool Controller IP garbage collection, prometheus type: counter.</td>
 </tr>
 <tr>
 <td>spiderpool_ip_gc_failure_counts</td>
-<td>Number of Spiderpool Controller IP garbage collection failures, prometheus type: counter</td>
+<td>Number of Spiderpool Controller IP garbage collection failures, prometheus type: counter.</td>
 </tr>
 <tr>
-<td>spiderpool_subnet_ippool_counts</td>
-<td>Number of SpiderSubnet corresponding IPPools number, prometheus type: gauge</td>
+<td>spiderpool_total_ippool_counts</td>
+<td>Number of Spiderpool IPPools, prometheus type: gauge.</td>
+</tr>
+<tr>
+<td>spiderpool_debug_ippool_total_ip_counts</td>
+<td>Number of Spiderpool IPPool corresponding total IPs (per-IPPool), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_ippool_available_ip_counts</td>
+<td>Number of Spiderpool IPPool corresponding availbale IPs (per-IPPool), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_total_subnet_counts</td>
+<td>Number of Spiderpool Subnets, prometheus type: gauge.</td>
+</tr>
+<tr>
+<td>spiderpool_debug_subnet_ippool_counts</td>
+<td>Number of Spiderpool Subnet corresponding IPPools (per-Subnet), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_subnet_total_ip_counts</td>
+<td>Number of Spiderpool Subnet corresponding total IPs (per-Subnet), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_subnet_available_ip_counts</td>
+<td>Number of Spiderpool Subnet corresponding availbale IPs (per-Subnet), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_auto_pool_waited_for_available_counts</td>
+<td>Number of waiting for auto-created IPPool available, prometheus type: couter. (debug level metric)</td>
 </tr>
 </tbody>
 </table>

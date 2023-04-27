@@ -400,6 +400,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -658,6 +686,20 @@
     <li class="md-nav__item">
       <a href="../gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1156,17 +1198,9 @@
 <p>The example will create two Multus CNI Configuration object and create two underlay subnets.
 Then run a pod with two NICs with IP in different subnets.</p>
 <h3 id="set-up-spiderpool">Set up Spiderpool</h3>
-<p>Follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> to install Spiderpool. And Spiderpool also provides a <a href="https://github.com/spidernet-io/plugins">Veth</a> The plug-in can help some CNIs (such as Macvlan, SR-IOV, etc.) solve the following problems:</p>
-<ul>
-<li>
-<p>Help the main CNI achieve communication between the Pod and the host to solve issues such as Pod access to clusterIP, and Pod host health checks.</p>
-</li>
-<li>
-<p>Automatic coordination of policy routing between multiple NICs in Pod multi-NIC scenarios to resolve multi-NIC communications</p>
-</li>
-</ul>
+<p>Follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/get-started-macvlan.md">installation</a> to install Spiderpool. </p>
 <h3 id="set-up-multus-configuration">Set up Multus Configuration</h3>
-<p>Create two network-attachment-definitions，The following parameters need to be confirmed:</p>
+<p>In this example, Macvlan will be used as the main CNI, Create two network-attachment-definitions，The following parameters need to be confirmed:</p>
 <ul>
 <li>
 <p>Confirm the host machine parent interface required for Macvlan. This example takes the ens192 and ens224 network cards of the host machine as examples to create a Macvlan sub interface for Pod to use.</p>
@@ -1192,7 +1226,7 @@ subnet-test-ens192   <span class="m">4</span>         <span class="m">10</span>.
 subnet-test-ens224   <span class="m">4</span>         <span class="m">10</span>.7.0.1/16   <span class="m">0</span>                    <span class="m">10</span>
 </code></pre></div>
 <p>In the following example Yaml, 2 copies of the Deployment are created：</p>
-<div class="highlight"><pre><span></span><code>~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml.yaml
+<div class="highlight"><pre><span></span><code>~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml
 </code></pre></div>
 <p>Eventually, when the Deployment is created, Spiderpool will select random IPs from the specified subnet to create two fixed IP pools to bind to each of the Deployment Pod's two NICs.</p>
 <div class="highlight"><pre><span></span><code>~# kubectl get spiderippool
@@ -1249,7 +1283,7 @@ NAME                   VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COU
 ippool-test-ens192     <span class="m">4</span>         <span class="m">10</span>.6.0.1/16   <span class="m">0</span>                    <span class="m">5</span>                <span class="nb">false</span>     <span class="nb">false</span>
 ippool-test-ens224     <span class="m">4</span>         <span class="m">10</span>.7.0.1/16   <span class="m">0</span>                    <span class="m">5</span>                <span class="nb">false</span>     <span class="nb">false</span>
 </code></pre></div>
-<p>In the following example Yaml, 2 copies of the Deployment are created：</p>
+<p>In the following example Yaml, 1 copies of the Deployment are created：</p>
 <div class="highlight"><pre><span></span><code>~# kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml
 </code></pre></div>
 <p>Eventually, when the Deployment is created, Spiderpool randomly selects IPs from the two specified IPPools to form bindings to each of the two NICs.</p>
@@ -1296,11 +1330,11 @@ default via <span class="m">10</span>.7.0.1 dev net1
 <p>Clean the relevant resources so that you can run this tutorial again.</p>
 <div class="highlight"><pre><span></span><code>kubectl delete <span class="se">\</span>
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/multus-conf.yaml <span class="se">\</span>
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-subnets.yaml <span class="se">\</span>
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml.yaml <span class="se">\</span>
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml <span class="se">\</span>
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-subnets.yaml <span class="se">\</span>
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/subnet-test-deploy.yaml <span class="se">\</span>
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/different-segment-ipv4-ippools.yaml <span class="se">\</span>
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/basic/custom-dual-ippool-deploy.yaml <span class="se">\</span>
--f kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml <span class="se">\</span>
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/multi-interfaces-annotation/ippool-test-deploy.yaml <span class="se">\</span>
 --ignore-not-found<span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 
@@ -1344,13 +1378,13 @@ default via <span class="m">10</span>.7.0.1 dev net1
       
       
         
-        <a href="../install/" class="md-footer__link md-footer__link--next" aria-label="Next: Installation" rel="next">
+        <a href="../get-started-kind/" class="md-footer__link md-footer__link--next" aria-label="Next: Kind" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Installation
+              Kind
             </div>
           </div>
           <div class="md-footer__button md-icon">

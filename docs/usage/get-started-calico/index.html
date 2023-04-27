@@ -401,6 +401,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -659,6 +687,20 @@
     <li class="md-nav__item">
       <a href="../gc/" class="md-nav__link">
         Reclaim IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
       </a>
     </li>
   
@@ -1182,6 +1224,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 </code></pre></div>
 <blockquote>
 <p>Spiderpool is IPv4-Only by default. If you want to enable IPv6, refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md">Spiderpool IPv6</a>.</p>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
 </blockquote>
 <p>Create a subnet for a Pod (SpiderSubnet):</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
@@ -1192,7 +1235,6 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 <span class="s">  labels:  </span>
 <span class="s">    ipam.spidernet.io/subnet-cidr: 10-244-0-0-16</span>
 <span class="s">spec:</span>
-<span class="s">  ipVersion: 4</span>
 <span class="s">  ips:</span>
 <span class="s">  - 10.244.100.0-10.244.200.1</span>
 <span class="s">  subnet: 10.244.0.0/16</span>

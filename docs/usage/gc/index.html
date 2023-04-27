@@ -316,6 +316,34 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-ovs/" class="md-nav__link">
+        Ovs CNI
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -639,6 +667,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../route/" class="md-nav__link">
+        Route support
+      </a>
     </li>
   
 
@@ -1114,7 +1156,6 @@
 <p>The spiderpool owns an IP garbage collection mechanism, it helps to clean up leaked IPs once CNI cmdDel failed.</p>
 <h2 id="enable-ip-gc-support">Enable IP GC support</h2>
 <p>Check k8s deployment <code>spiderpool-controller</code> environment property <code>SPIDERPOOL_GC_IP_ENABLED</code> whether is already set to <code>true</code> or not. (It would be enabled by default)</p>
-<p>We can also control whether to trace <code>Terminating</code> status phase Pod or not with environment <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. (It would be enabled by default)</p>
 <div class="highlight"><pre><span></span><code>kubectl edit deploy spiderpool-controller -n kube-system
 </code></pre></div>
 <h2 id="design">Design</h2>
@@ -1126,7 +1167,11 @@ We used a memory cache to record the Pods object that the corresponding IPs and 
 <p>pod was <code>deleted</code>, except StatefulSet restarts its pod situation.</p>
 </li>
 <li>
-<p>pod is <code>Terminating</code>, <code>Succeeded</code> or <code>Failed</code> phase, we'll clean the pod's IPs after <code>pod DeletionGracePeriodSeconds</code> + <code>AdditionalGraceDelay</code>(default 0 seconds).</p>
+<p>pod is <code>Terminating</code>, we will release its IPs after <code>pod.DeletionGracePeriodSeconds</code>, you can set environment <code>AdditionalGraceDelay</code>(default 0 seconds) to add delay duration. you can also determine whether gc <code>Terminating</code> status pod or not with environment <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. (It would be enabled by default).
+ There are 2 situation that this env may help: 1. If one node downtime in your cluster, you must reply on the IP GC to release the IPs. 2. In some underlay mode, if you do not release one IP with terminating pod and the new pod cannot fetch available IP to start because of the IP resources shortage.</p>
+</li>
+<li>
+<p>pod is <code>Succeeded</code> or <code>Failed</code> phase, we'll clean the pod's IPs after <code>pod.DeletionGracePeriodSeconds</code>, you can set environment <code>AdditionalGraceDelay</code>(default 0 seconds) to add delay duration.</p>
 </li>
 <li>
 <p>SpiderIPPool allocated IP corresponding pod is not exist in the Kubernetes, except StatefulSet restarts its pod situation.</p>
@@ -1192,13 +1237,13 @@ The <a href="https://github.com/spidernet-io/plugins">Veth</a> plugin implements
       
       
         
-        <a href="../performance/" class="md-footer__link md-footer__link--next" aria-label="Next: Spiderpool Performance Testing" rel="next">
+        <a href="../route/" class="md-footer__link md-footer__link--next" aria-label="Next: Route support" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Spiderpool Performance Testing
+              Route support
             </div>
           </div>
           <div class="md-footer__button md-icon">

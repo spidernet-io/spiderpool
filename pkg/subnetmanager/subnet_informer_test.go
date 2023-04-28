@@ -6,6 +6,7 @@ package subnetmanager_test
 import (
 	"context"
 	"fmt"
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"sync/atomic"
 	"time"
 
@@ -83,6 +84,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				LeaderRetryElectGap:     time.Second,
 				SubnetControllerWorkers: 1,
 				MaxWorkqueueLength:      1,
+				DynamicClient:           fakeDynamicClient,
 			}
 
 			patches := gomonkey.ApplyFuncReturn(cache.WaitForNamedCacheSync, true)
@@ -274,6 +276,68 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				var subnetR spiderpoolv2beta1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			}).Should(Succeed())
+		})
+
+		It("third-party controller exist with auto-created IPPool", func() {
+			subnet := subnetT.DeepCopy()
+			subnet.Spec = spiderpoolv2beta1.SubnetSpec{
+				IPVersion: pointer.Int64(4),
+				Subnet:    "172.16.0.0/16",
+				IPs:       []string{"172.16.41.1-172.16.41.200"},
+			}
+			subnet.Status = spiderpoolv2beta1.SubnetStatus{
+				ControlledIPPools: pointer.String(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
+				TotalIPCount:      pointer.Int64(200),
+				AllocatedIPCount:  pointer.Int64(2),
+			}
+
+			patches := gomonkey.ApplyFuncReturn(applicationinformers.IsAppExist, true, types.UID("a-b-c"), nil)
+			defer patches.Reset()
+
+			err := fakeClient.Create(ctx, subnet)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = subnetIndexer.Add(subnet)
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeSubnetWatch.Add(subnet)
+			Eventually(func(g Gomega) {
+				var subnetR spiderpoolv2beta1.SpiderSubnet
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnet.Name}, &subnetR)
+				g.Expect(err).NotTo(HaveOccurred())
+			}).Should(Succeed())
+		})
+
+		It("third-party controller exist with auto-created IPPool", func() {
+			subnet := subnetT.DeepCopy()
+			subnet.Spec = spiderpoolv2beta1.SubnetSpec{
+				IPVersion: pointer.Int64(4),
+				Subnet:    "172.16.0.0/16",
+				IPs:       []string{"172.16.41.1-172.16.41.200"},
+			}
+			subnet.Status = spiderpoolv2beta1.SubnetStatus{
+				ControlledIPPools: pointer.String(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
+				TotalIPCount:      pointer.Int64(200),
+				AllocatedIPCount:  pointer.Int64(2),
+			}
+
+			patches := gomonkey.ApplyFuncReturn(applicationinformers.IsAppExist, false, types.UID(""), nil)
+			defer patches.Reset()
+
+			err := fakeClient.Create(ctx, subnet)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = subnetIndexer.Add(subnet)
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeSubnetWatch.Add(subnet)
+			Eventually(func(g Gomega) {
+				var subnetR spiderpoolv2beta1.SpiderSubnet
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnet.Name}, &subnetR)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(subnetR.Status.ControlledIPPools).To(BeNil())
 			}).Should(Succeed())
 		})
 	})

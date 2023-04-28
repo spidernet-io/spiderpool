@@ -11,6 +11,7 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -20,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
@@ -205,6 +207,57 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 					}
 				}
 				Expect(hasSubnet).To(BeTrue())
+			})
+		})
+
+		Describe("ReconcileAutoIPPool", func() {
+			It("reconcile auto IPPool with terminating SpiderSubnet", func() {
+				subnet := subnetT.DeepCopy()
+				now := metav1.Now()
+				subnet.SetDeletionTimestamp(now.DeepCopy())
+
+				podController := types.PodTopController{}
+				autoPoolProperty := types.AutoPoolProperty{}
+				_, err := subnetManager.ReconcileAutoIPPool(ctx, nil, subnet.Name, podController, autoPoolProperty)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			})
+
+			It("reconcile an auto IPPool for Deployment", func() {
+				subnet := subnetT.DeepCopy()
+				subnet.Spec = spiderpoolv2beta1.SubnetSpec{
+					IPVersion: pointer.Int64(4),
+					Subnet:    "172.16.0.0/16",
+					IPs:       []string{"172.16.41.1-172.16.41.200"},
+				}
+				err := fakeClient.Create(ctx, subnet)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(subnet)
+				Expect(err).NotTo(HaveOccurred())
+
+				patches := gomonkey.ApplyMethodReturn(mockRIPManager, "AssembleReservedIPs", nil, nil)
+				defer patches.Reset()
+
+				podController := types.PodTopController{
+					AppNamespacedName: types.AppNamespacedName{
+						APIVersion: appsv1.SchemeGroupVersion.String(),
+						Kind:       constant.KindDeployment,
+						Namespace:  "default",
+						Name:       "deployment1",
+					},
+					UID: "a-b-c",
+					APP: nil,
+				}
+				autoPoolProperty := types.AutoPoolProperty{
+					DesiredIPNumber: 1,
+					IPVersion:       constant.IPv4,
+					IsReclaimIPPool: true,
+					IfName:          "eth0",
+				}
+
+				autoPool, err := subnetManager.ReconcileAutoIPPool(ctx, nil, subnet.Name, podController, autoPoolProperty)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*autoPool.Spec.IPVersion).Should(BeEquivalentTo(constant.IPv4))
 			})
 		})
 	})

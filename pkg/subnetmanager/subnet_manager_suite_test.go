@@ -10,8 +10,11 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kruiseapi "github.com/openkruise/kruise-api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,6 +36,7 @@ var scheme *runtime.Scheme
 var fakeClient client.Client
 var tracker k8stesting.ObjectTracker
 var fakeAPIReader client.Reader
+var fakeDynamicClient dynamic.Interface
 var subnetManager subnetmanager.SubnetManager
 var subnetWebhook *subnetmanager.SubnetWebhook
 
@@ -53,6 +57,8 @@ var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
 	err = spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = kruiseapi.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
@@ -71,6 +77,8 @@ var _ = BeforeSuite(func() {
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
 		Build()
+
+	fakeDynamicClient = dynamicfake.NewSimpleDynamicClient(scheme)
 
 	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
 	mockRIPManager = reservedipmanagermock.NewMockReservedIPManager(mockCtrl)

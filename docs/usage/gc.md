@@ -24,6 +24,7 @@ Here are several cases that we will release IP:
 
 * pod is `Terminating`, we will release its IPs after `pod.DeletionGracePeriodSeconds`, you can set environment `AdditionalGraceDelay`(default 0 seconds) to add delay duration. you can also determine whether gc `Terminating` status pod or not with environment `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. (It would be enabled by default).
  There are 2 situation that this env may help: 1. If one node downtime in your cluster, you must reply on the IP GC to release the IPs. 2. In some underlay mode, if you do not release one IP with terminating pod and the new pod cannot fetch available IP to start because of the IP resources shortage.
+ But there's a special situation we should watch out for: if the node lost the connection with the master API server due to the node Interface or network issues, the pod network may also good and still serves well. In this case, if we release its IPs and allocate them to other pods, this will lead to IP conflict.
 
 * pod is `Succeeded` or `Failed` phase, we'll clean the pod's IPs after `pod.DeletionGracePeriodSeconds`, you can set environment `AdditionalGraceDelay`(default 0 seconds) to add delay duration.
 

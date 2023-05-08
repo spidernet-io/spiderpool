@@ -32,6 +32,7 @@ import (
 	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 var informerLogger *zap.Logger
@@ -366,31 +367,34 @@ func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spi
 
 	if pool.Status.AllocatedIPs == nil {
 		// unpack the IPPool corresponding application type,namespace and name
-		appNamespacedNameStr := poolLabels[constant.LabelIPPoolOwnerApplication]
-		appNamespacedName, isMatch := applicationinformers.ParseApplicationNamespacedName(appNamespacedNameStr)
+		appGVStr := poolLabels[constant.LabelIPPoolOwnerApplicationGV]
+		appAPIVersion, isMatch := applicationinformers.ParseApplicationGVStr(appGVStr)
 		if !isMatch {
-			return fmt.Errorf("%w: invalid IPPool label '%s' value '%s'", constant.ErrWrongInput, constant.LabelIPPoolOwnerApplication, appNamespacedNameStr)
+			return fmt.Errorf("%w: invalid IPPool label '%s' value '%s'", constant.ErrWrongInput, constant.LabelIPPoolOwnerApplicationGV, appGVStr)
+		}
+
+		appNamespacedName := types.AppNamespacedName{
+			APIVersion: appAPIVersion,
+			Kind:       poolLabels[constant.LabelIPPoolOwnerApplicationKind],
+			Namespace:  poolLabels[constant.LabelIPPoolOwnerApplicationNamespace],
+			Name:       poolLabels[constant.LabelIPPoolOwnerApplicationName],
 		}
 
 		enableDelete := false
 		// check the IPPool's corresponding application whether is existed or not
-		informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%s/%s/%s'",
-			pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
+		informerLogger.Sugar().Debugf("try to get auto-created IPPool '%s' corresponding application '%v'", pool.Name, appNamespacedName)
 		isAppExist, appUID, err := applicationinformers.IsAppExist(ctx, ic.client, ic.dynamicClient, appNamespacedName)
 		if nil != err {
-			return fmt.Errorf("failed to get auto-created IPPool '%s' corresponding application '%s/%s/%s': %w",
-				pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name, err)
+			return fmt.Errorf("failed to get auto-created IPPool '%s' corresponding application '%v': %w", pool.Name, appNamespacedName, err)
 		}
 
 		// mismatch application UID
 		if !isAppExist {
-			informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%s/%s/%s' no longer exist, try to delete IPPool",
-				pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name)
+			informerLogger.Sugar().Warnf("auto-created IPPool '%s' corresponding application '%v' no longer exist, try to delete IPPool", pool.Name, appNamespacedName)
 			enableDelete = true
 		} else {
 			if string(appUID) != poolLabels[constant.LabelIPPoolOwnerApplicationUID] {
-				informerLogger.Sugar().Warnf("auto-created IPPool '%s' mismatches application '%s/%s/%s' UID '%s', try to delete IPPool",
-					pool.Name, appNamespacedName.Kind, appNamespacedName.Namespace, appNamespacedName.Name, appUID)
+				informerLogger.Sugar().Warnf("auto-created IPPool '%s' mismatches application '%v' UID '%s', try to delete IPPool", pool.Name, appNamespacedName, appUID)
 				enableDelete = true
 			}
 		}

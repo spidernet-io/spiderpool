@@ -17,7 +17,7 @@ import (
 func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	// only the auto-created IPPool owns the annotation "ipam.spidernet.io/owner-application"
 	poolLabels := pool.GetLabels()
-	_, ok := poolLabels[constant.LabelIPPoolOwnerApplication]
+	_, ok := poolLabels[constant.LabelIPPoolOwnerApplicationName]
 	return ok
 }
 

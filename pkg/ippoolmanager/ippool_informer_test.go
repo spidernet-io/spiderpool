@@ -27,7 +27,6 @@ import (
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
-	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 var _ = Describe("IPPool-informer", Label("unitest"), Ordered, func() {
@@ -130,13 +129,11 @@ var _ = Describe("IPPool-informer", Label("unitest"), Ordered, func() {
 				tmpPool := pool.DeepCopy()
 				tmpPool.Name = "auto4-deploy-abc"
 				labels := map[string]string{
-					constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       constant.KindDeployment,
-						Namespace:  "test-ns",
-						Name:       "test-name",
-					}),
-					constant.LabelIPPoolReclaimIPPool: constant.True,
+					constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
+					constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
+					constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
+					constant.LabelIPPoolOwnerApplicationName:      "test-name",
+					constant.LabelIPPoolReclaimIPPool:             constant.True,
 				}
 				tmpPool.SetLabels(labels)
 
@@ -168,13 +165,11 @@ var _ = Describe("IPPool-informer", Label("unitest"), Ordered, func() {
 				now := metav1.Now()
 				tmpPool.DeletionTimestamp = now.DeepCopy()
 				labels := map[string]string{
-					constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       constant.KindDeployment,
-						Namespace:  "test-ns",
-						Name:       "test-name",
-					}),
-					constant.LabelIPPoolReclaimIPPool: constant.True,
+					constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
+					constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
+					constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
+					constant.LabelIPPoolOwnerApplicationName:      "test-name",
+					constant.LabelIPPoolReclaimIPPool:             constant.True,
 				}
 				tmpPool.SetLabels(labels)
 				controllerutil.AddFinalizer(tmpPool, constant.SpiderFinalizer)

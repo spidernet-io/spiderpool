@@ -62,14 +62,17 @@ const (
 	AnnoSpiderSubnetPoolIPNumber  = AnnotationPre + "/ippool-ip-number"
 	AnnoSpiderSubnetReclaimIPPool = AnnotationPre + "/ippool-reclaim"
 
-	LabelIPPoolReclaimIPPool       = AnnoSpiderSubnetReclaimIPPool
-	LabelIPPoolOwnerSpiderSubnet   = AnnotationPre + "/owner-spider-subnet"
-	LabelIPPoolOwnerApplication    = AnnotationPre + "/owner-application"
-	LabelIPPoolOwnerApplicationUID = AnnotationPre + "/owner-application-uid"
-	LabelIPPoolInterface           = AnnotationPre + "/interface"
-	LabelIPPoolIPVersion           = AnnotationPre + "/ip-version"
-	LabelValueIPVersionV4          = "IPv4"
-	LabelValueIPVersionV6          = "IPv6"
+	LabelIPPoolReclaimIPPool             = AnnoSpiderSubnetReclaimIPPool
+	LabelIPPoolOwnerSpiderSubnet         = AnnotationPre + "/owner-spider-subnet"
+	LabelIPPoolOwnerApplicationGV        = AnnotationPre + "/owner-application-gv"
+	LabelIPPoolOwnerApplicationKind      = AnnotationPre + "/owner-application-kind"
+	LabelIPPoolOwnerApplicationNamespace = AnnotationPre + "/owner-application-namespace"
+	LabelIPPoolOwnerApplicationName      = AnnotationPre + "/owner-application-name"
+	LabelIPPoolOwnerApplicationUID       = AnnotationPre + "/owner-application-uid"
+	LabelIPPoolInterface                 = AnnotationPre + "/interface"
+	LabelIPPoolIPVersion                 = AnnotationPre + "/ip-version"
+	LabelValueIPVersionV4                = "IPv4"
+	LabelValueIPVersionV6                = "IPv6"
 
 	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"

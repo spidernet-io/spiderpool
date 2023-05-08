@@ -135,7 +135,12 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 			defer wg.Done()
 
 			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
-				v4PoolCandidate, errV4 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv4[0], constant.IPv4, nic, poolIPNum, podController)
+				v4PoolCandidate, errV4 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv4[0], podController, types.AutoPoolProperty{
+					DesiredIPNumber: poolIPNum,
+					IPVersion:       constant.IPv4,
+					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
+					IfName:          nic,
+				})
 			} else {
 				v4PoolCandidate, errV4 = i.findAppAutoPool(ctx, subnetItem.IPv4[0], nic, constant.LabelValueIPVersionV4, poolIPNum, podController)
 			}
@@ -153,7 +158,12 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 			defer wg.Done()
 
 			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
-				v6PoolCandidate, errV6 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv6[0], constant.IPv6, nic, poolIPNum, podController)
+				v6PoolCandidate, errV6 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv6[0], podController, types.AutoPoolProperty{
+					DesiredIPNumber: poolIPNum,
+					IPVersion:       constant.IPv6,
+					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
+					IfName:          nic,
+				})
 			} else {
 				v6PoolCandidate, errV6 = i.findAppAutoPool(ctx, subnetItem.IPv6[0], nic, constant.LabelValueIPVersionV6, poolIPNum, podController)
 			}
@@ -237,11 +247,11 @@ func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPP
 
 // applyThirdControllerAutoPool will fetch or reconcile third-party controller corresponding auto-created IPPools,
 // and the kubernetes basic controller like Deployment,StatefulSet etc... We'll reconcile their auto-created IPPools in spiderpool-controller component.
-func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, ipVersion types.IPVersion, ifName string, desiredIPNumber int, podController types.PodTopController) (*spiderpoolv2beta1.SpiderIPPool, error) {
+func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	log := logutils.FromContext(ctx)
 
 	var labelIPPoolIPVersionValue string
-	if ipVersion == constant.IPv4 {
+	if autoPoolProperty.IPVersion == constant.IPv4 {
 		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV4
 	} else {
 		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV6
@@ -252,7 +262,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 		constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
 		constant.LabelIPPoolOwnerApplication:  subnetmanagercontrollers.ApplicationNamespacedName(podController.AppNamespacedName),
 		constant.LabelIPPoolIPVersion:         labelIPPoolIPVersionValue,
-		constant.LabelIPPoolInterface:         ifName,
+		constant.LabelIPPoolInterface:         autoPoolProperty.IfName,
 	}
 	for j := 1; j <= i.config.OperationRetries; j++ {
 		poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabels)
@@ -277,10 +287,10 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 		}
 
 		pool, err = i.subnetManager.ReconcileAutoIPPool(ctx, pool, subnetName, podController, types.AutoPoolProperty{
-			DesiredIPNumber: desiredIPNumber,
-			IPVersion:       ipVersion,
-			IsReclaimIPPool: false,
-			IfName:          ifName,
+			DesiredIPNumber: autoPoolProperty.DesiredIPNumber,
+			IPVersion:       autoPoolProperty.IPVersion,
+			IsReclaimIPPool: autoPoolProperty.IsReclaimIPPool,
+			IfName:          autoPoolProperty.IfName,
 		})
 		if nil != err {
 			if apierrors.IsConflict(err) || apierrors.IsAlreadyExists(err) {

@@ -176,7 +176,7 @@ The network topology is as follows:
 Create a Calico IP pool with the same CIDR as the Spiderpool subnet, otherwise Calico won't advertise the route of the Spiderpool subnet:
 
 ```shell
-cat << EOF | calicoctl apply -f -
+[root@master1 ~]# cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
@@ -197,12 +197,32 @@ EOF
 
 ## Switch Calico's `IPAM` to Spiderpool
 
-Change the Calico CNI configuration file  `/etc/cni/net.d/10-calico.conflist` on each node to switch the ipam field to Spiderpool:
+Change the Calico configMap: `calico-config`, switch the ipam field to spiderpool and restart calico-node :
 
-```json
-"ipam": {
-    "type": "spiderpool"
-},
+```shell
+[root@master1 ~]# kubectl edit cm -n kube-system calico-config 
+apiVersion: v1
+data:
+  calico_backend: bird
+  cni_network_config: |-
+    {
+      ...
+        "ipam": {
+-         "type": "calico-ipam"
++         "type": "spiderpool"
+        },
+      ...
+    }
+```
+
+restart calico-node and check if the ipam field is spiderpool:
+
+```shell
+[root@master1 ~]# kubectl delete po -n kube-system -l k8s-app=calico-node
+[root@master1 ~]# # wait calico-node ready
+[root@master1 ~]# cat /etc/cni/net.d/10-calico.conflist | grep ipam -A1
+      "ipam": {
+        "type": "spiderpool",
 ```
 
 ## Create applications
@@ -210,7 +230,7 @@ Change the Calico CNI configuration file  `/etc/cni/net.d/10-calico.conflist` on
 Take the Nginx application as an example:
 
 ```shell
-cat <<EOF | kubectl create -f -
+[root@master1 ~]# cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:

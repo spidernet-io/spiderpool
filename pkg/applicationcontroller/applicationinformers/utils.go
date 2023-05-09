@@ -61,6 +61,37 @@ func AutoPoolName(controllerName string, ipVersion types.IPVersion, ifName strin
 	return fmt.Sprintf("auto%d-%s-%s-%s", ipVersion, strings.ToLower(controllerName), strings.ToLower(ifName), strings.ToLower(lastOne))
 }
 
+// ApplicationLabelGV switches the kubernetes APIVersion from "/" link format to "_" link format for kubernetes label value usage.
+func ApplicationLabelGV(apiVersion string) string {
+	// Kubernetes API Group might be empty, ref: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#api-versions
+	first, second, hasGroup := strings.Cut(apiVersion, "/")
+	if hasGroup {
+		return fmt.Sprintf("%s_%s", first, second)
+	}
+
+	return first
+}
+
+// ParseApplicationGVStr will parse a label value string back to apiVersion format string, its corresponding function is ApplicationLabelGV.
+func ParseApplicationGVStr(str string) (apiVersion string, isMatch bool) {
+	split := strings.Split(str, "_")
+
+	// no API Group
+	if len(split) == 1 {
+		return schema.GroupVersion{
+			Group:   "",
+			Version: split[0],
+		}.String(), true
+	} else if len(split) == 2 {
+		return schema.GroupVersion{
+			Group:   split[0],
+			Version: split[1],
+		}.String(), true
+	}
+
+	return
+}
+
 // ApplicationNamespacedName will joint the application apiVersion, application type, namespace and name as a string, then we need unpack it for tracing
 // [ns and object name constraint Ref]: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 // We set format is "{apiVersion}:{appKind}:{appNS}:{appName}"
@@ -467,4 +498,20 @@ func IsThirdController(appNamespacedName types.AppNamespacedName) bool {
 	}
 
 	return isThird
+}
+
+func IsReclaimAutoPoolLabelValue(isReclaim bool) string {
+	if isReclaim {
+		return constant.True
+	}
+
+	return constant.False
+}
+
+func AutoPoolIPVersionLabelValue(ipVersion types.IPVersion) string {
+	if ipVersion == constant.IPv4 {
+		return constant.LabelValueIPVersionV4
+	}
+
+	return constant.LabelValueIPVersionV6
 }

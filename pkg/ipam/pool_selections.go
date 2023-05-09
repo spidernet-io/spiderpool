@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -81,13 +81,13 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	logger := logutils.FromContext(ctx)
 
 	// get SpiderSubnet configuration from pod annotation
-	subnetAnnoConfig, err := subnetmanagercontrollers.GetSubnetAnnoConfig(pod.Annotations, logger)
+	subnetAnnoConfig, err := applicationinformers.GetSubnetAnnoConfig(pod.Annotations, logger)
 	if nil != err {
 		return nil, err
 	}
 
 	// default IPPool mode
-	if subnetmanagercontrollers.IsDefaultIPPoolMode(subnetAnnoConfig) {
+	if applicationinformers.IsDefaultIPPoolMode(subnetAnnoConfig) {
 		return nil, nil
 	}
 
@@ -206,11 +206,14 @@ func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPP
 
 	var pool *spiderpoolv2beta1.SpiderIPPool
 	matchLabels := client.MatchingLabels{
-		constant.LabelIPPoolOwnerSpiderSubnet:   subnetName,
-		constant.LabelIPPoolOwnerApplication:    subnetmanagercontrollers.ApplicationNamespacedName(podController.AppNamespacedName),
-		constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-		constant.LabelIPPoolInterface:           ifName,
-		constant.LabelIPPoolIPVersion:           labelIPPoolIPVersionValue,
+		constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
+		constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
+		constant.LabelIPPoolOwnerApplicationKind:      podController.Kind,
+		constant.LabelIPPoolOwnerApplicationNamespace: podController.Namespace,
+		constant.LabelIPPoolOwnerApplicationName:      podController.Name,
+		constant.LabelIPPoolOwnerApplicationUID:       string(podController.UID),
+		constant.LabelIPPoolInterface:                 ifName,
+		constant.LabelIPPoolIPVersion:                 labelIPPoolIPVersionValue,
 	}
 	for j := 1; j <= i.config.OperationRetries; j++ {
 		poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabels)
@@ -250,19 +253,15 @@ func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPP
 func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	log := logutils.FromContext(ctx)
 
-	var labelIPPoolIPVersionValue string
-	if autoPoolProperty.IPVersion == constant.IPv4 {
-		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV4
-	} else {
-		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV6
-	}
-
 	var pool *spiderpoolv2beta1.SpiderIPPool
 	matchLabels := client.MatchingLabels{
-		constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
-		constant.LabelIPPoolOwnerApplication:  subnetmanagercontrollers.ApplicationNamespacedName(podController.AppNamespacedName),
-		constant.LabelIPPoolIPVersion:         labelIPPoolIPVersionValue,
-		constant.LabelIPPoolInterface:         autoPoolProperty.IfName,
+		constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
+		constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
+		constant.LabelIPPoolOwnerApplicationKind:      podController.Kind,
+		constant.LabelIPPoolOwnerApplicationNamespace: podController.Namespace,
+		constant.LabelIPPoolOwnerApplicationName:      podController.Name,
+		constant.LabelIPPoolIPVersion:                 applicationinformers.AutoPoolIPVersionLabelValue(autoPoolProperty.IPVersion),
+		constant.LabelIPPoolInterface:                 autoPoolProperty.IfName,
 	}
 	for j := 1; j <= i.config.OperationRetries; j++ {
 		poolList, err := i.ipPoolManager.ListIPPools(ctx, constant.UseCache, matchLabels)

@@ -9,7 +9,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	types2 "k8s.io/apimachinery/pkg/types"
 
-	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -20,12 +19,7 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		It("normal IPPool", func() {
 			var pool spiderpoolv2beta1.SpiderIPPool
 
-			label := map[string]string{constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
-				APIVersion: appsv1.SchemeGroupVersion.String(),
-				Kind:       constant.KindDeployment,
-				Namespace:  "test-ns",
-				Name:       "test-name",
-			})}
+			label := map[string]string{constant.LabelIPPoolOwnerApplicationName: "test-name"}
 			pool.SetLabels(label)
 
 			isAutoCreatedIPPool := IsAutoCreatedIPPool(&pool)

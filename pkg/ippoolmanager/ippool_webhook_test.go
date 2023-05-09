@@ -1762,12 +1762,12 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					autoPool := ipPoolT.DeepCopy()
-					autoPool.Labels = map[string]string{constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       constant.KindDeployment,
-						Namespace:  autoPool.Namespace,
-						Name:       autoPool.Name,
-					})}
+					autoPool.Labels = map[string]string{
+						constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
+						constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
+						constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
+						constant.LabelIPPoolOwnerApplicationName:      "test-name",
+					}
 					autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					autoPool.Spec.Subnet = "172.18.40.0/24"
 					autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
@@ -1775,8 +1775,13 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := controllerutil.SetControllerReference(subnetT, autoPool, scheme)
 					Expect(err).NotTo(HaveOccurred())
 					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
-						IPs:         []string{"172.18.40.1"},
-						Application: pointer.String(autoPool.Labels[constant.LabelIPPoolOwnerApplication]),
+						IPs: []string{"172.18.40.1"},
+						Application: pointer.String(applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+							APIVersion: appsv1.SchemeGroupVersion.String(),
+							Kind:       constant.KindDeployment,
+							Namespace:  "test-ns",
+							Name:       "test-name",
+						})),
 					}}
 					subnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(poolIPPreAllocations)
 					Expect(err).NotTo(HaveOccurred())
@@ -1799,12 +1804,12 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 					autoPool := ipPoolT.DeepCopy()
-					autoPool.Labels = map[string]string{constant.LabelIPPoolOwnerApplication: applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       constant.KindDeployment,
-						Namespace:  autoPool.Namespace,
-						Name:       autoPool.Name,
-					})}
+					autoPool.Labels = map[string]string{
+						constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
+						constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
+						constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
+						constant.LabelIPPoolOwnerApplicationName:      "test-name",
+					}
 					autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					autoPool.Spec.Subnet = "172.18.40.0/24"
 					autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
@@ -1812,8 +1817,13 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := controllerutil.SetControllerReference(subnetT, autoPool, scheme)
 					Expect(err).NotTo(HaveOccurred())
 					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
-						IPs:         []string{"172.18.40.1"},
-						Application: pointer.String(autoPool.Labels[constant.LabelIPPoolOwnerApplication]),
+						IPs: []string{"172.18.40.1"},
+						Application: pointer.String(applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+							APIVersion: appsv1.SchemeGroupVersion.String(),
+							Kind:       constant.KindDeployment,
+							Namespace:  "test-ns",
+							Name:       "test-name",
+						})),
 					}}
 					subnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(poolIPPreAllocations)
 					Expect(err).NotTo(HaveOccurred())

@@ -746,20 +746,16 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 
 	// retrieve application pools
 	fn := func(subnetName string, ipVersion types.IPVersion, ifName string) error {
-		var ipVersionStr string
-		if ipVersion == constant.IPv4 {
-			ipVersionStr = constant.LabelValueIPVersionV4
-		} else {
-			ipVersionStr = constant.LabelValueIPVersionV6
-		}
-
 		var tmpPool *spiderpoolv2beta1.SpiderIPPool
 		tmpPoolList := &spiderpoolv2beta1.SpiderIPPoolList{}
 		matchLabels := client.MatchingLabels{
-			constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
-			constant.LabelIPPoolOwnerApplication:  applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
-			constant.LabelIPPoolIPVersion:         ipVersionStr,
-			constant.LabelIPPoolInterface:         ifName,
+			constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
+			constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
+			constant.LabelIPPoolOwnerApplicationKind:      podController.Kind,
+			constant.LabelIPPoolOwnerApplicationNamespace: podController.Namespace,
+			constant.LabelIPPoolOwnerApplicationName:      podController.Name,
+			constant.LabelIPPoolIPVersion:                 applicationinformers.AutoPoolIPVersionLabelValue(ipVersion),
+			constant.LabelIPPoolInterface:                 ifName,
 		}
 
 		err := sac.apiReader.List(ctx, tmpPoolList, matchLabels)

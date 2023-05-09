@@ -499,3 +499,19 @@ func IsThirdController(appNamespacedName types.AppNamespacedName) bool {
 
 	return isThird
 }
+
+func IsReclaimAutoPoolLabelValue(isReclaim bool) string {
+	if isReclaim {
+		return constant.True
+	}
+
+	return constant.False
+}
+
+func AutoPoolIPVersionLabelValue(ipVersion types.IPVersion) string {
+	if ipVersion == constant.IPv4 {
+		return constant.LabelValueIPVersionV4
+	}
+
+	return constant.LabelValueIPVersionV6
+}

@@ -253,13 +253,6 @@ func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPP
 func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	log := logutils.FromContext(ctx)
 
-	var labelIPPoolIPVersionValue string
-	if autoPoolProperty.IPVersion == constant.IPv4 {
-		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV4
-	} else {
-		labelIPPoolIPVersionValue = constant.LabelValueIPVersionV6
-	}
-
 	var pool *spiderpoolv2beta1.SpiderIPPool
 	matchLabels := client.MatchingLabels{
 		constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
@@ -267,7 +260,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 		constant.LabelIPPoolOwnerApplicationKind:      podController.Kind,
 		constant.LabelIPPoolOwnerApplicationNamespace: podController.Namespace,
 		constant.LabelIPPoolOwnerApplicationName:      podController.Name,
-		constant.LabelIPPoolIPVersion:                 labelIPPoolIPVersionValue,
+		constant.LabelIPPoolIPVersion:                 applicationinformers.AutoPoolIPVersionLabelValue(autoPoolProperty.IPVersion),
 		constant.LabelIPPoolInterface:                 autoPoolProperty.IfName,
 	}
 	for j := 1; j <= i.config.OperationRetries; j++ {

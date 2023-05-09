@@ -40,6 +40,24 @@ ipam.spidernet.io/subnets: |-
 - `ipv4` (array, optional): Specify which Subnet is used to generate IPPool and allocate the IPv4 address. When `enableIPv4` in the ConfigMap `spiderpool-conf` is set to true, this field is required.
 - `ipv6` (array, optional): Specify which Subnet is used to generate IPPool and allocate the IPv6 address. When `enableIPv6` in the ConfigMap `spiderpool-conf` is set to true, this field is required.
 
+### ipam.spidernet.io/ippool-ip-number
+
+This annotation is used with [SpiderSubnet](../usage/spider-subnet.md) feature enabled.
+It specifies the IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1').
+
+```yaml
+ipam.spidernet.io/ippool-ip-number: +1
+```
+
+### ipam.spidernet.io/ippool-reclaim
+
+This annotation is used with [SpiderSubnet](../usage/spider-subnet.md) feature enabled.
+It specifies the corresponding SpiderIPPool to delete or not once the application was deleted (optional and default 'true').
+
+```yaml
+ipam.spidernet.io/ippool-reclaim: true
+```
+
 ### ipam.spidernet.io/ippool
 
 Specify the IPPools used to allocate IP addresses.

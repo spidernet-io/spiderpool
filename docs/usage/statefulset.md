@@ -23,9 +23,9 @@ When the number of statefulset replicas is not scaled up or down, all pods could
 
 * Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its pods are running.
 
-* When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the IP of scaled-down pod event they have the same name
+* When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the previous IP.
 
-* The [RIPOGT feature](./ippool-gc.md) (reclaim IP for the pod of graceful-period timeout) does work for statefulset pod.
+* The [IP-GC](./gc.md) feature (reclaim IP for the pod of graceful-period timeout) does work for StatefulSet pod.
 
 ## Get Started
 
@@ -51,120 +51,77 @@ kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/
 
 ### Validate the Spiderpool related CR data
 
-1. Here's the created Pod, spiderippool, and spiderendpoint CR information:
+Here's the created Pod, spiderippool, and spiderendpoint CR information:
 
-    ```text
-    $ kubectl get po -o wide
-    NAME                        READY   STATUS    RESTARTS      AGE   IP              NODE            NOMINATED NODE   READINESS GATES
-    demo-sts-0                  1/1     Running   0             82s   172.18.40.47    spider-worker   <none>           <none>
+```text
+$ kubectl get po -o wide
+NAME                       READY   STATUS    RESTARTS   AGE   IP              NODE            NOMINATED NODE   READINESS GATES
+demo-sts-0                 1/1     Running   0          8s    172.22.40.181   spider-worker   <none>           <none>
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get sp default-v4-ippool -o yaml
 
-    ---------------------------------------------------------------------------------------------------------------------
+...
+"172.22.40.181":{"interface":"eth0","pod":"default/demo-sts-0","podUid":"fa50a7c2-99e7-4e97-a3f1-8d6503067b54"}
+...
 
-    $ kubectl get sp default-v4-ippool -o yaml
-    ...
-    172.18.40.47:
-    containerID: cffbddab79dc8eea447315da9b84db402d515b657d2b6943a87b47cdfa876359
-    interface: eth0
-    namespace: default
-    node: spider-worker
-    ownerControllerType: StatefulSet
-    pod: demo-sts-0
-    ...
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get se demo-sts-0 -o yaml
 
-    ---------------------------------------------------------------------------------------------------------------------
-
-    $ kubectl get se demo-sts-0 -o yaml
-    ...
-    status:
-    current:
-    containerID: cffbddab79dc8eea447315da9b84db402d515b657d2b6943a87b47cdfa876359
-    creationTime: "2022-07-29T08:54:12Z"
+...
+status:
+  current:
     ips:
     - interface: eth0
-    ipv4: 172.18.40.47/16
-    ipv4Gateway: ""
-    ipv4Pool: default-v4-ippool
-    ipv6: fc00:f853:ccd:e793:f::63/64
-    ipv6Gateway: ""
-    ipv6Pool: default-v6-ippool
-    vlan: 0
+      ipv4: 172.22.40.181/16
+      ipv4Pool: default-v4-ippool
+      ipv6: fc00:f853:ccd:e793:f::d/64
+      ipv6Pool: default-v6-ippool
+      vlan: 0
     node: spider-worker
-    ...
-    ```
+    uid: fa50a7c2-99e7-4e97-a3f1-8d6503067b54
+  ownerControllerName: demo-sts
+  ownerControllerType: StatefulSet
+...
+```
 
-2. Try to delete pod `demo-sts-0` and check whether the rebuilding pod keeps the previous IP or not.
+Try to delete pod `demo-sts-0` and check whether the rebuilding pod keeps the previous IP or not.
 
-    ```text
-    $ kubectl delete po demo-sts-0
-    pod "demo-sts-0" deleted
+```text
+$ kubectl delete po demo-sts-0
+pod "demo-sts-0" deleted
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get po -o wide
+NAME                       READY   STATUS    RESTARTS   AGE   IP              NODE            NOMINATED NODE   READINESS GATES
+demo-sts-0                 1/1     Running   0          12s   172.22.40.181   spider-worker   <none>           <none>
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get sp default-v4-ippool -o yaml
 
-    ---------------------------------------------------------------------------------------------------------------------
+...
+"172.22.40.181":{"interface":"eth0","pod":"default/demo-sts-0","podUid":"425d6552-63bb-4b4c-aab2-b2db95de0ab1"}
+...
 
-    $ kubectl get po -o wide
-    NAME                        READY   STATUS    RESTARTS      AGE   IP              NODE            NOMINATED NODE   READINESS GATES
-    demo-sts-0                  1/1     Running   0             20s   172.18.40.47    spider-worker   <none>           <none>
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get se demo-sts-0 -o yaml
 
-    ---------------------------------------------------------------------------------------------------------------------
-
-    $ kubectl get sp default-v4-ippool -o yaml
-    ...
-    172.18.40.47:
-    containerID: 5c7a1c9cf494c02090848bd3f8131817d02ee9f3046cd33a5ec4b74b897d6789
-    interface: eth0
-    namespace: default
-    node: spider-worker
-    ownerControllerType: StatefulSet
-    pod: demo-sts-0
-    ...
-
-    ---------------------------------------------------------------------------------------------------------------------
-
-    $ kubectl get se demo-sts-0 -o yaml
-    ...
-    status:
-    current:
-    containerID: 5c7a1c9cf494c02090848bd3f8131817d02ee9f3046cd33a5ec4b74b897d6789
-    creationTime: "2022-07-29T08:54:12Z"
+...
+status:
+  current:
     ips:
     - interface: eth0
-    ipv4: 172.18.40.47/16
-    ipv4Gateway: ""
-    ipv4Pool: default-v4-ippool
-    ipv6: fc00:f853:ccd:e793:f::63/64
-    ipv6Gateway: ""
-    ipv6Pool: default-v6-ippool
-    vlan: 0
+      ipv4: 172.22.40.181/16
+      ipv4Pool: default-v4-ippool
+      ipv6: fc00:f853:ccd:e793:f::d/64
+      ipv6Pool: default-v6-ippool
+      vlan: 0
     node: spider-worker
-    history:
-      - containerID: 5c7a1c9cf494c02090848bd3f8131817d02ee9f3046cd33a5ec4b74b897d6789
-        creationTime: "2022-07-29T08:54:12Z"
-        ips:
-        - interface: eth0
-          ipv4: 172.18.40.47/16
-          ipv4Gateway: ""
-          ipv4Pool: default-v4-ippool
-          ipv6: fc00:f853:ccd:e793:f::63/64
-          ipv6Gateway: ""
-          ipv6Pool: default-v6-ippool
-          vlan: 0
-          node: spider-worker
-      - containerID: cffbddab79dc8eea447315da9b84db402d515b657d2b6943a87b47cdfa876359
-        creationTime: "2022-07-29T08:54:12Z"
-        ips:
-        - interface: eth0
-          ipv4: 172.18.40.47/16
-          ipv4Gateway: ""
-          ipv4Pool: default-v4-ippool
-          ipv6: fc00:f853:ccd:e793:f::63/64
-          ipv6Gateway: ""
-          ipv6Pool: default-v6-ippool
-          vlan: 0
-          node: spider-worker
-          ownerControllerType: StatefulSet
-          ...
-    ```
+    uid: 425d6552-63bb-4b4c-aab2-b2db95de0ab1
+  ownerControllerName: demo-sts
+  ownerControllerType: StatefulSet
+...
+```
 
-    And you can see, the re-created Pod still holds the previous IP, spiderippool, and spiderendpoint updated containerID property.
+
+And you can see, the re-created Pod still holds the previous IP, spiderippool, and spiderendpoint updated containerID property.
 
 ### clean up
 

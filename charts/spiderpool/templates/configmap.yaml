@@ -20,3 +20,8 @@ data:
     enableIPv6: {{ .Values.feature.enableIPv6 }}
     enableStatefulSet: {{ .Values.feature.enableStatefulSet }}
     enableSpiderSubnet: {{ .Values.feature.enableSpiderSubnet }}
+    {{- if .Values.feature.enableSpiderSubnet }}
+    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetDefaultFlexibleIPNumber }}
+    {{- else}}
+    clusterSubnetDefaultFlexibleIPNumber: 0
+    {{- end }}

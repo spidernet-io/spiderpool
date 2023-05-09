@@ -20,6 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller"
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
@@ -331,6 +332,9 @@ func initControllerServiceManagers(ctx context.Context) {
 		}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}
+
+		logger.Sugar().Debugf("Begin to initialize cluster Subnet default flexible IP number to %d", controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
+		*applicationinformers.ClusterSubnetDefaultFlexibleIPNumber = controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}

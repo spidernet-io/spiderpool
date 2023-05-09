@@ -7,7 +7,6 @@ import (
 
 	"github.com/onsi/ginkgo/v2/formatter"
 	"github.com/onsi/ginkgo/v2/internal"
-	"github.com/onsi/ginkgo/v2/reporters"
 	"github.com/onsi/ginkgo/v2/types"
 )
 
@@ -185,9 +184,6 @@ func (t *ginkgoTestingTProxy) Fi(indentation uint, format string, args ...any) s
 }
 func (t *ginkgoTestingTProxy) Fiw(indentation uint, maxWidth uint, format string, args ...any) string {
 	return t.f.Fiw(indentation, maxWidth, format, args...)
-}
-func (t *ginkgoTestingTProxy) RenderTimeline() string {
-	return reporters.RenderTimeline(t.report(), false)
 }
 func (t *ginkgoTestingTProxy) GinkgoRecover() {
 	t.ginkgoRecover()

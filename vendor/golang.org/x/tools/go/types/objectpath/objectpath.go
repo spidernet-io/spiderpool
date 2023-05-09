@@ -113,20 +113,6 @@ const (
 	opObj    = 'O' // .Obj()		 (Named, TypeParam)
 )
 
-// For is equivalent to new(Encoder).For(obj).
-//
-// It may be more efficient to reuse a single Encoder across several calls.
-func For(obj types.Object) (Path, error) {
-	return new(Encoder).For(obj)
-}
-
-// An Encoder amortizes the cost of encoding the paths of multiple objects.
-// The zero value of an Encoder is ready to use.
-type Encoder struct {
-	scopeNamesMemo   map[*types.Scope][]string      // memoization of Scope.Names()
-	namedMethodsMemo map[*types.Named][]*types.Func // memoization of namedMethods()
-}
-
 // For returns the path to an object relative to its package,
 // or an error if the object is not accessible from the package's Scope.
 //
@@ -159,7 +145,24 @@ type Encoder struct {
 //	.Type().Field(0)					(field Var X)
 //
 // where p is the package (*types.Package) to which X belongs.
-func (enc *Encoder) For(obj types.Object) (Path, error) {
+func For(obj types.Object) (Path, error) {
+	return newEncoderFor()(obj)
+}
+
+// An encoder amortizes the cost of encoding the paths of multiple objects.
+// Nonexported pending approval of proposal 58668.
+type encoder struct {
+	scopeNamesMemo   map[*types.Scope][]string      // memoization of Scope.Names()
+	namedMethodsMemo map[*types.Named][]*types.Func // memoization of namedMethods()
+}
+
+// Exposed to gopls via golang.org/x/tools/internal/typesinternal
+// pending approval of proposal 58668.
+//
+//go:linkname newEncoderFor
+func newEncoderFor() func(types.Object) (Path, error) { return new(encoder).For }
+
+func (enc *encoder) For(obj types.Object) (Path, error) {
 	pkg := obj.Pkg()
 
 	// This table lists the cases of interest.
@@ -338,7 +341,7 @@ func appendOpArg(path []byte, op byte, arg int) []byte {
 // This function is just an optimization that avoids the general scope walking
 // approach. You are expected to fall back to the general approach if this
 // function fails.
-func (enc *Encoder) concreteMethod(meth *types.Func) (Path, bool) {
+func (enc *encoder) concreteMethod(meth *types.Func) (Path, bool) {
 	// Concrete methods can only be declared on package-scoped named types. For
 	// that reason we can skip the expensive walk over the package scope: the
 	// path will always be package -> named type -> method. We can trivially get
@@ -418,13 +421,7 @@ func (enc *Encoder) concreteMethod(meth *types.Func) (Path, bool) {
 		}
 	}
 
-	// Due to golang/go#59944, go/types fails to associate the receiver with
-	// certain methods on cgo types.
-	//
-	// TODO(rfindley): replace this panic once golang/go#59944 is fixed in all Go
-	// versions gopls supports.
-	return "", false
-	// panic(fmt.Sprintf("couldn't find method %s on type %s; methods: %#v", meth, named, enc.namedMethods(named)))
+	panic(fmt.Sprintf("couldn't find method %s on type %s", meth, named))
 }
 
 // find finds obj within type T, returning the path to it, or nil if not found.
@@ -733,23 +730,8 @@ func namedMethods(named *types.Named) []*types.Func {
 	return methods
 }
 
-// namedMethods is a memoization of the namedMethods function. Callers must not modify the result.
-func (enc *Encoder) namedMethods(named *types.Named) []*types.Func {
-	m := enc.namedMethodsMemo
-	if m == nil {
-		m = make(map[*types.Named][]*types.Func)
-		enc.namedMethodsMemo = m
-	}
-	methods, ok := m[named]
-	if !ok {
-		methods = namedMethods(named) // allocates and sorts
-		m[named] = methods
-	}
-	return methods
-}
-
 // scopeNames is a memoization of scope.Names. Callers must not modify the result.
-func (enc *Encoder) scopeNames(scope *types.Scope) []string {
+func (enc *encoder) scopeNames(scope *types.Scope) []string {
 	m := enc.scopeNamesMemo
 	if m == nil {
 		m = make(map[*types.Scope][]string)
@@ -761,4 +743,20 @@ func (enc *Encoder) scopeNames(scope *types.Scope) []string {
 		m[scope] = names
 	}
 	return names
+}
+
+// namedMethods is a memoization of the namedMethods function. Callers must not modify the result.
+func (enc *encoder) namedMethods(named *types.Named) []*types.Func {
+	m := enc.namedMethodsMemo
+	if m == nil {
+		m = make(map[*types.Named][]*types.Func)
+		enc.namedMethodsMemo = m
+	}
+	methods, ok := m[named]
+	if !ok {
+		methods = namedMethods(named) // allocates and sorts
+		m[named] = methods
+	}
+	return methods
+
 }

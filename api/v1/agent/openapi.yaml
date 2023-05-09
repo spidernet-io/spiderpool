@@ -108,6 +108,23 @@ paths:
           description: Success
         "500":
           description: Get workloadendpoint failure
+  "/coordinator/config":
+    get:
+      summary: Get coordinator config
+      description: |
+        Send a request to daemonset to get coordinator config
+      tags:
+        - daemonset
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/CoordinatorConfig"
+        '500':
+          description: Config not initialized successfully or others
+          x-go-name: Failure
+          schema:
+            $ref: "#/definitions/Error"
   "/runtime/startup":
     get:
       summary: Startup probe
@@ -273,3 +290,40 @@ definitions:
       - version
       - address
       - nic
+  CoordinatorConfig:
+    description: Coordinator config
+    type: object
+    properties:
+      tuneMode:
+        type: string
+      podCIDR:
+        type: array
+        items:
+          type: string
+      serviceCIDR:
+        type: array
+        items:
+          type: string
+      extraCIDR:
+        type: array
+        items:
+          type: string
+      podMACPrefix:
+        type: string
+      tunePodRoutes:
+        type: boolean
+      podDefaultRouteNIC:
+        type: string
+      hostRuleTable:
+        type: integer
+      hostRPFilter:
+        type: integer
+      detectIPConflict:
+        type: boolean
+      detectGateway:
+        type: boolean
+    required:
+      - tuneMode
+      - podCIDR
+      - serviceCIDR
+      - tunePodRoutes

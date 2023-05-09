@@ -24,9 +24,8 @@ import (
 	"sync"
 	"syscall"
 
-	"golang.org/x/sys/unix"
-
 	"github.com/containernetworking/plugins/pkg/ns"
+	"golang.org/x/sys/unix"
 )
 
 func getNsRunDir() string {
@@ -50,6 +49,7 @@ func getNsRunDir() string {
 // Creates a new persistent (bind-mounted) network namespace and returns an object
 // representing that namespace, without switching to it.
 func NewNS() (ns.NetNS, error) {
+
 	nsRunDir := getNsRunDir()
 
 	b := make([]byte, 16)
@@ -61,7 +61,7 @@ func NewNS() (ns.NetNS, error) {
 	// Create the directory for mounting network namespaces
 	// This needs to be a shared mountpoint in case it is mounted in to
 	// other namespaces (containers)
-	err = os.MkdirAll(nsRunDir, 0o755)
+	err = os.MkdirAll(nsRunDir, 0755)
 	if err != nil {
 		return nil, err
 	}

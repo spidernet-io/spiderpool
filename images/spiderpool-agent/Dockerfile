@@ -29,6 +29,11 @@ RUN  make GOARCH=${TARGETARCH}   \
         DESTDIR_BASH_COMPLETION=/tmp/install/${TARGETOS}/${TARGETARCH}/bash-completion \
         all install install-bash-completion
 
+WORKDIR /src/cmd/coordinator
+RUN make GOARCH=${TARGETARCH}   \
+        RACE=${RACE} NOSTRIP=${NOSTRIP} NOOPT=${NOOPT} QUIET_MAKE=${QUIET_MAKE} \
+        DESTDIR_BIN=/tmp/install/${TARGETOS}/${TARGETARCH}/bin \
+        all install
 
 #====== release image =======
 

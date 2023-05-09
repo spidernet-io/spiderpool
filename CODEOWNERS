@@ -27,3 +27,4 @@
 /.golangci.yaml @weizhoublue
 /MAINTAINERS.md @weizhoublue
 /.trivyignore @weizhoublue
+/internal/version/ @cyclinder

@@ -376,7 +376,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					return false
 				}
 				return frame.CheckPodListRunning(podList)
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			}, 2*common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
@@ -1216,11 +1216,12 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			deployName = "deploy-" + tools.RandomName()
 			deployObj := common.GenerateExampleDeploymentYaml(deployName, namespace, 1)
 			deployObj.Spec.Template.Annotations = map[string]string{
-				common.MultusNetworks: common.MacvlanCNIName,
+				common.MultusNetworks: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan100),
 				// second Interface
 				constant.AnnoSpiderSubnets: string(subnetsAnnoMarshal),
 			}
 			Expect(deployObj).NotTo(BeNil())
+
 			GinkgoWriter.Printf("Try to create deploy %v/%v \n", namespace, deployName)
 			Expect(frame.CreateDeployment(deployObj)).To(Succeed())
 
@@ -1232,7 +1233,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					return false
 				}
 				return frame.CheckPodListRunning(podList)
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			}, 2*common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
 			// Check that the corresponding ippool is created under each subnet.
 			// Get the application IP in IPPool
@@ -1280,11 +1281,11 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				command := fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC1, v6IPAddress1)
+				command := fmt.Sprintf("ip a | grep -w '%s' -A5 | grep '%s'", common.NIC1, v6IPAddress1)
 				_, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, command, ctx)
 				Expect(err).NotTo(HaveOccurred())
 
-				command = fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC2, v6IPAddress2)
+				command = fmt.Sprintf("ip a | grep -w '%s' -A5 | grep '%s'", common.NIC2, v6IPAddress2)
 				_, err = frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, command, ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1682,7 +1683,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			GinkgoWriter.Printf("Generate multi-NIC annotations for same name app  %v/%v \n", namespace, longAppName)
 			annotationMap[constant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
-			annotationMap[common.MultusNetworks] = common.MacvlanCNIName
+			annotationMap[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan100)
 
 			// Delete Single Card Annotations
 			delete(annotationMap, constant.AnnoSpiderSubnet)

@@ -5,6 +5,10 @@
 
 package v2beta1
 
+// SpiderCoordinatorListerExpansion allows custom methods to be added to
+// SpiderCoordinatorLister.
+type SpiderCoordinatorListerExpansion interface{}
+
 // SpiderIPPoolListerExpansion allows custom methods to be added to
 // SpiderIPPoolLister.
 type SpiderIPPoolListerExpansion interface{}

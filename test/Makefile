@@ -14,38 +14,56 @@ e2e:  kind-init e2e-test
 .PHONY: kind-init
 kind-init: check_env prepare
 	@echo -e "\033[35m [Step 3] Init kind for the cluster: $(E2E_CLUSTER_NAME) \033[0m"
-	@ make setup_kind
-	@echo -e "\033[35m [Step 4] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
+	make setup_kind
+	@echo -e "\033[35m [Step 4] Init network config for kind-node \033[0m"
+	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+    E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME)  \
+    E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
+    INSTALL_NETTOOLS=$(INSTALL_NETTOOLS) \
+	$(QUIET) bash scripts/config-network.sh
+	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
+ifeq ($(INSTALL_CALICO),true)
+	@echo -e "\033[35m [Step 6] Install Calico: $(CALICO_VERSION)  \033[0m"
+	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
+	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+	E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+	CALICO_VERSION=$(CALICO_VERSION) \
+	CALICO_IMAGE_REPO=$(CALICO_IMAGE_REPO) \
+	CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
+	CALICO_AUTODETECTION_METHOD=$(CALICO_AUTODETECTION_METHOD) \
+	$(QUIET) bash scripts/install-calico.sh
+endif
 ifeq ($(INSTALL_SPIDER),true)
-	@echo -e "\033[35m [Step 5] Install Default CNI: Macvlan + Spiderpool \033[0m"
+	@echo -e "\033[35m [Step 7] Install Spiderpool \033[0m"
 	@ make setup_spiderpool
-else
-	@echo -e "\033[35m [Step 5] Install Default CNI: Macvlan + Whereabouts \033[0m"
-	$(QUIET) IMAGE_WHEREABOUTS=$(IMAGE_WHEREABOUTS_NAME) \
-			scripts/install-whereabouts.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 ifeq ($(INSTALL_KRUISE),true)
-	@echo -e "\033[35m [Step 5] Install third-party controllers: kurise \033[0m"
+	@echo -e "\033[35m [Step 8] Install third-party controllers: kurise \033[0m"
 	@ make setup_kurise
 endif
+ifeq ($(INSTALL_SPIDERDOCTOR),true)
+	@echo -e "\033[35m [Step 9] Install SpiderDoctor \033[0m"
+	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
+	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+	E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+	SPIDERDOCTOR_VERSION=$(SPIDERDOCTOR_VERSION) \
+	SPIDERDOCTOR_REPORT_PATH=$(SPIDERDOCTOR_REPORT_PATH) \
+	SPIDERDOCTOR_IMAGE_REPO=$(SPIDERDOCTOR_IMAGE_REPO) \
+	$(QUIET) bash scripts/install-spiderdoctor.sh
+endif
 ifeq ($(INSTALL_MULTUS),true)
-	@echo -e "\033[35m [Step 6] Install Multus \033[0m"
+	@echo -e "\033[35m [Step 10] Install Multus \033[0m"
 	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
-		INSTALL_SPIDER=$(INSTALL_SPIDER) \
-		TEST_IMAGE=$(TEST_IMAGE_NAME) \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
+		MULTUS_DEFAULT_CNI_CALICO=$(MULTUS_DEFAULT_CNI_CALICO) \
+		MULTUS_DEFAULT_CNI_VLAN100=$(MULTUS_DEFAULT_CNI_VLAN100) \
+		MULTUS_DEFAULT_CNI_VLAN200=$(MULTUS_DEFAULT_CNI_VLAN200) \
+		MULTUS_ADDITIONAL_CNI_VLAN100=$(MULTUS_ADDITIONAL_CNI_VLAN100) \
+		MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
-		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
-		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
-		K8S_IPV4_SERVICE_CIDR=$(K8S_IPV4_SERVICE_CIDR) \
-		K8S_IPV6_SERVICE_CIDR=$(K8S_IPV6_SERVICE_CIDR) \
-		E2E_BRIDGE_V4_CIDR=$(E2E_BRIDGE_V4_CIDR) \
-		E2E_BRIDGE_V6_CIDR=$(E2E_BRIDGE_V6_CIDR) \
-		E2E_BRIDGE_V4_GW=$(E2E_BRIDGE_V4_GW) \
-		E2E_BRIDGE_V6_GW=$(E2E_BRIDGE_V6_GW) \
-		INSTALL_BRIDGE_CNI_FOR_SERVICE=true  \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null
@@ -57,9 +75,9 @@ endif
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE=$(TEST_IMAGE_NAME) \
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
-		MULTUS_ADDITIONAL_CNI_NAME=$(MULTUS_ADDITIONAL_CNI_NAME) \
-		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_NAME) \
-		scripts/installTestPod.sh $(E2E_KUBECONFIG) $(E2E_SPIDERPOOL_ENABLE_SUBNET)
+		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
+		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+		scripts/installTestPod.sh $(E2E_KUBECONFIG) $(INSTALL_MULTUS)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"
@@ -98,21 +116,12 @@ setup_kind:
 		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
 	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master- || true
 	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/control-plane- || true
-	@ NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' | tr '\n' ' ' ` ; \
-		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
-		echo "find cluster node: $${NODE_LIST}" ; \
-		for NODE in  $${NODE_LIST} ; do \
-		  echo "create macvlan interface for node $$NODE " ; \
-		  docker cp scripts/makeNodeMacvlan.sh $${NODE}:/home/makeNodeMacvlan.sh ; \
-		  docker exec $${NODE} chmod +x /home/makeNodeMacvlan.sh ; \
-		  docker exec $${NODE}  /home/makeNodeMacvlan.sh ; \
-        done ; \
-        for ((N=0;N<=30;N++)); do \
-        	sleep 1 ; \
-        	kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null && break ; \
-        	echo "wait for node ready" ; \
-        done ; \
-        kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
+	for ((N=0;N<=30;N++)); do \
+		sleep 1 ; \
+		kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null && break ; \
+		echo "wait for node ready" ; \
+	done ; \
+    kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
 	echo "show kubernetes node image " && docker ps
 	@echo "===================== deploy prometheus CRD ========== "
 	{ timeout 10 kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml ; } \
@@ -157,6 +166,9 @@ setup_spiderpool:
 		else \
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
+		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_COORDINATOR)" == "true" ] ; then \
+		    HELM_OPTION+=" --set feature.coordinator.enabled=true " ; \
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
 		    HELM_OPTION+=" --set feature.enableSpiderSubnet=true " ; \
@@ -212,7 +224,7 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		set -x ; \
-		helm install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
+		helm upgrade --install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
 			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
 			--set spiderpoolAgent.image.registry="" \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
@@ -235,6 +247,16 @@ clean:
 	-@ docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
 	-@ docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
 
+.PHONY: net-tools
+net-tools:
+	@NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+	[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+	for NODE in $${NODE_LIST} ; do \
+	  docker cp scripts/install-net-tools.sh $${NODE}:/home/ ; \
+	  docker exec $${NODE} chmod +x /home/install-net-tools.sh ; \
+	  docker exec $${NODE} ./home/install-net-tools.sh ; \
+	done
+
 .PHONY: check_env
 check_env:
 	$(QUIET) [ -n "$(E2E_CLUSTER_NAME)" ] || { echo "error, miss E2E_CLUSTER_NAME " ; false ; }
@@ -251,8 +273,8 @@ prepare:
 		 [ "$(USE_TLS_METHOD)" == "certmanager" ] && IMAGE_LIST+=" $(IMAGE_CERT_MANAGER_NAME) " ; \
 		 [ -n "$(PYROSCOPE_LOCAL_PORT)" ] && IMAGE_LIST+=" $(IMAGE_PYROSCOPE_NAME) " ; \
 		 IMAGE_LIST+=" $(IMAGE_MULTUS_NAME) " ; \
-		 IMAGE_LIST+=" $(IMAGE_WHEREABOUTS_NAME) " ; \
 		 IMAGE_LIST+=" $(TEST_IMAGE_NAME) " ; \
+		 IMAGE_LIST+=" $(TEST_VLAN_GATEWAY_IMAGE) " ; \
 		 ARCH=$(ARCH) IMAGE_LIST="$${IMAGE_LIST}" \
 		 	CNI_PACKAGE_VERSION=$(CNI_PACKAGE_VERSION)  scripts/prepare.sh $(DOWNLOAD_DIR)
 
@@ -285,8 +307,9 @@ e2e_test:
 			export E2E_WHEREABOUT_IPAM_ENABLED=false ; \
 			export E2E_SPIDERPOOL_IPAM_ENABLED=true ; \
 		fi ; \
-		export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_NAME)" ; \
-		export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_NAME)" ; \
+		export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_VLAN0)" ; \
+		export MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) ; \
+		export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_VLAN100)" ; \
 		rm -f $(E2E_LOG_FILE) || true ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \

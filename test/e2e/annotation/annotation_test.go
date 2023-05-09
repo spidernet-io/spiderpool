@@ -717,7 +717,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		podYaml := common.GenerateExamplePodYaml(podName, nsName)
 		podYaml.Annotations = map[string]string{
 			pkgconstant.AnnoPodIPPools: annoPodIPPoolsStr,
-			common.MultusNetworks:      common.MacvlanCNIName,
+			common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan100),
 		}
 		Expect(podYaml).NotTo(BeNil())
 		GinkgoWriter.Printf("succeeded to generate pod yaml: %+v. \n", podYaml)

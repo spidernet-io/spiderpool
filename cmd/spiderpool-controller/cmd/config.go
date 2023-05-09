@@ -82,10 +82,12 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", false, nil, nil, &controllerContext.Cfg.IPPoolMaxAllocatedIPs},
 
-	{"SPIDERPOOL_SUBNET_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetResyncPeriod},
+	{"SPIDERPOOL_SUBNET_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.SubnetInformerResyncPeriod},
 	{"SPIDERPOOL_SUBNET_INFORMER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetInformerWorkers},
 	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
 	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
+
+	{"SPIDERPOOL_COORDINATOR_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.CoordinatorInformerResyncPeriod},
 
 	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
@@ -126,7 +128,7 @@ type Config struct {
 
 	IPPoolMaxAllocatedIPs int
 
-	SubnetResyncPeriod               int
+	SubnetInformerResyncPeriod       int
 	SubnetInformerWorkers            int
 	SubnetInformerMaxWorkqueueLength int
 	SubnetAppControllerWorkers       int
@@ -136,6 +138,8 @@ type Config struct {
 	IPPoolInformerMaxWorkQueueLength int
 	WorkQueueMaxRetries              int
 	WorkQueueRequeueDelayDuration    int
+
+	CoordinatorInformerResyncPeriod int
 
 	// configmap
 	EnableIPv4                        bool `yaml:"enableIPv4"`

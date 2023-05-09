@@ -43,6 +43,8 @@ endif
 
 GIT_COMMIT_VERSION = $(shell git show -s --format='format:%H')
 GIT_COMMIT_TIME = $(shell git show -s --format='format:%aI')
+GIT_BRANCH = $(shell git branch --show-current)
+GIT_TAG ?= dev
 
 FULL_BUILD_VERSION = $(VERSION) $(GIT_COMMIT_VERSION)
 
@@ -64,6 +66,7 @@ GO ?= go
 GO_BUILD_FLAGS =
 GO_TEST_FLAGS =
 GO_CLEAN_FLAGS =
+GO_BUILD_TIME = $(shell date "+%Y-%m-%d@%H:%M:%S")
 GO_BUILD_LDFLAGS =
 # go build/test -tags values
 GO_TAGS_FLAGS = osusergo

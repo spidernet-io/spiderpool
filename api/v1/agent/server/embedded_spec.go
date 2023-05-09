@@ -35,6 +35,30 @@ func init() {
   },
   "basePath": "/v1",
   "paths": {
+    "/coordinator/config": {
+      "get": {
+        "description": "Send a request to daemonset to get coordinator config\n",
+        "tags": [
+          "daemonset"
+        ],
+        "summary": "Get coordinator config",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CoordinatorConfig"
+            }
+          },
+          "500": {
+            "description": "Config not initialized successfully or others",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
+          }
+        }
+      }
+    },
     "/ipam/healthy": {
       "get": {
         "description": "Check spiderpool daemonset health to make sure whether it's ready\nfor CNI plugin usage\n",
@@ -225,6 +249,60 @@ func init() {
     }
   },
   "definitions": {
+    "CoordinatorConfig": {
+      "description": "Coordinator config",
+      "type": "object",
+      "required": [
+        "tuneMode",
+        "podCIDR",
+        "serviceCIDR",
+        "tunePodRoutes"
+      ],
+      "properties": {
+        "detectGateway": {
+          "type": "boolean"
+        },
+        "detectIPConflict": {
+          "type": "boolean"
+        },
+        "extraCIDR": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hostRPFilter": {
+          "type": "integer"
+        },
+        "hostRuleTable": {
+          "type": "integer"
+        },
+        "podCIDR": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "podDefaultRouteNIC": {
+          "type": "string"
+        },
+        "podMACPrefix": {
+          "type": "string"
+        },
+        "serviceCIDR": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tuneMode": {
+          "type": "string"
+        },
+        "tunePodRoutes": {
+          "type": "boolean"
+        }
+      }
+    },
     "DNS": {
       "description": "IPAM CNI types DNS",
       "type": "object",
@@ -432,6 +510,30 @@ func init() {
   },
   "basePath": "/v1",
   "paths": {
+    "/coordinator/config": {
+      "get": {
+        "description": "Send a request to daemonset to get coordinator config\n",
+        "tags": [
+          "daemonset"
+        ],
+        "summary": "Get coordinator config",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CoordinatorConfig"
+            }
+          },
+          "500": {
+            "description": "Config not initialized successfully or others",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
+          }
+        }
+      }
+    },
     "/ipam/healthy": {
       "get": {
         "description": "Check spiderpool daemonset health to make sure whether it's ready\nfor CNI plugin usage\n",
@@ -622,6 +724,60 @@ func init() {
     }
   },
   "definitions": {
+    "CoordinatorConfig": {
+      "description": "Coordinator config",
+      "type": "object",
+      "required": [
+        "tuneMode",
+        "podCIDR",
+        "serviceCIDR",
+        "tunePodRoutes"
+      ],
+      "properties": {
+        "detectGateway": {
+          "type": "boolean"
+        },
+        "detectIPConflict": {
+          "type": "boolean"
+        },
+        "extraCIDR": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hostRPFilter": {
+          "type": "integer"
+        },
+        "hostRuleTable": {
+          "type": "integer"
+        },
+        "podCIDR": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "podDefaultRouteNIC": {
+          "type": "string"
+        },
+        "podMACPrefix": {
+          "type": "string"
+        },
+        "serviceCIDR": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tuneMode": {
+          "type": "string"
+        },
+        "tunePodRoutes": {
+          "type": "boolean"
+        }
+      }
+    },
     "DNS": {
       "description": "IPAM CNI types DNS",
       "type": "object",

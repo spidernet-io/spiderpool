@@ -138,15 +138,11 @@ type Config struct {
 	WorkQueueRequeueDelayDuration    int
 
 	// configmap
-	EnableIPv4                        bool     `yaml:"enableIPv4"`
-	EnableIPv6                        bool     `yaml:"enableIPv6"`
-	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
-	EnableSpiderSubnet                bool     `yaml:"enableSpiderSubnet"`
-	ClusterDefaultIPv4IPPool          []string `yaml:"clusterDefaultIPv4IPPool"`
-	ClusterDefaultIPv6IPPool          []string `yaml:"clusterDefaultIPv6IPPool"`
-	ClusterDefaultIPv4Subnet          []string `yaml:"clusterDefaultIPv4Subnet"`
-	ClusterDefaultIPv6Subnet          []string `yaml:"clusterDefaultIPv6Subnet"`
-	ClusterSubnetDefaultFlexibleIPNum int      `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+	EnableIPv4                        bool `yaml:"enableIPv4"`
+	EnableIPv6                        bool `yaml:"enableIPv6"`
+	EnableStatefulSet                 bool `yaml:"enableStatefulSet"`
+	EnableSpiderSubnet                bool `yaml:"enableSpiderSubnet"`
+	ClusterSubnetDefaultFlexibleIPNum int  `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 
 type ControllerContext struct {

@@ -147,10 +147,13 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 
 		{
 			poolLabels := map[string]string{
-				constant.LabelIPPoolOwnerSpiderSubnet:   subnet.Name,
-				constant.LabelIPPoolOwnerApplication:    applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
-				constant.LabelIPPoolOwnerApplicationUID: string(podController.UID),
-				constant.LabelIPPoolInterface:           autoPoolProperty.IfName,
+				constant.LabelIPPoolOwnerSpiderSubnet:         subnet.Name,
+				constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
+				constant.LabelIPPoolOwnerApplicationKind:      podController.Kind,
+				constant.LabelIPPoolOwnerApplicationNamespace: podController.Namespace,
+				constant.LabelIPPoolOwnerApplicationName:      podController.Name,
+				constant.LabelIPPoolOwnerApplicationUID:       string(podController.UID),
+				constant.LabelIPPoolInterface:                 autoPoolProperty.IfName,
 			}
 			// label IPPoolCIDR
 			cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*pool.Spec.IPVersion, pool.Spec.Subnet)

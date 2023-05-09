@@ -756,10 +756,13 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 		var tmpPool *spiderpoolv2beta1.SpiderIPPool
 		tmpPoolList := &spiderpoolv2beta1.SpiderIPPoolList{}
 		matchLabels := client.MatchingLabels{
-			constant.LabelIPPoolOwnerSpiderSubnet: subnetName,
-			constant.LabelIPPoolOwnerApplication:  applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName),
-			constant.LabelIPPoolIPVersion:         ipVersionStr,
-			constant.LabelIPPoolInterface:         ifName,
+			constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
+			constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
+			constant.LabelIPPoolOwnerApplicationKind:      podController.Kind,
+			constant.LabelIPPoolOwnerApplicationNamespace: podController.Namespace,
+			constant.LabelIPPoolOwnerApplicationName:      podController.Name,
+			constant.LabelIPPoolIPVersion:                 ipVersionStr,
+			constant.LabelIPPoolInterface:                 ifName,
 		}
 
 		err := sac.apiReader.List(ctx, tmpPoolList, matchLabels)

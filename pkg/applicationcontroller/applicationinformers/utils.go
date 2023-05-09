@@ -33,6 +33,9 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+// ClusterSubnetDefaultFlexibleIPNumber is a singleton recording cluster default Subnet flexible IP number.
+var ClusterSubnetDefaultFlexibleIPNumber = new(int)
+
 var errInvalidInput = func(str string) error {
 	return fmt.Errorf("invalid input '%s'", str)
 }
@@ -225,8 +228,8 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 			subnetAnnoConfig.AssignIPNum = ipNum
 		}
 	} else {
-		log.Sugar().Debugf("no specified IPPool IP number, default to set it 0")
-		subnetAnnoConfig.FlexibleIPNum = pointer.Int(0)
+		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster default subnet flexible IP number: %d", *ClusterSubnetDefaultFlexibleIPNumber)
+		subnetAnnoConfig.FlexibleIPNum = pointer.Int(*ClusterSubnetDefaultFlexibleIPNumber)
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)

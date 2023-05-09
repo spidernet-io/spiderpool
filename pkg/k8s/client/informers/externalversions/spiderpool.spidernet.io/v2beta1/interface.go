@@ -11,6 +11,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// SpiderCoordinators returns a SpiderCoordinatorInformer.
+	SpiderCoordinators() SpiderCoordinatorInformer
 	// SpiderIPPools returns a SpiderIPPoolInformer.
 	SpiderIPPools() SpiderIPPoolInformer
 	// SpiderSubnets returns a SpiderSubnetInformer.
@@ -26,6 +28,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// SpiderCoordinators returns a SpiderCoordinatorInformer.
+func (v *version) SpiderCoordinators() SpiderCoordinatorInformer {
+	return &spiderCoordinatorInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // SpiderIPPools returns a SpiderIPPoolInformer.

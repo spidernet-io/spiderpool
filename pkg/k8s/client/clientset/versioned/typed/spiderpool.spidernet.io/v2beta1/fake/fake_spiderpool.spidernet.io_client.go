@@ -15,6 +15,10 @@ type FakeSpiderpoolV2beta1 struct {
 	*testing.Fake
 }
 
+func (c *FakeSpiderpoolV2beta1) SpiderCoordinators() v2beta1.SpiderCoordinatorInterface {
+	return &FakeSpiderCoordinators{c}
+}
+
 func (c *FakeSpiderpoolV2beta1) SpiderIPPools() v2beta1.SpiderIPPoolInterface {
 	return &FakeSpiderIPPools{c}
 }

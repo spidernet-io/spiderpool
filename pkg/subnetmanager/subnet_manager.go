@@ -121,14 +121,21 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 		if nil != err {
 			return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec IPs %s: %v", constant.ErrWrongInput, pool.Name, pool.Spec.IPs, err)
 		}
-		if len(poolIPs) == autoPoolProperty.DesiredIPNumber && pool.Labels[constant.LabelIPPoolOwnerApplicationUID] == string(podController.UID) {
-			log.Sugar().Debugf("Auto-created IPPool %s matches the desired IP number %d, no need to reconcile", pool.Name, autoPoolProperty.DesiredIPNumber)
-			return pool, nil
+		if len(poolIPs) == autoPoolProperty.DesiredIPNumber {
+			oldAppUID := pool.Labels[constant.LabelIPPoolOwnerApplicationUID]
+			oldReclaimIPPoolStr := pool.Labels[constant.LabelIPPoolReclaimIPPool]
+
+			if oldAppUID == string(podController.UID) &&
+				oldReclaimIPPoolStr == applicationinformers.IsReclaimAutoPoolLabelValue(autoPoolProperty.IsReclaimIPPool) {
+				log.Sugar().Debugf("Auto-created IPPool %s matches the desired IP number %d, no need to reconcile", pool.Name, autoPoolProperty.DesiredIPNumber)
+				return pool, nil
+			}
 		}
 
-		// refresh the label "ipam.spidernet.io/owner-application-uid"
+		// refresh the label "ipam.spidernet.io/owner-application-uid" and "ipam.spidernet.io/ippool-reclaim"
 		labels := pool.GetLabels()
 		labels[constant.LabelIPPoolOwnerApplicationUID] = string(podController.UID)
+		labels[constant.LabelIPPoolReclaimIPPool] = applicationinformers.IsReclaimAutoPoolLabelValue(autoPoolProperty.IsReclaimIPPool)
 		pool.SetLabels(labels)
 	} else {
 		pool = &spiderpoolv2beta1.SpiderIPPool{
@@ -154,6 +161,8 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 				constant.LabelIPPoolOwnerApplicationName:      podController.Name,
 				constant.LabelIPPoolOwnerApplicationUID:       string(podController.UID),
 				constant.LabelIPPoolInterface:                 autoPoolProperty.IfName,
+				constant.LabelIPPoolReclaimIPPool:             applicationinformers.IsReclaimAutoPoolLabelValue(autoPoolProperty.IsReclaimIPPool),
+				constant.LabelIPPoolIPVersion:                 applicationinformers.AutoPoolIPVersionLabelValue(autoPoolProperty.IPVersion),
 			}
 			// label IPPoolCIDR
 			cidrLabelValue, err := spiderpoolip.CIDRToLabelValue(*pool.Spec.IPVersion, pool.Spec.Subnet)
@@ -161,18 +170,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 				return nil, fmt.Errorf("failed to parse '%s' when allocating empty Auto-created IPPool '%v'", pool.Spec.Subnet, pool)
 			}
 			poolLabels[constant.LabelIPPoolCIDR] = cidrLabelValue
-			if autoPoolProperty.IsReclaimIPPool {
-				poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.True
-			} else {
-				poolLabels[constant.LabelIPPoolReclaimIPPool] = constant.False
-			}
-			// label IPVersion
-			if autoPoolProperty.IPVersion == constant.IPv4 {
-				poolLabels[constant.LabelIPPoolIPVersion] = constant.LabelValueIPVersionV4
-			} else {
-				poolLabels[constant.LabelIPPoolIPVersion] = constant.LabelValueIPVersionV6
-			}
-			pool.Labels = poolLabels
+			pool.SetLabels(poolLabels)
 		}
 
 		// set owner reference

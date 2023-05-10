@@ -248,7 +248,6 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 				ok, e := CheckIppoolForPodName(f, m, v.Name, v.Namespace)
 				if e != nil || !ok {
 					f.Log("pod %v/%v not recorded in v4 pool %v \n", v.Namespace, v.Name, m.Name)
-					f.Log("v4 pool %v status : %v \n", v.Name, m.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true
@@ -270,7 +269,6 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 				ok, e := CheckIppoolForPodName(f, m, v.Name, v.Namespace)
 				if e != nil || !ok {
 					f.Log("pod %v/%v not recorded in v6 pool %v \n", v.Namespace, v.Name, m.Name)
-					f.Log("v6 pool %v status : %v \n", v.Name, m.Status.AllocatedIPs)
 					continue
 				}
 				bingo = true

@@ -190,6 +190,12 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 	}
 	pool.Spec.IPs = ips
 
+	// give the auto-created IPPool a symbol to explain whether it is IP number flexible or fixed.
+	poolAnno := map[string]string{
+		constant.AnnoSpiderSubnetPoolIPNumber: autoPoolProperty.AnnoPoolIPNumberVal,
+	}
+	pool.SetAnnotations(poolAnno)
+
 	if operationCreate {
 		log.Sugar().Infof("try to create IPPool '%v'", pool)
 		err = sm.client.Create(ctx, pool)

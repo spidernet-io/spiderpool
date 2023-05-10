@@ -136,10 +136,11 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 
 			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
 				v4PoolCandidate, errV4 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv4[0], podController, types.AutoPoolProperty{
-					DesiredIPNumber: poolIPNum,
-					IPVersion:       constant.IPv4,
-					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
-					IfName:          nic,
+					DesiredIPNumber:     poolIPNum,
+					IPVersion:           constant.IPv4,
+					IsReclaimIPPool:     subnetAnnoConfig.ReclaimIPPool,
+					IfName:              nic,
+					AnnoPoolIPNumberVal: strconv.Itoa(poolIPNum),
 				})
 			} else {
 				v4PoolCandidate, errV4 = i.findAppAutoPool(ctx, subnetItem.IPv4[0], nic, constant.LabelValueIPVersionV4, poolIPNum, podController)
@@ -159,10 +160,11 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 
 			if !slices.Contains(constant.K8sAPIVersions, podController.APIVersion) || !slices.Contains(constant.K8sKinds, podController.Kind) {
 				v6PoolCandidate, errV6 = i.applyThirdControllerAutoPool(ctx, subnetItem.IPv6[0], podController, types.AutoPoolProperty{
-					DesiredIPNumber: poolIPNum,
-					IPVersion:       constant.IPv6,
-					IsReclaimIPPool: subnetAnnoConfig.ReclaimIPPool,
-					IfName:          nic,
+					DesiredIPNumber:     poolIPNum,
+					IPVersion:           constant.IPv6,
+					IsReclaimIPPool:     subnetAnnoConfig.ReclaimIPPool,
+					IfName:              nic,
+					AnnoPoolIPNumberVal: strconv.Itoa(poolIPNum),
 				})
 			} else {
 				v6PoolCandidate, errV6 = i.findAppAutoPool(ctx, subnetItem.IPv6[0], nic, constant.LabelValueIPVersionV6, poolIPNum, podController)
@@ -285,12 +287,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 			}
 		}
 
-		pool, err = i.subnetManager.ReconcileAutoIPPool(ctx, pool, subnetName, podController, types.AutoPoolProperty{
-			DesiredIPNumber: autoPoolProperty.DesiredIPNumber,
-			IPVersion:       autoPoolProperty.IPVersion,
-			IsReclaimIPPool: autoPoolProperty.IsReclaimIPPool,
-			IfName:          autoPoolProperty.IfName,
-		})
+		pool, err = i.subnetManager.ReconcileAutoIPPool(ctx, pool, subnetName, podController, autoPoolProperty)
 		if nil != err {
 			if apierrors.IsConflict(err) || apierrors.IsAlreadyExists(err) {
 				log.Sugar().Warnf("fetch SubnetIPPool %d times: apply auto-created IPPool conflict: %v", j, err)

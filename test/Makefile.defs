@@ -15,7 +15,7 @@ E2E_BRIDGE_V6_GW = fd91::1
 E2E_IP_FAMILY ?= dual
 
 # kubernetes version
-E2E_KIND_IMAGE_TAG ?= v1.26.2
+E2E_KIND_IMAGE_TAG ?= v1.27.1
 # with kind default version
 # E2E_KIND_IMAGE_TAG ?= 
 

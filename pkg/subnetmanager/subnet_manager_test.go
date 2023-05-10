@@ -249,10 +249,11 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 					APP: nil,
 				}
 				autoPoolProperty := types.AutoPoolProperty{
-					DesiredIPNumber: 1,
-					IPVersion:       constant.IPv4,
-					IsReclaimIPPool: true,
-					IfName:          "eth0",
+					DesiredIPNumber:     1,
+					IPVersion:           constant.IPv4,
+					IsReclaimIPPool:     true,
+					IfName:              "eth0",
+					AnnoPoolIPNumberVal: "1",
 				}
 
 				autoPool, err := subnetManager.ReconcileAutoIPPool(ctx, nil, subnet.Name, podController, autoPoolProperty)

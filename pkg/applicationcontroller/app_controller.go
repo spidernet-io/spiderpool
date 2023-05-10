@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
 
@@ -784,19 +785,23 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 		}
 
 		var desiredIPNumber int
+		var annoPoolIPNumberVal string
 		if podSubnetConfig.FlexibleIPNum != nil {
 			desiredIPNumber = appReplicas + *(podSubnetConfig.FlexibleIPNum)
+			annoPoolIPNumberVal = fmt.Sprintf("+%d", *podSubnetConfig.FlexibleIPNum)
 		} else {
 			desiredIPNumber = podSubnetConfig.AssignIPNum
+			annoPoolIPNumberVal = strconv.Itoa(podSubnetConfig.AssignIPNum)
 		}
 
 		log.Sugar().Infof("try to reconcile auto-created IPv%d IPPool for Interface %s by SpiderSubnet %s with application controller %v",
 			ipVersion, ifName, subnetName, podController.AppNamespacedName)
 		_, err = sac.subnetMgr.ReconcileAutoIPPool(ctx, tmpPool, subnetName, podController, types.AutoPoolProperty{
-			DesiredIPNumber: desiredIPNumber,
-			IPVersion:       ipVersion,
-			IsReclaimIPPool: podSubnetConfig.ReclaimIPPool,
-			IfName:          ifName,
+			DesiredIPNumber:     desiredIPNumber,
+			IPVersion:           ipVersion,
+			IsReclaimIPPool:     podSubnetConfig.ReclaimIPPool,
+			IfName:              ifName,
+			AnnoPoolIPNumberVal: annoPoolIPNumberVal,
 		})
 		if nil != err {
 			return err

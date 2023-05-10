@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -44,8 +43,8 @@ import (
 )
 
 const (
-	MessageEnqueueSubnet = "Enqueue Subnet"
-	MessageWorkqueueFull = "Workqueue is full, dropping the element"
+	messageEnqueueSubnet = "Enqueue Subnet"
+	messageWorkqueueFull = "Workqueue is full, dropping the element"
 )
 
 var InformerLogger *zap.Logger
@@ -195,12 +194,12 @@ func (sc *SubnetController) enqueueSubnetOnAdd(obj interface{}) {
 	)
 
 	if sc.Workqueue.Len() >= sc.MaxWorkqueueLength {
-		logger.Sugar().Errorf(MessageWorkqueueFull)
+		logger.Sugar().Errorf(messageWorkqueueFull)
 		return
 	}
 
 	sc.Workqueue.Add(subnet.Name)
-	logger.Debug(MessageEnqueueSubnet)
+	logger.Debug(messageEnqueueSubnet)
 }
 
 func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
@@ -211,12 +210,12 @@ func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
 	)
 
 	if sc.Workqueue.Len() >= sc.MaxWorkqueueLength {
-		logger.Sugar().Errorf(MessageWorkqueueFull)
+		logger.Sugar().Errorf(messageWorkqueueFull)
 		return
 	}
 
 	sc.Workqueue.Add(newSubnet.Name)
-	logger.Debug(MessageEnqueueSubnet)
+	logger.Debug(messageEnqueueSubnet)
 }
 
 func (sc *SubnetController) enqueueSubnetOnIPPoolChange(obj interface{}) {
@@ -233,16 +232,15 @@ func (sc *SubnetController) enqueueSubnetOnIPPoolChange(obj interface{}) {
 	)
 
 	if sc.Workqueue.Len() >= sc.MaxWorkqueueLength {
-		logger.Sugar().Errorf(MessageWorkqueueFull)
+		logger.Sugar().Errorf(messageWorkqueueFull)
 		return
 	}
 
 	sc.Workqueue.Add(ownerSubnet)
-	logger.Debug(MessageEnqueueSubnet)
+	logger.Debug(messageEnqueueSubnet)
 }
 
 func (sc *SubnetController) run(ctx context.Context, workers int) error {
-	defer utilruntime.HandleCrash()
 	defer sc.Workqueue.ShutDown()
 	defer sc.dynamicWorkqueue.ShutDown()
 

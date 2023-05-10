@@ -22,6 +22,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller"
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
@@ -424,6 +425,21 @@ func setupInformers() {
 		logger.Fatal(err.Error())
 	}
 
+	k8sClient, err := initK8sClientSet()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+
+	logger.Info("Begin to set up Coordinator informer")
+	if err := (&coordinatormanager.CoordinatorController{
+		Manager:             controllerContext.CRDManager,
+		Client:              controllerContext.CRDManager.GetClient(),
+		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+		ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
+	}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
+		logger.Fatal(err.Error())
+	}
+
 	logger.Info("Begin to set up IPPool informer")
 	ipPoolController := ippoolmanager.NewIPPoolController(
 		ippoolmanager.IPPoolControllerConfig{
@@ -449,7 +465,7 @@ func setupInformers() {
 			Client:                  controllerContext.CRDManager.GetClient(),
 			APIReader:               controllerContext.CRDManager.GetAPIReader(),
 			LeaderRetryElectGap:     time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-			ResyncPeriod:            time.Duration(controllerContext.Cfg.SubnetResyncPeriod) * time.Second,
+			ResyncPeriod:            time.Duration(controllerContext.Cfg.SubnetInformerResyncPeriod) * time.Second,
 			SubnetControllerWorkers: controllerContext.Cfg.SubnetInformerWorkers,
 			MaxWorkqueueLength:      controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
 			DynamicClient:           controllerContext.DynamicClient,

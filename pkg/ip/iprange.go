@@ -6,6 +6,7 @@ package ip
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"net"
 	"sort"
 	"strings"
@@ -52,19 +53,25 @@ func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 	}
 
 	arr := strings.Split(ipRange, "-")
+	// 'n' must be 1 or 2 because of the validation of 'IsIPRange'
 	n := len(arr)
 	var ips []net.IP
 	if n == 1 {
-		ips = append(ips, net.ParseIP(arr[0]))
+		ips = make([]net.IP, 1)
+		ips[0] = net.ParseIP(arr[0])
+		return ips, nil
 	}
 
-	if n == 2 {
-		cur := net.ParseIP(arr[0])
-		end := net.ParseIP(arr[1])
-		for Cmp(cur, end) <= 0 {
-			ips = append(ips, cur)
-			cur = NextIP(cur)
-		}
+	cur := net.ParseIP(arr[0])
+	end := net.ParseIP(arr[1])
+
+	length := new(big.Int)
+	length.Sub(ipToInt(end), ipToInt(cur))
+	ips = make([]net.IP, 0, length.Int64())
+
+	for Cmp(cur, end) <= 0 {
+		ips = append(ips, cur)
+		cur = NextIP(cur)
 	}
 
 	return ips, nil

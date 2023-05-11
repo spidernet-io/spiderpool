@@ -58,10 +58,6 @@ data:
     enableIPv6: true
     enableStatefulSet: true
     enableSpiderSubnet: true
-    clusterDefaultIPv4IPPool: [default-v4-ippool]
-    clusterDefaultIPv6IPPool: [default-v6-ippool]
-    clusterDefaultIPv4Subnet: [default-v4-subnet]
-    clusterDefaultIPv6Subnet: [default-v6-subnet]
     clusterSubnetDefaultFlexibleIPNumber: 1
 ```
 
@@ -80,33 +76,31 @@ data:
 - `enableSpiderSubnet` (bool):
   - `true`: Enable SpiderSubnet capability of Spiderpool.
   - `false`: Disable SpiderSubnet capability of Spiderpool.
-- `clusterDefaultIPv4IPPool` (array): Global default IPv4 ippools. It takes effect across the cluster.
-- `clusterDefaultIPv6IPPool` (array): Global default IPv6 ippools. It takes effect across the cluster.
-- `clusterDefaultIPv4Subnet` (array): Global default IPv4 subnets. It takes effect across the cluster.
-- `clusterDefaultIPv6Subnet` (array): Global default IPv6 subnets. It takes effect across the cluster.
 - `clusterSubnetDefaultFlexibleIPNumber` (int): Global SpiderSubnet default flexible IP number. It takes effect across the cluster.
 
 ## Spiderpool-agent env
 
-| env                                             | default | description                                                  |
-| ----------------------------------------------- | ------- | ------------------------------------------------------------ |
-| SPIDERPOOL_LOG_LEVEL                            | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
-| SPIDERPOOL_ENABLED_METRIC                       | false   | Enable/disable metrics.                                   |
-| SPIDERPOOL_HEALTH_PORT                          | 5710    | Metric HTTP server port.                                     |
-| SPIDERPOOL_METRIC_HTTP_PORT                     | 5711    | Spiderpool-agent backend HTTP server port.                   |
-| SPIDERPOOL_GOPS_LISTEN_PORT                     | 5712    | Port that gops is listening on. Disabled if empty.    |
-| SPIDERPOOL_UPDATE_CR_MAX_RETRIES                 | 3       | Max retries to update k8s resources.                         |
+| env                                             | default | description                                                                                     |
+| ----------------------------------------------- | ------- |-------------------------------------------------------------------------------------------------|
+| SPIDERPOOL_LOG_LEVEL                            | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic".              |
+| SPIDERPOOL_ENABLED_METRIC                       | false   | Enable/disable metrics.                                                                         |
+| SPIDERPOOL_HEALTH_PORT                          | 5710    | Metric HTTP server port.                                                                        |
+| SPIDERPOOL_METRIC_HTTP_PORT                     | 5711    | Spiderpool-agent backend HTTP server port.                                                      |
+| SPIDERPOOL_GOPS_LISTEN_PORT                     | 5712    | Port that gops is listening on. Disabled if empty.                                              |
+| SPIDERPOOL_UPDATE_CR_MAX_RETRIES                | 3       | Max retries to update k8s resources.                                                            |
 | SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS | 100     | Max historical IP allocation information allowed for a single Pod recorded in WorkloadEndpoint. |
-| SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.          |
+| SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.                                             |
 
 ## Spiderpool-controller env
 
-| env                         | default | description                                                  |
-| --------------------------- | ------- | ------------------------------------------------------------ |
-| SPIDERPOOL_LOG_LEVEL        | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
-| SPIDERPOOL_ENABLED_METRIC   | false   | Enable/disable metrics.                                   |
-| SPIDERPOOL_HEALTH_PORT      | 5720    | Spiderpool-controller backend HTTP server port.              |
-| SPIDERPOOL_METRIC_HTTP_PORT | 5721    | Metric HTTP server port.                                     |
-| SPIDERPOOL_WEBHOOK_PORT     | 5722    | Webhook HTTP server port.                                    |
-| SPIDERPOOL_CLI_PORT         | 5723    | Spiderpool-CLI HTTP server port.                             |
-| SPIDERPOOL_GOPS_LISTEN_PORT | 5724    | Port that gops is listening on. Disabled if empty.    |
+| env                                      | default | description                                                                        |
+|------------------------------------------|---------|------------------------------------------------------------------------------------|
+| SPIDERPOOL_LOG_LEVEL                     | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
+| SPIDERPOOL_ENABLED_METRIC                | false   | Enable/disable metrics.                                                            |
+| SPIDERPOOL_HEALTH_PORT                   | 5720    | Spiderpool-controller backend HTTP server port.                                    |
+| SPIDERPOOL_METRIC_HTTP_PORT              | 5721    | Metric HTTP server port.                                                           |
+| SPIDERPOOL_WEBHOOK_PORT                  | 5722    | Webhook HTTP server port.                                                          |
+| SPIDERPOOL_CLI_PORT                      | 5723    | Spiderpool-CLI HTTP server port.                                                   |
+| SPIDERPOOL_GOPS_LISTEN_PORT              | 5724    | Port that gops is listening on. Disabled if empty.                                 |
+| SPIDERPOOL_GC_IP_ENABLED                 | true    | Enable/disable IP GC.                                                              |
+| SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED | true    | Enable/disable IP GC for Terminating pod.                                          |

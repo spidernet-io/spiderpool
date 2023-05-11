@@ -113,7 +113,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
         metadata:
           annotations:
             ipam.spidernet.io/subnet: |- 
-              {"ipv4": ["default-v4-subnet"], "ipv6": ["default-v6-subnet"]}
+              {"ipv4": ["subnet-demo-v4"], "ipv6": ["subnet-demo-v6"]}
             ipam.spidernet.io/ippool-ip-number: "5"
           labels:
             app: custom-kruise-cloneset
@@ -129,23 +129,21 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
     >
     > 1. You must specify a fixed IP number for auto-created IPPool like `ipam.spidernet.io/ippool-ip-number: "5"`. 
       Because Spiderpool has no idea about the replica number, so it does not support annotation like `ipam.spidernet.io/ippool-ip-number: "+5"`.
-    > 2. Spiderpool does not watch third-party controller object, so it does not support automatically reclaim the auto-created IPPool, and the administrator has to delete it by hand.
-      So, annotation like `ipam.spidernet.io/ippool-reclaim: "true"` does not take effect, it always behave like `ipam.spidernet.io/ippool-reclaim: "false"`.
 
 2. Check status
 
-    As expected, Spiderpool will create auto-created IPPool from `default-v4-subnet` and `default-v6-subnet` objects.
+    As expected, Spiderpool will create auto-created IPPool from `subnet-demo-v4` and `subnet-demo-v6` objects.
     And Pods of OpenKruise CloneSet `custom-kruise-cloneset` will be assigned with IP addresses from the created IPPools.
 
     ```text
     $ kubectl get sp | grep kruise
-    NAME                                               VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-    auto-custom-kruise-cloneset-v4-eth0-bcfbd5ac1a29   4         172.16.0.0/16             3                    5                false     false
-    auto-custom-kruise-cloneset-v6-eth0-bcfbd5ac1a29   6         fc00:f853:ccd:e790::/64   3                    5                false     false
+    NAME                                      VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE   APP-NAMESPACE
+    auto4-custom-kruise-cloneset-eth0-028d6   4         172.16.0.0/16             3                    5                false     false     default
+    auto6-custom-kruise-cloneset-eth0-028d6   6         fc00:f853:ccd:e790::/64   3                    5                false     false     default
     ------------------------------------------------------------------------------------------
     $ kubectl get po -l app=custom-kruise-cloneset -o wide
     NAME                           READY   STATUS    RESTARTS   AGE   IP            NODE            NOMINATED NODE   READINESS GATES
-    custom-kruise-cloneset-9x7bf   1/1     Running   0          43s   172.16.41.2   spider-worker   <none>           2/2
-    custom-kruise-cloneset-rl4d6   1/1     Running   0          43s   172.16.41.3   spider-worker   <none>           2/2
-    custom-kruise-cloneset-t4nkm   1/1     Running   0          43s   172.16.41.5   spider-worker   <none>           2/2
+    custom-kruise-cloneset-f52dn   1/1     Running   0          61s   172.16.41.4   spider-worker   <none>           2/2
+    custom-kruise-cloneset-mq67v   1/1     Running   0          61s   172.16.41.5   spider-worker   <none>           2/2
+    custom-kruise-cloneset-nprpf   1/1     Running   0          61s   172.16.41.1   spider-worker   <none>           2/2
     ```

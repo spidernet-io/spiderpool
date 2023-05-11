@@ -32,6 +32,24 @@ ipam.spidernet.io/subnet: '{"ipv4": ["subnet-demo-v4"], "ipv6": ["subnet-demo-v6
 
 For a pod, you can specify Spiderpool annotations for a special request.
 
+### ipam.spidernet.io/ippool-ip-number
+
+This annotation is used with [SpiderSubnet](../usage/spider-subnet.md) feature enabled.
+It specifies the IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1').
+
+```yaml
+ipam.spidernet.io/ippool-ip-number: +1
+```
+
+### ipam.spidernet.io/ippool-reclaim
+
+This annotation is used with [SpiderSubnet](../usage/spider-subnet.md) feature enabled.
+It specifies the corresponding SpiderIPPool to delete or not once the application was deleted (optional and default 'true').
+
+```yaml
+ipam.spidernet.io/ippool-reclaim: true
+```
+
 ### ipam.spidernet.io/ippool
 
 Specify the ippools used to allocate IP.

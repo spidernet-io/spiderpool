@@ -197,7 +197,7 @@ func Cmp(ip1, ip2 net.IP) int {
 // ipToInt converts net.IP to big.Int.
 func ipToInt(ip net.IP) *big.Int {
 	if v := ip.To4(); v != nil {
-		return big.NewInt(0).SetBytes(v)
+		return big.NewInt(0).SetBytes(v.To4())
 	}
 	return big.NewInt(0).SetBytes(ip.To16())
 }

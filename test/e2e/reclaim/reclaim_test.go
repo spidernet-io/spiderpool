@@ -576,6 +576,11 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart \n")
 				Expect(spiderpoolControllerPodList.Items).NotTo(HaveLen(0), "failed to get spiderpool controller podList \n")
+
+				// Check wbehook service ready after restarting the controller
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+				defer cancel()
+				Expect(common.WaitWebhookReady(ctx, frame, common.WebhookPort)).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("now time: %s, succeed to restart spiderpool controller pods \n", time.Now().Format(time.RFC3339Nano))
 
 				// check the real pod ip should be recorded in spiderpool, the dirty ip record should be reclaimed from spiderpool

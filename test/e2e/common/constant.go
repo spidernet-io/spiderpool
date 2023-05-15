@@ -65,3 +65,8 @@ const (
 	AutomaticallyCreated = "Automatic"
 	ManuallyCreated      = "Manual"
 )
+
+// Webhook Port
+const (
+	WebhookPort = "5722"
+)

@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
+var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 	var namespace, kruiseCloneSetName, kruiseStatefulSetName, v4SubnetName, v6SubnetName, v4PoolName, v6PoolName string
 	var v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
 	var v4PoolObj, v6PoolObj *spiderpool.SpiderIPPool
@@ -68,7 +68,7 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 		})
 	})
 
-	It("Third party control of OpenKruise can bind ippool. ", Label("kruise", "E00009", "E00011"), func() {
+	It("SpiderIPPool feature supports third party controllers. ", Label("kruise", "T00001", "T00003"), func() {
 
 		podAnno := types.AnnoPodIPPoolValue{}
 		if frame.Info.IpV4Enabled {
@@ -143,7 +143,8 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 		}
 	})
 
-	It("SpiderSubnet feature supports third party controllers.", Label("kruise", "E00010", "E00011"), func() {
+	It("SpiderSubnet feature supports third party controllers.", Label("kruise", "T00002", "T00003"), func() {
+
 		if !frame.Info.SpiderSubnetEnabled {
 			Skip("Test conditions `enableSpiderSubnet:true` not met")
 		}
@@ -242,5 +243,144 @@ var _ = Describe("Third party control:OpenKruise", Label("kruise"), func() {
 			}
 			return true
 		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	Context("Use of reserved IPPool by different types of applications", func() {
+
+		var (
+			replicasNum                    int32 = 1
+			thirdPartyAppName              string
+			v4PoolNameList, v6PoolNameList []string
+		)
+
+		BeforeEach(func() {
+			thirdPartyAppName = "third-party-" + tools.RandomName()
+		})
+
+		// T00004: Third-party applications with the same name and type can use the reserved IPPool.
+		// I00005: Third-party applications with the same name and different types cannot use the reserved IPPool.
+		It("A third-party application of the same name uses reserved IPPool", Label("T00004", "T00005"), func() {
+			subnetAnno := types.AnnoSubnetItem{}
+			if frame.Info.IpV4Enabled {
+				subnetAnno.IPv4 = []string{v4SubnetName}
+			}
+			if frame.Info.IpV6Enabled {
+				subnetAnno.IPv6 = []string{v6SubnetName}
+			}
+			subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			annotationMap := map[string]string{
+				// Set the annotation ipam.spidernet.io/ippool-reclaim: "false"
+				// to prevent the fixed pool from being deleted when the application is deleted.
+				constant.AnnoSpiderSubnetReclaimIPPool: "false",
+				constant.AnnoSpiderSubnet:              string(subnetAnnoMarshal),
+				/*
+					Notice
+						You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet feature.
+						Here's an example ipam.spidernet.io/ippool-ip-number: "5".
+				*/
+				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+			}
+			GinkgoWriter.Printf("Set the annotation ipam.spidernet.io/reclaim: false for the application %v/%v, and create. \n", namespace, thirdPartyAppName)
+			kruiseCloneSetObject := common.GenerateExampleKruiseCloneSetYaml(thirdPartyAppName, namespace, kruiseReplicasNum)
+			kruiseCloneSetObject.Spec.Template.Annotations = annotationMap
+			Expect(common.CreateKruiseCloneSet(frame, kruiseCloneSetObject)).NotTo(HaveOccurred())
+
+			// Check that the IP of the subnet record matches the record in IPPool
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Check that the pod's ip is recorded in the ippool
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(kruiseCloneSetObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
+			podList, err := frame.GetPodListByLabel(kruiseCloneSetObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			GinkgoWriter.Printf("Delete third party applications %v/%v. \n", namespace, thirdPartyAppName)
+			Expect(common.DeleteKruiseCloneSetByName(frame, thirdPartyAppName, namespace)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err || len(podList.Items) != 0 {
+					return false
+				}
+				return true
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			By("Third-party applications with the same name and type can use the reserved IPPool.")
+			// Create third party applications with the same name again
+			kruiseCloneSetObject = common.GenerateExampleKruiseCloneSetYaml(thirdPartyAppName, namespace, replicasNum)
+			kruiseCloneSetObject.Spec.Template.Annotations = annotationMap
+			GinkgoWriter.Printf("Create an application %v/%v with the same name. \n", namespace, thirdPartyAppName)
+			Expect(common.CreateKruiseCloneSet(frame, kruiseCloneSetObject)).NotTo(HaveOccurred())
+
+			// Check if the Pod IP of an application with the same name is recorded in IPPool
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(kruiseCloneSetObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
+			rePodList, err := frame.GetPodListByLabel(kruiseCloneSetObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, rePodList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			// Delete third party applications again
+			Expect(common.DeleteKruiseCloneSetByName(frame, thirdPartyAppName, namespace)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if nil != err || len(podList.Items) != 0 {
+					return false
+				}
+				return true
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			By(`Third-party applications with the same name and different type cannot use the reserved IPPool.`)
+			// Create third party applications again with the same name but a different controller type
+			kruiseStatefulsetObject := common.GenerateExampleKruiseStatefulSetYaml(thirdPartyAppName, namespace, kruiseReplicasNum)
+			kruiseStatefulsetObject.Spec.Template.Annotations = annotationMap
+			GinkgoWriter.Printf("Create an application %v/%v with the same name but a different type. \n", namespace, thirdPartyAppName)
+			Expect(common.CreateKruiseStatefulSet(frame, kruiseStatefulsetObject)).NotTo(HaveOccurred())
+
+			// A third-party application with the same name but a different controller type can be successfully created,
+			// But their IP will not be recorded in the reserved IP pool, instead a new fixed IP pool will be created.
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(kruiseStatefulsetObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
+			stsPodList, err := frame.GetPodListByLabel(kruiseStatefulsetObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, stsPodList)
+			Expect(ok).To(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 2)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				newV4PodList, err := common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("A new v4 pool will be created, %v. \n", newV4PodList)
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 2)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				newV6PodList, err := common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("A new v6 pool will be created, %v. \n", newV6PodList)
+			}
+		})
 	})
 })

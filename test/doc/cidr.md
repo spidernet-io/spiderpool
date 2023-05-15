@@ -16,4 +16,3 @@
 | I00012  | SpiderSubnet supports multiple interfaces                                                                                           |   p1     |       |  done  |       |
 | I00013  | SpiderSubnet supports automatic IP assignment for Pods                                                                              |   p2     |       |  done  |       |
 | I00014  | The default subnet should support different controller types                                                                        |   p2     |       |  done  |       |
-

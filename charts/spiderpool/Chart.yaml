@@ -16,6 +16,7 @@ sources:
   - "https://github.com/spidernet-io/spiderpool"
 keywords:
   - spiderpool
+  - networking
   - ipam
 maintainers:
   - name: spidernet-io

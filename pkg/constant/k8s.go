@@ -90,13 +90,14 @@ const (
 )
 
 const (
-	SpiderFinalizer      = SpiderpoolAPIGroup
-	SpiderpoolAPIGroup   = "spiderpool.spidernet.io"
-	SpiderpoolAPIVersion = "v2beta1"
-	KindSpiderSubnet     = "SpiderSubnet"
-	KindSpiderIPPool     = "SpiderIPPool"
-	KindSpiderEndpoint   = "SpiderEndpoint"
-	KindSpiderReservedIP = "SpiderReservedIP"
+	SpiderFinalizer       = SpiderpoolAPIGroup
+	SpiderpoolAPIGroup    = "spiderpool.spidernet.io"
+	SpiderpoolAPIVersion  = "v2beta1"
+	KindSpiderSubnet      = "SpiderSubnet"
+	KindSpiderIPPool      = "SpiderIPPool"
+	KindSpiderEndpoint    = "SpiderEndpoint"
+	KindSpiderReservedIP  = "SpiderReservedIP"
+	KindSpiderCoordinator = "SpiderCoordinator"
 )
 
 const (

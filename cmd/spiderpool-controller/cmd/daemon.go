@@ -312,6 +312,11 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
+	logger.Debug("Begin to set up Coordinator webhook")
+	if err := (&coordinatormanager.CoordinatorWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
+		logger.Fatal(err.Error())
+	}
+
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		logger.Debug("Begin to initialize Subnet manager")
 		subnetManager, err := subnetmanager.NewSubnetManager(

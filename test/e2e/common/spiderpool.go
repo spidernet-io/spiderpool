@@ -819,3 +819,39 @@ func GetPodIPAddressFromIppool(f *frame.Framework, poolName, namespace, name str
 
 	return "", fmt.Errorf(" '%s/%s' does not exist in the pool '%s'", namespace, name, poolName)
 }
+
+func WaitWebhookReady(ctx context.Context, f *frame.Framework, webhookPort string) error {
+	const webhookMutateRoute = "/webhook-health-check"
+
+	nodeList, err := f.GetNodeList()
+	if err != nil {
+		return fmt.Errorf("failed to get node information")
+	}
+
+	serviceObj, err := f.GetService(constant.SpiderpoolController, SpiderPoolConfigmapNameSpace)
+	if err != nil {
+		return fmt.Errorf("failed to obtain service information, unable to obtain cluster IP")
+	}
+
+	var webhookHealthyCheck string
+	if f.Info.IpV6Enabled && !f.Info.IpV4Enabled {
+		webhookHealthyCheck = fmt.Sprintf("curl -I -g https://[%s]:%s%s --insecure", serviceObj.Spec.ClusterIP, webhookPort, webhookMutateRoute)
+	} else {
+		webhookHealthyCheck = fmt.Sprintf("curl -I https://%s:%s%s --insecure", serviceObj.Spec.ClusterIP, webhookPort, webhookMutateRoute)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for webhookhealthy to be ready")
+		default:
+			out, err := f.DockerExecCommand(ctx, nodeList.Items[0].Name, webhookHealthyCheck)
+			if err != nil {
+				time.Sleep(ForcedWaitingTime)
+				f.Log("failed to check webhook healthy, error: %v, output log is: %v ", err, string(out))
+				continue
+			}
+			return nil
+		}
+	}
+}

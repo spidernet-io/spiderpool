@@ -128,6 +128,13 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 				wg.Done()
 			}()
 
+			if componentName == constant.SpiderpoolController {
+				// Check wbehook service ready after restarting the controller
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+				defer cancel()
+				Expect(common.WaitWebhookReady(ctx, frame, common.WebhookPort)).NotTo(HaveOccurred())
+			}
+
 			// Wait test Pod ready
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()

@@ -23,6 +23,7 @@ import (
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -302,6 +303,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Generate example StatefulSet yaml and create StatefulSet
 			stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, stsReplicasOriginialNum)
 			stsYaml.Spec.Template.Annotations = annotationMap
+			stsYaml.Spec.Ordinals = &appsv1.StatefulSetOrdinals{Start: stsReplicasOriginialNum}
 			Expect(stsYaml).NotTo(BeNil())
 			GinkgoWriter.Printf("Tty to create StatefulSet %v/%v \n", namespace, stsName)
 			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed())
@@ -1474,6 +1476,328 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				}
 				return true
 			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+	})
+
+	Context("Reserved IPPool usage.", func() {
+
+		var (
+			subnetIpNum                        int   = 5
+			replicasNum                        int32 = 1
+			longAppName                        string
+			v4PoolNameList, v6PoolNameList     []string
+			annotationMap                      map[string]string
+			err                                error
+			v4SubnetNameList, v6SubnetNameList []string
+			stsOrdinalsStartNum                int32 = 2
+		)
+
+		BeforeEach(func() {
+			// Ability to create fixed IPPools for applications with very long names
+			longAppName = "long-app-name-" + tools.RandomName() + tools.RandomName()
+
+			if frame.Info.IpV4Enabled {
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+				Expect(v4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+				v4SubnetNameList = append(v4SubnetNameList, v4SubnetName)
+			}
+			if frame.Info.IpV6Enabled {
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+				Expect(v6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+				v6SubnetNameList = append(v6SubnetNameList, v6SubnetName)
+			}
+
+			subnetAnno := types.AnnoSubnetItem{}
+			if frame.Info.IpV4Enabled {
+				subnetAnno.IPv4 = []string{v4SubnetName}
+			}
+			if frame.Info.IpV6Enabled {
+				subnetAnno.IPv6 = []string{v6SubnetName}
+			}
+			subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			annotationMap = map[string]string{
+				// Set the annotation ipam.spidernet.io/ippool-reclaim: "false"
+				// to prevent the fixed pool from being deleted when the application is deleted.
+				constant.AnnoSpiderSubnetReclaimIPPool: "false",
+				constant.AnnoSpiderSubnet:              string(subnetAnnoMarshal),
+			}
+
+			DeferCleanup(func() {
+				if frame.Info.IpV4Enabled {
+					for _, v := range v4SubnetNameList {
+						Expect(common.DeleteSubnetByName(frame, v)).NotTo(HaveOccurred())
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					for _, v := range v6SubnetNameList {
+						Expect(common.DeleteSubnetByName(frame, v)).NotTo(HaveOccurred())
+					}
+				}
+			})
+		})
+
+		// I00015: Applications with the same name and type can use the reserved IPPool.
+		// I00016: Applications with the same name and different types cannot use the reserved IPPool.
+		// I00017: Ability to create fixed IPPools for applications with very long names
+		// I00018: automatic IPPool IPs are not modifiable
+		// I00019: Change the annotation ipam.spidernet.io/ippool-reclaim to true and the reserved IPPool will be reclaimed.
+		// I00021: Pod works correctly when multiple NICs are specified by annotations for applications of the same name
+		It("Use of reserved IPPool by applications of the same name, same type/different types", Label("I00015", "I00016", "I00017", "I00018", "I00019", "I00021"), func() {
+
+			GinkgoWriter.Printf("Specify annotations for the application %v/%v, and create \n", namespace, longAppName)
+			deployObject := common.GenerateExampleDeploymentYaml(longAppName, namespace, replicasNum)
+			deployObject.Spec.Template.Annotations = annotationMap
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			// Check that the IP of the subnet record matches the record in IPPool
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Check that the pod's ip is recorded in the ippool
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(deployObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
+			podList, err := frame.GetPodListByLabel(deployObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			// Delete application
+			GinkgoWriter.Printf("Delete application %v/%v \n", namespace, longAppName)
+			Expect(frame.DeleteDeploymentUntilFinish(longAppName, namespace, common.ResourceDeleteTimeout)).NotTo(HaveOccurred())
+
+			// Checkpoint: automatic IPPool'IPs are not modifiable
+			if frame.Info.IpV4Enabled {
+				autoV4PoolObject, err := common.GetIppoolByName(frame, v4PoolNameList[0])
+				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("IPs for v4 automated pools %v cannot be edited.\n", autoV4PoolObject.Name)
+				desiredV4PoolObject := autoV4PoolObject.DeepCopy()
+				ips, err := ip.ParseIPRanges(*autoV4PoolObject.Spec.IPVersion, autoV4PoolObject.Spec.IPs)
+				Expect(err).NotTo(HaveOccurred())
+				updateIPs, err := ip.ConvertIPsToIPRanges(*autoV4PoolObject.Spec.IPVersion, []net.IP{ip.NextIP(ips[0])})
+				Expect(err).NotTo(HaveOccurred())
+				desiredV4PoolObject.Spec.IPs = updateIPs
+				err = common.PatchIppool(frame, desiredV4PoolObject, autoV4PoolObject)
+				Expect(err).To(HaveOccurred())
+				GinkgoWriter.Printf("Automatic v4 IPPool' IP editing failed, error: %v.\n", err.Error())
+			}
+			if frame.Info.IpV6Enabled {
+				autoV6PoolObject, err := common.GetIppoolByName(frame, v6PoolNameList[0])
+				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("IPs for v6 automated pools %v cannot be edited.\n", autoV6PoolObject.Name)
+				desiredV6PoolObject := autoV6PoolObject.DeepCopy()
+				ips, err := ip.ParseIPRanges(*autoV6PoolObject.Spec.IPVersion, autoV6PoolObject.Spec.IPs)
+				Expect(err).NotTo(HaveOccurred())
+				updateIPs, err := ip.ConvertIPsToIPRanges(*autoV6PoolObject.Spec.IPVersion, []net.IP{ip.NextIP(ips[0])})
+				Expect(err).NotTo(HaveOccurred())
+				desiredV6PoolObject.Spec.IPs = updateIPs
+				err = common.PatchIppool(frame, desiredV6PoolObject, autoV6PoolObject)
+				Expect(err).To(HaveOccurred())
+				GinkgoWriter.Printf("Automatic v6 IPPool' IP editing failed, error: %v. \n", err.Error())
+			}
+
+			By(`Applications with the same name and different types cannot use the reserved IPPool.`)
+			// Create the application again with the same name but a different controller type
+			// Checkpoint: The automatic IPPool adapts automatically even if the number of copies is changed
+			newReplicasNum := int(replicasNum) + int(1)
+			stsObject := common.GenerateExampleStatefulSetYaml(longAppName, namespace, int32(newReplicasNum))
+
+			GinkgoWriter.Printf("set sts %v/%v annotations ipam.spidernet.io/reclaimippool to true. \n", namespace, longAppName)
+			annotationMap[constant.AnnoSpiderSubnetReclaimIPPool] = "true"
+			stsObject.Spec.Template.Annotations = annotationMap
+			stsObject.Spec.Ordinals = &appsv1.StatefulSetOrdinals{Start: stsOrdinalsStartNum}
+			Expect(frame.CreateStatefulSet(stsObject)).NotTo(HaveOccurred())
+
+			// Applications with the same name but different controller types can be created successfully,
+			// but their IPs will not be recorded in the stock IPPool, instead a new fixed IP pool will be created.
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(stsObject.Spec.Template.Labels, newReplicasNum, ctx)).NotTo(HaveOccurred())
+			podList, err = frame.GetPodListByLabel(stsObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).To(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+			if frame.Info.IpV4Enabled {
+				GinkgoWriter.Printf("Different types of applications with the same name will create a new v4 fixed IPPool. \n")
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 2)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				GinkgoWriter.Printf("Different types of applications with the same name will create a new v6 fixed IPPool. \n")
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 2)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+			}
+
+			// Delete the application
+			GinkgoWriter.Printf("delete the application %v/%v \n.", longAppName, namespace)
+			Expect(frame.DeleteStatefulSet(longAppName, namespace)).NotTo(HaveOccurred())
+
+			By("Applications with the same name and the same type will inherit the reserved IPPool.")
+			type AnnoSubnetsItem []types.AnnoSubnetItem
+			subnetsAnno := AnnoSubnetsItem{
+				types.AnnoSubnetItem{
+					Interface: common.NIC1,
+				}, {
+					Interface: common.NIC2,
+				},
+			}
+			var newV4SubnetName, newV6SubnetName string
+			var newV4SubnetObject, newV6SubnetObject *spiderpool.SpiderSubnet
+			if frame.Info.IpV4Enabled {
+				newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+				Expect(newV4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, newV4SubnetObject)).NotTo(HaveOccurred())
+				v4SubnetNameList = append(v4SubnetNameList, newV4SubnetName)
+				subnetsAnno[0].IPv4 = []string{v4SubnetName}
+				subnetsAnno[1].IPv4 = []string{newV4SubnetName}
+			}
+			if frame.Info.IpV6Enabled {
+				newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+				Expect(newV6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, newV6SubnetObject)).NotTo(HaveOccurred())
+				v6SubnetNameList = append(v6SubnetNameList, newV6SubnetName)
+				subnetsAnno[0].IPv6 = []string{v6SubnetName}
+				subnetsAnno[1].IPv6 = []string{newV6SubnetName}
+			}
+			subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			GinkgoWriter.Printf("Generate multi-NIC annotations for same name app  %v/%v \n", namespace, longAppName)
+			annotationMap[constant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
+			annotationMap[common.MultusNetworks] = common.MacvlanCNIName
+
+			// Delete Single Card Annotations
+			delete(annotationMap, constant.AnnoSpiderSubnet)
+
+			// Create an application with the same name and modify the network card type to multiple network cards
+			GinkgoWriter.Printf("Create a multi-card application of the same name %v/%v \n", namespace, longAppName)
+			sameDeployNameObject := common.GenerateExampleDeploymentYaml(longAppName, namespace, replicasNum)
+			sameDeployNameObject.Spec.Template.Annotations = annotationMap
+			Expect(frame.CreateDeployment(sameDeployNameObject)).NotTo(HaveOccurred())
+
+			// Check if the Pod IP of an application with the same name is recorded in IPPool
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(sameDeployNameObject.Spec.Selector.MatchLabels, int(replicasNum), ctx)).NotTo(HaveOccurred())
+			podList, err = frame.GetPodListByLabel(sameDeployNameObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			Expect(ok).NotTo(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				GinkgoWriter.Printf("The expected v4 IPPool have been created for the multiple network interfaces. \n")
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, newV4SubnetName, 1)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				GinkgoWriter.Printf("The expected v6 IPPool have been created for the multiple network interfaces. \n")
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, newV6SubnetName, 1)).NotTo(HaveOccurred())
+			}
+
+			By("Change the annotation ipam.spidernet.io/ippool-reclaim to true and the reserved IPPool will be reclaimed.")
+			// Checkpoint: Modify the annotation to ipam.spidernet.io/ippool-reclaim to true，
+			// whether the automatic pool is reclaimed
+			deploy, err := frame.GetDeployment(longAppName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+
+			annotationMap[constant.AnnoSpiderSubnetReclaimIPPool] = "true"
+			deploy.Spec.Template.Annotations = annotationMap
+			Expect(frame.UpdateResource(deploy)).NotTo(HaveOccurred())
+
+			// Delete the application
+			GinkgoWriter.Printf("delete deploy %v/%v with ReclaimIPPool is true ", namespace, longAppName)
+			Expect(frame.DeleteDeploymentUntilFinish(longAppName, namespace, common.ResourceDeleteTimeout)).NotTo(HaveOccurred())
+
+			GinkgoWriter.Println("The fixed IPPool should have been reclaimed automatically.")
+			Eventually(func() bool {
+				if frame.Info.IpV4Enabled {
+					for _, v := range v4PoolNameList {
+						if _, err = common.GetIppoolByName(frame, v); !api_errors.IsNotFound(err) {
+							return false
+						}
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					for _, v := range v6PoolNameList {
+						if _, err = common.GetIppoolByName(frame, v); !api_errors.IsNotFound(err) {
+							return false
+						}
+					}
+				}
+				return true
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+
+		It("Redundant IPs for automatic IPPool, which cannot be used by other applications", Label("I00020"), func() {
+			deployObject := common.GenerateExampleDeploymentYaml(longAppName, namespace, replicasNum)
+			GinkgoWriter.Printf("Set deployment %v/%v annotation ipam.spidernet.io/ippool-ip-number to +2 . \n", namespace, longAppName)
+			annotationMap[constant.AnnoSpiderSubnetPoolIPNumber] = "+2"
+			deployObject.Spec.Template.Annotations = annotationMap
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			// Check that the IP of the subnet record matches the record in IPPool
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			podAnno := types.AnnoPodIPPoolValue{}
+			if frame.Info.IpV4Enabled {
+				GinkgoWriter.Println("Waiting for the v4 fixed pool to be created.")
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				podAnno.IPv4Pools = v4PoolNameList
+			}
+			if frame.Info.IpV6Enabled {
+				GinkgoWriter.Println("Waiting for the v6 fixed pool to be created.")
+				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				podAnno.IPv6Pools = v6PoolNameList
+			}
+
+			depName := "dep-" + tools.RandomName()
+			GinkgoWriter.Printf("Generate a new deploy object %v/%v. \n", namespace, depName)
+			podAnnoMarshal, err := json.Marshal(podAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podAnnoStr := string(podAnnoMarshal)
+			newDeployObject := common.GenerateExampleDeploymentYaml(depName, namespace, replicasNum)
+
+			GinkgoWriter.Println("Using the annotation ipam.spidernet.io/ippool to specify a fixed IP pool.")
+			newDeployObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
+
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			podList, err := common.CreateDeployUntilExpectedReplicas(frame, newDeployObject, ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Get the Pod creation failure Event
+			GinkgoWriter.Println("The new application pod is unable to run because the specified fixed IP pool is dedicated.")
+			for _, pod := range podList.Items {
+				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
+			}
 		})
 	})
 })

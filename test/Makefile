@@ -158,6 +158,9 @@ setup_spiderpool:
 			echo "unknown USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			exit 1 ; \
 		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_COORDINATOR)" == "true" ] ; then \
+		    HELM_OPTION+=" --set feature.coordinator.enabled=true " ; \
+		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
 		    HELM_OPTION+=" --set feature.enableSpiderSubnet=true " ; \
 		else \

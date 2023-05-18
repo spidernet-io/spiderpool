@@ -10,7 +10,7 @@ import (
 // CoordinationSpec defines the desired state of SpiderCoordinator.
 type CoordinatorSpec struct {
 	// +kubebuilder:default=underlay
-	// +kubebuilder:validation:Enum=underlay;overlay;disable
+	// +kubebuilder:validation:Enum=underlay;overlay;disabled
 	// +kubebuilder:validation:Optional
 	TuneMode *string `json:"tuneMode,omitempty"`
 

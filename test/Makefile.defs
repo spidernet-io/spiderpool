@@ -48,6 +48,7 @@ E2E_TIMEOUT ?= 60m
 E2E_GINKGO_PROCS ?= 4
 
 E2E_SPIDERPOOL_ENABLE_SUBNET ?= true
+E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
 
 #============Image version===========
 IMAGE_MULTUS_REPO ?= ghcr.io

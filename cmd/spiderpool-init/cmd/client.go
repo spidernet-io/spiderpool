@@ -45,6 +45,32 @@ func NewCoreClient() (*CoreClient, error) {
 	return &CoreClient{Client: client}, nil
 }
 
+func (c *CoreClient) WaitForCoordinatorCreated(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoordinator) error {
+	logger := logutils.FromContext(ctx)
+
+	for {
+		err := c.Create(ctx, coord)
+		if err == nil {
+			logger.Sugar().Infof("Succeed to create default Coordinator: %+v", *coord)
+			return nil
+		}
+
+		if apierrors.IsAlreadyExists(err) {
+			logger.Sugar().Infof("Default Coordinator %s is already exists, ignore creating", coord.Name)
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			interval := retryIntervalSec * time.Second
+			logger.Sugar().Infof("Failed to create default Coordinator %s, recreate in %s: %v", coord.Name, interval, err)
+			time.Sleep(interval)
+		}
+	}
+}
+
 func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 

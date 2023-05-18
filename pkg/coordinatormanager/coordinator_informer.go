@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -61,7 +62,7 @@ var InformerLogger *zap.Logger
 type CoordinatorController struct {
 	Manager         ctrl.Manager
 	Client          client.Client
-	coordinatorName string
+	coordinatorName atomic.Value
 
 	caliCtrlCanncel context.CancelFunc
 
@@ -226,11 +227,13 @@ func (cc *CoordinatorController) enqueueCoordinatorOnAdmConfigChange(obj interfa
 		zap.String("Operation", "SYNC"),
 	)
 
-	if len(cc.coordinatorName) == 0 {
+	v := cc.coordinatorName.Load()
+	cn, ok := v.(string)
+	if !ok {
 		return
 	}
 
-	cc.Workqueue.Add(cc.coordinatorName)
+	cc.Workqueue.Add(cn)
 	logger.Debug(messageEnqueueCoordiantor)
 }
 
@@ -287,8 +290,10 @@ func (cc *CoordinatorController) processNextWorkItem(ctx context.Context) bool {
 func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorName string) (err error) {
 	logger := logutils.FromContext(ctx)
 
-	if len(cc.coordinatorName) == 0 {
-		cc.coordinatorName = coordinatorName
+	v := cc.coordinatorName.Load()
+	_, ok := v.(string)
+	if !ok {
+		cc.coordinatorName.Store(coordinatorName)
 	}
 
 	coord, err := cc.CoordinatorLister.Get(coordinatorName)
@@ -348,7 +353,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			break
 		}
 
-		controller, err := NewCalicoIPPoolController(cc.Manager, cc.coordinatorName)
+		controller, err := NewCalicoIPPoolController(cc.Manager, coordinatorName)
 		if err != nil {
 			return err
 		}

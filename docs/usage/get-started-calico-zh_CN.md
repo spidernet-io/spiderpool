@@ -174,7 +174,7 @@ EOF
 我们需要创建一个与 Spiderpool 子网 CIDR 相同的 Calico IP 池, 否则 Calico 不会宣告 Spiderpool 子网的路由:
 
 ```shell
-cat << EOF | calicoctl apply -f -
+[root@master1 ~]# cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
@@ -195,12 +195,32 @@ EOF
 
 ## 切换 Calico 的 `IPAM` 为 Spiderpool
 
-修改每个节点上 Calico 的 CNI 配置文件: `/etc/cni/net.d/10-calico.conflist`, 将 ipam 字段切换为 Spiderpool:
+编辑 calico 的 configMap: `calico-config` ,将 ipam 字段切换为 spiderpool 并重启 `calico-node`:
 
-```json
-"ipam": {
-    "type": "spiderpool"
-},
+```shell
+[root@master1 ~]# kubectl edit cm -n kube-system calico-config 
+apiVersion: v1
+data:
+  calico_backend: bird
+  cni_network_config: |-
+    {
+      ...
+        "ipam": {
+-         "type": "calico-ipam"
++         "type": "spiderpool"
+        },
+      ...
+    }
+```
+
+重启 `calico-node`, 检查 `ipam` 是否成功切换为 `spiderpool` :
+
+```shell
+[root@master1 ~]# kubectl delete po -n kube-system -l k8s-app=calico-node
+[root@master1 ~]# # wait calico-node ready
+[root@master1 ~]# cat /etc/cni/net.d/10-calico.conflist | grep ipam -A1
+      "ipam": {
+        "type": "spiderpool",
 ```
 
 ## 创建应用
@@ -208,7 +228,7 @@ EOF
 以 Nginx 应用为例:
 
 ```shell
-cat <<EOF | kubectl create -f -
+[root@master1 ~]# cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:

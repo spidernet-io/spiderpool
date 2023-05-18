@@ -156,7 +156,7 @@ go-mod-tidy/%: DIR=$*
 go-mod-tidy/%: | crosslink
 	@echo "$(GO) mod tidy in $(DIR)" \
 		&& cd $(DIR) \
-		&& $(GO) mod tidy -compat=1.18
+		&& $(GO) mod tidy -compat=1.19
 
 .PHONY: lint-modules
 lint-modules: go-mod-tidy
@@ -210,8 +210,9 @@ SEMCONVPKG ?= "semconv/"
 semconv-generate: | $(SEMCONVGEN) $(SEMCONVKIT)
 	[ "$(TAG)" ] || ( echo "TAG unset: missing opentelemetry specification tag"; exit 1 )
 	[ "$(OTEL_SPEC_REPO)" ] || ( echo "OTEL_SPEC_REPO unset: missing path to opentelemetry specification repo"; exit 1 )
-	$(SEMCONVGEN) -i "$(OTEL_SPEC_REPO)/semantic_conventions/." --only=span -p conventionType=trace -p conventionType=trace -f trace.go -t "$(SEMCONVPKG)/template.j2" -s "$(TAG)"
-	$(SEMCONVGEN) -i "$(OTEL_SPEC_REPO)/semantic_conventions/." --only=resource -p conventionType=resource -p conventionType=resource -f resource.go -t "$(SEMCONVPKG)/template.j2" -s "$(TAG)"
+	$(SEMCONVGEN) -i "$(OTEL_SPEC_REPO)/semantic_conventions/." --only=span -p conventionType=trace -f trace.go -t "$(SEMCONVPKG)/template.j2" -s "$(TAG)"
+	$(SEMCONVGEN) -i "$(OTEL_SPEC_REPO)/semantic_conventions/." --only=event -p conventionType=event -f event.go -t "$(SEMCONVPKG)/template.j2" -s "$(TAG)"
+	$(SEMCONVGEN) -i "$(OTEL_SPEC_REPO)/semantic_conventions/." --only=resource -p conventionType=resource -f resource.go -t "$(SEMCONVPKG)/template.j2" -s "$(TAG)"
 	$(SEMCONVKIT) -output "$(SEMCONVPKG)/$(TAG)" -tag "$(TAG)"
 
 .PHONY: prerelease

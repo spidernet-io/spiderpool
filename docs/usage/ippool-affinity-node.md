@@ -27,6 +27,7 @@ spec:
   subnet: 172.18.41.0/24
   ips:
   - 172.18.41.40
+  gateway: 172.18.41.1
   nodeAffinity:
     matchExpressions:
     - {key: node-role.kubernetes.io/master, operator: Exists}
@@ -47,6 +48,7 @@ spec:
   subnet: 172.18.42.0/24
   ips:
   - 172.18.42.40
+  gateway: 172.18.42.1
   nodeAffinity:
     matchExpressions:
     - {key: node-role.kubernetes.io/master, operator: DoesNotExist}

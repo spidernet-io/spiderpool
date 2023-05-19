@@ -6,7 +6,7 @@ Here are some annotations that you should write down on the application template
 
 | Annotation                         | Description                                                                                                            | Example                                                                     |
 |------------------------------------|------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| ipam.spidernet.io/subnet           | Choose one SpiderSubnet V4 and V6 CR to use                                                                            | {{"interface":"eth0", "ipv4":["subnet-demo-v4"], "ipv6":["subnet-demo-v6"]} |
+| ipam.spidernet.io/subnet           | Choose one SpiderSubnet V4 and V6 CR to use                                                                            | {"interface":"eth0", "ipv4":["subnet-demo-v4"], "ipv6":["subnet-demo-v6"]} |
 | ipam.spidernet.io/subnets          | Choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one)              | [{"interface":"eth0", "ipv4":["v4-subnet1"], "ipv6":["v6-subnet1"]}]        |
 | ipam.spidernet.io/ippool-ip-number | The IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1')                  | +2                                                                          |
 | ipam.spidernet.io/ippool-reclaim   | Specify the corresponding SpiderIPPool to delete or not once the application was deleted (optional and default 'true') | true                                                                        |

@@ -244,6 +244,22 @@ func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge,
 	return logFile, nil
 }
 
+// SetupFileLogging Set up file logging.
+func SetupFileLogging(level, logPath string, maxSize, maxAge, maxCount int) (*zap.Logger, error) {
+	v := ConvertLogLevel(level)
+	if v == nil {
+		return nil, fmt.Errorf("unsupported log level %s", level)
+	}
+
+	return InitFileLogger(
+		*v,
+		logPath,
+		maxSize,
+		maxAge,
+		maxCount,
+	)
+}
+
 // loggerKey is how we find Loggers in a context.Context.
 type loggerKey struct{}
 

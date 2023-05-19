@@ -53,6 +53,11 @@ func configureAPI(api *restapi.SpiderpoolAgentAPIAPI) http.Handler {
 			return middleware.NotImplemented("operation daemonset.DeleteIpamIps has not yet been implemented")
 		})
 	}
+	if api.DaemonsetGetCoordinatorConfigHandler == nil {
+		api.DaemonsetGetCoordinatorConfigHandler = daemonset.GetCoordinatorConfigHandlerFunc(func(params daemonset.GetCoordinatorConfigParams) middleware.Responder {
+			return middleware.NotImplemented("operation daemonset.GetCoordinatorConfig has not yet been implemented")
+		})
+	}
 	if api.ConnectivityGetIpamHealthyHandler == nil {
 		api.ConnectivityGetIpamHealthyHandler = connectivity.GetIpamHealthyHandlerFunc(func(params connectivity.GetIpamHealthyParams) middleware.Responder {
 			return middleware.NotImplemented("operation connectivity.GetIpamHealthy has not yet been implemented")

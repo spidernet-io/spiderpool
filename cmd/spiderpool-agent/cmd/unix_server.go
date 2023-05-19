@@ -41,6 +41,7 @@ func NewAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 	api.DaemonsetDeleteIpamIPHandler = unixDeleteAgentIpamIp
 	api.DaemonsetPostIpamIpsHandler = unixPostAgentIpamIps
 	api.DaemonsetDeleteIpamIpsHandler = unixDeleteAgentIpamIps
+	api.DaemonsetGetCoordinatorConfigHandler = unixGetCoordinatorConfig
 
 	// new agent OpenAPI server with api
 	srv := agentOpenAPIServer.NewServer(api)

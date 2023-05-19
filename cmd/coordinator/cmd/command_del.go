@@ -46,8 +46,13 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 
 	c.netns, err = ns.GetNS(args.Netns)
 	if err != nil {
-		logger.Error("failed to GetNS, ignore error", zap.Error(err))
-		return nil
+		_, ok := err.(ns.NSPathNotExistErr)
+		if ok {
+			logger.Debug("Pod's netns already gone.  Nothing to do.")
+			return nil
+		}
+		logger.Error("failed to GetNS", zap.Error(err))
+		return err
 	}
 	defer c.netns.Close()
 

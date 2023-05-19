@@ -36,7 +36,8 @@ type Config struct {
 	types.NetConf
 	OnlyHardware       bool        `json:"only_hardware,omitempty"`
 	MacPrefix          string      `json:"mac_prefix,omitempty"`
-	NICPrefix          string      `json:"nic_prefix,omitempty"`
+	InterfacePrefix    string      `json:"iface_prefix,omitempty"`
+	PodFirstInterface  string      `json:"pod_first_iface,omitempty"`
 	ClusterCIDR        []string    `json:"cluster_cidr,omitempty"`
 	ServiceCIDR        []string    `json:"service_cidr,omitempty"`
 	ExtraCIDR          []string    `json:"extra_cidr,omitempty"`
@@ -91,8 +92,12 @@ func ParseConfig(stdin []byte) (*Config, error) {
 		return nil, err
 	}
 
-	if conf.NICPrefix == "" {
-		conf.NICPrefix = defaultNICPrefix
+	if conf.PodFirstInterface == "" {
+		conf.PodFirstInterface = defaultOverlayVethName
+	}
+
+	if conf.InterfacePrefix == "" {
+		conf.InterfacePrefix = defaultNICPrefix
 	}
 
 	if conf.LogOptions == nil {

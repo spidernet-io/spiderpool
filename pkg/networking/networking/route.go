@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"os"
+	"strings"
 )
 
 // GetRoutesByName return all routes is belonged to specify interface
@@ -135,7 +136,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 			logger.Debug("Del the route from main successfully", zap.String("Route", route.String()))
 
 			route.Table = dstRuleTable
-			if err = netlink.RouteAdd(&route); err != nil && os.IsExist(err) {
+			if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
 				logger.Error("failed to RouteAdd in new table ", zap.String("route", route.String()), zap.Error(err))
 				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", route, err)
 			}
@@ -194,12 +195,13 @@ func GetDefaultRouteInterface(filterInterface string, ipfamily int) (string, err
 	return "", fmt.Errorf("DefaultRouteInterface no found")
 }
 
-func IsRuleMiss(netns ns.NetNS, rule int) (bool, error) {
-	var rules []netlink.Rule
+// IsFirstModeOverlayInvoke return true if the number of NICs prefixed with interfacePrefix in the pod is equal to 1
+func IsFirstModeOverlayInvoke(netns ns.NetNS, interfacePrefix string) (bool, error) {
+	var interfaces []net.Interface
 	var err error
 
 	err = netns.Do(func(netNS ns.NetNS) error {
-		rules, err = netlink.RuleList(netlink.FAMILY_ALL)
+		interfaces, err = net.Interfaces()
 		if err != nil {
 			return err
 		}
@@ -210,13 +212,21 @@ func IsRuleMiss(netns ns.NetNS, rule int) (bool, error) {
 		return false, err
 	}
 
-	for idx, _ := range rules {
-		if rules[idx].Table == rule {
-			return false, nil
+	count := 0
+	for _, iface := range interfaces {
+		if strings.HasPrefix(iface.Name, interfacePrefix) {
+			count += 1
 		}
 	}
 
-	return true, nil
+	// We have at least three NICs in the pod: lo、eth0、currentInterface
+	if count > 1 {
+		return false, nil
+	} else if count == 1 {
+		return true, nil
+	} else {
+		return false, fmt.Errorf("maybe the pod's multus annotations: v1.multus-cni.io can't work with the tuneMode:Overlay")
+	}
 }
 
 func ConvertMaxMaskIPNet(nip net.IP) *net.IPNet {

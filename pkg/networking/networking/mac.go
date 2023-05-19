@@ -96,32 +96,25 @@ func convertHex2Mac(hexCode []byte) string {
 }
 
 // GetHwAddressByName get hardware address of veth pair device
-func GetHwAddressByName(netns ns.NetNS, podVethPairName string) (net.HardwareAddr, net.HardwareAddr, error) {
+func GetHwAddressByName(netns ns.NetNS, podVethPairName, hostVethPairName string) (net.HardwareAddr, net.HardwareAddr, error) {
 	var containerVethHwAddress net.HardwareAddr
-	parentIndex := -1
 	err := netns.Do(func(_ ns.NetNS) error {
 		link, err := netlink.LinkByName(podVethPairName)
 		if err != nil {
 			return err
 		}
-		// get link index of host veth-peer and pod veth-peer mac-address
-		parentIndex = link.Attrs().ParentIndex
-		if parentIndex < 0 {
-			return fmt.Errorf("failed to get parentIndex")
-		}
 		containerVethHwAddress = link.Attrs().HardwareAddr
 		return nil
 	})
-
 	if err != nil {
 		return nil, nil, err
 	}
 
-	hostLink, err := netlink.LinkByIndex(parentIndex)
+	// TODO: It seems a netlink bug: hostLink hardwareAddr no correct
+	hostLink, err := netlink.LinkByName(hostVethPairName)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return hostLink.Attrs().HardwareAddr, containerVethHwAddress, nil
 }
 

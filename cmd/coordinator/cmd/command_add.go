@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"golang.org/x/sys/unix"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/internal/version"
@@ -24,6 +23,7 @@ import (
 
 func CmdAdd(args *skel.CmdArgs) (err error) {
 	startTime := time.Now()
+
 	conf, err := ParseConfig(args.StdinData)
 	if err != nil {
 		return err
@@ -36,7 +36,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to init logger: %v ", err)
 	}
 
-	logger.Info("coordinator starting", zap.String("Version", version.CoordinatorBuildDateVersion()), zap.String("Branch", version.CoordinatorGitBranch()),
+	logger.Info("coordinator starting", zap.String("Version", version.CoordinatorBuildDateVersion()),
+		zap.String("Branch", version.CoordinatorGitBranch()),
 		zap.String("Commit", version.CoordinatorGitCommit()),
 		zap.String("Build time", version.CoordinatorBuildDate()),
 		zap.String("Go Version", version.GoString()))
@@ -69,7 +70,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.TuneMode,
-		interfacePrefix:  conf.NICPrefix,
+		interfacePrefix:  conf.InterfacePrefix,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
 	c.HijackCIDR = append(c.HijackCIDR, conf.ExtraCIDR...)
@@ -82,7 +83,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	defer c.netns.Close()
 
 	// check if it's first time invoke
-	c.firstInvoke, err = firstInvoke(c.netns, conf.TuneMode)
+	err = c.coordinatorFirstInvoke(conf.PodFirstInterface)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -94,7 +95,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		c.podVethName = defaultUnderlayVethName
 		c.hostVethName = getHostVethName(args.ContainerID)
 		if c.firstInvoke {
-			c.hostVethHwAddress, c.podVethHwAddress, err = c.setupVeth(args.ContainerID)
+			err = c.setupVeth(args.ContainerID)
 			if err != nil {
 				logger.Error("failed to create veth-pair device", zap.Error(err))
 				return err
@@ -109,12 +110,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			logger.Error("failed to GetHostVethName", zap.Error(err))
 			return err
 		}
-
-		c.hostVethHwAddress, c.podVethHwAddress, err = networking.GetHwAddressByName(c.netns, defaultOverlayVethName)
-		if err != nil {
-			logger.Error("failed to get mac address in overlay mode", zap.Error(err))
-			return fmt.Errorf("failed to get mac address in overlay mode: %v", err)
-		}
 	case ModeDisable:
 		logger.Info("TuneMode is disable, nothing to do")
 		return nil
@@ -122,6 +117,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error("Unknown tuneMode", zap.String("invalid tuneMode", string(conf.TuneMode)))
 		return fmt.Errorf("unknown tuneMode: %s", conf.TuneMode)
 	}
+
+	logger.Sugar().Infof("Get coordinator config: %v", c)
 
 	// we do check if ip is conflict firstly
 	if conf.IPConflict != nil && conf.IPConflict.Enabled {
@@ -182,24 +179,28 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	c.currentRuleTable = unix.RT_TABLE_MAIN
-	if !c.firstInvoke {
-		c.currentRuleTable = c.getRuleNumber(c.currentInterface)
-		if c.currentRuleTable < 0 {
-			logger.Error("failed to getRuleNumber, maybe the pod's multus annotations doesn't match the tuneMode",
-				zap.String("currentInterface", c.currentInterface), zap.String("interfacePrefix", c.interfacePrefix))
-			return fmt.Errorf("failed to getRuleNumber, maybe the pod's multus annotations doesn't match the tuneMode")
-		}
+	c.currentRuleTable = c.getRuleNumber(c.currentInterface)
+	if c.currentRuleTable < 0 {
+		logger.Error("failed to getRuleNumber, maybe the pod's multus annotations doesn't match the tuneMode",
+			zap.String("currentInterface", c.currentInterface), zap.String("interfacePrefix", c.interfacePrefix))
+		return fmt.Errorf("failed to getRuleNumber, maybe the pod's multus annotations doesn't match the tuneMode")
+	}
 
+	if err = c.setupHostRoutes(logger); err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	if err = c.setupHijackRoutes(logger, c.currentRuleTable); err != nil {
+		logger.Error("failed to setupHijackRoutes", zap.Error(err))
+		return fmt.Errorf("failed to setupHijackRoutes: %v", err)
+	}
+
+	if !c.firstInvoke || c.tuneMode == ModeOverlay {
 		if err = c.tunePodRoutes(logger, conf.PodDefaultRouteNIC); err != nil {
 			logger.Error("failed to tunePodRoutes", zap.Error(err))
 			return fmt.Errorf("failed to tunePodRoutes: %v", err)
 		}
-	}
-
-	if err = c.setupRoutes(logger, c.currentRuleTable); err != nil {
-		logger.Error(err.Error())
-		return err
 	}
 
 	logger.Info("coordinator end", zap.Int64("Time Cost", time.Since(startTime).Microseconds()))

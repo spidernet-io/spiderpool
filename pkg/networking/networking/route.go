@@ -28,6 +28,21 @@ func GetRoutesByName(iface string, ipfamily int) (routes []netlink.Route, err er
 	return
 }
 
+func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
+	routes, err := GetRoutesByName(iface, ipfamily)
+	if err != nil {
+		return nil, err
+	}
+
+	gws := make([]string, 0)
+	for _, route := range routes {
+		if route.Dst == nil {
+			gws = append(gws, route.Gw.String())
+		}
+	}
+	return gws, nil
+}
+
 func AddToRuleTable(dst *net.IPNet, ruleTable int) error {
 	rule := netlink.NewRule()
 	rule.Table = ruleTable

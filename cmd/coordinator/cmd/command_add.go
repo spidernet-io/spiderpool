@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/internal/version"
@@ -120,7 +121,28 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	logger.Sugar().Infof("Get coordinator config: %v", c)
 
-	// we do check if ip is conflict firstly
+	//  we do detect gateway connection firstly
+	if conf.DetectGateway {
+		err = c.netns.Do(func(netNS ns.NetNS) error {
+			gws, err := networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
+			if err != nil {
+				logger.Error("failed to GetDefaultGatewayByName", zap.Error(err))
+				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
+			}
+
+			for _, gw := range gws {
+				if err = gwconnection.DetectGatewayConnection(gw); err != nil {
+					logger.Error(err.Error())
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	if conf.IPConflict != nil && conf.IPConflict.Enabled {
 		err = ipchecking.DoIPConflictChecking(logger, c.netns, conf.IPConflict.Retry, conf.IPConflict.Interval, args.IfName, prevResult.IPs)
 		if err != nil {

@@ -35,6 +35,7 @@ const (
 type Config struct {
 	types.NetConf
 	OnlyHardware       bool        `json:"only_hardware,omitempty"`
+	DetectGateway      bool        `json:"detect_gateway,omitempty"`
 	MacPrefix          string      `json:"mac_prefix,omitempty"`
 	InterfacePrefix    string      `json:"iface_prefix,omitempty"`
 	PodFirstInterface  string      `json:"pod_first_iface,omitempty"`

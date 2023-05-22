@@ -3,9 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/version"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"k8s.io/utils/pointer"
 	"net"
 	"os"
@@ -13,6 +10,13 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+
+	"github.com/containernetworking/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/version"
+	"github.com/go-openapi/strfmt"
 )
 
 var (
@@ -45,7 +49,7 @@ type Config struct {
 	TunePodRoutes      bool        `json:"tune_pod_routes,omitempty"`
 	PodDefaultRouteNIC string      `json:"pod_default_route_nic,omitempty"`
 	TuneMode           Mode        `json:"tune_mode,omitempty"`
-	HostRuleTable      *int        `json:"host_rule_table,omitempty"`
+	HostRuleTable      *int64      `json:"host_rule_table,omitempty"`
 	RPFilter           int32       `json:"rp_filter,omitempty" `
 	IPConflict         *IPConflict `json:"ip_conflict,omitempty"`
 	LogOptions         *LogOptions `json:"log_options,omitempty"`
@@ -77,19 +81,19 @@ const (
 var SupportCNIVersions = []string{CniVersion030, CniVersion031, CniVersion040, CniVersion100}
 
 // ParseConfig parses the supplied configuration (and prevResult) from stdin.
-func ParseConfig(stdin []byte) (*Config, error) {
+func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Config, error) {
 	var err error
 	conf := Config{}
 
-	if err := json.Unmarshal(stdin, &conf); err != nil {
+	if err = json.Unmarshal(stdin, &conf); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
 
-	if err := version.ParsePrevResult(&conf.NetConf); err != nil {
+	if err = version.ParsePrevResult(&conf.NetConf); err != nil {
 		return nil, fmt.Errorf("failed to parse prevResult: %v", err)
 	}
 
-	if err = validateHwPrefix(conf.MacPrefix); err != nil {
+	if err = coordinatorConfig.Validate(strfmt.Default); err != nil {
 		return nil, err
 	}
 
@@ -116,11 +120,19 @@ func ParseConfig(stdin []byte) (*Config, error) {
 		conf.LogOptions.LogFilePath = defaultLogPath
 	}
 
+	if conf.MacPrefix == "" {
+		conf.MacPrefix = coordinatorConfig.PodMACPrefix
+	}
+
+	if err = validateHwPrefix(conf.MacPrefix); err != nil {
+		return nil, err
+	}
+
 	if conf.OnlyHardware {
 		return &conf, nil
 	}
 
-	if err = ValidateRoutes(conf.ClusterCIDR, conf.ServiceCIDR, conf.ExtraCIDR); err != nil {
+	if err = ValidateRoutes(&conf, coordinatorConfig); err != nil {
 		return nil, err
 	}
 
@@ -129,16 +141,36 @@ func ParseConfig(stdin []byte) (*Config, error) {
 		return nil, err
 	}
 
-	if conf.IPConflict != nil {
-		conf.IPConflict = ValidateIPConflict(conf.IPConflict)
-		_, err = time.ParseDuration(conf.IPConflict.Interval)
-		if err != nil {
-			return nil, fmt.Errorf("invalid interval %s: %v, input like: 1s or 1m", conf.IPConflict.Interval, err)
+	if conf.IPConflict == nil && coordinatorConfig.DetectIPConflict {
+		conf.IPConflict = &IPConflict{
+			Enabled: true,
 		}
 	}
 
+	conf.IPConflict = ValidateIPConflict(conf.IPConflict)
+	_, err = time.ParseDuration(conf.IPConflict.Interval)
+	if err != nil {
+		return nil, fmt.Errorf("invalid interval %s: %v, input like: 1s or 1m", conf.IPConflict.Interval, err)
+	}
+
+	if conf.HostRuleTable == nil && coordinatorConfig.HostRuleTable > 0 {
+		conf.HostRuleTable = pointer.Int64(coordinatorConfig.HostRuleTable)
+	}
+
 	if conf.HostRuleTable == nil {
-		conf.HostRuleTable = pointer.Int(500)
+		conf.HostRuleTable = pointer.Int64(500)
+	}
+
+	if !conf.DetectGateway && coordinatorConfig.DetectGateway {
+		conf.DetectGateway = coordinatorConfig.DetectGateway
+	}
+
+	if !conf.TunePodRoutes && *coordinatorConfig.TunePodRoutes {
+		conf.TunePodRoutes = *coordinatorConfig.TunePodRoutes
+	}
+
+	if conf.PodDefaultRouteNIC == "" && coordinatorConfig.PodDefaultRouteNIC != "" {
+		conf.PodDefaultRouteNIC = coordinatorConfig.PodDefaultRouteNIC
 	}
 
 	return &conf, nil
@@ -159,11 +191,31 @@ func validateHwPrefix(prefix string) error {
 	return nil
 }
 
-func ValidateRoutes(clusterSubnet, serviceSubnet, other []string) error {
-	subnets := append(clusterSubnet, serviceSubnet...)
-	subnets = append(subnets, other...)
+func ValidateRoutes(conf *Config, coordinatorConfig *models.CoordinatorConfig) error {
+	if len(conf.ServiceCIDR) == 0 {
+		conf.ServiceCIDR = coordinatorConfig.ServiceCIDR
+	}
 
-	err := validateRoutes(subnets)
+	if len(conf.ClusterCIDR) == 0 {
+		conf.ClusterCIDR = coordinatorConfig.PodCIDR
+	}
+
+	if len(conf.ExtraCIDR) == 0 {
+		conf.ExtraCIDR = coordinatorConfig.ExtraCIDR
+	}
+
+	var err error
+	err = validateRoutes(conf.ServiceCIDR)
+	if err != nil {
+		return err
+	}
+
+	err = validateRoutes(conf.ClusterCIDR)
+	if err != nil {
+		return err
+	}
+
+	err = validateRoutes(conf.ExtraCIDR)
 	if err != nil {
 		return err
 	}

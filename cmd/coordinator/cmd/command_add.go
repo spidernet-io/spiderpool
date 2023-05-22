@@ -5,11 +5,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
 	"time"
 
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/internal/version"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
 	"github.com/spidernet-io/spiderpool/pkg/networking/ipchecking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
@@ -25,7 +28,18 @@ import (
 func CmdAdd(args *skel.CmdArgs) (err error) {
 	startTime := time.Now()
 
-	conf, err := ParseConfig(args.StdinData)
+	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Daemonset.GetCoordinatorConfig(daemonset.NewGetCoordinatorConfigParams())
+	if err != nil {
+		return fmt.Errorf("failed to GetCoordinatorConfig: %v", err)
+	}
+	coordinatorConfig := resp.Payload
+
+	conf, err := ParseConfig(args.StdinData, coordinatorConfig)
 	if err != nil {
 		return err
 	}
@@ -67,7 +81,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	c := &coordinator{
 		HijackCIDR:       conf.ClusterCIDR,
-		hostRuleTable:    *conf.HostRuleTable,
+		hostRuleTable:    int(*conf.HostRuleTable),
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.TuneMode,
@@ -218,7 +232,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to setupHijackRoutes: %v", err)
 	}
 
-	if !c.firstInvoke || c.tuneMode == ModeOverlay {
+	if conf.TunePodRoutes && (!c.firstInvoke || c.tuneMode == ModeOverlay) {
 		if err = c.tunePodRoutes(logger, conf.PodDefaultRouteNIC); err != nil {
 			logger.Error("failed to tunePodRoutes", zap.Error(err))
 			return fmt.Errorf("failed to tunePodRoutes: %v", err)

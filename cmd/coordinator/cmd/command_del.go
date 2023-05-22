@@ -5,18 +5,34 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/containernetworking/plugins/pkg/ns"
+	"os"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/internal/version"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+
+	"github.com/containernetworking/cni/pkg/skel"
+	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
-	"os"
 )
 
 func CmdDel(args *skel.CmdArgs) (err error) {
-	conf, err := ParseConfig(args.StdinData)
+	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Daemonset.GetCoordinatorConfig(daemonset.NewGetCoordinatorConfigParams())
+	if err != nil {
+		return fmt.Errorf("failed to GetCoordinatorConfig: %v", err)
+	}
+	coordinatorConfig := resp.Payload
+
+	conf, err := ParseConfig(args.StdinData, coordinatorConfig)
 	if err != nil {
 		return err
 	}
@@ -41,7 +57,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	)
 
 	c := &coordinator{
-		hostRuleTable: *conf.HostRuleTable,
+		hostRuleTable: int(*conf.HostRuleTable),
 	}
 
 	c.netns, err = ns.GetNS(args.Netns)

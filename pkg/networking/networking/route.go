@@ -1,3 +1,6 @@
+// Copyright 2023 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package networking
 
 import (
@@ -138,7 +141,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 			continue
 		}
 
-		// ingore local link route
+		// ignore local link route
 		if route.Dst.String() == "fe80::/64" {
 			continue
 		}
@@ -193,7 +196,7 @@ func GetDefaultRouteInterface(filterInterface string, ipfamily int) (string, err
 		return "", err
 	}
 
-	for idx, _ := range routes {
+	for idx := range routes {
 		if routes[idx].Dst == nil {
 			// found default route
 			link, err := netlink.LinkByIndex(routes[idx].LinkIndex)

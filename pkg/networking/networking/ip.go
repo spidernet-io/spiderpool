@@ -1,3 +1,6 @@
+// Copyright 2023 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package networking
 
 import (
@@ -100,7 +103,7 @@ func IPAddressOnNode(logger *zap.Logger, ipFamily int) ([]netlink.Addr, error) {
 	}
 
 	var allIPAddress []netlink.Addr
-	for idx, _ := range links {
+	for idx := range links {
 		iLink := links[idx]
 		if excludeRegexp.MatchString(iLink.Attrs().Name) {
 			continue
@@ -133,12 +136,12 @@ func GetAddersByLink(link netlink.Link, ipfamily int) ([]netlink.Addr, error) {
 
 func getAdders(link netlink.Link, ipfamily int) ([]netlink.Addr, error) {
 	var ipAddress []netlink.Addr
-	addres, err := netlink.AddrList(link, ipfamily)
+	address, err := netlink.AddrList(link, ipfamily)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, addr := range addres {
+	for _, addr := range address {
 		if addr.IP.IsMulticast() || addr.IP.IsLinkLocalUnicast() {
 			continue
 		}
@@ -150,20 +153,6 @@ func getAdders(link netlink.Link, ipfamily int) ([]netlink.Addr, error) {
 		}
 	}
 	return ipAddress, nil
-}
-
-// AddrToString convert obj netlink.addr to ip's string list(mask 32)
-func AddrToString(addrs []netlink.Addr) []string {
-	addrStrings := make([]string, 0, len(addrs))
-	for _, addr := range addrs {
-		if addr.IP.To4() != nil {
-			addr.IPNet.Mask = net.CIDRMask(32, 32)
-		} else {
-			addr.IPNet.Mask = net.CIDRMask(128, 128)
-		}
-		addrStrings = append(addrStrings, addr.IPNet.String())
-	}
-	return addrStrings
 }
 
 func IsInterfaceMiss(netns ns.NetNS, iface string) (bool, error) {

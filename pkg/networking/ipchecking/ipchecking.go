@@ -1,3 +1,6 @@
+// Copyright 2023 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package ipchecking
 
 import (
@@ -33,7 +36,7 @@ func DoIPConflictChecking(logger *zap.Logger, netns ns.NetNS, retries int, inter
 			return fmt.Errorf("failed to get interface by name %s: %v", iface, err)
 		}
 
-		for idx, _ := range ipconfigs {
+		for idx := range ipconfigs {
 			target := netip.MustParseAddr(ipconfigs[idx].Address.IP.String())
 			if target.Is4() {
 				logger.Debug("IPCheckingByARP", zap.String("address", target.String()))

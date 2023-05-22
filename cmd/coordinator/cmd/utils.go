@@ -1,3 +1,6 @@
+// Copyright 2023 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package cmd
 
 import (
@@ -201,7 +204,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		return err
 	}
 
-	for idx, _ := range c.currentAddress {
+	for idx := range c.currentAddress {
 		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
 		if err = networking.AddToRuleTable(ipNet, c.hostRuleTable); err != nil {
 			logger.Error("failed to AddToRuleTable", zap.String("Dst", ipNet.String()), zap.Error(err))
@@ -287,7 +290,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 				}
 			}
 
-			for idx, _ := range defaultInterfaceAddress {
+			for idx := range defaultInterfaceAddress {
 				ipNet := networking.ConvertMaxMaskIPNet(defaultInterfaceAddress[idx].IP)
 				err = networking.AddFromRuleTable(ipNet, c.currentRuleTable)
 				if err != nil {
@@ -311,7 +314,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 				}
 			}
 
-			for idx, _ := range c.currentAddress {
+			for idx := range c.currentAddress {
 				ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
 				err = networking.AddFromRuleTable(ipNet, c.currentRuleTable)
 				if err != nil {
@@ -340,7 +343,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 				}
 			}
 
-			for idx, _ := range c.currentAddress {
+			for idx := range c.currentAddress {
 				ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
 				err = networking.AddFromRuleTable(ipNet, c.currentRuleTable)
 				if err != nil {
@@ -370,7 +373,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 			}
 
 			// 1. cleanup ip rule to cidr for configDefaultRouteNIC interface
-			for idx, _ := range routes {
+			for idx := range routes {
 				if routes[idx].Dst != nil {
 					if err = networking.DelToRuleTable(routes[idx].Dst, ruleTable); err != nil {
 						return fmt.Errorf("failed to DelToRuleTable: %v", err)
@@ -379,7 +382,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 			}
 
 			// 2. cleanup ip rule from cidr for configDefaultRouteNIC interface
-			for idx, _ := range address {
+			for idx := range address {
 				if routes[idx].Dst != nil {
 					if err = networking.DelFromRuleTable(address[idx].IPNet, ruleTable); err != nil {
 						return fmt.Errorf("failed to DelToRuleTable: %v", err)

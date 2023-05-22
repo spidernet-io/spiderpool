@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2023 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package cmd
@@ -87,7 +87,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return nil
 	}
 
-	for idx, _ := range c.currentAddress {
+	for idx := range c.currentAddress {
 		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
 		err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
 		if err != nil && !os.IsNotExist(err) {

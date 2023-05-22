@@ -1,3 +1,6 @@
+// Copyright 2023 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package networking
 
 import (
@@ -110,7 +113,6 @@ func GetHwAddressByName(netns ns.NetNS, podVethPairName, hostVethPairName string
 		return nil, nil, err
 	}
 
-	// TODO: It seems a netlink bug: hostLink hardwareAddr no correct
 	hostLink, err := netlink.LinkByName(hostVethPairName)
 	if err != nil {
 		return nil, nil, err

@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package unit // import "go.opentelemetry.io/otel/metric/unit"
+package internal // import "go.opentelemetry.io/otel/sdk/metric/internal"
 
-// Unit is a determinate standard quantity of measurement.
-type Unit string
-
-// Units defined by OpenTelemetry.
-const (
-	Dimensionless Unit = "1"
-	Bytes         Unit = "By"
-	Milliseconds  Unit = "ms"
-)
+// ReuseSlice returns a zeroed view of slice if its capacity is greater than or
+// equal to n. Otherwise, it returns a new []T with capacity equal to n.
+func ReuseSlice[T any](slice []T, n int) []T {
+	if cap(slice) >= n {
+		return slice[:n]
+	}
+	return make([]T, n)
+}

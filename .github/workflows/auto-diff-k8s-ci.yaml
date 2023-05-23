@@ -140,7 +140,7 @@ jobs:
           id: go
 
       - name: Install Kind Bin
-        uses: helm/kind-action@v1.5.0
+        uses: helm/kind-action@v1.7.0
         with:
           install_only: true
 
@@ -289,7 +289,7 @@ jobs:
           id: go
 
       - name: Install Kind Bin
-        uses: helm/kind-action@v1.5.0
+        uses: helm/kind-action@v1.7.0
         with:
           install_only: true
 

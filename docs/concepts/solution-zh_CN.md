@@ -1,12 +1,11 @@
-
-## underlay 网络 和 overlay 网络场景
+# underlay 网络 和 overlay 网络方案
 
 云原生网络中出现了两种技术类别，" overlay 网络方案" 和 " underlay网络方案"，
 云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。
 
 Spiderpool 是为 underlay 网络特点而设计，以下对两种方案进行比较，能够更好说明 Spiderpool 的特点和使用场景。
 
-### overlay 网络方案 IPAM
+## overlay 网络方案 IPAM
 
 本方案实现了 Pod 网络同宿主机网络的解耦，例如 [Calico](https://github.com/projectcalico/calico) , [Cilium](https://github.com/cilium/cilium) 等 CNI 插件，
 这些插件多数使用了 vxlan 等隧道技术，搭建起一个 overlay 网络平面，再借用 NAT 技术实现南北向的通信。
@@ -37,7 +36,7 @@ Spiderpool 是为 underlay 网络特点而设计，以下对两种方案进行�
 
 这个方案的优点是，无论集群部署在什么样的底层网络环境上，CNI 插件的兼容性都非常好，且都能够为 Pod 提供子网独立、IP 地址资源充沛的网络。
 
-### underlay 网络方案 IPAM
+## underlay 网络方案 IPAM
 
 本方案实现了 Pod 共享宿主机的底层网络，即 Pod 直接获取宿主机网络中的 IP 地址，这样，应用可直接使用自己的 IP 地址进行东西向和南北向通信。
 
@@ -79,7 +78,7 @@ underlay 网络方案的实施，有两种典型的场景，一种是集群部�
 这个方案的优势有：无需网络 NAT 映射的引入，对应用的云化网络改造，提出了最大的便利；底层网络的火墙等设备，可对 Pod 通信实现相对较为精细的管控；无需隧道技术，
 网络通信的吞吐量和延时性能也相对的提高了。
 
-### overlay CNI 和 underlay CNI 的性能
+## overlay CNI 和 underlay CNI 的性能
 
 overlay CNI 需要借助隧道封装和宿主机转发实现跨主机的 POD 通信，而 underlay CNI 可实现直接对接宿主机网络，因此在网络延时和吞吐量表现上有差异。
 

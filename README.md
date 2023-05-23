@@ -58,13 +58,13 @@ Spiderpool mainly provides two CNI plugins:
 
     It is a meta plugin, it could do kinds of supplementary things:
 
-    * tune routes for multiple NIC
+  * tune routes for multiple NIC
 
-    * detect IP conflict
+  * detect IP conflict
 
-    * detect reachability of gateway
+  * detect reachability of gateway
 
-    * set the MAC address of NIC to a fixed format
+  * set the MAC address of NIC to a fixed format
 
 ## Use Cases
 

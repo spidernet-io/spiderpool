@@ -172,7 +172,7 @@ spiderpool 架构如上所示，包含了以下组件：
 
     对于一个 overlay 网卡和多个 underlay CNI 网卡场景，可参考 [例子](./docs/usage/install/overlay/get-started-calico.md)
 
-* 在 POD 初始化网络命名空间时，能够实施 IP 地址冲突检测和网关可达性检测，以保证 POD 通信正常。可参考 [例子](??)
+* 在 POD 初始化网络命名空间时，能够实施 IP 地址冲突检测和网关可达性检测，以保证 POD 通信正常。可参考 [例子](./docs/usage/coodinator.md)
 
 * 合理的 IP 回收机制设计，可最大保证 IP 资源的可用性。可参考 [例子](./docs/usage/gc.md)
 

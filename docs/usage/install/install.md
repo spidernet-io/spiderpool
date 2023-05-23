@@ -44,7 +44,7 @@ The following examples are guides to install spiderpool:
 
 The following examples are advanced to use two CNI in a cluster:
 
-* [SRIOV and macvlan](???? ./get-started-macvlan-and-sriov.md), this is suitable for scenes like bare metal hosts, some nodes has SRIOV NIC and some nodes do not have
+* [SRIOV and macvlan](./get-started-macvlan-and-sriov.md), this is suitable for scenes like bare metal hosts, some nodes has SRIOV NIC and some nodes do not have
 
 ## Install for overlay and underlay NICs
 

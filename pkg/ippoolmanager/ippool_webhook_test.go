@@ -1118,6 +1118,108 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 			})
 
+			When("Validating 'spec.podAffinity'", func() {
+				It("no podAffinity", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				Context("auto-created IPPool", func() {
+					var autoPool *spiderpoolv2beta1.SpiderIPPool
+					BeforeEach(func() {
+						autoPool = ipPoolT.DeepCopy()
+						autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
+						autoPool.Spec.Subnet = "172.18.40.0/24"
+						autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						autoPool.Labels = map[string]string{
+							constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
+							constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
+							constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
+							constant.LabelIPPoolOwnerApplicationName:      "test-name",
+						}
+
+						podController := types.PodTopController{
+							AppNamespacedName: types.AppNamespacedName{
+								APIVersion: appsv1.SchemeGroupVersion.String(),
+								Kind:       constant.KindDeployment,
+								Namespace:  "test-ns",
+								Name:       "test-name",
+							},
+							UID: uuid.NewUUID(),
+							APP: nil,
+						}
+						autoPool.Spec.PodAffinity = ippoolmanager.NewAutoPoolPodAffinity(podController)
+					})
+
+					It("auto-created IPPool with owner application deployment", func() {
+						err := ipPoolWebhook.ValidateCreate(ctx, autoPool)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("auto-created IPPool with modified podAffinity", func() {
+						autoPool.Spec.PodAffinity = &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"key": "value",
+							},
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{Key: "key",
+									Operator: metav1.LabelSelectorOpIn,
+									Values:   []string{"value"},
+								},
+							},
+						}
+
+						err := ipPoolWebhook.ValidateCreate(ctx, autoPool)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("normal IPPool", func() {
+					It("valid podAffinity", func() {
+						ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
+						ipPoolT.Spec.Subnet = "172.18.40.0/24"
+						ipPoolT.Spec.PodAffinity = &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"key": "value",
+							},
+							MatchExpressions: nil,
+						}
+						err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("invalid podAffinity with invalid label value", func() {
+						ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
+						ipPoolT.Spec.Subnet = "172.18.40.0/24"
+						ipPoolT.Spec.PodAffinity = &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"key": ".starts.with.dot",
+							},
+							MatchExpressions: nil,
+						}
+						err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+						Expect(err).To(HaveOccurred())
+					})
+
+					It("empty podAffinity is invalid", func() {
+						ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
+						ipPoolT.Spec.Subnet = "172.18.40.0/24"
+						ipPoolT.Spec.PodAffinity = &metav1.LabelSelector{
+							MatchLabels:      map[string]string{},
+							MatchExpressions: []metav1.LabelSelectorRequirement{},
+						}
+						err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
+
 			It("creates IPv4 IPPool with all fields valid", func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
@@ -1842,6 +1944,24 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 					err = ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
 					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			When("Validating 'spec.podAffinity'", func() {
+				It("no podAffinity", func() {
+					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
+					ipPoolT.Spec.Subnet = "172.18.40.0/24"
+
+					newPool := ipPoolT.DeepCopy()
+					newPool.Spec.PodAffinity = &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"key": ".starts.with.dot",
+						},
+						MatchExpressions: nil,
+					}
+					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newPool)
+					Expect(err).To(HaveOccurred())
 				})
 			})
 

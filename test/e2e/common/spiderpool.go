@@ -835,9 +835,9 @@ func WaitWebhookReady(ctx context.Context, f *frame.Framework, webhookPort strin
 
 	var webhookHealthyCheck string
 	if f.Info.IpV6Enabled && !f.Info.IpV4Enabled {
-		webhookHealthyCheck = fmt.Sprintf("curl -I -g https://[%s]:%s%s --insecure", serviceObj.Spec.ClusterIP, webhookPort, webhookMutateRoute)
+		webhookHealthyCheck = fmt.Sprintf("curl -I -m 1 -g https://[%s]:%s%s --insecure", serviceObj.Spec.ClusterIP, webhookPort, webhookMutateRoute)
 	} else {
-		webhookHealthyCheck = fmt.Sprintf("curl -I https://%s:%s%s --insecure", serviceObj.Spec.ClusterIP, webhookPort, webhookMutateRoute)
+		webhookHealthyCheck = fmt.Sprintf("curl -I -m 1 https://%s:%s%s --insecure", serviceObj.Spec.ClusterIP, webhookPort, webhookMutateRoute)
 	}
 
 	for {

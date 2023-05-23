@@ -15,16 +15,15 @@ Here are some annotations that you should write down on the application template
 
 1. The annotation `ipam.spidernet.io/subnets` has higher priority over `ipam.spidernet.io/subnet`.
    If you specify both of them two, it only uses `ipam.spidernet.io/subnets` mode.
-
 2. In annotation `ipam.spidernet.io/subnet` mode, it will use default interface name `eth0` if you do not set `interface` property.
-
 3. For annotation `ipam.spidernet.io/ippool-ip-number`, you can use '2' for fixed IP number or '+2' for flexible mode.
    The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas.
    If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas.
    This is an optional annotation. If left unset, it will use the `clusterSubnetDefaultFlexibleIPNumber` property from the `spiderpool-conf` ConfigMap as the flexible IP number in flexible mode. Refer to [config](../concepts/config.md) for details.
-
-4. The current version only supports to use one SpiderSubnet V4/V6 CR, you shouldn't specify 2 or more SpiderSubnet V4 CRs and the spiderpool-controller
-will choose the first one to use.
+4. The current version only supports using one SpiderSubnet V4/V6 CR for one Interface. You shouldn't specify two or more SpiderSubnet V4 CRs. The system will choose the first one to use.
+5. It's invalid to modify the Auto-created IPPool `Spec.IPs` by users.
+6. The auto-created IPPool will only serve your specified application, and the system will bind a special Spiderpool podAffinity to it. 
+   If you want to use `ipam.spidernet.io/ippool` or `ipam.spidernet.io/ippools` annotations to specify the 'reserved' auto-created IPPool, you should edit the IPPool to remove its special Spiderpool podAffinity and annotations `ipam.spidernet.io/owner-application*`.
 
 ## Get Started
 
@@ -68,6 +67,8 @@ $ kubectl get sp auto4-demo-deploy-subnet-eth0-337bc -o yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
+  annotations:
+    ipam.spidernet.io/ippool-ip-number: "+2"
   creationTimestamp: "2023-05-09T09:25:24Z"
   finalizers:
   - spiderpool.spidernet.io
@@ -138,6 +139,8 @@ $ kubectl get sp auto4-demo-deploy-subnet-eth0-337bc -o yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
+  annotations:
+    ipam.spidernet.io/ippool-ip-number: "+2"
   creationTimestamp: "2023-05-09T09:25:24Z"
   finalizers:
   - spiderpool.spidernet.io

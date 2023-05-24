@@ -28,5 +28,8 @@ ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 apt-get install -y --no-install-recommends "${packages[@]}"
 
 apt-get purge --auto-remove
+
 apt-get clean
 rm -rf /var/lib/apt/lists/*
+
+

@@ -435,6 +435,7 @@ func setupInformers() {
 	if err := (&coordinatormanager.CoordinatorController{
 		Manager:             controllerContext.CRDManager,
 		Client:              controllerContext.CRDManager.GetClient(),
+		APIReader:           controllerContext.CRDManager.GetAPIReader(),
 		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 		ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
 	}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {

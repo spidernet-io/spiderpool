@@ -36,7 +36,7 @@ jobs:
         with:
           token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}
-          container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
+          container: ${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci
           # Dry-run first, then change to `false`
           dry-run: false
           # Minimum age in days of a version before it is pruned. Defaults to 0 which matches all versions of a container

@@ -133,7 +133,7 @@ spiderpoolAgent:
     registry: ghcr.io
 
     ## @param spiderpoolAgent.image.repository the image repository of spiderpoolAgent
-    repository: spidernet-io/spiderpool/spiderpool-agent
+    repository: spidernet-io/spiderpool-agent
 
     ## @param spiderpoolAgent.image.pullPolicy the image pullPolicy of spiderpoolAgent
     pullPolicy: IfNotPresent
@@ -347,7 +347,7 @@ spiderpoolController:
     registry: ghcr.io
 
     ## @param spiderpoolController.image.repository the image repository of spiderpoolController
-    repository: spidernet-io/spiderpool/spiderpool-controller
+    repository: spidernet-io/spiderpool-controller
 
     ## @param spiderpoolController.image.pullPolicy the image pullPolicy of spiderpoolController
     pullPolicy: IfNotPresent
@@ -606,7 +606,7 @@ spiderpoolInit:
     registry: ghcr.io
 
     ## @param spiderpoolInit.image.repository the image repository of spiderpoolInit
-    repository: spidernet-io/spiderpool/spiderpool-controller
+    repository: spidernet-io/spiderpool-controller
 
     ## @param spiderpoolInit.image.pullPolicy the image pullPolicy of spiderpoolInit
     pullPolicy: IfNotPresent

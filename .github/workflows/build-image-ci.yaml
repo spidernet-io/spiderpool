@@ -158,7 +158,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           github-token: ${{ secrets.WELAN_PAT }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
           build-args: |
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
@@ -181,7 +181,7 @@ jobs:
           outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
           github-token: ${{ secrets.WELAN_PAT }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
+            ${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
           build-args: |
             RACE=1
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
@@ -193,8 +193,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
       # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
@@ -210,7 +210,7 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
           build-args: |
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
@@ -229,7 +229,7 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
+            ${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
           build-args: |
             RACE=1
             GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
@@ -241,8 +241,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
       # Upload artifact digests
       - name: Upload artifact digests

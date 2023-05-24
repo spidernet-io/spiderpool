@@ -1,7 +1,7 @@
 # Copyright 2022 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
 
-ARG BASE_IMAGE=ghcr.io/spidernet-io/spiderpool/spiderpool-base:1f8330482d25b58d2ae26bc6252e20384bac92ad
+ARG BASE_IMAGE=ghcr.io/spidernet-io/spiderpool-base:1f8330482d25b58d2ae26bc6252e20384bac92ad
 ARG GOLANG_IMAGE=docker.io/library/golang:1.20@sha256:f69d47fedd3b2ebd23bcf473c0b78522ebbc1823f06b7d47f45f04a30bdc901d
 
 #======= build bin ==========

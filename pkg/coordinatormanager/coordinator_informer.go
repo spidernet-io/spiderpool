@@ -5,6 +5,7 @@ package coordinatormanager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -62,6 +63,7 @@ var InformerLogger *zap.Logger
 type CoordinatorController struct {
 	Manager         ctrl.Manager
 	Client          client.Client
+	APIReader       client.Reader
 	coordinatorName atomic.Value
 
 	caliCtrlCanncel context.CancelFunc
@@ -302,26 +304,44 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	}
 
 	coordCopy := coord.DeepCopy()
-	kcm, err := cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(kubeadmConfig)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			event.EventRecorder.Eventf(
-				coordCopy,
-				corev1.EventTypeWarning,
-				"ClusterNotReady",
-				"Configmap kube-system/kubeadm-config not found",
-			)
-		}
+	var cmPodList corev1.PodList
+	if err := cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"}); err != nil {
+		event.EventRecorder.Eventf(
+			coordCopy,
+			corev1.EventTypeWarning,
+			"ClusterNotReady",
+			err.Error(),
+		)
+
 		if coordCopy.Status.Phase != notReady {
 			coordCopy.Status.Phase = notReady
 			if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 				return err
 			}
 		}
+
 		return err
 	}
+	if len(cmPodList.Items) == 0 {
+		msg := `Failed to get kube-controller-manager Pod with label "component: kube-controller-manager"`
+		event.EventRecorder.Eventf(
+			coordCopy,
+			corev1.EventTypeWarning,
+			"ClusterNotReady",
+			msg,
+		)
 
-	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(kcm)
+		if coordCopy.Status.Phase != notReady {
+			coordCopy.Status.Phase = notReady
+			if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
+				return err
+			}
+		}
+
+		return errors.New(msg)
+	}
+
+	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(&cmPodList.Items[0])
 	switch coord.Spec.PodCIDRType {
 	case cluster:
 		if cc.caliCtrlCanncel != nil {
@@ -420,14 +440,14 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	return cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord))
 }
 
-func extractK8sCIDR(kubeadmConfig *corev1.ConfigMap) ([]string, []string) {
+func extractK8sCIDR(cmPod *corev1.Pod) ([]string, []string) {
 	var podCIDR, serviceCIDR []string
 
-	podReg := regexp.MustCompile(`podSubnet: (.*)`)
-	serviceReg := regexp.MustCompile(`serviceSubnet: (.*)`)
+	podReg := regexp.MustCompile(`--cluster-cidr=(.*)`)
+	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
 
 	var podSubnet, serviceSubnet []string
-	for _, l := range kubeadmConfig.Data {
+	for _, l := range cmPod.Spec.Containers[0].Command {
 		if len(podSubnet) == 0 {
 			podSubnet = podReg.FindStringSubmatch(l)
 		}

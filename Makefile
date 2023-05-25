@@ -11,7 +11,7 @@ all: build-bin install-bin
 .PHONY: all build install
 
 CONTROLLER_BIN_SUBDIRS := cmd/spiderpool-controller cmd/spiderpoolctl cmd/spiderpool-init
-AGENT_BIN_SUBDIRS := cmd/spiderpool-agent cmd/spiderpool
+AGENT_BIN_SUBDIRS := cmd/spiderpool-agent cmd/spiderpool cmd/coordinator
 COORDINATOR_BIN_SUBDIRS := cmd/coordinator
 
 SUBDIRS := $(CONTROLLER_BIN_SUBDIRS) $(AGENT_BIN_SUBDIRS)
@@ -29,9 +29,6 @@ controller-bin:
 install-bin:
 	$(QUIET)$(INSTALL) -m 0755 -d $(DESTDIR_BIN)
 	for i in $(SUBDIRS); do $(MAKE) $(SUBMAKEOPTS) -C $$i install; done
-
-coordinator-bin:
-    $(QUIET)
 
 install-bash-completion:
 	$(QUIET)$(INSTALL) -m 0755 -d $(DESTDIR_BIN)

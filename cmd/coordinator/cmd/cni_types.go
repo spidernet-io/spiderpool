@@ -150,10 +150,12 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		}
 	}
 
-	conf.IPConflict = ValidateIPConflict(conf.IPConflict)
-	_, err = time.ParseDuration(conf.IPConflict.Interval)
-	if err != nil {
-		return nil, fmt.Errorf("invalid interval %s: %v, input like: 1s or 1m", conf.IPConflict.Interval, err)
+	if conf.IPConflict != nil {
+		conf.IPConflict = ValidateIPConflict(conf.IPConflict)
+		_, err = time.ParseDuration(conf.IPConflict.Interval)
+		if err != nil {
+			return nil, fmt.Errorf("invalid interval %s: %v, input like: 1s or 1m", conf.IPConflict.Interval, err)
+		}
 	}
 
 	if conf.HostRuleTable == nil && coordinatorConfig.HostRuleTable > 0 {
@@ -184,13 +186,14 @@ func validateHwPrefix(prefix string) error {
 		return nil
 	}
 	// prefix format like: 00:00、0a:1b
-	matchRegexp, err := regexp.Compile("^" + "(" + "[a-fA-F0-9]{2}[:-][a-fA-F0-9]{2}" + ")" + "$")
+	matchRegexp, err := regexp.Compile("^" + "(" + "[a-fA-F0-9][a-fA-F,0,2-9][:-][a-fA-F0-9]{2}" + ")" + "$")
 	if err != nil {
 		return err
 	}
 	if !matchRegexp.MatchString(prefix) {
-		return fmt.Errorf("mac_prefix format should be match regex: [a-fA-F0-9]{2}[:][a-fA-F0-9]{2}, like '0a:1b'")
+		return fmt.Errorf("mac_prefix format should be match regex: [a-fA-F0-9][a-fA-F,0,2-9][:][a-fA-F0-9]{2}, like '0a:1b'")
 	}
+
 	return nil
 }
 

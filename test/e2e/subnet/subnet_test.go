@@ -1214,7 +1214,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			deployName = "deploy-" + tools.RandomName()
 			deployObj := common.GenerateExampleDeploymentYaml(deployName, namespace, 1)
 			deployObj.Spec.Template.Annotations = map[string]string{
-				common.MultusNetworks: common.MacvlanCNIName,
+				common.MultusNetworks: common.MacvlanUnderlayVlan100,
 				// second Interface
 				constant.AnnoSpiderSubnets: string(subnetsAnnoMarshal),
 			}

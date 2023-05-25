@@ -137,24 +137,31 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	//  we do detect gateway connection firstly
 	if conf.DetectGateway {
+		var gws []string
 		err = c.netns.Do(func(netNS ns.NetNS) error {
-			gws, err := networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
+			gws, err = networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
 			if err != nil {
 				logger.Error("failed to GetDefaultGatewayByName", zap.Error(err))
 				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
-			}
-
-			for _, gw := range gws {
-				if err = gwconnection.DetectGatewayConnection(gw); err != nil {
-					logger.Error(err.Error())
-					return err
-				}
 			}
 			return nil
 		})
 		if err != nil {
 			return err
 		}
+
+		logger.Debug("Get GetDefaultGatewayByName", zap.Strings("Gws", gws))
+
+		for _, gw := range gws {
+			if err = gwconnection.DetectGatewayConnection(gw); err != nil {
+				logger.Error(err.Error())
+				return err
+			}
+		}
+		if err != nil {
+			return err
+		}
+		logger.Debug("Success to detect gateway", zap.Strings("Gws", gws))
 	}
 
 	if conf.IPConflict != nil && conf.IPConflict.Enabled {

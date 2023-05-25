@@ -3,6 +3,7 @@
 package common
 
 import (
+	"os"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
@@ -42,8 +43,29 @@ const (
 // Network configurations
 var (
 	// multus CNI
-	MultusNetworks string = "k8s.v1.cni.cncf.io/networks"
-	MacvlanCNIName string = "kube-system/macvlan-cni2"
+	MultusDefaultNetwork        = "v1.multus-cni.io/default-network"
+	MultusNetworks       string = "k8s.v1.cni.cncf.io/networks"
+
+	CalicoCNIName          string = "k8s-pod-network"
+	MacvlanUnderlayVlan0   string = "macvlan-vlan0-underlay"
+	MacvlanUnderlayVlan100 string = "macvlan-vlan100-underlay"
+	MacvlanUnderlayVlan200 string = "macvlan-vlan200-underlay"
+	MacvlanOverlayVlan100  string = "macvlan-vlan100-overlay"
+	MacvlanOverlayVlan200  string = "macvlan-vlan200-overlay"
+
+	SpiderPoolIPv4SubnetVlan100 string = "vlan100-v4"
+	SpiderPoolIPv6SubnetVlan100 string = "vlan100-v6"
+	SpiderPoolIPv4SubnetVlan200 string = "vlan200-v4"
+	SpiderPoolIPv6SubnetVlan200 string = "vlan200-v6"
+
+	SpiderPoolIPPoolAnnotationKey  = "ipam.spidernet.io/ippool"
+	SpiderPoolIPPoolsAnnotationKey = "ipam.spidernet.io/ippools"
+	SpiderPoolSubnetAnnotationKey  = "ipam.spidernet.io/subnet"
+	SpiderPoolSubnetsAnnotationKey = "ipam.spidernet.io/subnets"
+
+	MultusNs                = "kube-system"
+	SpiderDoctorAgentNs     = "kube-system"
+	SpiderDoctorAgentDSName = "spiderdoctor-agent"
 
 	// Route
 	V4Dst string = "0.0.0.0/0"
@@ -65,3 +87,7 @@ const (
 	AutomaticallyCreated = "Automatic"
 	ManuallyCreated      = "Manual"
 )
+
+func init() {
+	MultusNs = os.Getenv("MULTUS_CNI_NAMESPACE")
+}

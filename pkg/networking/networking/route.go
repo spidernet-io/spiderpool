@@ -32,15 +32,31 @@ func GetRoutesByName(iface string, ipfamily int) (routes []netlink.Route, err er
 }
 
 func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
-	routes, err := GetRoutesByName(iface, ipfamily)
+	routes, err := GetRoutesByName("", ipfamily)
+	if err != nil {
+		return nil, err
+	}
+
+	link, err := netlink.LinkByName(iface)
 	if err != nil {
 		return nil, err
 	}
 
 	gws := make([]string, 0)
 	for _, route := range routes {
-		if route.Dst == nil {
-			gws = append(gws, route.Gw.String())
+		if route.LinkIndex == link.Attrs().Index {
+			if route.Dst == nil {
+				gws = append(gws, route.Gw.String())
+			}
+		} else {
+			if len(route.MultiPath) > 0 {
+				for _, r := range route.MultiPath {
+					if r.LinkIndex == link.Attrs().Index {
+						gws = append(gws, r.Gw.String())
+						break
+					}
+				}
+			}
 		}
 	}
 	return gws, nil
@@ -122,6 +138,8 @@ func AddRoute(logger *zap.Logger, ruleTable int, scope netlink.Scope, iface stri
 // MoveRouteTable move all routes of the specified interface to a new route table
 // Equivalent: `ip route del <route>` and `ip r route add <route> <table>`
 func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable, ipfamily int) error {
+	logger.Debug("Debug MoveRouteTable", zap.String("interface", iface),
+		zap.Int("srcRuleTable", srcRuleTable), zap.Int("dstRuleTable", dstRuleTable))
 	link, err := netlink.LinkByName(iface)
 	if err != nil {
 		logger.Error(err.Error())
@@ -135,7 +153,6 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 	}
 
 	for _, route := range routes {
-
 		// only handle route tables from table main
 		if route.Table != srcRuleTable {
 			continue
@@ -165,22 +182,39 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 				continue
 			}
 
+			var generatedRoute, deletedRoute *netlink.Route
 			// get generated default Route for new table
 			for _, v := range route.MultiPath {
+				logger.Debug("Found IPv6 Default Route", zap.String("Route", route.String()),
+					zap.Int("v.LinkIndex", v.LinkIndex), zap.Int("link.Attrs().Index", link.Attrs().Index))
 				if v.LinkIndex == link.Attrs().Index {
-					logger.Debug("Found IPv6 Default Route", zap.String("Route", route.String()))
-					if err := netlink.RouteDel(&route); err != nil {
-						logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
-						return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)
+					generatedRoute = &netlink.Route{
+						LinkIndex: v.LinkIndex,
+						Gw:        v.Gw,
+						Table:     dstRuleTable,
+						MTU:       route.MTU,
 					}
-
-					route.Table = dstRuleTable
-					if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
-						logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
-						return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
+					deletedRoute = &netlink.Route{
+						LinkIndex: v.LinkIndex,
+						Gw:        v.Gw,
+						Table:     srcRuleTable,
 					}
 					break
 				}
+			}
+			if generatedRoute == nil {
+				continue
+			}
+
+			logger.Debug("deletedRoute", zap.String("deletedRoute", deletedRoute.String()))
+			if err := netlink.RouteDel(deletedRoute); err != nil {
+				logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
+				return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)
+			}
+
+			if err = netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
+				logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
+				return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
 			}
 		}
 	}

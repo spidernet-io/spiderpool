@@ -97,7 +97,8 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "underlay"
+                  "tune_mode": "underlay",
+                  "detect_gateway": false
               }
           ]
       }
@@ -124,7 +125,9 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "underlay"
+                  "tune_mode": "underlay",
+                  "tune_pod_routes": false,
+                  "detect_gateway": false
               }
           ]
       }
@@ -151,7 +154,9 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "overlay"
+                  "tune_mode": "overlay",
+                  "detect_gateway": false,
+                  "tune_pod_routes": false
               }
           ]
       }
@@ -178,7 +183,8 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "overlay"
+                  "tune_mode": "overlay",
+                  "tune_pod_routes": false
               }
           ]
       }

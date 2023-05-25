@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	"github.com/spidernet-io/e2eframework/tools"
 	spiderdoctorV1 "github.com/spidernet-io/spiderdoctor/pkg/k8s/apis/spiderdoctor.spidernet.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,35 +28,37 @@ func TestMacvlanOverlayOne(t *testing.T) {
 }
 
 var frame *e2e.Framework
-var name string
+
+// var name string
 var spiderDoctorAgent *appsv1.DaemonSet
 var annotations = make(map[string]string)
-var successRate = float64(1)
-var delayMs = int64(15000)
-var (
-	task        *spiderdoctorV1.Nethttp
-	plan        *spiderdoctorV1.SchedulePlan
-	target      *spiderdoctorV1.NethttpTarget
-	targetAgent *spiderdoctorV1.TargetAgentSepc
-	request     *spiderdoctorV1.NethttpRequest
-	condition   *spiderdoctorV1.NetSuccessCondition
-	run         = true
-)
+
+//var successRate = float64(1)
+//var delayMs = int64(15000)
+//var (
+//	task        *spiderdoctorV1.Nethttp
+//	plan        *spiderdoctorV1.SchedulePlan
+//	target      *spiderdoctorV1.NethttpTarget
+//	targetAgent *spiderdoctorV1.TargetAgentSepc
+//	request     *spiderdoctorV1.NethttpRequest
+//	condition   *spiderdoctorV1.NetSuccessCondition
+//	run         = true
+//)
 
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	task = new(spiderdoctorV1.Nethttp)
-	plan = new(spiderdoctorV1.SchedulePlan)
-	target = new(spiderdoctorV1.NethttpTarget)
-	targetAgent = new(spiderdoctorV1.TargetAgentSepc)
-	request = new(spiderdoctorV1.NethttpRequest)
-	condition = new(spiderdoctorV1.NetSuccessCondition)
+	//task = new(spiderdoctorV1.Nethttp)
+	//plan = new(spiderdoctorV1.SchedulePlan)
+	//target = new(spiderdoctorV1.NethttpTarget)
+	//targetAgent = new(spiderdoctorV1.TargetAgentSepc)
+	//request = new(spiderdoctorV1.NethttpRequest)
+	//condition = new(spiderdoctorV1.NetSuccessCondition)
 
 	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{multus_v1.AddToScheme, spiderpool.AddToScheme, spiderdoctorV1.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
 
-	name = "one-macvlan-overlay-" + tools.RandomName()
+	//name = "one-macvlan-overlay-" + tools.RandomName()
 
 	// get calico multus crd instance by name
 	calicoMultusInstance, err := frame.GetMultusInstance(common.CalicoCNIName, common.MultusNs)
@@ -94,10 +95,14 @@ var _ = BeforeSuite(func() {
 	err = frame.UpdateResource(spiderDoctorAgent)
 	Expect(err).NotTo(HaveOccurred())
 
-	ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-	defer cancel()
+	time.Sleep(30 * time.Second)
+
 	nodeList, err := frame.GetNodeList()
 	Expect(err).NotTo(HaveOccurred())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*common.PodStartTimeout)
+	defer cancel()
+
 	err = frame.WaitPodListRunning(spiderDoctorAgent.Spec.Selector.MatchLabels, len(nodeList.Items), ctx)
 	Expect(err).NotTo(HaveOccurred())
 

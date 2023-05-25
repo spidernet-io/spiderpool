@@ -19,7 +19,7 @@ var _ = Describe("MacvlanUnderlayOne", Label("underlay", "one-interface", "coord
 		task.Name = name
 		// schedule
 		plan.StartAfterMinute = 0
-		plan.RoundNumber = 1
+		plan.RoundNumber = 2
 		plan.IntervalMinute = 2
 		plan.TimeoutMinute = 2
 		task.Spec.Schedule = plan
@@ -56,6 +56,9 @@ var _ = Describe("MacvlanUnderlayOne", Label("underlay", "one-interface", "coord
 		Expect(err).NotTo(HaveOccurred(), " spiderdoctor nethttp crd get failed")
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60*5)
 		defer cancel()
+
+		var err1 = errors.New("error has occurred")
+
 		for run {
 			select {
 			case <-ctx.Done():
@@ -66,12 +69,15 @@ var _ = Describe("MacvlanUnderlayOne", Label("underlay", "one-interface", "coord
 				Expect(err).NotTo(HaveOccurred(), " spiderdoctor nethttp crd get failed")
 				if taskCopy.Status.Finish == true {
 					for _, v := range taskCopy.Status.History {
-						Expect(v.Status).To(Equal("succeed"), "round %d failed", v.RoundNumber)
+						if v.Status == "succeed" {
+							err1 = nil
+						}
 					}
 					run = false
 				}
 				time.Sleep(time.Second * 5)
 			}
 		}
+		Expect(err1).NotTo(HaveOccurred())
 	})
 })

@@ -43,8 +43,8 @@ const (
 // Network configurations
 var (
 	// multus CNI
-	MultusDefaultNetwork        = "v1.multus-cni.io/default-network"
-	MultusNetworks       string = "k8s.v1.cni.cncf.io/networks"
+	MultusDefaultNetwork = "v1.multus-cni.io/default-network"
+	MultusNetworks       = "k8s.v1.cni.cncf.io/networks"
 
 	CalicoCNIName          string = "k8s-pod-network"
 	MacvlanUnderlayVlan0   string = "macvlan-vlan0-underlay"
@@ -73,7 +73,7 @@ var (
 
 	// Network Name
 	NIC1 string = "eth0"
-	NIC2 string = "net2"
+	NIC2 string = "net1"
 )
 
 // Error

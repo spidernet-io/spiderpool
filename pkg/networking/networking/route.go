@@ -224,27 +224,60 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 // GetDefaultRouteInterface returns the name of the NIC where the default route is located
 // if filterInterface not be empty, return first default route interface
 // otherwise filter filterInterface
-func GetDefaultRouteInterface(filterInterface string, ipfamily int) (string, error) {
-	routes, err := GetRoutesByName("", ipfamily)
+func GetDefaultRouteInterface(netns ns.NetNS, filterInterface string, ipfamily int) (string, error) {
+	var defaultInterface string
+	err := netns.Do(func(_ ns.NetNS) error {
+		routes, err := netlink.RouteList(nil, ipfamily)
+		if err != nil {
+			return err
+		}
+
+		if ipfamily == netlink.FAMILY_V6 {
+			for idx := range routes {
+				if len(routes[idx].MultiPath) > 0 {
+					// found v6 default route
+					for _, v6DefaultRoute := range routes[idx].MultiPath {
+						defaultInterface, err = getDefaultRouteIface(v6DefaultRoute.LinkIndex, filterInterface)
+						if err != nil {
+							return err
+						}
+						if defaultInterface != "" {
+							return nil
+						}
+					}
+				}
+			}
+			return nil
+		}
+
+		for idx := range routes {
+			if routes[idx].Dst == nil {
+				// found default route
+				defaultInterface, err = getDefaultRouteIface(routes[idx].LinkIndex, filterInterface)
+				if err != nil {
+					return err
+				}
+				if defaultInterface != "" {
+					return nil
+				}
+			}
+		}
+		return nil
+	})
+
+	return defaultInterface, err
+}
+
+func getDefaultRouteIface(linkIndex int, ignore string) (string, error) {
+	link, err := netlink.LinkByIndex(linkIndex)
 	if err != nil {
 		return "", err
 	}
 
-	for idx := range routes {
-		if routes[idx].Dst == nil {
-			// found default route
-			link, err := netlink.LinkByIndex(routes[idx].LinkIndex)
-			if err != nil {
-				return "", err
-			}
-
-			if filterInterface != "" && link.Attrs().Name == filterInterface {
-				continue
-			}
-			return link.Attrs().Name, nil
-		}
+	if ignore != "" && link.Attrs().Name == ignore {
+		return "", nil
 	}
-	return "", fmt.Errorf("DefaultRouteInterface no found")
+	return link.Attrs().Name, nil
 }
 
 // IsFirstModeOverlayInvoke return true if the number of NICs prefixed with interfacePrefix in the pod is equal to 1

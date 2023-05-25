@@ -42,14 +42,14 @@ const (
 type Config struct {
 	types.NetConf
 	OnlyHardware       bool        `json:"only_hardware,omitempty"`
-	DetectGateway      bool        `json:"detect_gateway,omitempty"`
+	DetectGateway      *bool       `json:"detect_gateway,omitempty"`
 	MacPrefix          string      `json:"mac_prefix,omitempty"`
 	InterfacePrefix    string      `json:"iface_prefix,omitempty"`
 	PodFirstInterface  string      `json:"pod_first_iface,omitempty"`
 	ClusterCIDR        []string    `json:"cluster_cidr,omitempty"`
 	ServiceCIDR        []string    `json:"service_cidr,omitempty"`
 	ExtraCIDR          []string    `json:"extra_cidr,omitempty"`
-	TunePodRoutes      bool        `json:"tune_pod_routes,omitempty"`
+	TunePodRoutes      *bool       `json:"tune_pod_routes,omitempty"`
 	PodDefaultRouteNIC string      `json:"pod_default_route_nic,omitempty"`
 	TuneMode           Mode        `json:"tune_mode,omitempty"`
 	HostRuleTable      *int64      `json:"host_rule_table,omitempty"`
@@ -166,12 +166,12 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		conf.HostRuleTable = pointer.Int64(500)
 	}
 
-	if !conf.DetectGateway && coordinatorConfig.DetectGateway {
-		conf.DetectGateway = coordinatorConfig.DetectGateway
+	if conf.DetectGateway == nil {
+		conf.DetectGateway = pointer.Bool(coordinatorConfig.DetectGateway)
 	}
 
-	if !conf.TunePodRoutes && *coordinatorConfig.TunePodRoutes {
-		conf.TunePodRoutes = *coordinatorConfig.TunePodRoutes
+	if conf.TunePodRoutes == nil {
+		conf.TunePodRoutes = pointer.Bool(*coordinatorConfig.TunePodRoutes)
 	}
 
 	if conf.PodDefaultRouteNIC == "" && coordinatorConfig.PodDefaultRouteNIC != "" {

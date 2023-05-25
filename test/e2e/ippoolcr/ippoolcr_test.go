@@ -353,8 +353,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 				defer cancel()
 				checkGatewayCommand := "ip -6 r | grep 'default via' | awk '{print $3}'"
-				checkRouteDstCommand := fmt.Sprintf("ip -6 r | grep 'via' | grep '%s' | grep -v 'default' | awk '{print $1}'", common.NIC1)
-				checkRouteViaCommand := fmt.Sprintf("ip -6 r | grep 'via' | grep '%s' | grep -v 'default' | awk '{print $3}'", common.NIC1)
+				checkRouteDstCommand := fmt.Sprintf("ip -6 r | grep 'via' | grep -w '%s' | grep -v 'default' | awk '{print $1}'", common.NIC1)
+				checkRouteViaCommand := fmt.Sprintf("ip -6 r | grep 'via' | grep -w '%s' | grep -v 'default' | awk '{print $3}'", common.NIC1)
 				effectiveIpv6Gw, err1 := frame.ExecCommandInPod(k, nsName, checkGatewayCommand, ctx)
 				effectiveIpv6Dst, err2 := frame.ExecCommandInPod(k, nsName, checkRouteDstCommand, ctx)
 				effectiveIpv6Via, err3 := frame.ExecCommandInPod(k, nsName, checkRouteViaCommand, ctx)

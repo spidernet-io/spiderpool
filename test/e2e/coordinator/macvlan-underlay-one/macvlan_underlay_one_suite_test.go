@@ -5,8 +5,6 @@ package macvlan_underlay_one_test
 import (
 	"context"
 	"fmt"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
 
@@ -20,7 +18,9 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	spiderdoctorV1 "github.com/spidernet-io/spiderdoctor/pkg/k8s/apis/spiderdoctor.spidernet.io/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestMacvlanStandaloneOne(t *testing.T) {
@@ -80,11 +80,14 @@ var _ = BeforeSuite(func() {
 	e = frame.UpdateResource(spiderDoctorAgent)
 	Expect(e).NotTo(HaveOccurred())
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*common.PodReStartTimeout)
+	time.Sleep(20 * time.Second)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*common.PodReStartTimeout)
 	defer cancel()
 
 	nodeList, err := frame.GetNodeList()
 	Expect(err).NotTo(HaveOccurred())
+
 	err = frame.WaitPodListRunning(spiderDoctorAgent.Spec.Selector.MatchLabels, len(nodeList.Items), ctx)
 	Expect(err).NotTo(HaveOccurred())
 

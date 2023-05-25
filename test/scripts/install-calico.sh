@@ -37,17 +37,17 @@ function install_calico() {
           export CALICO_CNI_ASSIGN_IPV4=true
           export CALICO_CNI_ASSIGN_IPV6=false
           export CALICO_IP_AUTODETECT=autodetect
-          export CALICO_IP6_AUTODETECT=autodetect
+          export CALICO_IP6_AUTODETECT=none
           export CALICO_FELIX_IPV6SUPPORT=false
           export CALICO_IPV6POOL_VXLAN=Never
         ;;
       ipv6)
           export CALICO_CNI_ASSIGN_IPV4=false
           export CALICO_CNI_ASSIGN_IPV6=true
-          export CALICO_IP_AUTODETECT=autodetect
+          export CALICO_IP_AUTODETECT=none
           export CALICO_IP6_AUTODETECT=autodetect
           export CALICO_FELIX_IPV6SUPPORT=true
-          export CALICO_IPV6POOL_VXLAN=Never
+          export CALICO_IPV6POOL_VXLAN=Always
         ;;
       dual)
           export CALICO_CNI_ASSIGN_IPV4=true
@@ -55,7 +55,7 @@ function install_calico() {
           export CALICO_IP_AUTODETECT=autodetect
           export CALICO_IP6_AUTODETECT=autodetect
           export CALICO_FELIX_IPV6SUPPORT=true
-          export CALICO_IPV6POOL_VXLAN=Never
+          export CALICO_IPV6POOL_VXLAN=Always
         ;;
       *)
         echo "the value of E2E_IP_FAMILY: ipv4 or ipv6 or dual"

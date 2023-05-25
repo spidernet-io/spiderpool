@@ -233,27 +233,31 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 		configDefaultRouteNIC = c.currentInterface
 	}
 
+	miss, err := networking.IsInterfaceMiss(c.netns, configDefaultRouteNIC)
+	if err != nil {
+		logger.Error("failed to IsInterfaceMiss", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
+		return fmt.Errorf("failed to IsInterfaceMiss: %v", err)
+	}
+
+	if miss {
+		return fmt.Errorf("podDefaultRouteNIC: %s don't exist in pod", configDefaultRouteNIC)
+	}
+
+	podDefaultRouteNIC, err := networking.GetDefaultRouteInterface(c.netns, c.currentInterface, c.ipFamily)
+	if err != nil {
+		logger.Error("failed to GetDefaultRouteInterface", zap.Error(err))
+	}
+
+	if podDefaultRouteNIC == "" {
+		logger.Warn("podDefaultRouteNIC no found in pod, ignore tuneRoutes")
+		return nil
+	}
+
+	logger.Sugar().Infof("podDefaultRouteNIC: %v", podDefaultRouteNIC)
+
 	// make sure that traffic sent from current interface to lookup table <ruleTable>
 	// eq: ip rule add from <currentInterfaceIPAddress> lookup <ruleTable>
-	err := c.netns.Do(func(_ ns.NetNS) error {
-		miss, err := networking.IsInterfaceMiss(c.netns, configDefaultRouteNIC)
-		if err != nil {
-			logger.Error("failed to IsInterfaceMiss", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
-			return fmt.Errorf("failed to IsInterfaceMiss: %v", err)
-		}
-
-		if miss {
-			return fmt.Errorf("podDefaultRouteNIC: %s don't exist in pod", configDefaultRouteNIC)
-		}
-
-		podDefaultRouteNIC, err := networking.GetDefaultRouteInterface(c.currentInterface, c.ipFamily)
-		if err != nil {
-			logger.Error("failed to GetDefaultRouteInterface", zap.Error(err))
-			return fmt.Errorf("failed to GetDefaultRouteInterface: %v", err)
-		}
-
-		logger.Sugar().Infof("podDefaultRouteNIC: %v", podDefaultRouteNIC)
-
+	err = c.netns.Do(func(_ ns.NetNS) error {
 		defaultInterfaceAddress, err := networking.GetAddersByName(podDefaultRouteNIC, c.ipFamily)
 		if err != nil {
 			logger.Error("failed to GetAdders for podDefaultRouteNIC", zap.Error(err))

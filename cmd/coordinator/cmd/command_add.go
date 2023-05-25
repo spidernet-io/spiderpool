@@ -136,7 +136,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Sugar().Infof("Get coordinator config: %v", c)
 
 	//  we do detect gateway connection firstly
-	if conf.DetectGateway {
+	if *conf.DetectGateway {
 		var gws []string
 		err = c.netns.Do(func(netNS ns.NetNS) error {
 			gws, err = networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
@@ -239,7 +239,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to setupHijackRoutes: %v", err)
 	}
 
-	if conf.TunePodRoutes && (!c.firstInvoke || c.tuneMode == ModeOverlay) {
+	if conf.TunePodRoutes != nil && *conf.TunePodRoutes && (!c.firstInvoke || c.tuneMode == ModeOverlay) {
 		if err = c.tunePodRoutes(logger, conf.PodDefaultRouteNIC); err != nil {
 			logger.Error("failed to tunePodRoutes", zap.Error(err))
 			return fmt.Errorf("failed to tunePodRoutes: %v", err)

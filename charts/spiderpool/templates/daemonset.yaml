@@ -137,7 +137,17 @@ spec:
           postStart:
             # Move an eventual old existing binary out of the way, we can't delete it as it might be in use right now
             exec:
-              command: [ "/bin/sh", "-c", "if [ -f '/host/opt/cni/bin/spiderpool' ];then rm -f /host/opt/cni/bin/spiderpool.old ; mv /host/opt/cni/bin/spiderpool /host/opt/cni/bin/spiderpool.old ; fi; if [ -f '/host/opt/cni/bin/coordinator' ];then rm -f /host/opt/cni/bin/coordinator.old ; mv /host/opt/cni/bin/coordinator /host/opt/cni/bin/coordinator.old ; fi ;cp /usr/bin/spiderpool  /host/opt/cni/bin/spiderpool ; cp /usr/bin/coordinator  /host/opt/cni/bin/coordinator ;rm -f /host/opt/cni/bin/spiderpool.old; rm -f /host/opt/cni/bin/coordinator.old &>/dev/null || true " ]
+              command:
+              - "/bin/sh"
+              - "-cex"
+              - |
+                BIN_LIST="spiderpool coordinator"
+                for ITEM in ${BIN_LIST} ; do
+                	rm -f /host/opt/cni/bin/${ITEM}.old || true
+                	( [ -f '/host/opt/cni/bin/${ITEM}' ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
+                	cp /usr/bin/${ITEM} /host/opt/cni/bin/${ITEM}
+                	rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
+                done
           preStop:
             exec:
               command:

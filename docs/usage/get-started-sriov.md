@@ -193,7 +193,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     helm repo update spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
-    
+
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
 
 2. Create a SpiderSubnet instance.
@@ -275,7 +275,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     Spec descriptions:
 
     > `intel.com/mlnx_sriov`: Sriov resources used.
-    > 
+    >
     >`v1.multus-cni.io/default-network`: specifies the CNI configuration for Multus.
     >
     > For more information on Multus annotations, refer to [Multus Quickstart](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).

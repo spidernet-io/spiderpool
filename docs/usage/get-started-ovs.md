@@ -19,7 +19,7 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
     ~# sudo systemctl start openvswitch-switch
     ```
 
-## Install Ovs-cni 
+## Install Ovs-cni
 
 [`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) is a Kubernetes CNI plugin based on Open vSwitch (OVS) that provides a way to use OVS for network virtualization in a Kubernetes cluster in a Kubernetes cluster.
 
@@ -35,7 +35,6 @@ Verify that the binary /opt/cni/bin/ovs exists on the node. if the binary is mis
 
 Note: Ovs-cni does not configure bridges, it is up to the user to create them and connect them to L2, L3, The following is an example of creating a bridge, to be executed on each node:
 
-
 1. Create an Open vSwitch bridge.
 
     ```bash
@@ -44,7 +43,7 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
 
 2. Network interface connected to the bridge：
 
-    This procedure depends on your platform, the following commands are only example instructions and it may break your system. First use `ip link show` to query the host for available interfaces, the example uses the interface on the host: `eth0` as an example. 
+    This procedure depends on your platform, the following commands are only example instructions and it may break your system. First use `ip link show` to query the host for available interfaces, the example uses the interface on the host: `eth0` as an example.
 
     ```bash
     ~# ovs-vsctl add-port br1 eth0
@@ -119,7 +118,7 @@ EOF
     helm repo update spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
-    
+
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
 
 2. Create a SpiderSubnet instance.

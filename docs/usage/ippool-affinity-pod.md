@@ -1,7 +1,7 @@
 # Pod affinity of IPPool
 
-IPPool supports affinity setting for Pods. when setting `sepc.podAffinity` in SpiderIPPool, only the selected pods
-could get IP address from it, and another pods could not even specifying the annotation.
+IPPool supports affinity setting for Pods. when setting `sepc.podAffinity` in SpiderIPPool, only the selected Pods
+could get IP address from it, and another Pods could not even specifying the annotation.
 
 * When setting the `sepc.podAffinity`, it helps to better implement the capability of **static IP** for workloads like Deployment, StatefulSet etc.
 

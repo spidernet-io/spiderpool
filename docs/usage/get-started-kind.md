@@ -25,7 +25,7 @@ kind is a tool for running local Kubernetes clusters using Docker container “n
     ```
 
 4. Execute the following command to create a Kind cluster and install Multus, Macvlan, Spiderpool for you.
-    
+
     ```bash
     ~# make e2e_init -e TEST_IMAGE_TAG=$LATEST_IMAGE_TAG
     ```

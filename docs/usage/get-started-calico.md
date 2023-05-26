@@ -65,7 +65,7 @@ nginx-subnet-v4   4         10.244.0.0/16   0                    25602
 
 In this example, we want Calico to work in underlay mode and announce the Spiderpool subnet (`10.244.0.0/16`) to the BGP router via the BGP protocol, ensuring that clients outside the cluster can directly access the real IP addresses of the Pods through BGP router.
 
-> If you don't need external clients to access pod IPs directly, skip this step.
+> If you don't need external clients to access Pod IPs directly, skip this step.
 
 The network topology is as follows:
 
@@ -286,7 +286,7 @@ nginx-644659db67-98rcg   1/1     Running       0          23s     10.244.100.92 
 When the replica count increases to `3`, the IP address of the new replica is still assigned from the automatic pool: `auto-nginx-v4-eth0-452e737e5e12(10.244.100.90-10.244.100.95)`
 
 ```shell
-[root@master1 ~]# kubectl scale deploy nginx --replicas 3  # scale pods
+[root@master1 ~]# kubectl scale deploy nginx --replicas 3  # scale Pods
 deployment.apps/nginx scaled
 
 [root@master1 ~]# kubectl get po -o wide

@@ -11,7 +11,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 2. [Helm 工具](https://helm.sh/docs/intro/install/)
 
 3. 必须在主机上安装并运行 Open vSwitch，可参考[官方安装说明](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages)
-    
+
     以下示例是基于 Ubuntu 22.04.1。主机系统不同，安装方式可能不同。
 
     ```bash
@@ -19,7 +19,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     ~# sudo systemctl start openvswitch-switch
     ```
 
-## 安装 Ovs-cni 
+## 安装 Ovs-cni
 
 [`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) 是一个基于 Open vSwitch（OVS）的 Kubernetes CNI 插件，它提供了一种在 Kubernetes 集群中使用 OVS 进行网络虚拟化的方式。
 
@@ -43,7 +43,7 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
 
 2. 网络接口连接到网桥
 
-    此过程取决于您的平台，以下命令只是示例说明，它可能会破坏您的系统。首先使用 `ip link show` 查询主机的可用接口，示例中使用主机上的接口：`eth0` 为例。 
+    此过程取决于您的平台，以下命令只是示例说明，它可能会破坏您的系统。首先使用 `ip link show` 查询主机的可用接口，示例中使用主机上的接口：`eth0` 为例。
 
     ```bash
     ~# ovs-vsctl add-port br1 eth0
@@ -118,14 +118,13 @@ EOF
     helm repo update spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
-    
-    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 2. 创建 SpiderSubnet 实例。
 
     Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。
-    
+
     以下是创建相关的 SpiderSubnet 示例：
 
     ```shell

@@ -119,7 +119,7 @@ chmod +x /opt/cni/bin/veth
     ```
 
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
-    
+
 2. Create a SpiderSubnet instance.
 
     An Underlay subnet for eth0 needs to be created for Pods as Macvlan uses eth0 as the parent interface.

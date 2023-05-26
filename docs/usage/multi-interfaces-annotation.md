@@ -1,17 +1,17 @@
 # Pod annotation of multi-NIC
 
-When assigning multiple NICs to a pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
+When assigning multiple NICs to a Pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
 
-This feature supports to implement by annotation `ipam.spidernet.io/subnets` and `ipam.spidernet.io/ippools` 
+This feature supports to implement by annotation `ipam.spidernet.io/subnets` and `ipam.spidernet.io/ippools`
 
 ## Get Started
 
 The example will create two Multus CNI Configuration object and create two underlay subnets.
-Then run a pod with two NICs with IP in different subnets.
+Then run a Pod with two NICs with IP in different subnets.
 
 ### Set up Spiderpool
 
-Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/get-started-macvlan.md) to install Spiderpool. 
+Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/get-started-macvlan.md) to install Spiderpool.
 
 ### Set up Multus Configuration
 

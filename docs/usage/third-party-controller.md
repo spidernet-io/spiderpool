@@ -2,11 +2,11 @@
 
 ## Description
 
-Operator is popularly used to implement customized controller. Spiderpool supports to assign IP to pods created not by kubernetes-native controller. There are two ways to do this:
+Operator is popularly used to implement customized controller. Spiderpool supports to assign IP to Pods created not by kubernetes-native controller. There are two ways to do this:
 
 1. Manual ippool
 
-    The administrator could create ippool object and assign IP to pods.
+    The administrator could create ippool object and assign IP to Pods.
 
 2. Automatical ippool
 
@@ -23,11 +23,11 @@ Operator is popularly used to implement customized controller. Spiderpool suppor
     In the future, spiderpool may support all operation of automatical ippool.
 
 Another issue about none kubernetes-native controller is stateful or stateless. Because Spiderpool has no idea whether application created by none kubernetes-native controller is stateful or not.
-So Spiderpool treats them as `stateless` pod like `Deployment`, this means pods created by none kubernetes-native controller is able to fix the IP range like `Deployment`, but not able to bind each pod to a specific IP address like `Statefulset`.
+So Spiderpool treats them as `stateless` Pod like `Deployment`, this means Pods created by none kubernetes-native controller is able to fix the IP range like `Deployment`, but not able to bind each Pod to a specific IP address like `Statefulset`.
 
 ## Get Started
 
-It will use [OpenKruise](https://openkruise.io/zh/docs/) to demonstrate how Spiderpool supports third-party controllers. 
+It will use [OpenKruise](https://openkruise.io/zh/docs/) to demonstrate how Spiderpool supports third-party controllers.
 
 ### Set up Spiderpool
 
@@ -37,7 +37,7 @@ See [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usa
 
 Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
 
-### Create pod by `Manual ippool` way
+### Create Pod by `Manual ippool` way
 
 1. Create a custom IPPool.
 
@@ -95,7 +95,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
     custom-kruise-cloneset-w9kfm   1/1     Running   0          96s   172.18.41.46   spider-worker   <none>           2/2
     ```
 
-## Create pod by `Automatical ippool` way
+## Create Pod by `Automatical ippool` way
 
 1. Create an OpenKruise CloneSet that has 3 replicas, and specify the subnet by annotations `ipam.spidernet.io/subnet`
 
@@ -127,7 +127,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
 
     > NOTICE:
     >
-    > 1. You must specify a fixed IP number for auto-created IPPool like `ipam.spidernet.io/ippool-ip-number: "5"`. 
+    > 1. You must specify a fixed IP number for auto-created IPPool like `ipam.spidernet.io/ippool-ip-number: "5"`.
       Because Spiderpool has no idea about the replica number, so it does not support annotation like `ipam.spidernet.io/ippool-ip-number: "+5"`.
 
 2. Check status

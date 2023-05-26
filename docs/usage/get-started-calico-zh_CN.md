@@ -28,7 +28,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 ```
 
 > Spiderpool 默认 IPv4-Only, 如需启用 IPv6 请参考 [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md)
-> 
+>
 > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 创建 Pod 的子网(SpiderSubnet):
@@ -52,18 +52,19 @@ EOF
 
 ```shell
 [root@master ~]# kubectl get po -n kube-system  | grep spiderpool
-  spiderpool-agent-27fr2                     1/1     Running     0          2m
-  spiderpool-agent-8vwxj                     1/1     Running     0          2m
-  spiderpool-controller-bc8d67b5f-xwsql      1/1     Running     0          2m
-  [root@master ~]# kubectl get ss
-  NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-  nginx-subnet-v4   4         10.244.0.0/16   0                    25602
+spiderpool-agent-27fr2                     1/1     Running     0          2m
+spiderpool-agent-8vwxj                     1/1     Running     0          2m
+spiderpool-controller-bc8d67b5f-xwsql      1/1     Running     0          2m
+
+[root@master ~]# kubectl get ss
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
+nginx-subnet-v4   4         10.244.0.0/16   0                    25602
 ```
 
 ## 配置 Calico BGP [可选]
 
 本例希望 calico 以 underlay 方式工作，将 Spiderpool 子网(`10.244.0.0/16`)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。
-如果您并不需要集群外部可以直接访问到 pod ip，可忽略本步骤。
+如果您并不需要集群外部可以直接访问到 Pod IPs，可忽略本步骤。
 
 网络拓扑如下:
 
@@ -101,7 +102,7 @@ EOF
     > * Router 侧的 AS 为 `23000`, 集群节点侧 AS 为 `64512`。Router 与节点之间为 `ebgp`, 节点之间为 `ibgp`
     > * 需要关闭 `ebgp-requires-policy`, 否则 BGP 会话无法建立
     > * 172.16.13.11/21 为集群节点 IP
-    >     
+    >
     > 更多配置参考 [frrouting](https://docs.frrouting.org/en/latest/bgp.html)。
 
 2. 配置 Calico 的 BGP 邻居
@@ -147,7 +148,7 @@ EOF
     ```
 
     > peerIP 为 BGP Router 的 IP 地址
-    > 
+    >
     > asNumber 为 BGP Router 的 AS 号
 
     查看 BGP 会话是否成功建立:
@@ -283,7 +284,7 @@ nginx-644659db67-98rcg   1/1     Running       0          23s     10.244.100.92 
 扩容副本数到 `3`, 新副本的 IP 地址仍然从自动池: `auto-nginx-v4-eth0-452e737e5e12(10.244.100.90-10.244.100.95)` 中分配:
 
 ```shell
-[root@master1 ~]# kubectl scale deploy nginx --replicas 3  # scale pods
+[root@master1 ~]# kubectl scale deploy nginx --replicas 3  # scale Pods
 deployment.apps/nginx scaled
 [root@master1 ~]# kubectl get po -o wide
 NAME                     READY   STATUS        RESTARTS   AGE     IP              NODE      NOMINATED NODE   READINESS GATES

@@ -16,20 +16,19 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 2. 已安装 [Helm](https://helm.sh/docs/intro/install/)
 
-## 安装 Macvlan 
+## 安装 Macvlan
 
 [`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) 是一个 CNI 插件项目，能够为 Pod 分配 Macvlan 虚拟网卡，可用于对接 Underlay 网络。
 
 一些 Kubernetes 安装器项目，默认安装了 Macvlan 二进制文件，可确认节点上存在二进制文件 /opt/cni/bin/macvlan 。如果节点上不存在该二进制文件，可参考如下命令，在所有节点上下载安装：
 
-```
+```shell
 ~# wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz 
 
 ~# tar xvfzp ./cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
 
 ~# chmod +x /opt/cni/bin/macvlan
 ```
-
 
 ## 安装 Veth
 
@@ -43,7 +42,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 请在所有的节点上，下载安装 Veth 二进制：
 
-```
+```shell
 ~# wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
 
 ~# tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
@@ -226,7 +225,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     test-app-f9f94688-2srj7   eth0        auto-deployment-default-test-app-v4-a0ae75eb5d47   172.18.30.139/16                     ipv4-worker          3m5s
     test-app-f9f94688-8982v   eth0        auto-deployment-default-test-app-v4-a0ae75eb5d47   172.18.30.138/16                     ipv4-control-plane   3m5s
     ```
-
 
 4. 测试 Pod 与 Pod 的通讯情况：
 

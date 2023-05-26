@@ -197,10 +197,10 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 2. 创建 SpiderSubnet 实例。
-   
+
     Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。
     以下是创建相关的 SpiderSubnet 示例
-    
+
     ```shell
     cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
@@ -275,7 +275,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
     必要参数说明：
 
     > `intel.com/mlnx_sriov`: 该参数表示使用 Sriov 资源。
-    > 
+    >
     > `v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
     >
     > 更多 Multus 注解使用请参考 [Multus 注解](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)

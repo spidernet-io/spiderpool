@@ -67,7 +67,7 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
 
 ### IPv4/IPv6 dual-stack
 
-- 1 Deployment with 1000 replicas: 
+- 1 Deployment with 1000 replicas:
 
   | CNI                   | Creation | Re-creation | Recovery | Deletion |
   | --------------------- | -------- | ----------- | -------- | -------- |
@@ -78,7 +78,7 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
 
   > During the testing of macvlan + Whereabouts, in the creation scenario, 922 Pods became `Running` at a relatively uniform rate within 14m25s. After that, the growth rate of Pods significantly decreased, and ultimately it took 25m18s for 1000 Pods to become `Running`. As for the re-creation scenario, after 55 Pods became `Running`, Whereabouts basically stopped working, and the time consumption was close to infinity.
 
-- 100 Deployments with 10 replicas: 
+- 100 Deployments with 10 replicas:
 
   | CNI                   | Creation | Re-creation | Recovery | Deletion |
   | --------------------- | -------- | ----------- | -------- | -------- |
@@ -89,7 +89,7 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
 
 ### IPv4 stack
 
-- 1 Deployment with 1000 replicas: 
+- 1 Deployment with 1000 replicas:
 
   | CNI                   | Creation | Re-creation | Recovery | Deletion |
   | --------------------- | -------- | ----------- | -------- | -------- |
@@ -98,8 +98,7 @@ Finally, we delete all Deployments and record the time taken for all Pods to com
   | Kube-OVN              | 3m32s    | 7m7s        | 9m41s    | 1m47s    |
   | Calico + calico-ipam  | 1m41s    | 3m33s       | 3m42s    | 1m27s    |
 
-
-- 100 Deployments with 10 replicas per Deployment: 
+- 100 Deployments with 10 replicas per Deployment:
 
   | CNI                   | Creation | Re-creation | Recovery | Deletion |
   | --------------------- | -------- | ----------- | -------- | -------- |

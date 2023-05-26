@@ -18,7 +18,6 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 
 2. 执行 `make dev-doctor`，检查本地主机上的开发工具是否满足部署 Kind 集群与 Spiderpool 的条件，如果缺少组件会为您自动安装。
 
-
 3. 通过以下方式获取 Spiderpool 的最新镜像。
 
     ```bash

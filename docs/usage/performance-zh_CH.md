@@ -98,7 +98,6 @@ kubectl get pod | grep "prefix" | awk '{print $1}' | xargs kubectl delete pod
   | Kube-OVN              | 3m32s | 7m7s  | 9m41s    | 1m47s |
   | Calico + calico-ipam  | 1m41s | 3m33s | 3m42s    | 1m27s |
 
-
 - 100 个 10 副本的 Deployment：
 
   | CNI                   | 创建  | 重建  | 故障恢复 | 删除  |

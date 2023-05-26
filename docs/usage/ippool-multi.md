@@ -1,6 +1,6 @@
 # Backup IPPool
 
-Multiple IP pools can be set for a pod for the usage of backup IP resources.
+Multiple IP pools can be set for a Pod for the usage of backup IP resources.
 
 ## Get Started
 

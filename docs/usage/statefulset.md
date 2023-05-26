@@ -4,28 +4,28 @@
 
 The spiderpool supports IP assignment for StatefulSet.
 
-When the number of statefulset replicas is not scaled up or down, all pods could hold same IP address even when the pod is restarting or rebuilding.
+When the number of statefulset replicas is not scaled up or down, all Pods could hold same IP address even when the Pod is restarting or rebuilding.
 
 * Pod restarts
 
-    Once a pod restarts (its pause container restarts), Spiderpool will keep use the previous IP,
+    Once a Pod restarts (its pause container restarts), Spiderpool will keep use the previous IP,
     and change the IPPool CR property ContainerID with the new pause container ID.
 
     In the meanwhile, spiderendpoint will still keep the previous IP but refresh the ContainerID property.
 
 * Pod is deleted and re-created
 
-    After deleting a StatefulSet pod, kubernetes will re-create a pod with the same name.
+    After deleting a StatefulSet Pod, kubernetes will re-create a Pod with the same name.
 
     In this case, Spiderpool will also keep the previous IP and update the ContainerID.
 
 ### Notice
 
-* Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its pods are running.
+* Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its Pods are running.
 
-* When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the previous IP.
+* When the statefulset is scaled down and then scaled up, the scaled-up Pod is not guaranteed to get the previous IP.
 
-* The [IP-GC](./gc.md) feature (reclaim IP for the pod of graceful-period timeout) does work for StatefulSet pod.
+* The [IP-GC](./gc.md) feature (reclaim IP for the Pod of graceful-period timeout) does work for StatefulSet Pod.
 
 ## Get Started
 
@@ -84,7 +84,7 @@ status:
 ...
 ```
 
-Try to delete pod `demo-sts-0` and check whether the rebuilding pod keeps the previous IP or not.
+Try to delete Pod `demo-sts-0` and check whether the rebuilding Pod keeps the previous IP or not.
 
 ```text
 $ kubectl delete po demo-sts-0
@@ -119,7 +119,6 @@ status:
   ownerControllerType: StatefulSet
 ...
 ```
-
 
 And you can see, the re-created Pod still holds the previous IP, spiderippool, and spiderendpoint updated containerID property.
 

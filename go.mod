@@ -45,7 +45,7 @@ require (
 )
 
 require (
-	github.com/agiledragon/gomonkey/v2 v2.10.0
+	github.com/agiledragon/gomonkey/v2 v2.10.1
 	github.com/containernetworking/plugins v1.3.0
 	github.com/golang/mock v1.6.0
 	github.com/openkruise/kruise-api v1.3.0

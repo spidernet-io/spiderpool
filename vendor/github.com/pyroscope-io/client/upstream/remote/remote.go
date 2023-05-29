@@ -38,11 +38,15 @@ type Remote struct {
 }
 
 type Config struct {
-	AuthToken string
-	Threads   int
-	Address   string
-	Timeout   time.Duration
-	Logger    Logger
+	AuthToken         string
+	BasicAuthUser     string // http basic auth user
+	BasicAuthPassword string // http basic auth password
+	TenantID          string
+	HTTPHeaders       map[string]string
+	Threads           int
+	Address           string
+	Timeout           time.Duration
+	Logger            Logger
 }
 
 type Logger interface {
@@ -163,7 +167,7 @@ func (r *Remote) uploadProfile(j *upstream.UploadJob) error {
 	q.Set("units", j.Units)
 	q.Set("aggregationType", j.AggregationType)
 
-	u.Path = path.Join(u.Path, "/ingest")
+	u.Path = path.Join(u.Path, "ingest")
 	u.RawQuery = q.Encode()
 
 	r.logger.Debugf("uploading at %s", u.String())
@@ -179,6 +183,14 @@ func (r *Remote) uploadProfile(j *upstream.UploadJob) error {
 
 	if r.cfg.AuthToken != "" {
 		request.Header.Set("Authorization", "Bearer "+r.cfg.AuthToken)
+	} else if r.cfg.BasicAuthUser != "" && r.cfg.BasicAuthPassword != "" {
+		request.SetBasicAuth(r.cfg.BasicAuthUser, r.cfg.BasicAuthPassword)
+	}
+	if r.cfg.TenantID != "" {
+		request.Header.Set("X-Scope-OrgID", r.cfg.TenantID)
+	}
+	for k, v := range r.cfg.HTTPHeaders {
+		request.Header.Set(k, v)
 	}
 
 	// do the request and get the response

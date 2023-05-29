@@ -15,13 +15,18 @@ type Config struct {
 	Tags                   map[string]string
 	ServerAddress          string // e.g http://pyroscope.services.internal:4040
 	AuthToken              string // specify this token when using pyroscope cloud
+	BasicAuthUser          string // http basic auth user
+	BasicAuthPassword      string // http basic auth password
+	TenantID               string // specify TenantId when using phlare multi-tenancy
 	SampleRate             uint32 // todo this one is not used
+	UploadRate             time.Duration
 	Logger                 Logger
 	ProfileTypes           []ProfileType
 	DisableGCRuns          bool // this will disable automatic runtime.GC runs between getting the heap profiles
 	DisableAutomaticResets bool // disable automatic profiler reset every 10 seconds. Reset manually by calling Flush method
 	// Deprecated: the field is ignored and does nothing
 	DisableCumulativeMerge bool
+	HTTPHeaders            map[string]string
 }
 
 type Profiler struct {
@@ -48,15 +53,24 @@ func Start(cfg Config) (*Profiler, error) {
 	}
 
 	rc := remote.Config{
-		AuthToken: cfg.AuthToken,
-		Address:   cfg.ServerAddress,
-		Threads:   5, // per each profile type upload
-		Timeout:   30 * time.Second,
-		Logger:    cfg.Logger,
+		AuthToken:         cfg.AuthToken,
+		TenantID:          cfg.TenantID,
+		BasicAuthUser:     cfg.BasicAuthUser,
+		BasicAuthPassword: cfg.BasicAuthPassword,
+		HTTPHeaders:       cfg.HTTPHeaders,
+		Address:           cfg.ServerAddress,
+		Threads:           5, // per each profile type upload
+		Timeout:           30 * time.Second,
+		Logger:            cfg.Logger,
 	}
 	uploader, err := remote.NewRemote(rc)
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.UploadRate == 0 {
+		// For backward compatibility.
+		cfg.UploadRate = 10 * time.Second
 	}
 
 	sc := SessionConfig{
@@ -68,7 +82,7 @@ func Start(cfg Config) (*Profiler, error) {
 		DisableGCRuns:          cfg.DisableGCRuns,
 		DisableAutomaticResets: cfg.DisableAutomaticResets,
 		SampleRate:             cfg.SampleRate,
-		UploadRate:             10 * time.Second,
+		UploadRate:             cfg.UploadRate,
 	}
 
 	cfg.Logger.Infof("starting profiling session:")
@@ -83,7 +97,7 @@ func Start(cfg Config) (*Profiler, error) {
 		return nil, fmt.Errorf("new session: %w", err)
 	}
 	uploader.Start()
-	if err = s.start(); err != nil {
+	if err = s.Start(); err != nil {
 		return nil, fmt.Errorf("start session: %w", err)
 	}
 

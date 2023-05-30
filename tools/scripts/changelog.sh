@@ -116,7 +116,7 @@ FIX_PR=""
 for PR in ${ALL_PR_NUM} ; do
 	INFO=` gh pr view ${PR}  `
 	TITLE=` grep -E "^title:[[:space:]]+" <<< "$INFO" | sed -E 's/title:[[:space:]]+//' `
-	LABELS=` grep -E "^labels:[[:space:]][^\[]" <<< "$INFO" | sed -E 's/labels://' | tr ',' ' ' `
+	LABELS=` grep -E "^labels:[[:space:]][^\[]" <<< "$INFO" | sed -E 's/labels://' | tr ',' ' ' ` || true
 	#
 	PR_URL="https://github.com/${PROJECT_REPO}/pull/${PR}"
 	#

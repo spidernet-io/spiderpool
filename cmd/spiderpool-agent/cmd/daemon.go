@@ -179,7 +179,7 @@ func DaemonMain() {
 
 	go func() {
 		logger.Info("Starting spiderpool-agent OpenAPI HTTP server")
-		if err = srv.Serve(); nil != err {
+		if err := srv.Serve(); nil != err {
 			if err == http.ErrServerClosed {
 				return
 			}
@@ -200,7 +200,7 @@ func DaemonMain() {
 
 	go func() {
 		logger.Info("Starting spiderpool-agent OpenAPI UNIX server")
-		if err = unixServer.Serve(); nil != err {
+		if err := unixServer.Serve(); nil != err {
 			if err == net.ErrClosed {
 				return
 			}

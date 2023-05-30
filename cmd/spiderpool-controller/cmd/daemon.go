@@ -164,7 +164,7 @@ func DaemonMain() {
 	controllerContext.HttpServer = srv
 
 	go func() {
-		if err = srv.Serve(); nil != err {
+		if err := srv.Serve(); nil != err {
 			if err == http.ErrServerClosed {
 				return
 			}

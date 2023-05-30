@@ -714,7 +714,5 @@ spiderpoolInit:
   podLabels: {}
 
   serviceAccount:
-    ## @param spiderpoolInit.serviceAccount.create create the service account for the spiderpoolInit
-    create: true
     ## @param spiderpoolInit.serviceAccount.annotations the annotations of spiderpoolInit service account
     annotations: {}

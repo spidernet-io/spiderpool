@@ -307,7 +307,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolInit.securityContext`            | the security Context of spiderpoolInit pod                                                                                  | `{}`                                            |
 | `spiderpoolInit.podAnnotations`             | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
 | `spiderpoolInit.podLabels`                  | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
-| `spiderpoolInit.serviceAccount.create`      | create the service account for the spiderpoolInit                                                                           | `true`                                          |
 | `spiderpoolInit.serviceAccount.annotations` | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
 
 

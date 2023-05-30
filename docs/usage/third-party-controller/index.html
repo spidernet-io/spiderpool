@@ -520,7 +520,7 @@
         
           <li class="md-nav__item">
   <a href="#create-pod-by-manual-ippool-way" class="md-nav__link">
-    Create pod by Manual ippool way
+    Create Pod by Manual ippool way
   </a>
   
 </li>
@@ -532,7 +532,7 @@
       
         <li class="md-nav__item">
   <a href="#create-pod-by-automatical-ippool-way" class="md-nav__link">
-    Create pod by Automatical ippool way
+    Create Pod by Automatical ippool way
   </a>
   
 </li>
@@ -1019,7 +1019,7 @@
         
           <li class="md-nav__item">
   <a href="#create-pod-by-manual-ippool-way" class="md-nav__link">
-    Create pod by Manual ippool way
+    Create Pod by Manual ippool way
   </a>
   
 </li>
@@ -1031,7 +1031,7 @@
       
         <li class="md-nav__item">
   <a href="#create-pod-by-automatical-ippool-way" class="md-nav__link">
-    Create pod by Automatical ippool way
+    Create Pod by Automatical ippool way
   </a>
   
 </li>
@@ -1061,11 +1061,11 @@
 
 <h1 id="spiderpool-supports-third-party-controllers">Spiderpool supports third-party controllers</h1>
 <h2 id="description">Description</h2>
-<p>Operator is popularly used to implement customized controller. Spiderpool supports to assign IP to pods created not by kubernetes-native controller. There are two ways to do this:</p>
+<p>Operator is popularly used to implement customized controller. Spiderpool supports to assign IP to Pods created not by kubernetes-native controller. There are two ways to do this:</p>
 <ol>
 <li>
 <p>Manual ippool</p>
-<p>The administrator could create ippool object and assign IP to pods.</p>
+<p>The administrator could create ippool object and assign IP to Pods.</p>
 </li>
 <li>
 <p>Automatical ippool</p>
@@ -1084,14 +1084,14 @@
 </li>
 </ol>
 <p>Another issue about none kubernetes-native controller is stateful or stateless. Because Spiderpool has no idea whether application created by none kubernetes-native controller is stateful or not.
-So Spiderpool treats them as <code>stateless</code> pod like <code>Deployment</code>, this means pods created by none kubernetes-native controller is able to fix the IP range like <code>Deployment</code>, but not able to bind each pod to a specific IP address like <code>Statefulset</code>.</p>
+So Spiderpool treats them as <code>stateless</code> Pod like <code>Deployment</code>, this means Pods created by none kubernetes-native controller is able to fix the IP range like <code>Deployment</code>, but not able to bind each Pod to a specific IP address like <code>Statefulset</code>.</p>
 <h2 id="get-started">Get Started</h2>
-<p>It will use <a href="https://openkruise.io/zh/docs/">OpenKruise</a> to demonstrate how Spiderpool supports third-party controllers. </p>
+<p>It will use <a href="https://openkruise.io/zh/docs/">OpenKruise</a> to demonstrate how Spiderpool supports third-party controllers.</p>
 <h3 id="set-up-spiderpool">Set up Spiderpool</h3>
 <p>See <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for more details.</p>
 <h3 id="set-up-openkruise">Set up OpenKruise</h3>
 <p>Please refer to <a href="https://openkruise.io/docs/installation/">OpenKruise</a></p>
-<h3 id="create-pod-by-manual-ippool-way">Create pod by <code>Manual ippool</code> way</h3>
+<h3 id="create-pod-by-manual-ippool-way">Create Pod by <code>Manual ippool</code> way</h3>
 <ol>
 <li>
 <p>Create a custom IPPool.</p>
@@ -1143,7 +1143,7 @@ custom-kruise-cloneset-w9kfm   <span class="m">1</span>/1     Running   <span cl
 </code></pre></div>
 </li>
 </ol>
-<h2 id="create-pod-by-automatical-ippool-way">Create pod by <code>Automatical ippool</code> way</h2>
+<h2 id="create-pod-by-automatical-ippool-way">Create Pod by <code>Automatical ippool</code> way</h2>
 <ol>
 <li>
 <p>Create an OpenKruise CloneSet that has 3 replicas, and specify the subnet by annotations <code>ipam.spidernet.io/subnet</code></p>
@@ -1174,7 +1174,7 @@ custom-kruise-cloneset-w9kfm   <span class="m">1</span>/1     Running   <span cl
 <blockquote>
 <p>NOTICE:</p>
 <ol>
-<li>You must specify a fixed IP number for auto-created IPPool like <code>ipam.spidernet.io/ippool-ip-number: "5"</code>. 
+<li>You must specify a fixed IP number for auto-created IPPool like <code>ipam.spidernet.io/ippool-ip-number: "5"</code>.
   Because Spiderpool has no idea about the replica number, so it does not support annotation like <code>ipam.spidernet.io/ippool-ip-number: "+5"</code>.</li>
 </ol>
 </blockquote>

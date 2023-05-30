@@ -999,7 +999,7 @@
 </li>
 <li>
 <p>Network interface connected to the bridge：</p>
-<p>This procedure depends on your platform, the following commands are only example instructions and it may break your system. First use <code>ip link show</code> to query the host for available interfaces, the example uses the interface on the host: <code>eth0</code> as an example. </p>
+<p>This procedure depends on your platform, the following commands are only example instructions and it may break your system. First use <code>ip link show</code> to query the host for available interfaces, the example uses the interface on the host: <code>eth0</code> as an example.</p>
 <div class="highlight"><pre><span></span><code>~# ovs-vsctl add-port br1 eth0
 ~# ip addr add &lt;IP地址&gt;/&lt;子网掩码&gt; dev br1
 ~# ip link <span class="nb">set</span> br1 up

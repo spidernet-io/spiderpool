@@ -56,17 +56,17 @@ feature:
     ## @param feature.coordinator.name the name of the default SpiderCoordinator CR
     name: "default-coordinator"
 
-    ## @param feature.coordinator.tuneMode optional network mode, underlay/overlay/disabled
+    ## @param feature.coordinator.tuneMode optional network mode, ["underlay", "overlay", "disabled"]
     tuneMode: "underlay"
 
-    ## @param feature.coordinator.podCIDRType Pod CIDR type that should be collected, cluster/calico/cilium
+    ## @param feature.coordinator.podCIDRType Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]
     podCIDRType: "cluster"
 
     ## @param feature.coordinator.detectGateway detect the reachability of the gateway
     detectGateway: true
 
     ## @param feature.coordinator.detectIPConflict detect IP address conflicts
-    detectIPConflict: false
+    detectIPConflict: true
 
     ## @param feature.coordinator.tunePodRoutes tune Pod routes
     tunePodRoutes: true

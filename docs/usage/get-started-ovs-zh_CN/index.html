@@ -999,7 +999,7 @@
 </li>
 <li>
 <p>网络接口连接到网桥</p>
-<p>此过程取决于您的平台，以下命令只是示例说明，它可能会破坏您的系统。首先使用 <code>ip link show</code> 查询主机的可用接口，示例中使用主机上的接口：<code>eth0</code> 为例。 </p>
+<p>此过程取决于您的平台，以下命令只是示例说明，它可能会破坏您的系统。首先使用 <code>ip link show</code> 查询主机的可用接口，示例中使用主机上的接口：<code>eth0</code> 为例。</p>
 <div class="highlight"><pre><span></span><code>~# ovs-vsctl add-port br1 eth0
 ~# ip addr add &lt;IP地址&gt;/&lt;子网掩码&gt; dev br1
 ~# ip link <span class="nb">set</span> br1 up

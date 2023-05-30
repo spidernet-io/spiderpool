@@ -30,7 +30,15 @@ INSTALL_MULTUS ?= true
 
 INSTALL_KRUISE ?= true
 
-CNI_PACKAGE_VERSION ?= v0.8.5
+INSTALL_CALICO ?= true
+
+INSTALL_SPIDERDOCTOR ?= true
+
+INSTALL_NETTOOLS ?= false
+
+CALICO_VERSION ?= v3.25.0
+
+CNI_PACKAGE_VERSION ?= v1.2.0
 
 #============ ginkgo-custom-flag ====================
 E2E_CLUSTER_NAME ?= spider
@@ -48,12 +56,11 @@ E2E_TIMEOUT ?= 60m
 E2E_GINKGO_PROCS ?= 4
 
 E2E_SPIDERPOOL_ENABLE_SUBNET ?= true
+E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
 
 #============Image version===========
 IMAGE_MULTUS_REPO ?= ghcr.io
-IMAGE_MULTUS_NAME := ${IMAGE_MULTUS_REPO}/k8snetworkplumbingwg/multus-cni:v3.8-$(ARCH)
-IMAGE_WHEREABOUTS_REPO ?= ghcr.io
-IMAGE_WHEREABOUTS_NAME := ${IMAGE_WHEREABOUTS_REPO}/k8snetworkplumbingwg/whereabouts:latest-$(ARCH)
+IMAGE_MULTUS_NAME := ${IMAGE_MULTUS_REPO}/k8snetworkplumbingwg/multus-cni:v3.9-$(ARCH)
 TEST_IMAGE_NAME := alpine:latest
 
 #USE_TLS_METHOD := certmanager
@@ -67,10 +74,27 @@ IMAGE_CERT_MANAGER_REPO := quay.io/jetstack
 IMAGE_CERT_MANAGER_NAME := $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-webhook:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-controller:$(CERT_MANAGER_VERSION)
 CERT_MANAGER_ISSUER_NAME := selfsigned
 
+TEST_VLAN_GATEWAY_IMAGE := centos/tools:latest
+
 #================= multus
 MULTUS_CNI_NAMESPACE := kube-system
-MULTUS_DEFAULT_CNI_NAME := macvlan-cni-default
-MULTUS_ADDITIONAL_CNI_NAME := macvlan-cni2
+MULTUS_DEFAULT_CNI_CALICO := k8s-pod-network
+MULTUS_DEFAULT_CNI_VLAN0 := macvlan-vlan0-underlay
+MULTUS_DEFAULT_CNI_VLAN100 := macvlan-vlan100-underlay
+MULTUS_DEFAULT_CNI_VLAN200 := macvlan-vlan200-underlay
+MULTUS_ADDITIONAL_CNI_VLAN100 := macvlan-vlan100-overlay
+MULTUS_ADDITIONAL_CNI_VLAN200 := macvlan-vlan200-overlay
+
+
+#================= calico
+CALICO_VERSION ?= v3.25.0
+CALICO_IMAGE_REPO ?= docker.io
+CALICO_AUTODETECTION_METHOD ?= "kubernetes-internal-ip"
+
+#================= spiderdoctor
+SPIDERDOCTOR_VERSION ?= v0.3.0
+SPIDERDOCTOR_IMAGE_REPO ?= ghcr.io
+SPIDERDOCTOR_REPORT_PATH=/var/log/spiderdoctor/controller
 
 #====== pyroscope
 PYROSCOPE_CONTAINER_NAME := e2e-pyroscope

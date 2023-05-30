@@ -8,6 +8,7 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
   - endpoints
   - namespaces
   - nodes
@@ -70,7 +71,7 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - spiderendpoints
+  - spidercoordinators
   verbs:
   - create
   - delete
@@ -82,11 +83,23 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - spiderendpoints/status
+  - spidercoordinators/status
   verbs:
   - get
   - patch
   - update
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spiderendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - spiderpool.spidernet.io
   resources:

@@ -34,6 +34,26 @@ func Execute() {
 		logger.Fatal(err.Error())
 	}
 
+	if len(config.CoordinatorName) != 0 {
+		logger.Sugar().Infof("Try to create default Coordinator %s", config.CoordinatorName)
+
+		coord := &spiderpoolv2beta1.SpiderCoordinator{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: config.CoordinatorName,
+			},
+			Spec: spiderpoolv2beta1.CoordinatorSpec{
+				TuneMode:         &config.CoordinatorTuneMode,
+				PodCIDRType:      config.CoordinatorPodCIDRType,
+				TunePodRoutes:    &config.CoordinatorTunePodRoutes,
+				DetectIPConflict: &config.CoordinatorDetectIPConflict,
+				DetectGateway:    &config.CoordinatorDetectGateway,
+			},
+		}
+		if err := client.WaitForCoordinatorCreated(ctx, coord); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+
 	if len(config.V4SubnetName) != 0 {
 		logger.Sugar().Infof("Try to create default IPv4 Subnet %s", config.V4SubnetName)
 

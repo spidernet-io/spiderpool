@@ -112,21 +112,28 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### feature parameters
 
-| Name                                      | Description                                                                                      | Value    |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
-| `feature.enableIPv4`                      | enable ipv4                                                                                      | `true`   |
-| `feature.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
-| `feature.networkMode`                     | the network mode                                                                                 | `legacy` |
-| `feature.enableStatefulSet`               | the network mode                                                                                 | `true`   |
-| `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`   |
-| `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`   |
-| `feature.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`    |
-| `feature.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`   |
-| `feature.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`      |
-| `feature.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false`  |
-| `feature.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`     |
-| `feature.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`     |
-| `feature.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`     |
+| Name                                      | Description                                                                                      | Value                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------- |
+| `feature.enableIPv4`                      | enable ipv4                                                                                      | `true`                |
+| `feature.enableIPv6`                      | enable ipv6                                                                                      | `false`               |
+| `feature.networkMode`                     | the network mode                                                                                 | `legacy`              |
+| `feature.enableStatefulSet`               | the network mode                                                                                 | `true`                |
+| `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`                |
+| `feature.coordinator.enabled`             | enable SpiderCoordinator                                                                         | `false`               |
+| `feature.coordinator.name`                | the name of the default SpiderCoordinator CR                                                     | `default-coordinator` |
+| `feature.coordinator.tuneMode`            | optional network mode, underlay/overlay/disabled                                                 | `underlay`            |
+| `feature.coordinator.podCIDRType`         | Pod CIDR type that should be collected, cluster/calico/cilium                                    | `cluster`             |
+| `feature.coordinator.detectGateway`       | detect the reachability of the gateway                                                           | `true`                |
+| `feature.coordinator.detectIPConflict`    | detect IP address conflicts                                                                      | `false`               |
+| `feature.coordinator.tunePodRoutes`       | tune Pod routes                                                                                  | `true`                |
+| `feature.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`                |
+| `feature.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`                 |
+| `feature.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`                |
+| `feature.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`                   |
+| `feature.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false`               |
+| `feature.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`                  |
+| `feature.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`                  |
+| `feature.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`                  |
 
 
 ### clusterDefaultPool parameters

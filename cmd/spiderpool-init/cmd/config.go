@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -14,6 +15,13 @@ import (
 const (
 	ENVNamespace                = "SPIDERPOOL_NAMESPACE"
 	ENVSpiderpoolControllerName = "SPIDERPOOL_CONTROLLER_NAME"
+
+	ENVDefaultCoordinatorName             = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME"
+	ENVDefaultCoordinatorTuneMode         = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_MODE"
+	ENVDefaultCoordinatorPodCIDRType      = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_POD_CIDR_TYPE"
+	ENVDefaultCoordinatorDetectGateway    = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_GATEWAY"
+	ENVDefaultCoordinatorDetectIPConflict = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_IP_CONFLICT"
+	ENVDefaultCoordinatorTunePodRoutes    = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_POD_ROUTES"
 
 	ENVDefaultIPv4SubnetName = "SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME"
 	ENVDefaultIPv4IPPoolName = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME"
@@ -31,6 +39,13 @@ const (
 type InitDefaultConfig struct {
 	Namespace      string
 	ControllerName string
+
+	CoordinatorName             string
+	CoordinatorTuneMode         string
+	CoordinatorPodCIDRType      string
+	CoordinatorDetectGateway    bool
+	CoordinatorDetectIPConflict bool
+	CoordinatorTunePodRoutes    bool
 
 	V4SubnetName string
 	V4IPPoolName string
@@ -58,6 +73,36 @@ func parseENVAsDefault() InitDefaultConfig {
 	config.ControllerName = strings.ReplaceAll(os.Getenv(ENVSpiderpoolControllerName), "\"", "")
 	if len(config.ControllerName) == 0 {
 		logger.Sugar().Fatalf("ENV %s %w", ENVSpiderpoolControllerName, constant.ErrMissingRequiredParam)
+	}
+
+	// Coordinator
+	config.CoordinatorName = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorName), "\"", "")
+	if len(config.CoordinatorName) != 0 {
+		config.CoordinatorTuneMode = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTuneMode), "\"", "")
+		config.CoordinatorPodCIDRType = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorPodCIDRType), "\"", "")
+
+		edg := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectGateway), "\"", "")
+		dg, err := strconv.ParseBool(edg)
+		if err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorDetectGateway, edg, err)
+		}
+		config.CoordinatorDetectGateway = dg
+
+		edic := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectIPConflict), "\"", "")
+		dic, err := strconv.ParseBool(edic)
+		if err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorDetectIPConflict, edic, err)
+		}
+		config.CoordinatorDetectIPConflict = dic
+
+		etpr := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTunePodRoutes), "\"", "")
+		tpr, err := strconv.ParseBool(etpr)
+		if err != nil {
+			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorTunePodRoutes, etpr, err)
+		}
+		config.CoordinatorTunePodRoutes = tpr
+	} else {
+		logger.Info("Ignore creating default Coordinator")
 	}
 
 	// IPv4

@@ -55,6 +55,9 @@ func NewSpiderpoolAgentAPIAPI(spec *loads.Document) *SpiderpoolAgentAPIAPI {
 		DaemonsetDeleteIpamIpsHandler: daemonset.DeleteIpamIpsHandlerFunc(func(params daemonset.DeleteIpamIpsParams) middleware.Responder {
 			return middleware.NotImplemented("operation daemonset.DeleteIpamIps has not yet been implemented")
 		}),
+		DaemonsetGetCoordinatorConfigHandler: daemonset.GetCoordinatorConfigHandlerFunc(func(params daemonset.GetCoordinatorConfigParams) middleware.Responder {
+			return middleware.NotImplemented("operation daemonset.GetCoordinatorConfig has not yet been implemented")
+		}),
 		ConnectivityGetIpamHealthyHandler: connectivity.GetIpamHealthyHandlerFunc(func(params connectivity.GetIpamHealthyParams) middleware.Responder {
 			return middleware.NotImplemented("operation connectivity.GetIpamHealthy has not yet been implemented")
 		}),
@@ -116,6 +119,8 @@ type SpiderpoolAgentAPIAPI struct {
 	DaemonsetDeleteIpamIPHandler daemonset.DeleteIpamIPHandler
 	// DaemonsetDeleteIpamIpsHandler sets the operation handler for the delete ipam ips operation
 	DaemonsetDeleteIpamIpsHandler daemonset.DeleteIpamIpsHandler
+	// DaemonsetGetCoordinatorConfigHandler sets the operation handler for the get coordinator config operation
+	DaemonsetGetCoordinatorConfigHandler daemonset.GetCoordinatorConfigHandler
 	// ConnectivityGetIpamHealthyHandler sets the operation handler for the get ipam healthy operation
 	ConnectivityGetIpamHealthyHandler connectivity.GetIpamHealthyHandler
 	// RuntimeGetRuntimeLivenessHandler sets the operation handler for the get runtime liveness operation
@@ -212,6 +217,9 @@ func (o *SpiderpoolAgentAPIAPI) Validate() error {
 	}
 	if o.DaemonsetDeleteIpamIpsHandler == nil {
 		unregistered = append(unregistered, "daemonset.DeleteIpamIpsHandler")
+	}
+	if o.DaemonsetGetCoordinatorConfigHandler == nil {
+		unregistered = append(unregistered, "daemonset.GetCoordinatorConfigHandler")
 	}
 	if o.ConnectivityGetIpamHealthyHandler == nil {
 		unregistered = append(unregistered, "connectivity.GetIpamHealthyHandler")
@@ -330,6 +338,10 @@ func (o *SpiderpoolAgentAPIAPI) initHandlerCache() {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
 	}
 	o.handlers["DELETE"]["/ipam/ips"] = daemonset.NewDeleteIpamIps(o.context, o.DaemonsetDeleteIpamIpsHandler)
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/coordinator/config"] = daemonset.NewGetCoordinatorConfig(o.context, o.DaemonsetGetCoordinatorConfigHandler)
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}

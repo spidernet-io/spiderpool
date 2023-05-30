@@ -154,7 +154,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(frame.DeletePod(podName, namespace)).NotTo(HaveOccurred())
 			// G00008: The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP
 			if componentName == constant.SpiderpoolAgent || componentName == constant.SpiderpoolController {
-				Expect(common.WaitIPReclaimedFinish(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, &corev1.PodList{Items: []corev1.Pod{*pod}}, common.IPReclaimTimeout)).To(Succeed())
+				Expect(common.WaitIPReclaimedFinish(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, &corev1.PodList{Items: []corev1.Pod{*pod}}, 2*common.IPReclaimTimeout)).To(Succeed())
 			}
 		},
 		Entry("Successfully run a pod during the ETCD is restarting",

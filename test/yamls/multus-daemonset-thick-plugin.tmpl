@@ -122,8 +122,8 @@ data:
       },
       "namespaceIsolation": false,
       "clusterNetwork": "<<MULTUS_DEFAULT_CNI_NAME>>",
-      "defaultNetworks": ["<<E2E_BRIDGE_CNI>>"],
-      "multusNamespace": "<<MULTUS_CNI_NAMESPACE>>",
+      "defaultNetworks": [],
+      "multusNamespace": "",
       "systemNamespaces": ["unknown"],
       "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
     }
@@ -158,7 +158,7 @@ spec:
       containers:
       - name: kube-multus
         imagePullPolicy: IfNotPresent
-        image: <<IMAGE_MULTUS>>
+        image: ghcr.io/k8snetworkplumbingwg/multus-cni:v3.9-amd64
         command: ["/entrypoint.sh"]
         args:
         - "--multus-conf-file=/tmp/multus-conf/00-multus.conf"

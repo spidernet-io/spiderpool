@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 
+	calicov1 "github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -24,6 +25,7 @@ var scheme = runtime.NewScheme()
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
+	utilruntime.Must(calicov1.AddToScheme(scheme))
 }
 
 func newCRDManager() (ctrl.Manager, error) {

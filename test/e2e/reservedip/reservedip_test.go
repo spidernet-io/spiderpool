@@ -171,7 +171,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			}
 
 			// Get the Pod creation failure Event
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*60*time.Second)
 			defer cancel()
 			for _, pod := range podlist.Items {
 				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())

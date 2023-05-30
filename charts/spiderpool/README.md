@@ -119,7 +119,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `feature.networkMode`                     | the network mode                                                                                 | `legacy`              |
 | `feature.enableStatefulSet`               | the network mode                                                                                 | `true`                |
 | `feature.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`                |
-| `feature.coordinator.enabled`             | enable SpiderCoordinator                                                                         | `true`                |
+| `feature.coordinator.enabled`             | enable SpiderCoordinator                                                                         | `false`               |
 | `feature.coordinator.name`                | the name of the default SpiderCoordinator CR                                                     | `default-coordinator` |
 | `feature.coordinator.tuneMode`            | optional network mode, underlay/overlay/disabled                                                 | `underlay`            |
 | `feature.coordinator.podCIDRType`         | Pod CIDR type that should be collected, cluster/calico/cilium                                    | `cluster`             |

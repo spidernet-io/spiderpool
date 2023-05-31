@@ -14,9 +14,9 @@
 
 ***
 
-Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
-
 **English** | [**简体中文**](./README-zh_CN.md)
+
+Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
 
 ## Introduction
 

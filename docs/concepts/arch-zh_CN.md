@@ -2,7 +2,7 @@
 
 ## underlay 网络 和 overlay 网络场景的比较
 
-云原生网络中出现了两种技术类别，" overlay 网络方案" 和 " underlay网络方案"，
+云原生网络中出现了两种技术类别，“overlay 网络方案” 和 “underlay 网络方案”，
 云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。
 
 [文章](./solution-zh_CN.md) 对两种方案的 IPAM 和网络性能做了简单比较，能够更好说明 Spiderpool 的特点和使用场景。
@@ -19,19 +19,19 @@
 
 ![arch](../images/spiderpool-arch.jpg)
 
-spiderpool 架构如上所示，包含了以下组件：
+Spiderpool 架构如上所示，包含了以下组件：
 
-* spiderpool controller: 是一组 deployment，实施了对各种 CRD 校验、状态更新、IP 回收、自动 IP 池的管理等
+* Spiderpool controller: 是一组 deployment，实施了对各种 CRD 校验、状态更新、IP 回收、自动 IP 池的管理等
 
-* spdierpool agent：是一组 daemonset，其帮助 spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施信息同步
+* Spiderpool agent：是一组 daemonset，其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施信息同步
 
-* spdierpool plugin：在每个主机上的二进制插件，供 CNI 调用，实施 IP 分配
+* Spiderpool plugin：在每个主机上的二进制插件，供 CNI 调用，实施 IP 分配
 
 * coordinator plugin：在每个主机上的二进制插件，供 CNI 调用，实施多网卡路由调谐、IP 冲突检查、宿主机联通等
 
-除了以上 spiderpool 自身的组件以外，还需要配合某个开源的 underlay CNI 来给 POD 分配网卡，可配合 [multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) 来实施多网卡和 CNI 配置管理。
+除了以上 Spiderpool 自身的组件以外，还需要配合某个开源的 underlay CNI 来给 POD 分配网卡，可配合 [multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) 来实施多网卡和 CNI 配置管理。
 
-任何支持第三方 IPAM 插件的 CNI 项目，都可以配合 spiderpool，例如：
+任何支持第三方 IPAM 插件的 CNI 项目，都可以配合 Spiderpool，例如：
 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
@@ -45,7 +45,7 @@ spiderpool 架构如上所示，包含了以下组件：
 
 ![arch_underlay](../images/spiderpool-underlay.jpg)
 
-如上所示，spiderpool 工作在 underlay 模式下，可配合 underlay CNI （例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ）实现:
+如上所示，Spiderpool 工作在 underlay 模式下，可配合 underlay CNI （例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ）实现:
 
 * 为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等
 
@@ -61,7 +61,7 @@ spiderpool 架构如上所示，包含了以下组件：
 
 * 在一个集群中，部分裸金属节点具备 SRIOV 高速网卡，可以运行低延时应用，部分节点不具备 SRIOV 高速网卡，可以运行普通应用。但在两类节点部署上什么 CNI 方案呢 ？
 
-结合 multus 的 CNI 配置管理和 spiderpool IPAM 的通用性，可同时运行多种 underlay CNI，充分整合集群中各种基础设施节点的资源，来解决以上问题。
+结合 multus 的 CNI 配置管理和 Spiderpool IPAM 的通用性，可同时运行多种 underlay CNI，充分整合集群中各种基础设施节点的资源，来解决以上问题。
 
 ![underlay](../images/underlay.jpg)
 
@@ -71,7 +71,7 @@ spiderpool 架构如上所示，包含了以下组件：
 
 ![arch_underlay](../images/spiderpool-overlay.jpg)
 
-如上所示，spiderpool 工作在 overlay 模式下，使用 multus 同时为为 POD 插入一张 overlay 网卡（例如 [calico](https://github.com/projectcalico/calico), [cilium](https://github.com/cilium/cilium) ）和若干张 underlay 网卡（例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ），可实现:
+如上所示，Spiderpool 工作在 overlay 模式下，使用 multus 同时为为 POD 插入一张 overlay 网卡（例如 [calico](https://github.com/projectcalico/calico), [cilium](https://github.com/cilium/cilium) ）和若干张 underlay 网卡（例如 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ），可实现:
 
 * 为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等
 
@@ -79,7 +79,7 @@ spiderpool 架构如上所示，包含了以下组件：
 
 * 以 overlay 网卡作为缺省网卡，并调谐路由，通过 overlay 网卡联通本地宿主机，实现 clusterIP 访问、应用的本地健康检测、overlay 网络流量通过 overlay 网络转发，而 underlay 网络流量通过 underlay 网卡转发。
 
-结合 multus 的 CNI 配置管理和 spiderpool IPAM 的通用性，可同时运行一种 overlay CNI 和 多种 underlay CNI。例如，在同一个集群下具备不同网络能力的节点， 裸金属节点上的 POD 同时接入 overlay CNI 和 underlay CNI 网卡，虚拟机节点上的 POD 只提供集群东西向服务，只接入 overlay CNI 网卡。
+结合 multus 的 CNI 配置管理和 Spiderpool IPAM 的通用性，可同时运行一种 overlay CNI 和 多种 underlay CNI。例如，在同一个集群下具备不同网络能力的节点， 裸金属节点上的 POD 同时接入 overlay CNI 和 underlay CNI 网卡，虚拟机节点上的 POD 只提供集群东西向服务，只接入 overlay CNI 网卡。
 带来了如下好处：
 
 * 把提供东西向服务的应用只接入 overlay 网卡，提供南北向服务的应用同时接入 overlay 和 underlay 网卡，在保障集群内 POD 连通性基础上，能够降低 underlay IP 资源的用量，减少相应的人工运维成本

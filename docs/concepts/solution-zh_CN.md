@@ -96,4 +96,4 @@ overlay CNI 需要借助隧道封装和宿主机转发实现跨主机的 POD 通
 
 ![performance](../images/network_performance.png)
 
-最终的测试报告如上所示，诸如 macvlan 和 SRIOV 的 underlay CNI 性能较好。 
+最终的测试报告如上所示，诸如 macvlan 和 SRIOV 的 underlay CNI 性能较好。

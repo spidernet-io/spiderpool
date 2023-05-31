@@ -113,11 +113,13 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 			return err
 		}
 
-		logger.Sugar().Debugf("Try to update the allocation status of IPPool using random IP %s", allocatedIP)
+		resourceVersion := ipPool.ResourceVersion
+		logger.With(zap.String("IPPool-ResourceVersion", resourceVersion)).
+			Sugar().Debugf("Try to update the allocation status of IPPool using random IP %s", allocatedIP)
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if apierrors.IsConflict(err) {
 				metric.IpamAllocationUpdateIPPoolConflictCounts.Add(ctx, 1)
-				logger.Debug("An conflict occurred when updating the status of IPPool")
+				logger.With(zap.String("IPPool-ResourceVersion", resourceVersion)).Warn("An conflict occurred when updating the status of IPPool")
 			}
 			return err
 		}
@@ -244,11 +246,13 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 		}
 		ipPool.Status.AllocatedIPs = data
 
-		logger.Sugar().Debugf("Try to clean the IP allocation records of IPPool with IP addresses %+v", ipAndUIDs)
+		resourceVersion := ipPool.ResourceVersion
+		logger.With(zap.String("IPPool-ResourceVersion", resourceVersion)).
+			Sugar().Debugf("Try to clean the IP allocation records of IPPool with IP addresses %+v", ipAndUIDs)
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if apierrors.IsConflict(err) {
 				metric.IpamReleaseUpdateIPPoolConflictCounts.Add(ctx, 1)
-				logger.Debug("An conflict occurred when cleaning the IP allocation records of IPPool")
+				logger.With(zap.String("IPPool-ResourceVersion", resourceVersion)).Warn("An conflict occurred when cleaning the IP allocation records of IPPool")
 			}
 			return err
 		}
@@ -266,9 +270,16 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 }
 
 func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {
+	logger := logutils.FromContext(ctx)
+
 	backoff := retry.DefaultRetry
 	steps := backoff.Steps
 	err := retry.RetryOnConflictWithContext(ctx, backoff, func(ctx context.Context) error {
+		logger := logger.With(
+			zap.String("IPPoolName", poolName),
+			zap.Int("Times", steps-backoff.Steps+1),
+		)
+
 		ipPool, err := im.GetIPPoolByName(ctx, poolName, constant.IgnoreCache)
 		if err != nil {
 			return err
@@ -300,9 +311,11 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 		}
 		ipPool.Status.AllocatedIPs = data
 
+		resourceVersion := ipPool.ResourceVersion
 		if err := im.client.Status().Update(ctx, ipPool); err != nil {
 			if apierrors.IsConflict(err) {
 				metric.IpamAllocationUpdateIPPoolConflictCounts.Add(ctx, 1)
+				logger.With(zap.String("IPPool-ResourceVersion", resourceVersion)).Warn("An conflict occurred when updating the status of IPPool")
 			}
 			return err
 		}

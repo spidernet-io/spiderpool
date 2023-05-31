@@ -46,9 +46,8 @@ const (
 )
 
 const (
-	kubeadmConfig = "kubeadm-config"
-	calicoConfig  = "calico-config"
-	ciliumConfig  = "cilium-config"
+	calicoConfig = "calico-config"
+	ciliumConfig = "cilium-config"
 )
 
 const (
@@ -174,9 +173,9 @@ func (cc *CoordinatorController) addEventHandlers(
 	}
 
 	_, err = configmapInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: cc.enqueueCoordinatorOnAdmConfigChange,
+		AddFunc: cc.enqueueCoordinatorOnCiliumConfigChange,
 		UpdateFunc: func(old, new interface{}) {
-			cc.enqueueCoordinatorOnAdmConfigChange(new)
+			cc.enqueueCoordinatorOnCiliumConfigChange(new)
 		},
 		DeleteFunc: nil,
 	})
@@ -218,9 +217,9 @@ func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj inter
 	logger.Debug(messageEnqueueCoordiantor)
 }
 
-func (cc *CoordinatorController) enqueueCoordinatorOnAdmConfigChange(obj interface{}) {
+func (cc *CoordinatorController) enqueueCoordinatorOnCiliumConfigChange(obj interface{}) {
 	cm := obj.(*corev1.ConfigMap)
-	if cm.Name != kubeadmConfig && cm.Name != ciliumConfig {
+	if cm.Name != ciliumConfig {
 		return
 	}
 

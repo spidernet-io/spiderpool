@@ -16,7 +16,7 @@
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，通过提供两个轻量级的插件，spiderpool 灵活地整合和强大了开源社区中的现有 CNI 项目，最大地简化 underlay IPAM 运维工作，使得多 CNI 协同工作真正的可落地：
+Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，通过提供两个轻量级的插件，Spiderpool 灵活地整合和强大了开源社区中的现有 CNI 项目，最大地简化 underlay IPAM 运维工作，使得多 CNI 协同工作真正的可落地：
 
 * Spiderpool: IPAM plugin，针对 underlay 网络的 IP 地址管理需求而设计，能为各种开源 CNI 项目分配 underlay IP 地址
 
@@ -79,7 +79,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 ![arch_underlay](./docs/images/spiderpool-underlay.jpg)
 
-如上所示，spiderpool 工作在 underlay 模式下，可配合 underlay CNI （例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ）实现:
+如上所示，Spiderpool 工作在 underlay 模式下，可配合 underlay CNI （例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ）实现:
 
 * 为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等
 
@@ -95,7 +95,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 * 在一个集群中，部分裸金属节点具备 SR-IOV 高速网卡，可以运行低延时应用，部分节点不具备 SR-IOV 高速网卡，可以运行普通应用。但在两类节点部署上什么 CNI 方案呢 ？
 
-结合 multus 的 CNI 配置管理和 spiderpool IPAM 的通用性，可同时运行多种 underlay CNI，充分整合集群中各种基础设施节点的资源，来解决以上问题。
+结合 multus 的 CNI 配置管理和 Spiderpool IPAM 的通用性，可同时运行多种 underlay CNI，充分整合集群中各种基础设施节点的资源，来解决以上问题。
 
 ![underlay](./docs/images/underlay.jpg)
 
@@ -105,7 +105,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 ![arch_underlay](./docs/images/spiderpool-overlay.jpg)
 
-如上所示，spiderpool 工作在 overlay 模式下，使用 multus 同时为 Pod 插入一张 overlay 网卡（例如 [Calico](https://github.com/projectcalico/calico), [Cilium](https://github.com/cilium/cilium) ）和若干张 underlay 网卡（例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ），可实现:
+如上所示，Spiderpool 工作在 overlay 模式下，使用 multus 同时为 Pod 插入一张 overlay 网卡（例如 [Calico](https://github.com/projectcalico/calico), [Cilium](https://github.com/cilium/cilium) ）和若干张 underlay 网卡（例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ），可实现:
 
 * 为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等
 
@@ -191,7 +191,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 * 支持 AMD64 和 ARM64
 
-* 为了避免管理员的运维失误、并发运维操作导致的偶然出错，spiderpool 在各种功能实现细节中，融入防止 IP 泄露、冲突的机制。
+* 为了避免管理员的运维失误、并发运维操作导致的偶然出错，Spiderpool 在各种功能实现细节中，融入防止 IP 泄露、冲突的机制。
 
 ## License
 

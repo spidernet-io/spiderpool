@@ -1,5 +1,7 @@
 # Spiderpool
 
+Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
+
 ## Introduction
 
 Spiderpool: An IP Address Management (IPAM) CNI plugin of Kubernetes for managing static ip for underlay network. Spiderpool can work well with any CNI project that is compatible with third-party IPAM plugins.

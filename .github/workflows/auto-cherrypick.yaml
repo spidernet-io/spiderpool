@@ -30,8 +30,8 @@ jobs:
         run: |
           set -x
           echo "============ print var ======== "
-              grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}"
-          PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq `
+              grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
+          PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
               [ -n "${PR_NUMBER}" ] || { echo "no PR number, ignore" ; }
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
           ACTION_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

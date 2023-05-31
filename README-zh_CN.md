@@ -13,7 +13,7 @@
 
 [**English**](./README.md) | **简体中文**
 
-Spiderpool 是  [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
+Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
 
 ## Spiderpool 介绍
 

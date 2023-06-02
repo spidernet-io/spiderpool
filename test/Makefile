@@ -169,7 +169,10 @@ setup_spiderpool:
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_COORDINATOR)" == "true" ] ; then \
 		    HELM_OPTION+=" --set feature.coordinator.enabled=true " ; \
+		else \
+		  	HELM_OPTION+=" --set feature.coordinator.enabled=false " ; \
 		fi ; \
+		HELM_OPTION+=" --set feature.coordinator.detectIPConflict=false --set feature.coordinator.detectGateway=false " ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
 		    HELM_OPTION+=" --set feature.enableSpiderSubnet=true " ; \
 		else \

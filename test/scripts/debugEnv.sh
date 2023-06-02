@@ -233,7 +233,7 @@ elif [ "$TYPE"x == "error"x ] ; then
 
         echo ""
         echo "----- check some warning log in ${NAMESPACE}/${POD}"
-        WARNING_LOG="exhaust all retries"
+        WARNING_LOG="ERROR.*exhaust all retries"
         NUMBER=` kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} |& grep -E -i "${WARNING_LOG}" | wc -l `
         if  (( NUMBER != 0 )) ; then
             echo "warning, in ${POD}, found $NUMBER line log with ${WARNING_LOG} !!!!!!!"

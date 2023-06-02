@@ -52,7 +52,42 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("test corev1", func() {
+	Context("test ApplicationLabelGV", func() {
+		It("no API Group with coresv1", func() {
+			apiVersion := corev1.SchemeGroupVersion.String()
+			Expect(ApplicationLabelGV(apiVersion)).To(Equal(corev1.SchemeGroupVersion.Version))
+		})
+
+		It("test appsv1", func() {
+			apiVersion := appsv1.SchemeGroupVersion.String()
+			expected := fmt.Sprintf("%s_%s", appsv1.SchemeGroupVersion.Group, appsv1.SchemeGroupVersion.Version)
+			Expect(ApplicationLabelGV(apiVersion)).To(Equal(expected))
+		})
+	})
+
+	Context("test ParseApplicationGVStr", func() {
+		It("coresv1", func() {
+			gvStr := corev1.SchemeGroupVersion.Version
+			apiVersion, isMatch := ParseApplicationGVStr(gvStr)
+			Expect(isMatch).To(BeTrue())
+			Expect(apiVersion).To(Equal(corev1.SchemeGroupVersion.String()))
+		})
+
+		It("appsv1", func() {
+			gvStr := fmt.Sprintf("%s_%s", appsv1.SchemeGroupVersion.Group, appsv1.SchemeGroupVersion.Version)
+			apiVersion, isMatch := ParseApplicationGVStr(gvStr)
+			Expect(isMatch).To(BeTrue())
+			Expect(apiVersion).To(Equal(appsv1.SchemeGroupVersion.String()))
+		})
+
+		It("mismatch ParseApplicationGVStr", func() {
+			gvStr := fmt.Sprintf("%s_%s_%s", "a", "b", "c")
+			_, isMatch := ParseApplicationGVStr(gvStr)
+			Expect(isMatch).To(BeFalse())
+		})
+	})
+
+	Context("test ApplicationNamespacedName", func() {
 		appKind := "test-kind"
 		appNS := "test-ns"
 		appName := "test-name"
@@ -570,6 +605,30 @@ var _ = Describe("Utils", func() {
 			appNamespacedName.Kind = "ClonsSet"
 			isThirdController := IsThirdController(appNamespacedName)
 			Expect(isThirdController).To(BeTrue())
+		})
+	})
+
+	Context("IsReclaimAutoPoolLabelValue", func() {
+		It("reclaim auto pool", func() {
+			labelValue := IsReclaimAutoPoolLabelValue(true)
+			Expect(labelValue).To(Equal(constant.True))
+		})
+
+		It("don't reclaim auto pool", func() {
+			labelValue := IsReclaimAutoPoolLabelValue(false)
+			Expect(labelValue).To(Equal(constant.False))
+		})
+	})
+
+	Context("AutoPoolIPVersionLabelValue", func() {
+		It("Label IPv4", func() {
+			labelValue := AutoPoolIPVersionLabelValue(constant.IPv4)
+			Expect(labelValue).To(Equal(constant.LabelValueIPVersionV4))
+		})
+
+		It("Label IPv6", func() {
+			labelValue := AutoPoolIPVersionLabelValue(constant.IPv6)
+			Expect(labelValue).To(Equal(constant.LabelValueIPVersionV6))
 		})
 	})
 })

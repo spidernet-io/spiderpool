@@ -26,18 +26,17 @@ jobs:
       - name: cherry pick
         env:
           GITHUB_TOKEN: ${{ secrets.WELAN_PAT}}
+          JSON: ${{ toJSON(github) }}
         run: |
           set -x
-          DATA_FILE="/tmp/`date +%Y%m%d%H%M%S%N`"
-          echo '${{ toJSON(github) }}' > ${DATA_FILE}
           echo "============ print var ======== "
-              grep -Eio "Merge pull request #[0-9]+ " < ${DATA_FILE}
-          PR_NUMBER=` cat ${DATA_FILE} | grep -Eio "Merge pull request #[0-9]+ " | grep -Eo "[0-9]+" | uniq `
+              grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
+          PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
               [ -n "${PR_NUMBER}" ] || { echo "no PR number, ignore" ; }
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
           ACTION_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-              grep '"username":'  < ${DATA_FILE}
-          PR_AUTHOR=` cat ${DATA_FILE} | grep '"username":'  | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
+              grep '"username":'  <<< "${JSON}"
+          PR_AUTHOR=` grep '"username":' <<< "${JSON}" | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
               [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
           gh pr view ${PR_NUMBER}
           PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
@@ -45,8 +44,8 @@ jobs:
           PR_TITLE=`gh pr view ${PR_NUMBER} | sed -n '1 p' `
                [ -n "${PR_TITLE}" ] || { echo "error, no PR_TITLE " ; exit 1 ; }
           #
-              cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit"
-          PR_COMMITS=` cat ${DATA_FILE} | grep -Ei "https://github.com/.*/commit" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
+              grep -Ei "https://github.com/.*/commit" <<< "${JSON}"
+          PR_COMMITS=` grep -Ei "https://github.com/.*/commit" <<< "${JSON}" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
               [ -n "${PR_COMMITS}" ] || { echo "no PR_COMMITS, ignore" ; }
           #
           echo "number: ${PR_NUMBER}"

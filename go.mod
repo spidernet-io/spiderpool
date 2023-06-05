@@ -59,7 +59,7 @@ require (
 	github.com/spidernet-io/spiderdoctor v0.3.0
 	github.com/tigera/operator v1.29.4
 	github.com/vishvananda/netlink v1.2.1-beta.2
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.11.0
 	golang.org/x/sys v0.8.0
 )
 

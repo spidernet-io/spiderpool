@@ -97,7 +97,7 @@ func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclients
 					}
 
 					if !controllerLeader.IsElected() {
-						informerLogger.Warn("Leader lost, stop Subnet informer")
+						informerLogger.Warn("Leader lost, stop IPPool informer")
 						innerCancel()
 						return
 					}

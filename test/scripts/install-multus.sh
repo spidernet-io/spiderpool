@@ -20,9 +20,6 @@ echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
-[ -z "$IMAGE_MULTUS" ] && echo "error, miss IMAGE_MULTUS" && exit 1
-echo "$CURRENT_FILENAME : IMAGE_MULTUS $IMAGE_MULTUS "
-
 [ -z "$CLUSTER_PATH" ] && echo "error, miss CLUSTER_PATH" && exit 1
 echo "$CURRENT_FILENAME : CLUSTER_PATH $CLUSTER_PATH "
 
@@ -51,17 +48,6 @@ echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN200 $MULTUS_ADDITIONAL_CNI_VLAN
 OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
 if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
-
-echo "load $IMAGE_MULTUS to kind cluster"
-kind load docker-image $IMAGE_MULTUS --name ${E2E_CLUSTER_NAME}
-
-# tmplate
-${SED_COMMAND}  's?<<IMAGE_MULTUS>>?'"${IMAGE_MULTUS}"'?'   ${CURRENT_DIR_PATH}/../yamls/multus-daemonset-thick-plugin.tmpl > ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
-${SED_COMMAND} -i 's?<<MULTUS_DEFAULT_CNI_NAME>>?'"${MULTUS_DEFAULT_CNI_NAME}"'?' ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
-
-kubectl apply -f ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml --kubeconfig ${E2E_KUBECONFIG}
-# for CRD is applied
-sleep 5
 
 echo "waiting for daemonset/kube-multus-ds ready"
 kubectl rollout status --kubeconfig ${E2E_KUBECONFIG} -n kube-system  daemonset/kube-multus-ds  -w --timeout=60s

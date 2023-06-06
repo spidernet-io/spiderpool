@@ -23,6 +23,10 @@ func (c *FakeSpiderpoolV2beta1) SpiderIPPools() v2beta1.SpiderIPPoolInterface {
 	return &FakeSpiderIPPools{c}
 }
 
+func (c *FakeSpiderpoolV2beta1) SpiderMultusConfigs(namespace string) v2beta1.SpiderMultusConfigInterface {
+	return &FakeSpiderMultusConfigs{c, namespace}
+}
+
 func (c *FakeSpiderpoolV2beta1) SpiderSubnets() v2beta1.SpiderSubnetInterface {
 	return &FakeSpiderSubnets{c}
 }

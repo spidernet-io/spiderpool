@@ -57,17 +57,17 @@ type NetConf struct {
 type IPAMConfig struct {
 	Type string `json:"type"`
 
-	LogLevel        string `json:"log_level"`
-	LogFilePath     string `json:"log_file_path"`
-	LogFileMaxSize  int    `json:"log_file_max_size"`
-	LogFileMaxAge   int    `json:"log_file_max_age"`
-	LogFileMaxCount int    `json:"log_file_max_count"`
+	LogLevel        string `json:"log_level,omitempty"`
+	LogFilePath     string `json:"log_file_path,omitempty"`
+	LogFileMaxSize  int    `json:"log_file_max_size,omitempty"`
+	LogFileMaxAge   int    `json:"log_file_max_age,omitempty"`
+	LogFileMaxCount int    `json:"log_file_max_count,omitempty"`
 
-	DefaultIPv4IPPool []string `json:"default_ipv4_ippool"`
-	DefaultIPv6IPPool []string `json:"default_ipv6_ippool"`
-	CleanGateway      bool     `json:"clean_gateway"`
+	DefaultIPv4IPPool []string `json:"default_ipv4_ippool,omitempty"`
+	DefaultIPv6IPPool []string `json:"default_ipv6_ippool,omitempty"`
+	CleanGateway      bool     `json:"clean_gateway,omitempty"`
 
-	IPAMUnixSocketPath string `json:"ipam_unix_socket_path"`
+	IPAMUnixSocketPath string `json:"ipam_unix_socket_path,omitempty"`
 }
 
 // LoadNetConf converts input (i.e. stdin) to NetConf.

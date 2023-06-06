@@ -9,4 +9,6 @@ type SpiderCoordinatorExpansion interface{}
 
 type SpiderIPPoolExpansion interface{}
 
+type SpiderMultusConfigExpansion interface{}
+
 type SpiderSubnetExpansion interface{}

@@ -89,6 +89,9 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_COORDINATOR_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.CoordinatorInformerResyncPeriod},
 
+	{"SPIDERPOOL_MULTUS_CONFIG_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableMultusConfig, nil},
+	{"SPIDERPOOL_MULTUS_CONFIG_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.MultusConfigInformerResyncPeriod},
+
 	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
@@ -140,6 +143,9 @@ type Config struct {
 	WorkQueueRequeueDelayDuration    int
 
 	CoordinatorInformerResyncPeriod int
+
+	EnableMultusConfig               bool
+	MultusConfigInformerResyncPeriod int
 
 	// configmap
 	EnableIPv4                        bool `yaml:"enableIPv4"`

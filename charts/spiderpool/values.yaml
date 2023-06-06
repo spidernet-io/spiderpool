@@ -82,7 +82,7 @@ ipam:
 ##
 coordinator:
   ## @param coordinator.enabled enable SpiderCoordinator
-  enabled: false
+  enabled: true
 
   ## @param coordinator.name the name of the default SpiderCoordinator CR
   name: "default-coordinator"
@@ -101,6 +101,29 @@ coordinator:
 
   ## @param coordinator.tunePodRoutes tune Pod routes
   tunePodRoutes: true
+
+## @section multus parameters
+##
+multus:
+  ## @param multus.enableMultusConfig enable SpiderMultusConfig
+  enableMultusConfig: true
+
+  multusCNI:
+    ## @param multus.multusCNI.install enable install multus-CNI
+    install: true
+
+    image:
+      ## @param multus.multusCNI.image.registry the multus-CNI image registry
+      registry: ghcr.io
+
+      ## @param multus.multusCNI.image.repository the multus-CNI image repository
+      repository: k8snetworkplumbingwg/multus-cni
+
+      ## @param multus.multusCNI.image.tag the multus-CNI image tag
+      tag: v3.9.3
+
+    ## @param multus.multusCNI.defaultCNIName the multus-CNI default CNI name
+    defaultCNIName: ""
 
 ## @section clusterDefaultPool parameters
 ##
@@ -717,7 +740,5 @@ spiderpoolInit:
   podLabels: {}
 
   serviceAccount:
-    ## @param spiderpoolInit.serviceAccount.create create the service account for the spiderpoolInit
-    create: true
     ## @param spiderpoolInit.serviceAccount.annotations the annotations of spiderpoolInit service account
     annotations: {}

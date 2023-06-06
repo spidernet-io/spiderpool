@@ -20,7 +20,7 @@ E2E_KIND_IMAGE_TAG ?= v1.27.1
 # E2E_KIND_IMAGE_TAG ?= 
 
 # disable default cni, default true
-E2E_DISABLE_DEFAULT_CNI ?= true
+E2E_DISABLE_DEFAULT_CNI ?= false
 
 INSTALL_MACVLAN ?= true
 
@@ -57,10 +57,9 @@ E2E_GINKGO_PROCS ?= 4
 
 E2E_SPIDERPOOL_ENABLE_SUBNET ?= true
 E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
+E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG ?= true
 
 #============Image version===========
-IMAGE_MULTUS_REPO ?= ghcr.io
-IMAGE_MULTUS_NAME := ${IMAGE_MULTUS_REPO}/k8snetworkplumbingwg/multus-cni:v3.9-$(ARCH)
 TEST_IMAGE_NAME := alpine:latest
 
 #USE_TLS_METHOD := certmanager

@@ -55,7 +55,7 @@ require (
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus-community/pro-bing v0.2.0
 	github.com/prometheus/client_golang v1.14.0
-	github.com/spidernet-io/e2eframework v0.0.0-20230403061847-445757b963b3
+	github.com/spidernet-io/e2eframework v0.0.0-20230721034001-0ebb34260e8f
 	github.com/spidernet-io/spiderdoctor v0.3.0
 	github.com/tigera/operator v1.30.4
 	github.com/vishvananda/netlink v1.2.1-beta.2

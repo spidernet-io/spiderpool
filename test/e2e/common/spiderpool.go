@@ -551,39 +551,15 @@ func BatchDeletePoolUntilFinish(f *frame.Framework, iPPoolNameList []string, ctx
 	return nil
 }
 
-func GenerateExampleIpv4Gateway() (v4Gateway string) {
-	num1 := GenerateRandomNumber(255)
-	num2 := GenerateRandomNumber(255)
-	num3 := GenerateRandomNumber(255)
-	num4 := GenerateRandomNumber(255)
-	v4Gateway = fmt.Sprintf("%s.%s.%s.%s", num1, num2, num3, num4)
-	return v4Gateway
+func GenerateRandomIPV4() string {
+	a, b, c, d := r.Intn(255), r.Intn(255), r.Intn(255), r.Intn(255)
+	return fmt.Sprintf("%d:%d:%d:%d", a, b, c, d)
 }
 
-func GenerateExampleIpv6Gateway() (v6Gateway string) {
-	num1 := GenerateRandomNumber(9999)
-	num2 := GenerateRandomNumber(9999)
-	num3 := GenerateRandomNumber(9999)
-	num4 := GenerateRandomNumber(9999)
-	v6Gateway = fmt.Sprintf("%s:%s:%s::%s", num1, num2, num3, num4)
-	return v6Gateway
-}
-
-func GenerateExampleIpv4Address() (ipv4Address string) {
-	randomNum1 := GenerateRandomNumber(255)
-	randomNum2 := GenerateRandomNumber(255)
-	randomNum3 := GenerateRandomNumber(255)
-	randomNum4 := GenerateRandomNumber(255)
-	ipv4Address = fmt.Sprintf("%s.%s.%s.%s", randomNum1, randomNum2, randomNum3, randomNum4)
-	return ipv4Address
-}
-
-func GenerateExampleIpv6Address() (ipv6Address string) {
-	randomNum1 := GenerateRandomNumber(9999)
-	randomNum2 := GenerateRandomNumber(9999)
-	randomNum3 := GenerateRandomNumber(9999)
-	ipv6Address = fmt.Sprintf("%s:%s::%s", randomNum1, randomNum2, randomNum3)
-	return ipv6Address
+func GenerateRandomIPV6() string {
+	n := make([]byte, 3)
+	r.Read(n)
+	return fmt.Sprintf("%x:%x::%x", n[0], n[1], n[2])
 }
 
 // Waiting for Ippool Status Condition By Allocated IPs meets expectations
@@ -733,6 +709,7 @@ func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetN
 
 			pool.Spec.Subnet = subnetObj.Spec.Subnet
 			pool.Spec.IPs = selectIpRanges
+			pool.Spec.Gateway = subnetObj.Spec.Gateway
 			err = CreateIppool(f, pool)
 			if err != nil {
 				// The informer of SpiderSubnet will delay synchronizing its own state information,

@@ -25,7 +25,6 @@ var frame *e2e.Framework
 
 // var name string
 var spiderDoctorAgent *appsv1.DaemonSet
-var annotations = make(map[string]string)
 
 var successRate = float64(1)
 var name string

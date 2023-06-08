@@ -104,7 +104,7 @@
         # run all e2e test
         $ make e2e_test
 
-5 finally, you could visit "http://HostIp:4040" the in the browser of your desktop, and get flamegraph
+5 finally, you could visit "<http://HostIp:4040>" the in the browser of your desktop, and get flamegraph
 
 ***
 

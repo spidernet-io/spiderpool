@@ -179,7 +179,7 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set feature.enableSpiderSubnet=false " ; \
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
-		HELM_OPTION+=" --set feature.gc.gcAll.interval=120 " ; \
+		HELM_OPTION+=" --set feature.gc.gcAll.intervalInSecond=120 " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \

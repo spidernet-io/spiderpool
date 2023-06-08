@@ -7,7 +7,7 @@ A MultusCNIConfig resource represents the configuration information of a multus 
 There are several reasons to use multusCniConfig CRD for Multus Network-Attachment-Definition:
 
 - Simplify the creation of cni config in multus CR, and also provide webhook verification of the cni configuration, multus doesn't provide webhook for multus CR.
-- It's good for ipvlan、macvlan、sriov,etc. work with coordinator. and simplify the creation of coordinator config.
+- It's good for ipvlan, macvlan, sriov, and more CNIs working with coordinator and simplifying the creation of coordinator configuration.
 - More flexibility and scalability.
 
 ## CRD definition

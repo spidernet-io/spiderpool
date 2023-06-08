@@ -5,16 +5,17 @@ package cmd
 
 import (
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
-	"net"
-	"strconv"
 
-	"strings"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 )
 
 type coordinator struct {
@@ -38,6 +39,8 @@ func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
 	case ModeOverlay:
 		c.firstInvoke, err = networking.IsFirstModeOverlayInvoke(c.netns, c.interfacePrefix)
 		return err
+	case ModeDisable:
+		return nil
 	}
 	return fmt.Errorf("unknown tuneMode: %s", c.tuneMode)
 }

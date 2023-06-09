@@ -210,8 +210,8 @@ return the spiderpoolInit image
 {{- end -}}
 {{- if .Values.spiderpoolInit.image.digest }}
     {{- print "@" .Values.spiderpoolInit.image.digest -}}
-{{- else if .Values.spiderpoolAgent.image.tag -}}
-    {{- printf ":%s" .Values.spiderpoolAgent.image.tag -}}
+{{- else if .Values.spiderpoolInit.image.tag -}}
+    {{- printf ":%s" .Values.spiderpoolInit.image.tag -}}
 {{- else -}}
     {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}

@@ -7,14 +7,15 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 	"math/big"
 	"net"
 	"net/netip"
 	"os"
 	"regexp"
+
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
+	"go.uber.org/zap"
 )
 
 // OverwriteHwAddress override the hardware address of the specified interface.
@@ -26,13 +27,13 @@ func OverwriteHwAddress(logger *zap.Logger, netns ns.NetNS, macPrefix, iface str
 	}
 
 	// we only focus on first element
-	nAddr, err := netip.ParsePrefix(ips[0].IP.String())
+	nAddr, err := netip.ParseAddr(ips[0].IP.String())
 	if err != nil {
 		logger.Error("failed to ParsePrefix", zap.Error(err))
 		return "", err
 	}
 
-	suffix, err := inetAton(nAddr.Addr())
+	suffix, err := inetAton(nAddr)
 	if err != nil {
 		logger.Error("failed to inetAton", zap.Error(err))
 		return "", err

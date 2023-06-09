@@ -23,38 +23,45 @@ kind-init: check_env prepare
 	$(QUIET) bash scripts/config-network.sh
 	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
-ifeq ($(INSTALL_CALICO),true)
-	@echo -e "\033[35m [Step 6] Install Calico: $(CALICO_VERSION)  \033[0m"
+ifeq ($(INSTALL_DEFAULT_CNI),true)
+	@echo -e "\033[35m [Step 6] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 	E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+	INSTALL_CALICO=$(INSTALL_CALICO) \
+	INSTALL_CILIUM=$(INSTALL_CILIUM) \
 	CALICO_VERSION=$(CALICO_VERSION) \
 	CALICO_IMAGE_REPO=$(CALICO_IMAGE_REPO) \
 	CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 	CALICO_AUTODETECTION_METHOD=$(CALICO_AUTODETECTION_METHOD) \
-	$(QUIET) bash scripts/install-calico.sh
+	CILIUM_VERSION=$(CILIUM_VERSION) \
+	CILIUM_CLUSTER_POD_SUBNET_V4=$(CILIUM_CLUSTER_POD_SUBNET_V4) \
+	CILIUM_CLUSTER_POD_SUBNET_V6=$(CILIUM_CLUSTER_POD_SUBNET_V6) \
+	$(QUIET) bash scripts/install-default-cni.sh
 endif
 ifeq ($(INSTALL_SPIDER),true)
 	@echo -e "\033[35m [Step 7] Install Spiderpool \033[0m"
 	@ make setup_spiderpool
 endif
-ifeq ($(INSTALL_KRUISE),true)
-	@echo -e "\033[35m [Step 8] Install third-party controllers: kurise \033[0m"
-	@ make setup_kurise
-endif
 ifeq ($(INSTALL_MULTUS),true)
-	@echo -e "\033[35m [Step 9] Install Multus \033[0m"
-	@ E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
-		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
-		MULTUS_DEFAULT_CNI_CALICO=$(MULTUS_DEFAULT_CNI_CALICO) \
-		MULTUS_DEFAULT_CNI_VLAN100=$(MULTUS_DEFAULT_CNI_VLAN100) \
-		MULTUS_DEFAULT_CNI_VLAN200=$(MULTUS_DEFAULT_CNI_VLAN200) \
-		MULTUS_ADDITIONAL_CNI_VLAN100=$(MULTUS_ADDITIONAL_CNI_VLAN100) \
-		MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
-		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
-		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
-		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
-		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+	@echo -e "\033[35m [Step 8] Install Multus \033[0m"
+	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
+	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+	MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
+	MULTUS_DEFAULT_CNI_CALICO=$(MULTUS_DEFAULT_CNI_CALICO) \
+	MULTUS_DEFAULT_CNI_CILIUM=$(MULTUS_DEFAULT_CNI_CILIUM) \
+	MULTUS_DEFAULT_CNI_VLAN100=$(MULTUS_DEFAULT_CNI_VLAN100) \
+	MULTUS_DEFAULT_CNI_VLAN200=$(MULTUS_DEFAULT_CNI_VLAN200) \
+	MULTUS_ADDITIONAL_CNI_VLAN100=$(MULTUS_ADDITIONAL_CNI_VLAN100) \
+	MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
+	MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
+	CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
+	E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
+	scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+endif
+ifeq ($(INSTALL_KRUISE),true)
+	@echo -e "\033[35m [Step 9] Install third-party controllers: kurise \033[0m"
+	@ make setup_kurise
 endif
 ifeq ($(INSTALL_SPIDERDOCTOR),true)
 	@echo -e "\033[35m [Step 10] Install SpiderDoctor \033[0m"
@@ -66,12 +73,6 @@ ifeq ($(INSTALL_SPIDERDOCTOR),true)
 	SPIDERDOCTOR_IMAGE_REPO=$(SPIDERDOCTOR_IMAGE_REPO) \
 	$(QUIET) bash scripts/install-spiderdoctor.sh
 endif
-	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null
-	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
- 		for POD in $${DNS_POD_LIST} ; do \
- 			echo "restart coredns pod $${POD} " ; \
- 			kubectl --kubeconfig $(E2E_KUBECONFIG) delete pod $${POD} -n kube-system --force --timeout=10s ; \
- 		done
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE=$(TEST_IMAGE_NAME) \
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
@@ -98,15 +99,17 @@ endif
 
 .PHONY: setup_kind
 setup_kind:
-	@ if [ "$(E2E_IP_FAMILY)" != "ipv4" ] ; then sysctl -w net.ipv6.conf.all.disable_ipv6=0 ; fi
 	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
 	-@ rm -rf $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
-	- sysctl -w fs.inotify.max_user_watches=524288 || true
-	- sysctl -w fs.inotify.max_user_instances=8192 || true
+	- sudo sysctl -w fs.inotify.max_user_watches=524288 || true
+	- sudo sysctl -w fs.inotify.max_user_instances=8192 || true
+	- sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
 	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
 			 kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
 			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
+			 CLUSTER_POD_SUBNET_V4=$(CLUSTER_POD_SUBNET_V4) \
+			 CLUSTER_POD_SUBNET_V6=$(CLUSTER_POD_SUBNET_V6) \
 			 K8S_IPV4_SERVICE_CIDR=$(K8S_IPV4_SERVICE_CIDR) \
 			 K8S_IPV6_SERVICE_CIDR=$(K8S_IPV6_SERVICE_CIDR) \
 			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
@@ -243,7 +246,7 @@ setup_spiderpool:
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		set -x ; \
 		helm upgrade --install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
-			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
+			-n $(RELEASE_NAMESPACE)  \
 			--set spiderpoolAgent.image.registry="" \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
 			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \
@@ -253,7 +256,8 @@ setup_spiderpool:
 			--set spiderpoolInit.image.registry="" \
 			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolInit.image.tag=$(TEST_IMAGE_TAG) \
-			--kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+			$${HELM_OPTION} \
+			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 		exit 0
 
 
@@ -347,8 +351,6 @@ e2e_test:
 		echo "succeeded to run all test" ; \
 		echo "output report to e2ereport.json" ; \
 		echo "output env log to $(E2E_LOG_FILE) "
-
-
 
 .PHONY: usage
 usage:

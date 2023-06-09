@@ -5,14 +5,14 @@ package networking
 
 import (
 	"fmt"
-	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/plugins/pkg/ip"
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 	"net"
 	"regexp"
 	"strings"
+
+	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
+	"go.uber.org/zap"
 )
 
 var DefaultInterfacesToExclude = []string{
@@ -155,19 +155,28 @@ func getAdders(link netlink.Link, ipfamily int) ([]netlink.Addr, error) {
 	return ipAddress, nil
 }
 
-func IsInterfaceMiss(netns ns.NetNS, iface string) (bool, error) {
-	err := netns.Do(func(_ ns.NetNS) error {
-		_, err := netlink.LinkByName(iface)
-		return err
-	})
-
-	if err == nil {
-		return false, nil
+func CheckInterfaceExist(netns ns.NetNS, iface string) (bool, error) {
+	var exist bool
+	var err error
+	if netns != nil {
+		err = netns.Do(func(_ ns.NetNS) error {
+			exist, err = isInterfaceExist(iface)
+			return err
+		})
+		return exist, err
 	}
+	return isInterfaceExist(iface)
+}
 
-	if strings.EqualFold(err.Error(), ip.ErrLinkNotFound.Error()) {
+func isInterfaceExist(iface string) (bool, error) {
+	_, err := netlink.LinkByName(iface)
+	if err == nil {
 		return true, nil
 	}
-	return false, err
 
+	if _, ok := err.(netlink.LinkNotFoundError); ok {
+		return false, nil
+	} else {
+		return false, err
+	}
 }

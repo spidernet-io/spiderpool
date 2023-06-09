@@ -1,14 +1,14 @@
-# go-ping
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/go-ping/ping)](https://pkg.go.dev/github.com/go-ping/ping)
-[![Circle CI](https://circleci.com/gh/go-ping/ping.svg?style=svg)](https://circleci.com/gh/go-ping/ping)
+# pro-bing
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/prometheus-community/pro-bing)](https://pkg.go.dev/github.com/prometheus-community/pro-bing)
+[![Circle CI](https://circleci.com/gh/prometheus-community/pro-bing.svg?style=svg)](https://circleci.com/gh/prometheus-community/pro-bing)
 
 A simple but powerful ICMP echo (ping) library for Go, inspired by
-[go-fastping](https://github.com/tatsushid/go-fastping).
+[go-ping](https://github.com/go-ping/ping) & [go-fastping](https://github.com/tatsushid/go-fastping).
 
 Here is a very simple example that sends and receives three packets:
 
 ```go
-pinger, err := ping.NewPinger("www.google.com")
+pinger, err := probing.NewPinger("www.google.com")
 if err != nil {
 	panic(err)
 }
@@ -23,7 +23,7 @@ stats := pinger.Statistics() // get send/receive/duplicate/rtt stats
 Here is an example that emulates the traditional UNIX ping command:
 
 ```go
-pinger, err := ping.NewPinger("www.google.com")
+pinger, err := probing.NewPinger("www.google.com")
 if err != nil {
 	panic(err)
 }
@@ -37,12 +37,12 @@ go func() {
 	}
 }()
 
-pinger.OnRecv = func(pkt *ping.Packet) {
+pinger.OnRecv = func(pkt *probing.Packet) {
 	fmt.Printf("%d bytes from %s: icmp_seq=%d time=%v\n",
 		pkt.Nbytes, pkt.IPAddr, pkt.Seq, pkt.Rtt)
 }
 
-pinger.OnDuplicateRecv = func(pkt *ping.Packet) {
+pinger.OnDuplicateRecv = func(pkt *probing.Packet) {
 	fmt.Printf("%d bytes from %s: icmp_seq=%d time=%v ttl=%v (DUP!)\n",
 		pkt.Nbytes, pkt.IPAddr, pkt.Seq, pkt.Rtt, pkt.Ttl)
 }
@@ -69,18 +69,18 @@ in which case it calls the `OnDuplicateRecv` callback. When it's
 finished, it calls the `OnFinish` callback.
 
 For a full ping example, see
-[cmd/ping/ping.go](https://github.com/go-ping/ping/blob/master/cmd/ping/ping.go).
+[cmd/ping/ping.go](https://github.com/prometheus-community/pro-bing/blob/master/cmd/ping/ping.go).
 
 ## Installation
 
 ```
-go get -u github.com/go-ping/ping
+go get -u github.com/prometheus-community/pro-bing
 ```
 
 To install the native Go ping executable:
 
 ```bash
-go get -u github.com/go-ping/ping/...
+go get -u github.com/prometheus-community/pro-bing/...
 $GOPATH/bin/ping
 ```
 
@@ -106,6 +106,13 @@ See [this blog](https://sturmflut.github.io/linux/ubuntu/2015/01/17/unprivileged
 and the Go [x/net/icmp](https://godoc.org/golang.org/x/net/icmp) package
 for more details.
 
+This library supports setting the `SO_MARK` socket option which is equivalent to the `-m mark`
+flag in standard ping binaries on linux. Setting this option requires the `CAP_NET_ADMIN` capability
+(via `setcap` or elevated privileges). You can set a mark (ex: 100) with `pinger.SetMark(100)` in your code.
+
+Setting the "Don't Fragment" bit is supported under Linux which is equivalent to `ping -Mdo`.
+You can enable this with `pinger.SetDoNotFragment(true)`.
+
 ### Windows
 
 You must use `pinger.SetPrivileged(true)`, otherwise you will receive
@@ -122,20 +129,16 @@ x/net/ipv4 and x/net/ipv6 packages.
 
 ### Plan 9 from Bell Labs
 
-There is no support for Plan 9. This is because the entire `x/net/ipv4` 
-and `x/net/ipv6` packages are not implemented by the Go programming 
+There is no support for Plan 9. This is because the entire `x/net/ipv4`
+and `x/net/ipv6` packages are not implemented by the Go programming
 language.
 
 ## Maintainers and Getting Help:
 
 This repo was originally in the personal account of
 [sparrc](https://github.com/sparrc), but is now maintained by the
-[go-ping organization](https://github.com/go-ping).
-
-For support and help, you usually find us in the #go-ping channel of
-Gophers Slack. See https://invite.slack.golangbridge.org/ for an invite
-to the Gophers Slack org.
+[Prometheus Community](https://prometheus.io/community).
 
 ## Contributing
 
-Refer to [CONTRIBUTING.md](https://github.com/go-ping/ping/blob/master/CONTRIBUTING.md)
+Refer to [CONTRIBUTING.md](https://github.com/prometheus-community/pro-bing/blob/master/CONTRIBUTING.md)

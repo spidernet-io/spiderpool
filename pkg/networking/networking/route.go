@@ -5,12 +5,13 @@ package networking
 
 import (
 	"fmt"
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 	"net"
 	"os"
 	"strings"
+
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
+	"go.uber.org/zap"
 )
 
 // GetRoutesByName return all routes is belonged to specify interface
@@ -24,11 +25,7 @@ func GetRoutesByName(iface string, ipfamily int) (routes []netlink.Route, err er
 		}
 	}
 
-	routes, err = netlink.RouteList(link, ipfamily)
-	if err != nil {
-		return nil, err
-	}
-	return
+	return netlink.RouteList(link, ipfamily)
 }
 
 func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
@@ -212,7 +209,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 // GetDefaultRouteInterface returns the name of the NIC where the default route is located
 // if filterInterface not be empty, return first default route interface
 // otherwise filter filterInterface
-func GetDefaultRouteInterface(netns ns.NetNS, filterInterface string, ipfamily int) (string, error) {
+func GetDefaultRouteInterface(ipfamily int, filterInterface string, netns ns.NetNS) (string, error) {
 	var defaultInterface string
 	err := netns.Do(func(_ ns.NetNS) error {
 		routes, err := netlink.RouteList(nil, ipfamily)
@@ -268,7 +265,7 @@ func getDefaultRouteIface(linkIndex int, ignore string) (string, error) {
 	return link.Attrs().Name, nil
 }
 
-// IsFirstModeOverlayInvoke return true if the number of NICs prefixed with interfacePrefix in the pod is equal to 1
+// IsFirstModeOverlayInvoke return true if the number of NICs in the pod prefixed with interfacePrefix is equal to 1
 func IsFirstModeOverlayInvoke(netns ns.NetNS, interfacePrefix string) (bool, error) {
 	var interfaces []net.Interface
 	var err error
@@ -292,13 +289,12 @@ func IsFirstModeOverlayInvoke(netns ns.NetNS, interfacePrefix string) (bool, err
 		}
 	}
 
-	// We have at least three NICs in the pod: lo、eth0、currentInterface
 	if count > 1 {
 		return false, nil
 	} else if count == 1 {
 		return true, nil
 	} else {
-		return false, fmt.Errorf("maybe the pod's multus annotations: v1.multus-cni.io can't work with the tuneMode:Overlay")
+		return false, fmt.Errorf("overlay mode can't work with multus pod's annotation: v1.multus-cni.io/default-network")
 	}
 }
 

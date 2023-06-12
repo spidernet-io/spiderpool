@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Login to online register
-        uses: docker/login-action@v2.1.0
+        uses: docker/login-action@v2.2.0
         if: ${{ steps.tag.outputs.push == 'true' }}
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}

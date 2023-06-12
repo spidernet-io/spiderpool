@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/containernetworking/cni v1.1.2
-	github.com/go-openapi/errors v0.20.3
+	github.com/go-openapi/errors v0.20.4
 	github.com/go-openapi/loads v0.21.2
 	github.com/go-openapi/runtime v0.25.0
 	github.com/go-openapi/spec v0.20.7

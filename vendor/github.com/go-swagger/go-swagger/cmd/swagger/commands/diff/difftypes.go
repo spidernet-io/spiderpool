@@ -99,6 +99,24 @@ const (
 	DeletedDefinition
 	// AddedDefinition removed one of the definitions
 	AddedDefinition
+	// ChangedDefault - Changed default value
+	ChangedDefault
+	// AddedDefault - Added a default value
+	AddedDefault
+	// DeletedDefault - Deleted a default value
+	DeletedDefault
+	// ChangedExample - Changed an example value
+	ChangedExample
+	// AddedExample - Added an example value
+	AddedExample
+	// DeletedExample - Deleted an example value
+	DeletedExample
+	// ChangedCollectionFormat - A collectionFormat has been changed to a collectionFormat whose relative compatibility cannot be determined
+	ChangedCollectionFormat
+	// DeletedExtension deleted an extension
+	DeletedExtension
+	// AddedExtension added an extension
+	AddedExtension
 )
 
 var toLongStringSpecChangeCode = map[SpecChangeCode]string{
@@ -146,6 +164,15 @@ var toLongStringSpecChangeCode = map[SpecChangeCode]string{
 	AddedConstraint:           "Added a schema constraint",
 	DeletedDefinition:         "Deleted a schema definition",
 	AddedDefinition:           "Added a schema definition",
+	ChangedDefault:            "Default value is changed",
+	AddedDefault:              "Default value is added",
+	DeletedDefault:            "Default value is removed",
+	ChangedExample:            "Example value is changed",
+	AddedExample:              "Example value is added",
+	DeletedExample:            "Example value is removed",
+	ChangedCollectionFormat:   "Changed collection format",
+	DeletedExtension:          "Deleted Extension",
+	AddedExtension:            "Added Extension",
 }
 
 var toStringSpecChangeCode = map[SpecChangeCode]string{
@@ -193,6 +220,15 @@ var toStringSpecChangeCode = map[SpecChangeCode]string{
 	AddedConstraint:           "AddedConstraint",
 	DeletedDefinition:         "DeletedDefinition",
 	AddedDefinition:           "AddedDefinition",
+	ChangedDefault:            "ChangedDefault",
+	AddedDefault:              "AddedDefault",
+	DeletedDefault:            "DeletedDefault",
+	ChangedExample:            "ChangedExample",
+	AddedExample:              "AddedExample",
+	DeletedExample:            "DeletedExample",
+	ChangedCollectionFormat:   "ChangedCollectionFormat",
+	DeletedExtension:          "DeletedExtension",
+	AddedExtension:            "AddedExtension",
 }
 
 var toIDSpecChangeCode = map[string]SpecChangeCode{}
@@ -237,6 +273,8 @@ const (
 	Breaking Compatibility = iota
 	// NonBreaking This is a backwards-compatible API change
 	NonBreaking
+	// Warning changes are technically non-breaking but can cause behavior changes in client and thus should be reported differently
+	Warning
 )
 
 func (s Compatibility) String() string {
@@ -246,6 +284,7 @@ func (s Compatibility) String() string {
 var toStringCompatibility = map[Compatibility]string{
 	Breaking:    "Breaking",
 	NonBreaking: "NonBreaking",
+	Warning:     "Warning",
 }
 
 var toIDCompatibility = map[string]Compatibility{}

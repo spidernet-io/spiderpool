@@ -32,6 +32,8 @@ type SpecAnalyser struct {
 	urlMethods2           URLMethods
 	Definitions1          spec.Definitions
 	Definitions2          spec.Definitions
+	Info1                 *spec.Info
+	Info2                 *spec.Info
 	ReferencedDefinitions map[string]bool
 
 	schemasCompared map[string]struct{}
@@ -50,6 +52,8 @@ func (sd *SpecAnalyser) Analyse(spec1, spec2 *spec.Swagger) error {
 	sd.schemasCompared = make(map[string]struct{})
 	sd.Definitions1 = spec1.Definitions
 	sd.Definitions2 = spec2.Definitions
+	sd.Info1 = spec1.Info
+	sd.Info2 = spec2.Info
 	sd.urlMethods1 = getURLMethodsFor(spec1)
 	sd.urlMethods2 = getURLMethodsFor(spec2)
 
@@ -58,6 +62,7 @@ func (sd *SpecAnalyser) Analyse(spec1, spec2 *spec.Swagger) error {
 	sd.analyseRequestParams()
 	sd.analyseEndpointData()
 	sd.analyseResponseParams()
+	sd.analyseExtensions(spec1, spec2)
 	sd.AnalyseDefinitions()
 
 	return nil
@@ -122,7 +127,7 @@ func (sd *SpecAnalyser) analyseEndpoints() {
 	sd.findAddedEndpoints()
 }
 
-// AnalyseDefinitions check for changes to defintion objects not referenced in any endpoint
+// AnalyseDefinitions check for changes to definition objects not referenced in any endpoint
 func (sd *SpecAnalyser) AnalyseDefinitions() {
 	alreadyReferenced := map[string]bool{}
 	for k := range sd.ReferencedDefinitions {
@@ -169,7 +174,7 @@ func (sd *SpecAnalyser) analyseEndpointData() {
 }
 
 func (sd *SpecAnalyser) analyseRequestParams() {
-	locations := []string{"query", "path", "body", "header"}
+	locations := []string{"query", "path", "body", "header", "formData"}
 
 	for _, paramLocation := range locations {
 		rootNode := getNameOnlyDiffNode(strings.Title(paramLocation))
@@ -231,7 +236,6 @@ func (sd *SpecAnalyser) analyseResponseParams() {
 			}
 			// Added updated Response Codes
 			for code2, op2Response := range op2Responses {
-
 				if op1Response, ok := op1Responses[code2]; ok {
 					op1Headers := op1Response.ResponseProps.Headers
 					headerRootNode := getNameOnlyDiffNode("Headers")
@@ -280,6 +284,163 @@ func (sd *SpecAnalyser) analyseResponseParams() {
 						Code:               AddedResponse})
 				}
 			}
+		}
+	}
+}
+
+func (sd *SpecAnalyser) analyseExtensions(spec1, spec2 *spec.Swagger) {
+	// root
+	specLoc := DifferenceLocation{Node: &Node{Field: "Spec"}}
+	sd.checkAddedExtensions(spec1.Extensions, spec2.Extensions, specLoc, "")
+	sd.checkDeletedExtensions(spec1.Extensions, spec2.Extensions, specLoc, "")
+
+	sd.analyzeInfoExtensions()
+	sd.analyzeTagExtensions(spec1, spec2)
+	sd.analyzeSecurityDefinitionExtensions(spec1, spec2)
+
+	sd.analyzeOperationExtensions()
+}
+
+func (sd *SpecAnalyser) analyzeOperationExtensions() {
+	for urlMethod, op2 := range sd.urlMethods2 {
+		pathAndMethodLoc := DifferenceLocation{URL: urlMethod.Path, Method: urlMethod.Method}
+		if op1, ok := sd.urlMethods1[urlMethod]; ok {
+			sd.checkAddedExtensions(op1.Extensions, op2.Extensions, DifferenceLocation{URL: urlMethod.Path}, "")
+			sd.checkAddedExtensions(op1.Operation.Responses.Extensions, op2.Operation.Responses.Extensions, pathAndMethodLoc, "Responses")
+			sd.checkAddedExtensions(op1.Operation.Extensions, op2.Operation.Extensions, pathAndMethodLoc, "")
+
+			for code, resp := range op1.Operation.Responses.StatusCodeResponses {
+				for hdr, h := range resp.Headers {
+					op2StatusCode, ok := op2.Operation.Responses.StatusCodeResponses[code]
+					if ok {
+						if _, ok = op2StatusCode.Headers[hdr]; ok {
+							sd.checkAddedExtensions(h.Extensions, op2StatusCode.Headers[hdr].Extensions, DifferenceLocation{URL: urlMethod.Path, Method: urlMethod.Method, Node: getNameOnlyDiffNode("Headers")}, hdr)
+						}
+					}
+				}
+
+				resp2 := op2.Operation.Responses.StatusCodeResponses[code]
+				sd.analyzeSchemaExtensions(resp.Schema, resp2.Schema, code, urlMethod)
+			}
+
+		}
+	}
+
+	for urlMethod, op1 := range sd.urlMethods1 {
+		pathAndMethodLoc := DifferenceLocation{URL: urlMethod.Path, Method: urlMethod.Method}
+		if op2, ok := sd.urlMethods2[urlMethod]; ok {
+			sd.checkDeletedExtensions(op1.Extensions, op2.Extensions, DifferenceLocation{URL: urlMethod.Path}, "")
+			sd.checkDeletedExtensions(op1.Operation.Responses.Extensions, op2.Operation.Responses.Extensions, pathAndMethodLoc, "Responses")
+			sd.checkDeletedExtensions(op1.Operation.Extensions, op2.Operation.Extensions, pathAndMethodLoc, "")
+			for code, resp := range op1.Operation.Responses.StatusCodeResponses {
+				for hdr, h := range resp.Headers {
+					op2StatusCode, ok := op2.Operation.Responses.StatusCodeResponses[code]
+					if ok {
+						if _, ok = op2StatusCode.Headers[hdr]; ok {
+							sd.checkDeletedExtensions(h.Extensions, op2StatusCode.Headers[hdr].Extensions, DifferenceLocation{URL: urlMethod.Path, Method: urlMethod.Method, Node: getNameOnlyDiffNode("Headers")}, hdr)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (sd *SpecAnalyser) analyzeSecurityDefinitionExtensions(spec1 *spec.Swagger, spec2 *spec.Swagger) {
+	securityDefLoc := DifferenceLocation{Node: &Node{Field: "Security Definitions"}}
+	for key, securityDef := range spec1.SecurityDefinitions {
+		if securityDef2, ok := spec2.SecurityDefinitions[key]; ok {
+			sd.checkAddedExtensions(securityDef.Extensions, securityDef2.Extensions, securityDefLoc, "")
+		}
+	}
+
+	for key, securityDef := range spec2.SecurityDefinitions {
+		if securityDef1, ok := spec1.SecurityDefinitions[key]; ok {
+			sd.checkDeletedExtensions(securityDef1.Extensions, securityDef.Extensions, securityDefLoc, "")
+		}
+	}
+}
+
+func (sd *SpecAnalyser) analyzeSchemaExtensions(schema1, schema2 *spec.Schema, code int, urlMethod URLMethod) {
+	if schema1 != nil && schema2 != nil {
+		diffLoc := DifferenceLocation{Response: code, URL: urlMethod.Path, Method: urlMethod.Method, Node: getSchemaDiffNode("Body", schema2)}
+		sd.checkAddedExtensions(schema1.Extensions, schema2.Extensions, diffLoc, "")
+		sd.checkDeletedExtensions(schema1.Extensions, schema2.Extensions, diffLoc, "")
+		if schema1.Items != nil && schema2.Items != nil {
+			sd.analyzeSchemaExtensions(schema1.Items.Schema, schema2.Items.Schema, code, urlMethod)
+			for i := range schema1.Items.Schemas {
+				s1 := schema1.Items.Schemas[i]
+				for j := range schema2.Items.Schemas {
+					s2 := schema2.Items.Schemas[j]
+					sd.analyzeSchemaExtensions(&s1, &s2, code, urlMethod)
+				}
+			}
+		}
+	}
+}
+
+func (sd *SpecAnalyser) analyzeInfoExtensions() {
+	if sd.Info1 != nil && sd.Info2 != nil {
+		diffLocation := DifferenceLocation{Node: &Node{Field: "Spec Info"}}
+		sd.checkAddedExtensions(sd.Info1.Extensions, sd.Info2.Extensions, diffLocation, "")
+		sd.checkDeletedExtensions(sd.Info1.Extensions, sd.Info2.Extensions, diffLocation, "")
+		if sd.Info1.Contact != nil && sd.Info2.Contact != nil {
+			diffLocation = DifferenceLocation{Node: &Node{Field: "Spec Info.Contact"}}
+			sd.checkAddedExtensions(sd.Info1.Contact.Extensions, sd.Info2.Contact.Extensions, diffLocation, "")
+			sd.checkDeletedExtensions(sd.Info1.Contact.Extensions, sd.Info2.Contact.Extensions, diffLocation, "")
+		}
+		if sd.Info1.License != nil && sd.Info2.License != nil {
+			diffLocation = DifferenceLocation{Node: &Node{Field: "Spec Info.License"}}
+			sd.checkAddedExtensions(sd.Info1.License.Extensions, sd.Info2.License.Extensions, diffLocation, "")
+			sd.checkDeletedExtensions(sd.Info1.License.Extensions, sd.Info2.License.Extensions, diffLocation, "")
+		}
+	}
+}
+
+func (sd *SpecAnalyser) analyzeTagExtensions(spec1 *spec.Swagger, spec2 *spec.Swagger) {
+	diffLocation := DifferenceLocation{Node: &Node{Field: "Spec Tags"}}
+	for _, spec2Tag := range spec2.Tags {
+		for _, spec1Tag := range spec1.Tags {
+			if spec2Tag.Name == spec1Tag.Name {
+				sd.checkAddedExtensions(spec1Tag.Extensions, spec2Tag.Extensions, diffLocation, "")
+			}
+		}
+	}
+	for _, spec1Tag := range spec1.Tags {
+		for _, spec2Tag := range spec2.Tags {
+			if spec1Tag.Name == spec2Tag.Name {
+				sd.checkDeletedExtensions(spec1Tag.Extensions, spec2Tag.Extensions, diffLocation, "")
+			}
+		}
+	}
+}
+
+func (sd *SpecAnalyser) checkAddedExtensions(extensions1 spec.Extensions, extensions2 spec.Extensions, diffLocation DifferenceLocation, fieldPrefix string) {
+	for extKey := range extensions2 {
+		if _, ok := extensions1[extKey]; !ok {
+			if fieldPrefix != "" {
+				extKey = fmt.Sprintf("%s.%s", fieldPrefix, extKey)
+			}
+			sd.Diffs = sd.Diffs.addDiff(SpecDifference{
+				DifferenceLocation: diffLocation.AddNode(&Node{Field: extKey}),
+				Code:               AddedExtension,
+				Compatibility:      Warning, // this could potentially be a breaking change
+			})
+		}
+	}
+}
+
+func (sd *SpecAnalyser) checkDeletedExtensions(extensions1 spec.Extensions, extensions2 spec.Extensions, diffLocation DifferenceLocation, fieldPrefix string) {
+	for extKey := range extensions1 {
+		if _, ok := extensions2[extKey]; !ok {
+			if fieldPrefix != "" {
+				extKey = fmt.Sprintf("%s.%s", fieldPrefix, extKey)
+			}
+			sd.Diffs = sd.Diffs.addDiff(SpecDifference{
+				DifferenceLocation: diffLocation.AddNode(&Node{Field: extKey}),
+				Code:               DeletedExtension,
+				Compatibility:      Warning, // this could potentially be a breaking change
+			})
 		}
 	}
 }
@@ -355,9 +516,9 @@ func (sd *SpecAnalyser) compareParams(urlMethod URLMethod, location string, name
 		if len(name) > 0 {
 			childLocation = childLocation.AddNode(getSchemaDiffNode(name, param2.Schema))
 		}
-
 		sd.compareSchema(childLocation, param1.Schema, param2.Schema)
 	}
+
 	diffs := sd.CompareProps(forParam(param1), forParam(param2))
 
 	childLocation = childLocation.AddNode(getSchemaDiffNode(name, &param2.SimpleSchema))
@@ -369,6 +530,8 @@ func (sd *SpecAnalyser) compareParams(urlMethod URLMethod, location string, name
 	if len(diffs) > 0 {
 		sd.addDiffs(childLocation, diffs)
 	}
+
+	sd.compareSimpleSchema(childLocation, &param1.SimpleSchema, &param2.SimpleSchema)
 }
 
 func (sd *SpecAnalyser) addTypeDiff(location DifferenceLocation, diff *TypeDiff) {
@@ -449,12 +612,63 @@ func (sd *SpecAnalyser) compareSchema(location DifferenceLocation, schema1, sche
 	}
 
 	if isArray(schema1) {
-		sd.compareSchema(location, schema1.Items.Schema, schema2.Items.Schema)
+		if isArray(schema2) {
+			sd.compareSchema(location, schema1.Items.Schema, schema2.Items.Schema)
+		} else {
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedType, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		}
 	}
 
 	diffs := CompareProperties(location, schema1, schema2, sd.getRefSchemaFromSpec1, sd.getRefSchemaFromSpec2, sd.compareSchema)
 	for _, diff := range diffs {
 		sd.Diffs = sd.Diffs.addDiff(diff)
+	}
+}
+
+func (sd *SpecAnalyser) compareSimpleSchema(location DifferenceLocation, schema1, schema2 *spec.SimpleSchema) {
+	// check optional/required
+	if schema1.Nullable != schema2.Nullable {
+		// If optional is made required
+		if schema1.Nullable && !schema2.Nullable {
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedOptionalToRequired, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		} else if !schema1.Nullable && schema2.Nullable {
+			// If required is made optional
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedRequiredToOptional, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		}
+	}
+
+	if schema1.CollectionFormat != schema2.CollectionFormat {
+		sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedCollectionFormat, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+	}
+
+	if schema1.Default != schema2.Default {
+		switch {
+		case schema1.Default == nil && schema2.Default != nil:
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: AddedDefault, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		case schema1.Default != nil && schema2.Default == nil:
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: DeletedDefault, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		default:
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedDefault, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		}
+	}
+
+	if schema1.Example != schema2.Example {
+		switch {
+		case schema1.Example == nil && schema2.Example != nil:
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: AddedExample, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		case schema1.Example != nil && schema2.Example == nil:
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: DeletedExample, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		default:
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedExample, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		}
+	}
+
+	if isArray(schema1) {
+		if isArray(schema2) {
+			sd.compareSimpleSchema(location, &schema1.Items.SimpleSchema, &schema2.Items.SimpleSchema)
+		} else {
+			sd.addDiffs(location, addTypeDiff([]TypeDiff{}, TypeDiff{Change: ChangedType, FromType: getSchemaTypeStr(schema1), ToType: getSchemaTypeStr(schema2)}))
+		}
 	}
 }
 

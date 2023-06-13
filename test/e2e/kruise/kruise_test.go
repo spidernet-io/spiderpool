@@ -166,7 +166,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			constant.AnnoSpiderSubnet: string(subnetAnnoMarshal),
 			/*
 				Notice
-					You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet feature.
+					You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet ipam.
 					Here's an example ipam.spidernet.io/ippool-ip-number: "5".
 			*/
 			constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
@@ -277,7 +277,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 				constant.AnnoSpiderSubnet:              string(subnetAnnoMarshal),
 				/*
 					Notice
-						You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet feature.
+						You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet ipam.
 						Here's an example ipam.spidernet.io/ippool-ip-number: "5".
 				*/
 				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,

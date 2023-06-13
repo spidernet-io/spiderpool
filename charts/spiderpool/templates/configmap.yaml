@@ -15,12 +15,12 @@ metadata:
 data:
   conf.yml: |
     ipamUnixSocketPath: {{ .Values.global.ipamUNIXSocketHostPath }}
-    networkMode: {{ .Values.feature.networkMode }}
-    enableIPv4: {{ .Values.feature.enableIPv4 }}
-    enableIPv6: {{ .Values.feature.enableIPv6 }}
-    enableStatefulSet: {{ .Values.feature.enableStatefulSet }}
-    enableSpiderSubnet: {{ .Values.feature.enableSpiderSubnet }}
-    {{- if .Values.feature.enableSpiderSubnet }}
+    networkMode: {{ .Values.ipam.networkMode }}
+    enableIPv4: {{ .Values.ipam.enableIPv4 }}
+    enableIPv6: {{ .Values.ipam.enableIPv6 }}
+    enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
+    enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
+    {{- if .Values.ipam.enableSpiderSubnet }}
     clusterSubnetDefaultFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetDefaultFlexibleIPNumber }}
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0

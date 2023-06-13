@@ -126,7 +126,7 @@ spiderpoolAgent:
   name: "spiderpool-agent"
 
   ## @param spiderpoolAgent.binName the binName name of spiderpoolAgent
-  binName: "spiderpool-agent"
+  binName: "/usr/bin/spiderpool-agent"
 
   image:
     ## @param spiderpoolAgent.image.registry the image registry of spiderpoolAgent
@@ -337,7 +337,7 @@ spiderpoolController:
   replicas: 1
 
   ## @param spiderpoolController.binName the binName name of spiderpoolController
-  binName: "spiderpool-controller"
+  binName: "/usr/bin/spiderpool-controller"
 
   ## @param spiderpoolController.hostnetwork enable hostnetwork mode of spiderpoolController pod. Notice, if no CNI available before spiderpool installation, must enable this
   hostnetwork: true

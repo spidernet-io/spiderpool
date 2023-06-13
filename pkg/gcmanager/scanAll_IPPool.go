@@ -29,8 +29,10 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 	timer := time.NewTimer(time.Duration(s.gcConfig.DefaultGCIntervalDuration) * time.Second)
 	defer timer.Stop()
 
-	logger.Debug("initial scan all for cluster firstly")
-	s.gcSignal <- struct{}{}
+	go func() {
+		logger.Debug("initial scan all for cluster firstly")
+		s.gcSignal <- struct{}{}
+	}()
 
 	for {
 		select {

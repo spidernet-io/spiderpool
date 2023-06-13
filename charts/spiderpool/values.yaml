@@ -621,7 +621,7 @@ spiderpoolInit:
   name: "spiderpool-init"
 
   ## @param spiderpoolInit.binName the binName name of spiderpoolInit
-  binName: "spiderpool-init"
+  binName: "/usr/bin/spiderpool-init"
 
   ## @param spiderpoolInit.hostnetwork enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this
   hostnetwork: true

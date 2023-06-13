@@ -118,7 +118,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 		return nil
 	}
 
-	logger.Sugar().Infof("Release IP allocation details: %+v", allocation.IPs)
+	logger.Sugar().Infof("Release IP allocation details: %v", allocation.IPs)
 	if err := i.release(ctx, allocation.UID, allocation.IPs); err != nil {
 		return err
 	}

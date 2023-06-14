@@ -1,80 +1,71 @@
 # SpiderEndpoint
 
-A SpiderEndpoint resource represents IP address allocation details for a specific endpoint object.
+A SpiderEndpoint resource represents IP address allocation details for the corresponding pod. This resource one to one pod, and it will inherit the pod name and pod namespace.
 
-## CRD definition
+## Sample YAML
 
-The SpiderEndpoint custom resource is modeled after a standard Kubernetes resource
-and is split into the `status` section:
-
-```text
-type SpiderEndpoint struct {
-    [...]
-
-    // Status is the status of the SpiderEndpoint
-    Status WorkloadEndpointStatus `json:"status,omitempty"`
-}
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderEndpoint
+metadata:
+  name: test-app-1-9dc78fb9-rs99d
+status:
+  current:
+    ips:
+    - cleanGateway: false
+      interface: eth0
+      ipv4: 172.31.199.193/20
+      ipv4Gateway: 172.31.207.253
+      ipv4Pool: worker-172
+      vlan: 0
+    node: dc-test02
+    uid: e7b50a38-25c2-41d0-b332-7f619c69194e
+  ownerControllerName: test-app-1
+  ownerControllerType: Deployment
 ```
 
-### SpiderEndpoint status
+## SpiderEndpoint definition
 
-The `status` section contains some fields to describe details about the current Endpoint allocation.
+### Metadata
 
-```text
-// WorkloadEndpointStatus defines the observed state of SpiderEndpoint
-type WorkloadEndpointStatus struct {
-    // the endpoint current allocation details
-    Current *PodIPAllocation `json:"current,omitempty"`
+| Field     | Description                                   | Schema | Validation |
+|-----------|-----------------------------------------------|--------|------------|
+| name      | the name of this SpiderEndpoint resource      | string | required   |
+| namespace | the namespace of this SpiderEndpoint resource | string | required   |
 
-    // the endpoint history allocation details
-    History []PodIPAllocation `json:"history,omitempty"`
+### Status (subresource)
 
-    // kubernetes controller owner reference
-    OwnerControllerType string `json:"ownerControllerType"`
-}
+The IPPool status is a subresource that processed automatically by the system to summarize the current state.
 
-type PodIPAllocation struct {
-    // container ID
-    ContainerID string `json:"containerID"`
+| Field               | Description                                        | Schema                                                 | Validation |
+|---------------------|----------------------------------------------------|--------------------------------------------------------|------------|
+| current             | the IP allocation details of the corresponding pod | [PodIPAllocation](./spiderendpoint.md#PodIPAllocation) | required   |
+| ownerControllerType | the corresponding pod top owner controller type    | string                                                 | required   |
+| ownerControllerName | the corresponding pod top owner controller name    | string                                                 | required   |
 
-    // node name
-    Node *string `json:"node,omitempty"`
+#### PodIPAllocation
 
-    // allocated IPs
-    IPs []IPAllocationDetail `json:"ips,omitempty"`
+This property describes the SpiderEndpoint corresponding pod details.
 
-    // created time
-    CreationTime *metav1.Time `json:"creationTime,omitempty"`
-}
+| Field | Description                         | Schema                                                               | Validation |
+|-------|-------------------------------------|----------------------------------------------------------------------|------------|
+| uid   | corresponding pod uid               | string                                                               | required   |
+| node  | total IP counts of this pool to use | string                                                               | required   |
+| ips   | current allocated IP counts         | list of [IPAllocationDetail](./spiderendpoint.md#IPAllocationDetail) | required   |
 
-type IPAllocationDetail struct {
-    // interface name
-    NIC string `json:"interface"`
+#### IPAllocationDetail
 
-    // IPv4 address
-    IPv4 *string `json:"ipv4,omitempty"`
+This property describes single Interface allocation details.
 
-    // IPv6 address
-    IPv6 *string `json:"ipv6,omitempty"`
-
-    // IPv4 SpiderIPPool name
-    IPv4Pool *string `json:"ipv4Pool,omitempty"`
-
-    // IPv6 SpiderIPPool name
-    IPv6Pool *string `json:"ipv6Pool,omitempty"`
-
-    // vlan ID
-    Vlan *int64 `json:"vlan,omitempty"`
-
-    // IPv4 gateway
-    IPv4Gateway *string `json:"ipv4Gateway,omitempty"`
-
-    // IPv6 gateway
-    IPv6Gateway *string `json:"ipv6Gateway,omitempty"`
-
-    CleanGateway *bool `json:"cleanGateway,omitempty"`
-
-    // route
-    Routes []Route `json:"routes,omitempty"`
-}
-```
+| Field        | Description                                                | Schema                                   | Validation | Default |
+|--------------|------------------------------------------------------------|------------------------------------------|------------|---------|
+| interface    | single interface name                                      | string                                   | required   |         |
+| ipv4         | single IPv4 allocated IP address                           | string                                   | optional   |         |
+| ipv6         | single IPv6 allocated IP address                           | string                                   | optional   |         |
+| ipv4Pool     | the IPv4 allocated IP address corresponding pool           | string                                   | optional   |         |
+| ipv6Pool     | the IPv6 allocated IP address corresponding pool           | string                                   | optional   |         |
+| vlan         | vlan ID                                                    | int                                      | optional   | 0       |
+| ipv4Gateway  | the IPv4 gateway IP address                                | string                                   | optional   |         |
+| ipv6Gateway  | the IPv6 gateway IP address                                | string                                   | optional   |         |
+| cleanGateway | a flag to choose whether need default route by the gateway | boolean                                  | optional   |         |
+| routes       | the allocation routes                                      | list if [Route](./spiderippool.md#Route) | optional   |         |

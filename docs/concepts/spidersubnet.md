@@ -2,80 +2,53 @@
 
 A SpiderSubnet resource represents a collection of IP addresses from which Spiderpool expects SpiderIPPool IPs to be assigned.
 
-## CRD definition
+For details on using this CRD, please read the [SpiderSubnet guide](./../usage/spider-subnet.md).
 
-The SpiderSubnet custom resource is modeled after a standard Kubernetes resource
-and is split into a `spec` and a `status` section:
+## Sample YAML
 
-```text
-type SpiderSubnet struct {
-    [...]
-
-    // Spec is the specification of the Subnet
-    Spec   SubnetSpec   `json:"spec,omitempty"`
-
-    // Status is the status of the SpiderSubnet
-    Status SubnetStatus `json:"status,omitempty"`
-}
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: default-v4-subnet
+spec:
+  ipVersion: 4
+  ips:
+    - 172.22.40.2-172.22.40.254
+  subnet: 172.22.0.0/16
+  excludeIPs:
+    - 172.22.40.10-172.22.40.20
+  gateway: 172.22.40.1
 ```
 
-### Subnet spec
+## SpiderSubnet definition
 
-The `spec` section embeds a specific Subnet field which allows to define the list of all IPs, ExcludeIPs, Routes,
-and some other data to the Subnet object for allocation:
+### Metadata
 
-```text
-// SubnetSpec defines the desired state of SpiderSubnet
-type SubnetSpec struct {
-    // specify the SpiderSubnet's IP version
-    IPVersion *int64 `json:"ipVersion,omitempty"`
+| Field | Description                            | Schema | Validation |
+|-------|----------------------------------------|--------|------------|
+| name  | the name of this SpiderSubnet resource | string | required   |
 
-    // specify the SpiderSubnet's subnet
-    Subnet string `json:"subnet"`
+### Spec
 
-    // specify the SpiderSubnet's IP ranges
-    IPs []string `json:"ips"`
+This is the SpiderSubnet spec for users to configure.
 
-    // specify the exclude IPs for the SpiderSubnet
-    ExcludeIPs []string `json:"excludeIPs,omitempty"`
+| Field             | Description                                    | Schema                                   | Validation | Values                                   | Default |
+|-------------------|------------------------------------------------|------------------------------------------|------------|------------------------------------------|---------|
+| ipVersion         | IP version of this subnet                      | int                                      | optional   | 4,6                                      |         |
+| subnet            | subnet of this resource                        | string                                   | required   | IPv4 or IPv6 CIDR.<br/>Must not overlap  |         |
+| ips               | IP ranges for this resource to use             | list of strings                          | optional   | array of IP ranges and single IP address |         |
+| excludeIPs        | isolated IP ranges for this resource to filter | list of strings                          | optional   | array of IP ranges and single IP address |         |
+| gateway           | gateway for this resource                      | string                                   | optional   | an IP address                            |         |
+| vlan              | vlan ID                                        | int                                      | optional   | [0,4095]                                 | 0       |
+| routes            | custom routes in this resource                 | list of [Route](./spiderippool.md#Route) | optional   |                                          |         |
 
-    // specify the gateway
-    Gateway *string `json:"gateway,omitempty"`
+### Status (subresource)
 
-    // specify the vlan
-    Vlan *int64 `json:"vlan,omitempty"`
+The Subnet status is a subresource that processed automatically by the system to summarize the current state.
 
-    //specify the routes
-    Routes []Route `json:"routes,omitempty"`
-}
-```
-
-### Subnet status
-
-The `status` section contains some fields to describe details about the current IPPool allocation.
-The IPPool status reports all used addresses.
-
-```text
-// SubnetStatus defines the observed state of SpiderSubnet
-type SubnetStatus struct {
-    // the SpiderSubnet IPPool pre-allocations
-    ControlledIPPools PoolIPPreAllocations `json:"controlledIPPools,omitempty"`
-
-    // the SpiderSubnet total addresses counts
-    TotalIPCount *int64 `json:"totalIPCount,omitempty"`
-
-    // the SpiderSubnet allocated addresses counts
-    AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
-}
-```
-
-```text
-// PoolIPPreAllocations is a map of pool IP pre-allocation details indexed by pool name.
-type PoolIPPreAllocations map[string]PoolIPPreAllocation
-
-type PoolIPPreAllocation struct {
-    // specify the SpiderSubnet's IPPool allocation IP ranges
-    IPs []string `json:"ips"`
-}
-```
-
+| Field             | Description                                              | Schema |
+|-------------------|----------------------------------------------------------|--------|
+| controlledIPPools | current IP allocations in this subnet resource           | string |
+| totalIPCount      | total IP addresses counts of this subnet resource to use | int    |
+| allocatedIPCount  | current allocated IP addresses counts                    | int    |

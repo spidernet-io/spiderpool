@@ -59,6 +59,8 @@ nav:
       - Reclaim IP: usage/gc.md
       - Route support: usage/route.md
       - Spiderpool Performance Testing: usage/performance.md
+      - IP Allocation Across Networks: usage/ip-allocation-across-networks.md
+      - Multi Nic Fixed IP: usage/multi-nic-fixed-ip.md
       - FAQ: usage/debug.md
   - Concepts:
       - Annotations: concepts/annotation.md

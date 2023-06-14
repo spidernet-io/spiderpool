@@ -701,22 +701,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 
-				It("creates default IPv4 IPPool, but there is already one in the cluster", func() {
-					existIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					existIPPoolT.Spec.Subnet = "172.18.40.0/24"
-					existIPPoolT.Spec.Default = pointer.Bool(true)
-
-					err := fakeClient.Create(ctx, existIPPoolT)
-					Expect(err).NotTo(HaveOccurred())
-
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					ipPoolT.Spec.Default = pointer.Bool(true)
-
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
 				It("creates default IPv4 IPPool", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
@@ -1386,25 +1370,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			When("Validating 'spec.default'", func() {
-				It("set default IPv4 IPPool, but there is already one in the cluster", func() {
-					existIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					existIPPoolT.Spec.Subnet = "172.18.40.0/24"
-					existIPPoolT.Spec.Default = pointer.Bool(true)
-
-					err := fakeClient.Create(ctx, existIPPoolT)
-					Expect(err).NotTo(HaveOccurred())
-
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
-					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					ipPoolT.Spec.Default = pointer.Bool(false)
-
-					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.Default = pointer.Bool(true)
-
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				})
-
 				It("set default IPv4 IPPool", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"

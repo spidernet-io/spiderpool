@@ -356,6 +356,9 @@ EOF
 }
 
 Install::MultusCR
-Install::SpiderpoolCR
+
+if [ ${E2E_SPIDERPOOL_ENABLE_SUBNET} == "true" ]; then
+  Install::SpiderpoolCR
+fi
 
 echo "$CURRENT_FILENAME : done"

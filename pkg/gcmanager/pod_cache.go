@@ -128,6 +128,11 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return nil, fmt.Errorf("currentPod must be specified")
 	}
 
+	if currentPod.Spec.HostNetwork {
+		logger.Sugar().Debugf("discard tracing HostNetwork pod %s/%s", currentPod.Namespace, currentPod.Name)
+		return nil, nil
+	}
+
 	// TODO(Icarus9913): Replace with method GetPodTopController.
 	ownerRef := metav1.GetControllerOf(currentPod)
 

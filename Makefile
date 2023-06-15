@@ -134,7 +134,7 @@ lint-openapi:
 lint-code-spell:
 	$(QUIET) if ! which codespell &> /dev/null ; then \
   				echo "try to install codespell" ; \
-  				if ! pip3 install codespell ; then \
+  				if ! pip3 install codespell==2.2.1 ; then \
   					echo "error, miss tool codespell, install it: pip3 install codespell" ; \
   					exit 1 ; \
   				fi \

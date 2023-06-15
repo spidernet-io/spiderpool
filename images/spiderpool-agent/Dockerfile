@@ -35,6 +35,12 @@ RUN make GOARCH=${TARGETARCH}   \
         DESTDIR_BIN=/tmp/install/${TARGETOS}/${TARGETARCH}/bin \
         all install
 
+WORKDIR /src/cmd/ifacer
+RUN make GOARCH=${TARGETARCH}   \
+        NOSTRIP=${NOSTRIP} NOOPT=${NOOPT} QUIET_MAKE=${QUIET_MAKE} \
+        DESTDIR_BIN=/tmp/install/${TARGETOS}/${TARGETARCH}/bin \
+        all install
+
 #====== release image =======
 
 FROM ${BASE_IMAGE}

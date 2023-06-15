@@ -3,7 +3,7 @@
 
 include ../../Makefile.defs
 
-TARGET := coordinator
+TARGET := ifacer
 
 GO_BUILD_LDFLGAS= -ldflags "-X github.com/spidernet-io/spiderpool/internal/version.coordinatorGitCommit=$(GIT_COMMIT_VERSION) \
 -X github.com/spidernet-io/spiderpool/internal/version.coordinatorGitBranch=$(GIT_BRANCH) \
@@ -18,7 +18,7 @@ all: $(TARGET)
 
 $(TARGET): ../../Makefile ../../Makefile.defs Makefile
 	@$(ECHO_GO)
-	$(QUIET)$(GO_BUILD_FLAG) $(GO_BUILD_LDFLGAS) -o $(TARGET)
+	$(QUIET) $(GO_BUILD_FLAG) $(GO_BUILD_LDFLGAS) -o $(TARGET)
 
 clean:
 	@$(ECHO_CLEAN)

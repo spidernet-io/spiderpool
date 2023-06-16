@@ -218,8 +218,8 @@ podDisruptionBudget
 ExcludeIPs
 e.g.
 spiderpoolInit
-feature.enableIPv4
-feature.enableIPv6
+ipam.enableIPv4
+ipam.enableIPv6
 Opentelemetry
 ipam_allocation_total_counts
 ipam_allocation_failure_counts

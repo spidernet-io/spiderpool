@@ -6,7 +6,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"net"
 	"os"
 	"path/filepath"
@@ -14,12 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
 	"github.com/go-openapi/strfmt"
+	"k8s.io/utils/pointer"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 var (

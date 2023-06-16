@@ -25,7 +25,7 @@ var (
 
 	// SelfishThresholdSec is the number of seconds that should be used when
 	// detecting if a lock was held for more than the specified time.
-	SelfishThresholdSec = 0.2
+	SelfishThresholdSec = 0.5
 
 	// Waiting for a lock for longer than DeadlockTimeout is considered a deadlock.
 	// Ignored is DeadlockTimeout <= 0.

@@ -37,7 +37,7 @@ Check configmap `spiderpool-conf` property `enableSpiderSubnet` whether is alrea
 kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
-If you want to set it `true`, just execute `helm upgrade spiderpool spiderpool/spiderpool --set feature.enableSpiderSubnet=true -n kube-system`.
+If you want to set it `true`, just execute `helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableSpiderSubnet=true -n kube-system`.
 
 ### Create a SpiderSubnet
 

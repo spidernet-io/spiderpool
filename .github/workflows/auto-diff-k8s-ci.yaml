@@ -24,10 +24,10 @@ on:
         description: 'run e2e test'
         required: false
         type: choice
-        default: false
+        default: "false"
         options:
-          - true
-          - false
+          - "true"
+          - "false"
 
 jobs:
   get_ref:
@@ -255,7 +255,7 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/ci-bug"
-          assignees: "iiiceoo,Icarus9913"
+          assignees: "Icarus9913,ty-dc"
 
   call_inputs_k8s:
     # workflow_dispatch event flow triggered by running the input k8s version

@@ -26,11 +26,15 @@ import (
 func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 	logger.Debug("start to monitor gc signal for CLI or default GC interval")
 
-	timer := time.NewTimer(time.Duration(s.gcConfig.DefaultGCIntervalDuration) * time.Second)
+	d := time.Duration(s.gcConfig.DefaultGCIntervalDuration) * time.Second
+	logger.Sugar().Debugf("default IP GC interval duration is %v", d)
+	timer := time.NewTimer(d)
 	defer timer.Stop()
 
-	logger.Debug("initial scan all for cluster firstly")
-	s.gcSignal <- struct{}{}
+	go func() {
+		logger.Debug("initial scan all for cluster firstly")
+		s.gcSignal <- struct{}{}
+	}()
 
 	for {
 		select {
@@ -61,7 +65,7 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 			}
 
 		case <-ctx.Done():
-			logger.Info("receive ctx done, stop monitoring gc signal!")
+			logger.Warn("receive ctx done, stop monitoring gc signal!")
 			return
 		}
 

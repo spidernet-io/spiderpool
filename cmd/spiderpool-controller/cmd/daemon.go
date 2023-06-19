@@ -175,6 +175,7 @@ func DaemonMain() {
 	initGCManager(controllerContext.InnerCtx)
 
 	logger.Info("Set spiderpool-controller Startup probe ready")
+	controllerContext.webhookClient = newWebhookHealthCheckClient()
 	controllerContext.IsStartupProbe.Store(true)
 
 	// The CRD webhook of Spiderpool must be started before informer, so that
@@ -483,8 +484,6 @@ func setupInformers() {
 }
 
 func checkWebhookReady() {
-	controllerContext.webhookClient = newWebhookHealthCheckClient()
-
 	for i := 1; i <= 100; i++ {
 		if i == 100 {
 			logger.Fatal("out of the max wait duration for webhook ready in process starting phase")

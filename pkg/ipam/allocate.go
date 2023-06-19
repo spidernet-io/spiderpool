@@ -501,21 +501,22 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 }
 
 func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {
-	for _, t := range tt {
-		var allIPPools []*spiderpoolv2beta1.SpiderIPPool
-		for _, c := range t.PoolCandidates {
-			allIPPools = append(allIPPools, c.PToIPPool.IPPools()...)
-		}
 
-		vlanToPools := map[types.Vlan][]string{}
-		for _, ipPool := range allIPPools {
-			vlanToPools[*ipPool.Spec.Vlan] = append(vlanToPools[*ipPool.Spec.Vlan], ipPool.Name)
-		}
-
-		if len(vlanToPools) > 1 {
-			return fmt.Errorf("%w, the VLANs of the IPPools corresponding to NIC %s are not all the same: %v", constant.ErrWrongInput, t.NIC, vlanToPools)
-		}
-	}
+	// for _, t := range tt {
+	// 	var allIPPools []*spiderpoolv2beta1.SpiderIPPool
+	// 	for _, c := range t.PoolCandidates {
+	// 		allIPPools = append(allIPPools, c.PToIPPool.IPPools()...)
+	// 	}
+	//
+	// 	vlanToPools := map[types.Vlan][]string{}
+	// 	for _, ipPool := range allIPPools {
+	// 		vlanToPools[*ipPool.Spec.Vlan] = append(vlanToPools[*ipPool.Spec.Vlan], ipPool.Name)
+	// 	}
+	//
+	// 	if len(vlanToPools) > 1 {
+	// 		return fmt.Errorf("%w, the VLANs of the IPPools corresponding to NIC %s are not all the same: %v", constant.ErrWrongInput, t.NIC, vlanToPools)
+	// 	}
+	// }
 
 	// TODO(iiiceoo): Different NICs should not use IP address pertaining to
 	// the same subnet.

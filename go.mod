@@ -16,8 +16,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/gops v0.3.27
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/onsi/ginkgo/v2 v2.9.2
-	github.com/onsi/gomega v1.27.6
+	github.com/onsi/ginkgo/v2 v2.11.0
+	github.com/onsi/gomega v1.27.8
 	github.com/pyroscope-io/client v0.6.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.7.0
@@ -60,7 +60,7 @@ require (
 	github.com/tigera/operator v1.29.4
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	go.uber.org/multierr v1.11.0
-	golang.org/x/sys v0.8.0
+	golang.org/x/sys v0.9.0
 )
 
 require (

@@ -20,6 +20,7 @@ import (
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -1800,5 +1801,101 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
 			}
 		})
+	})
+
+	It("Dirty data in the subnet should be recycled.", Label("I00022"), func() {
+		var (
+			subnetIpNum                    int = 5
+			dirtyPoolName                  string
+			v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
+		)
+
+		dirtyPoolName = "dirtyPool-" + tools.RandomName()
+		GinkgoWriter.Printf("generate dirty Pool name: %v \n", dirtyPoolName)
+
+		if frame.Info.IpV4Enabled {
+			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+			Expect(v4SubnetObject).NotTo(BeNil())
+			Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
+
+			preAllocations := spiderpool.PoolIPPreAllocations{
+				dirtyPoolName: spiderpool.PoolIPPreAllocation{
+					IPs: v4SubnetObject.Spec.IPs,
+				},
+			}
+			MarshalPreAllocations, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update dirty data to IPv4 subnet.Status.ControlledIPPools
+			Eventually(func() bool {
+				v4SubnetObject, err = common.GetSubnetByName(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				v4SubnetObject.Status.AllocatedIPCount = pointer.Int64(1)
+				v4SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
+				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v4SubnetName, *v4SubnetObject)
+				if err = frame.UpdateResourceStatus(v4SubnetObject); err != nil {
+					GinkgoWriter.Printf("failed to update v4 subnet status,error is: %v \n", err)
+					return false
+				}
+				return true
+			}, common.PodReStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// After triggering recycling, dirty data should not exist.
+			Eventually(func() bool {
+				newV4SubnetObject, err := common.GetSubnetByName(frame, v4SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				if *newV4SubnetObject.Status.AllocatedIPCount != int64(0) {
+					GinkgoWriter.Printf("AllocatedIPCount have not been recycledt: %v", *newV4SubnetObject.Status.AllocatedIPCount)
+					return false
+				}
+				if newV4SubnetObject.Status.ControlledIPPools != nil {
+					GinkgoWriter.Printf("ControlledIPPools have not been recycled: %v", *newV4SubnetObject.Status.ControlledIPPools)
+					return false
+				}
+				return true
+			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		}
+		if frame.Info.IpV6Enabled {
+			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+			Expect(v6SubnetObject).NotTo(BeNil())
+			Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			preAllocations := spiderpool.PoolIPPreAllocations{
+				dirtyPoolName: spiderpool.PoolIPPreAllocation{
+					IPs: v6SubnetObject.Spec.IPs,
+				},
+			}
+
+			MarshalPreAllocations, err := convert.MarshalSubnetAllocatedIPPools(preAllocations)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Update dirty data to IPv6 subnet.Status.ControlledIPPools
+			Eventually(func() bool {
+				v6SubnetObject, err = common.GetSubnetByName(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				v6SubnetObject.Status.AllocatedIPCount = pointer.Int64(1)
+				v6SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
+				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v6SubnetName, *v6SubnetObject)
+				if err = frame.UpdateResourceStatus(v6SubnetObject); err != nil {
+					GinkgoWriter.Printf("failed to update v6 subnet status,error is: %v", err)
+					return false
+				}
+				return true
+			}, common.PodReStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// After triggering recycling, dirty data should not exist.
+			Eventually(func() bool {
+				newV6SubnetObject, err := common.GetSubnetByName(frame, v6SubnetName)
+				Expect(err).NotTo(HaveOccurred())
+				if *newV6SubnetObject.Status.AllocatedIPCount != int64(0) {
+					GinkgoWriter.Printf("AllocatedIPCount have not been recycledt: %v", *newV6SubnetObject.Status.AllocatedIPCount)
+					return false
+				}
+				if newV6SubnetObject.Status.ControlledIPPools != nil {
+					GinkgoWriter.Printf("ControlledIPPools have not been recycled: %v", *newV6SubnetObject.Status.ControlledIPPools)
+					return false
+				}
+				return true
+			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		}
 	})
 })

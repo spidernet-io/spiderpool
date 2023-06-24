@@ -5,6 +5,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/containernetworking/cni/pkg/types"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"os"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
@@ -21,12 +24,22 @@ import (
 )
 
 func CmdDel(args *skel.CmdArgs) (err error) {
+	k8sArgs := plugincmd.K8sArgs{}
+	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
+		return fmt.Errorf("failed to load CNI ENV args: %w", err)
+	}
+
 	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.Daemonset.GetCoordinatorConfig(daemonset.NewGetCoordinatorConfigParams())
+	resp, err := client.Daemonset.GetCoordinatorConfig(daemonset.NewGetCoordinatorConfigParams().WithGetCoordinatorConfig(
+		&models.GetCoordinatorArgs{
+			PodName:      string(k8sArgs.K8S_POD_NAME),
+			PodNamespace: string(k8sArgs.K8S_POD_NAMESPACE),
+		},
+	))
 	if err != nil {
 		return fmt.Errorf("failed to GetCoordinatorConfig: %v", err)
 	}
@@ -71,6 +84,25 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return err
 	}
 	defer c.netns.Close()
+
+	if conf.TuneMode == ModeUnderlay {
+		hostVeth := getHostVethName(args.ContainerID)
+		vethLink, err := netlink.LinkByName(hostVeth)
+		if err != nil {
+			if _, ok := err.(*netlink.LinkNotFoundError); ok {
+				logger.Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
+			} else {
+				return fmt.Errorf("failed to get host veth device %s: %w", hostVeth, err)
+			}
+		}
+
+		if err = netlink.LinkDel(vethLink); err != nil {
+			logger.Error("failed to del hostVeth", zap.Error(err))
+			return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)
+		} else {
+			logger.Error("success to del hostVeth", zap.String("HostVeth", hostVeth))
+		}
+	}
 
 	err = c.netns.Do(func(netNS ns.NetNS) error {
 		c.currentAddress, err = networking.GetAddersByName(args.IfName, netlink.FAMILY_ALL)

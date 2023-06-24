@@ -42,11 +42,13 @@ func Execute() {
 				Name: config.CoordinatorName,
 			},
 			Spec: spiderpoolv2beta1.CoordinatorSpec{
-				TuneMode:         &config.CoordinatorTuneMode,
-				PodCIDRType:      config.CoordinatorPodCIDRType,
-				TunePodRoutes:    &config.CoordinatorTunePodRoutes,
-				DetectIPConflict: &config.CoordinatorDetectIPConflict,
-				DetectGateway:    &config.CoordinatorDetectGateway,
+				TuneMode:           &config.CoordinatorTuneMode,
+				PodCIDRType:        config.CoordinatorPodCIDRType,
+				TunePodRoutes:      &config.CoordinatorTunePodRoutes,
+				DetectIPConflict:   &config.CoordinatorDetectIPConflict,
+				DetectGateway:      &config.CoordinatorDetectGateway,
+				PodDefaultRouteNIC: &config.CoordinatorPodDefaultRouteNic,
+				PodMACPrefix:       &config.CoordinatorPodMACPrefix,
 			},
 		}
 		if err := client.WaitForCoordinatorCreated(ctx, coord); err != nil {

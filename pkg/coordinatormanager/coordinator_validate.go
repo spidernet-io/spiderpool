@@ -97,6 +97,10 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 		return nil
 	}
 
+	if *prefix == "" {
+		return nil
+	}
+
 	errInvalid := field.Invalid(podMACPrefixField, *prefix, "not a valid MAC prefix")
 	parts := strings.Split(*prefix, ":")
 	if len(parts) != 2 {

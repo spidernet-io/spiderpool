@@ -90,6 +90,9 @@ const (
 	MultusConfAnnoPre          = "multus.spidernet.io"
 	AnnoNetAttachConfName      = MultusConfAnnoPre + "/cr-name"
 	AnnoMultusConfigCNIVersion = MultusConfAnnoPre + "/cni-version"
+
+	// Coordinator
+	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 )
 
 const (

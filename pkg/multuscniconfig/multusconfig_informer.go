@@ -572,9 +572,7 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 			coordinatorNetConf.RPFilter = int32(*coordinatorSpec.HostRPFilter)
 		}
 		if coordinatorSpec.DetectIPConflict != nil {
-			coordinatorNetConf.IPConflict = &coordinatorcmd.IPConflict{
-				Enabled: true,
-			}
+			coordinatorNetConf.IPConflict = coordinatorSpec.DetectIPConflict
 		}
 		if coordinatorSpec.DetectGateway != nil {
 			coordinatorNetConf.DetectGateway = coordinatorSpec.DetectGateway

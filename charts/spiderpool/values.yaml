@@ -85,7 +85,7 @@ coordinator:
   enabled: true
 
   ## @param coordinator.name the name of the default SpiderCoordinator CR
-  name: "default-coordinator"
+  name: "default"
 
   ## @param coordinator.tuneMode optional network mode, ["underlay", "overlay", "disabled"]
   tuneMode: "underlay"

@@ -17,6 +17,8 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // NewGetCoordinatorConfigParams creates a new GetCoordinatorConfigParams object,
@@ -63,6 +65,10 @@ GetCoordinatorConfigParams contains all the parameters to send to the API endpoi
 	Typically these are written to a http.Request.
 */
 type GetCoordinatorConfigParams struct {
+
+	// GetCoordinatorConfig.
+	GetCoordinatorConfig *models.GetCoordinatorArgs
+
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -116,6 +122,17 @@ func (o *GetCoordinatorConfigParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithGetCoordinatorConfig adds the getCoordinatorConfig to the get coordinator config params
+func (o *GetCoordinatorConfigParams) WithGetCoordinatorConfig(getCoordinatorConfig *models.GetCoordinatorArgs) *GetCoordinatorConfigParams {
+	o.SetGetCoordinatorConfig(getCoordinatorConfig)
+	return o
+}
+
+// SetGetCoordinatorConfig adds the getCoordinatorConfig to the get coordinator config params
+func (o *GetCoordinatorConfigParams) SetGetCoordinatorConfig(getCoordinatorConfig *models.GetCoordinatorArgs) {
+	o.GetCoordinatorConfig = getCoordinatorConfig
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *GetCoordinatorConfigParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -123,6 +140,11 @@ func (o *GetCoordinatorConfigParams) WriteToRequest(r runtime.ClientRequest, reg
 		return err
 	}
 	var res []error
+	if o.GetCoordinatorConfig != nil {
+		if err := r.SetBodyParam(o.GetCoordinatorConfig); err != nil {
+			return err
+		}
+	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

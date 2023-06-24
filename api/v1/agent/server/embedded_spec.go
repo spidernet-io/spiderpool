@@ -42,6 +42,16 @@ func init() {
           "daemonset"
         ],
         "summary": "Get coordinator config",
+        "parameters": [
+          {
+            "name": "get-coordinator-config",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetCoordinatorArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -333,6 +343,18 @@ func init() {
     "Error": {
       "description": "API error",
       "type": "string"
+    },
+    "GetCoordinatorArgs": {
+      "description": "Get Coordinator Args",
+      "type": "object",
+      "properties": {
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        }
+      }
     },
     "IpConfig": {
       "description": "IPAM IPs struct, contains ifName, Address and Gateway",
@@ -517,6 +539,16 @@ func init() {
           "daemonset"
         ],
         "summary": "Get coordinator config",
+        "parameters": [
+          {
+            "name": "get-coordinator-config",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetCoordinatorArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -808,6 +840,18 @@ func init() {
     "Error": {
       "description": "API error",
       "type": "string"
+    },
+    "GetCoordinatorArgs": {
+      "description": "Get Coordinator Args",
+      "type": "object",
+      "properties": {
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        }
+      }
     },
     "IpConfig": {
       "description": "IPAM IPs struct, contains ifName, Address and Gateway",

@@ -238,7 +238,7 @@ setup_spiderpool:
 			--set spiderpoolInit.image.registry="" \
 			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolInit.image.tag=$(TEST_IMAGE_TAG) \
-			--kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+			--kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"  $(RELEASE_NAMESPACE) ; exit 1 ; } ; \
 		exit 0
 
 
@@ -315,7 +315,7 @@ e2e_test:
 		export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_VLAN100)" ; \
 		rm -f $(E2E_LOG_FILE) || true ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
-		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" $(RELEASE_NAMESPACE) ; \
 		RESULT=0 ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none --poll-progress-after=120s --poll-progress-interval=30s \
@@ -323,9 +323,9 @@ e2e_test:
 			--label-filter="$(E2E_GINKGO_LABELS)" -randomize-suites -randomize-all  -vv --fail-fast  $(GINKGO_OPTION) \
 			-r e2e/*  || RESULT=1  ; \
 		echo "=========== after test `date` ===========" >> $(E2E_LOG_FILE) ; \
-		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \
-		KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; \
-		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "error" "$(E2E_LOG_FILE)" || { echo "error, found error log !!!" ; RESULT=1 ; } ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" $(RELEASE_NAMESPACE); \
+		KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" $(RELEASE_NAMESPACE) ; \
+		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "error" "$(E2E_LOG_FILE)" $(RELEASE_NAMESPACE) || { echo "error, found error log !!!" ; RESULT=1 ; } ; \
 		if (($${RESULT} != 0)) ; then \
 		   echo "failed to run e2e test"  ; \
 		   exit 1 ; \

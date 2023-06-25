@@ -11,12 +11,12 @@ E2E_KUBECONFIG="$1"
 # gops or detail
 TYPE="$2"
 E2E_FILE_NAME="$3"
+NAMESPACE="$4"
 
 [ -z "$E2E_KUBECONFIG" ] && echo "error, miss E2E_KUBECONFIG " && exit 1
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
-NAMESPACE="kube-system"
 COMPONENT_GOROUTINE_MAX=300
 COMPONENT_PS_PROCESS_MAX=50
 

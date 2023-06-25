@@ -20,20 +20,11 @@ Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mo
 
 ## Introduction
 
-Spiderpool is an underlay network solution for Kubernetes that seamlessly integrates existing open-source CNI projects through two lightweight plugins. It streamlines underlay IPAM operations, allowing multiple CNIs to collaborate effectively.
+Spiderpool is a Kubernetes underlay network solution . It provides rich IPAM features and CNI integration capabilities, powering CNI projects in the open source community, allowing multiple CNIs to collaborate effectively. It enables underlay CNI to run perfectly in environments such as bare metal, virtual machines, and any public cloud.
 
-* Spiderpool: an IPAM plugin, is designed to meet the requirements of the underlay network's IP address management and can allocate underlay IP addresses for various open-source CNI projects.
+Why developing Spiderpool? Currently, the open source community does not provide comprehensive, friendly, and intelligent underlay network solutions, so Spiderpool aims to provide many innovative features:
 
-* metal plugins: provides supporting capabilities such as multi-network card route coordination, IP conflict detection, host connectivity, vlan interface creation.
-
-* multus operator: Simplify creation of multus CR instances with best-practice CNI composition
-
-Why Spiderpool? There has not yet been a comprehensive, user-friendly and intelligent open source solution for the complicated requirements of underlay networks' IPAMs.
-Therefore, Spiderpool provides many innovative features:
-
-* Shared and dedicated IP pools with support for fixed IP address allocation to meet the firewall's security management needs.
-
-* Automated management of dedicated IP pools with dynamic creation, scaling, and recovery of fixed IP addresses based on application orchestration events monitoring, resulting in zero maintenance operations.
+* Rich IPAM feature. Shared and dedicated IP pools, assigning fixed IP address, automated management of dedicated IP pools with dynamic creation, scaling, and recovery of fixed IP addresses based on application update events, resulting in zero maintenance operations.
 
 * IP allocation across multiple NICs and route coordination between NICs to ensure consistent request and reply data paths, enabling smooth communication.
 
@@ -41,7 +32,9 @@ Therefore, Spiderpool provides many innovative features:
 
 * Enhanced Pod and host connectivity, ensuring successful communication for clusterIP access, local health check, IP conflict detection, and gateway accessibility detection, which makes Macvlan, SR-IOV, and other projects more useful.
 
-## Comparison of underlay and overlay networks in the cloud-native world
+* Not only limited to bare metal environments in data centers, but also providing a unified underlay CNI solution for openstack, vmware, and various public cloud scenarios.
+
+## underlay CNI
 
 There are two technologies in cloud-native networking: "overlay network" and "underlay network".
 Despite no strict definition for underlay and overlay networks in cloud-native networking, we can simply abstract their characteristics from many CNI projects. The two technologies meet the needs of different scenarios.
@@ -72,6 +65,8 @@ Spiderpool consists of the following components:
 
 * coordinator plugin: a binary plugin on each host that CNI can use for multi-NIC route coordination, IP conflict detection, and host connectivity.
 
+* ifacer plugin: A binary plugin on each host that helps CNIs such as macvlan and ipvlan dynamically create bond and vlan interfaces
+
 On top of its own components, Spiderpool relies on open-source underlay CNIs to allocate network interfaces to Pods. You can use [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) to manage multiple NICs and CNI configurations.
 
 Any CNI project compatible with third-party IPAM plugins can work well with Spiderpool, such as:
@@ -85,7 +80,7 @@ Any CNI project compatible with third-party IPAM plugins can work well with Spid
 [Calico CNI](https://github.com/projectcalico/calico), 
 [Weave CNI](https://github.com/weaveworks/weave)
 
-## Use case 1: collaborate with one or more underlay CNIs
+## Use case: collaborate with one or more underlay CNIs
 
 ![arch_underlay](./docs/images/spiderpool-underlay.jpg)
 
@@ -111,7 +106,7 @@ By simultaneously deploying multiple underlay CNIs through Multus CNI configurat
 
 For example, as shown in the above diagram, different nodes with varying networking capabilities in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards, Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted network access (e.g., VMware virtual machines with limited layer 2 network forwarding).
 
-## Use case 2: collaborate with overlay and underlay CNIs
+## Use case: collaborate with overlay and underlay CNIs
 
 ![arch_underlay](./docs/images/spiderpool-overlay.jpg)
 
@@ -132,6 +127,20 @@ This approach provides several benefits:
 
 ![overlay](./docs/images/overlay.jpg)
 
+## Use case: underlay CNI on public cloud and VM
+
+It is hard to implement underlay CNI in public cloud, openstack, vmvare. It requires the vendor underlay CNI on specific environments, as these environments typically have the following limitations:
+
+* The IAAS network infrastructure implements MAC restrictions for packets. On the one hand, security checks are conducted on the source MAC to ensure that the source MAC address is the same as the MAC address of VM network interface. On the other hand, restrictions have been placed on the destination MAC, which only supports packet forwarding by the MAC address of VM network interfaces.
+
+    The MAC address of the POD in the common CNI plugin is newly generated, which leads to POD communication failure.
+
+* The IAAS network infrastructure implements IP restrictions on packets. Only when the destination and source IP of the packet are assigned to VM, packet could be forwarded rightly.
+
+    The common CNI plugin assigns IP addresses to PODs that do not comply with IAAS settings, which leads to POD communication failure.
+
+Spiderpool provides IP pool based on node topology, aligning with IP allocation settings of VMs. In conjunction with ipvlan CNI, it provides underlay CNI solutions for various public cloud environments
+
 ## Quick start
 
 If you want to start some Pods with Spiderpool in minutes, refer to [Quick start](./docs/usage/install/install.md).
@@ -147,13 +156,13 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
     To realize static IP addresses, some open source projects need hardcoded IP addresses in the application's annotation, which is prone to operations accidents, manual operations of IP address conflicts, and higher IP management costs caused by application scalability.
     Spiderpool's CRD-based IP pool management automates the creation, deletion, and scaling of fixed IPs to minimize operational burdens.
 
-  * For stateless applications, the IP address range can be automatically fixed and IP resources can be dynamically scaled according to the number of application replicas. See [example](./docs/usage/spider-subnet.md) for more details.
+    1. For stateless applications, the IP address range can be automatically fixed and IP resources can be dynamically scaled according to the number of application replicas. See [example](./docs/usage/spider-subnet.md) for more details.
 
-  * For stateful applications, IP addresses can be automatically fixed for each Pod, and the overall IP scaling range can be fixed as well. See [example](./docs/usage/statefulset.md) for more details.
+    2. For stateful applications, IP addresses can be automatically fixed for each Pod, and the overall IP scaling range can be fixed as well. See [example](./docs/usage/statefulset.md) for more details.
     
-  * The automated IP pool ensures the availability of a certain number of redundant IP addresses, allowing newly launched Pods to have temporary IP addresses during application rolling out.  See [example](./docs/usage/spider-subnet.md) for more details.
+    3. The automated IP pool ensures the availability of a certain number of redundant IP addresses, allowing newly launched Pods to have temporary IP addresses during application rolling out.  See [example](./docs/usage/spider-subnet.md) for more details.
 
-  * Support for third-party application controllers based on operators and other mechanisms. See [example](./docs/usage/third-party-controller.md) for details.
+    4. Support for third-party application controllers based on operators and other mechanisms. See [example](./docs/usage/third-party-controller.md) for details.
     
 * Manual IP pools enable administrators to customize fixed IP addresses, helping applications maintain consistent IP addresses. See [example](./docs/usage/ippool-affinity-pod.md) for details.
 
@@ -189,21 +198,23 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * The administrator could specify customized routes. See [example](./docs/usage/route.md) for details
 
+* Node based IP pool, supporting underlay CNI running on bare metal [example] (./docs/usage/install/underlay/get-started-cloud.md), vmware virtual machine ([example] (./docs/usage/install/underlay/get-started-vmware.md), openstack virtual machine ([example] (./docs/usage/install/underlay/get-started-openstack.md), public cloud ([example] (./docs/usage/install/underlay/get-started-cloud.md)
+
+* easy generation of multi CR instances in a best practice manner, avoiding manual writing of CNI configuration errors. [Example] (./docs/usage/??)
+
 * By comparison with other open source projects in the community, outstanding performance for assigning and releasing Pod IPs is showcased in the [test report](docs/usage/performance.md) covering multiple scenarios of IPv4 and IPv6:
 
-  * Enable fast allocation and release of static IPs for large-scale creation, restart, and deletion of applications
+    1. Enable fast allocation and release of static IPs for large-scale creation, restart, and deletion of applications
 
-  * Enable applications to quickly obtain IP addresses for self-recovery after downtime or a cluster host reboot
+    2. Enable applications to quickly obtain IP addresses for self-recovery after downtime or a cluster host reboot
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios. See [example](./docs/usage/ipv6.md) for details.
 
-## Other features
+* To avoid operational errors and accidental issues resulting from concurrent administrative actions, Spiderpool is able to prevent IP leakage and conflicts in the work process.
 
 * [Metrics](./docs/concepts/metrics.md)
 
 * Support AMD64 and ARM64
-
-* To avoid operational errors and accidental issues resulting from concurrent administrative actions, Spiderpool is able to prevent IP leakage and conflicts in the work process.
 
 ## License
 

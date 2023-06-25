@@ -1,5 +1,7 @@
 # Installation
 
+**English** | [**简体中文**](./install-zh_CN.md)
+
 ## usage
 
 It could have two kinds of scenes to install spiderpool:
@@ -41,6 +43,12 @@ The following examples are guides to install spiderpool:
 * [weave CNI](./underlay/get-started-weave.md)
 
 * [ovs CNI](./underlay/get-started-ovs.md), this is suitable for scenes like bare metal host.
+
+* [ipvlan CNI on public cloud](./underlay/get-started-cloud.md)
+
+* [ipvlan CNI on VMWARE](./underlay/get-started-vmware.md)
+
+* [ipvlan CNI on openstack](./underlay/get-started-openstack.md)
 
 The following examples are advanced to use two CNI in a cluster:
 

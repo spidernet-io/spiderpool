@@ -21,7 +21,7 @@ const (
 
 // Default timeouts to be used in context.WithTimeout
 const (
-	PodStartTimeout            = time.Minute * 2
+	PodStartTimeout            = time.Minute * 3
 	PodReStartTimeout          = time.Minute * 2
 	IPReclaimTimeout           = time.Minute * 2
 	ExecCommandTimeout         = time.Minute

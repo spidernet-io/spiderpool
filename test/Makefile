@@ -228,7 +228,7 @@ setup_spiderpool:
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
 		set -x ; \
 		helm upgrade --install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
-			-n $(RELEASE_NAMESPACE) $${HELM_OPTION} \
+			-n $(RELEASE_NAMESPACE) --create-namespace $${HELM_OPTION} \
 			--set spiderpoolAgent.image.registry="" \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
 			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \

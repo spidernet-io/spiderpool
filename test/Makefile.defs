@@ -44,7 +44,7 @@ CNI_PACKAGE_VERSION ?= v1.2.0
 E2E_CLUSTER_NAME ?= spider
 
 RELEASE_NAME ?= spiderpool
-RELEASE_NAMESPACE ?= kube-system
+RELEASE_NAMESPACE ?= spiderpool
 
 # multi flag separated by commas,like setup,ippool
 E2E_GINKGO_LABELS ?=

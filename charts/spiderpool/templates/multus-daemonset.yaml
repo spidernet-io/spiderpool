@@ -48,7 +48,7 @@ spec:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: multus
+  name: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
 rules:
   - apiGroups: ["k8s.cni.cncf.io"]
     resources:
@@ -76,30 +76,32 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: multus
+  name: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: multus
+  name: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
 subjects:
   - kind: ServiceAccount
-    name: multus
-    namespace: kube-system
+    name: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
+    namespace: {{ .Release.Namespace | quote }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: multus
-  namespace: kube-system
+  name: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: multus-cni-config
-  namespace: kube-system
+  name: {{ .Values.multus.multusCNI.configmapName | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
-    tier: node
-    app: multus
+    {{- include "spiderpool.multus.labels" . | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
 data:
   # NOTE: If you'd prefer to manually apply a configuration file, you may create one here.
   # In the case you'd like to customize the Multus installation, you should change the arguments to the Multus pod
@@ -115,16 +117,17 @@ data:
       "name": "multus-cni-network",
       "type": "multus",
       "confDir": "/etc/cni/net.d/" ,
-      "logLevel": "debug",
-      "logFile": "/var/log/multus.log",
+      "logLevel": "{{ .Values.multus.multusCNI.log.logLevel }}",
+      "logFile": "{{ .Values.multus.multusCNI.log.logFile }}",
       "capabilities": {
-        "portMappings": true
+        "portMappings": true,
+        "bandwidth": true
       },
       "namespaceIsolation": false,
-      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCNIName}}",
+      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCNIName }}",
       "defaultNetworks": [],
       "multusNamespace": "",
-      "systemNamespaces": ["unknown"],
+      "systemNamespaces": [],
       "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
     }
 ---
@@ -132,46 +135,72 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kube-multus-ds
-  namespace: kube-system
+  namespace: {{ .Release.Namespace | quote }}
   labels:
-    tier: node
-    app: multus
-    name: multus
+    {{- include "spiderpool.multus.labels" . | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     matchLabels:
-      name: multus
+      {{- include "spiderpool.multus.selectorLabels" . | nindent 6 }}
+  {{- with .Values.multus.multusCNI.updateStrategy }}
   updateStrategy:
-    type: RollingUpdate
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
   template:
     metadata:
+      annotations:
+        {{- if .Values.global.commonAnnotations }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.multus.multusCNI.podAnnotations }}
+        {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.podAnnotations "context" $ ) | nindent 8 }}
+        {{- end }}
       labels:
-        tier: node
-        app: multus
-        name: multus
+        {{- include "spiderpool.multus.selectorLabels" . | nindent 8 }}
+        {{- if .Values.global.commonLabels }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.multus.multusCNI.podLabels }}
+        {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.podLabels "context" $ ) | nindent 8 }}
+        {{- end }}
     spec:
       hostNetwork: true
       tolerations:
         - operator: Exists
           effect: NoSchedule
-      serviceAccountName: multus
+      serviceAccountName: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
       containers:
         - name: kube-multus
-          imagePullPolicy: IfNotPresent
-          image: {{ .Values.multus.multusCNI.image.registry}}/{{ .Values.multus.multusCNI.image.repository}}:{{ .Values.multus.multusCNI.image.tag}}
+          imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}
+          image: {{ include "spiderpool.multus.image" . | quote }}
           command: ["/entrypoint.sh"]
           args:
             - "--multus-conf-file=/tmp/multus-conf/00-multus.conf"
             - "--cni-version=0.3.1"
+            {{- with .Values.multus.multusCNI.extraArgs }}
+            {{- toYaml . | trim | nindent 12 }}
+            {{- end }}
+          {{- if .Values.multus.multusCNI.extraEnv }}
+          env:
+            {{- with .Values.multus.multusCNI.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.multus.multusCNI.resources }}
           resources:
-            requests:
-              cpu: "100m"
-              memory: "50Mi"
-            limits:
-              cpu: "100m"
-              memory: "50Mi"
+          {{- toYaml . | trim | nindent 12 }}
+          {{- end }}
+          {{- with .Values.multus.multusCNI.securityContext }}
           securityContext:
-            privileged: true
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: cni
               mountPath: /host/etc/cni/net.d
@@ -179,6 +208,9 @@ spec:
               mountPath: /host/opt/cni/bin
             - name: multus-cfg
               mountPath: /tmp/multus-conf
+            {{- if .Values.multus.multusCNI.extraVolumes }}
+            {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
+            {{- end }}
       terminationGracePeriodSeconds: 10
       volumes:
         - name: cni
@@ -189,8 +221,11 @@ spec:
             path: /opt/cni/bin
         - name: multus-cfg
           configMap:
-            name: multus-cni-config
+            name: {{ .Values.multus.multusCNI.configmapName | trunc 63 | trimSuffix "-" }}
             items:
               - key: cni-conf.json
                 path: 00-multus.conf
+        {{- if .Values.multus.multusCNI.extraVolumeMounts }}
+        {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 8 }}
+        {{- end }}
 {{- end }}

@@ -13,6 +13,14 @@ type SpiderCoordinatorListerExpansion interface{}
 // SpiderIPPoolLister.
 type SpiderIPPoolListerExpansion interface{}
 
+// SpiderMultusConfigListerExpansion allows custom methods to be added to
+// SpiderMultusConfigLister.
+type SpiderMultusConfigListerExpansion interface{}
+
+// SpiderMultusConfigNamespaceListerExpansion allows custom methods to be added to
+// SpiderMultusConfigNamespaceLister.
+type SpiderMultusConfigNamespaceListerExpansion interface{}
+
 // SpiderSubnetListerExpansion allows custom methods to be added to
 // SpiderSubnetLister.
 type SpiderSubnetListerExpansion interface{}

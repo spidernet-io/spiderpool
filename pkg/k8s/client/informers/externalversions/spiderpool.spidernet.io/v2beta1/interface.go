@@ -15,6 +15,8 @@ type Interface interface {
 	SpiderCoordinators() SpiderCoordinatorInformer
 	// SpiderIPPools returns a SpiderIPPoolInformer.
 	SpiderIPPools() SpiderIPPoolInformer
+	// SpiderMultusConfigs returns a SpiderMultusConfigInformer.
+	SpiderMultusConfigs() SpiderMultusConfigInformer
 	// SpiderSubnets returns a SpiderSubnetInformer.
 	SpiderSubnets() SpiderSubnetInformer
 }
@@ -38,6 +40,11 @@ func (v *version) SpiderCoordinators() SpiderCoordinatorInformer {
 // SpiderIPPools returns a SpiderIPPoolInformer.
 func (v *version) SpiderIPPools() SpiderIPPoolInformer {
 	return &spiderIPPoolInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// SpiderMultusConfigs returns a SpiderMultusConfigInformer.
+func (v *version) SpiderMultusConfigs() SpiderMultusConfigInformer {
+	return &spiderMultusConfigInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // SpiderSubnets returns a SpiderSubnetInformer.

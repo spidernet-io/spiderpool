@@ -17,6 +17,7 @@ type SpiderpoolV2beta1Interface interface {
 	RESTClient() rest.Interface
 	SpiderCoordinatorsGetter
 	SpiderIPPoolsGetter
+	SpiderMultusConfigsGetter
 	SpiderSubnetsGetter
 }
 
@@ -31,6 +32,10 @@ func (c *SpiderpoolV2beta1Client) SpiderCoordinators() SpiderCoordinatorInterfac
 
 func (c *SpiderpoolV2beta1Client) SpiderIPPools() SpiderIPPoolInterface {
 	return newSpiderIPPools(c)
+}
+
+func (c *SpiderpoolV2beta1Client) SpiderMultusConfigs(namespace string) SpiderMultusConfigInterface {
+	return newSpiderMultusConfigs(c, namespace)
 }
 
 func (c *SpiderpoolV2beta1Client) SpiderSubnets() SpiderSubnetInterface {

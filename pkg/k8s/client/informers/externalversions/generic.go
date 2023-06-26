@@ -44,6 +44,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderCoordinators().Informer()}, nil
 	case v2beta1.SchemeGroupVersion.WithResource("spiderippools"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderIPPools().Informer()}, nil
+	case v2beta1.SchemeGroupVersion.WithResource("spidermultusconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderMultusConfigs().Informer()}, nil
 	case v2beta1.SchemeGroupVersion.WithResource("spidersubnets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderSubnets().Informer()}, nil
 

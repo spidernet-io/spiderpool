@@ -167,6 +167,8 @@ spec:
           value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.delay | quote }}
         - name: SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION
           value: {{ .Values.ipam.gc.gcAll.intervalInSecond | quote }}
+        - name: SPIDERPOOL_MULTUS_CONFIG_ENABLED
+          value: {{ .Values.multus.enableMultusConfig | quote }}
         - name: SPIDERPOOL_POD_NAME
           valueFrom:
             fieldRef:

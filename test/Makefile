@@ -64,6 +64,7 @@ ifeq ($(INSTALL_MULTUS),true)
 		MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
+		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null

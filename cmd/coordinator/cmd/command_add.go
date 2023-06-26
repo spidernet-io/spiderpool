@@ -7,8 +7,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/containernetworking/cni/pkg/skel"
+	"github.com/containernetworking/cni/pkg/types"
+	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
+	"go.uber.org/zap"
+
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
+	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/internal/version"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -16,13 +24,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/networking/ipchecking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
-
-	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/containernetworking/cni/pkg/types"
-	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 )
 
 func CmdAdd(args *skel.CmdArgs) (err error) {
@@ -64,6 +65,18 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("ContainerID", args.ContainerID),
 		zap.String("Netns", args.Netns),
 		zap.String("IfName", args.IfName),
+	)
+
+	k8sArgs := plugincmd.K8sArgs{}
+	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
+		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
+		logger.Error(err.Error())
+		return err
+	}
+
+	logger = logger.With(
+		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
+		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
 
 	// parse prevResult
@@ -127,7 +140,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		}
 	case ModeDisable:
 		logger.Info("TuneMode is disable, nothing to do")
-		return nil
+		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 	default:
 		logger.Error("Unknown tuneMode", zap.String("invalid tuneMode", string(conf.TuneMode)))
 		return fmt.Errorf("unknown tuneMode: %s", conf.TuneMode)
@@ -137,6 +150,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	//  we do detect gateway connection firstly
 	if *conf.DetectGateway {
+		logger.Debug("Try to detect gateway")
+
 		var gws []string
 		err = c.netns.Do(func(netNS ns.NetNS) error {
 			gws, err = networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
@@ -168,8 +183,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		err = ipchecking.DoIPConflictChecking(logger, c.netns, conf.IPConflict.Retry, conf.IPConflict.Interval, args.IfName, prevResult.IPs)
 		if err != nil {
 			logger.Error(err.Error())
-			return err
+			return fmt.Errorf("failed to check ip conflict: %w", err)
 		}
+		logger.Debug("Success to check IP conflict")
 	}
 
 	// overwrite mac address
@@ -240,12 +256,14 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	if conf.TunePodRoutes != nil && *conf.TunePodRoutes && (!c.firstInvoke || c.tuneMode == ModeOverlay) {
+		logger.Debug("Try to tune pod routes")
 		if err = c.tunePodRoutes(logger, conf.PodDefaultRouteNIC); err != nil {
 			logger.Error("failed to tunePodRoutes", zap.Error(err))
 			return fmt.Errorf("failed to tunePodRoutes: %v", err)
 		}
+		logger.Debug("Success to tune pod routes")
 	}
 
-	logger.Info("coordinator end", zap.Int64("Time Cost", time.Since(startTime).Microseconds()))
+	logger.Sugar().Infof("coordinator end, time cost: %v", time.Since(startTime))
 	return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 }

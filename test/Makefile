@@ -42,20 +42,9 @@ ifeq ($(INSTALL_KRUISE),true)
 	@echo -e "\033[35m [Step 8] Install third-party controllers: kurise \033[0m"
 	@ make setup_kurise
 endif
-ifeq ($(INSTALL_SPIDERDOCTOR),true)
-	@echo -e "\033[35m [Step 9] Install SpiderDoctor \033[0m"
-	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
-	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
-	E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
-	SPIDERDOCTOR_VERSION=$(SPIDERDOCTOR_VERSION) \
-	SPIDERDOCTOR_REPORT_PATH=$(SPIDERDOCTOR_REPORT_PATH) \
-	SPIDERDOCTOR_IMAGE_REPO=$(SPIDERDOCTOR_IMAGE_REPO) \
-	$(QUIET) bash scripts/install-spiderdoctor.sh
-endif
 ifeq ($(INSTALL_MULTUS),true)
-	@echo -e "\033[35m [Step 10] Install Multus \033[0m"
-	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
-		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+	@echo -e "\033[35m [Step 9] Install Multus \033[0m"
+	@ E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		MULTUS_DEFAULT_CNI_CALICO=$(MULTUS_DEFAULT_CNI_CALICO) \
 		MULTUS_DEFAULT_CNI_VLAN100=$(MULTUS_DEFAULT_CNI_VLAN100) \
@@ -65,6 +54,16 @@ ifeq ($(INSTALL_MULTUS),true)
 		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
+endif
+ifeq ($(INSTALL_SPIDERDOCTOR),true)
+	@echo -e "\033[35m [Step 10] Install SpiderDoctor \033[0m"
+	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
+	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
+	E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+	SPIDERDOCTOR_VERSION=$(SPIDERDOCTOR_VERSION) \
+	SPIDERDOCTOR_REPORT_PATH=$(SPIDERDOCTOR_REPORT_PATH) \
+	SPIDERDOCTOR_IMAGE_REPO=$(SPIDERDOCTOR_IMAGE_REPO) \
+	$(QUIET) bash scripts/install-spiderdoctor.sh
 endif
 	-$(QUIET) kubectl --kubeconfig $(E2E_KUBECONFIG) delete namespace local-path-storage --force --timeout=10s  &>/dev/null
 	- DNS_POD_LIST=` kubectl --kubeconfig $(E2E_KUBECONFIG) get pods --no-headers  -n kube-system --selector k8s-app=kube-dns --output jsonpath={.items[*].metadata.name} ` ; \
@@ -168,18 +167,33 @@ setup_spiderpool:
 			exit 1 ; \
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_COORDINATOR)" == "true" ] ; then \
-		    HELM_OPTION+=" --set feature.coordinator.enabled=true " ; \
+		    HELM_OPTION+=" --set coordinator.enabled=true " ; \
 		else \
-		  	HELM_OPTION+=" --set feature.coordinator.enabled=false " ; \
+		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		HELM_OPTION+=" --set feature.coordinator.detectIPConflict=false --set feature.coordinator.detectGateway=false " ; \
-		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
-		    HELM_OPTION+=" --set feature.enableSpiderSubnet=true " ; \
+		HELM_OPTION+=" --set coordinator.detectIPConflict=false --set coordinator.detectGateway=false " ; \
+		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
+		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
+		    HELM_OPTION+=" --set multus.multusCNI.defaultCNIName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
+			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
+			docker pull $${IMAGE_MULTUS} ; \
+		 	kind load docker-image $${IMAGE_MULTUS}  --name $(E2E_CLUSTER_NAME); \
+				if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
+					HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
+				else \
+					HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
+				fi ; \
 		else \
-		    HELM_OPTION+=" --set feature.enableSpiderSubnet=false " ; \
+		    HELM_OPTION+=" --set multus.multusCNI.install=false " ; \
+		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
+		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=true " ; \
+		else \
+		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=false " ; \
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
-		HELM_OPTION+=" --set feature.gc.gcAll.interval=120 " ; \
+		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=120 " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
@@ -188,7 +202,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
-			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=false" ; \
+			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=false" ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
@@ -196,7 +210,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
-			HELM_OPTION+=" --set feature.enableIPv4=false --set feature.enableIPv6=true" ; \
+			HELM_OPTION+=" --set ipam.enableIPv4=false --set ipam.enableIPv6=true" ; \
 		else \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
@@ -207,7 +221,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet} --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
-			HELM_OPTION+=" --set feature.enableIPv4=true --set feature.enableIPv6=true" ; \
+			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=true" ; \
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabled=true --set spiderpoolController.prometheus.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabledDebugMetric=true --set spiderpoolController.prometheus.enabledDebugMetric=true " ; \
@@ -275,7 +289,6 @@ prepare:
 	$(QUEIT) IMAGE_LIST="" ; \
 		 [ "$(USE_TLS_METHOD)" == "certmanager" ] && IMAGE_LIST+=" $(IMAGE_CERT_MANAGER_NAME) " ; \
 		 [ -n "$(PYROSCOPE_LOCAL_PORT)" ] && IMAGE_LIST+=" $(IMAGE_PYROSCOPE_NAME) " ; \
-		 IMAGE_LIST+=" $(IMAGE_MULTUS_NAME) " ; \
 		 IMAGE_LIST+=" $(TEST_IMAGE_NAME) " ; \
 		 IMAGE_LIST+=" $(TEST_VLAN_GATEWAY_IMAGE) " ; \
 		 ARCH=$(ARCH) IMAGE_LIST="$${IMAGE_LIST}" \
@@ -300,9 +313,7 @@ e2e_test:
 		else \
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
-		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "false" ] ; then export E2E_SPIDERSUBNET_ENABLED=false ; else  export E2E_MULTUS_CNI_ENABLED=true ; fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
-		if [ "$(INSTALL_MULTUS)" == "true" ] ; then export E2E_MULTUS_CNI_ENABLED=true ; else  export E2E_MULTUS_CNI_ENABLED=false ; fi ; \
 		if [ "$(INSTALL_SPIDER)" != "true" ] ; then \
 			export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
 			export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \

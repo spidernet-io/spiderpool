@@ -29,6 +29,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -345,6 +346,13 @@ func initControllerServiceManagers(ctx context.Context) {
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}
+
+	if controllerContext.Cfg.EnableMultusConfig {
+		logger.Debug("Begin to set up MultusConfig webhook")
+		if err := (&multuscniconfig.MultusConfigWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); nil != err {
+			logger.Fatal(err.Error())
+		}
+	}
 }
 
 func initGCManager(ctx context.Context) {
@@ -499,6 +507,23 @@ func setupInformers() {
 		}
 
 		err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet, controllerContext.Leader)
+		if nil != err {
+			logger.Fatal(err.Error())
+		}
+	}
+
+	if controllerContext.Cfg.EnableMultusConfig {
+		logger.Info("Begin to set up MultusConfig informer")
+		multusConfigController := multuscniconfig.NewMultusConfigController(
+			multuscniconfig.MultusConfigControllerConfig{
+				ControllerWorkers:             1,
+				WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
+				WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
+				LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+				ResyncPeriod:                  time.Duration(controllerContext.Cfg.MultusConfigInformerResyncPeriod) * time.Second,
+			},
+			controllerContext.CRDManager.GetClient())
+		err = multusConfigController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
 		if nil != err {
 			logger.Fatal(err.Error())
 		}

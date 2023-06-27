@@ -32,80 +32,175 @@ global:
   ## @param global.configName the configmap name
   configName: "spiderpool-conf"
 
-## @section feature parameters
-feature:
-  ## @param feature.enableIPv4 enable ipv4
+## @section ipam parameters
+##
+ipam:
+  ## @param ipam.enableIPv4 enable ipv4
   enableIPv4: true
 
-  ## @param feature.enableIPv6 enable ipv6
+  ## @param ipam.enableIPv6 enable ipv6
   enableIPv6: false
 
-  ## @param feature.networkMode the network mode
+  ## @param ipam.networkMode the network mode
   networkMode: legacy
 
-  ## @param feature.enableStatefulSet the network mode
+  ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true
 
-  ## @param feature.enableSpiderSubnet SpiderSubnet feature gate.
+  ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: true
 
-  coordinator:
-    ## @param feature.coordinator.enabled enable SpiderCoordinator
-    enabled: false
-
-    ## @param feature.coordinator.name the name of the default SpiderCoordinator CR
-    name: "default-coordinator"
-
-    ## @param feature.coordinator.tuneMode optional network mode, ["underlay", "overlay", "disabled"]
-    tuneMode: "underlay"
-
-    ## @param feature.coordinator.podCIDRType Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]
-    podCIDRType: "cluster"
-
-    ## @param feature.coordinator.detectGateway detect the reachability of the gateway
-    detectGateway: true
-
-    ## @param feature.coordinator.detectIPConflict detect IP address conflicts
-    detectIPConflict: true
-
-    ## @param feature.coordinator.tunePodRoutes tune Pod routes
-    tunePodRoutes: true
-
   gc:
-    ## @param feature.gc.enabled enable retrieve IP in spiderippool CR
+    ## @param ipam.gc.enabled enable retrieve IP in spiderippool CR
     enabled: true
 
     gcAll:
-      ## @param feature.gc.gcAll.intervalInSecond the gc all interval duration
+      ## @param ipam.gc.gcAll.intervalInSecond the gc all interval duration
       intervalInSecond: 600
 
     GcDeletingTimeOutPod:
-      ## @param feature.gc.GcDeletingTimeOutPod.enabled enable retrieve IP for the pod who times out of deleting graceful period
+      ## @param ipam.gc.GcDeletingTimeOutPod.enabled enable retrieve IP for the pod who times out of deleting graceful period
       enabled: true
 
-      ## @param feature.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
+      ## @param ipam.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
 
   grafanaDashboard:
-    ## @param feature.grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
+    ## @param ipam.grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
     install: false
 
-    ## @param feature.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
+    ## @param ipam.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
     namespace: ""
 
-    ## @param feature.grafanaDashboard.annotations the additional annotations of spiderpool grafanaDashboard
+    ## @param ipam.grafanaDashboard.annotations the additional annotations of spiderpool grafanaDashboard
     annotations: {}
 
-    ## @param feature.grafanaDashboard.labels the additional label of spiderpool grafanaDashboard
+    ## @param ipam.grafanaDashboard.labels the additional label of spiderpool grafanaDashboard
     labels: {}
+
+## @section coordinator parameters
+##
+coordinator:
+  ## @param coordinator.enabled enable SpiderCoordinator
+  enabled: true
+
+  ## @param coordinator.name the name of the default SpiderCoordinator CR
+  name: "default-coordinator"
+
+  ## @param coordinator.tuneMode optional network mode, ["underlay", "overlay", "disabled"]
+  tuneMode: "underlay"
+
+  ## @param coordinator.podCIDRType Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]
+  podCIDRType: "cluster"
+
+  ## @param coordinator.detectGateway detect the reachability of the gateway
+  detectGateway: true
+
+  ## @param coordinator.detectIPConflict detect IP address conflicts
+  detectIPConflict: true
+
+  ## @param coordinator.tunePodRoutes tune Pod routes
+  tunePodRoutes: true
+
+## @section multus parameters
+##
+multus:
+  ## @param multus.name the name of spiderpool multus
+  name: "spiderpool-multus"
+
+  ## @param multus.enableMultusConfig enable SpiderMultusConfig
+  enableMultusConfig: true
+
+  multusCNI:
+    ## @param multus.multusCNI.install enable install multus-CNI
+    install: true
+
+    image:
+      ## @param multus.multusCNI.image.registry the multus-CNI image registry
+      registry: ghcr.io
+
+      ## @param multus.multusCNI.image.repository the multus-CNI image repository
+      repository: k8snetworkplumbingwg/multus-cni
+
+      ## @param multus.multusCNI.image.pullPolicy the multus-CNI image pullPolicy
+      pullPolicy: IfNotPresent
+
+      ## @param multus.multusCNI.image.digest the multus-CNI image digest
+      digest: ""
+
+      ## @param multus.multusCNI.image.tag the multus-CNI image tag
+      tag: v3.9.3
+
+      ## @param multus.multusCNI.image.imagePullSecrets the multus-CNI image imagePullSecrets
+      imagePullSecrets: []
+      # - name: "image-pull-secret"
+
+    ## @param multus.multusCNI.defaultCNIName the multus-CNI default CNI name
+    defaultCNIName: ""
+
+    resources:
+      limits:
+        ## @param multus.multusCNI.resources.limits.cpu the cpu limit of multus-CNI daemonset pod
+        cpu: 100m
+        ## @param multus.multusCNI.resources.limits.memory the memory limit of multus-CNI daemonset pod
+        memory: 50Mi
+      requests:
+        ## @param multus.multusCNI.resources.requests.cpu the cpu requests of multus-CNI daemonset pod
+        cpu: 100m
+        ## @param multus.multusCNI.resources.requests.memory the memory requests of multus-CNI daemonset pod
+        memory: 50Mi
+
+
+    ## @param multus.multusCNI.podAnnotations the additional annotations of multus-CNI daemonset pod
+    podAnnotations: {}
+
+    ## @param multus.multusCNI.podLabels the additional label of multus-CNI daemonset pod
+    podLabels: {}
+
+    ## @skip multus.multusCNI.updateStrategy.rollingUpdate.maxUnavailable
+    ## @skip multus.multusCNI.updateStrategy.type
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: 2
+      type: RollingUpdate
+
+    ## @param multus.multusCNI.configmapName the configmap name
+    configmapName: "multus-cni-config"
+
+    securityContext:
+      ## @param multus.multusCNI.securityContext.privileged the securityContext privileged of multus-CNI daemonset pod
+      privileged: true
+
+    ## @param multus.multusCNI.extraArgs the additional arguments of multus-CNI daemonset pod container
+    extraArgs: []
+
+    ## @param multus.multusCNI.extraEnv the additional environment variables of multus-CNI daemonset pod container
+    extraEnv: []
+
+    ## @param multus.multusCNI.extraVolumes the additional volumes of multus-CNI daemonset pod container
+    extraVolumes: []
+      # - name: test-val
+    #   mountPath: /host/tmp
+
+    ## @param multus.multusCNI.extraVolumeMounts the additional hostPath mounts of multus-CNI daemonset pod container
+    extraVolumeMounts: []
+      # - name: test-val
+    #   mountPath: /tmp
+
+    log:
+      ## @param multus.multusCNI.log.logLevel the multus-CNI daemonset pod log level
+      logLevel: "debug"
+
+      ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
+      logFile: "/var/log/multus.log"
 
 ## @section clusterDefaultPool parameters
 ##
 clusterDefaultPool:
-  ## @param clusterDefaultPool.installIPv4IPPool install ipv4 spiderpool instance. It is required to set feature.enableIPv4=true
+  ## @param clusterDefaultPool.installIPv4IPPool install ipv4 spiderpool instance. It is required to set ipam.enableIPv4=true
   installIPv4IPPool: false
 
-  ## @param clusterDefaultPool.installIPv6IPPool install ipv6 spiderpool instance. It is required to set feature.enableIPv6=true
+  ## @param clusterDefaultPool.installIPv6IPPool install ipv6 spiderpool instance. It is required to set ipam.enableIPv6=true
   installIPv6IPPool: false
 
   ## @param clusterDefaultPool.ipv4IPPoolName the name of ipv4 spiderpool instance
@@ -148,7 +243,7 @@ spiderpoolAgent:
   name: "spiderpool-agent"
 
   ## @param spiderpoolAgent.binName the binName name of spiderpoolAgent
-  binName: "spiderpool-agent"
+  binName: "/usr/bin/spiderpool-agent"
 
   image:
     ## @param spiderpoolAgent.image.registry the image registry of spiderpoolAgent
@@ -359,7 +454,7 @@ spiderpoolController:
   replicas: 1
 
   ## @param spiderpoolController.binName the binName name of spiderpoolController
-  binName: "spiderpool-controller"
+  binName: "/usr/bin/spiderpool-controller"
 
   ## @param spiderpoolController.hostnetwork enable hostnetwork mode of spiderpoolController pod. Notice, if no CNI available before spiderpool installation, must enable this
   hostnetwork: true
@@ -618,7 +713,7 @@ spiderpoolInit:
   name: "spiderpool-init"
 
   ## @param spiderpoolInit.binName the binName name of spiderpoolInit
-  binName: "spiderpool-init"
+  binName: "/usr/bin/spiderpool-init"
 
   ## @param spiderpoolInit.hostnetwork enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this
   hostnetwork: true
@@ -714,7 +809,5 @@ spiderpoolInit:
   podLabels: {}
 
   serviceAccount:
-    ## @param spiderpoolInit.serviceAccount.create create the service account for the spiderpoolInit
-    create: true
     ## @param spiderpoolInit.serviceAccount.annotations the annotations of spiderpoolInit service account
     annotations: {}

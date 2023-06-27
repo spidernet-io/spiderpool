@@ -104,7 +104,7 @@ spec:
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
-            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
@@ -114,7 +114,7 @@ spec:
         {{- end }}
         livenessProbe:
           httpGet:
-            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
@@ -125,7 +125,7 @@ spec:
           timeoutSeconds: 1
         readinessProbe:
           httpGet:
-            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolController.httpPort }}
             scheme: HTTP
@@ -160,13 +160,15 @@ spec:
         - name: SPIDERPOOL_HEALTH_PORT
           value: {{ .Values.spiderpoolController.httpPort | quote }}
         - name: SPIDERPOOL_GC_IP_ENABLED
-          value: {{ .Values.feature.gc.enabled | quote }}
+          value: {{ .Values.ipam.gc.enabled | quote }}
         - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
-          value: {{ .Values.feature.gc.GcDeletingTimeOutPod.enabled | quote }}
+          value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.enabled | quote }}
         - name: SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY
-          value: {{ .Values.feature.gc.GcDeletingTimeOutPod.delay | quote }}
+          value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.delay | quote }}
         - name: SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION
-          value: {{ .Values.feature.gc.gcAll.intervalInSecond | quote }}
+          value: {{ .Values.ipam.gc.gcAll.intervalInSecond | quote }}
+        - name: SPIDERPOOL_MULTUS_CONFIG_ENABLED
+          value: {{ .Values.multus.enableMultusConfig | quote }}
         - name: SPIDERPOOL_POD_NAME
           valueFrom:
             fieldRef:

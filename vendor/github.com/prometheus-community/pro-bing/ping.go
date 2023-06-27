@@ -1,8 +1,8 @@
-// Package ping is a simple but powerful ICMP echo (ping) library.
+// Package probing is a simple but powerful ICMP echo (ping) library.
 //
 // Here is a very simple example that sends and receives three packets:
 //
-//	pinger, err := ping.NewPinger("www.google.com")
+//	pinger, err := probing.NewPinger("www.google.com")
 //	if err != nil {
 //		panic(err)
 //	}
@@ -15,7 +15,7 @@
 //
 // Here is an example that emulates the traditional UNIX ping command:
 //
-//	pinger, err := ping.NewPinger("www.google.com")
+//	pinger, err := probing.NewPinger("www.google.com")
 //	if err != nil {
 //		panic(err)
 //	}
@@ -27,11 +27,11 @@
 //			pinger.Stop()
 //		}
 //	}()
-//	pinger.OnRecv = func(pkt *ping.Packet) {
+//	pinger.OnRecv = func(pkt *probing.Packet) {
 //		fmt.Printf("%d bytes from %s: icmp_seq=%d time=%v\n",
 //			pkt.Nbytes, pkt.IPAddr, pkt.Seq, pkt.Rtt)
 //	}
-//	pinger.OnFinish = func(stats *ping.Statistics) {
+//	pinger.OnFinish = func(stats *probing.Statistics) {
 //		fmt.Printf("\n--- %s ping statistics ---\n", stats.Addr)
 //		fmt.Printf("%d packets transmitted, %d packets received, %v%% packet loss\n",
 //			stats.PacketsSent, stats.PacketsRecv, stats.PacketLoss)
@@ -49,17 +49,18 @@
 // it calls the OnFinish callback.
 //
 // For a full ping example, see "cmd/ping/ping.go".
-//
-package ping
+package probing
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"math"
 	"math/rand"
 	"net"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -82,6 +83,9 @@ const (
 var (
 	ipv4Proto = map[string]string{"icmp": "ip4:icmp", "udp": "udp4"}
 	ipv6Proto = map[string]string{"icmp": "ip6:ipv6-icmp", "udp": "udp6"}
+
+	ErrMarkNotSupported = errors.New("setting SO_MARK socket option is not supported on this platform")
+	ErrDFNotSupported   = errors.New("setting do-not-fragment bit is not supported on this platform")
 )
 
 // New returns a new Pinger struct pointer.
@@ -173,6 +177,12 @@ type Pinger struct {
 	// OnDuplicateRecv is called when a packet is received that has already been received.
 	OnDuplicateRecv func(*Packet)
 
+	// OnSendError is called when an error occurs while Pinger attempts to send a packet
+	OnSendError func(*Packet, error)
+
+	// OnRecvError is called when an error occurs while Pinger attempts to receive a packet
+	OnRecvError func(error)
+
 	// Size of packet being sent
 	Size int
 
@@ -188,6 +198,12 @@ type Pinger struct {
 
 	ipaddr *net.IPAddr
 	addr   string
+
+	// mark is a SO_MARK (fwmark) set on outgoing icmp packets
+	mark uint
+
+	// df when true sets the do-not-fragment bit in the outer IP or IPv6 header
+	df bool
 
 	// trackerUUIDs is the list of UUIDs being used for sending packets.
 	trackerUUIDs []uuid.UUID
@@ -231,7 +247,7 @@ type Packet struct {
 	Seq int
 
 	// TTL is the Time To Live on the packet.
-	Ttl int
+	TTL int
 
 	// ID is the ICMP identifier.
 	ID int
@@ -398,10 +414,32 @@ func (p *Pinger) ID() int {
 	return p.id
 }
 
+// SetMark sets a mark intended to be set on outgoing ICMP packets.
+func (p *Pinger) SetMark(m uint) {
+	p.mark = m
+}
+
+// Mark returns the mark to be set on outgoing ICMP packets.
+func (p *Pinger) Mark() uint {
+	return p.mark
+}
+
+// SetDoNotFragment sets the do-not-fragment bit in the outer IP header to the desired value.
+func (p *Pinger) SetDoNotFragment(df bool) {
+	p.df = df
+}
+
 // Run runs the pinger. This is a blocking function that will exit when it's
 // done. If Count or Interval are not specified, it will run continuously until
 // it is interrupted.
 func (p *Pinger) Run() error {
+	return p.RunWithContext(context.Background())
+}
+
+// RunWithContext runs the pinger with a context. This is a blocking function that will exit when it's
+// done or if the context is canceled. If Count or Interval are not specified, it will run continuously until
+// it is interrupted.
+func (p *Pinger) RunWithContext(ctx context.Context) error {
 	var conn packetConn
 	var err error
 	if p.Size < timeSliceLength+trackerLength {
@@ -418,11 +456,23 @@ func (p *Pinger) Run() error {
 	}
 	defer conn.Close()
 
+	if p.mark != 0 {
+		if err := conn.SetMark(p.mark); err != nil {
+			return fmt.Errorf("error setting mark: %v", err)
+		}
+	}
+
+	if p.df {
+		if err := conn.SetDoNotFragment(); err != nil {
+			return fmt.Errorf("error setting do-not-fragment: %v", err)
+		}
+	}
+
 	conn.SetTTL(p.TTL)
-	return p.run(conn)
+	return p.run(ctx, conn)
 }
 
-func (p *Pinger) run(conn packetConn) error {
+func (p *Pinger) run(ctx context.Context, conn packetConn) error {
 	if err := conn.SetFlagTTL(); err != nil {
 		return err
 	}
@@ -431,11 +481,20 @@ func (p *Pinger) run(conn packetConn) error {
 	recv := make(chan *packet, 5)
 	defer close(recv)
 
-	if handler := p.OnSetup; handler != nil {
-		handler()
+	if p.OnSetup != nil {
+		p.OnSetup()
 	}
 
-	var g errgroup.Group
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		select {
+		case <-ctx.Done():
+			p.Stop()
+		case <-p.done:
+		}
+		return nil
+	})
 
 	g.Go(func() error {
 		defer p.Stop()
@@ -518,10 +577,8 @@ func (p *Pinger) Stop() {
 }
 
 func (p *Pinger) finish() {
-	handler := p.OnFinish
-	if handler != nil {
-		s := p.Statistics()
-		handler(s)
+	if p.OnFinish != nil {
+		p.OnFinish(p.Statistics())
 	}
 }
 
@@ -575,12 +632,18 @@ func (p *Pinger) recvICMP(
 	expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	delay := expBackoff.Get()
 
+	// Workaround for https://github.com/golang/go/issues/47369
+	offset := 0
+	if p.ipv4 && !p.Privileged() && runtime.GOOS == "darwin" {
+		offset = 20
+	}
+
 	for {
 		select {
 		case <-p.done:
 			return nil
 		default:
-			bytes := make([]byte, p.getMessageLength())
+			bytes := make([]byte, p.getMessageLength()+offset)
 			if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
 				return err
 			}
@@ -588,6 +651,9 @@ func (p *Pinger) recvICMP(
 			var err error
 			n, ttl, _, err = conn.ReadFrom(bytes)
 			if err != nil {
+				if p.OnRecvError != nil {
+					p.OnRecvError(err)
+				}
 				if neterr, ok := err.(*net.OpError); ok {
 					if neterr.Timeout() {
 						// Read timeout
@@ -633,6 +699,8 @@ func (p *Pinger) processPacket(recv *packet) error {
 	var proto int
 	if p.ipv4 {
 		proto = protocolICMP
+		// Workaround for https://github.com/golang/go/issues/47369
+		recv.nbytes = stripIPv4Header(recv.nbytes, recv.bytes)
 	} else {
 		proto = protocolIPv6ICMP
 	}
@@ -652,7 +720,7 @@ func (p *Pinger) processPacket(recv *packet) error {
 		Nbytes: recv.nbytes,
 		IPAddr: p.ipaddr,
 		Addr:   p.addr,
-		Ttl:    recv.ttl,
+		TTL:    recv.ttl,
 		ID:     p.id,
 	}
 
@@ -691,9 +759,8 @@ func (p *Pinger) processPacket(recv *packet) error {
 		return fmt.Errorf("invalid ICMP echo reply; type: '%T', '%v'", pkt, pkt)
 	}
 
-	handler := p.OnRecv
-	if handler != nil {
-		handler(inPkt)
+	if p.OnRecv != nil {
+		p.OnRecv(inPkt)
 	}
 
 	return nil
@@ -734,6 +801,16 @@ func (p *Pinger) sendICMP(conn packetConn) error {
 
 	for {
 		if _, err := conn.WriteTo(msgBytes, dst); err != nil {
+			if p.OnSendError != nil {
+				outPkt := &Packet{
+					Nbytes: len(msgBytes),
+					IPAddr: p.ipaddr,
+					Addr:   p.addr,
+					Seq:    p.sequence,
+					ID:     p.id,
+				}
+				p.OnSendError(outPkt, err)
+			}
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Err == syscall.ENOBUFS {
 					continue
@@ -741,8 +818,7 @@ func (p *Pinger) sendICMP(conn packetConn) error {
 			}
 			return err
 		}
-		handler := p.OnSend
-		if handler != nil {
+		if p.OnSend != nil {
 			outPkt := &Packet{
 				Nbytes: len(msgBytes),
 				IPAddr: p.ipaddr,
@@ -750,7 +826,7 @@ func (p *Pinger) sendICMP(conn packetConn) error {
 				Seq:    p.sequence,
 				ID:     p.id,
 			}
-			handler(outPkt)
+			p.OnSend(outPkt)
 		}
 		// mark this sequence as in-flight
 		p.awaitingSequences[currentUUID][p.sequence] = struct{}{}
@@ -812,9 +888,26 @@ func timeToBytes(t time.Time) []byte {
 	return b
 }
 
-var seed int64 = time.Now().UnixNano()
+var seed = time.Now().UnixNano()
 
 // getSeed returns a goroutine-safe unique seed
 func getSeed() int64 {
 	return atomic.AddInt64(&seed, 1)
+}
+
+// stripIPv4Header strips IPv4 header bytes if present
+// https://github.com/golang/go/commit/3b5be4522a21df8ce52a06a0c4ba005c89a8590f
+func stripIPv4Header(n int, b []byte) int {
+	if len(b) < 20 {
+		return n
+	}
+	l := int(b[0]&0x0f) << 2
+	if 20 > l || l > len(b) {
+		return n
+	}
+	if b[0]>>4 != 4 {
+		return n
+	}
+	copy(b, b[l:])
+	return n - l
 }

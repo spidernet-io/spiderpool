@@ -29,6 +29,9 @@ echo "$CURRENT_FILENAME : E2E_IP_FAMILY $E2E_IP_FAMILY "
 [ -z "$MULTUS_DEFAULT_CNI_CALICO" ] && echo "error, miss MULTUS_DEFAULT_CNI_CALICO" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_CALICO $MULTUS_DEFAULT_CNI_CALICO "
 
+[ -z "$MULTUS_DEFAULT_CNI_CILIUM" ] && echo "error, miss MULTUS_DEFAULT_CNI_CILIUM" && exit 1
+echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_CILIUM $MULTUS_DEFAULT_CNI_CILIUM "
+
 [ -z "$MULTUS_DEFAULT_CNI_NAME" ] && echo "error, miss MULTUS_DEFAULT_CNI_NAME" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_NAME $MULTUS_DEFAULT_CNI_NAME "
 
@@ -66,6 +69,14 @@ EOF
   apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
+    name: ${MULTUS_DEFAULT_CNI_CILIUM}
+    namespace: ${MULTUS_CNI_NAMESPACE}
+EOF
+
+  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+  apiVersion: k8s.cni.cncf.io/v1
+  kind: NetworkAttachmentDefinition
+  metadata:
     name: ${MULTUS_DEFAULT_CNI_NAME}
     namespace: ${MULTUS_CNI_NAMESPACE}
   spec:
@@ -83,8 +94,7 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "underlay",
-                  "detect_gateway": false
+                  "tune_mode": "underlay"
               }
           ]
       }
@@ -111,9 +121,7 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "underlay",
-                  "tune_pod_routes": false,
-                  "detect_gateway": false
+                  "tune_mode": "underlay"
               }
           ]
       }
@@ -140,9 +148,7 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "overlay",
-                  "detect_gateway": false,
-                  "tune_pod_routes": false
+                  "tune_mode": "overlay"
               }
           ]
       }
@@ -169,8 +175,7 @@ EOF
                   }
               },{
                   "type": "coordinator",
-                  "tune_mode": "overlay",
-                  "tune_pod_routes": false
+                  "tune_mode": "overlay"
               }
           ]
       }

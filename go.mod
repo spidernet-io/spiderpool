@@ -47,13 +47,13 @@ require (
 require (
 	github.com/agiledragon/gomonkey/v2 v2.9.0
 	github.com/containernetworking/plugins v1.3.0
-	github.com/go-ping/ping v1.1.0
 	github.com/golang/mock v1.6.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/ndp v1.0.1
 	github.com/openkruise/kruise-api v1.3.0
+	github.com/prometheus-community/pro-bing v0.2.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spidernet-io/e2eframework v0.0.0-20230403061847-445757b963b3
 	github.com/spidernet-io/spiderdoctor v0.3.0

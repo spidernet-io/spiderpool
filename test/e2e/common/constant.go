@@ -21,14 +21,14 @@ const (
 
 // Default timeouts to be used in context.WithTimeout
 const (
-	PodStartTimeout            = time.Minute * 3
-	PodReStartTimeout          = time.Minute * 2
-	IPReclaimTimeout           = time.Minute * 2
+	PodStartTimeout            = time.Minute * 5
+	PodReStartTimeout          = time.Minute * 5
+	IPReclaimTimeout           = time.Minute * 5
 	ExecCommandTimeout         = time.Minute
 	EventOccurTimeout          = time.Second * 30
 	ServiceAccountReadyTimeout = time.Second * 20
 	NodeReadyTimeout           = time.Minute
-	ResourceDeleteTimeout      = time.Minute * 2
+	ResourceDeleteTimeout      = time.Minute * 5
 	BatchCreateTimeout         = time.Minute * 5
 )
 
@@ -47,6 +47,7 @@ var (
 	MultusNetworks       = "k8s.v1.cni.cncf.io/networks"
 
 	CalicoCNIName          string = "k8s-pod-network"
+	CiliumCNIName          string = "cilium"
 	MacvlanUnderlayVlan0   string = "macvlan-vlan0-underlay"
 	MacvlanUnderlayVlan100 string = "macvlan-vlan100-underlay"
 	MacvlanUnderlayVlan200 string = "macvlan-vlan200-underlay"

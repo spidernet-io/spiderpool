@@ -10,13 +10,15 @@ GO_BUILD_LDFLGAS= -ldflags "-X github.com/spidernet-io/spiderpool/internal/versi
 -X github.com/spidernet-io/spiderpool/internal/version.coordinatorBuildDate=$(GO_BUILD_TIME) \
 -X github.com/spidernet-io/spiderpool/internal/version.coordinatorVersion=$(GIT_TAG)"
 
+GO_BUILD_FLAG= CGO_ENABLED=0 $(GO) build
+
 all: $(TARGET)
 
 .PHONY: all $(TARGET)
 
 $(TARGET): ../../Makefile ../../Makefile.defs Makefile
 	@$(ECHO_GO)
-	$(QUIET)$(GO_BUILD) $(GO_BUILD_LDFLGAS) -o $(TARGET)
+	$(QUIET)$(GO_BUILD_FLAG) $(GO_BUILD_LDFLGAS) -o $(TARGET)
 
 clean:
 	@$(ECHO_CLEAN)

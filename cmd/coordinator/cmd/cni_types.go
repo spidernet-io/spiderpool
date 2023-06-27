@@ -25,10 +25,11 @@ import (
 var (
 	defaultLogPath          = "/var/log/spidernet/coordinator.log"
 	defaultUnderlayVethName = "veth0"
-	defaultOverlayVethName  = "eth0"
-	defaultPodRuleTable     = 100
-	defaultNICPrefix        = "net"
-	BinNamePlugin           = filepath.Base(os.Args[0])
+	// by default, k8s pod's first NIC is eth0
+	defaultOverlayVethName = "eth0"
+	defaultPodRuleTable    = 100
+	defaultNICPrefix       = "net"
+	BinNamePlugin          = filepath.Base(os.Args[0])
 )
 
 type Mode string
@@ -131,10 +132,6 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		return nil, err
 	}
 
-	if conf.OnlyHardware {
-		return &conf, nil
-	}
-
 	if err = ValidateRoutes(&conf, coordinatorConfig); err != nil {
 		return nil, err
 	}
@@ -172,6 +169,10 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 
 	if conf.TunePodRoutes == nil {
 		conf.TunePodRoutes = pointer.Bool(*coordinatorConfig.TunePodRoutes)
+	}
+
+	if conf.TuneMode == "" {
+		conf.TuneMode = Mode(*coordinatorConfig.TuneMode)
 	}
 
 	if conf.PodDefaultRouteNIC == "" && coordinatorConfig.PodDefaultRouteNIC != "" {

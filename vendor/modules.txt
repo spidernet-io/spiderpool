@@ -125,9 +125,6 @@ github.com/go-openapi/swag
 # github.com/go-openapi/validate v0.22.1
 ## explicit; go 1.14
 github.com/go-openapi/validate
-# github.com/go-ping/ping v1.1.0
-## explicit; go 1.14
-github.com/go-ping/ping
 # github.com/go-swagger/go-swagger v0.30.3
 ## explicit; go 1.19
 github.com/go-swagger/go-swagger/cmd/swagger
@@ -363,6 +360,9 @@ github.com/pkg/errors
 # github.com/projectcalico/api v0.0.0-20220722155641-439a754a988b
 ## explicit; go 1.16
 github.com/projectcalico/api/pkg/lib/numorstring
+# github.com/prometheus-community/pro-bing v0.2.0
+## explicit; go 1.19
+github.com/prometheus-community/pro-bing
 # github.com/prometheus/client_golang v1.14.0
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus

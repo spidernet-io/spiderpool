@@ -29,19 +29,49 @@ type coordinator struct {
 	hostAddress, currentAddress                                  []netlink.Addr
 }
 
-// firstInvoke check if coordinator is first called.
+// firstInvoke check if coordinator is first called and do some checks:
+// underlay mode only works with underlay mode, which can't work with overlay
+// mode, and which can't be called in first cni invoked by using multus's
+// annotations: v1.multus-cni.io/default-network
 func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
 	var err error
 	switch c.tuneMode {
 	case ModeUnderlay:
 		c.firstInvoke = c.currentInterface == podFirstInterface
-		return err
+		// underlay mode can't work with calico/cilium(overlay)
+		if !c.firstInvoke {
+			var exist bool
+			exist, err = networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
+			if err != nil {
+				return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
+			}
+
+			if !exist {
+				return fmt.Errorf("in multi-NIC mode, underlay mode can only work with underlay mode. please check pod's multus annotations")
+			}
+		}
+		return nil
 	case ModeOverlay:
+		// in overlay mode, it should no veth0 and currentInterface isn't eth0
+		if c.currentInterface == podFirstInterface {
+			return fmt.Errorf("in overlay mode, underlay mode can only work with underlay mode. please check pod's multus annotations")
+		}
+
+		exist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
+		if err != nil {
+			return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
+		}
+
+		if exist {
+			return fmt.Errorf("in multi-NIC mode, overlay mode can't work with underlay mode. please check pod's multus annotations")
+		}
+
 		c.firstInvoke, err = networking.IsFirstModeOverlayInvoke(c.netns, c.interfacePrefix)
 		return err
 	case ModeDisable:
 		return nil
 	}
+
 	return fmt.Errorf("unknown tuneMode: %s", c.tuneMode)
 }
 
@@ -88,11 +118,7 @@ func (c *coordinator) setupVeth(containerID string) error {
 		return nil
 	})
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // setupNeighborhood setup neighborhood tables for pod and host.
@@ -147,6 +173,8 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 		return err
 	}
 
+	logger.Debug("Debug setupHijackRoutes", zap.String("v4Gw", v4Gw.String()), zap.String("v6Gw", v6Gw.String()))
+
 	err = c.netns.Do(func(_ ns.NetNS) error {
 		// make sure that veth0/eth0 forwards traffic within the cluster
 		// eq: ip route add <cluster/service cidr> dev veth0/eth0
@@ -164,7 +192,7 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
 				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
-					logger.Error("failed to AddRoute for hijackCIDR", zap.Error(err))
+					logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 					return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 				}
 				logger.Debug("Add Route for hijackSubnet in pod successfully", zap.String("Dst", ipNet.String()))
@@ -236,19 +264,20 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 		configDefaultRouteNIC = c.currentInterface
 	}
 
-	miss, err := networking.IsInterfaceMiss(c.netns, configDefaultRouteNIC)
+	exist, err := networking.CheckInterfaceExist(c.netns, configDefaultRouteNIC)
 	if err != nil {
-		logger.Error("failed to IsInterfaceMiss", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
-		return fmt.Errorf("failed to IsInterfaceMiss: %v", err)
+		logger.Error("failed to CheckInterfaceExist", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
+		return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
 	}
 
-	if miss {
+	if !exist {
 		return fmt.Errorf("podDefaultRouteNIC: %s don't exist in pod", configDefaultRouteNIC)
 	}
 
-	podDefaultRouteNIC, err := networking.GetDefaultRouteInterface(c.netns, c.currentInterface, c.ipFamily)
+	podDefaultRouteNIC, err := networking.GetDefaultRouteInterface(c.ipFamily, c.currentInterface, c.netns)
 	if err != nil {
 		logger.Error("failed to GetDefaultRouteInterface", zap.Error(err))
+		return fmt.Errorf("failed to GetDefaultRouteInterface: %v", err)
 	}
 
 	if podDefaultRouteNIC == "" {

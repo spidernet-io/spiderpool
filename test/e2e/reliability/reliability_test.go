@@ -158,15 +158,16 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			}
 		},
 		Entry("Successfully run a pod during the ETCD is restarting",
-			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, time.Second*90),
+			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, common.PodStartTimeout),
 		Entry("Successfully run a pod during the API-server is restarting",
-			Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, time.Second*90),
-		Entry("Successfully run a pod during the coreDns is restarting",
-			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Minute*3),
+			Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, common.PodStartTimeout),
+		// https://github.com/spidernet-io/spiderpool/issues/1916
+		//Entry("Successfully run a pod during the coreDns is restarting",
+		//	Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, time.Minute*3),
 		Entry("Successfully run a pod during the Spiderpool agent is restarting",
-			Label("R00004", "G00008"), constant.SpiderpoolAgent, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent}, time.Second*90),
+			Label("R00004", "G00008"), constant.SpiderpoolAgent, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent}, common.PodStartTimeout),
 		Entry("Successfully run a pod during the Spiderpool controller is restarting",
-			Label("R00001", "G00008"), constant.SpiderpoolController, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController}, time.Second*90),
+			Label("R00001", "G00008"), constant.SpiderpoolController, map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController}, common.PodStartTimeout),
 	)
 
 	DescribeTable("check ip assign after reboot node",

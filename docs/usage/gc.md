@@ -21,7 +21,7 @@ Here are several cases in which we release IP:
 
 * Pod was `deleted`, except StatefulSet restarts its Pod situation.
 
-* Pod is `Terminating`, we will release its IPs after `pod.DeletionGracePeriodSeconds`, you can set environment `AdditionalGraceDelay`(default 0 seconds) to add delay duration. you can also determine whether gc `Terminating` status Pod or not with environment `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. (It would be enabled by default). There are two cases that this env may help:
+* Pod is `Terminating`, we will release its IPs after `spec.terminationGracePeriodSecond`, you can set environment `AdditionalGraceDelay`(default 0 seconds) to add delay duration. you can also determine whether gc `Terminating` status Pod or not with environment `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. (It would be enabled by default). There are two cases that this env may help:
     
     1. If one node encounters downtime in your cluster, you must rely on the IP GC to release the IPs.
     2. In some underlay mode, if you do not release one IP with terminating Pod and the new Pod cannot fetch available IP to start because of the IP resources shortage.

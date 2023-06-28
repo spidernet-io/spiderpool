@@ -41,9 +41,6 @@ ipam:
   ## @param ipam.enableIPv6 enable ipv6
   enableIPv6: false
 
-  ## @param ipam.networkMode the network mode
-  networkMode: legacy
-
   ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true
 

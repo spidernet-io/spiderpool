@@ -6,6 +6,7 @@ package networking
 import (
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 
@@ -179,4 +180,32 @@ func isInterfaceExist(iface string) (bool, error) {
 	} else {
 		return false, err
 	}
+}
+
+func LinkSetBondSlave(slave string, bond *netlink.Bond) error {
+	l, err := netlink.LinkByName(slave)
+	if err != nil {
+		return fmt.Errorf("failed to LinkByName slave %s: %w", slave, err)
+	}
+
+	if err = netlink.LinkSetBondSlave(l, bond); err != nil {
+		return fmt.Errorf("failed to LinkSetBondSlave: %w", err)
+	}
+	return nil
+}
+
+func LinkAdd(link netlink.Link) error {
+	return linkAddAndSetUp(link)
+}
+
+func linkAddAndSetUp(link netlink.Link) error {
+	var err error
+	if err = netlink.LinkAdd(link); err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("failed to LinkAdd %s: %w", link.Attrs().Name, err)
+	}
+
+	if err = netlink.LinkSetUp(link); err != nil {
+		return fmt.Errorf("failed to set %s up: %w", link.Attrs().Name, err)
+	}
+	return nil
 }

@@ -141,7 +141,7 @@ spec:
               - "/bin/sh"
               - "-c"
               - |
-                BIN_LIST="spiderpool coordinator"
+                BIN_LIST="spiderpool coordinator ifacer"
                 for ITEM in ${BIN_LIST} ; do
                 	rm -f /host/opt/cni/bin/${ITEM}.old || true
                 	( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true

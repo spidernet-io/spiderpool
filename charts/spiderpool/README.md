@@ -112,20 +112,21 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### ipam parameters
 
-| Name                                   | Description                                                                                      | Value   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`  |
-| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false` |
-| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`  |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `false` |
-| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`  |
-| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`   |
-| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`  |
-| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`     |
-| `ipam.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
-| `ipam.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
-| `ipam.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
-| `ipam.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
+| Name                                   | Description                                                                                      | Value    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
+| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`   |
+| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
+| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`   |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `false`  |
+| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`      |
+| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`   |
+| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`    |
+| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`   |
+| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`      |
+| `ipam.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false`  |
+| `ipam.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`     |
+| `ipam.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`     |
+| `ipam.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`     |
 
 
 ### coordinator parameters
@@ -173,21 +174,20 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### clusterDefaultPool parameters
 
-| Name                                               | Description                                                                  | Value               |
-| -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------- |
-| `clusterDefaultPool.installIPv4IPPool`             | install ipv4 spiderpool instance. It is required to set ipam.enableIPv4=true | `false`             |
-| `clusterDefaultPool.installIPv6IPPool`             | install ipv6 spiderpool instance. It is required to set ipam.enableIPv6=true | `false`             |
-| `clusterDefaultPool.ipv4IPPoolName`                | the name of ipv4 spiderpool instance                                         | `default-v4-ippool` |
-| `clusterDefaultPool.ipv6IPPoolName`                | the name of ipv6 spiderpool instance                                         | `default-v6-ippool` |
-| `clusterDefaultPool.ipv4SubnetName`                | the name of ipv4 spidersubnet instance                                       | `default-v4-subnet` |
-| `clusterDefaultPool.ipv6SubnetName`                | the name of ipv6 spidersubnet instance                                       | `default-v6-subnet` |
-| `clusterDefaultPool.ipv4Subnet`                    | the subnet of ipv4 spiderpool instance                                       | `""`                |
-| `clusterDefaultPool.ipv6Subnet`                    | the subnet of ipv6 spiderpool instance                                       | `""`                |
-| `clusterDefaultPool.ipv4IPRanges`                  | the available IP of ipv4 spiderpool instance                                 | `[]`                |
-| `clusterDefaultPool.ipv6IPRanges`                  | the available IP of ipv6 spiderpool instance                                 | `[]`                |
-| `clusterDefaultPool.ipv4Gateway`                   | the gateway of ipv4 subnet                                                   | `""`                |
-| `clusterDefaultPool.ipv6Gateway`                   | the gateway of ipv6 subnet                                                   | `""`                |
-| `clusterDefaultPool.subnetDefaultFlexibleIPNumber` | the default flexible IP number of SpiderSubnet feature auto-created IPPools  | `1`                 |
+| Name                                   | Description                                                                  | Value               |
+| -------------------------------------- | ---------------------------------------------------------------------------- | ------------------- |
+| `clusterDefaultPool.installIPv4IPPool` | install ipv4 spiderpool instance. It is required to set ipam.enableIPv4=true | `false`             |
+| `clusterDefaultPool.installIPv6IPPool` | install ipv6 spiderpool instance. It is required to set ipam.enableIPv6=true | `false`             |
+| `clusterDefaultPool.ipv4IPPoolName`    | the name of ipv4 spiderpool instance                                         | `default-v4-ippool` |
+| `clusterDefaultPool.ipv6IPPoolName`    | the name of ipv6 spiderpool instance                                         | `default-v6-ippool` |
+| `clusterDefaultPool.ipv4SubnetName`    | the name of ipv4 spidersubnet instance                                       | `default-v4-subnet` |
+| `clusterDefaultPool.ipv6SubnetName`    | the name of ipv6 spidersubnet instance                                       | `default-v6-subnet` |
+| `clusterDefaultPool.ipv4Subnet`        | the subnet of ipv4 spiderpool instance                                       | `""`                |
+| `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance                                       | `""`                |
+| `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance                                 | `[]`                |
+| `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                                 | `[]`                |
+| `clusterDefaultPool.ipv4Gateway`       | the gateway of ipv4 subnet                                                   | `""`                |
+| `clusterDefaultPool.ipv6Gateway`       | the gateway of ipv6 subnet                                                   | `""`                |
 
 
 ### spiderpoolAgent parameters

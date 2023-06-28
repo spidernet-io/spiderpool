@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install.md" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -692,20 +692,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/solution/" class="md-nav__link">
-        Underlay and overlay solutions
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -990,13 +976,13 @@
 
 
 <h1 id="pod-annotation-of-multi-nic">Pod annotation of multi-NIC</h1>
-<p>When assigning multiple NICs to a Pod with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>, Spiderpool supports to specify the IP pools for each interface.</p>
-<p>This feature supports to implement by annotation <code>ipam.spidernet.io/subnets</code> and <code>ipam.spidernet.io/ippools</code></p>
+<p>When assigning multiple NICs to a pod with <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>, Spiderpool supports to specify the IP pools for each interface.</p>
+<p>This feature supports to implement by annotation <code>ipam.spidernet.io/subnets</code> and <code>ipam.spidernet.io/ippools</code> </p>
 <h2 id="get-started">Get Started</h2>
 <p>The example will create two Multus CNI Configuration object and create two underlay subnets.
-Then run a Pod with two NICs with IP in different subnets.</p>
+Then run a pod with two NICs with IP in different subnets.</p>
 <h3 id="set-up-spiderpool">Set up Spiderpool</h3>
-<p>Follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/get-started-macvlan.md">installation</a> to install Spiderpool.</p>
+<p>Follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/get-started-macvlan.md">installation</a> to install Spiderpool. </p>
 <h3 id="set-up-multus-configuration">Set up Multus Configuration</h3>
 <p>In this example, Macvlan will be used as the main CNI, Create two network-attachment-definitions，The following parameters need to be confirmed:</p>
 <ul>

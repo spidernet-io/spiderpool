@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install.md" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -776,20 +776,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/solution/" class="md-nav__link">
-        Underlay and overlay solutions
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -1075,7 +1061,7 @@
 
 <h1 id="spidersubnet">SpiderSubnet</h1>
 <p>The Spiderpool owns a CRD SpiderSubnet, which can help applications (such as Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet) to create a corresponding SpiderIPPool.</p>
-<p>Here are some annotations that you should write down on the application template Pod annotation:</p>
+<p>Here are some annotations that you should write down on the application template pod annotation:</p>
 <table>
 <thead>
 <tr>
@@ -1088,7 +1074,7 @@
 <tr>
 <td>ipam.spidernet.io/subnet</td>
 <td>Choose one SpiderSubnet V4 and V6 CR to use</td>
-<td>{"interface":"eth0", "ipv4":["subnet-demo-v4"], "ipv6":["subnet-demo-v6"]}</td>
+<td>{{"interface":"eth0", "ipv4":["subnet-demo-v4"], "ipv6":["subnet-demo-v6"]}</td>
 </tr>
 <tr>
 <td>ipam.spidernet.io/subnets</td>
@@ -1109,32 +1095,25 @@
 </table>
 <h2 id="notice">Notice</h2>
 <ol>
-<li>
-<p>The annotation <code>ipam.spidernet.io/subnets</code> has higher priority over <code>ipam.spidernet.io/subnet</code>. If you specify both of them two, it only uses <code>ipam.spidernet.io/subnets</code> mode.</p>
-</li>
-<li>
-<p>In annotation <code>ipam.spidernet.io/subnet</code> mode, it will use default interface name <code>eth0</code> if you do not set <code>interface</code> property.</p>
-</li>
-<li>
-<p>For annotation <code>ipam.spidernet.io/ippool-ip-number</code>, you can use '2' for fixed IP number or '+2' for flexible mode. The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas. If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas. This is an optional annotation. If left unset, it will use the <code>clusterSubnetDefaultFlexibleIPNumber</code> property from the <code>spiderpool-conf</code> ConfigMap as the flexible IP number in flexible mode. Refer to <a href="../../concepts/config/">config</a> for details.</p>
-</li>
-<li>
-<p>The current version only supports using one SpiderSubnet V4/V6 CR for one Interface. You shouldn't specify two or more SpiderSubnet V4 CRs. The system will choose the first one to use.</p>
-</li>
-<li>
-<p>It's invalid to modify the Auto-created IPPool <code>Spec.IPs</code> by users.</p>
-</li>
-<li>
-<p>The auto-created IPPool will only serve your specified application, and the system will bind a special Spiderpool podAffinity to it. If you want to use <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code> annotations to specify the 'reserved' auto-created IPPool, you should edit the IPPool to remove its special Spiderpool podAffinity and annotations <code>ipam.spidernet.io/owner-application*</code>.</p>
-</li>
+<li>The annotation <code>ipam.spidernet.io/subnets</code> has higher priority over <code>ipam.spidernet.io/subnet</code>.
+   If you specify both of them two, it only uses <code>ipam.spidernet.io/subnets</code> mode.</li>
+<li>In annotation <code>ipam.spidernet.io/subnet</code> mode, it will use default interface name <code>eth0</code> if you do not set <code>interface</code> property.</li>
+<li>For annotation <code>ipam.spidernet.io/ippool-ip-number</code>, you can use '2' for fixed IP number or '+2' for flexible mode.
+   The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas.
+   If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas.
+   This is an optional annotation. If left unset, it will use the <code>clusterSubnetDefaultFlexibleIPNumber</code> property from the <code>spiderpool-conf</code> ConfigMap as the flexible IP number in flexible mode. Refer to <a href="../../concepts/config/">config</a> for details.</li>
+<li>The current version only supports using one SpiderSubnet V4/V6 CR for one Interface. You shouldn't specify two or more SpiderSubnet V4 CRs. The system will choose the first one to use.</li>
+<li>It's invalid to modify the Auto-created IPPool <code>Spec.IPs</code> by users.</li>
+<li>The auto-created IPPool will only serve your specified application, and the system will bind a special Spiderpool podAffinity to it. 
+   If you want to use <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code> annotations to specify the 'reserved' auto-created IPPool, you should edit the IPPool to remove its special Spiderpool podAffinity and annotations <code>ipam.spidernet.io/owner-application*</code>.</li>
 </ol>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-spidersubnet-feature">Enable SpiderSubnet feature</h3>
-<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="./install.md">install</a> for details.</p>
+<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="../install/">install</a> for details.</p>
 <p>Check configmap <code>spiderpool-conf</code> property <code>enableSpiderSubnet</code> whether is already set to <code>true</code> or not.</p>
 <div class="highlight"><pre><span></span><code>kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre></div>
-<p>If you want to set it <code>true</code>, just execute <code>helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableSpiderSubnet=true -n kube-system</code>.</p>
+<p>If you want to set it <code>true</code>, just execute <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableSpiderSubnet=true -n kube-system</code>.</p>
 <h3 id="create-a-spidersubnet">Create a SpiderSubnet</h3>
 <p>Install a SpiderSubnet example:</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/subnet-demo.yaml

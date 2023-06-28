@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install.md" class="md-nav__link">
+      <a href="../../usage/install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -686,20 +686,6 @@
     <li class="md-nav__item">
       <a href="../../concepts/spidersubnet/" class="md-nav__link">
         SpiderSubnet
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/solution/" class="md-nav__link">
-        Underlay and overlay solutions
       </a>
     </li>
   
@@ -1209,7 +1195,7 @@ finish checking e2e tools
       -----------------------------------------------------------------------------------------------------
          succeeded to setup cluster spider
          you could use following command to access the cluster
-            export KUBECONFIG=$(pwd)/test/.cluster/spider/.kube/config
+            export KUBECONFIG=/root/git/spiderpool/test/.cluster/spider/.kube/config
             kubectl get nodes
       -----------------------------------------------------------------------------------------------------
 
@@ -1261,7 +1247,7 @@ $ make e2e_test
 </code></pre>
 </li>
 </ol>
-<p>5 finally, you could visit "<a href="http://HostIp:4040">http://HostIp:4040</a>" the in the browser of your desktop, and get flamegraph</p>
+<p>5 finally, you could visit "http://HostIp:4040" the in the browser of your desktop, and get flamegraph</p>
 <hr />
 <h2 id="submit-pull-request">Submit Pull Request</h2>
 <p>A pull request will be checked by following workflow, which is required for merging.</p>

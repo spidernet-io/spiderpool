@@ -50,6 +50,9 @@ ipam:
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: false
 
+  ## @param ipam.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
+  subnetDefaultFlexibleIPNumber: 1
+
   gc:
     ## @param ipam.gc.enabled enable retrieve IP in spiderippool CR
     enabled: true
@@ -232,9 +235,6 @@ clusterDefaultPool:
 
   ## @param clusterDefaultPool.ipv6Gateway the gateway of ipv6 subnet
   ipv6Gateway: ""
-
-  ## @param clusterDefaultPool.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
-  subnetDefaultFlexibleIPNumber: 1
 
 ## @section spiderpoolAgent parameters
 ##

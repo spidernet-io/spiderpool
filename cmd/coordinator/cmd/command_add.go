@@ -82,6 +82,18 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
 
+	k8sArgs := plugincmd.K8sArgs{}
+	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
+		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
+		logger.Error(err.Error())
+		return err
+	}
+
+	logger = logger.With(
+		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
+		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
+	)
+
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
 	if err != nil {

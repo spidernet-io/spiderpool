@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../install.md" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -789,6 +789,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/solution/" class="md-nav__link">
+        Underlay and overlay solutions
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1116,11 +1130,11 @@ and change the IPPool CR property ContainerID with the new pause container ID.</
 </ul>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-statefulset-support">Enable StatefulSet support</h3>
-<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to <a href="../install/">install</a> for details.</p>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to <a href="./install.md">install</a> for details.</p>
 <p>Check whether the property <code>enableStatefulSet</code> of the configmap <code>spiderpool-conf</code> is already set to <code>true</code> or not.</p>
 <div class="highlight"><pre><span></span><code>kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre></div>
-<p>If you want to set it <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableStatefulSet=true -n kube-system</code>.</p>
+<p>If you want to set it <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableStatefulSet=true -n kube-system</code>.</p>
 <h3 id="create-a-statefulset">Create a StatefulSet</h3>
 <p>This is an example to install a StatefulSet.</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset/statefulset-demo.yaml

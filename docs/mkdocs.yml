@@ -71,6 +71,7 @@ nav:
       - SpiderIPPool: concepts/spiderippool.md
       - SpiderReservedIP: concepts/spiderreservedip.md
       - SpiderSubnet: concepts/spidersubnet.md
+      - Underlay and overlay solutions: concepts/solution.md
   - CLI Reference:
       - spiderpoolctl: cmdref/spiderpoolctl.md
       - spiderpool-controller: cmdref/spiderpool-controller.md

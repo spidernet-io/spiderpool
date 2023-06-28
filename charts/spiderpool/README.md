@@ -118,7 +118,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
 | `ipam.networkMode`                     | the network mode                                                                                 | `legacy` |
 | `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`   |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`   |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `false`   |
 | `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`      |
 | `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`   |
 | `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`    |

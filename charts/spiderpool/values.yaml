@@ -48,7 +48,7 @@ ipam:
   enableStatefulSet: true
 
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
-  enableSpiderSubnet: true
+  enableSpiderSubnet: false
 
   ## @param ipam.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
   subnetDefaultFlexibleIPNumber: 1

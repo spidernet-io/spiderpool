@@ -21,7 +21,7 @@ SpiderEndpoint 对象。使用内存缓存来追踪应该清理的具有相应 I
 
 * Pod 被 `deleted`，不包括 StatefulSet 重启其 Pod 的情况。
 
-* Pod 正在 `Terminating`，我们将在 `pod.DeletionGracePeriodSeconds` 后释放其 IP，
+* Pod 正在 `Terminating`，我们将在 `spec.terminationGracePeriodSecond` 后释放其 IP，
   您可以设置 `AdditionalGraceDelay`（默认为 0 秒）环境变量以添加延迟时间。
   您还可以使用环境变量 `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`（默认已启用）确定是否回收
   `Terminating` 状态的 Pod。此环境变量可能在以下两种情况中有所帮助：

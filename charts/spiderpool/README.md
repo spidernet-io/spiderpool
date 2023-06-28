@@ -112,20 +112,20 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### ipam parameters
 
-| Name                                   | Description                                                                                      | Value    |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
-| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`   |
-| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
-| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`   |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `false`  |
-| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`   |
-| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`    |
-| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`   |
-| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`      |
-| `ipam.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false`  |
-| `ipam.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`     |
-| `ipam.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`     |
-| `ipam.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`     |
+| Name                                   | Description                                                                                      | Value   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- |
+| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`  |
+| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false` |
+| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`  |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `false` |
+| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`  |
+| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`   |
+| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`  |
+| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`     |
+| `ipam.grafanaDashboard.install`        | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
+| `ipam.grafanaDashboard.namespace`      | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
+| `ipam.grafanaDashboard.annotations`    | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
+| `ipam.grafanaDashboard.labels`         | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
 
 
 ### coordinator parameters

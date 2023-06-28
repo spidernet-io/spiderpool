@@ -48,7 +48,7 @@ ipam:
   enableStatefulSet: true
 
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
-  enableSpiderSubnet: true
+  enableSpiderSubnet: false
 
   gc:
     ## @param ipam.gc.enabled enable retrieve IP in spiderippool CR

@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../install.md" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -776,6 +776,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/solution/" class="md-nav__link">
+        Underlay and overlay solutions
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1116,11 +1130,11 @@
 </ol>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-spidersubnet-feature">Enable SpiderSubnet feature</h3>
-<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="../install/">install</a> for details.</p>
+<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="./install.md">install</a> for details.</p>
 <p>Check configmap <code>spiderpool-conf</code> property <code>enableSpiderSubnet</code> whether is already set to <code>true</code> or not.</p>
 <div class="highlight"><pre><span></span><code>kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre></div>
-<p>If you want to set it <code>true</code>, just execute <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableSpiderSubnet=true -n kube-system</code>.</p>
+<p>If you want to set it <code>true</code>, just execute <code>helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableSpiderSubnet=true -n kube-system</code>.</p>
 <h3 id="create-a-spidersubnet">Create a SpiderSubnet</h3>
 <p>Install a SpiderSubnet example:</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/subnet-demo.yaml

@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/" class="md-nav__link">
+      <a href="../../usage/install.md" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -756,6 +756,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solution/" class="md-nav__link">
+        Underlay and overlay solutions
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1068,7 +1082,6 @@
 <span class="nt">data</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">conf.yml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
 <span class="w">    </span><span class="no">ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock</span><span class="w"></span>
-<span class="w">    </span><span class="no">networkMode: legacy</span><span class="w"></span>
 <span class="w">    </span><span class="no">enableIPv4: true</span><span class="w"></span>
 <span class="w">    </span><span class="no">enableIPv6: true</span><span class="w"></span>
 <span class="w">    </span><span class="no">enableStatefulSet: true</span><span class="w"></span>
@@ -1077,8 +1090,6 @@
 </code></pre></div>
 <ul>
 <li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.</li>
-<li><code>networkMode</code>:</li>
-<li><code>legacy</code>: Applicable to the traditional network consisting of physical machines.</li>
 <li><code>enableIPv4</code> (bool):</li>
 <li><code>true</code>: Enable IPv4 IP allocation capability of Spiderpool.</li>
 <li><code>false</code>: Disable IPv4 IP allocation capability of Spiderpool.</li>

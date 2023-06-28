@@ -52,7 +52,7 @@
           -----------------------------------------------------------------------------------------------------
              succeeded to setup cluster spider
              you could use following command to access the cluster
-                export KUBECONFIG=/root/git/spiderpool/test/.cluster/spider/.kube/config
+                export KUBECONFIG=$(pwd)/test/.cluster/spider/.kube/config
                 kubectl get nodes
           -----------------------------------------------------------------------------------------------------        
 

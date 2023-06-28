@@ -113,12 +113,13 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 ### ipam parameters
 
 | Name                                   | Description                                                                                      | Value    |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
+|----------------------------------------|--------------------------------------------------------------------------------------------------| -------- |
 | `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`   |
 | `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
 | `ipam.networkMode`                     | the network mode                                                                                 | `legacy` |
 | `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`   |
 | `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`   |
+| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`      |
 | `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`   |
 | `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`    |
 | `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`   |
@@ -188,7 +189,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `clusterDefaultPool.ipv6IPRanges`                  | the available IP of ipv6 spiderpool instance                                 | `[]`                |
 | `clusterDefaultPool.ipv4Gateway`                   | the gateway of ipv4 subnet                                                   | `""`                |
 | `clusterDefaultPool.ipv6Gateway`                   | the gateway of ipv6 subnet                                                   | `""`                |
-| `clusterDefaultPool.subnetDefaultFlexibleIPNumber` | the default flexible IP number of SpiderSubnet feature auto-created IPPools  | `1`                 |
 
 
 ### spiderpoolAgent parameters

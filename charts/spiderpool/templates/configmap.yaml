@@ -21,7 +21,7 @@ data:
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
     enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
     {{- if .Values.ipam.enableSpiderSubnet }}
-    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.clusterDefaultPool.subnetDefaultFlexibleIPNumber }}
+    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.subnetDefaultFlexibleIPNumber }}
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}

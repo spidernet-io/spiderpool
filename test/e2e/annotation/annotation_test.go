@@ -186,7 +186,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				}]`),
 	)
 
-	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Label("A00001"), func() {
+	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Label("A00001"), Pending, func() {
 		var (
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool

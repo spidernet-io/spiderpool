@@ -5,7 +5,7 @@ package ipam
 
 import (
 	"context"
-	"fmt"
+	// "fmt"
 	"time"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -75,12 +75,13 @@ func (c *IPAMConfig) filterPoolMisspecified(ctx context.Context, t *ToBeAllocate
 	}
 	t.PoolCandidates = validPoolCandidates
 
-	if c.EnableIPv4 && v4Count == 0 {
-		return fmt.Errorf("%w, IPv4 is enabled, but no IPv4 IPPool specified for NIC %s", constant.ErrWrongInput, t.NIC)
-	}
-	if c.EnableIPv6 && v6Count == 0 {
-		return fmt.Errorf("%w, IPv6 is enabled, but no IPv6 IPPool specified for NIC %s", constant.ErrWrongInput, t.NIC)
-	}
+	// for dual stack environment, support only ipv4 or ipv6 address
+	// if c.EnableIPv4 && v4Count == 0 {
+	//	return fmt.Errorf("%w, IPv4 is enabled, but no IPv4 IPPool specified for NIC %s", constant.ErrWrongInput, t.NIC)
+	// }
+	// if c.EnableIPv6 && v6Count == 0 {
+	//	return fmt.Errorf("%w, IPv6 is enabled, but no IPv6 IPPool specified for NIC %s", constant.ErrWrongInput, t.NIC)
+	// }
 
 	return nil
 }

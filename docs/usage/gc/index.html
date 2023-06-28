@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install.md" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -504,8 +504,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#enable-ip-gc-support" class="md-nav__link">
-    Enable IP GC Support
+    Enable IP GC support
   </a>
   
 </li>
@@ -749,20 +756,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/solution/" class="md-nav__link">
-        Underlay and overlay solutions
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -976,8 +969,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#enable-ip-gc-support" class="md-nav__link">
-    Enable IP GC Support
+    Enable IP GC support
   </a>
   
 </li>
@@ -1020,52 +1020,49 @@
 
 
 <h1 id="reclaim-ip">Reclaim IP</h1>
-<p><strong>English</strong> | <a href="../gc-zh_CN/"><strong>简体中文</strong></a></p>
-<p>Spiderpool has an IP garbage collection mechanism that helps to clean up leaked IPs once CNI cmdDel fails.</p>
-<h2 id="enable-ip-gc-support">Enable IP GC Support</h2>
-<p>Check the <code>SPIDERPOOL_GC_IP_ENABLED</code> environment property of the <code>spiderpool-controller</code> Kubernetes deployment to see if it is already set to <code>true</code>. (It is enabled by default.)</p>
+<h2 id="description">Description</h2>
+<p>The spiderpool owns an IP garbage collection mechanism, it helps to clean up leaked IPs once CNI cmdDel failed.</p>
+<h2 id="enable-ip-gc-support">Enable IP GC support</h2>
+<p>Check k8s deployment <code>spiderpool-controller</code> environment property <code>SPIDERPOOL_GC_IP_ENABLED</code> whether is already set to <code>true</code> or not. (It would be enabled by default)</p>
 <div class="highlight"><pre><span></span><code>kubectl edit deploy spiderpool-controller -n kube-system
 </code></pre></div>
 <h2 id="design">Design</h2>
-<p>The spiderpool-controller uses <code>pod informer</code> and regular interval <code>scan all SpiderIPPool</code> to clean up leaked IPs and corresponding SpiderEndpoint objects.
-We used a memory cache to record the Pods object that the corresponding IPs and SpiderEndpoint objects should be cleaned up.</p>
-<p>Here are several cases in which we release IP:</p>
+<p>The spiderpool-controller uses <code>pod informer</code> and regular interval <code>scan all SpiderIPPool</code> to clean up leaked IPs and corresponding SpiderEndpoint object.
+We used a memory cache to record the Pods object that the corresponding IPs and SpiderEndpoint objects should be cleaned.</p>
+<p>Here are several cases that we will release IP:</p>
 <ul>
 <li>
-<p>Pod was <code>deleted</code>, except StatefulSet restarts its Pod situation.</p>
+<p>pod was <code>deleted</code>, except StatefulSet restarts its pod situation.</p>
 </li>
 <li>
-<p>Pod is <code>Terminating</code>, we will release its IPs after <code>spec.terminationGracePeriodSecond</code>, you can set environment <code>AdditionalGraceDelay</code>(default 0 seconds) to add delay duration. you can also determine whether gc <code>Terminating</code> status Pod or not with environment <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. (It would be enabled by default). There are two cases that this env may help:</p>
-<ol>
-<li>If one node encounters downtime in your cluster, you must rely on the IP GC to release the IPs.</li>
-<li>In some underlay mode, if you do not release one IP with terminating Pod and the new Pod cannot fetch available IP to start because of the IP resources shortage.</li>
-</ol>
-<p>But there's a special case we should watch out for: if the node lost the connection with the master API server due to the node Interface or network issues, the Pod network may also be good and still serves well. In this case, if we release its IPs and allocate them to other Pods, this will lead to IP conflict.</p>
+<p>pod is <code>Terminating</code>, we will release its IPs after <code>pod.DeletionGracePeriodSeconds</code>, you can set environment <code>AdditionalGraceDelay</code>(default 0 seconds) to add delay duration. you can also determine whether gc <code>Terminating</code> status pod or not with environment <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. (It would be enabled by default).
+ There are 2 situation that this env may help: 1. If one node downtime in your cluster, you must reply on the IP GC to release the IPs. 2. In some underlay mode, if you do not release one IP with terminating pod and the new pod cannot fetch available IP to start because of the IP resources shortage.
+ But there's a special situation we should watch out for: if the node lost the connection with the master API server due to the node Interface or network issues, the pod network may also good and still serves well. In this case, if we release its IPs and allocate them to other pods, this will lead to IP conflict.</p>
 </li>
 <li>
-<p>Pod is in the <code>Succeeded</code> or <code>Failed</code> phase, we'll clean the Pod's IPs after <code>pod.DeletionGracePeriodSeconds</code>, you can set the <code>AdditionalGraceDelay</code>(default 0 seconds) environment variable to add delay duration.</p>
+<p>pod is <code>Succeeded</code> or <code>Failed</code> phase, we'll clean the pod's IPs after <code>pod.DeletionGracePeriodSeconds</code>, you can set environment <code>AdditionalGraceDelay</code>(default 0 seconds) to add delay duration.</p>
 </li>
 <li>
-<p>SpiderIPPool allocated IP corresponding Pod does not exist in Kubernetes, except StatefulSet restarts its Pod situation.</p>
+<p>SpiderIPPool allocated IP corresponding pod is not exist in the Kubernetes, except StatefulSet restarts its pod situation.</p>
 </li>
 <li>
-<p>The Pod UID is different from the SpiderIPPool IP allocation Pod UID.</p>
+<p>The pod UID is different from the SpiderIPPool IP allocation pod UID.</p>
 </li>
 </ul>
 <h2 id="notice">Notice</h2>
 <ul>
 <li>
-<p>The <code>spiderpool-controller</code> has multiple replicas and uses leader election. The IP Garbage Collection <code>pod informer</code> only serves the <code>Master</code>.
-  However, every backup will use <code>scan all SpiderIPPool</code> to release the leaked IPs that should be cleaned up immediately. It will not trace the Pod into memory cache with the upper Pod status cases.</p>
+<p>The spiderpool controller owns multiple replicas and uses leader election, and the IP Garbage collection <code>pod informer</code> only serves for <code>Master</code>.
+  But every backup will use <code>scan all SpiderIPPool</code> to release the leaked IPs that should be cleaned up immediately, it wouldn't trace the pod into memory cache with the upper pod status cases.</p>
 </li>
 <li>
-<p>We can change tracing Pod <code>AdditionalGraceDelay</code> with the environment <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code>(default 5 seconds).</p>
+<p>We can change tracing pod <code>AdditionalGraceDelay</code> with the environment <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code>. (default 5 seconds)</p>
 </li>
 <li>
-<p>If one node breaks in your cluster, the IP GC will forcibly release the unreachable Pod corresponding IPs if you enable the <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code> environment variable.
-  There is also a rare situation where your Pod is still alive even after the <code>DeletionGracePeriod</code> duration. The IP GC will still forcibly release the unreachable Pod corresponding IPs.
-  For these two cases, we recommend that the Main CNI has the ability to check for IP conflicts.
-  The <a href="https://github.com/spidernet-io/plugins">Veth</a> plugin already implements this feature, and you can use it in collaboration with <code>Macvlan</code> or <code>SR-IOV</code> CNI.</p>
+<p>If one node broke in your cluster, the IP GC will forcibly release the unreachable pod corresponding IPs if you enabled env <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. 
+And there's one rare situation that your pod is still alive even after pod <code>DeletionGracePeriod</code> duration, the IP GC will still forcibly release the unreachable pod corresponding IPs.
+For these two cases, we recommend the Main CNI has the ability to check IP conflict. 
+The <a href="https://github.com/spidernet-io/plugins">Veth</a> plugin implements this feature already, you can use it to collaborate with <code>Macvlan</code> or <code>SR-IOV</code> Main CNI.</p>
 </li>
 </ul>
 

@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install.md" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -692,20 +692,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/solution/" class="md-nav__link">
-        Underlay and overlay solutions
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -1050,7 +1036,7 @@ nginx-subnet-v4   <span class="m">4</span>         <span class="m">10</span>.244
 <h2 id="configure-calico-bgp-optional">Configure Calico BGP [optional]</h2>
 <p>In this example, we want Calico to work in underlay mode and announce the Spiderpool subnet (<code>10.244.0.0/16</code>) to the BGP router via the BGP protocol, ensuring that clients outside the cluster can directly access the real IP addresses of the Pods through BGP router.</p>
 <blockquote>
-<p>If you don't need external clients to access Pod IPs directly, skip this step.</p>
+<p>If you don't need external clients to access pod IPs directly, skip this step.</p>
 </blockquote>
 <p>The network topology is as follows:</p>
 <p><img alt="calico-bgp" src="../../images/calico-bgp.svg" /></p>
@@ -1229,7 +1215,7 @@ nginx-644659db67-szgcg   <span class="m">1</span>/1     Running       <span clas
 nginx-644659db67-98rcg   <span class="m">1</span>/1     Running       <span class="m">0</span>          23s     <span class="m">10</span>.244.100.92    master1   &lt;none&gt;           &lt;none&gt;
 </code></pre></div>
 <p>When the replica count increases to <code>3</code>, the IP address of the new replica is still assigned from the automatic pool: <code>auto-nginx-v4-eth0-452e737e5e12(10.244.100.90-10.244.100.95)</code></p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale Pods</span>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale pods</span>
 deployment.apps/nginx scaled
 
 <span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>

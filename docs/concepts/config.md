@@ -53,7 +53,6 @@ metadata:
 data:
   conf.yml: |
     ipamUnixSocketPath: /var/run/spidernet/spiderpool.sock
-    networkMode: legacy
     enableIPv4: true
     enableIPv6: true
     enableStatefulSet: true
@@ -62,8 +61,6 @@ data:
 ```
 
 - `ipamUnixSocketPath` (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.
-- `networkMode`:
-  - `legacy`: Applicable to the traditional network consisting of physical machines.
 - `enableIPv4` (bool):
   - `true`: Enable IPv4 IP allocation capability of Spiderpool.
   - `false`: Disable IPv4 IP allocation capability of Spiderpool.

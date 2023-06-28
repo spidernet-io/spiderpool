@@ -131,15 +131,15 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### coordinator parameters
 
-| Name                           | Description                                                               | Value                 |
-| ------------------------------ | ------------------------------------------------------------------------- | --------------------- |
-| `coordinator.enabled`          | enable SpiderCoordinator                                                  | `true`                |
-| `coordinator.name`             | the name of the default SpiderCoordinator CR                              | `default-coordinator` |
-| `coordinator.tuneMode`         | optional network mode, ["underlay", "overlay", "disabled"]                | `underlay`            |
-| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ] | `cluster`             |
-| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `true`                |
-| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `true`                |
-| `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`                |
+| Name                           | Description                                                               | Value      |
+| ------------------------------ | ------------------------------------------------------------------------- | ---------- |
+| `coordinator.enabled`          | enable SpiderCoordinator                                                  | `true`     |
+| `coordinator.name`             | the name of the default SpiderCoordinator CR                              | `default`  |
+| `coordinator.tuneMode`         | optional network mode, ["underlay", "overlay", "disabled"]                | `underlay` |
+| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ] | `cluster`  |
+| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `true`     |
+| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `true`     |
+| `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`     |
 
 
 ### multus parameters

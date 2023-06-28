@@ -115,6 +115,12 @@ paths:
         Send a request to daemonset to get coordinator config
       tags:
         - daemonset
+      parameters:
+        - name: get-coordinator-config
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/GetCoordinatorArgs"
       responses:
         "200":
           description: Success
@@ -327,3 +333,11 @@ definitions:
       - podCIDR
       - serviceCIDR
       - tunePodRoutes
+  GetCoordinatorArgs:
+    description: Get Coordinator Args
+    type: object
+    properties:
+      podName:
+        type: string
+      podNamespace:
+        type: string

@@ -113,7 +113,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 ### ipam parameters
 
 | Name                                   | Description                                                                                      | Value    |
-|----------------------------------------|--------------------------------------------------------------------------------------------------| -------- |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
 | `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`   |
 | `ipam.enableIPv6`                      | enable ipv6                                                                                      | `false`  |
 | `ipam.networkMode`                     | the network mode                                                                                 | `legacy` |
@@ -132,15 +132,15 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### coordinator parameters
 
-| Name                           | Description                                                               | Value      |
-| ------------------------------ | ------------------------------------------------------------------------- | ---------- |
-| `coordinator.enabled`          | enable SpiderCoordinator                                                  | `true`     |
-| `coordinator.name`             | the name of the default SpiderCoordinator CR                              | `default`  |
-| `coordinator.tuneMode`         | optional network mode, ["underlay", "overlay", "disabled"]                | `underlay` |
-| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ] | `cluster`  |
-| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `true`     |
-| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `true`     |
-| `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`     |
+| Name                           | Description                                                               | Value                 |
+| ------------------------------ | ------------------------------------------------------------------------- | --------------------- |
+| `coordinator.enabled`          | enable SpiderCoordinator                                                  | `true`                |
+| `coordinator.name`             | the name of the default SpiderCoordinator CR                              | `default-coordinator` |
+| `coordinator.tuneMode`         | optional network mode, ["underlay", "overlay", "disabled"]                | `underlay`            |
+| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ] | `cluster`             |
+| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `true`                |
+| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `true`                |
+| `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`                |
 
 
 ### multus parameters
@@ -175,20 +175,20 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### clusterDefaultPool parameters
 
-| Name                                               | Description                                                                  | Value               |
-| -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------- |
-| `clusterDefaultPool.installIPv4IPPool`             | install ipv4 spiderpool instance. It is required to set ipam.enableIPv4=true | `false`             |
-| `clusterDefaultPool.installIPv6IPPool`             | install ipv6 spiderpool instance. It is required to set ipam.enableIPv6=true | `false`             |
-| `clusterDefaultPool.ipv4IPPoolName`                | the name of ipv4 spiderpool instance                                         | `default-v4-ippool` |
-| `clusterDefaultPool.ipv6IPPoolName`                | the name of ipv6 spiderpool instance                                         | `default-v6-ippool` |
-| `clusterDefaultPool.ipv4SubnetName`                | the name of ipv4 spidersubnet instance                                       | `default-v4-subnet` |
-| `clusterDefaultPool.ipv6SubnetName`                | the name of ipv6 spidersubnet instance                                       | `default-v6-subnet` |
-| `clusterDefaultPool.ipv4Subnet`                    | the subnet of ipv4 spiderpool instance                                       | `""`                |
-| `clusterDefaultPool.ipv6Subnet`                    | the subnet of ipv6 spiderpool instance                                       | `""`                |
-| `clusterDefaultPool.ipv4IPRanges`                  | the available IP of ipv4 spiderpool instance                                 | `[]`                |
-| `clusterDefaultPool.ipv6IPRanges`                  | the available IP of ipv6 spiderpool instance                                 | `[]`                |
-| `clusterDefaultPool.ipv4Gateway`                   | the gateway of ipv4 subnet                                                   | `""`                |
-| `clusterDefaultPool.ipv6Gateway`                   | the gateway of ipv6 subnet                                                   | `""`                |
+| Name                                   | Description                                                                  | Value               |
+| -------------------------------------- | ---------------------------------------------------------------------------- | ------------------- |
+| `clusterDefaultPool.installIPv4IPPool` | install ipv4 spiderpool instance. It is required to set ipam.enableIPv4=true | `false`             |
+| `clusterDefaultPool.installIPv6IPPool` | install ipv6 spiderpool instance. It is required to set ipam.enableIPv6=true | `false`             |
+| `clusterDefaultPool.ipv4IPPoolName`    | the name of ipv4 spiderpool instance                                         | `default-v4-ippool` |
+| `clusterDefaultPool.ipv6IPPoolName`    | the name of ipv6 spiderpool instance                                         | `default-v6-ippool` |
+| `clusterDefaultPool.ipv4SubnetName`    | the name of ipv4 spidersubnet instance                                       | `default-v4-subnet` |
+| `clusterDefaultPool.ipv6SubnetName`    | the name of ipv6 spidersubnet instance                                       | `default-v6-subnet` |
+| `clusterDefaultPool.ipv4Subnet`        | the subnet of ipv4 spiderpool instance                                       | `""`                |
+| `clusterDefaultPool.ipv6Subnet`        | the subnet of ipv6 spiderpool instance                                       | `""`                |
+| `clusterDefaultPool.ipv4IPRanges`      | the available IP of ipv4 spiderpool instance                                 | `[]`                |
+| `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                                 | `[]`                |
+| `clusterDefaultPool.ipv4Gateway`       | the gateway of ipv4 subnet                                                   | `""`                |
+| `clusterDefaultPool.ipv6Gateway`       | the gateway of ipv6 subnet                                                   | `""`                |
 
 
 ### spiderpoolAgent parameters

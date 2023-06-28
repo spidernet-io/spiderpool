@@ -65,18 +65,18 @@ ipam:
       ## @param ipam.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
 
-  grafanaDashboard:
-    ## @param ipam.grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
-    install: false
+grafanaDashboard:
+  ## @param grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
+  install: false
 
-    ## @param ipam.grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
-    namespace: ""
+  ## @param grafanaDashboard.namespace the grafanaDashboard namespace. Default to the namespace of helm instance
+  namespace: ""
 
-    ## @param ipam.grafanaDashboard.annotations the additional annotations of spiderpool grafanaDashboard
-    annotations: {}
+  ## @param grafanaDashboard.annotations the additional annotations of spiderpool grafanaDashboard
+  annotations: {}
 
-    ## @param ipam.grafanaDashboard.labels the additional label of spiderpool grafanaDashboard
-    labels: {}
+  ## @param grafanaDashboard.labels the additional label of spiderpool grafanaDashboard
+  labels: {}
 
 ## @section coordinator parameters
 ##
@@ -150,6 +150,9 @@ multus:
         ## @param multus.multusCNI.resources.requests.memory the memory requests of multus-CNI daemonset pod
         memory: 50Mi
 
+    ## @skip multus.multusCNI.tolerations
+    tolerations:
+      - operator: Exists
 
     ## @param multus.multusCNI.podAnnotations the additional annotations of multus-CNI daemonset pod
     podAnnotations: {}
@@ -286,38 +289,8 @@ spiderpoolAgent:
     type: ClusterIP
 
   ## @skip spiderpoolAgent.tolerations
-  # --  Node tolerations
-  # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
   tolerations:
-    - effect: NoExecute
-      key: node.kubernetes.io/not-ready
-      operator: Exists
-    - effect: NoExecute
-      key: node.kubernetes.io/unreachable
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/disk-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/memory-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/pid-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/unschedulable
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/network-unavailable
-      operator: Exists
-    - key: node.kubernetes.io/not-ready
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/control-plane
-      effect: NoSchedule
-    - key: CriticalAddonsOnly
-      operator: Exists
+    - operator: Exists
 
   ## @param spiderpoolAgent.priorityClassName the priority Class Name for spiderpoolAgent
   priorityClassName: "system-node-critical"
@@ -494,35 +467,7 @@ spiderpoolController:
 
   ## @skip spiderpoolController.tolerations
   tolerations:
-    - effect: NoExecute
-      key: node.kubernetes.io/not-ready
-      operator: Exists
-    - effect: NoExecute
-      key: node.kubernetes.io/unreachable
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/disk-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/memory-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/pid-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/unschedulable
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/network-unavailable
-      operator: Exists
-    - key: node.kubernetes.io/not-ready
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/control-plane
-      effect: NoSchedule
-    - key: CriticalAddonsOnly
-      operator: Exists
+    - operator: Exists
 
   ## @param spiderpoolController.priorityClassName the priority Class Name for spiderpoolController
   priorityClassName: "system-node-critical"
@@ -740,35 +685,7 @@ spiderpoolInit:
 
   ## @skip spiderpoolInit.tolerations
   tolerations:
-    - effect: NoExecute
-      key: node.kubernetes.io/not-ready
-      operator: Exists
-    - effect: NoExecute
-      key: node.kubernetes.io/unreachable
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/disk-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/memory-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/pid-pressure
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/unschedulable
-      operator: Exists
-    - effect: NoSchedule
-      key: node.kubernetes.io/network-unavailable
-      operator: Exists
-    - key: node.kubernetes.io/not-ready
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/control-plane
-      effect: NoSchedule
-    - key: CriticalAddonsOnly
-      operator: Exists
+    - operator: Exists
 
   ## @skip spiderpoolInit.nodeSelector.kubernetes.io/os
   nodeSelector:

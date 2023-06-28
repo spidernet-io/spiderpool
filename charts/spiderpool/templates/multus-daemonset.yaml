@@ -172,10 +172,10 @@ spec:
         {{- end }}
     spec:
       hostNetwork: true
+      {{- with .Values.multus.multusCNI.tolerations }}
       tolerations:
       {{- toYaml . | nindent 6 }}
       {{- end }}
-      {{- with .Values.multus.multusCNI.tolerations }}
       serviceAccountName: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
       containers:
         - name: kube-multus

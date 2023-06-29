@@ -175,6 +175,16 @@ elif [ "$TYPE"x == "detail"x ] ; then
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
     done
 
+    echo ""
+    echo "=============== coordinator log  ============== "
+    KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
+    KIND_NODES=$(  kind get  nodes --name ${KIND_CLUSTER_NAME} )
+    [ -z "$KIND_NODES" ] && echo "warning, failed to find nodes of kind cluster $KIND_CLUSTER_NAME " || true
+    for NODE in $KIND_NODES ; do
+        echo "--------- coordinator logs from node ${NODE}"
+        docker exec $NODE cat /var/log/spidernet/coordinator.log
+    done
+
 
 elif [ "$TYPE"x == "error"x ] ; then
     CHECK_ERROR(){

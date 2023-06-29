@@ -90,7 +90,8 @@ EOF
                   "master": "eth0",
                   "mode": "bridge",
                   "ipam": {
-                      "type": "spiderpool"
+                      "type": "spiderpool",
+                      "log_level": "debug"
                   }
               },{
                   "type": "coordinator",
@@ -117,7 +118,8 @@ EOF
                   "master": "eth0.100",
                   "mode": "bridge",
                   "ipam": {
-                      "type": "spiderpool"
+                      "type": "spiderpool",
+                      "log_level": "debug"
                   }
               },{
                   "type": "coordinator",
@@ -144,7 +146,8 @@ EOF
                   "master": "eth0.100",
                   "mode": "bridge",
                   "ipam": {
-                      "type": "spiderpool"
+                      "type": "spiderpool",
+                      "log_level": "debug"
                   }
               },{
                   "type": "coordinator",
@@ -171,7 +174,8 @@ EOF
                   "master": "eth0.200",
                   "mode": "bridge",
                   "ipam": {
-                      "type": "spiderpool"
+                      "type": "spiderpool",
+                      "log_level": "debug"
                   }
               },{
                   "type": "coordinator",
@@ -198,7 +202,8 @@ EOF
                   "master": "eth0.200",
                   "mode": "bridge",
                   "ipam": {
-                      "type": "spiderpool"
+                      "type": "spiderpool",
+                      "log_level": "debug"
                   }
               },{
                   "type": "coordinator",

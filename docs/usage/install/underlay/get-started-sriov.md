@@ -30,159 +30,116 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
 
-## Install Veth
+## Install Sriov-network-operator
 
-[`Veth`](https://github.com/spidernet-io/plugins) is a CNI plugin designed to resolve the following issues in other CNIs like Macvlan and SR-IOV:
+SriovNetwork helps us install sriov-cni and sriov-device-plugin components, making it easier to use sriov-cni:
 
-* Enable clusterIP communication for Pods in the Sriov CNI scenario
-
-* Address communication issues in multiple NICs for Pods by automatically coordinating policy routing between NICs
-
-Download and install the Veth binary on all nodes:
-
-```shell
-wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
-tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
-chmod +x /opt/cni/bin/veth
-```
-
-## Create Sriov Configmap that matches the NIC configuration
-
-* Check the vendor, deviceID and driver information of the NIC:
+1. Install sriov-network-operator
 
     ```shell
-    ~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info
-    driver: mlx5_core
-    bus-info: 0000:04:00.0
+    git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
+    helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
+    ```
+   
+   > You may need to label SR-IOV worker nodes using node-role.kubernetes.io/worker="" label, if not already.
+   > By default, SR-IOV Operator will be deployed in namespace 'openshift-sriov-network-operator'.
+   > After installation, the node may reboot automatically. If necessary, install sriov-network-operator to the designated worker nodes.
+   
+2. Configure sriov-network-operator
 
-    ~# lspci -s 0000:04:00.0 -n
-    04:00.0 0200: 15b3:1018
+   Firstly, check the status of SriovNetworkNodeState CRs to confirm that sriov-network-operator has found a network card on the node that supports the SR-IOV feature.
+
+    ```shell
+    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    apiVersion: sriovnetwork.openshift.io/v1
+    kind: SriovNetworkNodeState
+    spec: ...
+    status:
+      interfaces:
+      - deviceID: "1017"
+        driver: mlx5_core
+        linkSpeed: 10000 Mb/s
+        linkType: ETH
+        mac: 04:3f:72:d0:d2:86
+        mtu: 1500
+        name: enp4s0f0np0
+        pciAddress: "0000:04:00.0"
+        totalvfs: 8
+        vendor: 15b3
+      - deviceID: "1017"
+        driver: mlx5_core
+        linkSpeed: 10000 Mb/s
+        linkType: ETH
+        mac: 04:3f:72:d0:d2:87
+        mtu: 1500
+        name: enp4s0f1np1
+        pciAddress: "0000:04:00.1"
+        totalvfs: 8
+        vendor: 15b3
+      syncStatus: Succeeded
     ```
 
-    > In this example, the vendor is 15b3, the deviceID is 1018, and the driver is mlx5_core.
+   As can be seen from the above, interfaces 'enp4s0f0np0' and 'enp4s0f1np1' on node 'node-1' both have SR-IOV capability and support a maximum number of VFs of 8. Below we will configure the VFs by creating SriovNetworkNodePolicy CRs and install sriov-device-plugin:
 
-* Create Configmap
-
-    ```bash
-    vendor="15b3"
-    deviceID="1018"
-    driver="mlx5_core"
-    cat <<EOF | kubectl apply -f -
-    apiVersion: v1
-    kind: ConfigMap
+    ```shell
+    $ cat << EOF | kubectl apply -f -
+    apiVersion: sriovnetwork.openshift.io/v1
+    kind: SriovNetworkNodePolicy
     metadata:
-        name: sriovdp-config
-        namespace: kube-system
-    data:
-        config.json: |
-        {
-            "resourceList": [{
-                    "resourceName": "mlnx_sriov",
-                    "selectors": {
-                        "vendors": [ "$vendor" ],
-                        "devices": [ "$deviceID" ],
-                        "drivers": [ "$driver" ]
-                        }
-                }
-            ]
-        }
-    EOF
+      name: policy1
+      namespace: sriov-network-operator
+    spec:
+      deviceType: netdevice
+      nicSelector:
+      pfNames:
+      - enp4s0f0np0
+      nodeSelector:
+        kubernetes.io/hostname: node-1 
+      numVfs: 8 # The number of VFs desired
+      resourceName: sriov_netdevice
     ```
 
-    > resourceName is the name of the Sriov resource, and after it is declared in Configmap, a Sriov resource named `intel.com/mlnx_sriov` will be generated on the node for Pods after the sriov-plugin takes effect. The prefix `intel.com` can be defined through the `resourcePrefix` field.
-    > Refer to [Sriov Configmap](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations) for more configuration rules.
-
-## Create Sriov VFs
-
-1. Check the current number of VFs:
+    After creating the SriovNetworkNodePolicy CRs, check the status of the SriovNetworkNodeState CRs again to see that the VFs in status have been configured:
 
     ```shell
-    ~# cat /sys/class/net/enp4s0f0np0/device/sriov_numvfs
-    0
+    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    ...
+    - Vfs:
+        - deviceID: 1018
+          driver: mlx5_core
+          pciAddress: 0000:04:00.4
+          vendor: "15b3"
+        - deviceID: 1018
+          driver: mlx5_core
+          pciAddress: 0000:04:00.5
+          vendor: "15b3"
+        - deviceID: 1018
+          driver: mlx5_core
+          pciAddress: 0000:04:00.6
+          vendor: "15b3"
+        deviceID: "1017"
+        driver: mlx5_core
+        mtu: 1500
+        numVfs: 8
+        pciAddress: 0000:04:00.0
+        totalvfs: 8
+        vendor: "8086"
+    ...
     ```
 
-2. Create 8 VFs
+    You can see the sriov resource named 'spidernet/sriov_netdevice' has been configured in Node object, where the number of VFs is 8:
 
     ```shell
-    echo 8 > /sys/class/net/enp4s0f0np0/device/sriov_numvfs
-    ```
-
-    > Refer to [Setting up Virtual Functions](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/blob/master/docs/vf-setup.md) for more details.
-
-## Install Sriov Device Plugin
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-network-device-plugin/v3.5.1/deployments/k8s-v1.16/sriovdp-daemonset.yaml
-```
-
-Wait for the plugin to take effect After installation.
-
-* Check the Node and verify that the Sriov resource named `intel.com/mlnx_sriov` defined in Configmap has taken effect, with 8 as the number of VFs:
-
-    ```shell
-    ~# kubectl get  node  master-11 -ojson |jq '.status.allocatable'
+    ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
     {
       "cpu": "24",
       "ephemeral-storage": "94580335255",
       "hugepages-1Gi": "0",
       "hugepages-2Mi": "0",
-      "intel.com/mlnx_sriov": "8",
+      "spidernet/sriov_netdevice": "8",
       "memory": "16247944Ki",
       "pods": "110"
     }
-    ```
-
-## Install Sriov CNI
-
-Install Sriov CNI through manifest:
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cni/v2.7.0/images/k8s-v1.16/sriov-cni-daemonset.yaml
-```
-
-## Install Multus
-
-1. Install Multus through manifest:
-
-    ```shell
-    kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-    ```
-
-2. Create a NetworkAttachmentDefinition configuration for Sriov in Multus
-
-    To implement clusterIP communication using Veth, confirm the service CIDR of the cluster through a query command `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service` or other methods:
-
-    ```shell
-    SERVICE_CIDR="10.43.0.0/16"
-    cat <<EOF | kubectl apply -f -
-    apiVersion: k8s.cni.cncf.io/v1
-    kind: NetworkAttachmentDefinition
-    metadata:
-      annotations:
-        k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov
-      name: sriov-test
-      namespace: kube-system
-    spec:
-      config: |-
-        {
-            "cniVersion": "0.3.1",
-            "name": "sriov-test",
-            "plugins": [
-                {
-                    "type": "sriov",
-                    "ipam": {
-                        "type": "spiderpool"
-                    }
-                },{
-                      "type": "veth",
-                      "service_cidr": ["${SERVICE_CIDR}"]
-                  }
-            ]
-        }
-    EOF
-    ```
-
-    > `k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov`: the name of the Sriov resource to be used
 
 ## Install Spiderpool
 
@@ -214,6 +171,21 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
       gateway: 10.20.0.1
     EOF
     ```
+
+3. Create a SpiderMultusConfig instance.
+
+    ```shell
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: sriov-test
+      namespace: kube-system
+    spec:
+      cniType: sriov
+      sriov:
+        resourceName: spidernet.io/sriov_netdevice
+      ```
 
 ## Create applications
 
@@ -251,9 +223,9 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
               protocol: TCP
             resources:
               requests:
-                intel.com/mlnx_sriov: '1' 
+                spidernet/sriov_netdevice: '1' 
               limits:
-                intel.com/mlnx_sriov: '1'  
+                spidernet/sriov_netdevice: '1'  
     ---
     apiVersion: v1
     kind: Service
@@ -274,7 +246,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
 
     Spec descriptions:
 
-    > `intel.com/mlnx_sriov`: Sriov resources used.
+    > `spidernet/sriov_netdevice`: Sriov resources used.
     >
     >`v1.multus-cni.io/default-network`: specifies the CNI configuration for Multus.
     >

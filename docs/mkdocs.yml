@@ -92,6 +92,7 @@ nav:
       - CRD SpiderSubnet: reference/crd-spidersubnet.md
       - CRD SpiderIPPool: reference/crd-spiderippool.md
       - CRD Spidermultusconfig: reference/crd-spidermultusconfig.md
+      - CRD Spidercoordinator: reference/crd-spidercoordinator.md
       - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
       - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
       - Ifacer plugin: reference/plugin-ifacer.md

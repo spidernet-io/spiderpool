@@ -2,7 +2,7 @@
 
 [**English**](./get-started-sriov.md) | **简体中文**
 
-Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Veth](https://github.com/spidernet-io/plugins)、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 Underlay 网络解决方案，该方案能够满足以下各种功能需求：
+Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 Underlay 网络解决方案，该方案能够满足以下各种功能需求：
 
 * 通过简易运维，应用可分配到固定的 Underlay IP 地址
 
@@ -29,160 +29,119 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
         ~# lspci -s 0000:04:00.0 -v |grep SR-IOV
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
+    
+### 安装 Sriov-network-operator
 
-## 安装 Veth
+Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sriov-device-plugin。
 
-[`Veth`](https://github.com/spidernet-io/plugins) 是一个 CNI 插件，它能够帮助一些 CNI （例如 Macvlan、SR-IOV 等）解决如下问题：
-
-* 在 Sriov CNI 场景下，帮助 Pod 实现 clusterIP 通信
-
-* 在 Pod 多网卡场景下，Veth 能自动够协调多网卡间的策略路由，解决多网卡通信问题
-
-请在所有的节点上，下载安装 Veth 二进制：
-
-```shell
-wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
-tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
-chmod +x /opt/cni/bin/veth
-```
-
-## 创建与网卡配置匹配的 Sriov Configmap
-
-* 查询网卡 vendor、deviceID 和 driver 信息：
+1. 安装 sriov-network-operator
 
     ```shell
-    ~# ethtool -i enp4s0f0np0 |grep -e driver -e bus-info
-    driver: mlx5_core
-    bus-info: 0000:04:00.0
-    ~#
-    ~# lspci -s 0000:04:00.0 -n
-    04:00.0 0200: 15b3:1018
+    git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
+    helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
     ```
+   
+   > 如果组件未就绪, 可能需要给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'
+   > sriov-network-operator 默认安装在 sriov-network-operator 命名空间下
+   > 安装 sriov-network-operator 后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，安装到工作节点。
 
-    > 本示例中，vendor 为 15b3，deviceID 为 1018，driver 为 mlx5_core
+2. 配置 sriov-network-operator
 
-* 创建 Configmap
+    首先检查  SriovNetworkNodeState CRs 的状态，确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
 
     ```shell
-    vendor="15b3"
-    deviceID="1018"
-    driver="mlx5_core"
-    cat <<EOF | kubectl apply -f -
-    apiVersion: v1
-    kind: ConfigMap
+    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    apiVersion: sriovnetwork.openshift.io/v1
+    kind: SriovNetworkNodeState
+    spec: ...
+    status:
+      interfaces:
+      - deviceID: "1017"
+        driver: mlx5_core
+        linkSpeed: 10000 Mb/s
+        linkType: ETH
+        mac: 04:3f:72:d0:d2:86
+        mtu: 1500
+        name: enp4s0f0np0
+        pciAddress: "0000:04:00.0"
+        totalvfs: 8
+        vendor: 15b3
+      - deviceID: "1017"
+        driver: mlx5_core
+        linkSpeed: 10000 Mb/s
+        linkType: ETH
+        mac: 04:3f:72:d0:d2:87
+        mtu: 1500
+        name: enp4s0f1np1
+        pciAddress: "0000:04:00.1"
+        totalvfs: 8
+        vendor: 15b3
+      syncStatus: Succeeded
+    ```
+   
+    从上面可知，节点 `node-1` 上的接口 `enp4s0f0np0` 和 `enp4s0f1np1` 都具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs 来配置 VFs，并且安装 sriov-device-plugin :
+
+    ```shell
+    $ cat << EOF | kubectl apply -f -
+    apiVersion: sriovnetwork.openshift.io/v1
+    kind: SriovNetworkNodePolicy
     metadata:
-        name: sriovdp-config
-        namespace: kube-system
-    data:
-        config.json: |
-        {
-            "resourceList": [{
-                    "resourceName": "mlnx_sriov",
-                    "selectors": {
-                        "vendors": [ "$vendor" ],
-                        "devices": [ "$deviceID" ],
-                        "drivers": [ "$driver" ]
-                        }
-                }
-            ]
-        }
+      name: policy1
+      namespace: sriov-network-operator
+    spec:
+      deviceType: netdevice
+      nicSelector:
+      pfNames:
+      - enp4s0f0np0
+      nodeSelector:
+        kubernetes.io/hostname: node-1  # 只作用于 10-20-1-240 这个节点
+      numVfs: 8 # 渴望的 VFs 数量
+      resourceName: sriov_netdevice
     EOF
     ```
 
-    > resourceName 为 sriov 资源名称，在 configmap 声明后，在 sriov-plugin 生效后，会在 node 上产生一个名为 `intel.com/mlnx_sriov` 的 sriov 资源供 Pod 使用，前缀 `intel.com` 可通过 `resourcePrefix` 字段定义
-    > 具体配置规则参考 [Sriov Configmap](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#configurations)
-
-## 创建 Sriov VF
-
-1. 查询当前 VF 数量
+    在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VFs 已经得到配置:
 
     ```shell
-    ~# cat /sys/class/net/enp4s0f0np0/device/sriov_numvfs
-    0
+    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    ...
+    - Vfs:
+        - deviceID: 1018
+          driver: mlx5_core
+          pciAddress: 0000:04:00.4
+          vendor: "15b3"
+        - deviceID: 1018
+          driver: mlx5_core
+          pciAddress: 0000:04:00.5
+          vendor: "15b3"
+        - deviceID: 1018
+          driver: mlx5_core
+          pciAddress: 0000:04:00.6
+          vendor: "15b3"
+        deviceID: "1017"
+        driver: mlx5_core
+        mtu: 1500
+        numVfs: 8
+        pciAddress: 0000:04:00.0
+        totalvfs: 8
+        vendor: "8086"
+    ...
     ```
 
-2. 创建 8个 VF
+    查看 Node 发现名为 `spidernet/sriov_netdevice` 的 sriov 资源已经生效，其中 VF 的数量为 8:
 
     ```shell
-    echo 8 > /sys/class/net/enp4s0f0np0/device/sriov_numvfs
-    ```
-
-    > 具体配置参考 sriov 官方文档 [Setting up Virtual Functions](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/blob/master/docs/vf-setup.md)
-
-## 安装 Sriov Device Plugin
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-network-device-plugin/v3.5.1/deployments/k8s-v1.16/sriovdp-daemonset.yaml
-```
-
-安装完成后，等待插件生效。
-
-* 查看 Node 发现在 configmap 中定义的名为 `intel.com/mlnx_sriov` 的 sriov 资源已经生效，其中 8 为 VF 的数量：
-
-    ```shell
-    ~# kubectl get  node  master-11 -ojson |jq '.status.allocatable'
+    ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
     {
       "cpu": "24",
       "ephemeral-storage": "94580335255",
       "hugepages-1Gi": "0",
       "hugepages-2Mi": "0",
-      "intel.com/mlnx_sriov": "8",
+      "spidernet/sriov_netdevice": "8",
       "memory": "16247944Ki",
       "pods": "110"
     }
     ```
-
-## 安装 Sriov CNI
-
-通过 manifest 安装 Sriov CNI
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cni/v2.7.0/images/k8s-v1.16/sriov-cni-daemonset.yaml
-```
-
-## 安装 Multus
-
-1. 通过 manifest 安装 Multus
-
-    ```shell
-    kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-    ```
-
-2. 为 Sriov 创建 Multus 的 NetworkAttachmentDefinition 配置
-
-    因为使用 Veth 插件来实现 clusterIP 通信，需确认集群的 service CIDR，例如可基于命令 `kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service` 查询
-
-    ```bash
-    SERVICE_CIDR="10.43.0.0/16"
-    cat <<EOF | kubectl apply -f -
-    apiVersion: k8s.cni.cncf.io/v1
-    kind: NetworkAttachmentDefinition
-    metadata:
-      annotations:
-        k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov
-      name: sriov-test
-      namespace: kube-system
-    spec:
-      config: |-
-        {
-            "cniVersion": "0.3.1",
-            "name": "sriov-test",
-            "plugins": [
-                {
-                    "type": "sriov",
-                    "ipam": {
-                        "type": "spiderpool"
-                    }
-                },{
-                      "type": "veth",
-                      "service_cidr": ["${SERVICE_CIDR}"]
-                  }
-            ]
-        }
-    EOF
-    ```
-
-    > `k8s.v1.cni.cncf.io/resourceName: intel.com/mlnx_sriov` 该 annotations 表示要使用的 sriov 资源名称.
 
 ## 安装 Spiderpool
 
@@ -212,6 +171,22 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
       - "10.20.168.190-10.20.168.199"
       subnet: 10.20.0.0/16
       gateway: 10.20.0.1
+    EOF
+    ```
+
+3. 创建 SpiderMultusConfig 实例。
+
+    ```shell
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: sriov-test
+      namespace: kube-system
+    spec:
+      cniType: sriov
+      sriov:
+        resourceName: spidernet.io/sriov_netdevice
     EOF
     ```
 
@@ -251,9 +226,9 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
               protocol: TCP
             resources:
               requests:
-                intel.com/mlnx_sriov: '1' 
+                spidernet/sriov_netdevice: '1' 
               limits:
-                intel.com/mlnx_sriov: '1'  
+                spidernet/sriov_netdevice: '1'  
     ---
     apiVersion: v1
     kind: Service
@@ -274,7 +249,7 @@ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cn
 
     必要参数说明：
 
-    > `intel.com/mlnx_sriov`: 该参数表示使用 Sriov 资源。
+    > `spidernet/sriov_netdevice`: 该参数表示使用 Sriov 资源。
     >
     > `v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
     >

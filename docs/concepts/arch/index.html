@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture" class="md-skip">
+        <a href="#spiderpool-architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/" class="md-nav__link">
+      <a href="../../usage/install/install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -280,7 +280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/certificate/" class="md-nav__link">
+      <a href="../../usage/install/certificate/" class="md-nav__link">
         Certificates
       </a>
     </li>
@@ -608,8 +608,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#crds" class="md-nav__link">
-    CRDs
+  <a href="#comparison-of-underlay-and-overlay-network-scenarios" class="md-nav__link">
+    Comparison of underlay and overlay network scenarios
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    Architecture
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-case-collaborate-with-one-or-more-underlay-cnis" class="md-nav__link">
+    Use case: collaborate with one or more underlay CNIs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-case-collaborate-with-overlay-and-underlay-cnis" class="md-nav__link">
+    Use case: collaborate with overlay and underlay CNIs
   </a>
   
 </li>
@@ -729,6 +750,20 @@
     <li class="md-nav__item">
       <a href="../spidersubnet/" class="md-nav__link">
         SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solution/" class="md-nav__link">
+        Underlay and overlay solutions
       </a>
     </li>
   
@@ -948,8 +983,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#crds" class="md-nav__link">
-    CRDs
+  <a href="#comparison-of-underlay-and-overlay-network-scenarios" class="md-nav__link">
+    Comparison of underlay and overlay network scenarios
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    Architecture
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-case-collaborate-with-one-or-more-underlay-cnis" class="md-nav__link">
+    Use case: collaborate with one or more underlay CNIs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-case-collaborate-with-overlay-and-underlay-cnis" class="md-nav__link">
+    Use case: collaborate with overlay and underlay CNIs
   </a>
   
 </li>
@@ -977,45 +1033,104 @@
   </a>
 
 
-<h1 id="architecture">Architecture</h1>
-<p><img alt="Architecture" src="../images/arch.jpg" /></p>
-<p>Spiderpool consists of following components:</p>
+<h1 id="spiderpool-architecture">Spiderpool architecture</h1>
+<h2 id="comparison-of-underlay-and-overlay-network-scenarios">Comparison of underlay and overlay network scenarios</h2>
+<p>There are two technologies in cloud-native networking: "overlay network" and "underlay network".
+Despite no strict definition for underlay and overlay networks in cloud-native networking, we can simply abstract their characteristics from many CNI projects. The two technologies meet the needs of different scenarios.</p>
+<p>The <a href="../solution/">article</a>  provides a brief comparison of IPAM and network performance between the two technologies, which offers better insights into the unique features and use cases of Spiderpool.</p>
+<p>Why underlay network solutions? In data center scenarios, the following requirements necessitate underlay network solutions:</p>
 <ul>
 <li>
-<p>Spiderpool IPAM plugin, a binary installed on each host. It is called by a CNI plugin to assign and release IP for a pod.</p>
+<p>Low-latency applications need optimized network latency and throughput provided by underlay networks</p>
 </li>
 <li>
-<p>spiderpool-agent, deployed as a daemonset. It receives IPAM requests from the IPAM plugin, assigns and releases IP from the ippool resource.</p>
+<p>Initial migration of traditional host applications to the cloud use traditional network methods such as service exposure and discovery and multi subnets</p>
 </li>
 <li>
-<p>spiderpool-controller, deployed as a deployment.</p>
-</li>
-<li>
-<p>It takes charge of reclaiming IP resource in ippool, to prevent IP from leaking after the pod does not take it. Refer to <a href="../gc/">Resource Reclaim</a> for details.</p>
-</li>
-<li>
-<p>It uses a webhook to watch the ippool resource, help the administrator to validate creation, modification, and deletion.</p>
-</li>
-<li>
-<p>spiderpoolctl, a CLI tool for debugging.</p>
+<p>Network management in the data center desires security controls such as firewalls and traditional network observation techniques to implement cluster network monitoring.</p>
 </li>
 </ul>
-<h2 id="crds">CRDs</h2>
-<p>Spiderpool supports for the following CRDs:</p>
+<h2 id="architecture">Architecture</h2>
+<p><img alt="arch" src="../../images/spiderpool-arch.jpg" /></p>
+<p>Spiderpool consists of the following components:</p>
 <ul>
 <li>
-<p>SpiderSubnet CRD. It is used to represent a collection of IP addresses from which Spiderpool expects SpiderIPPool IPs to be assigned. Refer to <a href="../spidersubnet/">SpiderSubnet</a> for detail.</p>
+<p>Spiderpool controller: a set of deployments that manage CRD validation, status updates, IP recovery, and automated IP pools</p>
 </li>
 <li>
-<p>SpiderReservedIP CRD. It is used to represent a collection of IP addresses that Spiderpool expects not to be allocated. Refer to <a href="../spiderreservedip/">SpiderReservedIP</a> for detail.</p>
+<p>Spiderpool agent: a set of daemonsets that help Spiderpool plugin by performing IP allocation and coordinator plugin for information synchronization.</p>
 </li>
 <li>
-<p>SpiderIPPool CRD. It is used to represent a collection of IP addresses from which Spiderpool expects endpoint IPs to be assigned. Refer to <a href="../spiderippool/">SpiderIPPool</a> for detail.</p>
+<p>Spiderpool plugin: a binary plugin on each host that CNI can utilize to implement IP allocation.</p>
 </li>
 <li>
-<p>SpiderEndpoint CRD. It is used to represent IP address allocation details for a specific endpoint object. Refer to <a href="../spiderendpoint/">SpiderEndpoint</a> for detail.</p>
+<p>coordinator plugin: a binary plugin on each host that CNI can use for multi-NIC route coordination, IP conflict detection, and host connectivity.</p>
 </li>
 </ul>
+<p>On top of its own components, Spiderpool relies on open-source underlay CNIs to allocate network interfaces to Pods. You can use <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a> to manage multiple NICs and CNI configurations.</p>
+<p>Any CNI project compatible with third-party IPAM plugins can work well with Spiderpool, such as:</p>
+<p><a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>, 
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>, 
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>, 
+<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>, 
+<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>, 
+<a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>, 
+<a href="https://github.com/projectcalico/calico">Calico CNI</a>, 
+<a href="https://github.com/weaveworks/weave">Weave CNI</a></p>
+<h2 id="use-case-collaborate-with-one-or-more-underlay-cnis">Use case: collaborate with one or more underlay CNIs</h2>
+<p><img alt="arch_underlay" src="../../images/spiderpool-underlay.jpg" /></p>
+<p>In underlay networks, Spiderpool can work with underlay CNIs such as <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a> and <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> to provide the following benefits:</p>
+<ul>
+<li>
+<p>Rich IPAM capabilities for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation, and dual-stack support</p>
+</li>
+<li>
+<p>One or more underlay NICs for Pods with coordinating routes between multiple NICs to ensure smooth communication with consistent request and reply data paths</p>
+</li>
+<li>
+<p>Enhanced connectivity between open-source underlay CNIs and hosts using additional veth network interfaces and route control. This enables clusterIP access, local health checks of applications, and much more</p>
+</li>
+</ul>
+<p>How can you deploy containers using a single underlay CNI, when a cluster has multiple underlying setups?</p>
+<ul>
+<li>
+<p>Some nodes in the cluster are virtual machines like VMware that don't enable promiscuous mode, while others are bare metal and connected to traditional switch networks. What CNI solution should be deployed on each type of node?</p>
+</li>
+<li>
+<p>Some bare metal nodes only have one SR-IOV high-speed NIC that provides 64 VFs. How can more pods run on such a node?</p>
+</li>
+<li>
+<p>Some bare metal nodes have an SR-IOV high-speed NIC capable of running low-latency applications, while others have only ordinary network cards for running regular applications. What CNI solution should be deployed on each type of node?</p>
+</li>
+</ul>
+<p>By simultaneously deploying multiple underlay CNIs through Multus CNI configuration and Spiderpool's IPAM abilities, resources from various infrastructure nodes across the cluster can be integrated to solve these problems.</p>
+<p><img alt="underlay" src="../../images/underlay.jpg" /></p>
+<p>For example, as shown in the above diagram, different nodes with varying networking capabilities in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards, Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted network access (e.g., VMware virtual machines with limited layer 2 network forwarding).</p>
+<h2 id="use-case-collaborate-with-overlay-and-underlay-cnis">Use case: collaborate with overlay and underlay CNIs</h2>
+<p><img alt="arch_underlay" src="../../images/spiderpool-overlay.jpg" /></p>
+<p>In overlay networks, Spiderpool uses Multus to add an overlay NIC (such as <a href="https://github.com/projectcalico/calico">Calico</a> or <a href="https://github.com/cilium/cilium">Cilium</a>) and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod. This offers several benefits:</p>
+<ul>
+<li>
+<p>Rich IPAM features for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation, and dual-stack support.</p>
+</li>
+<li>
+<p>Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods, ensuring the consistent request and reply data paths for smooth communication.</p>
+</li>
+<li>
+<p>Use the overlay NIC as the default one with route coordination and enable local host connectivity to enable clusterIP access, local health checks of applications, and forwarding overlay network traffic through overlay networks while forwarding underlay network traffic through underlay networks.</p>
+</li>
+</ul>
+<p>The integration of Multus CNI and Spiderpool IPAM enables the collaboration of an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes of varying network capabilities, Pods on bare-metal nodes can access both overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only serving east-west services are connected to the Overlay NIC.
+This approach provides several benefits:</p>
+<ul>
+<li>
+<p>Applications providing east-west services can be restricted to being allocated only the overlay NIC while those providing north-south services can simultaneously access overlay and underlay NICs. This results in reduced Underlay IP resource usage, lower manual maintenance costs, and preserved pod connectivity within the cluster.</p>
+</li>
+<li>
+<p>Fully integrate resources from virtual machines and bare-metal nodes.</p>
+</li>
+</ul>
+<p><img alt="overlay" src="../../images/overlay.jpg" /></p>
 
 
 

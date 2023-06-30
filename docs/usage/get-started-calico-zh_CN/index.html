@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../install/install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -280,7 +280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../certificate/" class="md-nav__link">
+      <a href="../install/certificate/" class="md-nav__link">
         Certificates
       </a>
     </li>
@@ -692,6 +692,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/solution/" class="md-nav__link">
+        Underlay and overlay solutions
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1025,16 +1039,17 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 </code></pre></div>
 <p>验证安装：</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system  | grep spiderpool</span>
-  spiderpool-agent-27fr2                     <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
-  spiderpool-agent-8vwxj                     <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
-  spiderpool-controller-bc8d67b5f-xwsql      <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
-  <span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get ss</span>
-  NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-  nginx-subnet-v4   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">0</span>                    <span class="m">25602</span>
+spiderpool-agent-27fr2                     <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
+spiderpool-agent-8vwxj                     <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
+spiderpool-controller-bc8d67b5f-xwsql      <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
+
+<span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get ss</span>
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
+nginx-subnet-v4   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">0</span>                    <span class="m">25602</span>
 </code></pre></div>
 <h2 id="calico-bgp">配置 Calico BGP [可选]</h2>
 <p>本例希望 calico 以 underlay 方式工作，将 Spiderpool 子网(<code>10.244.0.0/16</code>)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。
-如果您并不需要集群外部可以直接访问到 pod ip，可忽略本步骤。</p>
+如果您并不需要集群外部可以直接访问到 Pod IPs，可忽略本步骤。</p>
 <p>网络拓扑如下:</p>
 <p><img alt="calico-bgp" src="../../images/calico-bgp.svg" /></p>
 <ol>
@@ -1211,7 +1226,7 @@ nginx-644659db67-szgcg   <span class="m">1</span>/1     Running       <span clas
 nginx-644659db67-98rcg   <span class="m">1</span>/1     Running       <span class="m">0</span>          23s     <span class="m">10</span>.244.100.92    master1   &lt;none&gt;           &lt;none&gt;
 </code></pre></div>
 <p>扩容副本数到 <code>3</code>, 新副本的 IP 地址仍然从自动池: <code>auto-nginx-v4-eth0-452e737e5e12(10.244.100.90-10.244.100.95)</code> 中分配:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale pods</span>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale Pods</span>
 deployment.apps/nginx scaled
 <span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
 NAME                     READY   STATUS        RESTARTS   AGE     IP              NODE      NOMINATED NODE   READINESS GATES

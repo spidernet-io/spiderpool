@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../install/install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -280,7 +280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../certificate/" class="md-nav__link">
+      <a href="../install/certificate/" class="md-nav__link">
         Certificates
       </a>
     </li>
@@ -789,6 +789,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/solution/" class="md-nav__link">
+        Underlay and overlay solutions
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1088,39 +1102,39 @@
 <h1 id="statefulset">StatefulSet</h1>
 <h2 id="description">Description</h2>
 <p>The spiderpool supports IP assignment for StatefulSet.</p>
-<p>When the number of statefulset replicas is not scaled up or down, all pods could hold same IP address even when the pod is restarting or rebuilding.</p>
+<p>When the number of statefulset replicas is not scaled up or down, all Pods could hold same IP address even when the Pod is restarting or rebuilding.</p>
 <ul>
 <li>
 <p>Pod restarts</p>
-<p>Once a pod restarts (its pause container restarts), Spiderpool will keep use the previous IP,
+<p>Once a Pod restarts (its pause container restarts), Spiderpool will keep use the previous IP,
 and change the IPPool CR property ContainerID with the new pause container ID.</p>
 <p>In the meanwhile, spiderendpoint will still keep the previous IP but refresh the ContainerID property.</p>
 </li>
 <li>
 <p>Pod is deleted and re-created</p>
-<p>After deleting a StatefulSet pod, kubernetes will re-create a pod with the same name.</p>
+<p>After deleting a StatefulSet Pod, kubernetes will re-create a Pod with the same name.</p>
 <p>In this case, Spiderpool will also keep the previous IP and update the ContainerID.</p>
 </li>
 </ul>
 <h3 id="notice">Notice</h3>
 <ul>
 <li>
-<p>Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its pods are running.</p>
+<p>Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its Pods are running.</p>
 </li>
 <li>
-<p>When the statefulset is scaled down and then scaled up, the scaled-up pod is not guaranteed to get the previous IP.</p>
+<p>When the statefulset is scaled down and then scaled up, the scaled-up Pod is not guaranteed to get the previous IP.</p>
 </li>
 <li>
-<p>The <a href="../gc/">IP-GC</a> feature (reclaim IP for the pod of graceful-period timeout) does work for StatefulSet pod.</p>
+<p>The <a href="../gc/">IP-GC</a> feature (reclaim IP for the Pod of graceful-period timeout) does work for StatefulSet Pod.</p>
 </li>
 </ul>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-statefulset-support">Enable StatefulSet support</h3>
-<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to <a href="../install/">install</a> for details.</p>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to <a href="./install.md">install</a> for details.</p>
 <p>Check whether the property <code>enableStatefulSet</code> of the configmap <code>spiderpool-conf</code> is already set to <code>true</code> or not.</p>
 <div class="highlight"><pre><span></span><code>kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre></div>
-<p>If you want to set it <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set feature.enableStatefulSet=true -n kube-system</code>.</p>
+<p>If you want to set it <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableStatefulSet=true -n kube-system</code>.</p>
 <h3 id="create-a-statefulset">Create a StatefulSet</h3>
 <p>This is an example to install a StatefulSet.</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset/statefulset-demo.yaml
@@ -1156,7 +1170,7 @@ status:
   ownerControllerType: StatefulSet
 ...
 </code></pre></div>
-<p>Try to delete pod <code>demo-sts-0</code> and check whether the rebuilding pod keeps the previous IP or not.</p>
+<p>Try to delete Pod <code>demo-sts-0</code> and check whether the rebuilding Pod keeps the previous IP or not.</p>
 <div class="highlight"><pre><span></span><code>$ kubectl delete po demo-sts-0
 pod &quot;demo-sts-0&quot; deleted
 ---------------------------------------------------------------------------------------------------------------------

@@ -17,7 +17,7 @@ const (
 
 	resourceNameAnnot = "k8s.v1.cni.cncf.io/resourceName"
 
-	coordinatorBinName = "coordinattor"
+	coordinatorBinName = "coordinator"
 	ifacerBinName      = "ifacer"
 )
 

@@ -106,7 +106,7 @@ By simultaneously deploying multiple underlay CNIs through Multus CNI configurat
 
 For example, as shown in the above diagram, different nodes with varying networking capabilities in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards, Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted network access (e.g., VMware virtual machines with limited layer 2 network forwarding).
 
-## Use case: collaborate with overlay and underlay CNIs
+## Use case: underlay CNI collaborates with overlay CNI
 
 ![arch_underlay](./docs/images/spiderpool-overlay.jpg)
 

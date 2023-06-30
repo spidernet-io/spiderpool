@@ -101,7 +101,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 例如上图所示，在同一个集群下具备不同网络能力的节点， 有的节点具备 SR-IOV 网卡，可运行 SR-IOV CNI，有的节点具备普通的网卡，可运行 Macvlan CNI ，有的节点网络访问受限（例如二层网络转发受限的 vmware 虚拟机），可运行 ipvlan CNI。
 
-## 应用场景：overlay CNI 和 underlay CNI 协同
+## 应用场景：underlay CNI 与 overlay CNI 协同
 
 ![arch_underlay](./docs/images/spiderpool-overlay.jpg)
 

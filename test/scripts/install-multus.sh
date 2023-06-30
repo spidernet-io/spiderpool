@@ -52,9 +52,6 @@ OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
 if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
 
-echo "waiting for daemonset/kube-multus-ds ready"
-kubectl rollout status --kubeconfig ${E2E_KUBECONFIG} -n kube-system  daemonset/kube-multus-ds  -w --timeout=60s
-
 Install::MultusCR(){
 
   cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -

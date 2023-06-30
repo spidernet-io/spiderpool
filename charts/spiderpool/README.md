@@ -146,25 +146,24 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 | Name                                          | Description                                                                | Value                             |
 | --------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------- |
-| `multus.name`                                 | the name of spiderpool multus                                              | `spiderpool-multus`               |
 | `multus.enableMultusConfig`                   | enable SpiderMultusConfig                                                  | `true`                            |
 | `multus.multusCNI.install`                    | enable install multus-CNI                                                  | `true`                            |
+| `multus.multusCNI.name`                       | the name of spiderpool multus                                              | `spiderpool-multus`               |
 | `multus.multusCNI.image.registry`             | the multus-CNI image registry                                              | `ghcr.io`                         |
 | `multus.multusCNI.image.repository`           | the multus-CNI image repository                                            | `k8snetworkplumbingwg/multus-cni` |
 | `multus.multusCNI.image.pullPolicy`           | the multus-CNI image pullPolicy                                            | `IfNotPresent`                    |
 | `multus.multusCNI.image.digest`               | the multus-CNI image digest                                                | `""`                              |
-| `multus.multusCNI.image.tag`                  | the multus-CNI image tag                                                   | `v3.9.3`                          |
+| `multus.multusCNI.image.tag`                  | the multus-CNI image tag                                                   | `v4.0.2-thick`                    |
 | `multus.multusCNI.image.imagePullSecrets`     | the multus-CNI image imagePullSecrets                                      | `[]`                              |
-| `multus.multusCNI.defaultCNIName`             | the multus-CNI default CNI name                                            | `""`                              |
+| `multus.multusCNI.defaultCNIName`             | the multus-CNI default CNI name                                            | `auto`                            |
 | `multus.multusCNI.resources.limits.cpu`       | the cpu limit of multus-CNI daemonset pod                                  | `100m`                            |
 | `multus.multusCNI.resources.limits.memory`    | the memory limit of multus-CNI daemonset pod                               | `50Mi`                            |
 | `multus.multusCNI.resources.requests.cpu`     | the cpu requests of multus-CNI daemonset pod                               | `100m`                            |
 | `multus.multusCNI.resources.requests.memory`  | the memory requests of multus-CNI daemonset pod                            | `50Mi`                            |
 | `multus.multusCNI.podAnnotations`             | the additional annotations of multus-CNI daemonset pod                     | `{}`                              |
 | `multus.multusCNI.podLabels`                  | the additional label of multus-CNI daemonset pod                           | `{}`                              |
-| `multus.multusCNI.configmapName`              | the configmap name                                                         | `multus-cni-config`               |
+| `multus.multusCNI.configmapName`              | the configmap name                                                         | `multus-daemon-config`            |
 | `multus.multusCNI.securityContext.privileged` | the securityContext privileged of multus-CNI daemonset pod                 | `true`                            |
-| `multus.multusCNI.extraArgs`                  | the additional arguments of multus-CNI daemonset pod container             | `[]`                              |
 | `multus.multusCNI.extraEnv`                   | the additional environment variables of multus-CNI daemonset pod container | `[]`                              |
 | `multus.multusCNI.extraVolumes`               | the additional volumes of multus-CNI daemonset pod container               | `[]`                              |
 | `multus.multusCNI.extraVolumeMounts`          | the additional hostPath mounts of multus-CNI daemonset pod container       | `[]`                              |

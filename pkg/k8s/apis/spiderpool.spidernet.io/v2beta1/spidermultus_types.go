@@ -110,7 +110,7 @@ type BondConfig struct {
 	Mode int32 `json:"mode"`
 
 	// +kubebuilder:validation:Optional
-	Options map[string]string `json:"options,omitempty"`
+	Options *string `json:"options,omitempty"`
 }
 
 // SpiderpoolPools could specify the IPAM spiderpool CNI configuration default IPv4&IPv6 pools.

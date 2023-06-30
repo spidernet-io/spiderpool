@@ -448,7 +448,7 @@ func generateMacvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 	// set vlanID for interface basement name
 	if multusConfSpec.MacvlanConfig.VlanID != nil {
 		if *multusConfSpec.MacvlanConfig.VlanID != 0 {
-			masterName = fmt.Sprintf("%s.%d", multusConfSpec.MacvlanConfig.Master, *multusConfSpec.MacvlanConfig.VlanID)
+			masterName = fmt.Sprintf("%s.%d", masterName, *multusConfSpec.MacvlanConfig.VlanID)
 		}
 	}
 
@@ -483,7 +483,7 @@ func generateIPvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec)
 
 	if multusConfSpec.IPVlanConfig.VlanID != nil {
 		if *multusConfSpec.IPVlanConfig.VlanID != 0 {
-			masterName = fmt.Sprintf("%s.%d", multusConfSpec.IPVlanConfig.Master, *multusConfSpec.IPVlanConfig.VlanID)
+			masterName = fmt.Sprintf("%s.%d", masterName, *multusConfSpec.IPVlanConfig.VlanID)
 		}
 	}
 
@@ -527,15 +527,20 @@ func generateSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) 
 
 func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondConfig) interface{} {
 	netConf := IfacerNetConf{
-		Type:      ifacerBinName,
-		Interface: master,
-		VlanID:    vlanID,
+		NetConf: types.NetConf{
+			Type: ifacerBinName,
+		},
+		Interfaces: master,
+		VlanID:     int(vlanID),
 	}
 
 	if bond != nil {
 		netConf.Bond.Name = bond.Name
-		netConf.Bond.Mode = bond.Mode
-		netConf.Bond.Options = bond.Options
+		netConf.Bond.Mode = int(bond.Mode)
+
+		if bond.Options != nil {
+			netConf.Bond.Options = *bond.Options
+		}
 	}
 
 	return netConf

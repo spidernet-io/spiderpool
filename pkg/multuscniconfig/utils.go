@@ -4,8 +4,8 @@
 package multuscniconfig
 
 import (
+	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
@@ -42,13 +42,4 @@ type SRIOVNetConf struct {
 	DeviceID     string                   `json:"deviceID,omitempty"`
 }
 
-type IfacerNetConf struct {
-	Type      string   `json:"type"` // Ifacer
-	Interface []string `json:"interface"`
-	VlanID    int32    `json:"vlanID,omitempty"`
-	Bond      *struct {
-		Name    string            `json:"name"`
-		Mode    int32             `json:"mode"`
-		Options map[string]string `json:"options,omitempty"`
-	} `json:"bond,omitempty"`
-}
+type IfacerNetConf = ifacercmd.Ifacer

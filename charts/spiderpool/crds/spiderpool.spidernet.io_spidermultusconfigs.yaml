@@ -103,9 +103,7 @@ spec:
                       name:
                         type: string
                       options:
-                        additionalProperties:
-                          type: string
-                        type: object
+                        type: string
                     required:
                     - mode
                     - name
@@ -147,9 +145,7 @@ spec:
                       name:
                         type: string
                       options:
-                        additionalProperties:
-                          type: string
-                        type: object
+                        type: string
                     required:
                     - mode
                     - name

@@ -173,6 +173,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
     for NODE in $KIND_NODES ; do
         echo "--------- IPAM logs from node ${NODE}"
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
+        echo "--------- coordinator logs from node ${NODE}"
+        docker exec $NODE cat /var/log/spidernet/coordinator.log
     done
 
 

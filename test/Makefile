@@ -148,9 +148,9 @@ setup_kurise:
 
 .PHONY: setup_spiderpool
 setup_spiderpool:
-	@echo "Load Image $(TEST_IMAGE_TAG) to kind..." ; \
+	@echo "Load Image $(E2E_SPIDERPOOL_TAG) to kind..." ; \
 		for i in $(SPIDERPOOL_IMAGES); do \
-			kind load docker-image $${i}:$(TEST_IMAGE_TAG) --name $(E2E_CLUSTER_NAME);	\
+			kind load docker-image $${i}:$(E2E_SPIDERPOOL_TAG) --name $(E2E_CLUSTER_NAME);	\
 		done; \
 		if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
@@ -178,6 +178,8 @@ setup_spiderpool:
 		HELM_OPTION+=" --set coordinator.detectIPConflict=false --set coordinator.detectGateway=false " ; \
 		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
 		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
+		    HELM_OPTION+=' --set multus.multusCNI.image.registry="" ' ; \
+		    HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.defaultCNIName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
 			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
@@ -243,19 +245,19 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
-		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(TEST_IMAGE_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(TEST_IMAGE_TAG) " ; \
+		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
 		set -x ; \
 		helm upgrade --install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
 			-n $(RELEASE_NAMESPACE)  \
 			--set spiderpoolAgent.image.registry="" \
 			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
-			--set spiderpoolAgent.image.tag=$(TEST_IMAGE_TAG) \
+			--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
 			--set spiderpoolController.image.registry="" \
 			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-			--set spiderpoolController.image.tag=$(TEST_IMAGE_TAG) \
+			--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
 			--set spiderpoolInit.image.registry="" \
 			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-			--set spiderpoolInit.image.tag=$(TEST_IMAGE_TAG) \
+			--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
 			$${HELM_OPTION} \
 			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 		exit 0

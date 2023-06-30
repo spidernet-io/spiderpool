@@ -56,6 +56,9 @@
                 kubectl get nodes
           -----------------------------------------------------------------------------------------------------        
 
+        # for china developer not able access ghcr.io
+        $ make e2e_init -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
+
         # setup the kind cluster of ipv4-only
         $ make e2e_init -e E2E_IP_FAMILY=ipv4
 
@@ -95,11 +98,14 @@
         # load images to docker
         $ docker pull ${AGENT_IMAGE_NAME}:${IMAGE_TAG}
         $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
 
         # setup the cluster with the specified image
-        $ make e2e_init -e TEST_IMAGE_TAG=${IMAGE_TAG} \
+        $ make e2e_init -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} 
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
+                -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}
 
         # run all e2e test
         $ make e2e_test

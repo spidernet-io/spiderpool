@@ -38,20 +38,20 @@ install-bash-completion:
 # ============ build-load-image ============
 .PHONY: build_image
 build_image:
-	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
+	@echo "Build Image tag $(E2E_SPIDERPOOL_TAG) with commit $(GIT_COMMIT_VERSION)"
 	@for NAME in $(SPIDERPOOL_IMAGES); do \
 		docker buildx build --build-arg RACE --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
 				--file $(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile \
-				--output type=docker --tag $${NAME}:$(TEST_IMAGE_TAG) . ; \
+				--output type=docker --tag $${NAME}:$(E2E_SPIDERPOOL_TAG) . ; \
 		echo "$${NAME##*/} build success" ; \
 	done
 
 # for local debug, if buildx fail to pull images
 .PHONY: build_docker_image
 build_docker_image:
-	@echo "Build Image tag $(TEST_IMAGE_TAG) with commit $(GIT_COMMIT_VERSION)"
+	@echo "Build Image tag $(E2E_SPIDERPOOL_TAG) with commit $(GIT_COMMIT_VERSION)"
 	@for NAME in $(SPIDERPOOL_IMAGES); do \
   		DOCKER_FILE=$(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile ; \
   		sed -i '2 a \ARG BUILDPLATFORM' $${DOCKER_FILE} ; \
@@ -62,7 +62,7 @@ build_docker_image:
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
 				--file $${DOCKER_FILE} \
-				--tag $${NAME}:$(TEST_IMAGE_TAG) . ; \
+				--tag $${NAME}:$(E2E_SPIDERPOOL_TAG) . ; \
 		sed -i '3 d'  $${DOCKER_FILE} ; \
 		echo "$${NAME##*/} build success" ; \
 	done
@@ -295,13 +295,13 @@ e2e:
 .PHONY: e2e_init
 e2e_init:
 	for NAME in $(SPIDERPOOL_IMAGES); do \
-			if $(CONTAINER_ENGINE) images $${NAME}:$(TEST_IMAGE_TAG) | grep -q "$(TEST_IMAGE_TAG)" &>/dev/null ; then \
-				echo "test's image $${NAME}:$(TEST_IMAGE_TAG) found" && continue ; \
+			if $(CONTAINER_ENGINE) images $${NAME}:$(E2E_SPIDERPOOL_TAG) | grep -q "$(E2E_SPIDERPOOL_TAG)" &>/dev/null ; then \
+				echo "test's image $${NAME}:$(E2E_SPIDERPOOL_TAG) found" && continue ; \
 			fi ; \
-			if $(CONTAINER_ENGINE) pull $${NAME}:$(TEST_IMAGE_TAG) ; then \
-				echo "Successfully pulled test image $${NAME}:$(TEST_IMAGE_TAG)" && continue ; \
+			if $(CONTAINER_ENGINE) pull $${NAME}:$(E2E_SPIDERPOOL_TAG) ; then \
+				echo "Successfully pulled test image $${NAME}:$(E2E_SPIDERPOOL_TAG)" && continue ; \
 			fi ; \
-			echo "error, failed to find $${NAME}:$(TEST_IMAGE_TAG), please run 'make build_image' firstly " >&2 && false ; \
+			echo "error, failed to find $${NAME}:$(E2E_SPIDERPOOL_TAG), please run 'make build_image' firstly " >&2 && false ; \
 		 done
 	$(QUIET)  make -C test kind-init
 

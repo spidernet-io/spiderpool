@@ -179,7 +179,7 @@ jobs:
           shell: bash
           command: |
                 make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                    -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                    -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
                     -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                     -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
                     -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT="" \
@@ -328,7 +328,7 @@ jobs:
           shell: bash
           command: |
                 make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                    -e TEST_IMAGE_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                    -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
                     -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                     -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
                     -e E2E_IP_FAMILY=dual -e PYROSCOPE_LOCAL_PORT="" \

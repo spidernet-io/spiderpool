@@ -33,7 +33,7 @@ kind is a tool for running local Kubernetes clusters using Docker container “n
     Note: If you are mainland user who is not available to access ghcr.io, you can use the following command to avoid failures in pulling Spiderpool and Multus images.
 
     ```bash
-    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$LAE2E_SPIDERPOOL_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e IMAGE_MULTUS_REPO=ghcr.m.daocloud.io
+    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$LAE2E_SPIDERPOOL_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
     ```
 
 ## Check that everything is working

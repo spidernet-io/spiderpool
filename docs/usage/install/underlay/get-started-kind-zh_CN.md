@@ -33,7 +33,7 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
     注意：如果您是国内用户，您可以使用如下命令，避免拉取 Spiderpool 与 Multus 镜像失败。
 
     ```bash
-    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$LAE2E_SPIDERPOOL_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e IMAGE_MULTUS_REPO=ghcr.m.daocloud.io
+    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$LAE2E_SPIDERPOOL_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
     ```
 
 ## 验证安装

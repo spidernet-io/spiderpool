@@ -249,6 +249,6 @@ spiderpool multus Selector labels
 {{- define "spiderpool.multus.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "spiderpool.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: {{ .Values.multus.name | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/component: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
 name: multus
 {{- end }}

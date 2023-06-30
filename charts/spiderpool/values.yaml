@@ -105,15 +105,15 @@ coordinator:
 ## @section multus parameters
 ##
 multus:
-  ## @param multus.name the name of spiderpool multus
-  name: "spiderpool-multus"
-
   ## @param multus.enableMultusConfig enable SpiderMultusConfig
   enableMultusConfig: true
 
   multusCNI:
     ## @param multus.multusCNI.install enable install multus-CNI
     install: true
+
+    ## @param multus.multusCNI.name the name of spiderpool multus
+    name: "spiderpool-multus"
 
     image:
       ## @param multus.multusCNI.image.registry the multus-CNI image registry
@@ -129,14 +129,14 @@ multus:
       digest: ""
 
       ## @param multus.multusCNI.image.tag the multus-CNI image tag
-      tag: v3.9.3
+      tag: v4.0.2-thick
 
       ## @param multus.multusCNI.image.imagePullSecrets the multus-CNI image imagePullSecrets
       imagePullSecrets: []
       # - name: "image-pull-secret"
 
     ## @param multus.multusCNI.defaultCNIName the multus-CNI default CNI name
-    defaultCNIName: ""
+    defaultCNIName: "auto"
 
     resources:
       limits:
@@ -168,14 +168,11 @@ multus:
       type: RollingUpdate
 
     ## @param multus.multusCNI.configmapName the configmap name
-    configmapName: "multus-cni-config"
+    configmapName: "multus-daemon-config"
 
     securityContext:
       ## @param multus.multusCNI.securityContext.privileged the securityContext privileged of multus-CNI daemonset pod
       privileged: true
-
-    ## @param multus.multusCNI.extraArgs the additional arguments of multus-CNI daemonset pod container
-    extraArgs: []
 
     ## @param multus.multusCNI.extraEnv the additional environment variables of multus-CNI daemonset pod container
     extraEnv: []

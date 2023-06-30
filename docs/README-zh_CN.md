@@ -10,9 +10,9 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
 
 为什么希望研发 Spiderpool ?  当前开源社区中并未提供全面、友好、智能的 underlay 网络解决方案，Spiderpool 因此提供了很多创新的功能：
 
-* 丰富的 IPAM 能力。提供共享、独享的 IP 池，支持应用固定 IP 地址，满足防火墙的安全管控等需求。 通过监控应用编排事件，自动化管理独享的 IP 池，实现固定 IP 地址的动态创建、扩容、缩容和回收，实现零运维。
+* 丰富的 IPAM 能力。提供共享、独享的 IP 池，支持应用固定 IP 地址，自动化管理独享的 IP 池，实现固定 IP 地址的动态创建、扩容、缩容和回收等。
 
-* overlay CNI 和 underlay CNI 协同，POD 具备多种 CNI 网卡。Spiderpool 能够定制多 underlay CNI 网卡的 IP 地址，调协所有网卡之间的路由，以确保请求向和回复向数据路径一致而避免丢包，能够使得 POD 同时具备 underlay CNI 和 overlay CNI 的网卡。多 CNI 协同能有效降低集群节点的硬件一致要求。
+* overlay CNI 和 underlay CNI 协同，POD 具备多种 CNI 网卡。Spiderpool 能够定制多个 underlay CNI 网卡的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。多 CNI 协同能有效降低集群节点的硬件一致要求。
 
 * 增强了开源社区中的 underlay CNI，如[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),

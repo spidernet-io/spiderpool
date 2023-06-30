@@ -42,15 +42,15 @@ Despite no strict definition for underlay and overlay networks in cloud-native n
  
 The [article](./docs/concepts/solution.md) provides a brief comparison of IPAM and network performance between the two technologies, which offers better insights into the unique features and use cases of Spiderpool.
 
-Why underlay network solutions? In data center scenarios, the following requirements necessitate underlay network solutions:
+Why underlay network solutions? the following requirements necessitate underlay network solutions:
 
-* Low-latency applications need optimized network latency and throughput provided by underlay networks
+* For applications with high-performance network requirements, the underlay network solution can provide advantages of low network latency and high throughput, compared to the overlay network solution.
 
-* Initial migration of traditional host applications to the cloud use traditional network methods such as service exposure and discovery and multi subnets
+* Traditional host applications, directly expose services through host IP, unable to accept NAT mapping, or different transaction stream have already been separated based on VLAN subnets. When migrating to the kubernetes, underlay network solutions can provide lower migration costs of the network.
 
-* Network management in the data center desires security controls like firewalls, vlan insulation and traditional network observation techniques to implement cluster network monitoring.
+* Network security requirements, like using firewall or VLAN isolation to implement network security, like using traditional network observation means to implement monitoring.
 
-* Independent host network interface to ensure the bandwidth isolation of the underlying subnet. Projects such as [kubevirt](https://github.com/kubevirt/kubevirt), storage and log, ensure independent network bandwidth to transfer data.
+* The underlay network solution allows for flexible customization of VLAN subnets for application access, applications could occupy independent subnet to ensure bandwidth isolation of underlying network. It suits for applications such as [kubevirt](https://github.com/kubevirt/kubevirt), CSI storage project, log collection project, etc.
 
 ## Architecture
 

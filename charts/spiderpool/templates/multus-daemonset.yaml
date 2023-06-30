@@ -95,7 +95,7 @@ metadata:
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ .Values.multus.configmapName | trunc 63 | trimSuffix "-" }}
+  name: {{ .Values.multus.multusCNI.configmapName | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- if .Values.global.commonLabels }}

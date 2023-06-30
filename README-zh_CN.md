@@ -189,11 +189,14 @@ spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 * 管理员可以为 Pod 添加额外的自定义路由， 可参考 [例子](./docs/usage/route.md)
 
-* 基于节点拓扑的 IP 池功能，支持运行在裸金属[例子](./docs/usage/install/underlay/get-started-cloud-zh_CN.md)、vmware 虚拟机([例子](./docs/usage/install/underlay/get-started-vmware-zh_CN.md))、openstack 虚拟机([例子](./docs/usage/install/underlay/get-started-openstack-zh_CN.md))、公有云([例子](./docs/usage/install/underlay/get-started-cloud-zh_CN.md))等场景。
+* 基于节点拓扑的 IP 池功能，支持运行在裸金属[例子](./docs/usage/install/underlay/get-started-cloud-zh_CN.md)、
+vmware 虚拟机[例子](./docs/usage/install/underlay/get-started-vmware-zh_CN.md)、
+openstack 虚拟机[例子](./docs/usage/install/underlay/get-started-openstack-zh_CN.md)、
+公有云[例子](./docs/usage/install/underlay/get-started-cloud-zh_CN.md)等场景。
 
-* 支持以最佳实践方式来便捷生成 multus CR 实例，避免了人工书写 CNI 配置错误。[例子](./docs/usage/??)
+* 支持以最佳实践方式来便捷生成 multus CR 实例，避免了人工书写 CNI 配置错误。[例子](./docs/concepts/mulltus-zh_CN.md)
 
-* 分配和释放 IP 地址的高效性能，[报告](docs/usage/performance-zh_CH.md)以其它开源项目为比较，涵盖了 IPv4 和 IPv6 多个场景，性能结果社区领先：
+* 分配和释放 IP 地址的高效性能，[报告](./docs/usage/performance-zh_CH.md)以其它开源项目为比较，涵盖了 IPv4 和 IPv6 多个场景，性能结果社区领先：
 
     1. 应用大批量创建、重启、删除，能确保快速的静态 IP 分配和释放
 

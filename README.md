@@ -198,9 +198,12 @@ If you want to start some Pods with Spiderpool in minutes, refer to [Quick start
 
 * The administrator could specify customized routes. See [example](./docs/usage/route.md) for details
 
-* Node based IP pool, supporting underlay CNI running on bare metal [example] (./docs/usage/install/underlay/get-started-cloud.md), vmware virtual machine ([example] (./docs/usage/install/underlay/get-started-vmware.md), openstack virtual machine ([example] (./docs/usage/install/underlay/get-started-openstack.md), public cloud ([example] (./docs/usage/install/underlay/get-started-cloud.md)
+* Node based IP pool, supporting underlay CNI running on bare metal [example](./docs/usage/install/underlay/get-started-cloud.md), 
+vmware virtual machine [example](./docs/usage/install/underlay/get-started-vmware.md), 
+openstack virtual machine [example](./docs/usage/install/underlay/get-started-openstack.md), 
+public cloud [example](./docs/usage/install/underlay/get-started-cloud.md)
 
-* easy generation of multi CR instances in a best practice manner, avoiding manual writing of CNI configuration errors. [Example] (./docs/usage/??)
+* easy generation of multi CR instances in a best practice manner, avoiding manual writing of CNI configuration errors. [Example](./docs/concepts/multus.md)
 
 * By comparison with other open source projects in the community, outstanding performance for assigning and releasing Pod IPs is showcased in the [test report](docs/usage/performance.md) covering multiple scenarios of IPv4 and IPv6:
 

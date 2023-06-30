@@ -12,7 +12,7 @@ Why developing Spiderpool? Currently, the open source community does not provide
 
 * Rich IPAM feature. Shared and dedicated IP pools, assigning fixed IP address, automated management of dedicated IP pools with dynamic creation, scaling, and recovery of fixed IP addresses based on application update events, resulting in zero maintenance operations.
 
-* Underlay CNI and overlay cooperation, multiple CNI interfaces for pod. Spiderpool helps assign IP address to multiple underlay interfaces, coordinate route between interfaces to ensure consistence data path of request and reply packets, which enable pod to have more than one interfaces of underlay and overlay CNI. Multiple CNI cooperates to reduce hardware requirements for deploying the cluster.
+* Underlay CNI and overlay CNI cooperation, multiple CNI interfaces for pod. Spiderpool helps assign IP address to multiple underlay interfaces, coordinate route between interfaces to ensure consistence data path of request and reply packets, which enable pod to have more than one interfaces of underlay and overlay CNI. Multiple CNI cooperates to reduce hardware requirements for deploying the cluster.
 
 * Enhance underlay CNI like [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),

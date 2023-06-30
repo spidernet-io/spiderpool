@@ -17,7 +17,7 @@ Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?categ
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了丰富的 IPAM 和 CNI 整合能力，强大了开源社区中的现有 CNI 项目，让多 CNI 协同工作可真正地可落，它使得 underlay CNI 能够完美地运行在裸金属、虚拟机、任意公有云等环境下。
+Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了丰富的 IPAM 和 CNI 整合能力，强大了开源社区中的现有 CNI 项目，让多 CNI 协同工作可真正地可落，它使得 underlay CNI 能够完美地运行在**裸金属、虚拟机、任意公有云等环境下**。
 
 为什么希望研发 Spiderpool ?  当前开源社区中并未提供全面、友好、智能的 underlay 网络解决方案，Spiderpool 因此提供了很多创新的功能：
 

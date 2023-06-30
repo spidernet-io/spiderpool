@@ -20,7 +20,7 @@ Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mo
 
 ## Introduction
 
-Spiderpool is a Kubernetes underlay network solution . It provides rich IPAM features and CNI integration capabilities, powering CNI projects in the open source community, allowing multiple CNIs to collaborate effectively. It enables underlay CNI to run perfectly in environments such as bare metal, virtual machines, and any public cloud.
+Spiderpool is a Kubernetes underlay network solution . It provides rich IPAM features and CNI integration capabilities, powering CNI projects in the open source community, allowing multiple CNIs to collaborate effectively. It enables underlay CNI to run perfectly in environments such as **bare metal, virtual machines, and any public cloud**.
 
 Why developing Spiderpool? Currently, the open source community does not provide comprehensive, friendly, and intelligent underlay network solutions, so Spiderpool aims to provide many innovative features:
 

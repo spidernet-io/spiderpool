@@ -81,7 +81,7 @@ Any CNI project compatible with third-party IPAM plugins can work well with Spid
 [Calico CNI](https://github.com/projectcalico/calico), 
 [Weave CNI](https://github.com/weaveworks/weave)
 
-## Use case: collaborate with one or more underlay CNIs
+## Use case: one or more underlay CNIs
 
 ![arch_underlay](./docs/images/spiderpool-underlay.jpg)
 

@@ -18,10 +18,8 @@ func (in *BondConfig) DeepCopyInto(out *BondConfig) {
 	*out = *in
 	if in.Options != nil {
 		in, out := &in.Options, &out.Options
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = new(string)
+		**out = **in
 	}
 }
 

@@ -154,7 +154,7 @@ Refer to [Quick start](./docs/usage/install/install.md), setup a cluster quickly
 
 * For stateful applications, IP addresses can be automatically fixed for each Pod, and the overall IP scaling range can be fixed as well. See [example](./docs/usage/statefulset.md) for more details.
 
-* Subnet feature, one hand, could help to separate the responsibility from the infrastructure administrator and the application administrator.
+* Subnet feature, on the one hand, could help to separate the responsibility from the infrastructure administrator and the application administrator.
 
     On the other hand, it supports to automatically create and dynamically scale the fixed IP ippools to each applcation requiring static IPs. which could help reduce operation burden of IP pools burden, referring to [example](./docs/usage/spider-subnet.md) for more details. In additional to kubernetes-native controller, subnet feature also supports third-party pod controllers based on operator, See [example](./docs/usage/third-party-controller.md) for details.
 

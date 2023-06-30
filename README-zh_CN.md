@@ -174,7 +174,7 @@ spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
   openstack 虚拟机[例子](./docs/usage/install/underlay/get-started-openstack-zh_CN.md)、
   公有云[例子](./docs/usage/install/underlay/get-started-cloud-zh_CN.md)等场景。
 
-* 在 POD 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) 和 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) 准备 master 接口。可参考 [example](./docs/usage/ifcacer.md).
+* 在 POD 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) 和 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) 准备 master 接口。可参考 [例子](./docs/usage/ifcacer.md).
 
 * 可以通过 IP 池和 POD annotaiton 等多种方式定制自定义路由，可参考 [例子](./docs/usage/route.md)
 

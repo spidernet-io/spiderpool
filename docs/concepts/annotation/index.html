@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/" class="md-nav__link">
+      <a href="../../usage/install/install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -280,7 +280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/certificate/" class="md-nav__link">
+      <a href="../../usage/install/certificate/" class="md-nav__link">
         Certificates
       </a>
     </li>
@@ -594,19 +594,12 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#application-annotations" class="md-nav__link">
-    Application annotations
+  <a href="#pod-annotations" class="md-nav__link">
+    Pod annotations
   </a>
   
-    <nav class="md-nav" aria-label="Application annotations">
+    <nav class="md-nav" aria-label="Pod annotations">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ipamspidernetiosubnets" class="md-nav__link">
-    ipam.spidernet.io/subnets
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#ipamspidernetiosubnet" class="md-nav__link">
@@ -615,18 +608,12 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pod-annotations" class="md-nav__link">
-    Pod annotations
+          <li class="md-nav__item">
+  <a href="#ipamspidernetiosubnets" class="md-nav__link">
+    ipam.spidernet.io/subnets
   </a>
   
-    <nav class="md-nav" aria-label="Pod annotations">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
   <a href="#ipamspidernetioippool-ip-number" class="md-nav__link">
@@ -659,13 +646,6 @@
           <li class="md-nav__item">
   <a href="#ipamspidernetioroutes" class="md-nav__link">
     ipam.spidernet.io/routes
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ipamspidernetioassigned-interface" class="md-nav__link">
-    ipam.spidernet.io/assigned-{INTERFACE}
   </a>
   
 </li>
@@ -831,6 +811,20 @@
     <li class="md-nav__item">
       <a href="../spidersubnet/" class="md-nav__link">
         SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solution/" class="md-nav__link">
+        Underlay and overlay solutions
       </a>
     </li>
   
@@ -1050,19 +1044,12 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#application-annotations" class="md-nav__link">
-    Application annotations
+  <a href="#pod-annotations" class="md-nav__link">
+    Pod annotations
   </a>
   
-    <nav class="md-nav" aria-label="Application annotations">
+    <nav class="md-nav" aria-label="Pod annotations">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ipamspidernetiosubnets" class="md-nav__link">
-    ipam.spidernet.io/subnets
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#ipamspidernetiosubnet" class="md-nav__link">
@@ -1071,18 +1058,12 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pod-annotations" class="md-nav__link">
-    Pod annotations
+          <li class="md-nav__item">
+  <a href="#ipamspidernetiosubnets" class="md-nav__link">
+    ipam.spidernet.io/subnets
   </a>
   
-    <nav class="md-nav" aria-label="Pod annotations">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
   <a href="#ipamspidernetioippool-ip-number" class="md-nav__link">
@@ -1115,13 +1096,6 @@
           <li class="md-nav__item">
   <a href="#ipamspidernetioroutes" class="md-nav__link">
     ipam.spidernet.io/routes
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ipamspidernetioassigned-interface" class="md-nav__link">
-    ipam.spidernet.io/assigned-{INTERFACE}
   </a>
   
 </li>
@@ -1182,24 +1156,38 @@
 
 
 <h1 id="annotations">Annotations</h1>
-<p>Spiderpool provides annotations for configuring custom ippools and routes.</p>
-<h2 id="application-annotations">Application annotations</h2>
-<p>Once you set up SpiderSubnet feature, you can specify SpiderSubnet annotations for the application templates.
-For more details, please refer to <a href="../../usage/spider-subnet/">SpiderSubnet</a></p>
-<p>Notice: The current version only supports to use one SpiderSubnet V4/V6 CR for one interface, you shouldn't specify 2 or more SpiderSubnet V4 CRs,
-and it will choose the first one to use.</p>
-<h3 id="ipamspidernetiosubnets">ipam.spidernet.io/subnets</h3>
-<p>Here's an example for multiple interfaces to use SpiderSubnet.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/subnets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
-<span class="w">  </span><span class="no">[{&quot;interface&quot;: &quot;eth0&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-1&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-1&quot;]},</span><span class="w"></span>
-<span class="w">   </span><span class="no">{&quot;interface&quot;: &quot;net2&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-2&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-2&quot;]}]</span><span class="w"></span>
-</code></pre></div>
-<h3 id="ipamspidernetiosubnet">ipam.spidernet.io/subnet</h3>
-<p>This is used for SpiderSubnet with single interface.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/subnet</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;ipv4&quot;:</span><span class="nv"> </span><span class="s">[&quot;subnet-demo-v4&quot;],</span><span class="nv"> </span><span class="s">&quot;ipv6&quot;:</span><span class="nv"> </span><span class="s">[&quot;subnet-demo-v6&quot;]}&#39;</span><span class="w"></span>
-</code></pre></div>
+<p>Spiderpool provides annotations for configuring custom IPPools and routes.</p>
 <h2 id="pod-annotations">Pod annotations</h2>
-<p>For a pod, you can specify Spiderpool annotations for a special request.</p>
+<p>After enabling the feature <a href="../../usage/spider-subnet/">SpiderSubnet</a> (default enabled after v0.4.0), the annotations related to Subnet will take effect. They always have higher priority than IPPool related annotations.</p>
+<h3 id="ipamspidernetiosubnet">ipam.spidernet.io/subnet</h3>
+<p>Specify the Subnets used to generate IPPools and allocate IP addresses.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/subnet</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
+<span class="w">  </span><span class="no">{</span><span class="w"></span>
+<span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-subnet1&quot;],</span><span class="w"></span>
+<span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-subnet1&quot;]</span><span class="w"></span>
+<span class="w">  </span><span class="no">}</span><span class="w"></span>
+</code></pre></div>
+<ul>
+<li><code>ipv4</code> (array, optional): Specify which Subnet is used to generate IPPool and allocate the IPv4 address. When <code>enableIPv4</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+<li><code>ipv6</code> (array, optional): Specify which Subnet is used to generate IPPool and allocate the IPv6 address. When <code>enableIPv6</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+</ul>
+<h3 id="ipamspidernetiosubnets">ipam.spidernet.io/subnets</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/subnets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
+<span class="w">  </span><span class="no">[{</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;interface&quot;: &quot;eth0&quot;,</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-subnet1&quot;],</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-subnet1&quot;]</span><span class="w"></span>
+<span class="w">   </span><span class="no">},{</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;interface&quot;: &quot;net1&quot;,</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-subnet2&quot;],</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-subnet2&quot;]</span><span class="w"></span>
+<span class="w">  </span><span class="no">}]</span><span class="w"></span>
+</code></pre></div>
+<ul>
+<li><code>interface</code> (string, required): Since the CNI request only carries the information of one interface, the field <code>interface</code> shall be specified to distinguish in the case of multiple interfaces.</li>
+<li><code>ipv4</code> (array, optional): Specify which Subnet is used to generate IPPool and allocate the IPv4 address. When <code>enableIPv4</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+<li><code>ipv6</code> (array, optional): Specify which Subnet is used to generate IPPool and allocate the IPv6 address. When <code>enableIPv6</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+</ul>
 <h3 id="ipamspidernetioippool-ip-number">ipam.spidernet.io/ippool-ip-number</h3>
 <p>This annotation is used with <a href="../../usage/spider-subnet/">SpiderSubnet</a> feature enabled.
 It specifies the IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1').</p>
@@ -1211,73 +1199,61 @@ It specifies the corresponding SpiderIPPool to delete or not once the applicatio
 <div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/ippool-reclaim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
 </code></pre></div>
 <h3 id="ipamspidernetioippool">ipam.spidernet.io/ippool</h3>
-<p>Specify the ippools used to allocate IP.</p>
+<p>Specify the IPPools used to allocate IP addresses.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
 <span class="w">  </span><span class="no">{</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;v4-ippool1&quot;],</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;v6-ippool1&quot;, &quot;v6-ippool2&quot;]</span><span class="w"></span>
+<span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span><span class="w"></span>
+<span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;demo-v6-ippool2&quot;]</span><span class="w"></span>
 <span class="w">  </span><span class="no">}</span><span class="w"></span>
 </code></pre></div>
 <ul>
-<li><code>ipv4</code> (array, optional): Specify which ippool is used to allocate the IPv4 address. When <code>enableIPv4</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
-<li><code>ipv6</code> (array, optional): Specify which ippool is used to allocate the IPv6 address. When <code>enableIPv6</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
+<li><code>ipv4</code> (array, optional): Specify which IPPool is used to allocate the IPv4 address. When <code>enableIPv4</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+<li><code>ipv6</code> (array, optional): Specify which IPPool is used to allocate the IPv6 address. When <code>enableIPv6</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
 </ul>
 <h3 id="ipamspidernetioippools">ipam.spidernet.io/ippools</h3>
 <p>It is similar to <code>ipam.spidernet.io/ippool</code> but could be used in the case with multiple interfaces. Note that <code>ipam.spidernet.io/ippools</code> has precedence over <code>ipam.spidernet.io/ippool</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
 <span class="w">  </span><span class="no">[{</span><span class="w"></span>
 <span class="w">      </span><span class="no">&quot;interface&quot;: &quot;eth0&quot;,</span><span class="w"></span>
-<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;v4-ippool1&quot;],</span><span class="w"></span>
-<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;v6-ippool1&quot;],</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span><span class="w"></span>
 <span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span><span class="w"></span>
 <span class="w">   </span><span class="no">},{</span><span class="w"></span>
-<span class="w">      </span><span class="no">&quot;interface&quot;: &quot;eth1&quot;,</span><span class="w"></span>
-<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;v4-ippool2&quot;],</span><span class="w"></span>
-<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;v6-ippool2&quot;],</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;interface&quot;: &quot;net1&quot;,</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span><span class="w"></span>
 <span class="w">      </span><span class="no">&quot;cleangateway&quot;: false</span><span class="w"></span>
 <span class="w">  </span><span class="no">}]</span><span class="w"></span>
 </code></pre></div>
 <ul>
-<li><code>interface</code> (string, required): Since the CNI request only carries the information of one interface, the <code>interface</code> field shall be specified to distinguish in the case of multiple interfaces.</li>
-<li><code>ipv4</code> (array, optional): Specify which ippool is used to allocate the IPv4 address. When <code>enableIPv4</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
-<li><code>ipv6</code> (array, optional): Specify which ippool is used to allocate the IPv6 address. When <code>enableIPv6</code> in the <code>spiderpool-conf</code> ConfigMap is set to true, this field is required.</li>
-<li><code>cleangateway</code> (bool, optional): If set to true, the IPAM plugin will not return the default gateway route recorded in the ippool. default to false</li>
+<li><code>interface</code> (string, required): Since the CNI request only carries the information of one interface, the field <code>interface</code> shall be specified to distinguish in the case of multiple interfaces.</li>
+<li><code>ipv4</code> (array, optional): Specify which IPPool is used to allocate the IPv4 address. When <code>enableIPv4</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+<li><code>ipv6</code> (array, optional): Specify which IPPool is used to allocate the IPv6 address. When <code>enableIPv6</code> in the ConfigMap <code>spiderpool-conf</code> is set to true, this field is required.</li>
+<li><code>cleangateway</code> (bool, optional): If set to true, the IPAM plugin will not return the default route (generated by <code>spec.gateway</code>) recorded in the IPPool.</li>
 </ul>
-<p>For different interfaces, it is not recommended to use ippools of the same subnet.</p>
 <h3 id="ipamspidernetioroutes">ipam.spidernet.io/routes</h3>
 <p>You can use the following code to enable additional routes take effect.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/routes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
 <span class="w">  </span><span class="no">[{</span><span class="w"></span>
 <span class="w">      </span><span class="no">&quot;dst&quot;: &quot;10.0.0.0/16&quot;,</span><span class="w"></span>
 <span class="w">      </span><span class="no">&quot;gw&quot;: &quot;192.168.1.1&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="no">},{</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;dst&quot;: &quot;172.10.40.0/24&quot;,</span><span class="w"></span>
+<span class="w">      </span><span class="no">&quot;gw&quot;: &quot;172.18.40.1&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="no">}]</span><span class="w"></span>
 </code></pre></div>
 <ul>
 <li><code>dst</code> (string, required): Network destination of the route.</li>
 <li><code>gw</code> (string, required): The forwarding or next hop IP address.</li>
 </ul>
-<h3 id="ipamspidernetioassigned-interface">ipam.spidernet.io/assigned-{INTERFACE}</h3>
-<p>It is the IP allocation result of the interface. It is only used by Spiderpool, not reserved for users.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/assigned-eth0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span><span class="w"></span>
-<span class="w">  </span><span class="no">{</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;interface&quot;: &quot;eth0&quot;,</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;ipv4pool&quot;: &quot;v4-ippool1&quot;,</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;ipv6pool&quot;: &quot;v6-ippool1&quot;,</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;ipv4&quot;: &quot;172.16.0.100/16&quot;,</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;ipv6&quot;: &quot;fd00::100/64&quot;,</span><span class="w"></span>
-<span class="w">    </span><span class="no">&quot;vlan&quot;: 100</span><span class="w"></span>
-<span class="w">  </span><span class="no">}</span><span class="w"></span>
-</code></pre></div>
 <h2 id="namespace-annotations">Namespace annotations</h2>
-<p>Namespace could set following annotations to specify default ippools. They are valid for all Pods under the Namespace.</p>
+<p>A Namespace can set the following annotations to specify default IPPools which are effective for all Pods under the Namespace.</p>
 <h3 id="ipamspidernetiodefault-ipv4-ippool">ipam.spidernet.io/default-ipv4-ippool</h3>
 <div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/default-ipv4-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v4-ippool1&quot;,&quot;ns-v4-ippool2&quot;]&#39;</span><span class="w"></span>
 </code></pre></div>
-<p>If multiple ippools are listed, it will try to allocate IP from the later ippool when the former one is not allocatable.</p>
 <h3 id="ipamspidernetiodefault-ipv6-ippool">ipam.spidernet.io/default-ipv6-ippool</h3>
 <div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/default-ipv6-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v6-ippool1&quot;,&quot;ns-v6-ippool2&quot;]&#39;</span><span class="w"></span>
 </code></pre></div>
-<p>For other procedure, similar to <a href="#pod-annotations">Pod Annotations</a> described above.</p>
 
 
 

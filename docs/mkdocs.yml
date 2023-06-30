@@ -42,9 +42,9 @@ markdown_extensions:
 nav:
   - README.md
   - Installation:
-      - Installation: usage/install.md
+      - Installation: usage/install/install.md
       - Upgrading: usage/upgrade.md
-      - Certificates: usage/certificate.md
+      - Certificates: usage/install/certificate.md
   - Usage:
       - SpiderSubnet: usage/spider-subnet.md
       - Default IPPool at namespace: usage/ippool-namespace.md
@@ -71,6 +71,7 @@ nav:
       - SpiderIPPool: concepts/spiderippool.md
       - SpiderReservedIP: concepts/spiderreservedip.md
       - SpiderSubnet: concepts/spidersubnet.md
+      - Underlay and overlay solutions: concepts/solution.md
   - CLI Reference:
       - spiderpoolctl: cmdref/spiderpoolctl.md
       - spiderpool-controller: cmdref/spiderpool-controller.md

@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../install/install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -280,7 +280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../certificate/" class="md-nav__link">
+      <a href="../install/certificate/" class="md-nav__link">
         Certificates
       </a>
     </li>
@@ -776,6 +776,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/solution/" class="md-nav__link">
+        Underlay and overlay solutions
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1060,8 +1074,8 @@
 
 
 <h1 id="pod-affinity-of-ippool">Pod affinity of IPPool</h1>
-<p>IPPool supports affinity setting for Pods. when setting <code>sepc.podAffinity</code> in SpiderIPPool, only the selected pods
-could get IP address from it, and another pods could not even specifying the annotation.</p>
+<p>IPPool supports affinity setting for Pods. when setting <code>sepc.podAffinity</code> in SpiderIPPool, only the selected Pods
+could get IP address from it, and another Pods could not even specifying the annotation.</p>
 <ul>
 <li>
 <p>When setting the <code>sepc.podAffinity</code>, it helps to better implement the capability of <strong>static IP</strong> for workloads like Deployment, StatefulSet etc.</p>
@@ -1073,7 +1087,7 @@ could get IP address from it, and another pods could not even specifying the ann
 <h2 id="get-started">Get started</h2>
 <p>The example shows how <code>sepc.podAffinity</code> works.</p>
 <h3 id="set-up-spiderpool">Set up Spiderpool</h3>
-<p>Follow the <a href="../install/">installation guide</a> to install Spiderpool.</p>
+<p>Follow the <a href="./install.md">installation guide</a> to install Spiderpool.</p>
 <h3 id="create-spidersubnet">Create SpiderSubnet</h3>
 <p>Create a subnet to allocate IP addresses for the IPPool, from which both the Shared IPPool and the Occupied IPPool will receive their IP addresses.</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/static-ipv4-subnet.yaml

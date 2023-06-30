@@ -55,9 +55,42 @@ func CmdAdd(args *skel.CmdArgs) error {
 			return types.PrintResult(result, conf.CNIVersion)
 		}
 
+		for _, slave := range conf.Interfaces {
+			link, err := netlink.LinkByName(slave)
+			if err != nil {
+				return fmt.Errorf("failed to InterfaceByName %s: %w", slave, err)
+			}
+
+			if err = netlink.LinkSetDown(link); err != nil {
+				return fmt.Errorf("failed to set slave %s down: %w", slave, err)
+			}
+
+			if err = networking.LinkSetBondSlave(slave, bond); err != nil {
+				return err
+			}
+		}
+
+		if err = netlink.LinkSetUp(bond); err != nil {
+			return fmt.Errorf("failed to set %s up", bond.Name)
+		}
+
 		vlanName := getVlanIfaceName(conf.Bond.Name, conf.VlanID)
 		if err := checkInterfaceWithSameVlan(conf.VlanID, vlanName); err != nil {
 			return err
+		}
+
+		vlanLink, err := netlink.LinkByName(vlanName)
+		if err == nil {
+			if vlanLink.Attrs().Flags != net.FlagUp {
+				if err = netlink.LinkSetUp(vlanLink); err != nil {
+					return fmt.Errorf("failed to set %s up: %v", vlanLink.Attrs().Name, err)
+				}
+			}
+			return nil
+		}
+
+		if _, ok := err.(netlink.LinkNotFoundError); !ok {
+			return fmt.Errorf("failed to LinkByName %s: %v", vlanName, err)
 		}
 
 		// create vlan interface
@@ -117,14 +150,8 @@ func createBondDevice(conf *Ifacer) (*netlink.Bond, error) {
 		}
 	}
 
-	for _, slave := range conf.Interfaces {
-		if err = networking.LinkSetBondSlave(slave, bond); err != nil {
-			return nil, err
-		}
-	}
-
 	// create vlan interface base on bond
-	return bond, networking.LinkAdd(bond)
+	return bond, netlink.LinkAdd(bond)
 }
 
 func createVlanDevice(conf *Ifacer) error {

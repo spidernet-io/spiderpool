@@ -119,14 +119,6 @@ data:
     }
   {{- if .Values.multus.multusCNI.defaultCniCRName }}
 ---
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
-  labels:
-    {{- if .Values.global.commonLabels }}
-      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
-      {{- end }}
 ---
 kind: ConfigMap
 apiVersion: v1

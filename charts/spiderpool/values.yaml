@@ -167,9 +167,6 @@ multus:
         maxUnavailable: 2
       type: RollingUpdate
 
-    ## @param multus.multusCNI.configmapName the configmap name
-    configmapName: "multus-daemon-config"
-
     securityContext:
       ## @param multus.multusCNI.securityContext.privileged the securityContext privileged of multus-CNI daemonset pod
       privileged: true

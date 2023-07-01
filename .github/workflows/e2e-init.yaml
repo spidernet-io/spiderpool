@@ -96,7 +96,7 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+            make e2e_init_underlay -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
                 -e E2E_SPIDERPOOL_TAG=${{ inputs.image_tag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \

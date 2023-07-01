@@ -145,7 +145,6 @@ setup_kind:
 setup_kurise:
 	@echo "add openkruise charts repository..." ; \
 		helm repo add openkruise https://openkruise.github.io/charts/
-		helm repo update
 		helm install kruise openkruise/kruise --kubeconfig $(E2E_KUBECONFIG) --wait --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE)
 
 .PHONY: setup_spiderpool

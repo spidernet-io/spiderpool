@@ -144,10 +144,6 @@ function install_cilium() {
           exit 1
       esac
 
-    echo "CILIUM_HELM_OPTIONS: ${CILIUM_HELM_OPTIONS}"
-    helm repo remove cilium &>/dev/null || true
-    helm repo add cilium https://helm.cilium.io
-
     CILIUM_HELM_OPTIONS+=" \
       --set image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
       --set image.useDigest=false \
@@ -162,6 +158,11 @@ function install_cilium() {
       --set preflight.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
       --set preflight.image.useDigest=false \
       --set nodeinit.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/startup-script "
+
+    echo "CILIUM_HELM_OPTIONS: ${CILIUM_HELM_OPTIONS}"
+
+    helm repo remove cilium &>/dev/null || true
+    helm repo add cilium https://helm.cilium.io
 
     HELM_IMAGES_LIST=` helm template test cilium/cilium --version ${CILIUM_VERSION} ${CILIUM_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | awk -F "@" '{print $1}' | uniq `
     [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of cilium" && exit 1

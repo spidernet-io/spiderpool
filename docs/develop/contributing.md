@@ -57,7 +57,7 @@
           -----------------------------------------------------------------------------------------------------        
 
         # for china developer not able access ghcr.io
-        $ make e2e_init -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
+        $ make e2e_init -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io -e SPIDERDOCTOR_IMAGE_REPO=ghcr.m.daocloud.io
 
         # setup the kind cluster of ipv4-only
         $ make e2e_init -e E2E_IP_FAMILY=ipv4

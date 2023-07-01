@@ -110,7 +110,7 @@ data:
         "socketDir": "/host/run/multus/",
         "cniVersion": "0.3.1",
         "cniConfigDir": "/host/etc/cni/net.d",
-        "multusConfigFile": "{{ .Values.multus.defaultCNIName }}",
+        "multusConfigFile": "{{ .Values.multus.multusCNI.defaultCNIName }}",
         "multusAutoconfigDir": "/host/etc/cni/net.d"
     }
 ---

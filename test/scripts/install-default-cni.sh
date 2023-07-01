@@ -147,18 +147,6 @@ function install_cilium() {
     echo "CILIUM_HELM_OPTIONS: ${CILIUM_HELM_OPTIONS}"
     helm repo remove cilium &>/dev/null || true
     helm repo add cilium https://helm.cilium.io
-    HELM_IMAGES_LIST=` helm template test cilium/cilium --version ${CILIUM_VERSION} ${CILIUM_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | awk -F "@" '{print $1}' | uniq `
-    [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of cilium" && exit 1
-    LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`
-
-    for CILIUM_IMAGE in ${HELM_IMAGES_LIST}; do
-      if ! grep ${CILIUM_IMAGE} <<< ${LOCAL_IMAGE_LIST} ; then
-        echo "===> docker pull ${CILIUM_IMAGE} "
-        docker pull ${CILIUM_IMAGE}
-      fi
-      echo "===> load image ${CILIUM_IMAGE} to kind..."
-      kind load docker-image ${CILIUM_IMAGE} --name ${E2E_CLUSTER_NAME}
-    done
 
     CILIUM_HELM_OPTIONS+=" \
       --set image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
@@ -174,7 +162,20 @@ function install_cilium() {
       --set preflight.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
       --set preflight.image.useDigest=false \
       --set nodeinit.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/startup-script "
-  
+
+    HELM_IMAGES_LIST=` helm template test cilium/cilium --version ${CILIUM_VERSION} ${CILIUM_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | awk -F "@" '{print $1}' | uniq `
+    [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of cilium" && exit 1
+    LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`
+
+    for CILIUM_IMAGE in ${HELM_IMAGES_LIST}; do
+      if ! grep ${CILIUM_IMAGE} <<< ${LOCAL_IMAGE_LIST} ; then
+        echo "===> docker pull ${CILIUM_IMAGE} "
+        docker pull ${CILIUM_IMAGE}
+      fi
+      echo "===> load image ${CILIUM_IMAGE} to kind..."
+      kind load docker-image ${CILIUM_IMAGE} --name ${E2E_CLUSTER_NAME}
+    done
+
     # Install cilium
     helm upgrade --install cilium cilium/cilium --wait -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${CILIUM_HELM_OPTIONS} --version ${CILIUM_VERSION}
     kubectl wait --for=condition=ready -l k8s-app=cilium --timeout=${INSTALL_TIME_OUT} pod -n kube-system \

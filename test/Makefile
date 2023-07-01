@@ -178,7 +178,7 @@ setup_spiderpool:
 		HELM_OPTION+=" --set coordinator.detectIPConflict=false --set coordinator.detectGateway=false " ; \
 		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
 		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
-		    HELM_OPTION+=' --set multus.multusCNI.image.registry="" ' ; \
+		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.defaultCNIName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
 			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \

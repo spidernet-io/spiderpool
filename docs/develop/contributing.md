@@ -60,13 +60,15 @@
         $ make e2e_init_underlay -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
 
         # setup the kind cluster of ipv4-only
-        $ make e2e_init -e E2E_IP_FAMILY=ipv4
+        $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv4
 
         # setup the kind cluster of ipv6-only
-        $ make e2e_init -e E2E_IP_FAMILY=ipv6
+        $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
 
+        # setup cluster with calico cni
         $ make e2e_init_calico -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io -e SPIDERDOCTOR_IMAGE_REPO=ghcr.m.daocloud.io -e E2E_CALICO_IMAGE_REPO=docker.m.daocloud.io
 
+        # setup cluster with cilium cni
         $ make e2e_init_cilium -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io -e SPIDERDOCTOR_IMAGE_REPO=ghcr.m.daocloud.io -e E2E_CILIUM_IMAGE_REPO=quay.m.daocloud.io
 
    run the e2e test

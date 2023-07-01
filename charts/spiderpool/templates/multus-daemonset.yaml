@@ -94,13 +94,13 @@ metadata:
 ---
 kind: ConfigMap
 apiVersion: v1
-metadata: multus-daemon-config
-  name: .Values.multus.multusCNI.configmapName
+metadata:
+  name: multus-daemon-config
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- if .Values.global.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
-    {{- end }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
 data:
   daemon-config.json: |
     {
@@ -117,7 +117,7 @@ data:
         {{- end }}
         "multusAutoconfigDir": "/host/etc/cni/net.d"
     }
-{{- if .Values.multus.multusCNI.defaultCniCRName }}
+  {{- if .Values.multus.multusCNI.defaultCniCRName }}
 ---
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
@@ -135,15 +135,15 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- if .Values.global.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
-    {{- end }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
 data:
   cni-conf.json: |
     {
       "cniVersion": "0.3.1",
       "name": "multus-cni-network",
       "type": "multus-shim",
-      "socketDir":"/host/run/multus/"
+      "socketDir":"/host/run/multus/",
       "logLevel": "{{ .Values.multus.multusCNI.log.logLevel }}",
       "logFile": "{{ .Values.multus.multusCNI.log.logFile }}",
       "capabilities": {
@@ -152,7 +152,7 @@ data:
       },
       "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}"
     }
-{{- end }}
+  {{- end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet

@@ -170,7 +170,7 @@ Refer to [Quick start](./usage/install/install.md), setup a cluster quickly.
 
 * It could specify customized routes by IP pool and pod annotation. See [example](./usage/route.md) for details
 
-* Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) CR instances with best practice manner, avoiding manual writing of CNI configuration errors. [Example](.concepts/multus.md)
+* Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition custom resources with best-practice CNI configuration, also ensure well formatted JSON to improve experience. [Example](./docs/concepts/multus.md)
 
 * Multiple IP pools can be set for the application for prevent IP address from running out. See [example](./usage/ippool-multi.md) for details.
 

@@ -167,7 +167,7 @@ spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 * 可以通过 IP 池和 POD annotaiton 等多种方式定制自定义路由，可参考 [例子](./usage/route.md)
 
-* 支持以最佳实践方式来便捷生成 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) CR 实例，避免了人工书写 CNI 配置错误。[例子](./concepts/mulltus-zh_CN.md)
+* 以最佳实践的 CNI 配置来便捷地生成 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition 实例，并且保证其正确的 JSON 格式来提高使用体验。[例子](./concepts/mulltus-zh_CN.md)
 
 * 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考 [例子](./usage/ippool-multi.md)
 

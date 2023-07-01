@@ -175,15 +175,14 @@ spec:
         - name: kube-multus
           imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}
           image: {{ include "spiderpool.multus.image" . | quote }}
-          command: ["/thin_entrypoint"]
+          command: ["/entrypoint.sh"]
           args:
             {{- if .Values.multus.multusCNI.defaultCniCRName }}
             - "--multus-conf-file=/tmp/multus-conf/00-multus.conf"
             {{- else }}
             - "--multus-conf-file=auto"
             {{- end }}
-            - "--multus-autoconfig-dir=/host/etc/cni/net.d"
-            - "--cni-conf-dir=/host/etc/cni/net.d"
+            - "--cni-version=0.3.1"
             {{- with .Values.multus.multusCNI.extraArgs }}
             {{- toYaml . | trim | nindent 12 }}
             {{- end }}
@@ -217,10 +216,10 @@ spec:
         - name: install-multus-binary
           imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}
           image: {{ include "spiderpool.multus.image" . | quote }}
-          command: ["/install_multus"]
-          args:
-            - "--type"
-            - "thin"
+          command:
+            - "cp"
+            - "/usr/src/multus-cni/bin/multus"
+            - "/host/opt/cni/bin/multus"
           resources:
             requests:
               cpu: "10m"

@@ -149,7 +149,7 @@ setup_kurise:
 	@echo "add openkruise charts repository..." ; \
 		[ -z "$(HTTP_PROXY)" ] || export https_proxy=$(HTTP_PROXY) ; \
 			helm repo add openkruise https://openkruise.github.io/charts/ ; \
-			IMAGE_LIST=` helm template kruise openkruise/kruise --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) | grep " image: " | tr -d '"'| awk '{print $2}' | uniq ` ; \
+			IMAGE_LIST=` helm template kruise openkruise/kruise --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) | grep " image: " | tr -d '"'| awk '{print $$2}' | uniq ` ; \
 			for IMAGE in $${IMAGE_LIST}; do \
 				docker pull ${IMAGE} ; \
 				kind load docker-image $${IMAGE}:$(E2E_SPIDERPOOL_TAG) --name $(E2E_CLUSTER_NAME);	\

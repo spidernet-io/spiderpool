@@ -66,7 +66,7 @@ ifeq ($(INSTALL_KRUISE),true)
 	@echo -e "\033[35m [Step 9] Install third-party controllers: kurise \033[0m"
 	@ make setup_kurise
 endif
-ifeq ($(INSTALL_OVERLAY_CNI),true)
+ifeq ($(INSTALL_SPIDERDOCTOR),true)
 	@echo -e "\033[35m [Step 10] Install SpiderDoctor \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \

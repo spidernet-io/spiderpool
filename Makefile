@@ -288,7 +288,7 @@ e2e:
 	$(QUIET) TMP=` date +%m%d%H%M%S ` ; E2E_CLUSTER_NAME="spiderpool$${TMP}" ; \
 		echo "begin e2e with cluster $${E2E_CLUSTER_NAME}" ; \
 		make build_image ; \
-		make e2e_init -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME} ; \
+		make e2e_init_underlay -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME} ; \
 		make e2e_test -e E2E_CLUSTER_NAME=$${E2E_CLUSTER_NAME}
 
 
@@ -311,7 +311,7 @@ e2e_init_underlay:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false
 
 .PHONY: e2e_init_calico
-e2e_init_overlay:
+e2e_init_calico:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false
 
 .PHONY: e2e_init_cilium

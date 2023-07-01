@@ -87,7 +87,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 			if _, ok := err.(*netlink.LinkNotFoundError); ok {
 				logger.Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
 			} else {
-				logger.Warn(fmt.Sprintf("failed to get host veth device %s: %w", hostVeth, err))
+				logger.Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
 				// go on to clean other things
 			}
 		} else {

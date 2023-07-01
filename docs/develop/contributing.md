@@ -108,7 +108,7 @@
         $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
 
         # setup the cluster with the specified image
-        $ make e2e_init -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
+        $ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
                 -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}

@@ -23,7 +23,7 @@ kind-init: check_env prepare
 	$(QUIET) bash scripts/config-network.sh
 	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
-ifeq ($(INSTALL_DEFAULT_CNI),true)
+ifeq ($(INSTALL_OVERLAY_CNI),true)
 	@echo -e "\033[35m [Step 6] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
@@ -31,9 +31,10 @@ ifeq ($(INSTALL_DEFAULT_CNI),true)
 	INSTALL_CALICO=$(INSTALL_CALICO) \
 	INSTALL_CILIUM=$(INSTALL_CILIUM) \
 	CALICO_VERSION=$(CALICO_VERSION) \
-	CALICO_IMAGE_REPO=$(CALICO_IMAGE_REPO) \
+	E2E_CALICO_IMAGE_REPO=$(E2E_CALICO_IMAGE_REPO) \
 	CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 	CALICO_AUTODETECTION_METHOD=$(CALICO_AUTODETECTION_METHOD) \
+	E2E_CILIUM_IMAGE_REPO=$(E2E_CILIUM_IMAGE_REPO) \
 	CILIUM_VERSION=$(CILIUM_VERSION) \
 	CILIUM_CLUSTER_POD_SUBNET_V4=$(CILIUM_CLUSTER_POD_SUBNET_V4) \
 	CILIUM_CLUSTER_POD_SUBNET_V6=$(CILIUM_CLUSTER_POD_SUBNET_V6) \
@@ -63,7 +64,7 @@ ifeq ($(INSTALL_KRUISE),true)
 	@echo -e "\033[35m [Step 9] Install third-party controllers: kurise \033[0m"
 	@ make setup_kurise
 endif
-ifeq ($(INSTALL_DEFAULT_CNI),true)
+ifeq ($(INSTALL_OVERLAY_CNI),true)
 	@echo -e "\033[35m [Step 10] Install SpiderDoctor \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
@@ -180,7 +181,11 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
-		    HELM_OPTION+=" --set multus.multusCNI.defaultCNIName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+		    if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
+		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
+		    else \
+		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+		    fi ; \
 			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
 			docker pull $${IMAGE_MULTUS} ; \

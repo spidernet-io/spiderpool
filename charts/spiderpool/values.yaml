@@ -135,8 +135,8 @@ multus:
       imagePullSecrets: []
       # - name: "image-pull-secret"
 
-    ## @param multus.multusCNI.defaultCNIName the multus-CNI default CNI name
-    defaultCNIName: "auto"
+    ## @param multus.multusCNI.defaultCniCRName it will create the NetworkAttachmentDefinition name for default CNI, if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
+    defaultCniCRName: ""
 
     resources:
       limits:

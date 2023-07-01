@@ -32,8 +32,10 @@ echo "$CURRENT_FILENAME : CLUSTER_PATH $CLUSTER_PATH "
 
 export CALICO_VERSION=${CALICO_VERSION:-"v3.25.0"}
 export INSTALL_TIME_OUT=${INSTALL_TIME_OUT:-"600s"}
-export CALICO_IMAGE_REPO=${CALICO_IMAGE_REPO:-"docker.io"}
+export E2E_CALICO_IMAGE_REPO=${E2E_CALICO_IMAGE_REPO:-"docker.io"}
 export CALICO_AUTODETECTION_METHOD=${CALICO_AUTODETECTION_METHOD:-"kubernetes-internal-ip"}
+
+E2E_CILIUM_IMAGE_REPO=${E2E_CILIUM_IMAGE_REPO:-"quay.io"}
 CILIUM_VERSION=${CILIUM_VERSION:-"v1.13.3"}
 CILIUM_CLUSTER_POD_SUBNET_V4=${CILIUM_CLUSTER_POD_SUBNET_V4:-"10.244.64.0/18"}
 CILIUM_CLUSTER_POD_SUBNET_V6=${CILIUM_CLUSTER_POD_SUBNET_V6:-"fd00:10:244::/112"}
@@ -158,6 +160,21 @@ function install_cilium() {
       kind load docker-image ${CILIUM_IMAGE} --name ${E2E_CLUSTER_NAME}
     done
 
+    CILIUM_HELM_OPTIONS+=" \
+      --set image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
+      --set image.useDigest=false \
+      --set certgen.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/certgen \
+      --set hubble.relay.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/hubble-relay \
+      --set hubble.relay.image.useDigest=false \
+      --set hubble.ui.backend.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/hubble-ui-backend \
+      --set hubble.ui.frontend.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/hubble-ui \
+      --set etcd.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium-etcd-operator \
+      --set operator.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/operator  \
+      --set operator.image.useDigest=false  \
+      --set preflight.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
+      --set preflight.image.useDigest=false \
+      --set nodeinit.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/startup-script "
+  
     # Install cilium
     helm upgrade --install cilium cilium/cilium --wait -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${CILIUM_HELM_OPTIONS} --version ${CILIUM_VERSION}
     kubectl wait --for=condition=ready -l k8s-app=cilium --timeout=${INSTALL_TIME_OUT} pod -n kube-system \

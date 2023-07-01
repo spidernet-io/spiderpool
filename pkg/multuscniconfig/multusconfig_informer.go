@@ -418,7 +418,9 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 		confStr = string(bytes)
 	} else {
-		confStr = *multusConfSpec.CustomCNIConfig
+		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
+			confStr = *multusConfSpec.CustomCNIConfig
+		}
 	}
 
 	netAttachDef := &netv1.NetworkAttachmentDefinition{
@@ -427,9 +429,11 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			Namespace:   multusConf.Namespace,
 			Annotations: anno,
 		},
-		Spec: netv1.NetworkAttachmentDefinitionSpec{
+	}
+	if len(confStr) > 0 {
+		netAttachDef.Spec = netv1.NetworkAttachmentDefinitionSpec{
 			Config: confStr,
-		},
+		}
 	}
 
 	return netAttachDef, nil

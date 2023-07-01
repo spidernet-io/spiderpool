@@ -94,8 +94,8 @@ metadata:
 ---
 kind: ConfigMap
 apiVersion: v1
-metadata:
-  name: {{ .Values.multus.multusCNI.configmapName | trunc 63 | trimSuffix "-" }}
+metadata: multus-daemon-config
+  name: .Values.multus.multusCNI.configmapName
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- if .Values.global.commonLabels }}
@@ -110,9 +110,49 @@ data:
         "socketDir": "/host/run/multus/",
         "cniVersion": "0.3.1",
         "cniConfigDir": "/host/etc/cni/net.d",
-        "multusConfigFile": "{{ .Values.multus.multusCNI.defaultCNIName }}",
+        {{- if .Values.multus.multusCNI.defaultCniCRName }}
+        "multusConfigFile": "/tmp/multus-conf/70-multus.conf",
+        {{- else }}
+        "multusConfigFile": "auto",
+        {{- end }}
         "multusAutoconfigDir": "/host/etc/cni/net.d"
     }
+{{- if .Values.multus.multusCNI.defaultCniCRName }}
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: multus-cni-config
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+data:
+  cni-conf.json: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "multus-cni-network",
+      "type": "multus-shim",
+      "socketDir":"/host/run/multus/"
+      "logLevel": "{{ .Values.multus.multusCNI.log.logLevel }}",
+      "logFile": "{{ .Values.multus.multusCNI.log.logFile }}",
+      "capabilities": {
+        "portMappings": true,
+        "bandwidth": true
+      },
+      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}"
+    }
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -213,6 +253,10 @@ spec:
             - name: multus-daemon-config
               mountPath: /etc/cni/net.d/multus.d
               readOnly: true
+            {{- if .Values.multus.multusCNI.defaultCniCRName }}
+            - name: multus-cfg
+              mountPath: /tmp/multus-conf
+            {{- end }}
             - name: hostroot
               mountPath: /hostroot
               mountPropagation: HostToContainer
@@ -236,6 +280,14 @@ spec:
             items:
               - key: daemon-config.json
                 path: daemon-config.json
+        {{- if .Values.multus.multusCNI.defaultCniCRName }}
+        - name: multus-cfg
+          configMap:
+            name: multus-cni-config
+            items:
+              - key: cni-conf.json
+                path: 70-multus.conf
+        {{- end }}
         - name: host-run
           hostPath:
             path: /run

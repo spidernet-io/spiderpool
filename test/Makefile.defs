@@ -30,7 +30,7 @@ INSTALL_MULTUS ?= true
 
 INSTALL_KRUISE ?= true
 
-INSTALL_DEFAULT_CNI ?= true
+INSTALL_OVERLAY_CNI ?= false
 
 INSTALL_CALICO ?= true
 
@@ -90,10 +90,12 @@ MULTUS_ADDITIONAL_CNI_VLAN200 := macvlan-vlan200-overlay
 
 #================= calico
 CALICO_VERSION ?= v3.25.0
-CALICO_IMAGE_REPO ?= docker.io
+E2E_CALICO_IMAGE_REPO ?= docker.io
 CALICO_AUTODETECTION_METHOD ?= "kubernetes-internal-ip"
 
 #================= cilium
+E2E_CILIUM_IMAGE_REPO ?= "quay.io"
+
 CILIUM_VERSION ?= v1.13.3
 
 #================= spiderdoctor

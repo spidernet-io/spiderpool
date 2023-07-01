@@ -20,7 +20,6 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-	"github.com/spidernet-io/spiderpool/internal/version"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"

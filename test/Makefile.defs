@@ -97,7 +97,7 @@ else
 endif
 
 #================= multus
-MULTUS_CNI_NAMESPACE := kube-system
+MULTUS_CNI_NAMESPACE := default
 MULTUS_DEFAULT_CNI_CALICO := k8s-pod-network
 MULTUS_DEFAULT_CNI_CILIUM := cilium
 MULTUS_DEFAULT_CNI_VLAN0 := macvlan-vlan0-underlay
@@ -159,3 +159,11 @@ E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
 http_proxy ?=
 
 E2E_LOG_FILE ?= $(ROOT_DIR)/test/e2edebugLog.txt
+
+#========= openkruise =========
+
+ifeq ($(E2E_CHINA_REPO),true)
+    E2E_OPENKRUISE_IMAGE ?= docker.m.daocloud.io/openkruise/kruise-manager
+else
+    E2E_OPENKRUISE_IMAGE ?= docker.io/openkruise/kruise-manager
+endif

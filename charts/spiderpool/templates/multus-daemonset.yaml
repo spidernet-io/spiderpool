@@ -111,7 +111,7 @@ data:
         "cniVersion": "0.3.1",
         "cniConfigDir": "/host/etc/cni/net.d",
         {{- if .Values.multus.multusCNI.defaultCniCRName }}
-        "multusConfigFile": "/tmp/multus-conf/70-multus.conf",
+        "multusConfigFile": "/tmp/multus-conf/00-multus.conf",
         {{- else }}
         "multusConfigFile": "auto",
         {{- end }}
@@ -278,7 +278,7 @@ spec:
             name: multus-cni-config
             items:
               - key: cni-conf.json
-                path: 70-multus.conf
+                path: 00-multus.conf
         {{- end }}
         - name: host-run
           hostPath:

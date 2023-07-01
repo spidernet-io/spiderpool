@@ -57,17 +57,13 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to init logger: %v ", err)
 	}
 
-	logger.Info("coordinator cmdDel starting", zap.String("Version", version.CoordinatorBuildDateVersion()), zap.String("Branch", version.CoordinatorGitBranch()),
-		zap.String("Commit", version.CoordinatorGitCommit()),
-		zap.String("Build time", version.CoordinatorBuildDate()),
-		zap.String("Go Version", version.GoString()))
-
 	logger = logger.Named(BinNamePlugin).With(
-		zap.String("Action", "ADD"),
+		zap.String("Action", "DELETE"),
 		zap.String("ContainerID", args.ContainerID),
 		zap.String("Netns", args.Netns),
 		zap.String("IfName", args.IfName),
 	)
+	logger.Info(fmt.Sprintf("start to implement DELETE command in %v mode", conf.TuneMode))
 
 	c := &coordinator{
 		hostRuleTable: int(*conf.HostRuleTable),
@@ -80,8 +76,8 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 			logger.Debug("Pod's netns already gone.  Nothing to do.")
 			return nil
 		}
-		logger.Error("failed to GetNS", zap.Error(err))
-		return err
+		logger.Warn("failed to GetNS, container maybe gone, ignore ", zap.Error(err))
+		return nil
 	}
 	defer c.netns.Close()
 
@@ -92,15 +88,16 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 			if _, ok := err.(*netlink.LinkNotFoundError); ok {
 				logger.Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
 			} else {
-				return fmt.Errorf("failed to get host veth device %s: %w", hostVeth, err)
+				logger.Warn("failed to get host veth device %s: %w", hostVeth, err)
+				// go on to clean other things
 			}
-		}
-
-		if err = netlink.LinkDel(vethLink); err != nil {
-			logger.Error("failed to del hostVeth", zap.Error(err))
-			return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)
 		} else {
-			logger.Error("success to del hostVeth", zap.String("HostVeth", hostVeth))
+			if err = netlink.LinkDel(vethLink); err != nil {
+				logger.Warn("failed to del hostVeth", zap.Error(err))
+				// go on to clean other things
+			} else {
+				logger.Debug("success to del hostVeth", zap.String("HostVeth", hostVeth))
+			}
 		}
 	}
 
@@ -112,11 +109,9 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		// ignore err
-		logger.Error("failed to GetAddersByName, ignore error")
-		return nil
+		logger.Warn("failed to GetAddersByName, ignore error", zap.Error(err))
 	}
 
 	for idx := range c.currentAddress {
@@ -124,9 +119,9 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
 		if err != nil && !os.IsNotExist(err) {
 			logger.Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
-			return fmt.Errorf("failed to DelToRuleTable: %v", err)
 		}
 	}
-	logger.Info("coordinator cmdDel end")
+
+	logger.Info("cmdDel end")
 	return nil
 }

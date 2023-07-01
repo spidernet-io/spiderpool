@@ -39,7 +39,7 @@ ipam:
   enableIPv4: true
 
   ## @param ipam.enableIPv6 enable ipv6
-  enableIPv6: false
+  enableIPv6: true
 
   ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true

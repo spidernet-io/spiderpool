@@ -63,13 +63,16 @@
         $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
 
         # for china developer not able access ghcr.io
-        $ make e2e_init_underlay  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}:7890
+        # it pulls images from another image registry and just use http proxy to pull chart 
+        $ make e2e_init_underlay  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with calico cni
-        $ make e2e_init_calico -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}:7890
+        # it pulls images from another image registry and just use http proxy to pull chart 
+        $ make e2e_init_calico -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with cilium cni
-        $ make e2e_init_cilium  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}:7890
+        # it pulls images from another image registry and just use http proxy to pull chart 
+        $ make e2e_init_cilium  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
    run the e2e test
 

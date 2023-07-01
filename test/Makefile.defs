@@ -22,6 +22,12 @@ E2E_KIND_IMAGE_TAG ?= v1.27.1
 # with kind default version
 # E2E_KIND_IMAGE_TAG ?= 
 
+ifeq ($(E2E_CHINA_REPO),true)
+    E2E_KIND_IMAGE_NAME ?= docker.m.daocloud.io/kindest/node
+else
+    E2E_KIND_IMAGE_NAME ?= docker.io/kindest/node
+endif
+
 # disable default cni, default true
 E2E_DISABLE_DEFAULT_CNI ?= true
 
@@ -119,9 +125,9 @@ E2E_MULTUS_IMAGE_NAME ?= $(E2E_MULTUS_IMAGE_REGISTER)/k8snetworkplumbingwg/multu
 CALICO_VERSION ?= v3.25.0
 
 ifeq ($(E2E_CHINA_REPO),true)
-  E2E_CALICO_IMAGE_REPO ?= docker.m.daocloud.io
+  CALICO_IMAGE_REPO ?= docker.m.daocloud.io
 else
-  E2E_CALICO_IMAGE_REPO ?= docker.io
+  CALICO_IMAGE_REPO ?= docker.io
 endif
 
 CALICO_AUTODETECTION_METHOD ?= "kubernetes-internal-ip"

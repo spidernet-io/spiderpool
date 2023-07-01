@@ -31,9 +31,9 @@ kubeadmConfigPatches:
 nodes:
   - role: control-plane
 {%- if kind_image_tag != "" %}
-    image: kindest/node:{{ kind_image_tag }}
+    image: {{ kind_image_name }}:{{ kind_image_tag }}
 {%- endif %}
   - role: worker
 {%- if kind_image_tag != "" %}
-    image: kindest/node:{{ kind_image_tag }}
+    image: {{ kind_image_name }}:{{ kind_image_tag }}
 {%- endif %}

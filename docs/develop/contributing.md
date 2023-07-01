@@ -63,13 +63,13 @@
         $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
 
         # for china developer not able access ghcr.io
-        $ make e2e_init_underlay  -e E2E_CHINA_REPO=true
+        $ make e2e_init_underlay  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}:7890
 
         # setup cluster with calico cni
-        $ make e2e_init_calico -e E2E_CHINA_REPO=true
+        $ make e2e_init_calico -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}:7890
 
         # setup cluster with cilium cni
-        $ make e2e_init_cilium  -e E2E_CHINA_REPO=true
+        $ make e2e_init_cilium  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}:7890
 
    run the e2e test
 

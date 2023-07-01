@@ -40,6 +40,8 @@ CILIUM_VERSION=${CILIUM_VERSION:-"v1.13.3"}
 CILIUM_CLUSTER_POD_SUBNET_V4=${CILIUM_CLUSTER_POD_SUBNET_V4:-"10.244.64.0/18"}
 CILIUM_CLUSTER_POD_SUBNET_V6=${CILIUM_CLUSTER_POD_SUBNET_V6:-"fd00:10:244::/112"}
 
+[ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
+
 function install_calico() {
     cp ${PROJECT_ROOT_PATH}/test/yamls/calico.yaml $CLUSTER_PATH/calico.yaml
 

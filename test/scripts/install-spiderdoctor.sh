@@ -54,6 +54,8 @@ SPIDERDOCTOR_HELM_OPTIONS+=" --set spiderdoctorAgent.image.registry=${E2E_SPIDER
 
 echo "SPIDERDOCTOR_HELM_OPTIONS: ${SPIDERDOCTOR_HELM_OPTIONS}"
 
+[ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
+
 helm repo add spiderdoctor https://spidernet-io.github.io/spiderdoctor
 helm repo update
 HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' `

@@ -418,7 +418,9 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 		confStr = string(bytes)
 	} else {
-		confStr = *multusConfSpec.CustomCNIConfig
+		if multusConfSpec.CustomCNIConfig != nil {
+			confStr = *multusConfSpec.CustomCNIConfig
+		}
 	}
 
 	netAttachDef := &netv1.NetworkAttachmentDefinition{

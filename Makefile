@@ -314,7 +314,6 @@ e2e_init_underlay:
 e2e_init_overlay:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false
 
-
 .PHONY: e2e_init_cilium
 e2e_init_cilium:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true

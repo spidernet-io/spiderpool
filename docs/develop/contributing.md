@@ -54,10 +54,7 @@
              you could use following command to access the cluster
                 export KUBECONFIG=$(pwd)/test/.cluster/spider/.kube/config
                 kubectl get nodes
-          -----------------------------------------------------------------------------------------------------        
-
-        # for china developer not able access ghcr.io
-        $ make e2e_init_underlay -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
+          -----------------------------------------------------------------------------------------------------
 
         # setup the kind cluster of ipv4-only
         $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv4
@@ -65,11 +62,14 @@
         # setup the kind cluster of ipv6-only
         $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
 
+        # for china developer not able access ghcr.io
+        $ make e2e_init_underlay  -e E2E_CHINA_REPO=true
+
         # setup cluster with calico cni
-        $ make e2e_init_calico -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io -e SPIDERDOCTOR_IMAGE_REPO=ghcr.m.daocloud.io -e E2E_CALICO_IMAGE_REPO=docker.m.daocloud.io
+        $ make e2e_init_calico -e E2E_CHINA_REPO=true
 
         # setup cluster with cilium cni
-        $ make e2e_init_cilium -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io -e SPIDERDOCTOR_IMAGE_REPO=ghcr.m.daocloud.io -e E2E_CILIUM_IMAGE_REPO=quay.m.daocloud.io
+        $ make e2e_init_cilium  -e E2E_CHINA_REPO=true
 
    run the e2e test
 

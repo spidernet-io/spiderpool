@@ -58,7 +58,7 @@ echo "SPIDERDOCTOR_HELM_OPTIONS: ${SPIDERDOCTOR_HELM_OPTIONS}"
 
 helm repo add spiderdoctor https://spidernet-io.github.io/spiderdoctor
 helm repo update
-HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' `
+HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | uniq `
 
 [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of SPIDERDOCTOR" && exit 1
 LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`

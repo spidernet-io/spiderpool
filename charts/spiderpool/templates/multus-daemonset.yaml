@@ -126,7 +126,7 @@ data:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-multus-ds
+  name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "spiderpool.multus.labels" . | nindent 4 }}

@@ -308,15 +308,19 @@ e2e_init:
 
 .PHONY: e2e_init_underlay
 e2e_init_underlay:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+
+.PHONY: e2e_init_underlay_subnet
+e2e_init_underlay_subnet:
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
 
 .PHONY: e2e_init_calico
 e2e_init_calico:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
 
 .PHONY: e2e_init_cilium
 e2e_init_cilium:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
 
 
 .PHONY: e2e_test
@@ -325,15 +329,19 @@ e2e_test:
 
 .PHONY: e2e_test_underlay
 e2e_test_underlay:
-	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false
+	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+
+.PHONY: e2e_test_underlay_subnet
+e2e_test_underlay_subnet:
+	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
 
 .PHONY: e2e_test_calico
 e2e_test_calico:
-	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false
+	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false -e E2E_GINKGO_LABELS=overlay
 
 .PHONY: e2e_test_cilium
 e2e_test_cilium:
-	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true
+	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e E2E_GINKGO_LABELS=overlay
 
 
 .PHONY: preview_doc

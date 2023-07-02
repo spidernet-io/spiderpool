@@ -139,7 +139,7 @@ else
     E2E_CILIUM_IMAGE_REPO ?= "quay.io"
 endif
 
-CILIUM_VERSION ?= v1.13.3
+CILIUM_VERSION ?=
 
 #================= spiderdoctor
 SPIDERDOCTOR_VERSION ?= v0.3.0

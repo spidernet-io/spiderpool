@@ -40,6 +40,8 @@
     | test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
     | test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
 
+    if you are in China, it could add `-e E2E_CHINA_REPO=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
+
     build the image
 
         # do some coding

@@ -323,8 +323,8 @@ e2e_init_cilium:
 e2e_test:
 	$(QUIET)  make -C test e2e_test
 
-.PHONY: e2e_test_unverlay
-e2e_test_unverlay:
+.PHONY: e2e_test_underlay
+e2e_test_underlay:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false
 
 .PHONY: e2e_test_calico

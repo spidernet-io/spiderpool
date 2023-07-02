@@ -46,7 +46,7 @@ var _ = BeforeSuite(func() {
 	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{multus_v1.AddToScheme, spiderpool.AddToScheme, spiderdoctorV1.AddToScheme})
 	Expect(err).NotTo(HaveOccurred())
 
-	if common.CheckRunOverlayCNI() != "true" {
+	if !common.CheckRunOverlayCNI() {
 		Skip("overlay CNI is not installed , ignore this suite")
 	}
 

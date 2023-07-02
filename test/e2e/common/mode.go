@@ -4,8 +4,8 @@
 package common
 
 import (
-	"strings"
 	"os"
+	"strings"
 )
 
 const (

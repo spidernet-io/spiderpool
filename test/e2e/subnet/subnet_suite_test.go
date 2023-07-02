@@ -28,7 +28,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(e).NotTo(HaveOccurred())
 
-	if common.CheckSubnetFeatureOn() == false {
+	if !common.CheckSubnetFeatureOn() {
 		Skip("Subnet feature is off , ignore this suite")
 	}
 })

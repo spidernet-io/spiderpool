@@ -73,12 +73,33 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		_, ok := err.(ns.NSPathNotExistErr)
 		if ok {
 			logger.Debug("Pod's netns already gone.  Nothing to do.")
-			return nil
+		} else {
+			logger.Warn("failed to GetNS, container maybe gone, ignore ", zap.Error(err))
 		}
-		logger.Warn("failed to GetNS, container maybe gone, ignore ", zap.Error(err))
-		return nil
+	} else {
+		defer c.netns.Close()
+
+		err = c.netns.Do(func(netNS ns.NetNS) error {
+			c.currentAddress, err = networking.GetAddersByName(args.IfName, netlink.FAMILY_ALL)
+			if err != nil {
+				logger.Error("failed to GetAddersByName", zap.String("interface", args.IfName))
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			// ignore err
+			logger.Warn("failed to GetAddersByName, ignore error", zap.Error(err))
+		} else {
+			for idx := range c.currentAddress {
+				ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
+				err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
+				if err != nil && !os.IsNotExist(err) {
+					logger.Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
+				}
+			}
+		}
 	}
-	defer c.netns.Close()
 
 	if conf.TuneMode == ModeUnderlay {
 		hostVeth := getHostVethName(args.ContainerID)
@@ -97,27 +118,6 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 			} else {
 				logger.Debug("success to del hostVeth", zap.String("HostVeth", hostVeth))
 			}
-		}
-	}
-
-	err = c.netns.Do(func(netNS ns.NetNS) error {
-		c.currentAddress, err = networking.GetAddersByName(args.IfName, netlink.FAMILY_ALL)
-		if err != nil {
-			logger.Error("failed to GetAddersByName", zap.String("interface", args.IfName))
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		// ignore err
-		logger.Warn("failed to GetAddersByName, ignore error", zap.Error(err))
-	}
-
-	for idx := range c.currentAddress {
-		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
-		err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
-		if err != nil && !os.IsNotExist(err) {
-			logger.Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
 		}
 	}
 

@@ -31,7 +31,16 @@
 
 3. you could do it step by step with the follow
 
-   build the image
+    before start the test, you shoud know there are test scenes as following 
+
+| kind                                     | setup cluster                    | test                          |
+|------------------------------------------|----------------------------------|-------------------------------|
+| test underlay CNI without subnet feature | make    e2e_init_underlay        | make e2e_test_underlay        |
+| test underlay CNI with subnet feature    | make    e2e_init_underlay_subnet | make e2e_test_underlay_subnet |
+| test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
+| test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
+
+    build the image
 
         # do some coding
 
@@ -66,37 +75,44 @@
         # it pulls images from another image registry and just use http proxy to pull chart 
         $ make e2e_init_underlay  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
+        # setup cluster with subnet feature
+        $ make e2e_init_underlay_subnet -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
+
         # setup cluster with calico cni
-        # it pulls images from another image registry and just use http proxy to pull chart 
         $ make e2e_init_calico -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with cilium cni
-        # it pulls images from another image registry and just use http proxy to pull chart 
         $ make e2e_init_cilium  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
    run the e2e test
 
         # run all e2e test on dual-stack cluster
-        $ make e2e_test
+        $ make e2e_test_underlay
 
         # run all e2e test on ipv4-only cluster
-        $ make e2e_test -e E2E_IP_FAMILY=ipv4
+        $ make e2e_test_underlay -e E2E_IP_FAMILY=ipv4
 
         # run all e2e test on ipv6-only cluster
-        $ make e2e_test -e E2E_IP_FAMILY=ipv6
-
-        # Run all e2e tests on an enableSpiderSubnet=false cluster
-        $ make e2e_test -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+        $ make e2e_test_underlay -e E2E_IP_FAMILY=ipv6
 
         # run smoke test
-        $ make e2e_test -e E2E_GINKGO_LABELS=smoke
+        $ make e2e_test_underlay -e E2E_GINKGO_LABELS=smoke
 
         # after finishing e2e case , you could test repeated for debugging flaky tests
         # example: run a case repeatedly
-        $ make e2e_test -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
+        $ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
 
         # example: run a case until fails
-        $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+        $ make e2e_test_underlay -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+
+        # Run all e2e tests for enableSpiderSubnet=false cluster
+        $ make e2e_test_underlay_subnet 
+
+        # Run all e2e tests for enableSpiderSubnet=false cluster
+        $ make e2e_test_overlay_calico
+
+        # Run all e2e tests for enableSpiderSubnet=false cluster
+        $ make e2e_test_overlay_cilium 
 
         $ ls e2ereport.json
 

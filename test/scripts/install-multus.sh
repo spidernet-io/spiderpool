@@ -137,135 +137,102 @@ spec:
 
 
 Install::SpiderpoolCR(){
-  SPIDERPOOL_VLAN100_POOL_V4=172.100.0.0/16
-  SPIDERPOOL_VLAN100_POOL_V6=fd00:172:100::/64
-  SPIDERPOOL_VLAN100_RANGES_V4=172.100.0.201-172.100.10.199
-  SPIDERPOOL_VLAN100_RANGES_V6=fd00:172:100::201-fd00:172:100::fff1
-  SPIDERPOOL_VLAN100_GATEWAY_V4=172.100.0.1
-  SPIDERPOOL_VLAN100_GATEWAY_V6=fd00:172:100::1
-  SPIDERPOOL_VLAN200_POOL_V4=172.200.0.0/16
-  SPIDERPOOL_VLAN200_POOL_V6=fd00:172:200::/64
-  SPIDERPOOL_VLAN200_RANGES_V4=172.200.0.201-172.200.10.199
-  SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
-  SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
-  SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
+    SPIDERPOOL_VLAN100_POOL_V4=172.100.0.0/16
+    SPIDERPOOL_VLAN100_POOL_V6=fd00:172:100::/64
+    SPIDERPOOL_VLAN100_RANGES_V4=172.100.0.201-172.100.10.199
+    SPIDERPOOL_VLAN100_RANGES_V6=fd00:172:100::201-fd00:172:100::fff1
+    SPIDERPOOL_VLAN100_GATEWAY_V4=172.100.0.1
+    SPIDERPOOL_VLAN100_GATEWAY_V6=fd00:172:100::1
+    SPIDERPOOL_VLAN200_POOL_V4=172.200.0.0/16
+    SPIDERPOOL_VLAN200_POOL_V6=fd00:172:200::/64
+    SPIDERPOOL_VLAN200_RANGES_V4=172.200.0.201-172.200.10.199
+    SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
+    SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
+    SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
+
+    if [ "${E2E_SPIDERPOOL_ENABLE_SUBNET}" == "true" ] ; then
+        CR_KIND="SpiderSubnet"
+        echo "spiderpool subnet feature is on , install SpiderSubnet CR"
+    else
+        CR_KIND="SpiderIPPool"
+        echo "spiderpool subnet feature is off , install SpiderIPPool CR"
+    fi
+
+    INSTALL_V4_CR(){
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan100-v4
+        spec:
+          gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
+          vlan: 100
+          ipVersion: 4
+          ips:
+          - ${SPIDERPOOL_VLAN100_RANGES_V4}
+          subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
+EOF
+
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan200-v4
+        spec:
+          gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
+          vlan: 200
+          ipVersion: 4
+          ips:
+          - ${SPIDERPOOL_VLAN200_RANGES_V4}
+          subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
+EOF
+    }
+
+    INSTALL_V6_CR(){
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan100-v6
+        spec:
+          gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V6}
+          ipVersion: 6
+          ips:
+          - ${SPIDERPOOL_VLAN100_RANGES_V6}
+          subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
+          vlan: 100
+EOF
+
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan200-v6
+        spec:
+          gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V6}
+          ipVersion: 6
+          ips:
+          - ${SPIDERPOOL_VLAN200_RANGES_V6}
+          subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
+          vlan: 200
+EOF
+    }
+
 
   case ${E2E_IP_FAMILY} in
     ipv4)
-    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
-    metadata:
-      name: vlan100-v4
-    spec:
-      gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
-      vlan: 100
-      ipVersion: 4
-      ips:
-      - ${SPIDERPOOL_VLAN100_RANGES_V4}
-      subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
-EOF
-
-    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
-    metadata:
-      name: vlan200-v4
-    spec:
-      gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
-      vlan: 200
-      ipVersion: 4
-      ips:
-      - ${SPIDERPOOL_VLAN200_RANGES_V4}
-      subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
-EOF
+      INSTALL_V4_CR
       ;;
+
     ipv6)
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan100-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN100_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
-    vlan: 100
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan200-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN200_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
-    vlan: 200
-EOF
+      INSTALL_V6_CR
       ;;
+
     dual)
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan100-v4
-  spec:
-    gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
-    vlan: 100
-    ipVersion: 4
-    ips:
-    - ${SPIDERPOOL_VLAN100_RANGES_V4}
-    subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan200-v4
-  spec:
-    gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
-    vlan: 200
-    ipVersion: 4
-    ips:
-    - ${SPIDERPOOL_VLAN200_RANGES_V4}
-    subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan100-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN100_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
-    vlan: 100
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan200-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN200_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
-    vlan: 200
-EOF
+      INSTALL_V4_CR
+      INSTALL_V6_CR
       ;;
+
     *)
       echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
       exit 1
@@ -273,9 +240,7 @@ EOF
 }
 
 Install::MultusCR
+Install::SpiderpoolCR
 
-if [ ${E2E_SPIDERPOOL_ENABLE_SUBNET} == "true" ]; then
-  Install::SpiderpoolCR
-fi
 
 echo "$CURRENT_FILENAME : done"

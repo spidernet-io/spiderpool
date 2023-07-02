@@ -3,6 +3,7 @@
 package macvlan_overlay_one_test
 
 import (
+	"strings"
 	"testing"
 
 	multus_v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -13,6 +14,7 @@ import (
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 func TestMacvlanOverlayOne(t *testing.T) {
@@ -43,4 +45,9 @@ var (
 var _ = BeforeSuite(func() {
 	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{multus_v1.AddToScheme, spiderpool.AddToScheme, spiderdoctorV1.AddToScheme})
 	Expect(err).NotTo(HaveOccurred())
+
+	if common.CheckRunOverlayCNI() != "true" {
+		Skip("overlay CNI is not installed , ignore this suite")
+	}
+
 })

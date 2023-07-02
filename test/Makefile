@@ -42,10 +42,8 @@ ifeq ($(INSTALL_OVERLAY_CNI),true)
 		HTTP_PROXY=$(HTTP_PROXY) \
 		$(QUIET) bash scripts/install-default-cni.sh
 endif
-ifeq ($(INSTALL_SPIDER),true)
 	@echo -e "\033[35m [Step 7] Install Spiderpool \033[0m"
 	@ make setup_spiderpool
-endif
 ifeq ($(INSTALL_MULTUS),true)
 	@echo -e "\033[35m [Step 8] Install Multus \033[0m"
 	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
@@ -86,7 +84,6 @@ endif
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"
-	@echo "       install spiderpool: $(INSTALL_SPIDER)"
 	@echo "       multus default CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
 	@echo "       multus addon CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
 	@echo ""
@@ -335,16 +332,9 @@ e2e_test:
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
-		if [ "$(INSTALL_SPIDER)" != "true" ] ; then \
-			export E2E_WHEREABOUT_IPAM_ENABLED=true ; \
-			export E2E_SPIDERPOOL_IPAM_ENABLED=false ; \
-		else \
-			export E2E_WHEREABOUT_IPAM_ENABLED=false ; \
-			export E2E_SPIDERPOOL_IPAM_ENABLED=true ; \
-		fi ; \
-		export E2E_Multus_DefaultCni="kube-system/$(MULTUS_DEFAULT_CNI_VLAN0)" ; \
 		export MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) ; \
-		export E2E_Multus_AdditionalCni="kube-system/$(MULTUS_ADDITIONAL_CNI_VLAN100)" ; \
+		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
+		export E2E_SPIDERPOOL_ENABLE_SUBNET=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ;\
 		rm -f $(E2E_LOG_FILE) || true ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \

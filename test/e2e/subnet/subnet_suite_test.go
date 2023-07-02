@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 func TestSubnet(t *testing.T) {
@@ -26,4 +27,8 @@ var _ = BeforeSuite(func() {
 	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
 
 	Expect(e).NotTo(HaveOccurred())
+
+	if common.CheckSubnetFeatureOn() == false {
+		Skip("Subnet feature is off , ignore this suite")
+	}
 })

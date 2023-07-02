@@ -13,6 +13,7 @@ import (
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 func TestMacvlanStandaloneOne(t *testing.T) {
@@ -40,4 +41,8 @@ var (
 var _ = BeforeSuite(func() {
 	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{multus_v1.AddToScheme, spiderpool.AddToScheme, spiderdoctorV1.AddToScheme})
 	Expect(err).NotTo(HaveOccurred())
+
+	if common.CheckRunOverlayCNI() == "true" {
+		Skip("overlay CNI is installed , ignore this suite")
+	}
 })

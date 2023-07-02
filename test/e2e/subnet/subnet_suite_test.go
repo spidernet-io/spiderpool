@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	"k8s.io/apimachinery/pkg/runtime"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestSubnet(t *testing.T) {

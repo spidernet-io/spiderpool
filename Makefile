@@ -323,17 +323,16 @@ e2e_init_cilium:
 e2e_test:
 	$(QUIET)  make -C test e2e_test
 
-
-.PHONY: e2e_init_underlay
-e2e_init_underlay:
+.PHONY: e2e_test_unverlay
+e2e_test_unverlay:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false
 
-.PHONY: e2e_init_calico
-e2e_init_calico:
+.PHONY: e2e_test_calico
+e2e_test_calico:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false
 
-.PHONY: e2e_init_cilium
-e2e_init_cilium:
+.PHONY: e2e_test_cilium
+e2e_test_cilium:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true
 
 

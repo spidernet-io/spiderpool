@@ -33,12 +33,12 @@
 
     before start the test, you shoud know there are test scenes as following 
 
-| kind                                     | setup cluster                    | test                          |
-|------------------------------------------|----------------------------------|-------------------------------|
-| test underlay CNI without subnet feature | make    e2e_init_underlay        | make e2e_test_underlay        |
-| test underlay CNI with subnet feature    | make    e2e_init_underlay_subnet | make e2e_test_underlay_subnet |
-| test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
-| test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
+    | kind                                     | setup cluster                    | test                          |
+    |------------------------------------------|----------------------------------|-------------------------------|
+    | test underlay CNI without subnet feature | make    e2e_init_underlay        | make e2e_test_underlay        |
+    | test underlay CNI with subnet feature    | make    e2e_init_underlay_subnet | make e2e_test_underlay_subnet |
+    | test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
+    | test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
 
     build the image
 
@@ -52,7 +52,7 @@
         # or (if buildx fail to pull images)
         $ make build_docker_image
 
-   setup the cluster
+    setup the cluster
 
         # setup the kind cluster of dual-stack
         # !!! images is tested by commit sha, so make sure the commit is submit locally
@@ -84,7 +84,7 @@
         # setup cluster with cilium cni
         $ make e2e_init_cilium  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
 
-   run the e2e test
+    run the e2e test
 
         # run all e2e test on dual-stack cluster
         $ make e2e_test_underlay

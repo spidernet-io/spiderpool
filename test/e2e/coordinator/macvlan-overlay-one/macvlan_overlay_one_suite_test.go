@@ -12,9 +12,9 @@ import (
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	spiderdoctorV1 "github.com/spidernet-io/spiderdoctor/pkg/k8s/apis/spiderdoctor.spidernet.io/v1"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 func TestMacvlanOverlayOne(t *testing.T) {

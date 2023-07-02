@@ -284,7 +284,7 @@ clean:
 
 .PHONY: net-tools
 net-tools:
-	@NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+	@NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
 	[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 	for NODE in $${NODE_LIST} ; do \
 	  docker cp scripts/install-net-tools.sh $${NODE}:/home/ ; \
@@ -317,7 +317,7 @@ prepare:
 e2e_test:
 	@echo -e "\033[35m Run e2e test on the cluster $(E2E_CLUSTER_NAME) \033[0m "
 	@ echo -e "\033[35m [E2E] Run E2E with ginkgo label=$(E2E_GINKGO_LABELS) , timeout=$(E2E_TIMEOUT) GINKGO_OPTION=$(GINKGO_OPTION) \033[0m"
-	@  NODE_LIST=` docker ps | egrep " kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' ` ; \
+	NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		NODE_LIST=` echo "$${NODE_LIST}" | tr -d ' ' | tr '\n' ',' ` ; \
 		NODE_LIST=$${NODE_LIST%%,} ; \
@@ -334,8 +334,8 @@ e2e_test:
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
 		export MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) ; \
 		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
-		export E2E_SPIDERPOOL_ENABLE_SUBNET=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ;\
-		rm -f $(E2E_LOG_FILE) || true ; \
+		export E2E_SPIDERPOOL_ENABLE_SUBNET=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
+		rm -f $(E2E_LOG_FILE) || true  ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \
 		RESULT=0 ; \

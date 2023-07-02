@@ -40,7 +40,7 @@
     | test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
     | test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
 
-    if you are in China, it could add `-e E2E_CHINA_REPO=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
+    if you are in China, it could add `-e E2E_CHINA_IMAGE_REGISTRY=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
 
     build the image
 
@@ -75,16 +75,16 @@
 
         # for china developer not able access ghcr.io
         # it pulls images from another image registry and just use http proxy to pull chart 
-        $ make e2e_init_underlay  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
+        $ make e2e_init_underlay  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with subnet feature
-        $ make e2e_init_underlay_subnet -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
+        $ make e2e_init_underlay_subnet -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with calico cni
-        $ make e2e_init_calico -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
+        $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with cilium cni
-        $ make e2e_init_cilium  -e E2E_CHINA_REPO=true -e HTTP_PROXY=http://${ADDR}
+        $ make e2e_init_cilium  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
     run the e2e test
 

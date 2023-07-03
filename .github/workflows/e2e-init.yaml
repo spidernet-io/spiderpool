@@ -17,16 +17,32 @@ on:
       ref:
         required: false
         type: string
-      push:
+      k8s_version:
         required: false
-        type: boolean
-      charts:
+        type: string
+      run_e2e:
+        required: false
+        type: string
+        default: true
+      e2e_labels:
         required: false
         type: string
 
 jobs:
   call_e2e:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - e2e_init_mode: e2e_init_underlay
+            e2e_test_mode: e2e_test_underlay
+          - e2e_init_mode: e2e_init_underlay_subnet
+            e2e_test_mode: e2e_test_underlay_subnet
+          - e2e_init_mode: e2e_init_calico
+            e2e_test_mode: e2e_test_calico
+          - e2e_init_mode: e2e_init_cilium
+            e2e_test_mode: e2e_test_cilium
     steps:
       - name: Prepare
         id: prepare
@@ -37,11 +53,10 @@ jobs:
           echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-controller-ci:${{ inputs.image_tag }}-race"
           echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ inputs.image_tag }}"
           echo "ci race image tag: ghcr.io/${{ github.repository }}/spiderpool-agent-ci:${{ inputs.image_tag }}-race"
-          echo "===== chart "
-          echo "chart package artifact: ${{ inputs.charts }}"
           TMP=` date +%m%d%H%M%S `
           E2E_CLUSTER_NAME="spiderpool${TMP}"
-          echo ::set-output name=clusterName::${E2E_CLUSTER_NAME}
+          echo "E2E_CLUSTER_NAME=${E2E_CLUSTER_NAME}" >> $GITHUB_ENV
+          echo "kind node image tag: ${{ inputs.k8s_version }}"
 
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -96,57 +111,62 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            make e2e_init_underlay_subnet -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+            make ${{ matrix.e2e_init_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e E2E_SPIDERPOOL_TAG=${{ inputs.image_tag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT=""
+                -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT="" \
+                -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }}
 
       - name: Run e2e Test
         id: run_e2e
         continue-on-error: true
+        if: ${{ inputs.run_e2e == 'true' }}
         run: |
-          echo ${{ github.event.inputs.labels }}
+          E2E_LABELS=${{ inputs.e2e_labels }}
+          echo "run e2e labels: ${E2E_LABELS}"
           RESULT=0
-          make e2e_test_underlay_subnet -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
-              -e E2E_GINKGO_LABELS=${{ inputs.ref.e2e_labels }} \
+          make ${{ matrix.e2e_test_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
+              -e E2E_GINKGO_LABELS=${E2E_LABELS} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
               -e E2E_IP_FAMILY=${{ inputs.ip_family }} || RESULT=1
           if ((RESULT==0)) ; then
-              echo ::set-output name=pass::true
+              echo "RUN_E2E_PASS=true" >> $GITHUB_ENV
           else
-              echo ::set-output name=pass::false
+              echo "RUN_E2E_PASS=false" >> $GITHUB_ENV
           fi
           if [ -f "test/e2edebugLog" ] ; then
-              echo ::set-output name=updaloadlog::true
+              echo "UPLOAD_E2E_LOG=true" >> $GITHUB_ENV
           else
-              echo ::set-output name=updaloadlog::false
+              echo "UPLOAD_E2E_LOG=false" >> $GITHUB_ENV
           fi
           if [ -f "./e2ereport.json" ] ; then
               echo "error, did not find e2e report"
-              echo ::set-output name=upload::true
+              echo "UPLOAD_E2E_REPORT=true" >> $GITHUB_ENV
           else
-              echo ::set-output name=upload::false
+              echo "UPLOAD_E2E_REPORT=false" >> $GITHUB_ENV
           fi
 
       - name: Upload e2e log
+        if: ${{ inputs.run_e2e == 'true' }}
         uses: actions/upload-artifact@v3.1.2
         with:
-          name: ${{ inputs.ip_family }}-debuglog.txt
+          name: ${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-debuglog.txt
           path: test/e2edebugLog.txt
           retention-days: 7
 
       - name: Upload e2e report
-        if: ${{ steps.run_e2e.outputs.upload == 'true' }}
+        if: ${{ env.UPLOAD_E2E_REPORT == 'true' }}
         uses: actions/upload-artifact@v3.1.2
         with:
-          name: ${{ inputs.ip_family }}-e2ereport.json
+          name: ${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-e2ereport.json
           path: e2ereport.json
           retention-days: 1
 
       - name: Show e2e Result
+        if: ${{ inputs.run_e2e == 'true' }}
         run: |
-          if ${{ steps.run_e2e.outputs.pass == 'true' }} ;then
+          if ${{ env.RUN_E2E_PASS == 'true' }} ;then
               exit 0
           else
               exit 1
@@ -154,22 +174,21 @@ jobs:
 
       - name: Get the E2E Performance Result For Dual-stack
         id: get_performance
-        if: ${{ inputs.ip_family == 'dual' }}
+        if: ${{ inputs.run_e2e == 'true' && inputs.ip_family == 'dual' && ( matrix.e2e_test_mode == 'e2e_test_underlay' || matrix.e2e_test_mode == 'e2e_test_underlay_subnet' ) }}
         shell: bash
         run: |
           # sudo apt-get install -y jq
           TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
           TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
-          # echo "PERFORMANCE=${TODO_STATUS}" >> $GITHUB_ENV
-          echo ::set-output name=result::${TODO_STATUS}
+          echo "PERFORMANCE_RESULT=${TODO_STATUS}" >> $GITHUB_ENV
 
       - name: Update Badge For Dual-stack
-        if: ${{ steps.get_performance.outputs.result != '' && inputs.ip_family == 'dual' }}
+        if: ${{ inputs.run_e2e == 'true' && env.PERFORMANCE_RESULT != '' && inputs.ip_family == 'dual' }}
         uses: schneegans/dynamic-badges-action@v1.6.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: 38d00a872e830eedb46870c886549561
           filename: spiderpoolperformance.json
           label: performance
-          message: ${{ steps.get_performance.outputs.result }}
+          message: ${{ env.PERFORMANCE_RESULT }}
           color: lightgrey

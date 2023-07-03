@@ -102,18 +102,27 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			const fixedIPNumber string = "+1"
 
 			if frame.Info.IpV4Enabled {
-				v4ReservedIpName, v4ReservedIpObj = common.GenerateExampleV4ReservedIpObject(v4SubnetObject.Spec.IPs)
+				if frame.Info.SpiderSubnetEnabled {
+					v4ReservedIpName, v4ReservedIpObj = common.GenerateExampleV4ReservedIpObject(v4SubnetObject.Spec.IPs)
+				} else {
+					v4ReservedIpName, v4ReservedIpObj = common.GenerateExampleV4ReservedIpObject(iPv4PoolObj.Spec.IPs)
+				}
 				err = common.CreateReservedIP(frame, v4ReservedIpObj)
 				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("Successfully created v4 reservedIP: %v \n", v4ReservedIpName)
 			}
 
 			if frame.Info.IpV6Enabled {
-				v6ReservedIpName, v6ReservedIpObj = common.GenerateExampleV6ReservedIpObject(v6SubnetObject.Spec.IPs)
+				if frame.Info.SpiderSubnetEnabled {
+					v6ReservedIpName, v6ReservedIpObj = common.GenerateExampleV6ReservedIpObject(v6SubnetObject.Spec.IPs)
+				} else {
+					v6ReservedIpName, v6ReservedIpObj = common.GenerateExampleV6ReservedIpObject(iPv6PoolObj.Spec.IPs)
+				}
 				err = common.CreateReservedIP(frame, v6ReservedIpObj)
 				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("Successfully created v6 reservedIP : %v \n", v6ReservedIpName)
 			}
+
 			// Generate IPPool annotation string
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
 

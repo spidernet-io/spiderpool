@@ -188,9 +188,9 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
 		    if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
-		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
+			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
 		    else \
-		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
 		    fi ; \
 			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
@@ -334,7 +334,7 @@ e2e_test:
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
 		export MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) ; \
 		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
-		export E2E_SPIDERPOOL_ENABLE_SUBNET=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
+		export E2E_SPIDERSUBNET_ENABLED=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
 		rm -f $(E2E_LOG_FILE) || true  ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \

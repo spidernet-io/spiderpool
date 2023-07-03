@@ -109,12 +109,12 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 				logger.Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
 			} else {
 				logger.Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
-				// go on to clean other things
+				return fmt.Errorf("failed to get host veth device %s: %v", hostVeth, err)
 			}
 		} else {
 			if err = netlink.LinkDel(vethLink); err != nil {
 				logger.Warn("failed to del hostVeth", zap.Error(err))
-				// go on to clean other things
+				return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)
 			} else {
 				logger.Debug("success to del hostVeth", zap.String("HostVeth", hostVeth))
 			}

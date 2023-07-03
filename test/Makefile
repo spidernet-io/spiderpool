@@ -21,6 +21,7 @@ kind-init: check_env prepare
 		E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		INSTALL_NETTOOLS=$(INSTALL_NETTOOLS) \
 		E2E_VLAN_GATEWAY_IMAGE=$(E2E_VLAN_GATEWAY_IMAGE) \
+		VLAN_GATEWAY_CONTAINER=$(VLAN_GATEWAY_CONTAINER) \
 		$(QUIET) bash scripts/config-network.sh
 	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
@@ -281,6 +282,8 @@ clean:
 	-@  kind get clusters | xargs -n1  kind delete cluster --name
 	-@ docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
 	-@ docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
+	-@ docker stop $(VLAN_GATEWAY_CONTAINER) &>/dev/null
+	-@ docker rm $(VLAN_GATEWAY_CONTAINER) &>/dev/null
 
 .PHONY: net-tools
 net-tools:

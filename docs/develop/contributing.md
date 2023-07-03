@@ -139,6 +139,8 @@
 
 5 finally, you could visit "<http://HostIp:4040>" the in the browser of your desktop, and get flamegraph
 
+6. clean. `make clean_e2e`
+
 ***
 
 ## Submit Pull Request

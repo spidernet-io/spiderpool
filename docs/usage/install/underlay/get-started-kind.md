@@ -21,19 +21,19 @@ kind is a tool for running local Kubernetes clusters using Docker container “n
 3. Get the latest image of Spiderpool.
 
     ```bash
-    ~# LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
+    ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
     ```
 
 4. Execute the following command to create a Kind cluster and install Multus, Macvlan, Spiderpool for you.
 
     ```bash
-    ~# make e2e_init -e TEST_IMAGE_TAG=$LATEST_IMAGE_TAG
+    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
     ```
 
     Note: If you are mainland user who is not available to access ghcr.io, you can use the following command to avoid failures in pulling Spiderpool and Multus images.
 
     ```bash
-    ~# make e2e_init -e TEST_IMAGE_TAG=$LATEST_IMAGE_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e IMAGE_MULTUS_REPO=ghcr.m.daocloud.io
+    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
     ```
 
 ## Check that everything is working

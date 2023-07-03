@@ -31,7 +31,18 @@
 
 3. you could do it step by step with the follow
 
-   build the image
+    before start the test, you shoud know there are test scenes as following 
+
+    | kind                                     | setup cluster                    | test                          |
+    |------------------------------------------|----------------------------------|-------------------------------|
+    | test underlay CNI without subnet feature | make    e2e_init_underlay        | make e2e_test_underlay        |
+    | test underlay CNI with subnet feature    | make    e2e_init_underlay_subnet | make e2e_test_underlay_subnet |
+    | test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
+    | test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
+
+    if you are in China, it could add `-e E2E_CHINA_IMAGE_REGISTRY=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
+
+    build the image
 
         # do some coding
 
@@ -43,48 +54,67 @@
         # or (if buildx fail to pull images)
         $ make build_docker_image
 
-   setup the cluster
+    setup the cluster
 
         # setup the kind cluster of dual-stack
         # !!! images is tested by commit sha, so make sure the commit is submit locally
-        $ make e2e_init
+        $ make e2e_init_underlay
           .......
           -----------------------------------------------------------------------------------------------------
              succeeded to setup cluster spider
              you could use following command to access the cluster
                 export KUBECONFIG=$(pwd)/test/.cluster/spider/.kube/config
                 kubectl get nodes
-          -----------------------------------------------------------------------------------------------------        
+          -----------------------------------------------------------------------------------------------------
 
         # setup the kind cluster of ipv4-only
-        $ make e2e_init -e E2E_IP_FAMILY=ipv4
+        $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv4
 
         # setup the kind cluster of ipv6-only
-        $ make e2e_init -e E2E_IP_FAMILY=ipv6
+        $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
 
-   run the e2e test
+        # for china developer not able access ghcr.io
+        # it pulls images from another image registry and just use http proxy to pull chart 
+        $ make e2e_init_underlay  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+
+        # setup cluster with subnet feature
+        $ make e2e_init_underlay_subnet -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+
+        # setup cluster with calico cni
+        $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+
+        # setup cluster with cilium cni
+        $ make e2e_init_cilium  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+
+    run the e2e test
 
         # run all e2e test on dual-stack cluster
-        $ make e2e_test
+        $ make e2e_test_underlay
 
         # run all e2e test on ipv4-only cluster
-        $ make e2e_test -e E2E_IP_FAMILY=ipv4
+        $ make e2e_test_underlay -e E2E_IP_FAMILY=ipv4
 
         # run all e2e test on ipv6-only cluster
-        $ make e2e_test -e E2E_IP_FAMILY=ipv6
-
-        # Run all e2e tests on an enableSpiderSubnet=false cluster
-        $ make e2e_test -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+        $ make e2e_test_underlay -e E2E_IP_FAMILY=ipv6
 
         # run smoke test
-        $ make e2e_test -e E2E_GINKGO_LABELS=smoke
+        $ make e2e_test_underlay -e E2E_GINKGO_LABELS=smoke
 
         # after finishing e2e case , you could test repeated for debugging flaky tests
         # example: run a case repeatedly
-        $ make e2e_test -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
+        $ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
 
         # example: run a case until fails
-        $ make e2e_test -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+        $ make e2e_test_underlay -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+
+        # Run all e2e tests for enableSpiderSubnet=false cluster
+        $ make e2e_test_underlay_subnet 
+
+        # Run all e2e tests for enableSpiderSubnet=false cluster
+        $ make e2e_test_overlay_calico
+
+        # Run all e2e tests for enableSpiderSubnet=false cluster
+        $ make e2e_test_overlay_cilium 
 
         $ ls e2ereport.json
 
@@ -95,11 +125,14 @@
         # load images to docker
         $ docker pull ${AGENT_IMAGE_NAME}:${IMAGE_TAG}
         $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
 
         # setup the cluster with the specified image
-        $ make e2e_init -e TEST_IMAGE_TAG=${IMAGE_TAG} \
+        $ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} 
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
+                -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}
 
         # run all e2e test
         $ make e2e_test

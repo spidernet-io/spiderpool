@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -26,4 +27,8 @@ var _ = BeforeSuite(func() {
 	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
 
 	Expect(e).NotTo(HaveOccurred())
+
+	if !common.CheckSubnetFeatureOn() {
+		Skip("Subnet feature is off , ignore this suite")
+	}
 })

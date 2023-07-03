@@ -1,4 +1,4 @@
-{{- if .Values.multus.multusCNI.install -}}
+{{- if .Values.multus.multusCNI.install_thisNotInstall -}}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -91,7 +91,34 @@ kind: ServiceAccount
 metadata:
   name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace | quote }}
-{{- if .Values.multus.multusCNI.defaultCniCRName }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: multus-daemon-config
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+data:
+  daemon-config.json: |
+    {
+        "chrootDir": "/hostroot",
+        "confDir": "/host/etc/cni/net.d",
+        "logLevel": "verbose",
+        "socketDir": "/host/run/multus/",
+        "cniVersion": "0.3.1",
+        "cniConfigDir": "/host/etc/cni/net.d",
+        {{- if .Values.multus.multusCNI.defaultCniCRName }}
+        "multusConfigFile": "/tmp/multus-conf/00-multus.conf",
+        {{- else }}
+        "multusConfigFile": "auto",
+        {{- end }}
+        "multusAutoconfigDir": "/host/etc/cni/net.d"
+    }
+  {{- if .Values.multus.multusCNI.defaultCniCRName }}
+---
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -99,8 +126,7 @@ metadata:
   name: multus-cni-config
   namespace: {{ .Release.Namespace | quote }}
   labels:
-    {{- include "spiderpool.multus.labels" . | nindent 4 }}
-      {{- if .Values.global.commonLabels }}
+    {{- if .Values.global.commonLabels }}
       {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
       {{- end }}
 data:
@@ -108,22 +134,17 @@ data:
     {
       "cniVersion": "0.3.1",
       "name": "multus-cni-network",
-      "type": "multus",
-      "confDir": "/etc/cni/net.d/" ,
+      "type": "multus-shim",
+      "socketDir":"/host/run/multus/",
       "logLevel": "{{ .Values.multus.multusCNI.log.logLevel }}",
       "logFile": "{{ .Values.multus.multusCNI.log.logFile }}",
       "capabilities": {
         "portMappings": true,
         "bandwidth": true
       },
-      "namespaceIsolation": false,
-      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}",
-      "defaultNetworks": [],
-      "multusNamespace": "",
-      "systemNamespaces": [],
-      "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
+      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}"
     }
-{{- end }}
+  {{- end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -171,21 +192,28 @@ spec:
       {{- toYaml . | nindent 6 }}
       {{- end }}
       serviceAccountName: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+      initContainers:
+        - name: install-multus-binary
+          image: {{ include "spiderpool.multus.image" . | quote }}
+          command:
+            - "cp"
+            - "/usr/src/multus-cni/bin/multus-shim"
+            - "/host/opt/cni/bin/multus-shim"
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "15Mi"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+              mountPropagation: Bidirectional
       containers:
         - name: kube-multus
           imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}
           image: {{ include "spiderpool.multus.image" . | quote }}
-          command: ["/entrypoint.sh"]
-          args:
-            {{- if .Values.multus.multusCNI.defaultCniCRName }}
-            - "--multus-conf-file=/tmp/multus-conf/00-multus.conf"
-            {{- else }}
-            - "--multus-conf-file=auto"
-            {{- end }}
-            - "--cni-version=0.3.1"
-            {{- with .Values.multus.multusCNI.extraArgs }}
-            {{- toYaml . | trim | nindent 12 }}
-            {{- end }}
+          command: [ "/usr/src/multus-cni/bin/multus-daemon" ]
           {{- if .Values.multus.multusCNI.extraEnv }}
           env:
             {{- with .Values.multus.multusCNI.extraEnv }}
@@ -203,33 +231,30 @@ spec:
           volumeMounts:
             - name: cni
               mountPath: /host/etc/cni/net.d
-            - name: cnibin
-              mountPath: /host/opt/cni/bin
+            - name: host-run
+              mountPath: /host/run
+            - name: host-var-lib-cni-multus
+              mountPath: /var/lib/cni/multus
+            - name: host-var-lib-kubelet
+              mountPath: /var/lib/kubelet
+            - name: host-run-k8s-cni-cncf-io
+              mountPath: /run/k8s.cni.cncf.io
+            - name: host-run-netns
+              mountPath: /run/netns
+              mountPropagation: HostToContainer
+            - name: multus-daemon-config
+              mountPath: /etc/cni/net.d/multus.d
+              readOnly: true
             {{- if .Values.multus.multusCNI.defaultCniCRName }}
             - name: multus-cfg
               mountPath: /tmp/multus-conf
             {{- end }}
+            - name: hostroot
+              mountPath: /hostroot
+              mountPropagation: HostToContainer
             {{- if .Values.multus.multusCNI.extraVolumes }}
             {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
             {{- end }}
-      initContainers:
-        - name: install-multus-binary
-          imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}
-          image: {{ include "spiderpool.multus.image" . | quote }}
-          command:
-            - "cp"
-            - "/usr/src/multus-cni/bin/multus"
-            - "/host/opt/cni/bin/multus"
-          resources:
-            requests:
-              cpu: "10m"
-              memory: "15Mi"
-          securityContext:
-            privileged: true
-          volumeMounts:
-            - name: cnibin
-              mountPath: /host/opt/cni/bin
-              mountPropagation: Bidirectional
       terminationGracePeriodSeconds: 10
       volumes:
         - name: cni
@@ -238,6 +263,15 @@ spec:
         - name: cnibin
           hostPath:
             path: /opt/cni/bin
+        - name: hostroot
+          hostPath:
+            path: /
+        - name: multus-daemon-config
+          configMap:
+            name: multus-daemon-config
+            items:
+              - key: daemon-config.json
+                path: daemon-config.json
         {{- if .Values.multus.multusCNI.defaultCniCRName }}
         - name: multus-cfg
           configMap:
@@ -246,6 +280,21 @@ spec:
               - key: cni-conf.json
                 path: 00-multus.conf
         {{- end }}
+        - name: host-run
+          hostPath:
+            path: /run
+        - name: host-var-lib-cni-multus
+          hostPath:
+            path: /var/lib/cni/multus
+        - name: host-var-lib-kubelet
+          hostPath:
+            path: /var/lib/kubelet
+        - name: host-run-k8s-cni-cncf-io
+          hostPath:
+            path: /run/k8s.cni.cncf.io
+        - name: host-run-netns
+          hostPath:
+            path: /run/netns/
         {{- if .Values.multus.multusCNI.extraVolumeMounts }}
         {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}

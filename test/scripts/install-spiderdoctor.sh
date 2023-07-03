@@ -25,7 +25,7 @@ echo "$CURRENT_FILENAME : SPIDERDOCTOR_REPORT_PATH $SPIDERDOCTOR_REPORT_PATH "
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
 SPIDERDOCTOR_VERSION=${SPIDERDOCTOR_VERSION:-0.2.1}
-SPIDERDOCTOR_IMAGE_REPO=${SPIDERDOCTOR_IMAGE_REPO:-"ghcr.io"}
+E2E_SPIDERDOCTOR_IMAGE_REPO=${E2E_SPIDERDOCTOR_IMAGE_REPO:-"ghcr.io"}
 
 INSTALL_TIME_OUT=300s
 
@@ -49,14 +49,16 @@ case ${E2E_IP_FAMILY} in
     exit 1
 esac
 
-SPIDERDOCTOR_HELM_OPTIONS+=" --set spiderdoctorAgent.image.registry=${SPIDERDOCTOR_IMAGE_REPO} \
- --set spiderdoctorController.image.registry=${SPIDERDOCTOR_IMAGE_REPO} "
+SPIDERDOCTOR_HELM_OPTIONS+=" --set spiderdoctorAgent.image.registry=${E2E_SPIDERDOCTOR_IMAGE_REPO} \
+ --set spiderdoctorController.image.registry=${E2E_SPIDERDOCTOR_IMAGE_REPO} "
 
 echo "SPIDERDOCTOR_HELM_OPTIONS: ${SPIDERDOCTOR_HELM_OPTIONS}"
 
+[ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
+
 helm repo add spiderdoctor https://spidernet-io.github.io/spiderdoctor
 helm repo update
-HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' `
+HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | uniq `
 
 [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of SPIDERDOCTOR" && exit 1
 LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`

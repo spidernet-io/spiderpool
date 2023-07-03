@@ -21,19 +21,19 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 3. 通过以下方式获取 Spiderpool 的最新镜像。
 
     ```bash
-    ~# LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
+    ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
     ```
 
 4. 执行以下命令，创建 Kind 集群，并为您安装 Multus、Macvlan、Spiderpool。
 
     ```bash
-    ~# make e2e_init -e TEST_IMAGE_TAG=$LATEST_IMAGE_TAG
+    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
     ```
 
     注意：如果您是国内用户，您可以使用如下命令，避免拉取 Spiderpool 与 Multus 镜像失败。
 
     ```bash
-    ~# make e2e_init -e TEST_IMAGE_TAG=$LATEST_IMAGE_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e IMAGE_MULTUS_REPO=ghcr.m.daocloud.io
+    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
     ```
 
 ## 验证安装

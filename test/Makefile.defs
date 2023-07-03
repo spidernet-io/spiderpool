@@ -3,6 +3,9 @@
 # iptables or ipvs, default iptables
 E2E_KUBE_PROXY_MODE ?= iptables
 
+E2E_CHINA_IMAGE_REGISTRY ?= false
+HTTP_PROXY ?=
+
 K8S_IPV4_SERVICE_CIDR = 10.233.0.0/18
 K8S_IPV6_SERVICE_CIDR = fd00:10:233::/116
 
@@ -19,26 +22,30 @@ E2E_KIND_IMAGE_TAG ?= v1.27.1
 # with kind default version
 # E2E_KIND_IMAGE_TAG ?= 
 
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_KIND_IMAGE_NAME ?= docker.m.daocloud.io/kindest/node
+else
+    E2E_KIND_IMAGE_NAME ?= docker.io/kindest/node
+endif
+
 # disable default cni, default true
 E2E_DISABLE_DEFAULT_CNI ?= true
 
 INSTALL_MACVLAN ?= true
 
-INSTALL_SPIDER ?= true
-
 INSTALL_MULTUS ?= true
 
 INSTALL_KRUISE ?= true
 
-INSTALL_DEFAULT_CNI ?= true
+INSTALL_OVERLAY_CNI ?= false
 
 INSTALL_CALICO ?= true
 
 INSTALL_CILIUM ?= true
 
-INSTALL_SPIDERDOCTOR ?= true
-
 INSTALL_NETTOOLS ?= false
+
+INSTALL_SPIDERDOCTOR ?= true
 
 CALICO_VERSION ?= v3.25.0
 
@@ -64,20 +71,37 @@ E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
 E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG ?= true
 
 #============Image version===========
-TEST_IMAGE_NAME := alpine:latest
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+  TEST_IMAGE_NAME ?= docker.m.daocloud.io/alpine:latest
+else
+  TEST_IMAGE_NAME ?= docker.io/alpine:latest
+endif
 
 #USE_TLS_METHOD := certmanager
 #USE_TLS_METHOD := provided
 USE_TLS_METHOD := auto
 
-IMAGE_PYROSCOPE_NAME := pyroscope/pyroscope:latest
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    IMAGE_PYROSCOPE_NAME ?= docker.m.daocloud.io/pyroscope/pyroscope:latest
+else
+    IMAGE_PYROSCOPE_NAME ?= docker.io/pyroscope/pyroscope:latest
+endif
+
 
 CERT_MANAGER_VERSION := v1.8.0
-IMAGE_CERT_MANAGER_REPO := quay.io/jetstack
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    IMAGE_CERT_MANAGER_REPO := quay.m.daocloud.io/jetstack
+else
+    IMAGE_CERT_MANAGER_REPO := quay.io/jetstack
+endif
 IMAGE_CERT_MANAGER_NAME := $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-cainjector:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-webhook:$(CERT_MANAGER_VERSION) $(IMAGE_CERT_MANAGER_REPO)/cert-manager-controller:$(CERT_MANAGER_VERSION)
 CERT_MANAGER_ISSUER_NAME := selfsigned
 
-TEST_VLAN_GATEWAY_IMAGE := centos/tools:latest
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_VLAN_GATEWAY_IMAGE ?= docker.m.daocloud.io/centos/tools:latest
+else
+    E2E_VLAN_GATEWAY_IMAGE ?= docker.io/centos/tools:latest
+endif
 
 #================= multus
 MULTUS_CNI_NAMESPACE := kube-system
@@ -89,18 +113,43 @@ MULTUS_DEFAULT_CNI_VLAN200 := macvlan-vlan200-underlay
 MULTUS_ADDITIONAL_CNI_VLAN100 := macvlan-vlan100-overlay
 MULTUS_ADDITIONAL_CNI_VLAN200 := macvlan-vlan200-overlay
 
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_MULTUS_IMAGE_REGISTER ?= ghcr.m.daocloud.io
+else
+    E2E_MULTUS_IMAGE_REGISTER ?= ghcr.io
+endif
+E2E_MULTUS_IMAGE_NAME ?= $(E2E_MULTUS_IMAGE_REGISTER)/k8snetworkplumbingwg/multus-cni
+
 
 #================= calico
 CALICO_VERSION ?= v3.25.0
-CALICO_IMAGE_REPO ?= docker.io
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+  CALICO_IMAGE_REPO ?= docker.m.daocloud.io
+else
+  CALICO_IMAGE_REPO ?= docker.io
+endif
+
 CALICO_AUTODETECTION_METHOD ?= "kubernetes-internal-ip"
 
 #================= cilium
-CILIUM_VERSION ?= v1.13.3
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_CILIUM_IMAGE_REPO ?= "quay.m.daocloud.io"
+else
+    E2E_CILIUM_IMAGE_REPO ?= "quay.io"
+endif
+
+CILIUM_VERSION ?=
 
 #================= spiderdoctor
 SPIDERDOCTOR_VERSION ?= v0.3.0
-SPIDERDOCTOR_IMAGE_REPO ?= ghcr.io
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_SPIDERDOCTOR_IMAGE_REPO ?= ghcr.m.daocloud.io
+else
+    E2E_SPIDERDOCTOR_IMAGE_REPO ?= ghcr.io
+endif
+
 SPIDERDOCTOR_REPORT_PATH=/var/log/spiderdoctor/controller
 
 #====== pyroscope
@@ -117,3 +166,11 @@ E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
 http_proxy ?=
 
 E2E_LOG_FILE ?= $(ROOT_DIR)/test/e2edebugLog.txt
+
+#========= openkruise =========
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_OPENKRUISE_IMAGE ?= docker.m.daocloud.io/openkruise/kruise-manager
+else
+    E2E_OPENKRUISE_IMAGE ?= docker.io/openkruise/kruise-manager
+endif

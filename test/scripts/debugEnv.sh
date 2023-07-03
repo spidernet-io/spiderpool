@@ -70,14 +70,14 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get events -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
     echo "=============== event of error pod ============== "
-    ERROR_POD=`kubectl get pod -o wide -A | sed '1 d' | grep -Ev "Running|Completed" | awk '{printf "%s,%s\n",$1,$2}' `
+    ERROR_POD=`kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "Running|Completed" | awk '{printf "%s,%s\n",$1,$2}' `
     if [ -n "$ERROR_POD" ]; then
           echo "error pod:"
           echo "${ERROR_POD}"
           for LINE in ${ERROR_POD}; do
               NS_NAME=${LINE//,/ }
               echo "---------------error pod: ${NS_NAME}------------"
-              kubectl describe pod -n ${NS_NAME}
+              kubectl describe pod -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG}
           done
     fi
 
@@ -173,6 +173,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
     for NODE in $KIND_NODES ; do
         echo "--------- IPAM logs from node ${NODE}"
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
+        echo "--------- coordinator logs from node ${NODE}"
+        docker exec $NODE cat /var/log/spidernet/coordinator.log
     done
 
 

@@ -15,13 +15,13 @@ CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
 [ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
 echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 
-[ -z "$TEST_IMAGE" ] && echo "error, miss TEST_IMAGE" && exit 1
-echo "$CURRENT_FILENAME : TEST_IMAGE $TEST_IMAGE "
+[ -z "$TEST_IMAGE_NAME" ] && echo "error, miss TEST_IMAGE_NAME" && exit 1
+echo "$CURRENT_FILENAME : TEST_IMAGE_NAME $TEST_IMAGE_NAME "
 
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
-docker pull ${TEST_IMAGE}
-kind load docker-image ${TEST_IMAGE} --name $E2E_CLUSTER_NAME
+docker pull ${TEST_IMAGE_NAME}
+kind load docker-image ${TEST_IMAGE_NAME} --name $E2E_CLUSTER_NAME
 
 NAME=test-pod
 cat <<EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: $NAME
-        image: ${TEST_IMAGE}
+        image: ${TEST_IMAGE_NAME}
         imagePullPolicy: IfNotPresent
         command:
         - "/bin/sh"

@@ -20,7 +20,6 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-	"github.com/spidernet-io/spiderpool/internal/version"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
@@ -57,6 +56,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return err
 	}
+	if conf.TuneMode == ModeDisable {
+		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
+	}
 
 	logger, err := logutils.SetupFileLogging(conf.LogOptions.LogLevel,
 		conf.LogOptions.LogFilePath, conf.LogOptions.LogFileMaxSize,
@@ -64,14 +66,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to init logger: %v ", err)
 	}
-
-	logger.Info("coordinator starting", zap.String("Version", version.CoordinatorBuildDateVersion()),
-		zap.String("Branch", version.CoordinatorGitBranch()),
-		zap.String("Commit", version.CoordinatorGitCommit()),
-		zap.String("Build time", version.CoordinatorBuildDate()),
-		zap.String("Go Version", version.GoString()))
-
-	logger.Sugar().Infof("coordinator run in mode: %v", conf.TuneMode)
 
 	logger = logger.Named(BinNamePlugin).With(
 		zap.String("Action", "ADD"),
@@ -81,6 +75,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
+	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.TuneMode))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)

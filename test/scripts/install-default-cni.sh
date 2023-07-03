@@ -34,9 +34,13 @@ export CALICO_VERSION=${CALICO_VERSION:-"v3.25.0"}
 export INSTALL_TIME_OUT=${INSTALL_TIME_OUT:-"600s"}
 export CALICO_IMAGE_REPO=${CALICO_IMAGE_REPO:-"docker.io"}
 export CALICO_AUTODETECTION_METHOD=${CALICO_AUTODETECTION_METHOD:-"kubernetes-internal-ip"}
-CILIUM_VERSION=${CILIUM_VERSION:-"v1.13.3"}
+
+E2E_CILIUM_IMAGE_REPO=${E2E_CILIUM_IMAGE_REPO:-"quay.io"}
+CILIUM_VERSION=${CILIUM_VERSION:-""}
 CILIUM_CLUSTER_POD_SUBNET_V4=${CILIUM_CLUSTER_POD_SUBNET_V4:-"10.244.64.0/18"}
 CILIUM_CLUSTER_POD_SUBNET_V6=${CILIUM_CLUSTER_POD_SUBNET_V6:-"fd00:10:244::/112"}
+
+[ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
 
 function install_calico() {
     cp ${PROJECT_ROOT_PATH}/test/yamls/calico.yaml $CLUSTER_PATH/calico.yaml
@@ -142,10 +146,32 @@ function install_cilium() {
           exit 1
       esac
 
+    CILIUM_HELM_OPTIONS+=" \
+      --set image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
+      --set image.useDigest=false \
+      --set certgen.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/certgen \
+      --set hubble.relay.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/hubble-relay \
+      --set hubble.relay.image.useDigest=false \
+      --set hubble.ui.backend.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/hubble-ui-backend \
+      --set hubble.ui.frontend.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/hubble-ui \
+      --set etcd.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium-etcd-operator \
+      --set operator.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/operator  \
+      --set operator.image.useDigest=false  \
+      --set preflight.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/cilium \
+      --set preflight.image.useDigest=false \
+      --set nodeinit.image.repository=${E2E_CILIUM_IMAGE_REPO}/cilium/startup-script "
+
     echo "CILIUM_HELM_OPTIONS: ${CILIUM_HELM_OPTIONS}"
+
     helm repo remove cilium &>/dev/null || true
     helm repo add cilium https://helm.cilium.io
-    HELM_IMAGES_LIST=` helm template test cilium/cilium --version ${CILIUM_VERSION} ${CILIUM_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | awk -F "@" '{print $1}' | uniq `
+    helm repo update
+
+    if [ -n "${CILIUM_VERSION}" ] ; then
+        CILIUM_HELM_OPTIONS+=" --version ${CILIUM_VERSION} "
+    fi
+
+    HELM_IMAGES_LIST=` helm template test cilium/cilium ${CILIUM_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | awk -F "@" '{print $1}' | uniq `
     [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of cilium" && exit 1
     LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`
 
@@ -159,7 +185,7 @@ function install_cilium() {
     done
 
     # Install cilium
-    helm upgrade --install cilium cilium/cilium --wait -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${CILIUM_HELM_OPTIONS} --version ${CILIUM_VERSION}
+    helm upgrade --install cilium cilium/cilium --wait -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${CILIUM_HELM_OPTIONS}
     kubectl wait --for=condition=ready -l k8s-app=cilium --timeout=${INSTALL_TIME_OUT} pod -n kube-system \
     --kubeconfig ${E2E_KUBECONFIG}
 

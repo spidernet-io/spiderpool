@@ -184,7 +184,7 @@ public cloud ([example](./docs/usage/install/underlay/get-started-cloud.md)).
 
 * It could specify customized routes by IP pool and pod annotation. See [example](./docs/usage/route.md) for details
 
-* Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) CR instances with best practice manner, avoiding manual writing of CNI configuration errors. [Example](./docs/concepts/multus.md)
+* Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition custom resources with best-practice CNI configuration, also ensure well formatted JSON to improve experience. [Example](./docs/concepts/multus.md)
 
 * Multiple IP pools can be set for the application for prevent IP address from running out. See [example](./docs/usage/ippool-multi.md) for details.
 

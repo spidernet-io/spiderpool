@@ -119,7 +119,7 @@ data:
       "namespaceIsolation": false,
       "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}",
       "defaultNetworks": [],
-      "multusNamespace": "",
+      "multusNamespace": "{{ .Release.Namespace }}",
       "systemNamespaces": [],
       "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
     }

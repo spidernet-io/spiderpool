@@ -381,7 +381,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 	case SriovType:
 		// SRIOV special annotation
-		anno[resourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
+		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
 
 		sriovCNIConf := generateSriovCNIConf(*multusConfSpec)
 		// head insertion
@@ -532,7 +532,7 @@ func generateSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) 
 func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondConfig) interface{} {
 	netConf := IfacerNetConf{
 		NetConf: types.NetConf{
-			Type: ifacerBinName,
+			Type: constant.Ifacer,
 		},
 		Interfaces: master,
 		VlanID:     int(vlanID),
@@ -553,7 +553,7 @@ func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondC
 func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSpec) interface{} {
 	coordinatorNetConf := coordinatorcmd.Config{
 		NetConf: types.NetConf{
-			Type: coordinatorBinName,
+			Type: constant.Coordinator,
 		},
 	}
 

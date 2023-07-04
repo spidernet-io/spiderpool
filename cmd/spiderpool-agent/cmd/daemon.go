@@ -19,6 +19,7 @@ import (
 	"github.com/pyroscope-io/client/pyroscope"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -26,6 +27,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
@@ -128,17 +130,21 @@ func DaemonMain() {
 	initAgentServiceManagers(agentContext.InnerCtx)
 
 	logger.Info("Begin to initialize IPAM")
+	ipamConfig := ipam.IPAMConfig{
+		EnableIPv4:               agentContext.Cfg.EnableIPv4,
+		EnableIPv6:               agentContext.Cfg.EnableIPv6,
+		ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
+		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
+		EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
+		EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
+		OperationRetries:         agentContext.Cfg.WaitSubnetPoolMaxRetries,
+		OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+	}
+	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
+		ipamConfig.MultusClusterNetwork = pointer.String(agentContext.Cfg.MultusClusterNetwork)
+	}
 	ipam, err := ipam.NewIPAM(
-		ipam.IPAMConfig{
-			EnableIPv4:               agentContext.Cfg.EnableIPv4,
-			EnableIPv6:               agentContext.Cfg.EnableIPv6,
-			ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
-			ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
-			EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
-			EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
-			OperationRetries:         agentContext.Cfg.WaitSubnetPoolMaxRetries,
-			OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-		},
+		ipamConfig,
 		agentContext.IPPoolManager,
 		agentContext.EndpointManager,
 		agentContext.NodeManager,
@@ -192,7 +198,7 @@ func DaemonMain() {
 	if err := os.RemoveAll(agentContext.Cfg.IpamUnixSocketPath); err != nil {
 		logger.Sugar().Fatalf("Failed to clean up socket %s: %v", agentContext.Cfg.IpamUnixSocketPath, err)
 	}
-	unixServer, err := NewAgentOpenAPIUnixServer()
+	unixServer, err := newAgentOpenAPIUnixServer()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -208,7 +214,7 @@ func DaemonMain() {
 		}
 	}()
 
-	spiderpoolAgentAPI, err := NewAgentOpenAPIUnixClient(agentContext.Cfg.IpamUnixSocketPath)
+	spiderpoolAgentAPI, err := openapi.NewAgentOpenAPIUnixClient(agentContext.Cfg.IpamUnixSocketPath)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}

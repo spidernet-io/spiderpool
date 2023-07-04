@@ -6,6 +6,7 @@ package ipam
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -14,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -22,6 +24,7 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -420,7 +423,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		var errs []error
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
-			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController); err != nil {
+			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC); err != nil {
 				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
 				errs = append(errs, err)
 
@@ -438,7 +441,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 	return nil
 }
 
-func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController) error {
+func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController, nic string) error {
 	if ipPool.DeletionTimestamp != nil {
 		return fmt.Errorf("terminating IPPool %s", ipPool.Name)
 	}
@@ -451,34 +454,49 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		return fmt.Errorf("expect an IPv%d IPPool, but the version of the IPPool %s is IPv%d", version, ipPool.Name, *ipPool.Spec.IPVersion)
 	}
 
-	if ipPool.Spec.NodeAffinity != nil {
-		node, err := i.nodeManager.GetNodeByName(ctx, pod.Spec.NodeName, constant.UseCache)
-		if err != nil {
-			return err
+	// node
+	if len(ipPool.Spec.NodeName) != 0 {
+		if !slices.Contains(ipPool.Spec.NodeName, pod.Spec.NodeName) {
+			return fmt.Errorf("unmatched Node name of IPPool %s", ipPool.Name)
 		}
-		selector, err := metav1.LabelSelectorAsSelector(ipPool.Spec.NodeAffinity)
-		if err != nil {
-			return err
-		}
-		if !selector.Matches(labels.Set(node.Labels)) {
-			return fmt.Errorf("unmatched Node affinity of IPPool %s", ipPool.Name)
-		}
-	}
-
-	if ipPool.Spec.NamespaceAffinity != nil {
-		namespace, err := i.nsManager.GetNamespaceByName(ctx, pod.Namespace, constant.UseCache)
-		if err != nil {
-			return err
-		}
-		selector, err := metav1.LabelSelectorAsSelector(ipPool.Spec.NamespaceAffinity)
-		if err != nil {
-			return err
-		}
-		if !selector.Matches(labels.Set(namespace.Labels)) {
-			return fmt.Errorf("unmatched Namespace affinity of IPPool %s", ipPool.Name)
+	} else {
+		if ipPool.Spec.NodeAffinity != nil {
+			node, err := i.nodeManager.GetNodeByName(ctx, pod.Spec.NodeName, constant.UseCache)
+			if err != nil {
+				return err
+			}
+			selector, err := metav1.LabelSelectorAsSelector(ipPool.Spec.NodeAffinity)
+			if err != nil {
+				return err
+			}
+			if !selector.Matches(labels.Set(node.Labels)) {
+				return fmt.Errorf("unmatched Node affinity of IPPool %s", ipPool.Name)
+			}
 		}
 	}
 
+	// namespace
+	if len(ipPool.Spec.NamespaceName) != 0 {
+		if !slices.Contains(ipPool.Spec.NamespaceName, pod.Namespace) {
+			return fmt.Errorf("unmatched Namespace name of IPPool %s", ipPool.Name)
+		}
+	} else {
+		if ipPool.Spec.NamespaceAffinity != nil {
+			namespace, err := i.nsManager.GetNamespaceByName(ctx, pod.Namespace, constant.UseCache)
+			if err != nil {
+				return err
+			}
+			selector, err := metav1.LabelSelectorAsSelector(ipPool.Spec.NamespaceAffinity)
+			if err != nil {
+				return err
+			}
+			if !selector.Matches(labels.Set(namespace.Labels)) {
+				return fmt.Errorf("unmatched Namespace affinity of IPPool %s", ipPool.Name)
+			}
+		}
+	}
+
+	// pod affinity
 	if ipPool.Spec.PodAffinity != nil {
 		if ippoolmanager.IsAutoCreatedIPPool(ipPool) {
 			if !ippoolmanager.IsMatchAutoPoolAffinity(ipPool.Spec.PodAffinity, podTopController) {
@@ -495,6 +513,72 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		if !selector.Matches(labels.Set(pod.Labels)) {
 			return fmt.Errorf("unmatched Pod affinity of IPPool %s", ipPool.Name)
 		}
+	}
+
+	// multus
+	if len(ipPool.Spec.MultusName) != 0 {
+		var multusNS, multusName string
+
+		podAnno := pod.GetAnnotations()
+		// the first NIC
+		if nic == constant.ClusterDefaultInterfaceName {
+			// default net-attach-def specified in the annotations
+			defaultMultusObj := podAnno[constant.MultusDefaultNetAnnot]
+			if len(defaultMultusObj) == 0 {
+				if i.config.MultusClusterNetwork == nil {
+					return fmt.Errorf("cluster-network multus isn't set, the IPPool %v specified multusName %s unmatched", ipPool.Name, ipPool.Spec.MultusName)
+				}
+				defaultMultusObj = *i.config.MultusClusterNetwork
+			}
+
+			netNsName, networkName, _, err := multuscniconfig.ParsePodNetworkObjectName(defaultMultusObj)
+			if nil != err {
+				return fmt.Errorf("failed to parse Annotation '%s' value '%s', error: %v", constant.MultusDefaultNetAnnot, defaultMultusObj, err)
+			}
+
+			multusNS = netNsName
+			if multusNS == "" {
+				multusNS = pod.Namespace
+			}
+			multusName = networkName
+		} else {
+			// the additional NICs must own a Multus CR object
+			networkSelectionElements, err := multuscniconfig.ParsePodNetworkAnnotation(podAnno[constant.MultusNetworkAttachmentAnnot], pod.Namespace)
+			if nil != err {
+				return fmt.Errorf("failed to parse pod network annotation: %v", err)
+			}
+
+			isFound := false
+			for idx := range networkSelectionElements {
+				if len(networkSelectionElements[idx].InterfaceRequest) == 0 {
+					networkSelectionElements[idx].InterfaceRequest = fmt.Sprintf("net%d", idx+1)
+				}
+
+				if nic == networkSelectionElements[idx].InterfaceRequest {
+					multusNS = networkSelectionElements[idx].Namespace
+					multusName = networkSelectionElements[idx].Name
+					isFound = true
+					break
+				}
+			}
+
+			// impossible
+			if !isFound {
+				return fmt.Errorf("%w: no matched multus object for NIC '%s'. The multus network-attachments: %v", constant.ErrUnknown, nic, podAnno[constant.MultusNetworkAttachmentAnnot])
+			}
+		}
+
+		for index := range ipPool.Spec.MultusName {
+			expectedMultusName := ipPool.Spec.MultusName[index]
+			if !strings.Contains(expectedMultusName, "/") {
+				expectedMultusName = fmt.Sprintf("%s/%s", pod.Namespace, expectedMultusName)
+			}
+
+			if strings.Compare(expectedMultusName, fmt.Sprintf("%s/%s", multusNS, multusName)) == 0 {
+				return nil
+			}
+		}
+		return fmt.Errorf("interface %s IPPool %s specified multusName %v unmacthed multusCR %s/%s", nic, ipPool.Name, ipPool.Spec.MultusName, multusNS, multusName)
 	}
 
 	return nil

@@ -166,6 +166,10 @@ spec:
           value: {{ .Values.spiderpoolAgent.httpPort | quote }}
         - name: SPIDERPOOL_GOPS_LISTEN_PORT
           value: {{ .Values.spiderpoolAgent.debug.gopsPort | quote }}
+        {{- if .Values.multus.multusCNI.defaultCniCRName }}
+        - name: MULTUS_CLUSTER_NETWORK
+          value: {{ .Release.Namespace }}/{{ .Values.multus.multusCNI.defaultCniCRName }}
+        {{ end }}
         {{- with .Values.spiderpoolAgent.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

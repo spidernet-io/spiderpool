@@ -59,7 +59,7 @@ Install::MultusCR(){
   kind: NetworkAttachmentDefinition
   metadata:
     name: ${MULTUS_DEFAULT_CNI_CALICO}
-    namespace: ${MULTUS_CNI_NAMESPACE}
+    namespace: ${RELEASE_NAMESPACE}
 EOF
 
   cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
@@ -67,7 +67,7 @@ EOF
   kind: NetworkAttachmentDefinition
   metadata:
     name: ${MULTUS_DEFAULT_CNI_CILIUM}
-    namespace: ${MULTUS_CNI_NAMESPACE}
+    namespace: ${RELEASE_NAMESPACE}
 EOF
 
 MACVLAN_CR_TEMPLATE='
@@ -99,14 +99,14 @@ spec:
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?underlay?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?underlay?g' \
     | sed 's?<<MASTER>>?eth0.100?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
@@ -114,21 +114,21 @@ spec:
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN100}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?overlay?g' \
     | sed 's?<<MASTER>>?eth0.100?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN200}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?overlay?g' \
     | sed 's?<<MASTER>>?eth0.200?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?underlay?g' \
     | sed 's?<<MASTER>>?eth0.200?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -

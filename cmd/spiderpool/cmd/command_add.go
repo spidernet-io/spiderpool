@@ -19,8 +19,8 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 // CmdAdd follows CNI SPEC cmdAdd.
@@ -78,7 +78,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	)
 	logger.Sugar().Debugf("CNI ENV args: %+v", k8sArgs)
 
-	spiderpoolAgentAPI, err := cmd.NewAgentOpenAPIUnixClient(conf.IPAM.IPAMUnixSocketPath)
+	spiderpoolAgentAPI, err := openapi.NewAgentOpenAPIUnixClient(conf.IPAM.IPAMUnixSocketPath)
 	if nil != err {
 		err := fmt.Errorf("failed to create spiderpool-agent client: %w", err)
 		logger.Error(err.Error())

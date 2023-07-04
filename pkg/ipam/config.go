@@ -25,6 +25,8 @@ type IPAMConfig struct {
 
 	OperationRetries     int
 	OperationGapDuration time.Duration
+
+	MultusClusterNetwork *string
 }
 
 func setDefaultsForIPAMConfig(config IPAMConfig) IPAMConfig {

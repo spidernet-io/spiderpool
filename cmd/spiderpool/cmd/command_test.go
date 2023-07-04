@@ -25,10 +25,10 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
-	agentcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 const ifName string = "eth0"
@@ -522,7 +522,7 @@ var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func
 		})
 
 		It("Failed to new agent openAPI unix client with cmdAdd and cmdDel", func() {
-			patches := gomonkey.ApplyFuncSeq(agentcmd.NewAgentOpenAPIUnixClient, []gomonkey.OutputCell{
+			patches := gomonkey.ApplyFuncSeq(openapi.NewAgentOpenAPIUnixClient, []gomonkey.OutputCell{
 				{Values: gomonkey.Params{nil, constant.ErrUnknown}},
 				{Values: gomonkey.Params{nil, constant.ErrUnknown}},
 			})

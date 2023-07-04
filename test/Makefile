@@ -56,7 +56,7 @@ ifeq ($(INSTALL_MULTUS),true)
 		MULTUS_DEFAULT_CNI_VLAN200=$(MULTUS_DEFAULT_CNI_VLAN200) \
 		MULTUS_ADDITIONAL_CNI_VLAN100=$(MULTUS_ADDITIONAL_CNI_VLAN100) \
 		MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
-		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
+		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
@@ -78,15 +78,15 @@ ifeq ($(INSTALL_SPIDERDOCTOR),true)
 endif
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE_NAME=$(TEST_IMAGE_NAME) \
-		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
+		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
 		scripts/installTestPod.sh $(E2E_KUBECONFIG) $(INSTALL_MULTUS)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"
-	@echo "       multus default CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
-	@echo "       multus addon CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
+	@echo "       multus default CNI: $(RELEASE_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
+	@echo "       multus addon CNI: $(RELEASE_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
 	@echo ""
 	@echo -e "    succeeded to setup cluster $(E2E_CLUSTER_NAME) "
 	@echo -e "    you could use following command to access the cluster "
@@ -335,7 +335,7 @@ e2e_test:
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
-		export MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) ; \
+		export RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) ; \
 		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
 		export E2E_SPIDERSUBNET_ENABLED=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
 		rm -f $(E2E_LOG_FILE) || true  ; \

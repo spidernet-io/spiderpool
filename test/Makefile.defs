@@ -106,7 +106,6 @@ endif
 VLAN_GATEWAY_CONTAINER := vlan-gateway
 
 #================= multus
-MULTUS_CNI_NAMESPACE := kube-system
 MULTUS_DEFAULT_CNI_CALICO := k8s-pod-network
 MULTUS_DEFAULT_CNI_CILIUM := cilium
 MULTUS_DEFAULT_CNI_VLAN0 := macvlan-vlan0-underlay

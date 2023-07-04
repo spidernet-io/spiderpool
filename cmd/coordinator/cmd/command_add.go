@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -15,10 +14,10 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -26,6 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/networking/ipchecking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 func CmdAdd(args *skel.CmdArgs) (err error) {
@@ -36,7 +36,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to load CNI ENV args: %w", err)
 	}
 
-	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
+	client, err := openapi.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
 	if err != nil {
 		return err
 	}

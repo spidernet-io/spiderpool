@@ -95,5 +95,5 @@ const (
 )
 
 func init() {
-	MultusNs = os.Getenv("MULTUS_CNI_NAMESPACE")
+	MultusNs = os.Getenv("RELEASE_NAMESPACE")
 }

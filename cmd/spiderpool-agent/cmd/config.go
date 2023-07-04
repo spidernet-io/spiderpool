@@ -60,6 +60,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", true, nil, nil, &agentContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "2", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_MAX_RETRIES", "25", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolMaxRetries},
+
+	{"MULTUS_CLUSTER_NETWORK", "", false, &agentContext.Cfg.MultusClusterNetwork, nil, nil},
 }
 
 type Config struct {
@@ -84,6 +86,8 @@ type Config struct {
 	IPPoolMaxAllocatedIPs    int
 	WaitSubnetPoolTime       int
 	WaitSubnetPoolMaxRetries int
+
+	MultusClusterNetwork string
 
 	// configmap
 	IpamUnixSocketPath                string   `yaml:"ipamUnixSocketPath"`

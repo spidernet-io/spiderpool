@@ -548,6 +548,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				GinkgoWriter.Println("Pod IP is successfully released")
 			})
 	})
+
 	It("succeeded to running pod after added valid route field", Label("A00002"), func() {
 		var v4PoolName, v6PoolName, ipv4Dst, ipv6Dst, ipv4Gw, ipv6Gw string
 		var v4Pool, v6Pool *spiderpool.SpiderIPPool

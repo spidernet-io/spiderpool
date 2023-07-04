@@ -48,7 +48,7 @@ GIT_TAG ?= dev
 
 FULL_BUILD_VERSION = $(VERSION) $(GIT_COMMIT_VERSION)
 
-TEST_IMAGE_TAG := $(GIT_COMMIT_VERSION)
+E2E_SPIDERPOOL_TAG := $(GIT_COMMIT_VERSION)
 
 #------------------
 
@@ -100,7 +100,7 @@ endif
 GO_BUILD_WITH_CGO = CGO_ENABLED=1 $(CGO_CC) $(GO) build
 
 #data race and lock debug
-ifneq ($(RACE),)
+ifeq ($(RACE),"1")
     GO_BUILD_FLAGS += -race
     GO_TEST_FLAGS += -race
     GOTEST_COVER_OPTS += -covermode=atomic

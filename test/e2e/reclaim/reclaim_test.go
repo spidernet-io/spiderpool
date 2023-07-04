@@ -46,7 +46,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(100)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalV4Pool, 20)).NotTo(HaveOccurred())
+				Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalV4Pool, 30)).NotTo(HaveOccurred())
 			} else {
 				Expect(common.CreateIppool(frame, globalV4Pool)).NotTo(HaveOccurred())
 			}
@@ -59,7 +59,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(100)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalV6Pool, 20)).NotTo(HaveOccurred())
+				Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalV6Pool, 30)).NotTo(HaveOccurred())
 			} else {
 				Expect(common.CreateIppool(frame, globalV6Pool)).NotTo(HaveOccurred())
 			}
@@ -255,7 +255,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, stsReplicasNum)
 			stsYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			Expect(stsYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml \n", namespace, stsName)
-			GinkgoWriter.Printf("Tty to create StatefulSet %v/%v \n", namespace, stsName)
+			GinkgoWriter.Printf("Try to create StatefulSet %v/%v \n", namespace, stsName)
 			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed(), "failed to create StatefulSet %v/%v \n", namespace, stsName)
 
 			// Generate example daemonSet yaml and create daemonSet

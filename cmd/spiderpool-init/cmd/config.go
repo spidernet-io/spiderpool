@@ -40,12 +40,14 @@ type InitDefaultConfig struct {
 	Namespace      string
 	ControllerName string
 
-	CoordinatorName             string
-	CoordinatorTuneMode         string
-	CoordinatorPodCIDRType      string
-	CoordinatorDetectGateway    bool
-	CoordinatorDetectIPConflict bool
-	CoordinatorTunePodRoutes    bool
+	CoordinatorName               string
+	CoordinatorTuneMode           string
+	CoordinatorPodCIDRType        string
+	CoordinatorPodDefaultRouteNic string
+	CoordinatorPodMACPrefix       string
+	CoordinatorDetectGateway      bool
+	CoordinatorDetectIPConflict   bool
+	CoordinatorTunePodRoutes      bool
 
 	V4SubnetName string
 	V4IPPoolName string
@@ -101,6 +103,13 @@ func parseENVAsDefault() InitDefaultConfig {
 			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorTunePodRoutes, etpr, err)
 		}
 		config.CoordinatorTunePodRoutes = tpr
+		switch config.CoordinatorTuneMode {
+		case "underlay":
+			config.CoordinatorPodDefaultRouteNic = "eth0"
+		case "overlay":
+			config.CoordinatorPodDefaultRouteNic = "net1"
+		}
+		config.CoordinatorPodMACPrefix = ""
 	} else {
 		logger.Info("Ignore creating default Coordinator")
 	}

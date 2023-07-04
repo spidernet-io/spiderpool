@@ -7,67 +7,108 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/netip"
+	"time"
+
 	types100 "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/mdlayher/arp"
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/ndp"
+	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
-	"net"
-	"net/netip"
-	"time"
+	"golang.org/x/sync/errgroup"
 )
 
-func DoIPConflictChecking(logger *zap.Logger, netns ns.NetNS, retries int, interval, iface string, ipconfigs []*types100.IPConfig) error {
-	logger.Debug("DoIPConflictChecking", zap.String("interval", interval), zap.Int("retries", retries))
+type IPChecker struct {
+	retries   int
+	interval  time.Duration
+	timeout   time.Duration
+	netns     ns.NetNS
+	ip4, ip6  netip.Addr
+	ifi       *net.Interface
+	arpClient *arp.Client
+	ndpClient *ndp.Conn
+	logger    *zap.Logger
+}
 
-	if len(ipconfigs) == 0 {
-		return fmt.Errorf("interface %s has no any ip configured", iface)
-	}
+func NewIPChecker(ipfamily, retries int, iface, interval, timeout string, netns ns.NetNS, logger *zap.Logger) (*IPChecker, error) {
+	var err error
 
-	duration, err := time.ParseDuration(interval)
+	ipc := new(IPChecker)
+	ipc.retries = retries
+	ipc.interval, err = time.ParseDuration(interval)
 	if err != nil {
-		return fmt.Errorf("failed to parse interval %v: %v", interval, err)
+		return nil, fmt.Errorf("failed to parse interval %v: %v", interval, err)
 	}
 
-	return netns.Do(func(netNS ns.NetNS) error {
-		ifi, err := net.InterfaceByName(iface)
-		if err != nil {
-			return fmt.Errorf("failed to get interface by name %s: %v", iface, err)
-		}
+	ipc.timeout, err = time.ParseDuration(timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse timeoute %v: %v", timeout, err)
+	}
 
+	err = netns.Do(func(netNS ns.NetNS) error {
+		ipc.ifi, err = net.InterfaceByName(iface)
+		if err != nil {
+			return fmt.Errorf("failed to InterfaceByName %s: %w", iface, err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if ipfamily != netlink.FAMILY_V6 {
+		ipc.arpClient, err = arp.Dial(ipc.ifi)
+		if err != nil {
+			return nil, fmt.Errorf("failed to init arp client: %w", err)
+		}
+	}
+
+	if ipfamily != netlink.FAMILY_V4 {
+		ipc.ndpClient, _, err = ndp.Listen(ipc.ifi, ndp.LinkLocal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to init ndp client: %w", err)
+		}
+	}
+	ipc.netns = netns
+	ipc.logger = logger
+	return ipc, nil
+}
+
+func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, errg *errgroup.Group) {
+	ipc.logger.Debug("DoIPConflictChecking", zap.String("interval", ipc.interval.String()), zap.Int("retries", ipc.retries))
+	if len(ipconfigs) == 0 {
+		ipc.logger.Info("No ips found in pod, ignore pod ip's conflict checking")
+		return
+	}
+	_ = ipc.netns.Do(func(netNS ns.NetNS) error {
 		for idx := range ipconfigs {
 			target := netip.MustParseAddr(ipconfigs[idx].Address.IP.String())
 			if target.Is4() {
-				logger.Debug("IPCheckingByARP", zap.String("address", target.String()))
-				err = IPCheckingByARP(ifi, target, retries, duration)
-				if err != nil {
-					return err
-				}
-				logger.Debug("No IPv4 address conflicting", zap.String("address", target.String()))
+				ipc.logger.Debug("IPCheckingByARP", zap.String("ipv4 address", target.String()))
+				ipc.ip4 = target
+				errg.Go(ipc.ipCheckingByARP)
 			} else {
-				logger.Debug("IPCheckingByNDP", zap.String("address", target.String()))
-				err = IPCheckingByNDP(ifi, target, retries, duration)
-				if err != nil {
-					return err
-				}
-				logger.Debug("No IPv6 address conflicting", zap.String("address", target.String()))
+				ipc.logger.Debug("IPCheckingByNDP", zap.String("ipv6 address", target.String()))
+				ipc.ip6 = target
+				errg.Go(ipc.ipCheckingByNDP)
 			}
 		}
 		return nil
 	})
 }
 
-func IPCheckingByARP(ifi *net.Interface, targetIP netip.Addr, retry int, interval time.Duration) error {
-	client, err := arp.Dial(ifi)
-	if err != nil {
-		return err
-	}
+func (ipc *IPChecker) ipCheckingByARP() error {
+	defer ipc.arpClient.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var conflictingMac string
+	var err error
 	// start a goroutine to receive arp response
 	go func() {
 		var packet *arp.Packet
@@ -76,7 +117,7 @@ func IPCheckingByARP(ifi *net.Interface, targetIP netip.Addr, retry int, interva
 			case <-ctx.Done():
 				return
 			default:
-				packet, _, err = client.Read()
+				packet, _, err = ipc.arpClient.Read()
 				if err != nil {
 					cancel()
 					return
@@ -84,7 +125,7 @@ func IPCheckingByARP(ifi *net.Interface, targetIP netip.Addr, retry int, interva
 
 				if packet.Operation == arp.OperationReply {
 					// found reply and simple check if the reply packet is we want.
-					if packet.SenderIP.Compare(targetIP) == 0 {
+					if packet.SenderIP.Compare(ipc.ip4) == 0 {
 						conflictingMac = packet.SenderHardwareAddr.String()
 						cancel()
 						return
@@ -97,22 +138,22 @@ func IPCheckingByARP(ifi *net.Interface, targetIP netip.Addr, retry int, interva
 	// we send a gratuitous arp to checking if ip is conflict
 	// we use dad mode(duplicate address detection mode), so
 	// we set source ip to 0.0.0.0
-	packet, err := arp.NewPacket(arp.OperationRequest, ifi.HardwareAddr, netip.MustParseAddr("0.0.0.0"), ethernet.Broadcast, targetIP)
+	packet, err := arp.NewPacket(arp.OperationRequest, ipc.ifi.HardwareAddr, netip.MustParseAddr("0.0.0.0"), ethernet.Broadcast, ipc.ip4)
 	if err != nil {
 		cancel()
 		return err
 	}
 
-	ticker := time.NewTicker(interval)
+	ticker := time.NewTicker(ipc.interval)
 	defer ticker.Stop()
 
 	stop := false
-	for i := 0; i < retry && !stop; i++ {
+	for i := 0; i < ipc.retries && !stop; i++ {
 		select {
 		case <-ctx.Done():
 			stop = true
 		case <-ticker.C:
-			err = client.WriteTo(packet, ethernet.Broadcast)
+			err = ipc.arpClient.WriteTo(packet, ethernet.Broadcast)
 			if err != nil {
 				stop = true
 			}
@@ -120,97 +161,104 @@ func IPCheckingByARP(ifi *net.Interface, targetIP netip.Addr, retry int, interva
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to checking ip %s if it's conflicting: %v", targetIP.String(), err)
+		return fmt.Errorf("failed to checking ip %s if it's conflicting: %v", ipc.ip4.String(), err)
 	}
 
 	if conflictingMac != "" {
 		// found ip conflicting
-		return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ifi.Name,
-			targetIP.String(), targetIP.String(), conflictingMac)
+		ipc.logger.Error("Found IPv4 address conflicting", zap.String("Conflicting IP", ipc.ip4.String()), zap.String("Host", conflictingMac))
+		return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ipc.ifi.Name,
+			ipc.ip4.String(), ipc.ip4.String(), conflictingMac)
 	}
 
+	ipc.logger.Debug("No ipv4 address conflict", zap.String("IPv4 address", ipc.ip4.String()))
 	return nil
 }
 
 var errRetry = errors.New("retry")
 var NDPFoundReply error = errors.New("found ndp reply")
-var NDPFoundError error = errors.New("found err")
-var NDPRetryError error = errors.New("ip conflicting check fails with more than maximum number of retries")
 
-func IPCheckingByNDP(ifi *net.Interface, target netip.Addr, retry int, interval time.Duration) error {
-	client, _, err := ndp.Listen(ifi, ndp.LinkLocal)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
+func (ipc *IPChecker) ipCheckingByNDP() error {
+	defer ipc.ndpClient.Close()
 
 	m := &ndp.NeighborSolicitation{
-		TargetAddress: target,
+		TargetAddress: ipc.ip6,
 		Options: []ndp.Option{
 			&ndp.LinkLayerAddress{
 				Direction: ndp.Source,
-				Addr:      ifi.HardwareAddr,
+				Addr:      ipc.ifi.HardwareAddr,
 			},
 		},
 	}
 
 	var replyMac string
-	replyMac, err = sendReceiveLoop(retry, interval, client, m, target)
-	switch err {
-	case NDPFoundReply:
-		if replyMac != ifi.HardwareAddr.String() {
-			return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ifi.Name,
-				target.String(), target.String(), replyMac)
+	var err error
+	replyMac, err = ipc.sendReceiveLoop(m)
+	if err != nil {
+		if err.Error() == NDPFoundReply.Error() {
+			if replyMac != ipc.ifi.HardwareAddr.String() {
+				ipc.logger.Error("Found IPv6 address conflicting", zap.String("Conflicting IP", ipc.ip6.String()), zap.String("Host", replyMac))
+				return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ipc.ifi.Name,
+					ipc.ip6.String(), ipc.ip6.String(), replyMac)
+			} else {
+				return fmt.Errorf("failed to checking ipv6 address conflicting: %v", err)
+			}
 		}
-	case NDPRetryError:
-		return NDPRetryError
-	default:
-		return fmt.Errorf("failed to checking ip conflicting: %v", err)
 	}
 
+	// no ipv6 conflicting
+	ipc.logger.Debug("No ipv6 address conflicting", zap.String("ipv6 address", ipc.ip6.String()))
 	return nil
 }
 
-func sendReceiveLoop(retry int, interval time.Duration, client *ndp.Conn, msg ndp.Message, dst netip.Addr) (string, error) {
+func (ipc *IPChecker) sendReceiveLoop(msg ndp.Message) (string, error) {
 	var hwAddr string
 	var err error
-	for i := 0; i < retry; i++ {
-		hwAddr, err = sendReceive(client, msg, dst, interval)
+	for i := 0; i < ipc.retries; i++ {
+		hwAddr, err = ipc.sendReceive(msg)
 		switch err {
 		case errRetry:
 			continue
 		case nil:
 			return hwAddr, NDPFoundReply
 		default:
+			// Was the error caused by a read timeout, and should the loop continue?
+			if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+				ipc.logger.Error(err.Error())
+				continue
+			}
 			return "", err
 		}
 	}
 
-	return "", NDPRetryError
+	return "", nil
 }
 
-func sendReceive(client *ndp.Conn, m ndp.Message, target netip.Addr, interval time.Duration) (string, error) {
+func (ipc *IPChecker) sendReceive(m ndp.Message) (string, error) {
 	// Always multicast the message to the target's solicited-node multicast
 	// group as if we have no knowledge of its MAC address.
-	snm, err := ndp.SolicitedNodeMulticast(target)
+	snm, err := ndp.SolicitedNodeMulticast(ipc.ip6)
 	if err != nil {
+		ipc.logger.Error("[NDP]failed to determine solicited-node multicast address", zap.Error(err))
 		return "", fmt.Errorf("failed to determine solicited-node multicast address: %v", err)
 	}
 
 	// we send a gratuitous neighbor solicitation to checking if ip is conflict
-	err = client.WriteTo(m, nil, snm)
+	err = ipc.ndpClient.WriteTo(m, nil, snm)
 	if err != nil {
+		ipc.logger.Error("[NDP]failed to send message", zap.Error(err))
 		return "", fmt.Errorf("failed to send message: %v", err)
 	}
 
-	if err := client.SetReadDeadline(time.Now().Add(interval)); err != nil {
+	if err := ipc.ndpClient.SetReadDeadline(time.Now().Add(ipc.interval)); err != nil {
+		ipc.logger.Error("[NDP]failed to set deadline", zap.Error(err))
 		return "", fmt.Errorf("failed to set deadline: %v", err)
 	}
 
-	msg, _, _, err := client.ReadFrom()
+	msg, _, _, err := ipc.ndpClient.ReadFrom()
 	if err == nil {
 		na, ok := msg.(*ndp.NeighborAdvertisement)
-		if ok && na.TargetAddress.Compare(target) == 0 && len(na.Options) == 1 {
+		if ok && na.TargetAddress.Compare(ipc.ip6) == 0 && len(na.Options) == 1 {
 			// found ndp reply what we want
 			option, ok := na.Options[0].(*ndp.LinkLayerAddress)
 			if ok {
@@ -218,13 +266,6 @@ func sendReceive(client *ndp.Conn, m ndp.Message, target netip.Addr, interval ti
 			}
 		}
 		return "", errRetry
-
 	}
-
-	// Was the error caused by a read timeout, and should the loop continue?
-	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-		return "", errRetry
-	}
-
-	return "", fmt.Errorf("failed to read message: %v", err)
+	return "", err
 }

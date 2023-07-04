@@ -31,7 +31,13 @@ RUN  make GOARCH=${TARGETARCH}   \
 
 WORKDIR /src/cmd/coordinator
 RUN make GOARCH=${TARGETARCH}   \
-        RACE=${RACE} NOSTRIP=${NOSTRIP} NOOPT=${NOOPT} QUIET_MAKE=${QUIET_MAKE} \
+        NOSTRIP=${NOSTRIP} NOOPT=${NOOPT} QUIET_MAKE=${QUIET_MAKE} \
+        DESTDIR_BIN=/tmp/install/${TARGETOS}/${TARGETARCH}/bin \
+        all install
+
+WORKDIR /src/cmd/ifacer
+RUN make GOARCH=${TARGETARCH}   \
+        NOSTRIP=${NOSTRIP} NOOPT=${NOOPT} QUIET_MAKE=${QUIET_MAKE} \
         DESTDIR_BIN=/tmp/install/${TARGETOS}/${TARGETARCH}/bin \
         all install
 

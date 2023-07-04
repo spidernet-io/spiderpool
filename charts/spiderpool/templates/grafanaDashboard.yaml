@@ -1,24 +1,24 @@
-{{- if .Values.feature.grafanaDashboard.install -}}
+{{- if .Values.grafanaDashboard.install -}}
 apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDashboard
 metadata:
   name: {{ default "spiderpool" .Values.global.nameOverride }}
-  namespace: {{ default .Release.Namespace .Values.feature.grafanaDashboard.namespace }}
+  namespace: {{ default .Release.Namespace .Values.grafanaDashboard.namespace }}
   labels:
     {{- include "insight.labels" . | nindent 4 }}
     {{- if .Values.global.commonLabels }}
     {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
-    {{- if .Values.feature.grafanaDashboard.labels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.feature.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+    {{- if .Values.grafanaDashboard.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.labels "context" $ ) | nindent 4 }}
     {{- end }}
-  {{- if or .Values.global.commonAnnotations .Values.feature.grafanaDashboard.annotations }}
+  {{- if or .Values.global.commonAnnotations .Values.grafanaDashboard.annotations }}
   annotations:
     {{- if .Values.global.commonAnnotations }}
     {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
-    {{- if .Values.feature.grafanaDashboard.annotations }}
-    {{- include "tplvalues.render" ( dict "value" .Values.feature.grafanaDashboard.annotations "context" $ ) | nindent 4 }}
+    {{- if .Values.grafanaDashboard.annotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.annotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
 spec:

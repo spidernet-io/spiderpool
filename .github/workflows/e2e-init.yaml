@@ -96,8 +96,8 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            make e2e_init -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
-                -e TEST_IMAGE_TAG=${{ inputs.image_tag }} \
+            make e2e_init_underlay_subnet -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }} \
+                -e E2E_SPIDERPOOL_TAG=${{ inputs.image_tag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
                 -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT=""
@@ -108,7 +108,7 @@ jobs:
         run: |
           echo ${{ github.event.inputs.labels }}
           RESULT=0
-          make e2e_test -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
+          make e2e_test_underlay_subnet -e E2E_CLUSTER_NAME=${{ steps.prepare.outputs.clusterName }}  \
               -e E2E_GINKGO_LABELS=${{ inputs.ref.e2e_labels }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
               -e E2E_IP_FAMILY=${{ inputs.ip_family }} || RESULT=1

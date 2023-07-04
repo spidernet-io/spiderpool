@@ -1,5 +1,5 @@
-{{- if or .Values.feature.enableIPv4 .Values.feature.enableIPv6 -}}
-{{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool .Values.feature.coordinator.enabled -}}
+{{- if or .Values.ipam.enableIPv4 .Values.ipam.enableIPv6 -}}
+{{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool .Values.coordinator.enabled -}}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -71,21 +71,21 @@ spec:
       value: {{ .Release.Namespace | quote }}
     - name: SPIDERPOOL_CONTROLLER_NAME
       value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-    {{- if .Values.feature.coordinator.enabled }}
+    {{- if .Values.coordinator.enabled }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME
-      value: {{ .Values.feature.coordinator.name | quote }}
+      value: {{ .Values.coordinator.name | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_MODE
-      value: {{ .Values.feature.coordinator.tuneMode | quote }}
+      value: {{ .Values.coordinator.tuneMode | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_POD_CIDR_TYPE
-      value: {{ .Values.feature.coordinator.podCIDRType | quote }}
+      value: {{ .Values.coordinator.podCIDRType | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_GATEWAY
-      value: {{ .Values.feature.coordinator.detectGateway | quote }}
+      value: {{ .Values.coordinator.detectGateway | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_IP_CONFLICT
-      value: {{ .Values.feature.coordinator.detectIPConflict | quote }}
+      value: {{ .Values.coordinator.detectIPConflict | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_POD_ROUTES
-      value: {{ .Values.feature.coordinator.tunePodRoutes | quote }}
+      value: {{ .Values.coordinator.tunePodRoutes | quote }}
     {{- end }}
-    {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.feature.enableIPv4 }}
+    {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.ipam.enableIPv4 }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
       value: {{ .Values.clusterDefaultPool.ipv4IPPoolName | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET
@@ -94,12 +94,12 @@ spec:
       value: {{ toJson .Values.clusterDefaultPool.ipv4IPRanges | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_GATEWAY
       value: {{ .Values.clusterDefaultPool.ipv4Gateway | quote }}
-    {{- if .Values.feature.enableSpiderSubnet }}
+    {{- if .Values.ipam.enableSpiderSubnet }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME
       value: {{ .Values.clusterDefaultPool.ipv4SubnetName | quote }}
     {{- end }}
     {{- end }}
-    {{- if and .Values.clusterDefaultPool.installIPv6IPPool .Values.feature.enableIPv6 }}
+    {{- if and .Values.clusterDefaultPool.installIPv6IPPool .Values.ipam.enableIPv6 }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME
       value: {{ .Values.clusterDefaultPool.ipv6IPPoolName | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET
@@ -108,7 +108,7 @@ spec:
       value: {{ toJson .Values.clusterDefaultPool.ipv6IPRanges | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY
       value: {{ .Values.clusterDefaultPool.ipv6Gateway | quote }}
-    {{- if .Values.feature.enableSpiderSubnet }}
+    {{- if .Values.ipam.enableSpiderSubnet }}
     - name: SPIDERPOOL_INIT_DEFAULT_IPV6_SUBNET_NAME
       value: {{ .Values.clusterDefaultPool.ipv6SubnetName | quote }}
     {{- end }}
@@ -117,5 +117,25 @@ spec:
     securityContext:
     {{- toYaml . | nindent 4 }}
     {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "spiderpool.spiderpoolInit.labels" . | nindent 4 }}
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.spiderpoolInit.serviceAccount.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolInit.serviceAccount.annotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.serviceAccount.annotations "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- end }}
 {{- end -}}
 {{- end -}}

@@ -25,10 +25,11 @@ import (
 var (
 	defaultLogPath          = "/var/log/spidernet/coordinator.log"
 	defaultUnderlayVethName = "veth0"
-	defaultOverlayVethName  = "eth0"
-	defaultPodRuleTable     = 100
-	defaultNICPrefix        = "net"
-	BinNamePlugin           = filepath.Base(os.Args[0])
+	// by default, k8s pod's first NIC is eth0
+	defaultOverlayVethName = "eth0"
+	defaultPodRuleTable    = 100
+	defaultNICPrefix       = "net"
+	BinNamePlugin          = filepath.Base(os.Args[0])
 )
 
 type Mode string
@@ -41,36 +42,37 @@ const (
 
 type Config struct {
 	types.NetConf
-	OnlyHardware       bool        `json:"only_hardware,omitempty"`
-	DetectGateway      *bool       `json:"detect_gateway,omitempty"`
-	MacPrefix          string      `json:"mac_prefix,omitempty"`
-	InterfacePrefix    string      `json:"iface_prefix,omitempty"`
-	PodFirstInterface  string      `json:"pod_first_iface,omitempty"`
-	ClusterCIDR        []string    `json:"cluster_cidr,omitempty"`
-	ServiceCIDR        []string    `json:"service_cidr,omitempty"`
-	ExtraCIDR          []string    `json:"extra_cidr,omitempty"`
-	TunePodRoutes      *bool       `json:"tune_pod_routes,omitempty"`
-	PodDefaultRouteNIC string      `json:"pod_default_route_nic,omitempty"`
-	TuneMode           Mode        `json:"tune_mode,omitempty"`
-	HostRuleTable      *int64      `json:"host_rule_table,omitempty"`
-	RPFilter           int32       `json:"rp_filter,omitempty" `
-	IPConflict         *IPConflict `json:"ip_conflict,omitempty"`
-	LogOptions         *LogOptions `json:"log_options,omitempty"`
+	OnlyHardware       bool           `json:"onlyHardware,omitempty"`
+	DetectGateway      *bool          `json:"detectGateway,omitempty"`
+	MacPrefix          string         `json:"podMACPrefix,omitempty"`
+	InterfacePrefix    string         `json:"ifacePrefix,omitempty"`
+	PodFirstInterface  string         `json:"podDefaultInterface,omitempty"`
+	ClusterCIDR        []string       `json:"podCIDR,omitempty"`
+	ServiceCIDR        []string       `json:"serviceCIDR,omitempty"`
+	ExtraCIDR          []string       `json:"extraCIDR,omitempty"`
+	TunePodRoutes      *bool          `json:"tunePodRoutes,omitempty"`
+	PodDefaultRouteNIC string         `json:"podDefaultRouteNic,omitempty"`
+	TuneMode           Mode           `json:"tuneMode,omitempty"`
+	HostRuleTable      *int64         `json:"hostRuleTable,omitempty"`
+	RPFilter           int32          `json:"hostRPFilter,omitempty" `
+	IPConflict         *bool          `json:"detectIPConflict,omitempty"`
+	DetectOptions      *DetectOptions `json:"detectOptions,omitempty"`
+	LogOptions         *LogOptions    `json:"logOptions,omitempty"`
 }
 
-// IPConflict enable ip conflicting check for pod's ip
-type IPConflict struct {
-	Enabled  bool   `json:"enabled,omitempty"`
-	Interval string `json:"interval,omitempty"`
+// DetectOptions enable ip conflicting check for pod's ip
+type DetectOptions struct {
 	Retry    int    `json:"retries,omitempty"`
+	Interval string `json:"interval,omitempty"`
+	TimeOut  string `json:"timeout,omitempty"`
 }
 
 type LogOptions struct {
-	LogLevel        string `json:"log_level"`
-	LogFilePath     string `json:"log_file"`
-	LogFileMaxSize  int    `json:"log_max_size"`
-	LogFileMaxAge   int    `json:"log_max_age"`
-	LogFileMaxCount int    `json:"log_max_count"`
+	LogLevel        string `json:"logLevel"`
+	LogFilePath     string `json:"logFile"`
+	LogFileMaxSize  int    `json:"logMaxSize"`
+	LogFileMaxAge   int    `json:"logMaxAge"`
+	LogFileMaxCount int    `json:"logMaxCount"`
 }
 
 const (
@@ -131,10 +133,6 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		return nil, err
 	}
 
-	if conf.OnlyHardware {
-		return &conf, nil
-	}
-
 	if err = ValidateRoutes(&conf, coordinatorConfig); err != nil {
 		return nil, err
 	}
@@ -145,17 +143,12 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	}
 
 	if conf.IPConflict == nil && coordinatorConfig.DetectIPConflict {
-		conf.IPConflict = &IPConflict{
-			Enabled: true,
-		}
+		conf.IPConflict = pointer.Bool(true)
 	}
 
-	if conf.IPConflict != nil {
-		conf.IPConflict = ValidateIPConflict(conf.IPConflict)
-		_, err = time.ParseDuration(conf.IPConflict.Interval)
-		if err != nil {
-			return nil, fmt.Errorf("invalid interval %s: %v, input like: 1s or 1m", conf.IPConflict.Interval, err)
-		}
+	conf.DetectOptions, err = ValidateDelectOptions(conf.DetectOptions)
+	if err != nil {
+		return nil, err
 	}
 
 	if conf.HostRuleTable == nil && coordinatorConfig.HostRuleTable > 0 {
@@ -171,7 +164,11 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	}
 
 	if conf.TunePodRoutes == nil {
-		conf.TunePodRoutes = pointer.Bool(*coordinatorConfig.TunePodRoutes)
+		conf.TunePodRoutes = coordinatorConfig.TunePodRoutes
+	}
+
+	if conf.TuneMode == "" {
+		conf.TuneMode = Mode(*coordinatorConfig.TuneMode)
 	}
 
 	if conf.PodDefaultRouteNIC == "" && coordinatorConfig.PodDefaultRouteNIC != "" {
@@ -258,18 +255,36 @@ func validateRPFilterConfig(rpfilter int32) error {
 	return nil
 }
 
-func ValidateIPConflict(config *IPConflict) *IPConflict {
+func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
 	if config == nil {
-		return nil
+		return &DetectOptions{
+			Interval: "1s",
+			TimeOut:  "1s",
+			Retry:    3,
+		}, nil
 	}
-	if config.Enabled {
-		if config.Interval == "" {
-			config.Interval = "1s"
-		}
 
-		if config.Retry <= 0 {
-			config.Retry = 3
-		}
+	if config.Retry == 0 {
+		config.Retry = 3
 	}
-	return config
+
+	if config.Interval == "" {
+		config.Interval = "1s"
+	}
+
+	if config.TimeOut == "" {
+		config.TimeOut = "1s"
+	}
+
+	_, err := time.ParseDuration(config.Interval)
+	if err != nil {
+		return nil, fmt.Errorf("invalid detectOptions.interval %s: %v, input like: 1s or 1m", config.Interval, err)
+	}
+
+	_, err = time.ParseDuration(config.TimeOut)
+	if err != nil {
+		return nil, fmt.Errorf("invalid detectOptions.timeout %s: %v, input like: 1s or 1m", config.TimeOut, err)
+	}
+
+	return config, nil
 }

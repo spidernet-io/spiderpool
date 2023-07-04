@@ -5,14 +5,15 @@ package networking
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"regexp"
+	"strings"
+
 	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
-	"net"
-	"regexp"
-	"strings"
 )
 
 var DefaultInterfacesToExclude = []string{
@@ -155,19 +156,56 @@ func getAdders(link netlink.Link, ipfamily int) ([]netlink.Addr, error) {
 	return ipAddress, nil
 }
 
-func IsInterfaceMiss(netns ns.NetNS, iface string) (bool, error) {
-	err := netns.Do(func(_ ns.NetNS) error {
-		_, err := netlink.LinkByName(iface)
-		return err
-	})
-
-	if err == nil {
-		return false, nil
+func CheckInterfaceExist(netns ns.NetNS, iface string) (bool, error) {
+	var exist bool
+	var err error
+	if netns != nil {
+		err = netns.Do(func(_ ns.NetNS) error {
+			exist, err = isInterfaceExist(iface)
+			return err
+		})
+		return exist, err
 	}
+	return isInterfaceExist(iface)
+}
 
-	if strings.EqualFold(err.Error(), ip.ErrLinkNotFound.Error()) {
+func isInterfaceExist(iface string) (bool, error) {
+	_, err := netlink.LinkByName(iface)
+	if err == nil {
 		return true, nil
 	}
-	return false, err
 
+	if _, ok := err.(netlink.LinkNotFoundError); ok {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
+func LinkSetBondSlave(slave string, bond *netlink.Bond) error {
+	l, err := netlink.LinkByName(slave)
+	if err != nil {
+		return fmt.Errorf("failed to LinkByName slave %s: %w", slave, err)
+	}
+
+	if err = netlink.LinkSetBondSlave(l, bond); err != nil {
+		return fmt.Errorf("failed to LinkSetBondSlave: %w", err)
+	}
+	return nil
+}
+
+func LinkAdd(link netlink.Link) error {
+	return linkAddAndSetUp(link)
+}
+
+func linkAddAndSetUp(link netlink.Link) error {
+	var err error
+	if err = netlink.LinkAdd(link); err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("failed to LinkAdd %s: %w", link.Attrs().Name, err)
+	}
+
+	if err = netlink.LinkSetUp(link); err != nil {
+		return fmt.Errorf("failed to set %s up: %w", link.Attrs().Name, err)
+	}
+	return nil
 }

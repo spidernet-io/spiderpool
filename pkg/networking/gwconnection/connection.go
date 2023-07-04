@@ -5,23 +5,46 @@ package gwconnection
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
-	"github.com/go-ping/ping"
+	ping "github.com/prometheus-community/pro-bing"
 )
 
-func DetectGatewayConnection(gw string) error {
-	pingCtl := ping.New(gw)
-	pingCtl.Interval = 100 * time.Millisecond
-	pingCtl.Count = 3
-	pingCtl.Timeout = 2 * time.Second
-	if err := pingCtl.Run(); err != nil {
-		return fmt.Errorf("failed to DetectGatewayConnection: %v", err)
+type Pinger struct {
+	logger *zap.Logger
+	pinger *ping.Pinger
+}
+
+func NewPinger(count int, interval, timeout, gw string, logger *zap.Logger) (*Pinger, error) {
+	pinger := ping.New(gw)
+	pinger.Count = count
+
+	intervalDuration, err := time.ParseDuration(interval)
+	if err != nil {
+		return nil, err
+	}
+	pinger.Interval = intervalDuration
+
+	timeoutDuration, err := time.ParseDuration(timeout)
+	if err != nil {
+		return nil, err
+	}
+	pinger.Timeout = timeoutDuration
+
+	return &Pinger{logger, pinger}, nil
+}
+
+func (p *Pinger) DetectGateway() error {
+	if err := p.pinger.Run(); err != nil {
+		return fmt.Errorf("failed to run DetectGateway: %v", err)
 	}
 
-	stats := pingCtl.Statistics()
+	stats := p.pinger.Statistics()
 	if stats.PacketLoss > 0 {
-		return fmt.Errorf("gateway: %s is unreachable", gw)
+		return fmt.Errorf("gateway %s is unreachable", p.pinger.Addr())
 	}
+
+	p.logger.Sugar().Debugf("gateway %s is reachable", p.pinger.Addr())
 	return nil
 }

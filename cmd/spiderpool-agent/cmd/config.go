@@ -33,10 +33,6 @@ import (
 
 var agentContext = new(AgentContext)
 
-const (
-	defaultNetworkMode = constant.NetworkLegacy
-)
-
 type envConf struct {
 	envName          string
 	defaultValue     string
@@ -91,7 +87,6 @@ type Config struct {
 
 	// configmap
 	IpamUnixSocketPath                string   `yaml:"ipamUnixSocketPath"`
-	NetworkMode                       string   `yaml:"networkMode"`
 	EnableIPv4                        bool     `yaml:"enableIPv4"`
 	EnableIPv6                        bool     `yaml:"enableIPv6"`
 	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
@@ -197,16 +192,6 @@ func (ac *AgentContext) LoadConfigmap() error {
 
 	if ac.Cfg.IpamUnixSocketPath == "" {
 		ac.Cfg.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
-	}
-
-	if ac.Cfg.NetworkMode == "" {
-		ac.Cfg.NetworkMode = defaultNetworkMode
-	} else {
-		if ac.Cfg.NetworkMode != constant.NetworkLegacy &&
-			ac.Cfg.NetworkMode != constant.NetworkStrict &&
-			ac.Cfg.NetworkMode != constant.NetworkSDN {
-			return fmt.Errorf("unrecognized network mode %s", ac.Cfg.NetworkMode)
-		}
 	}
 
 	return nil

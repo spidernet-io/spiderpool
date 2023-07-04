@@ -85,6 +85,14 @@ const (
 	AutoPoolPodAffinityAppKind       = AutoPoolPodAffinityAppPrefix + "/app-kind"
 	AutoPoolPodAffinityAppNS         = AutoPoolPodAffinityAppPrefix + "/app-namespace"
 	AutoPoolPodAffinityAppName       = AutoPoolPodAffinityAppPrefix + "/app-name"
+
+	// SpiderMultusConfig
+	MultusConfAnnoPre          = "multus.spidernet.io"
+	AnnoNetAttachConfName      = MultusConfAnnoPre + "/cr-name"
+	AnnoMultusConfigCNIVersion = MultusConfAnnoPre + "/cni-version"
+
+	// Coordinator
+	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 )
 
 const (
@@ -94,14 +102,15 @@ const (
 )
 
 const (
-	SpiderFinalizer       = SpiderpoolAPIGroup
-	SpiderpoolAPIGroup    = "spiderpool.spidernet.io"
-	SpiderpoolAPIVersion  = "v2beta1"
-	KindSpiderSubnet      = "SpiderSubnet"
-	KindSpiderIPPool      = "SpiderIPPool"
-	KindSpiderEndpoint    = "SpiderEndpoint"
-	KindSpiderReservedIP  = "SpiderReservedIP"
-	KindSpiderCoordinator = "SpiderCoordinator"
+	SpiderFinalizer        = SpiderpoolAPIGroup
+	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"
+	SpiderpoolAPIVersion   = "v2beta1"
+	KindSpiderSubnet       = "SpiderSubnet"
+	KindSpiderIPPool       = "SpiderIPPool"
+	KindSpiderEndpoint     = "SpiderEndpoint"
+	KindSpiderReservedIP   = "SpiderReservedIP"
+	KindSpiderCoordinator  = "SpiderCoordinator"
+	KindSpiderMultusConfig = "SpiderMultusConfig"
 )
 
 const (

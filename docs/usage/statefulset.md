@@ -39,7 +39,7 @@ Check whether the property `enableStatefulSet` of the configmap `spiderpool-conf
 kubectl -n kube-system get configmap spiderpool-conf -o yaml
 ```
 
-If you want to set it `true`, run `helm upgrade spiderpool spiderpool/spiderpool --set feature.enableStatefulSet=true -n kube-system`.
+If you want to set it `true`, run `helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableStatefulSet=true -n kube-system`.
 
 ### Create a StatefulSet
 

@@ -20,9 +20,6 @@ echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
-[ -z "$IMAGE_MULTUS" ] && echo "error, miss IMAGE_MULTUS" && exit 1
-echo "$CURRENT_FILENAME : IMAGE_MULTUS $IMAGE_MULTUS "
-
 [ -z "$CLUSTER_PATH" ] && echo "error, miss CLUSTER_PATH" && exit 1
 echo "$CURRENT_FILENAME : CLUSTER_PATH $CLUSTER_PATH "
 
@@ -31,6 +28,9 @@ echo "$CURRENT_FILENAME : E2E_IP_FAMILY $E2E_IP_FAMILY "
 
 [ -z "$MULTUS_DEFAULT_CNI_CALICO" ] && echo "error, miss MULTUS_DEFAULT_CNI_CALICO" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_CALICO $MULTUS_DEFAULT_CNI_CALICO "
+
+[ -z "$MULTUS_DEFAULT_CNI_CILIUM" ] && echo "error, miss MULTUS_DEFAULT_CNI_CILIUM" && exit 1
+echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_CILIUM $MULTUS_DEFAULT_CNI_CILIUM "
 
 [ -z "$MULTUS_DEFAULT_CNI_NAME" ] && echo "error, miss MULTUS_DEFAULT_CNI_NAME" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_NAME $MULTUS_DEFAULT_CNI_NAME "
@@ -52,20 +52,6 @@ OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
 if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
 
-echo "load $IMAGE_MULTUS to kind cluster"
-kind load docker-image $IMAGE_MULTUS --name ${E2E_CLUSTER_NAME}
-
-# tmplate
-${SED_COMMAND}  's?<<IMAGE_MULTUS>>?'"${IMAGE_MULTUS}"'?'   ${CURRENT_DIR_PATH}/../yamls/multus-daemonset-thick-plugin.tmpl > ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
-${SED_COMMAND} -i 's?<<MULTUS_DEFAULT_CNI_NAME>>?'"${MULTUS_DEFAULT_CNI_NAME}"'?' ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml
-
-kubectl apply -f ${CLUSTER_PATH}/multus-daemonset-thick-plugin.yml --kubeconfig ${E2E_KUBECONFIG}
-# for CRD is applied
-sleep 5
-
-echo "waiting for daemonset/kube-multus-ds ready"
-kubectl rollout status --kubeconfig ${E2E_KUBECONFIG} -n kube-system  daemonset/kube-multus-ds  -w --timeout=60s
-
 Install::MultusCR(){
 
   cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
@@ -80,275 +66,173 @@ EOF
   apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: ${MULTUS_DEFAULT_CNI_NAME}
+    name: ${MULTUS_DEFAULT_CNI_CILIUM}
     namespace: ${MULTUS_CNI_NAMESPACE}
-  spec:
-    config: |-
-      {
-          "cniVersion": "0.3.1",
-          "name": "macvlan-vlan0-underlay",
-          "plugins": [
-              {
-                  "type": "macvlan",
-                  "master": "eth0",
-                  "mode": "bridge",
-                  "ipam": {
-                      "type": "spiderpool"
-                  }
-              },{
-                  "type": "coordinator",
-                  "tune_mode": "underlay",
-                  "detect_gateway": false
-              }
-          ]
-      }
 EOF
 
-  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: ${MULTUS_DEFAULT_CNI_VLAN100}
-    namespace: ${MULTUS_CNI_NAMESPACE}
-  spec:
-    config: |-
-      {
-          "cniVersion": "0.3.1",
-          "name": "macvlan-vlan100-underlay",
-          "plugins": [
-              {
-                  "type": "macvlan",
-                  "master": "eth0.100",
-                  "mode": "bridge",
-                  "ipam": {
-                      "type": "spiderpool"
-                  }
-              },{
-                  "type": "coordinator",
-                  "tune_mode": "underlay",
-                  "tune_pod_routes": false,
-                  "detect_gateway": false
-              }
-          ]
-      }
-EOF
+MACVLAN_CR_TEMPLATE='
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: <<CNI_NAME>>
+  namespace: <<NAMESPACE>>
+spec:
+  config: |-
+    {
+        "cniVersion": "0.3.1",
+        "name": "<<CNI_NAME>>",
+        "plugins": [
+            {
+                "type": "macvlan",
+                "master": "<<MASTER>>",
+                "mode": "bridge",
+                "ipam": {
+                    "type": "spiderpool"
+                }
+            },{
+                "type": "coordinator",
+                "tuneMode": "<<MODE>>"
+            }
+        ]
+    }
+'
 
-  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: ${MULTUS_ADDITIONAL_CNI_VLAN100}
-    namespace: ${MULTUS_CNI_NAMESPACE}
-  spec:
-    config: |-
-      {
-          "cniVersion": "0.3.1",
-          "name": "macvlan-vlan100-overlay",
-          "plugins": [
-              {
-                  "type": "macvlan",
-                  "master": "eth0.100",
-                  "mode": "bridge",
-                  "ipam": {
-                      "type": "spiderpool"
-                  }
-              },{
-                  "type": "coordinator",
-                  "tune_mode": "overlay",
-                  "detect_gateway": false,
-                  "tune_pod_routes": false
-              }
-          ]
-      }
-EOF
+  echo "${MACVLAN_CR_TEMPLATE}" \
+    | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' \
+    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<MODE>>?underlay?g' \
+    | sed 's?<<MASTER>>?eth0?g' \
+    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
-  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: ${MULTUS_ADDITIONAL_CNI_VLAN200}
-    namespace: ${MULTUS_CNI_NAMESPACE}
-  spec:
-    config: |-
-      {
-          "cniVersion": "0.3.1",
-          "name": "macvlan-vlan200-overlay",
-          "plugins": [
-              {
-                  "type": "macvlan",
-                  "master": "eth0.200",
-                  "mode": "bridge",
-                  "ipam": {
-                      "type": "spiderpool"
-                  }
-              },{
-                  "type": "coordinator",
-                  "tune_mode": "overlay",
-                  "tune_pod_routes": false
-              }
-          ]
-      }
-EOF
+  echo "${MACVLAN_CR_TEMPLATE}" \
+    | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' \
+    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<MODE>>?underlay?g' \
+    | sed 's?<<MASTER>>?eth0.100?g' \
+    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
-  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: ${MULTUS_DEFAULT_CNI_VLAN200}
-    namespace: ${MULTUS_CNI_NAMESPACE}
-  spec:
-    config: |-
-      {
-          "cniVersion": "0.3.1",
-          "name": "macvlan-vlan200-underlay",
-          "plugins": [
-              {
-                  "type": "macvlan",
-                  "master": "eth0.200",
-                  "mode": "bridge",
-                  "ipam": {
-                      "type": "spiderpool"
-                  }
-              },{
-                  "type": "coordinator",
-                  "tune_mode": "underlay"
-              }
-          ]
-      }
-EOF
+
+  echo "${MACVLAN_CR_TEMPLATE}" \
+    | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN100}""'?g' \
+    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<MODE>>?overlay?g' \
+    | sed 's?<<MASTER>>?eth0.100?g' \
+    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+
+  echo "${MACVLAN_CR_TEMPLATE}" \
+    | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN200}""'?g' \
+    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<MODE>>?overlay?g' \
+    | sed 's?<<MASTER>>?eth0.200?g' \
+    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+
+  echo "${MACVLAN_CR_TEMPLATE}" \
+    | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' \
+    | sed 's?<<NAMESPACE>>?'"${MULTUS_CNI_NAMESPACE}"'?g' \
+    | sed 's?<<MODE>>?underlay?g' \
+    | sed 's?<<MASTER>>?eth0.200?g' \
+    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+
 }
 
 
 Install::SpiderpoolCR(){
-  SPIDERPOOL_VLAN100_POOL_V4=172.100.0.0/16
-  SPIDERPOOL_VLAN100_POOL_V6=fd00:172:100::/64
-  SPIDERPOOL_VLAN100_RANGES_V4=172.100.0.201-172.100.10.199
-  SPIDERPOOL_VLAN100_RANGES_V6=fd00:172:100::201-fd00:172:100::fff1
-  SPIDERPOOL_VLAN100_GATEWAY_V4=172.100.0.1
-  SPIDERPOOL_VLAN100_GATEWAY_V6=fd00:172:100::1
-  SPIDERPOOL_VLAN200_POOL_V4=172.200.0.0/16
-  SPIDERPOOL_VLAN200_POOL_V6=fd00:172:200::/64
-  SPIDERPOOL_VLAN200_RANGES_V4=172.200.0.201-172.200.10.199
-  SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
-  SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
-  SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
+    SPIDERPOOL_VLAN100_POOL_V4=172.100.0.0/16
+    SPIDERPOOL_VLAN100_POOL_V6=fd00:172:100::/64
+    SPIDERPOOL_VLAN100_RANGES_V4=172.100.0.201-172.100.10.199
+    SPIDERPOOL_VLAN100_RANGES_V6=fd00:172:100::201-fd00:172:100::fff1
+    SPIDERPOOL_VLAN100_GATEWAY_V4=172.100.0.1
+    SPIDERPOOL_VLAN100_GATEWAY_V6=fd00:172:100::1
+    SPIDERPOOL_VLAN200_POOL_V4=172.200.0.0/16
+    SPIDERPOOL_VLAN200_POOL_V6=fd00:172:200::/64
+    SPIDERPOOL_VLAN200_RANGES_V4=172.200.0.201-172.200.10.199
+    SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
+    SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
+    SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
+
+    if [ "${E2E_SPIDERPOOL_ENABLE_SUBNET}" == "true" ] ; then
+        CR_KIND="SpiderSubnet"
+        echo "spiderpool subnet feature is on , install SpiderSubnet CR"
+    else
+        CR_KIND="SpiderIPPool"
+        echo "spiderpool subnet feature is off , install SpiderIPPool CR"
+    fi
+
+    INSTALL_V4_CR(){
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan100-v4
+        spec:
+          gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
+          vlan: 100
+          ipVersion: 4
+          ips:
+          - ${SPIDERPOOL_VLAN100_RANGES_V4}
+          subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
+EOF
+
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan200-v4
+        spec:
+          gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
+          vlan: 200
+          ipVersion: 4
+          ips:
+          - ${SPIDERPOOL_VLAN200_RANGES_V4}
+          subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
+EOF
+    }
+
+    INSTALL_V6_CR(){
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan100-v6
+        spec:
+          gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V6}
+          ipVersion: 6
+          ips:
+          - ${SPIDERPOOL_VLAN100_RANGES_V6}
+          subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
+          vlan: 100
+EOF
+
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: ${CR_KIND}
+        metadata:
+          name: vlan200-v6
+        spec:
+          gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V6}
+          ipVersion: 6
+          ips:
+          - ${SPIDERPOOL_VLAN200_RANGES_V6}
+          subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
+          vlan: 200
+EOF
+    }
+
 
   case ${E2E_IP_FAMILY} in
     ipv4)
-    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
-    metadata:
-      name: vlan100-v4
-    spec:
-      gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
-      vlan: 100
-      ipVersion: 4
-      ips:
-      - ${SPIDERPOOL_VLAN100_RANGES_V4}
-      subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
-EOF
-
-    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
-    metadata:
-      name: vlan200-v4
-    spec:
-      gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
-      vlan: 200
-      ipVersion: 4
-      ips:
-      - ${SPIDERPOOL_VLAN200_RANGES_V4}
-      subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
-EOF
+      INSTALL_V4_CR
       ;;
+
     ipv6)
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan100-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN100_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
-    vlan: 100
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan200-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN200_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
-    vlan: 200
-EOF
+      INSTALL_V6_CR
       ;;
+
     dual)
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan100-v4
-  spec:
-    gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
-    vlan: 100
-    ipVersion: 4
-    ips:
-    - ${SPIDERPOOL_VLAN100_RANGES_V4}
-    subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan200-v4
-  spec:
-    gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
-    vlan: 200
-    ipVersion: 4
-    ips:
-    - ${SPIDERPOOL_VLAN200_RANGES_V4}
-    subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan100-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN100_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
-    vlan: 100
-EOF
-
-  cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-  apiVersion: spiderpool.spidernet.io/v2beta1
-  kind: SpiderSubnet
-  metadata:
-    name: vlan200-v6
-  spec:
-    gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V6}
-    ipVersion: 6
-    ips:
-    - ${SPIDERPOOL_VLAN200_RANGES_V6}
-    subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
-    vlan: 200
-EOF
+      INSTALL_V4_CR
+      INSTALL_V6_CR
       ;;
+
     *)
       echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
       exit 1
@@ -357,5 +241,6 @@ EOF
 
 Install::MultusCR
 Install::SpiderpoolCR
+
 
 echo "$CURRENT_FILENAME : done"

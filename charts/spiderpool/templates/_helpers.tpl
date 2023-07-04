@@ -174,6 +174,28 @@ return the spiderpoolController image
 {{- end -}}
 
 {{/*
+return the multus image
+*/}}
+{{- define "spiderpool.multus.image" -}}
+{{- $registryName := .Values.multus.multusCNI.image.registry -}}
+{{- $repositoryName := .Values.multus.multusCNI.image.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.multus.multusCNI.image.digest }}
+    {{- print "@" .Values.multus.multusCNI.image.digest -}}
+{{- else if .Values.multus.multusCNI.image.tag -}}
+    {{- printf ":%s" .Values.multus.multusCNI.image.tag -}}
+{{- else -}}
+    {{- printf ":v%s" .Chart.AppVersion -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 return the spiderpoolInit image
 */}}
 {{- define "spiderpool.spiderpoolInit.image" -}}
@@ -188,8 +210,8 @@ return the spiderpoolInit image
 {{- end -}}
 {{- if .Values.spiderpoolInit.image.digest }}
     {{- print "@" .Values.spiderpoolInit.image.digest -}}
-{{- else if .Values.spiderpoolAgent.image.tag -}}
-    {{- printf ":%s" .Values.spiderpoolAgent.image.tag -}}
+{{- else if .Values.spiderpoolInit.image.tag -}}
+    {{- printf ":%s" .Values.spiderpoolInit.image.tag -}}
 {{- else -}}
     {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
@@ -209,3 +231,24 @@ insight labels
 {{- define "insight.labels" -}}
 operator.insight.io/managed-by: insight
 {{- end}}
+
+{{/*
+spiderpool multus Common labels
+*/}}
+{{- define "spiderpool.multus.labels" -}}
+helm.sh/chart: {{ include "spiderpool.chart" . }}
+{{ include "spiderpool.multus.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+tier: node
+app: multus
+{{- end }}
+
+{{/*
+spiderpool multus Selector labels
+*/}}
+{{- define "spiderpool.multus.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "spiderpool.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+name: multus
+{{- end }}

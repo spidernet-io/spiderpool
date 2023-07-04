@@ -25,9 +25,9 @@ echo "$CURRENT_FILENAME : SPIDERDOCTOR_REPORT_PATH $SPIDERDOCTOR_REPORT_PATH "
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
 SPIDERDOCTOR_VERSION=${SPIDERDOCTOR_VERSION:-0.2.1}
-SPIDERDOCTOR_IMAGE_REPO=${SPIDERDOCTOR_IMAGE_REPO:-"ghcr.io"}
+E2E_SPIDERDOCTOR_IMAGE_REPO=${E2E_SPIDERDOCTOR_IMAGE_REPO:-"ghcr.io"}
 
-INSTALL_TIME_OUT=600s
+INSTALL_TIME_OUT=300s
 
 SPIDERDOCTOR_HELM_OPTIONS=" --set feature.aggregateReport.enabled=true \
                             --set feature.aggregateReport.controller.reportHostPath=${SPIDERDOCTOR_REPORT_PATH}  "
@@ -49,14 +49,16 @@ case ${E2E_IP_FAMILY} in
     exit 1
 esac
 
-SPIDERDOCTOR_HELM_OPTIONS+=" --set spiderdoctorAgent.image.registry=${SPIDERDOCTOR_IMAGE_REPO} \
- --set spiderdoctorController.image.registry=${SPIDERDOCTOR_IMAGE_REPO} "
+SPIDERDOCTOR_HELM_OPTIONS+=" --set spiderdoctorAgent.image.registry=${E2E_SPIDERDOCTOR_IMAGE_REPO} \
+ --set spiderdoctorController.image.registry=${E2E_SPIDERDOCTOR_IMAGE_REPO} "
 
 echo "SPIDERDOCTOR_HELM_OPTIONS: ${SPIDERDOCTOR_HELM_OPTIONS}"
 
+[ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
+
 helm repo add spiderdoctor https://spidernet-io.github.io/spiderdoctor
 helm repo update
-HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' `
+HELM_IMAGES_LIST=` helm template test spiderdoctor/spiderdoctor --version ${SPIDERDOCTOR_VERSION} ${SPIDERDOCTOR_HELM_OPTIONS} | grep " image: " | tr -d '"'| awk '{print $2}' | uniq `
 
 [ -z "${HELM_IMAGES_LIST}" ] && echo "can't found image of SPIDERDOCTOR" && exit 1
 LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`
@@ -71,8 +73,8 @@ for IMAGE in ${HELM_IMAGES_LIST}; do
 done
 
 # Install SPIDERDOCTOR
-helm upgrade --install spiderdoctor spiderdoctor/spiderdoctor -n kube-system --kubeconfig ${E2E_KUBECONFIG} ${SPIDERDOCTOR_HELM_OPTIONS} --version ${SPIDERDOCTOR_VERSION}
-kubectl wait --for=condition=ready -l app.kubernetes.io/name=spiderdoctor --timeout=${INSTALL_TIME_OUT} pod -n kube-system \
---kubeconfig ${E2E_KUBECONFIG}
+helm upgrade --install spiderdoctor spiderdoctor/spiderdoctor -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${SPIDERDOCTOR_HELM_OPTIONS} --version ${SPIDERDOCTOR_VERSION} 
+kubectl wait --for=condition=ready -l app.kubernetes.io/name=spiderdoctor --timeout=100s pod -n kube-system \
+--kubeconfig ${E2E_KUBECONFIG} 
 
 echo -e "\033[35m Succeed to install spiderdoctor \033[0m"

@@ -100,7 +100,7 @@ spec:
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
         startupProbe:
           httpGet:
-            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/startup
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
@@ -110,7 +110,7 @@ spec:
         {{- end }}
         livenessProbe:
           httpGet:
-            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/liveness
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
@@ -121,7 +121,7 @@ spec:
           timeoutSeconds: 1
         readinessProbe:
           httpGet:
-            host: {{ .Values.feature.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
             path: /v1/runtime/readiness
             port: {{ .Values.spiderpoolAgent.httpPort }}
             scheme: HTTP
@@ -141,7 +141,7 @@ spec:
               - "/bin/sh"
               - "-c"
               - |
-                BIN_LIST="spiderpool coordinator"
+                BIN_LIST="spiderpool coordinator ifacer"
                 for ITEM in ${BIN_LIST} ; do
                 	rm -f /host/opt/cni/bin/${ITEM}.old || true
                 	( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true

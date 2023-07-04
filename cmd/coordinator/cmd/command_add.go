@@ -4,7 +4,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -15,9 +17,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-	"github.com/spidernet-io/spiderpool/internal/version"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
@@ -29,12 +31,22 @@ import (
 func CmdAdd(args *skel.CmdArgs) (err error) {
 	startTime := time.Now()
 
+	k8sArgs := plugincmd.K8sArgs{}
+	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
+		return fmt.Errorf("failed to load CNI ENV args: %w", err)
+	}
+
 	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.Daemonset.GetCoordinatorConfig(daemonset.NewGetCoordinatorConfigParams())
+	resp, err := client.Daemonset.GetCoordinatorConfig(daemonset.NewGetCoordinatorConfigParams().WithGetCoordinatorConfig(
+		&models.GetCoordinatorArgs{
+			PodName:      string(k8sArgs.K8S_POD_NAME),
+			PodNamespace: string(k8sArgs.K8S_POD_NAMESPACE),
+		},
+	))
 	if err != nil {
 		return fmt.Errorf("failed to GetCoordinatorConfig: %v", err)
 	}
@@ -44,6 +56,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return err
 	}
+	if conf.TuneMode == ModeDisable {
+		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
+	}
 
 	logger, err := logutils.SetupFileLogging(conf.LogOptions.LogLevel,
 		conf.LogOptions.LogFilePath, conf.LogOptions.LogFileMaxSize,
@@ -52,32 +67,15 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to init logger: %v ", err)
 	}
 
-	logger.Info("coordinator starting", zap.String("Version", version.CoordinatorBuildDateVersion()),
-		zap.String("Branch", version.CoordinatorGitBranch()),
-		zap.String("Commit", version.CoordinatorGitCommit()),
-		zap.String("Build time", version.CoordinatorBuildDate()),
-		zap.String("Go Version", version.GoString()))
-
-	logger.Sugar().Infof("coordinator run in mode: %v", conf.TuneMode)
-
 	logger = logger.Named(BinNamePlugin).With(
 		zap.String("Action", "ADD"),
 		zap.String("ContainerID", args.ContainerID),
 		zap.String("Netns", args.Netns),
 		zap.String("IfName", args.IfName),
-	)
-
-	k8sArgs := plugincmd.K8sArgs{}
-	if err = types.LoadArgs(args.Args, &k8sArgs); nil != err {
-		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
-		logger.Error(err.Error())
-		return err
-	}
-
-	logger = logger.With(
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
+	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.TuneMode))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
@@ -148,6 +146,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	logger.Sugar().Infof("Get coordinator config: %v", c)
 
+	errg, ctx := errgroup.WithContext(context.Background())
+	defer ctx.Done()
+
 	//  we do detect gateway connection firstly
 	if *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
@@ -168,24 +169,25 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Debug("Get GetDefaultGatewayByName", zap.Strings("Gws", gws))
 
 		for _, gw := range gws {
-			if err = gwconnection.DetectGatewayConnection(gw); err != nil {
-				logger.Error(err.Error())
-				return err
+			p, err := gwconnection.NewPinger(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, gw, logger)
+			if err != nil {
+				return fmt.Errorf("failed to run NewPinger: %v", err)
 			}
+			errg.Go(p.DetectGateway)
 		}
-		if err != nil {
-			return err
-		}
-		logger.Debug("Success to detect gateway", zap.Strings("Gws", gws))
 	}
 
-	if conf.IPConflict != nil && conf.IPConflict.Enabled {
-		err = ipchecking.DoIPConflictChecking(logger, c.netns, conf.IPConflict.Retry, conf.IPConflict.Interval, args.IfName, prevResult.IPs)
+	if conf.IPConflict != nil && *conf.IPConflict {
+		ipc, err := ipchecking.NewIPChecker(c.ipFamily, conf.DetectOptions.Retry, c.currentInterface, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
 		if err != nil {
-			logger.Error(err.Error())
-			return fmt.Errorf("failed to check ip conflict: %w", err)
+			return fmt.Errorf("failed to run NewIPChecker: %w", err)
 		}
-		logger.Debug("Success to check IP conflict")
+		ipc.DoIPConflictChecking(prevResult.IPs, errg)
+	}
+
+	if err = errg.Wait(); err != nil {
+		logger.Error("failed to ip checking", zap.Error(err))
+		return fmt.Errorf("failed to ip checking: %w", err)
 	}
 
 	// overwrite mac address

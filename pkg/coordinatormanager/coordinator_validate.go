@@ -23,7 +23,7 @@ var (
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
 	var errs field.ErrorList
-	if err := validateCoordinatorSpec(coord); err != nil {
+	if err := ValidateCoordinatorSpec(coord.Spec.DeepCopy()); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -36,7 +36,7 @@ func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field
 
 func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
 	var errs field.ErrorList
-	if err := validateCoordinatorSpec(newCoord); err != nil {
+	if err := ValidateCoordinatorSpec(newCoord.Spec.DeepCopy()); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -47,18 +47,18 @@ func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoord
 	return errs
 }
 
-func validateCoordinatorSpec(coord *spiderpoolv2beta1.SpiderCoordinator) *field.Error {
-	if err := validateCoordinatorPodCIDRType(coord.Spec.PodCIDRType); err != nil {
+func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec) *field.Error {
+	if err := validateCoordinatorPodCIDRType(spec.PodCIDRType); err != nil {
 		return err
 	}
-	if err := validateCoordinatorExtraCIDR(coord.Spec.ExtraCIDR); err != nil {
+	if err := validateCoordinatorExtraCIDR(spec.ExtraCIDR); err != nil {
 		return err
 	}
-	if err := validateCoordinatorPodMACPrefix(coord.Spec.PodMACPrefix); err != nil {
+	if err := validateCoordinatorPodMACPrefix(spec.PodMACPrefix); err != nil {
 		return err
 	}
 
-	return validateCoordinatorhostRPFilter(coord.Spec.HostRPFilter)
+	return validateCoordinatorhostRPFilter(spec.HostRPFilter)
 }
 
 func validateCoordinatorPodCIDRType(t string) *field.Error {
@@ -94,6 +94,10 @@ func validateCoordinatorExtraCIDR(cidrs []string) *field.Error {
 
 func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 	if prefix == nil {
+		return nil
+	}
+
+	if *prefix == "" {
 		return nil
 	}
 

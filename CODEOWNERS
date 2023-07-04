@@ -1,15 +1,15 @@
 *  @weizhoublue
 /.github/ @weizhoublue
-/api/ @weizhoublue @Icarus9913 @iiiceoo
+/api/ @weizhoublue @Icarus9913
 /charts/ @weizhoublue
-/cmd/ @weizhoublue @Icarus9913 @iiiceoo
+/cmd/ @weizhoublue @Icarus9913
 /contrib/ @weizhoublue
 /docs/ @weizhoublue @windsonsea @Michelle951 @Jeanine-tw
 /images/ @weizhoublue
-/pkg/ @weizhoublue @Icarus9913 @iiiceoo
+/pkg/ @weizhoublue @Icarus9913
 /test/ @weizhoublue
-/test/e2e/ @weizhoublue @ty-dc @yulng @bzsuni
-/test/doc/ @weizhoublue @ty-dc @yulng @bzsuni
+/test/e2e/ @weizhoublue @ty-dc @bzsuni
+/test/doc/ @weizhoublue @ty-dc @bzsuni
 /tools/ @weizhoublue
 /vendor/ @weizhoublue
 /.gitignore @weizhoublue
@@ -27,4 +27,3 @@
 /.golangci.yaml @weizhoublue
 /MAINTAINERS.md @weizhoublue
 /.trivyignore @weizhoublue
-/internal/version/ @cyclinder

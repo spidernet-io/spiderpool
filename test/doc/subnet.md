@@ -23,3 +23,4 @@
 | I00019  | Change the annotation ipam.spidernet.io/ippool-reclaim to true and the reserved IPPool will be reclaimed.                   |   p3     |       |  done  |       |
 | I00020  | Redundant IPs for automatic IPPool, which cannot be used by other applications             |   p3     |       |  done  |       |
 | I00021  | Pod works correctly when multiple NICs are specified by annotations for applications of the same name             |   p3     |       |  done  |       |
+| I00022  | Dirty data in the subnet should be recycled.             |   p3     |       |  done  |       |

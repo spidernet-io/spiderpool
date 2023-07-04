@@ -38,9 +38,9 @@ require (
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v0.26.3
-	k8s.io/code-generator v0.26.1
-	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/controller-runtime v0.14.5
+	k8s.io/code-generator v0.26.3
+	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749
+	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/controller-tools v0.10.0
 )
 
@@ -57,7 +57,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spidernet-io/e2eframework v0.0.0-20230403061847-445757b963b3
 	github.com/spidernet-io/spiderdoctor v0.3.0
-	github.com/tigera/operator v1.29.4
+	github.com/tigera/operator v1.30.4
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/sync v0.2.0
@@ -84,10 +84,10 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
-	github.com/go-openapi/jsonpointer v0.19.5 // indirect
-	github.com/go-openapi/jsonreference v0.20.0 // indirect
+	github.com/go-openapi/jsonpointer v0.19.6 // indirect
+	github.com/go-openapi/jsonreference v0.20.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
-	github.com/gobuffalo/flect v0.2.5 // indirect
+	github.com/gobuffalo/flect v0.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
@@ -139,7 +139,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.14.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	github.com/tigera/api v0.0.0-20230403181112-f6b531acbe56 // indirect
+	github.com/tigera/api v0.0.0-20230406222214-ca74195900cb // indirect
 	github.com/toqueteos/webbrowser v1.2.0 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
@@ -154,13 +154,13 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	k8s.io/apiextensions-apiserver v0.26.1 // indirect
+	k8s.io/apiextensions-apiserver v0.26.3 // indirect
 	k8s.io/component-base v0.26.3 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20221110221610-a28e98eb7c70 // indirect
+	k8s.io/kube-openapi v0.0.0-20230123231816-1cb3ae25d79a // indirect
 	k8s.io/kubectl v0.26.3 // indirect
-	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
+	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )

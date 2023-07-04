@@ -27,7 +27,7 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 			var ipv4Gateway string
 			if d.IPv4Gateway != nil {
 				ipv4Gateway = *d.IPv4Gateway
-				routes = append(routes, genDefaultRoute(nic, ipv4Gateway))
+				routes = append(routes, GenDefaultRoute(nic, ipv4Gateway))
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv4,
@@ -44,7 +44,7 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 			var ipv6Gateway string
 			if d.IPv6Gateway != nil {
 				ipv6Gateway = *d.IPv6Gateway
-				routes = append(routes, genDefaultRoute(nic, ipv6Gateway))
+				routes = append(routes, GenDefaultRoute(nic, ipv6Gateway))
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv6,
@@ -68,23 +68,15 @@ func ConvertResultsToIPConfigsAndAllRoutes(results []*types.AllocationResult) ([
 	for _, r := range results {
 		ips = append(ips, r.IP)
 		routes = append(routes, r.Routes...)
-
-		if r.CleanGateway {
-			continue
-		}
-
-		if r.IP.Gateway != "" {
-			routes = append(routes, genDefaultRoute(*r.IP.Nic, r.IP.Gateway))
-		}
 	}
 
 	return ips, routes
 }
 
-func genDefaultRoute(nic, gateway string) *models.Route {
+func GenDefaultRoute(nic, gateway string) *models.Route {
 	var route *models.Route
 	if govalidator.IsIPv4(gateway) {
-		dst := "0.0.0.0/0"
+		dst := constant.IPv4AllNet
 		route = &models.Route{
 			IfName: &nic,
 			Dst:    &dst,
@@ -93,7 +85,7 @@ func genDefaultRoute(nic, gateway string) *models.Route {
 	}
 
 	if govalidator.IsIPv6(gateway) {
-		dst := "::/0"
+		dst := constant.IPv6AllNet
 		route = &models.Route{
 			IfName: &nic,
 			Dst:    &dst,

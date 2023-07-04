@@ -367,7 +367,7 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 		logger.Sugar().Infof("Allocate IPv%d IP %s to NIC %s from IPPool %s", c.IPVersion, *ip.Address, nic, pool)
 		result = &types.AllocationResult{
 			IP:           ip,
-			Routes:       convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
+			Routes:       inheritIPPoolRoutes(cleanGateway, nic, c.PToIPPool[pool].Spec.Gateway, c.PToIPPool[pool].Spec.Routes),
 			CleanGateway: cleanGateway,
 		}
 

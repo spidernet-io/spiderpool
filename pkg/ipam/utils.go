@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -46,6 +47,51 @@ func getCustomRoutes(pod *corev1.Pod) ([]*models.Route, error) {
 	return convert.ConvertAnnoPodRoutesToOAIRoutes(annoPodRoutes), nil
 }
 
+// isDefaultRoute checks whether the route is default route or not
+func isDefaultRoute(route models.Route) bool {
+	if strings.Compare(*route.Dst, constant.IPv4AllNet) == 0 ||
+		strings.Compare(*route.Dst, constant.IPv6AllNet) == 0 {
+		return true
+	}
+
+	return false
+}
+
+func hasDefaultRoute(routes []*models.Route) bool {
+	for index := range routes {
+		if isDefaultRoute(*routes[index]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// inheritIPPoolRoutes will assemble the IPPool's routes and default route with gateway.
+// if the IPPool's routes has default route, it will write over the gateway default route.
+func inheritIPPoolRoutes(cleanGateway bool, nic string, poolGateway *string, specRoutes []spiderpoolv2beta1.Route) []*models.Route {
+	poolRoutes := convert.ConvertSpecRoutesToOAIRoutes(nic, specRoutes)
+	if !hasDefaultRoute(poolRoutes) {
+		if poolGateway != nil {
+			poolRoutes = append(poolRoutes, defaultRoute(cleanGateway, nic, *poolGateway)...)
+		}
+	}
+
+	return poolRoutes
+}
+
+func defaultRoute(cleanGateway bool, nic, gateway string) []*models.Route {
+	var routes []*models.Route
+
+	// cleanGateway means we don't need default route
+	if cleanGateway {
+		return nil
+	}
+
+	routes = append(routes, convert.GenDefaultRoute(nic, gateway))
+	return routes
+}
+
 func groupCustomRoutes(ctx context.Context, customRoutes []*models.Route, results []*types.AllocationResult) error {
 	if len(customRoutes) == 0 {
 		return nil
@@ -57,15 +103,30 @@ func groupCustomRoutes(ctx context.Context, customRoutes []*models.Route, result
 			return err
 		}
 
+		// move the NIC custom routes to a new slice
+		var nicCustomRoutes []*models.Route
 		for i := 0; i < len(customRoutes); i++ {
 			route := customRoutes[i]
 			if ipNet.Contains(net.ParseIP(*route.Gw)) {
 				route.IfName = res.IP.Nic
-				res.Routes = append(res.Routes, route)
-
+				nicCustomRoutes = append(nicCustomRoutes, route)
 				customRoutes = append((customRoutes)[:i], (customRoutes)[i+1:]...)
 				i--
 			}
+		}
+
+		// write over the IPPool gateway default route with customRoutes default route
+		for i := 0; i < len(res.Routes); i++ {
+			for j := 0; j < len(nicCustomRoutes); j++ {
+				if isDefaultRoute(*nicCustomRoutes[j]) && isDefaultRoute(*res.Routes[i]) {
+					res.Routes[i] = nicCustomRoutes[j]
+					nicCustomRoutes = append((nicCustomRoutes)[:j], (nicCustomRoutes)[j+1:]...)
+					j--
+				}
+			}
+		}
+		if len(nicCustomRoutes) != 0 {
+			res.Routes = append(res.Routes, nicCustomRoutes...)
 		}
 	}
 

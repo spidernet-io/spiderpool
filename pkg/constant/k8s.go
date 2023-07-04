@@ -144,3 +144,8 @@ const (
 	MultusNetworkAttachmentAnnot = "k8s.v1.cni.cncf.io/networks"
 	ResourceNameAnnot            = "k8s.v1.cni.cncf.io/resourceName"
 )
+
+const (
+	IPv4AllNet = "0.0.0.0/0"
+	IPv6AllNet = "::/0"
+)

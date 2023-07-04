@@ -9,6 +9,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -63,8 +64,14 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 	}
 
 	if iw.EnableSpiderSubnet {
-		if err := iw.setControllerSubnet(ctx, ipPool); err != nil {
+		subnet, err := iw.setControllerSubnet(ctx, ipPool)
+		if err != nil {
 			return apierrors.NewInternalError(fmt.Errorf("failed to set the reference of the controller Subnet: %v", err))
+		}
+
+		// inherit gateway,vlan,routes from corresponding SpiderSubnet if not set
+		if subnet != nil {
+			inheritSubnetProperties(subnet, ipPool)
 		}
 	}
 
@@ -93,18 +100,18 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 	return nil
 }
 
-func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) error {
+func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) (*spiderpoolv2beta1.SpiderSubnet, error) {
 	logger := logutils.FromContext(ctx)
 
 	// TODO(iiiceoo): There was an occasional bug.
 	owner := metav1.GetControllerOf(ipPool)
 	if v, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; ok && owner != nil && v == owner.Name {
-		return nil
+		return nil, nil
 	}
 
 	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
 	if err != nil {
-		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err)
+		return nil, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err)
 	}
 
 	var subnetList spiderpoolv2beta1.SpiderSubnetList
@@ -113,17 +120,17 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 		&subnetList,
 		client.MatchingLabels{constant.LabelSubnetCIDR: cidr},
 	); err != nil {
-		return fmt.Errorf("failed to list Subnets: %v", err)
+		return nil, fmt.Errorf("failed to list Subnets: %v", err)
 	}
 
 	if len(subnetList.Items) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	subnet := subnetList.Items[0]
-	if !metav1.IsControlledBy(ipPool, &subnet) {
-		if err := ctrl.SetControllerReference(&subnet, ipPool, iw.Client.Scheme()); err != nil {
-			return fmt.Errorf("failed to set owner reference: %v", err)
+	subnet := subnetList.Items[0].DeepCopy()
+	if !metav1.IsControlledBy(ipPool, subnet) {
+		if err := ctrl.SetControllerReference(subnet, ipPool, iw.Client.Scheme()); err != nil {
+			return nil, fmt.Errorf("failed to set owner reference: %v", err)
 		}
 		logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
 	}
@@ -133,5 +140,21 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 		logger.Sugar().Infof("Set label %s: %s", constant.LabelIPPoolOwnerSpiderSubnet, subnet.Name)
 	}
 
-	return nil
+	return subnet, nil
+}
+
+func inheritSubnetProperties(subnet *spiderpoolv2beta1.SpiderSubnet, ipPool *spiderpoolv2beta1.SpiderIPPool) {
+	if subnet.Spec.Gateway != nil && ipPool.Spec.Gateway == nil {
+		ipPool.Spec.Gateway = pointer.String(*subnet.Spec.Gateway)
+	}
+
+	if subnet.Spec.Vlan != nil && ipPool.Spec.Vlan == nil {
+		ipPool.Spec.Vlan = pointer.Int64(*subnet.Spec.Vlan)
+	}
+
+	if len(subnet.Spec.Routes) != 0 && len(ipPool.Spec.Routes) == 0 {
+		routes := make([]spiderpoolv2beta1.Route, len(subnet.Spec.Routes))
+		copy(routes, subnet.Spec.Routes)
+		ipPool.Spec.Routes = routes
+	}
 }

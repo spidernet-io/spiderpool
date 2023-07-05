@@ -52,6 +52,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
 ## 架构
 
 ![arch](./docs/images/spiderpool-arch.jpg)
+
 Spiderpool 架构如上所示，包含了以下组件：
 
 * Spiderpool controller: 是一组 deployment，实施了对各种 CRD 校验、状态更新、IP 回收、自动 IP 池的管理等

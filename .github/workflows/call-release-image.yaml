@@ -76,7 +76,8 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: 'v2.0.1' #do not upgrade, or else go error
+          # do not upgrade, or else go error
+          cosign-release: 'v2.0.1'
 
       - name: Getting Build Arg
         id: arg

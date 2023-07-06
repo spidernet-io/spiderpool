@@ -21,6 +21,7 @@ import (
 var _ = Describe("MacvlanOverlayOne", Serial, Label("overlay", "one-nic", "coordinator"), func() {
 
 	BeforeEach(func() {
+
 		defer GinkgoRecover()
 		task = new(spiderdoctorV1.Nethttp)
 		plan = new(spiderdoctorV1.SchedulePlan)
@@ -31,7 +32,10 @@ var _ = Describe("MacvlanOverlayOne", Serial, Label("overlay", "one-nic", "coord
 
 		name = "one-macvlan-overlay-" + tools.RandomName()
 
-		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.CalicoCNIName)
+		// TODO(tao.yang), Unable to run pod with annotation: "v1.multus-cni.io/default-network"
+		// Reference issue：https://github.com/k8snetworkplumbingwg/multus-cni/issues/1118
+		// Remarks are reserved first, and verification is performed after the problem is resolved.
+		// annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.CalicoCNIName)
 		annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanOverlayVlan100)
 
 		if frame.Info.IpV4Enabled && frame.Info.IpV6Enabled {
@@ -74,6 +78,7 @@ var _ = Describe("MacvlanOverlayOne", Serial, Label("overlay", "one-nic", "coord
 	})
 
 	It("spiderdoctor connectivity should be succeed", Label("C00002"), func() {
+
 		// create task spiderdoctor crd
 		task.Name = name
 		// schedule

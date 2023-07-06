@@ -186,6 +186,9 @@ function install_cilium() {
 
     # Install cilium
     helm upgrade --install cilium cilium/cilium --wait -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${CILIUM_HELM_OPTIONS}
+
+    # no matching resources found
+    sleep 3
     kubectl wait --for=condition=ready -l k8s-app=cilium --timeout=${INSTALL_TIME_OUT} pod -n kube-system \
     --kubeconfig ${E2E_KUBECONFIG}
 

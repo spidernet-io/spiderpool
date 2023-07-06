@@ -73,7 +73,11 @@ for IMAGE in ${HELM_IMAGES_LIST}; do
 done
 
 # Install SPIDERDOCTOR
-helm upgrade --install spiderdoctor spiderdoctor/spiderdoctor -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${SPIDERDOCTOR_HELM_OPTIONS} --version ${SPIDERDOCTOR_VERSION} 
+helm upgrade --install spiderdoctor spiderdoctor/spiderdoctor -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${SPIDERDOCTOR_HELM_OPTIONS} --version ${SPIDERDOCTOR_VERSION}
+
+# no matching resources found
+sleep 3
+
 kubectl wait --for=condition=ready -l app.kubernetes.io/name=spiderdoctor --timeout=100s pod -n kube-system \
 --kubeconfig ${E2E_KUBECONFIG} 
 

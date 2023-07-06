@@ -211,6 +211,8 @@ func (ipc *IPChecker) ipCheckingByNDP() error {
 	return nil
 }
 
+// sendReceiveLoop send ndp message and waiting for receive.
+// Copyright Authors of mdlayher/ndp: https://github.com/mdlayher/ndp/
 func (ipc *IPChecker) sendReceiveLoop(msg ndp.Message) (string, error) {
 	var hwAddr string
 	var err error
@@ -234,6 +236,10 @@ func (ipc *IPChecker) sendReceiveLoop(msg ndp.Message) (string, error) {
 	return "", nil
 }
 
+// sendReceive send and receive ndp message,return error if error occurred.
+// if the returned string isn't empty, it indicates that there are an
+// IPv6 address conflict.
+// Copyright Authors of mdlayher/ndp: https://github.com/mdlayher/ndp/
 func (ipc *IPChecker) sendReceive(m ndp.Message) (string, error) {
 	// Always multicast the message to the target's solicited-node multicast
 	// group as if we have no knowledge of its MAC address.

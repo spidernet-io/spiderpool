@@ -98,7 +98,6 @@ endif
 	@echo ""
 	@ KUBECONFIG=$(E2E_KUBECONFIG) kubectl get pods -o wide -A
 
-
 .PHONY: setup_kind
 setup_kind:
 	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null

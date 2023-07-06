@@ -67,13 +67,13 @@ func (r *calicoIPPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	if coordinator.Status.Phase == synced && reflect.DeepEqual(coordinator.Status.PodCIDR, podCIDR) {
+	if coordinator.Status.Phase == synced && reflect.DeepEqual(coordinator.Status.OverlayPodCIDR, podCIDR) {
 		return ctrl.Result{}, nil
 	}
 
 	origin := coordinator.DeepCopy()
 	coordinator.Status.Phase = synced
-	coordinator.Status.PodCIDR = podCIDR
+	coordinator.Status.OverlayPodCIDR = podCIDR
 	if err := r.client.Status().Patch(ctx, &coordinator, client.MergeFrom(origin)); err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}

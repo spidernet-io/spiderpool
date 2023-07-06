@@ -87,7 +87,7 @@ func DelFromRuleTable(src *net.IPNet, ruleTable int) error {
 	rule := netlink.NewRule()
 	rule.Table = ruleTable
 	rule.Src = src
-	return netlink.RuleAdd(rule)
+	return netlink.RuleDel(rule)
 }
 
 // AddRoute add static route to specify rule table

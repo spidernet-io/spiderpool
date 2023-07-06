@@ -28,8 +28,8 @@ type CoordinatorConfig struct {
 	// detect IP conflict
 	DetectIPConflict bool `json:"detectIPConflict,omitempty"`
 
-	// extra c ID r
-	ExtraCIDR []string `json:"extraCIDR"`
+	// hijack c ID r
+	HijackCIDR []string `json:"hijackCIDR"`
 
 	// host r p filter
 	HostRPFilter int64 `json:"hostRPFilter,omitempty"`
@@ -37,9 +37,13 @@ type CoordinatorConfig struct {
 	// host rule table
 	HostRuleTable int64 `json:"hostRuleTable,omitempty"`
 
-	// pod c ID r
+	// mode
 	// Required: true
-	PodCIDR []string `json:"podCIDR"`
+	Mode *string `json:"mode"`
+
+	// overlay pod c ID r
+	// Required: true
+	OverlayPodCIDR []string `json:"overlayPodCIDR"`
 
 	// pod default route n i c
 	PodDefaultRouteNIC string `json:"podDefaultRouteNIC,omitempty"`
@@ -51,10 +55,6 @@ type CoordinatorConfig struct {
 	// Required: true
 	ServiceCIDR []string `json:"serviceCIDR"`
 
-	// tune mode
-	// Required: true
-	TuneMode *string `json:"tuneMode"`
-
 	// tune pod routes
 	// Required: true
 	TunePodRoutes *bool `json:"tunePodRoutes"`
@@ -64,15 +64,15 @@ type CoordinatorConfig struct {
 func (m *CoordinatorConfig) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validatePodCIDR(formats); err != nil {
+	if err := m.validateMode(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateOverlayPodCIDR(formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.validateServiceCIDR(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTuneMode(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -86,9 +86,18 @@ func (m *CoordinatorConfig) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *CoordinatorConfig) validatePodCIDR(formats strfmt.Registry) error {
+func (m *CoordinatorConfig) validateMode(formats strfmt.Registry) error {
 
-	if err := validate.Required("podCIDR", "body", m.PodCIDR); err != nil {
+	if err := validate.Required("mode", "body", m.Mode); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *CoordinatorConfig) validateOverlayPodCIDR(formats strfmt.Registry) error {
+
+	if err := validate.Required("overlayPodCIDR", "body", m.OverlayPodCIDR); err != nil {
 		return err
 	}
 
@@ -98,15 +107,6 @@ func (m *CoordinatorConfig) validatePodCIDR(formats strfmt.Registry) error {
 func (m *CoordinatorConfig) validateServiceCIDR(formats strfmt.Registry) error {
 
 	if err := validate.Required("serviceCIDR", "body", m.ServiceCIDR); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *CoordinatorConfig) validateTuneMode(formats strfmt.Registry) error {
-
-	if err := validate.Required("tuneMode", "body", m.TuneMode); err != nil {
 		return err
 	}
 

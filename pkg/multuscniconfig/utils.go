@@ -34,6 +34,11 @@ import (
 )
 
 const (
+	CalicoType  spiderpoolv2beta1.CniType = "calico"
+	CiliumType  spiderpoolv2beta1.CniType = "cilium-cni"
+	FlannelType spiderpoolv2beta1.CniType = "flannel"
+	WeaveType   spiderpoolv2beta1.CniType = "weave-net"
+	KubeOvnType spiderpoolv2beta1.CniType = "kube-ovn"
 	MacVlanType spiderpoolv2beta1.CniType = "macvlan"
 	IpVlanType  spiderpoolv2beta1.CniType = "ipvlan"
 	SriovType   spiderpoolv2beta1.CniType = "sriov"
@@ -57,7 +62,7 @@ type SRIOVNetConf struct {
 	Type         string                   `json:"type"`
 	ResourceName string                   `json:"resourceName"` // required
 	IPAM         spiderpoolcmd.IPAMConfig `json:"ipam"`
-	Vlan         *int                     `json:"vlan,omitempty"`
+	Vlan         *int32                   `json:"vlan,omitempty"`
 	DeviceID     string                   `json:"deviceID,omitempty"`
 }
 

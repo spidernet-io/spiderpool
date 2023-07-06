@@ -273,7 +273,7 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 		Namespace: multusConfig.Namespace,
 		Name:      netAttachName,
 	}, netAttachDef)
-	if nil != err {
+	if err != nil {
 		if apierrors.IsNotFound(err) {
 			isExist = false
 		} else {
@@ -356,6 +356,17 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		plugins = append(plugins, coordinatorCNIConf)
 	}
 
+	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
+	cniVersion := cmd.CniVersion031
+	if annCniVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
+		if !slices.Contains(cmd.SupportCNIVersions, annCniVersion) {
+			return nil, fmt.Errorf("%w: unsupported CNI version %s", constant.ErrWrongInput, annCniVersion)
+		}
+		cniVersion = annCniVersion
+	}
+
+	var confStr string
+	var err error
 	switch multusConfSpec.CniType {
 	case MacVlanType:
 		macvlanCNIConf := generateMacvlanCNIConf(*multusConfSpec)
@@ -368,6 +379,11 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 				multusConfSpec.MacvlanConfig.Bond)
 			plugins = append([]interface{}{subVlanCNIConf}, plugins...)
 		}
+		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
+		}
+
 	case IpVlanType:
 		ipvlanCNIConf := generateIPvlanCNIConf(*multusConfSpec)
 		// head insertion
@@ -379,6 +395,11 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 				multusConfSpec.IPVlanConfig.Bond)
 			plugins = append([]interface{}{subVlanCNIConf}, plugins...)
 		}
+
+		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
+		}
 	case SriovType:
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
@@ -386,42 +407,21 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		sriovCNIConf := generateSriovCNIConf(*multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{sriovCNIConf}, plugins...)
-	case CustomType:
 
+		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
+		}
+	case CalicoType, CiliumType, FlannelType, WeaveType, KubeOvnType, CustomType:
+		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
+			confStr = *multusConfSpec.CustomCNIConfig
+		}
 	default:
 		// It's impossible get into the default branch
 		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, multusConfSpec.CniType)
 	}
 
-	cniVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]
-	if !ok {
-		// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
-		cniVersion = cmd.CniVersion031
-	} else {
-		if !slices.Contains(cmd.SupportCNIVersions, cniVersion) {
-			return nil, fmt.Errorf("%w: unsupported CNI version %s", constant.ErrWrongInput, cniVersion)
-		}
-	}
-
 	fmt.Printf("Length: %d, Cap: %d\n", len(plugins), cap(plugins))
-
-	var confStr string
-	if multusConfSpec.CniType != CustomType {
-		rawList := map[string]interface{}{
-			"name":       netAttachName,
-			"cniVersion": cniVersion,
-			"plugins":    plugins,
-		}
-		bytes, err := json.Marshal(rawList)
-		if nil != err {
-			return nil, err
-		}
-		confStr = string(bytes)
-	} else {
-		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
-			confStr = *multusConfSpec.CustomCNIConfig
-		}
-	}
 
 	netAttachDef := &netv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -435,7 +435,6 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			Config: confStr,
 		}
 	}
-
 	return netAttachDef, nil
 }
 
@@ -517,7 +516,7 @@ func generateSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) 
 	}
 
 	if multusConfSpec.SriovConfig.VlanID != nil {
-		netConf.Vlan = pointer.Int(int(*multusConfSpec.SriovConfig.VlanID))
+		netConf.Vlan = multusConfSpec.SriovConfig.VlanID
 	}
 
 	// set default IPPools for spiderpool cni configuration
@@ -559,11 +558,11 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 
 	// coordinatorSpec could be nil, and we just need the coorinator CNI specified and use the default configuration
 	if coordinatorSpec != nil {
-		if coordinatorSpec.TuneMode != nil {
-			coordinatorNetConf.TuneMode = coordinatorcmd.Mode(*coordinatorSpec.TuneMode)
+		if coordinatorSpec.Mode != nil {
+			coordinatorNetConf.Mode = coordinatorcmd.Mode(*coordinatorSpec.Mode)
 		}
-		if len(coordinatorSpec.ExtraCIDR) != 0 {
-			coordinatorNetConf.ExtraCIDR = coordinatorSpec.ExtraCIDR
+		if len(coordinatorSpec.HijackCIDR) != 0 {
+			coordinatorNetConf.HijackCIDR = coordinatorSpec.HijackCIDR
 		}
 		if coordinatorSpec.PodMACPrefix != nil {
 			coordinatorNetConf.MacPrefix = *coordinatorSpec.PodMACPrefix
@@ -589,4 +588,18 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 	}
 
 	return coordinatorNetConf
+}
+
+func marshalCniConfig2String(netAttachName, cniVersion string, plugins interface{}) (string, error) {
+	rawList := map[string]interface{}{
+		"name":       netAttachName,
+		"cniVersion": cniVersion,
+		"plugins":    plugins,
+	}
+	bytes, err := json.Marshal(rawList)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
 }

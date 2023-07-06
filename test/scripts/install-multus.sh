@@ -26,12 +26,6 @@ echo "$CURRENT_FILENAME : CLUSTER_PATH $CLUSTER_PATH "
 [ -z "$E2E_IP_FAMILY" ] && echo "error, miss E2E_IP_FAMILY" && exit 1
 echo "$CURRENT_FILENAME : E2E_IP_FAMILY $E2E_IP_FAMILY "
 
-[ -z "$MULTUS_DEFAULT_CNI_CALICO" ] && echo "error, miss MULTUS_DEFAULT_CNI_CALICO" && exit 1
-echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_CALICO $MULTUS_DEFAULT_CNI_CALICO "
-
-[ -z "$MULTUS_DEFAULT_CNI_CILIUM" ] && echo "error, miss MULTUS_DEFAULT_CNI_CILIUM" && exit 1
-echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_CILIUM $MULTUS_DEFAULT_CNI_CILIUM "
-
 [ -z "$MULTUS_DEFAULT_CNI_NAME" ] && echo "error, miss MULTUS_DEFAULT_CNI_NAME" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_NAME $MULTUS_DEFAULT_CNI_NAME "
 
@@ -54,22 +48,6 @@ if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
 
 Install::MultusCR(){
 
-  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: ${MULTUS_DEFAULT_CNI_CALICO}
-    namespace: ${RELEASE_NAMESPACE}
-EOF
-
-  cat << EOF | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-  apiVersion: k8s.cni.cncf.io/v1
-  kind: NetworkAttachmentDefinition
-  metadata:
-    name: ${MULTUS_DEFAULT_CNI_CILIUM}
-    namespace: ${RELEASE_NAMESPACE}
-EOF
-
 MACVLAN_CR_TEMPLATE='
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
@@ -91,7 +69,7 @@ spec:
                 }
             },{
                 "type": "coordinator",
-                "tuneMode": "<<MODE>>"
+                "mode": "<<MODE>>"
             }
         ]
     }

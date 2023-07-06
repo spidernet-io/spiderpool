@@ -348,7 +348,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			cc.caliCtrlCanncel = nil
 		}
 		coordCopy.Status.Phase = synced
-		coordCopy.Status.PodCIDR = k8sPodCIDR
+		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 	case calico:
 		if _, err := cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(calicoConfig); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -425,9 +425,9 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			break
 		}
 		coordCopy.Status.Phase = synced
-		coordCopy.Status.PodCIDR = ciliumPodCIDR
+		coordCopy.Status.OverlayPodCIDR = ciliumPodCIDR
 		if ipam == "kubernetes" {
-			coordCopy.Status.PodCIDR = k8sPodCIDR
+			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 		}
 	}
 

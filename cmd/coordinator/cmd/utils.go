@@ -136,6 +136,7 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 		zap.String("PodVethName", c.podVethName),
 		zap.String("PodVethMac", c.podVethHwAddress.String()))
 
+	// do any clean?
 	for _, ipAddr := range c.currentAddress {
 		if err = networking.AddStaticNeighborTable(c.hostVethName, ipAddr.IP, c.podVethHwAddress); err != nil {
 			logger.Error(err.Error())

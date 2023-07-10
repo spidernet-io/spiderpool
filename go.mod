@@ -60,7 +60,7 @@ require (
 	github.com/tigera/operator v1.30.4
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	go.uber.org/multierr v1.11.0
-	golang.org/x/sync v0.2.0
+	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.9.0
 )
 

@@ -18,7 +18,7 @@ echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 echo "$CURRENT_FILENAME : E2E_IP_FAMILY $E2E_IP_FAMILY "
 
 DEFAULT_INTERFACE=eth0
-VLAN_GATEWAY_CONTAINER="vlan-gateway"
+VLAN_GATEWAY_CONTAINER=${VLAN_GATEWAY_CONTAINER:-"vlan-gateway"}
 VLANID1=100
 VLANID2=200
 VLANID1_IP=172.100.0.100/16
@@ -57,7 +57,8 @@ done
 
 # run a test container as a vlan gateway and client
 # note: ip address of this container should be consist with spiderpool's gateway
-docker rm ${VLAN_GATEWAY_CONTAINER} -f &>/dev/null
+docker stop ${VLAN_GATEWAY_CONTAINER}  &>/dev/null || true
+docker rm ${VLAN_GATEWAY_CONTAINER}  &>/dev/null || true
 
 containerID=`docker run -itd  --name ${VLAN_GATEWAY_CONTAINER} --network kind --cap-add=NET_ADMIN --privileged ${E2E_VLAN_GATEWAY_IMAGE}`
 docker exec ${containerID} ip link add link ${DEFAULT_INTERFACE} name ${DEFAULT_INTERFACE}.${VLANID1} type vlan id ${VLANID1}

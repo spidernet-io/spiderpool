@@ -93,8 +93,15 @@ var _ = Describe("MacvlanOverlayOne", Serial, Label("overlay", "one-nic", "coord
 		targetAgent.TestClusterIp = true
 		targetAgent.TestMultusInterface = frame.Info.MultusEnabled
 		targetAgent.TestNodePort = true
+
 		targetAgent.TestIPv4 = &frame.Info.IpV4Enabled
-		targetAgent.TestIPv6 = &frame.Info.IpV6Enabled
+		if common.CheckCiliumFeatureOn() {
+			// TODO(tao.yang), set testIPv6 to false, reference issue: https://github.com/spidernet-io/spiderpool/issues/2007
+			testIPv6 := false
+			targetAgent.TestIPv6 = &testIPv6
+		} else {
+			targetAgent.TestIPv6 = &frame.Info.IpV6Enabled
+		}
 
 		target.TargetAgent = targetAgent
 		task.Spec.Target = target
@@ -130,9 +137,10 @@ var _ = Describe("MacvlanOverlayOne", Serial, Label("overlay", "one-nic", "coord
 				Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running spiderdoctor task timeout")
 			default:
 				err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-				Expect(err).NotTo(HaveOccurred(), " spiderdoctor nethttp crd get failed")
+				Expect(err).NotTo(HaveOccurred(), "spiderdoctor nethttp crd get failed,err is %v", err)
 
 				if taskCopy.Status.Finish == true {
+					GinkgoWriter.Printf("spiderdoctor's nethttp execution result %+v", taskCopy)
 					for _, v := range taskCopy.Status.History {
 						if v.Status == "succeed" {
 							err1 = nil

@@ -73,9 +73,8 @@ nav:
       - SpiderSubnet: concepts/spidersubnet.md
       - Underlay and overlay solutions: concepts/solution.md
   - CLI Reference:
-      - spiderpoolctl: cmdref/spiderpoolctl.md
-      - spiderpool-controller: cmdref/spiderpool-controller.md
-      - spiderpool-agent: cmdref/spiderpool-agent.md
+      - spiderpool-controller: reference/spiderpool-controller.md
+      - spiderpool-agent: reference/spiderpool-agent.md
   - Development:
       - Contribution Guide: develop/contributing.md
       - Code of Conduct: develop/contributing.md

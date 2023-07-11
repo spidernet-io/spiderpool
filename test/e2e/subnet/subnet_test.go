@@ -1497,6 +1497,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		BeforeEach(func() {
 			// Ability to create fixed IPPools for applications with very long names
 			longAppName = "long-app-name-" + tools.RandomName() + tools.RandomName()
+			v4SubnetNameList, v6SubnetNameList = []string{}, []string{}
 
 			if frame.Info.IpV4Enabled {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)

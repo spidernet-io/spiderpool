@@ -737,18 +737,21 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		GinkgoWriter.Println("Check for another NIC comment to take effect.")
 		if frame.Info.IpV4Enabled {
-			command := fmt.Sprintf("ip a | grep '%s' |grep '%s'", common.NIC2, v4Pool.Spec.IPs[0])
+			command := fmt.Sprintf("ip a show '%s' |grep '%s'", common.NIC2, v4Pool.Spec.IPs[0])
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
-			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
-			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v. \n", command)
+			errOut, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v, error is %v, %v \n", command, err, string(errOut))
 		}
 		if frame.Info.IpV6Enabled {
-			command := fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC2, v6Pool.Spec.IPs[0])
+			// The ipv6 address on the network interface will be abbreviated. For example fd00:0c3d::2 becomes fd00:c3d::2.
+			// Abbreviate the expected ipv6 address and use it in subsequent assertions.
+			ipv6Addr := strings.Replace(v6Pool.Spec.IPs[0], ":0", ":", -1)
+			command := fmt.Sprintf("ip -6 a show '%s' | grep '%s'", common.NIC2, ipv6Addr)
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
-			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
-			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v. \n", command)
+			errOut, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v, error is %v, %v \n", command, err, string(errOut))
 		}
 
 		GinkgoWriter.Printf("delete pod %v/%v. \n", nsName, podName)

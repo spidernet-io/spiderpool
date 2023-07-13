@@ -41,7 +41,16 @@ type IPPoolSpec struct {
 	NamespaceAffinity *metav1.LabelSelector `json:"namespaceAffinity,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	NamespaceName []string `json:"namespaceName,omitempty"`
+
+	// +kubebuilder:validation:Optional
 	NodeAffinity *metav1.LabelSelector `json:"nodeAffinity,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	NodeName []string `json:"nodeName,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	MultusName []string `json:"multusName,omitempty"`
 
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
@@ -89,7 +98,9 @@ type PoolIPAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=".status.allocatedIPCount",description="allocatedIPCount",name="ALLOCATED-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalIPCount",description="totalIPCount",name="TOTAL-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".spec.default",description="default",name="DEFAULT",type=boolean
-// +kubebuilder:printcolumn:JSONPath=".spec.disable",description="disable",name="DISABLE",type=boolean
+// +kubebuilder:printcolumn:JSONPath=".spec.disable",description="disable",name="DISABLE",type=boolean,priority=10
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",description="disable",name="NodeName",type=string,priority=10
+// +kubebuilder:printcolumn:JSONPath=".spec.multusName",description="disable",name="MultusName",type=string,priority=10
 // +kubebuilder:printcolumn:JSONPath=`.spec.podAffinity.matchLabels['ipam\.spidernet\.io/app\-namespace']`,description="AppNamespace",name="APP-NAMESPACE",type=string,priority=10
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

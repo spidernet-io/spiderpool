@@ -43,7 +43,18 @@ spec:
     - description: disable
       jsonPath: .spec.disable
       name: DISABLE
+      priority: 10
       type: boolean
+    - description: disable
+      jsonPath: .spec.nodeName
+      name: NodeName
+      priority: 10
+      type: string
+    - description: disable
+      jsonPath: .spec.multusName
+      name: MultusName
+      priority: 10
+      type: string
     - description: AppNamespace
       jsonPath: .spec.podAffinity.matchLabels['ipam\.spidernet\.io/app\-namespace']
       name: APP-NAMESPACE
@@ -88,6 +99,10 @@ spec:
                 format: int64
                 type: integer
               ips:
+                items:
+                  type: string
+                type: array
+              multusName:
                 items:
                   type: string
                 type: array
@@ -139,6 +154,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-map-type: atomic
+              namespaceName:
+                items:
+                  type: string
+                type: array
               nodeAffinity:
                 description: A label selector is a label query over a set of resources.
                   The result of matchLabels and matchExpressions are ANDed. An empty
@@ -187,6 +206,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-map-type: atomic
+              nodeName:
+                items:
+                  type: string
+                type: array
               podAffinity:
                 description: A label selector is a label query over a set of resources.
                   The result of matchLabels and matchExpressions are ANDed. An empty

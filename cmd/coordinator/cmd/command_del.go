@@ -5,21 +5,21 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types"
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"os"
 
-	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
-
 	"github.com/containernetworking/cni/pkg/skel"
+	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 func CmdDel(args *skel.CmdArgs) (err error) {
@@ -28,7 +28,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to load CNI ENV args: %w", err)
 	}
 
-	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
+	client, err := openapi.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
 	if err != nil {
 		return err
 	}

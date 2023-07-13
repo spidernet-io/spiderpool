@@ -221,10 +221,25 @@ func (in *IPPoolSpec) DeepCopyInto(out *IPPoolSpec) {
 		*out = new(v1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.NamespaceName != nil {
+		in, out := &in.NamespaceName, &out.NamespaceName
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.NodeAffinity != nil {
 		in, out := &in.NodeAffinity, &out.NodeAffinity
 		*out = new(v1.LabelSelector)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.NodeName != nil {
+		in, out := &in.NodeName, &out.NodeName
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.MultusName != nil {
+		in, out := &in.MultusName, &out.MultusName
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.Default != nil {
 		in, out := &in.Default, &out.Default

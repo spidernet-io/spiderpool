@@ -41,7 +41,7 @@ spec:
     metadata:
       annotations:
         $(if [[ "${E2E_MULTUS_ENABLED}" == "true" ]];then
-        echo "v1.multus-cni.io/default-network: ${MULTUS_CNI_NAMESPACE}/${MULTUS_DEFAULT_CNI_NAME}"
+        echo "v1.multus-cni.io/default-network: ${RELEASE_NAMESPACE}/${MULTUS_DEFAULT_CNI_NAME}"
         fi)
       name: $NAME
       labels:

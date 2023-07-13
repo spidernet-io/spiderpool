@@ -20,9 +20,9 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
   underlay CNI 网卡的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。
   多 CNI 协同能有效降低集群节点的硬件一致要求。
 
-* 增强了开源社区中的 underlay CNI，如[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-  [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
+* 增强了开源社区中的 underlay CNI，如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、
+  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)、
+  [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)、
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni) 等等，
   打通 Pod 和宿主机的连通性，使得 clusterIP 访问、应用本地健康检测等通信成功，并且支持 Pod 的 IP 冲突检测、网关可达性检测等。
 
@@ -30,7 +30,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
 
 ## underlay CNI
 
-云原生网络中出现了两种技术类别，"overlay 网络方案" 和 "underlay 网络方案"，
+云原生网络中出现了两种技术类别，"overlay 网络方案"和 "underlay 网络方案"，
 云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。
 
 [文章](./concepts/solution-zh_CN.md) 对两种方案的 IPAM 和网络性能做了简单比较，能够更好说明 Spiderpool 的特点和使用场景。
@@ -53,13 +53,13 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
 
 Spiderpool 架构如上所示，包含了以下组件：
 
-* Spiderpool controller: 是一组 deployment，实施了对各种 CRD 校验、状态更新、IP 回收、自动 IP 池的管理等
+* Spiderpool controller：是一组 deployment，实现了对各种 CRD 校验、状态更新、IP 回收、自动 IP 池的管理等
 
-* Spiderpool agent：是一组 daemonset，其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施信息同步
+* Spiderpool agent：是一组 daemonset，其帮助 Spiderpool plugin 实现 IP 分配，帮助 coordinator plugin 实现信息同步
 
-* Spiderpool plugin：在每个主机上的二进制插件，供 CNI 调用，实施 IP 分配
+* Spiderpool plugin：在每个主机上的二进制插件，供 CNI 调用，实现 IP 分配
 
-* coordinator plugin：在每个主机上的二进制插件，供 CNI 调用，实施多网卡路由调协、IP 冲突检查、宿主机联通等
+* coordinator plugin：在每个主机上的二进制插件，供 CNI 调用，实现多网卡路由调协、IP 冲突检查、宿主机联通等
 
 * ifacer plugin：在每个主机上的二进制插件，帮助 macvlan 、ipvlan 等 CNI 动态创建 bond 和 vlan 子接口
 
@@ -67,13 +67,13 @@ Spiderpool 架构如上所示，包含了以下组件：
 可配合 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) 来实施多网卡和 CNI 配置管理。
 
 任何支持第三方 IPAM 插件的 CNI 项目，都可以配合 Spiderpool，例如：
-[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
-[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
-[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni),
-[Calico CNI](https://github.com/projectcalico/calico),
+[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan)、
+[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)、
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)、
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)、
+[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)、
+[Calico CNI](https://github.com/projectcalico/calico)、
 [Weave CNI](https://github.com/weaveworks/weave)
 
 ## 应用场景：一个或多个 underlay CNI 协同
@@ -81,7 +81,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 ![arch_underlay](./images/spiderpool-underlay.jpg)
 
 如上所示，Spiderpool 工作在 underlay 模式下，可配合 underlay CNI
-（例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+（例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ）实现：
 
 * 为 underlay CNI 提供丰富的 IPAM 能力，包括共享/固定 IP、多网卡 IP 分配、双栈支持等
@@ -106,19 +106,19 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 ![underlay](./images/underlay.jpg)
 
-例如上图所示，在同一个集群下具备不同网络能力的节点， 有的节点具备 SR-IOV 网卡，可运行 SR-IOV CNI，
-有的节点具备普通的网卡，可运行 Macvlan CNI ，有的节点网络访问受限（例如二层网络转发受限的 vmware 虚拟机），可运行 ipvlan CNI。
+例如上图所示，在同一个集群下具备不同网络能力的节点，有的节点具备 SR-IOV 网卡，可运行 SR-IOV CNI，
+有的节点具备普通的网卡，可运行 Macvlan CNI，有的节点网络访问受限（例如二层网络转发受限的 vmware 虚拟机），可运行 ipvlan CNI。
 
 ## 应用场景：overlay CNI 和 underlay CNI 协同
 
 ![arch_underlay](./images/spiderpool-overlay.jpg)
 
 如上所示，Spiderpool 工作在 overlay 模式下，使用 multus 同时为 Pod 插入一张 overlay 网卡
-（例如 [Calico](https://github.com/projectcalico/calico), [Cilium](https://github.com/cilium/cilium) ）
-和若干张 underlay 网卡（例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+（例如 [Calico](https://github.com/projectcalico/calico)、[Cilium](https://github.com/cilium/cilium) ）
+和若干张 underlay 网卡（例如 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) ），可实现：
 
-* 为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等
+* 为 underlay CNI 提供丰富的 IPAM 能力，包括共享/固定 IP、多网卡 IP 分配、双栈支持等
 
 * 为 Pod 的多个 underlay CNI 网卡和 overlay 网卡调协路由，以实现请求向和回复向数据路径一致，确保网络通信畅通
 
@@ -136,7 +136,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 ![overlay](./images/overlay.jpg)
 
-## 应用场景 ：underlay CNI 运行在公有云环境和虚拟机
+## 应用场景：underlay CNI 运行在公有云环境和虚拟机
 
 在公有云、openstack、vmvare 等环境下实施 underlay CNI，通常只能使用特定环境的厂商 CNI 插件，因为这些环境通常有如下限制：
 
@@ -185,10 +185,10 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 * 可以设置集群级别的默认 IP 池，也可租户级别的默认 IP 池。同时，IP 池既可以被整个集群共享，
   也可被限定为被一个租户使用。可参考[例子](./usage/ippool-affinity-namespace.md)。
 
-* 对于开源的 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-  [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
-  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-  [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
+* 对于开源的 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、
+  [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan)、
+  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)、
+  [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni)、
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni)等，
   可帮助解决 ClusterIP 访问、Pod 宿主机健康检查等问题。
   可参考[例子](./usage/get-started-macvlan.md)。

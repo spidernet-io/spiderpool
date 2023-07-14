@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 
@@ -136,9 +137,34 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 		zap.String("PodVethName", c.podVethName),
 		zap.String("PodVethMac", c.podVethHwAddress.String()))
 
-	// do any clean?
+	// do any cleans?
+	nList, err := netlink.NeighList(0, c.ipFamily)
+	if err != nil {
+		logger.Warn("failed to get NeighList, ignore clean dirty neigh table")
+	}
+
+	hostVethlink, err := netlink.LinkByName(c.hostVethName)
+	if err != nil {
+		logger.Error("failed to setup neigh table, couldn't find host veth link", zap.Error(err))
+		return fmt.Errorf("failed to setup neigh table, couldn't find host veth link: %v", err)
+	}
+
+	for idx := range nList {
+		for _, ipAddr := range c.currentAddress {
+			if nList[idx].IP.Equal(ipAddr.IP) {
+				if err = netlink.NeighDel(&nList[idx]); err != nil && !os.IsNotExist(err) {
+					logger.Warn("failed to clean dirty neigh table, it may cause the pod can't communicate with the node, please clean it up manually",
+						zap.String("dirty neigh table", nList[idx].String()))
+				} else {
+					logger.Debug("successfully cleaned up the dirty neigh table", zap.String("dirty neigh table", nList[idx].String()))
+				}
+				break
+			}
+		}
+	}
+
 	for _, ipAddr := range c.currentAddress {
-		if err = networking.AddStaticNeighborTable(c.hostVethName, ipAddr.IP, c.podVethHwAddress); err != nil {
+		if err = networking.AddStaticNeighborTable(hostVethlink.Attrs().Index, ipAddr.IP, c.podVethHwAddress); err != nil {
 			logger.Error(err.Error())
 			return err
 		}
@@ -149,8 +175,14 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 	}
 
 	err = c.netns.Do(func(_ ns.NetNS) error {
+		podVethlink, err := netlink.LinkByName(c.podVethName)
+		if err != nil {
+			logger.Error("failed to setup neigh table, couldn't find pod veth link", zap.Error(err))
+			return fmt.Errorf("failed to setup neigh table, couldn't find pod veth link: %v", err)
+		}
+
 		for _, ipAddr := range c.hostAddress {
-			if err := networking.AddStaticNeighborTable(c.podVethName, ipAddr.IP, c.hostVethHwAddress); err != nil {
+			if err := networking.AddStaticNeighborTable(podVethlink.Attrs().Index, ipAddr.IP, c.hostVethHwAddress); err != nil {
 				return err
 			}
 		}
@@ -213,7 +245,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 	var err error
 	err = c.netns.Do(func(_ ns.NetNS) error {
 		// traffic sent to the pod its node is forwarded via veth0/eth0
-		// eq:  "ip r add <ipAddressOnNode> dev veth0/eth0 table <ruleTable> "
+		// eq: "ip r add <ipAddressOnNode> dev veth0/eth0 table <ruleTable>"
 		for _, hostAddress := range c.hostAddress {
 			ipNet := networking.ConvertMaxMaskIPNet(hostAddress.IP)
 			if err = networking.AddRoute(logger, c.currentRuleTable, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
@@ -238,22 +270,61 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 
 	for idx := range c.currentAddress {
 		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
+
+		// do any cleans dirty rule tables
+		filterRule := netlink.NewRule()
+		filterRule.Table = c.hostRuleTable
+		filterRule.Dst = ipNet
+		filtedRules, err := netlink.RuleListFiltered(netlink.FAMILY_V4, filterRule, netlink.RT_FILTER_DST)
+		if err != nil {
+			logger.Warn("failed to fetch rule list filter by RT_FILTER_DST, ignore clean dirty rule table")
+		}
+
+		for idx := range filtedRules {
+			if err = netlink.RuleDel(&filtedRules[idx]); err != nil && !os.IsNotExist(err) {
+				logger.Warn("failed to clean dirty rule table, it may cause the pod can't communicate with the node, please clean it up manually",
+					zap.String("dirty rule table", filtedRules[idx].String()))
+			} else {
+				logger.Debug("successfully cleaned up the dirty rule table", zap.String("dirty rule table", filtedRules[idx].String()))
+			}
+		}
+
 		if err = networking.AddToRuleTable(ipNet, c.hostRuleTable); err != nil {
 			logger.Error("failed to AddToRuleTable", zap.String("Dst", ipNet.String()), zap.Error(err))
 			return fmt.Errorf("failed to AddToRuleTable: %v", err)
 		}
-	}
 
-	// set routes for host
-	// equivalent: ip add  <chainedIPs> dev <hostVethName> table  on host
-	for _, hostAddress := range c.currentAddress {
-		ipNet := networking.ConvertMaxMaskIPNet(hostAddress.IP)
+		// do any cleans dirty route tables
+		filterRoute := &netlink.Route{
+			Dst:   ipNet,
+			Table: c.hostRuleTable,
+		}
+
+		filterRoutes, err := netlink.RouteListFiltered(c.ipFamily, filterRoute, netlink.RT_FILTER_TABLE)
+		if err != nil {
+			logger.Warn("failed to fetch route list filter by RT_FILTER_DST, ignore clean dirty route table")
+		}
+
+		for idx := range filterRoutes {
+			if networking.IPNetEqual(filterRoutes[idx].Dst, ipNet) {
+				if err = netlink.RouteDel(&filterRoutes[idx]); err != nil && !os.IsNotExist(err) {
+					logger.Warn("failed to clean dirty route table, it may cause the pod can't communicate with the node, please clean it up manually",
+						zap.String("dirty route table", filterRoutes[idx].String()))
+				} else {
+					logger.Debug("successfully cleaned up the dirty route table", zap.String("dirty route table", filterRoutes[idx].String()))
+				}
+			}
+		}
+
+		// set routes for host
+		// equivalent: ip add  <chainedIPs> dev <hostVethName> table  on host
 		if err = networking.AddRoute(logger, c.hostRuleTable, netlink.SCOPE_LINK, c.hostVethName, ipNet, nil, nil); err != nil {
 			logger.Error("failed to AddRouteTable for preInterfaceIPAddress", zap.Error(err))
 			return fmt.Errorf("failed to AddRouteTable for preInterfaceIPAddress: %v", err)
 		}
 		logger.Info("add route for to pod in host", zap.String("Dst", ipNet.String()))
 	}
+
 	return nil
 }
 

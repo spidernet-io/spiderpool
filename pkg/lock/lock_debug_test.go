@@ -40,6 +40,8 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 
 		It("holds the lock timeout", func() {
 			go func() {
+				defer GinkgoRecover()
+
 				mutex.Lock()
 				time.Sleep(selfishTimeout)
 				mutex.Unlock()
@@ -50,6 +52,8 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 
 		It("ignores the timeout when unlocking", func() {
 			go func() {
+				defer GinkgoRecover()
+
 				mutex.Lock()
 				time.Sleep(selfishTimeout)
 				mutex.UnlockIgnoreTime()
@@ -76,6 +80,8 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 
 		It("holds the lock timeout", func() {
 			go func() {
+				defer GinkgoRecover()
+
 				rwMutex.Lock()
 				time.Sleep(selfishTimeout)
 				rwMutex.Unlock()
@@ -86,6 +92,8 @@ var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
 
 		It("ignores the timeout when unlocking", func() {
 			go func() {
+				defer GinkgoRecover()
+
 				rwMutex.Lock()
 				time.Sleep(selfishTimeout)
 				rwMutex.UnlockIgnoreTime()

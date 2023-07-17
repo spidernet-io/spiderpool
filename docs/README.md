@@ -4,7 +4,7 @@
 
 Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
 
-<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:800px;" />
+![CNCF](./images/cncf-cloud-gophers-transparent.png)
 
 ## Introduction
 
@@ -48,20 +48,15 @@ the unique features and use cases of Spiderpool.
 
 Why underlay network solutions? The following requirements necessitate underlay network solutions:
 
-* For applications with high-performance network requirements, the underlay network solution
-  can provide advantages of low network latency and high throughput, compared to the overlay network solution.
+* Network performance. Network performance advantages, like low latency, high throughput, low forwarding overhead of node’s CPU.  It fits to applications like financial and AI application.
 
-* Traditional host applications, directly expose services through host IP, unable to accept
-  NAT mapping, or different transaction stream have already been separated based on VLAN subnets.
-  When migrating to the kubernetes, underlay network solutions can provide lower migration costs of the network.
+* Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of netowrk, application can directly use Pod IP for cluster east-west and north-south communication.
 
-* Network security requirements, like using firewall or VLAN isolation to implement
-  network security, like using traditional network observation means to implement monitoring.
+* Network security. In the data center, it may be used to enforce network security to Pod, like firewall and isolating communication with VLAN.  The underlay network solution could expose the Pod packet without tunnel encapsulation, and meet requirements.
 
-* The underlay network solution allows for flexible customization of VLAN subnets for
-  application access, applications could occupy independent subnet to ensure bandwidth isolation
-  of underlying network. It suits for applications such as [kubevirt](https://github.com/kubevirt/kubevirt),
-  CSI storage project, log collection project, etc.
+* Bandwitdth. It can help Pod to customize the exit network interface of the node, thereby ensuring bandwidth isolation of the underlying subnet. It can help components such as [kubevirt](https://github.com/kubevirt/kubevirt), storage, and logging, to transmit massive amounts of data.
+
+* Multi clusters. For multi clusters, all Pods of multi clusters are connected to the underlay network, so they could communicate smoothly without the need to deploy additional components for cluster connectivity.
 
 ## Architecture
 
@@ -98,13 +93,13 @@ Any CNI project compatible with third-party IPAM plugins can work well with Spid
 [Calico CNI](https://github.com/projectcalico/calico),
 [Weave CNI](https://github.com/weaveworks/weave)
 
-## Use case: one or more underlay CNIs
+## Use case: underlay CNIs access layer2
 
 ![arch_underlay](./images/spiderpool-underlay.jpg)
 
 In underlay networks, Spiderpool can work with underlay CNIs such as
-[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
-and [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) to provide the following benefits:
+[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) to provide the following benefits:
 
 * Rich IPAM capabilities for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation,
   and dual-stack support

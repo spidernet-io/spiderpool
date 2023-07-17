@@ -6,7 +6,7 @@ Multiple IP pools can be set for a Pod for the usage of backup IP resources.
 
 ### Set up Spiderpool
 
-Follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
+Follow the guide [installation](./install/underlay/get-started-kind.md) to install Spiderpool.
 
 ### Backup IPPool effect
 

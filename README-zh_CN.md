@@ -227,7 +227,7 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 * 设置全局的预留 IP，让 IPAM 不分配出这些 IP 地址，这样能避免与集群外部的已用 IP 冲突。
   可参考[例子](./docs/usage/reserved-ip.md)。
 
-* 分配和释放 IP 地址的高效性能，可参考[报告](./docs/concepts/performance-zh_CH.md)。
+* 分配和释放 IP 地址的高效性能，可参考[报告](./docs/concepts/performance-zh_CN.md)。
 
 * 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](./docs/usage/gc.md)。
 

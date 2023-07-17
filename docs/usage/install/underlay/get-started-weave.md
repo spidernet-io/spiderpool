@@ -30,21 +30,19 @@
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.install=false
     ```
-    
+
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
-    > 
-    > "ipam.enableSpiderSubnet=true": SpiderPool's subnet feature needs to be enabled.
-   
-    Wait for Pod Running and create a subnet for Pod (SpiderSubnet):
+
+    Wait for Pod Running and create the IPPool used by Pod:
 
      ```shell
      cat << EOF | kubectl apply -f -
      apiVersion: spiderpool.spidernet.io/v2beta1
-     kind: SpiderSubnet
+     kind: SpiderIPPool
      metadata:
-       name: weave-subnet-v4
+       name: weave-ippool-v4
        labels:  
          ipam.spidernet.io/subnet-cidr: 10-32-0-0-12
      spec:
@@ -54,19 +52,20 @@
      EOF
      ```
 
-     > `Weave` uses `10.32.0.0/12` as the cluster's default subnet, and thus a SpiderSubnet with the same subnet needs to be created in this case
+     > `Weave` uses `10.32.0.0/12` as the cluster's default subnet, and thus a SpiderIPPool with the same subnet needs to be created in this case.
 
 3. Verify installation
 
     ```shell
     [root@node1 ~]# kubectl get po -n kube-system | grep spiderpool
-    spiderpool-agent-lgdw7                  1/1     Running   0          65s
-    spiderpool-agent-x974l                  1/1     Running   0          65s
-    spiderpool-controller-9df44bc47-hbhbg   1/1     Running   0          65s
-    [root@node1 ~]# kubectl get ss
+    spiderpool-agent-7hhkz                   1/1     Running     0              13m
+    spiderpool-agent-kxf27                   1/1     Running     0              13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+    spiderpool-init                          0/1     Completed   0              13m
+    [root@node1 ~]# kubectl get sp
     NAME               VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-    weave-subnet-v4    4         10.32.0.0/12   0                    12901            false
-    ```
+    weave-ippool-v4    4         10.32.0.0/12   0                    12901            false
+   ```
 
 ## Switch `Weave`'s `IPAM` to Spiderpool
 
@@ -135,7 +134,7 @@ cat <<< $(jq '.plugins[0].ipam.type = "spiderpool" ' /etc/cni/net.d/10-weave.con
 
 ## Create applications
 
-Specify that the Pods will be allocated IPs from that SpiderSubnet via the annotation `ipam.spidernet.io/subnet`:
+Specify that the Pods will be allocated IPs from that SpiderSubnet via the annotation `ipam.spidernet.io/ippool`:
 
   ```shell
   [root@node1 ~]# cat << EOF | kubectl apply -f -
@@ -151,7 +150,7 @@ Specify that the Pods will be allocated IPs from that SpiderSubnet via the annot
     template:
       metadata:
         annotations:
-          ipam.spidernet.io/subnet: '{"ipv4":["weave-subnet-v4"]}'
+          ipam.spidernet.io/ippool: '{"ipv4":["weave-ippool-v4"]}'
         labels:
           app: nginx
       spec:
@@ -163,7 +162,7 @@ Specify that the Pods will be allocated IPs from that SpiderSubnet via the annot
   EOF
   ```
 
-> _spec.template.metadata.annotations.ipam.spidernet.io/subnet_: specifies that the Pods will be assigned IPs from SpiderSubnet: `weave-subnet-v4`.
+> _spec.template.metadata.annotations.ipam.spidernet.io/subnet_: specifies that the Pods will be assigned IPs from SpiderSubnet: `weave-ippool-v4`.
 
 The Pods have been created and allocated IP addresses from Spiderpool Subnets:
 
@@ -172,14 +171,10 @@ The Pods have been created and allocated IP addresses from Spiderpool Subnets:
   NAME                     READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
   nginx-5745d9b5d7-2rvn7   1/1     Running   0          8s    10.32.22.190   node1   <none>           <none>
   nginx-5745d9b5d7-5ssck   1/1     Running   0          8s    10.32.35.87    node2   <none>           <none>
-  ```
 
-Spiderpool has automatically created an IP pool for the Nginx application named `auto-deployment-default-nginx-v4-a0ae75eb5d47`, with a pool size of 2 IP addresses:
-
-  ```shell
   [root@node1 ~]# kubectl get sp
-  NAME                                            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-  auto-deployment-default-nginx-v4-a0ae75eb5d47   4         10.32.0.0/12    2                    2                false
+  NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+  weave-ippool-v4   4         10.32.0.0/12    2                    2                false
   ```
 
 To test connectivity, let's use inter-node communication between Pods as an example:

@@ -29,22 +29,20 @@
 
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool 
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.install=false
     ```
-   
-    > `ipam.enableSpiderSubnet=true`: SpiderPool 的 subnet 功能需要被打开。
-    > 
+
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
-    等待 Pod Running， 创建 Pod 的子网(SpiderSubnet):
+    等待 Pod Running， 创建 Pod 所使用的 IP 池:
 
      ```shell
      cat << EOF | kubectl apply -f -
      apiVersion: spiderpool.spidernet.io/v2beta1
-     kind: SpiderSubnet
+     kind: SpiderIPPool
      metadata:
-       name: weave-subnet-v4
+       name: weave-ippool-v4
        labels:  
          ipam.spidernet.io/subnet-cidr: 10-32-0-0-12
      spec:
@@ -54,18 +52,19 @@
      EOF
      ```
 
-     > `Weave` 使用 `10.32.0.0/12` 作为集群默认子网。所以这里需要创建一个相同子网的 SpiderSubnet
+     > `Weave` 使用 `10.32.0.0/12` 作为集群默认子网。所以需要创建一个相同子网内 SpiderIPPool。
 
 3. 验证安装
 
    ```shell
     [root@node1 ~]# kubectl get po -n kube-system | grep spiderpool
-    spiderpool-agent-lgdw7                  1/1     Running   0          65s
-    spiderpool-agent-x974l                  1/1     Running   0          65s
-    spiderpool-controller-9df44bc47-hbhbg   1/1     Running   0          65s
-    [root@node1 ~]# kubectl get ss
+    spiderpool-agent-7hhkz                   1/1     Running     0              13m
+    spiderpool-agent-kxf27                   1/1     Running     0              13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+    spiderpool-init                          0/1     Completed   0              13m
+    [root@node1 ~]# kubectl get sp
     NAME               VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-    weave-subnet-v4    4         10.32.0.0/12   0                    12901            false
+    weave-ippool-v4    4         10.32.0.0/12   0                    12901            false
    ```
 
 ## 切换 `Weave` 的 `IPAM` 为 `Spiderpool`
@@ -133,7 +132,7 @@
 
 ## 创建应用
 
-使用注解: `ipam.spidernet.io/subnet` 指定 Pod 从该 SpiderSubnet 中分配 IP:
+使用注解: `ipam.spidernet.io/ippool` 指定 Pod 从该 SpiderIPPool 中分配 IP:
 
   ```shell
   [root@node1 ~]# cat << EOF | kubectl apply -f -
@@ -149,7 +148,7 @@
     template:
       metadata:
         annotations:
-          ipam.spidernet.io/subnet: '{"ipv4":["weave-subnet-v4"]}'
+          ipam.spidernet.io/ippool: '{"ipv4":["weave-ippool-v4"]}'
         labels:
           app: nginx
       spec:
@@ -161,23 +160,19 @@
   EOF
   ```
 
-> _spec.template.metadata.annotations.ipam.spidernet.io/subnet_：指定 Pod 从 SpiderSubnet:  `weave-subnet-v4` 中分配 IP
+> _spec.template.metadata.annotations.ipam.spidernet.io/ippool_：指定 Pod 从 SpiderIPPool:  `weave-ippool-v4` 中分配 IP
 
-Pod 成功创建, 并且从 Spiderpool Subnet 中分配 IP 地址:
+Pod 成功创建, 并且从 Spiderpool 中分配 IP 地址:
 
   ```shell
   [root@node1 ~]# kubectl get po  -o wide
   NAME                     READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
   nginx-5745d9b5d7-2rvn7   1/1     Running   0          8s    10.32.22.190   node1   <none>           <none>
   nginx-5745d9b5d7-5ssck   1/1     Running   0          8s    10.32.35.87    node2   <none>           <none>
-  ```
 
-Spiderpool 为该 Nginx 应用自动创建了一个 IP 池: `auto-deployment-default-nginx-v4-a0ae75eb5d47`, 池的 IP 数量为 2:
-
-  ```shell
   [root@node1 ~]# kubectl get sp
-  NAME                                            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-  auto-deployment-default-nginx-v4-a0ae75eb5d47   4         10.32.0.0/12    2                    2                false
+  NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+  weave-ippool-v4   4         10.32.0.0/12    2                    2                false
   ```
 
 测试连通性，以 Pod 跨节点通信为例:

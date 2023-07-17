@@ -68,47 +68,6 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
     ovs_version: "2.17.3"
 ```
 
-## Install Multus
-
-[`Multus`](https://github.com/k8snetworkplumbingwg/multus-cni) is a CNI plugin that allows Pods to have multiple NICs by scheduling third-party CNIs. The management of the ovs-cni CNI configuration is simplified through the CRD-based approach provided by Multus, with nothing for manual editing of CNI configuration files on each host.
-
-1. Install Multus via the manifest:
-
-    ```bash
-    kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-    ```
-
-2. Create a NetworkAttachmentDefinition for ovs-cni.
-
-    The following parameters need to be confirmed:
-
-     * Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
-
-```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: ovs-conf
-  namespace: kube-system
-spec:
-  config: |-
-    {
-        "cniVersion": "0.3.1",
-        "name": "ovs-conf",
-        "plugins": [
-            {
-                "type": "ovs",
-                "bridge": "br1",
-                "ipam": {
-                    "type": "spiderpool"
-                }
-            }
-        ]
-    }
-EOF
-```
-
 ## Install Spiderpool
 
 1. Install Spiderpool
@@ -116,50 +75,87 @@ EOF
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf"
     ```
 
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
+    >
+    > Specify the Multus clusterNetwork of the cluster through `multus.multusCNI.defaultCniCRName`, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.
 
-2. Create a SpiderSubnet instance.
+2. Create a SpiderIPPool instance.
 
-    The Pod will obtain an IP address from this subnet for underlying network communication, so the subnet needs to correspond to the underlying subnet that is being accessed.
+    The Pod will obtain an IP address from the IPPool for underlying network communication, so the subnet of the IPPool needs to correspond to the underlying subnet being accessed.
 
     Here is an example of creating a SpiderSubnet instance:
 
     ```bash
     cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
+    kind: SpiderIPPool
     metadata:
-      name: subnet-test
+      name: ippool-test
     spec:
       ipVersion: 4
       ips:
       - "172.18.30.131-172.18.30.140"
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
-      vlan: 0
+      multusName: 
+      - ovs-conf
     EOF
     ```
 
 3. Verify the installation：
 
-```bash
-~# kubectl get po -n kube-system | grep spiderpool
-spiderpool-agent-f899f                       1/1     Running   0             2m
-spiderpool-agent-w69z6                       1/1     Running   0             2m
-spiderpool-controller-5bf7b5ddd9-6vd2w       1/1     Running   0             2m
-~# kubectl get spidersubnet
-NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-subnet-test   4         172.18.0.0/16   0                    10
-```
+    ```bash
+    ~# kubectl get po -n kube-system |grep spiderpool
+    spiderpool-agent-7hhkz                   1/1     Running     0              13m
+    spiderpool-agent-kxf27                   1/1     Running     0              13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+    spiderpool-init                          0/1     Completed   0              13m
+    spiderpool-multus-7vkm2                  1/1     Running     0              13m
+    spiderpool-multus-rwzjn                  1/1     Running     0              13m
+
+    ~# kubectl get sp ippool-test       
+    NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
+    ippool-test   4         172.18.0.0/16   0                    10               false
+    ~# 
+    ```
+
+4. Create a NetworkAttachmentDefinition for ovs-cni.
+
+    The following parameters need to be confirmed:
+
+     * Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
+
+    ```bash
+    cat <<EOF | kubectl apply -f -
+    apiVersion: k8s.cni.cncf.io/v1
+    kind: NetworkAttachmentDefinition
+    metadata:
+      name: ovs-conf
+      namespace: kube-system
+    spec:
+      config: |-
+        {
+            "cniVersion": "0.3.1",
+            "name": "ovs-conf",
+            "plugins": [
+                {
+                    "type": "ovs",
+                    "bridge": "br1",
+                    "ipam": {
+                        "type": "spiderpool",
+                    }
+                }
+            ]
+        }
+    EOF
+    ```
 
 ## Create applications
 
 In the following example Yaml, 2 copies of the Deployment are created, of which:
-
-* `ipam.spidernet.io/subnet`: used to specify the subnet of Spiderpool, Spiderpool will automatically select some random IPs in this subnet to create a fixed IP pool to bind with this application, which can achieve the effect of IP fixing.
 
 * `v1.multus-cni.io/default-network`: used to specify Multus' NetworkAttachmentDefinition configuration, which will create a default NIC for the application.
 
@@ -177,11 +173,10 @@ spec:
   template:
     metadata:
       annotations:
-        ipam.spidernet.io/subnet: |-
+        ipam.spidernet.io/ippool: |-
           {
-            "ipv4": ["subnet-test"]
+            "ipv4": ["ippool-test"]
           }
-        v1.multus-cni.io/default-network: kube-system/ovs-conf
       labels:
         app: test-app
     spec:
@@ -203,7 +198,7 @@ spec:
 EOF
 ```
 
-Spiderpool automatically creates a pool of IP fixes for the application and the application's IP will be automatically fixed to that IP range:
+SpiderIPPool assigns an IP to the application, and the application's IP will be automatically fixed within this IP range:
 
 ```bash
 ~# kubectl get po -l app=test-app -o wide
@@ -212,13 +207,13 @@ test-app-6f8dddd88d-hstg7   1/1     Running   0          3m37s   172.18.30.131  
 test-app-6f8dddd88d-rj7sm   1/1     Running   0          3m37s   172.18.30.132   ipv4-control-plane   <none>           <none>
 
 ~# kubectl get spiderippool
-NAME                                 VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-test-app-v4-eth0-9b208a961acd   4         172.18.0.0/16   2                    2                false     false
+NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+ippool-test   4         172.18.0.0/16   2                    2                false     false
 
-~#  kubectl get spiderendpoints
-NAME                        INTERFACE   IPV4POOL                             IPV4               IPV6POOL   IPV6   NODE
-test-app-6f8dddd88d-hstg7   eth0        auto-test-app-v4-eth0-9b208a961acd   172.18.30.131/16                     ipv4-worker
-test-app-6f8dddd88d-rj7sm   eth0        auto-test-app-v4-eth0-9b208a961acd   172.18.30.132/16                     ipv4-control-plane
+~# kubectl get spiderendpoints
+NAME                        INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE
+test-app-6f8dddd88d-hstg7   eth0        ippool-test   172.18.30.131/16                     ipv4-worker
+test-app-6f8dddd88d-rj7sm   eth0        ippool-test   172.18.30.132/16                     ipv4-control-plane
 ```
 
 Testing Pod communication with cross-node Pods:

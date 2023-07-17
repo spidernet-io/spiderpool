@@ -68,47 +68,6 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
     ovs_version: "2.17.3"
 ```
 
-## 安装 Multus
-
-[`Multus`](https://github.com/k8snetworkplumbingwg/multus-cni) 是一个 CNI 插件项目，它通过调度第三方 CNI 项目，能够实现为 Pod 接入多张网卡。并且 Multus 提供了 CRD 方式管理 Ovs-cni 的 CNI 配置，避免在每个主机上手动编辑 CNI 配置文件，能够降低运维工作量。
-
-1. 通过 manifest 安装 Multus
-
-    ```shell
-    ~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-    ```
-
-2. 为 Ovs-cni 创建 Multus 的 NetworkAttachmentDefinition 配置
-
-     需要确认如下参数：
-
-    * 确认 ovs-cni 所需的宿主机网桥，例如可基于命令 `ovs-vsctl show` 查询，本例子以宿主机的网桥：`br1` 为例
-
-```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: ovs-conf
-  namespace: kube-system
-spec:
-  config: |-
-    {
-        "cniVersion": "0.3.1",
-        "name": "ovs-conf",
-        "plugins": [
-            {
-                "type": "ovs",
-                "bridge": "br1",
-                "ipam": {
-                    "type": "spiderpool"
-                }
-            }
-        ]
-    }
-EOF
-```
-
 ## 安装 Spiderpool
 
 1. 安装 Spiderpool。
@@ -116,49 +75,81 @@ EOF
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf"
     ```
 
-    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 以帮助您快速的拉取镜像。
+    >
+    > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
 
-2. 创建 SpiderSubnet 实例。
+2. 创建 SpiderIPPool 实例。
 
-    Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。
-
-    以下是创建相关的 SpiderSubnet 示例：
+    Pod 会从该 IP 池中获取 IP，进行 Underlay 的网络通讯，所以该 IP 池的子网需要与接入的 Underlay 子网对应。以下是创建相关的 SpiderIPPool 示例：
 
     ```shell
     cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
+    kind: SpiderIPPool
     metadata:
-      name: subnet-test
+      name: ippool-test
     spec:
       ipVersion: 4
       ips:
-        - "172.18.30.131-172.18.30.140"
+      - "172.18.30.131-172.18.30.140"
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
+      multusName: 
+      - ovs-conf
     EOF
     ```
 
-验证安装：
+3. 验证安装：
 
-```bash
-~# kubectl get po -n kube-system | grep spiderpool
-spiderpool-agent-f899f                       1/1     Running   0             2m
-spiderpool-agent-w69z6                       1/1     Running   0             2m
-spiderpool-controller-5bf7b5ddd9-6vd2w       1/1     Running   0             2m
-~# kubectl get spidersubnet
-NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-subnet-test   4         172.18.0.0/16   0                    10
-```
+    ```bash
+    ~# kubectl get po -n kube-system |grep spiderpool
+    spiderpool-agent-7hhkz                   1/1     Running     0              13m
+    spiderpool-agent-kxf27                   1/1     Running     0              13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+    spiderpool-init                          0/1     Completed   0              13m
+    spiderpool-multus-7vkm2                  1/1     Running     0              13m
+    spiderpool-multus-rwzjn                  1/1     Running     0              13m
+
+    ~# kubectl get sp ippool-test       
+    NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
+    ippool-test   4         172.18.0.0/16   0                    10               false
+    ~# 
+    ```
+
+4. 为 ovs-cni 创建 multus NetworkAttachmentDefinition CR
+
+    ```bash
+    cat <<EOF | kubectl apply -f -
+    apiVersion: k8s.cni.cncf.io/v1
+    kind: NetworkAttachmentDefinition
+    metadata:
+      name: ovs-conf
+      namespace: kube-system
+    spec:
+      config: |-
+        {
+            "cniVersion": "0.3.1",
+            "name": "ovs-conf",
+            "plugins": [
+                {
+                    "type": "ovs",
+                    "bridge": "br1",
+                    "ipam": {
+                        "type": "spiderpool",
+                    }
+                }
+            ]
+        }
+    EOF
+    ```
 
 ## 创建应用
 
 以下的示例 Yaml 中， 会创建 2 个副本的 Deployment，其中：
-
-* `ipam.spidernet.io/subnet`：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，能实现 IP 固定的效果。
 
 * `v1.multus-cni.io/default-network`：用于指定 Multus 的 NetworkAttachmentDefinition 配置，会基于它为应用创建一张默认网卡。
 
@@ -176,11 +167,10 @@ spec:
   template:
     metadata:
       annotations:
-        ipam.spidernet.io/subnet: |-
+        ipam.spidernet.io/ippool: |-
           {
-            "ipv4": ["subnet-test"]
+            "ipv4": ["ippool-test"]
           }
-        v1.multus-cni.io/default-network: kube-system/ovs-conf
       labels:
         app: test-app
     spec:
@@ -202,7 +192,7 @@ spec:
 EOF
 ```
 
-Spiderpool 自动为应用创建了 IP 固定池，应用的 IP 将会自动固定在该 IP 范围内：
+SpiderIPPool 为应用分配了 IP，应用的 IP 将会自动固定在该 IP 范围内：
 
 ```bash
 ~# kubectl get po -l app=test-app -o wide
@@ -211,13 +201,13 @@ test-app-6f8dddd88d-hstg7   1/1     Running   0          3m37s   172.18.30.131  
 test-app-6f8dddd88d-rj7sm   1/1     Running   0          3m37s   172.18.30.132   ipv4-control-plane   <none>           <none>
 
 ~# kubectl get spiderippool
-NAME                                 VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-test-app-v4-eth0-9b208a961acd   4         172.18.0.0/16   2                    2                false     false
+NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+ippool-test   4         172.18.0.0/16   2                    2                false     false
 
-~#  kubectl get spiderendpoints
-NAME                        INTERFACE   IPV4POOL                             IPV4               IPV6POOL   IPV6   NODE
-test-app-6f8dddd88d-hstg7   eth0        auto-test-app-v4-eth0-9b208a961acd   172.18.30.131/16                     ipv4-worker
-test-app-6f8dddd88d-rj7sm   eth0        auto-test-app-v4-eth0-9b208a961acd   172.18.30.132/16                     ipv4-control-plane
+~# kubectl get spiderendpoints
+NAME                        INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE
+test-app-6f8dddd88d-hstg7   eth0        ippool-test   172.18.30.131/16                     ipv4-worker
+test-app-6f8dddd88d-rj7sm   eth0        ippool-test   172.18.30.132/16                     ipv4-control-plane
 ```
 
 测试 Pod 与 Pod 的通讯情况，以跨节点 Pod 为例：

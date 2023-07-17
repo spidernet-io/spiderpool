@@ -20,7 +20,7 @@ Spiderpool supports:
 
 ### Set up Spiderpool
 
-follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) to install Spiderpool.
+follow the guide [installation](./install/underlay/get-started-kind.md) to install Spiderpool.
 
 ### Create SpiderSubnet
 

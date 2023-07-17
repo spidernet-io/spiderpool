@@ -18,23 +18,21 @@ It could have two kinds of scenes to install spiderpool:
 
     When one or more NIC of different NIC in a pod, spiderpool could help assign IP address, tune routes, connect the pod and local node, detect IP conflict etc.
 
-## Installation for underlay NICs
+## Install Spiderpool in Underlay NICs
 
 Any CNI project compatible with third-party IPAM plugins, can work well with spiderpool, such as:
-[macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
-[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
+[macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
-[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
-[calico CNI](https://github.com/projectcalico/calico), 
+[sriov CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
+[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni),
+[calico CNI](https://github.com/projectcalico/calico),
 [weave CNI](https://github.com/weaveworks/weave)
 
 The following examples are guides to install spiderpool:
 
 * [macvlan in Kind](./underlay/get-started-kind.md)
-
-* [macvlan CNI](./underlay/get-started-macvlan.md), this is suitable for scenes like bare metal host, vmware VM with promiscuous bridge.
 
 * [SRIOV CNI](./underlay/get-started-sriov.md), this is suitable for scenes like bare metal host.
 

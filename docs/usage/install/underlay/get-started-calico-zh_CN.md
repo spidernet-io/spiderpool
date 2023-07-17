@@ -18,31 +18,26 @@ Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等
 
     确认 calico 开启了 fullmesh 方式的 BGP 配置。
 
-* 确认 SpiderPool 开启 Subnet 功能。
-
 * Helm、Calicoctl 二进制工具
 
 ## 安装 Spiderpool
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
+helm repo update spiderpool
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.install=false
 ```
 
-> Spiderpool 默认 IPv4-Only, 如需启用 IPv6 请参考 [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md)
-> 
-> `ipam.enableSpiderSubnet=true`: Spiderpool 的 subnet 功能需要被打开。
-> 
 > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
-创建 Pod 的子网(SpiderSubnet):
+创建 Pod 使用的 SpiderIPPool 实例:
 
 ```shell
 cat << EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderSubnet
+kind: SpiderIPPool
 metadata:
-  name: nginx-subnet-v4
+  name: nginx-ippool-v4
   labels:  
     ipam.spidernet.io/subnet-cidr: 10-244-0-0-16
 spec:
@@ -55,19 +50,21 @@ EOF
 验证安装：
 
 ```shell
-[root@master ~]# kubectl get po -n kube-system  | grep spiderpool
-  spiderpool-agent-27fr2                     1/1     Running     0          2m
-  spiderpool-agent-8vwxj                     1/1     Running     0          2m
-  spiderpool-controller-bc8d67b5f-xwsql      1/1     Running     0          2m
-  [root@master ~]# kubectl get ss
+[root@master ~]# kubectl get po -n kube-system |grep spiderpool
+  spiderpool-agent-7hhkz                   1/1     Running     0              13m
+  spiderpool-agent-kxf27                   1/1     Running     0              13m
+  spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+  spiderpool-init                          0/1     Completed   0              13m
+  [root@master ~]# kubectl get sp
   NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-  nginx-subnet-v4   4         10.244.0.0/16   0                    25602
+  nginx-ippool-v4   4         10.244.0.0/16   0                    25602
 ```
 
 ## 配置 Calico BGP [可选]
 
-本例希望 calico 以 underlay 方式工作，将 Spiderpool 子网(`10.244.0.0/16`)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。
-如果您并不需要集群外部可以直接访问到 pod ip，可忽略本步骤。
+本例希望 calico 以 underlay 方式工作，将 Spiderpool 的 IP 池所在的子网(`10.244.0.0/16`)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。
+
+> 如果您并不需要集群外部可以直接访问到 Pod IP，可忽略本步骤。
 
 网络拓扑如下:
 
@@ -105,7 +102,7 @@ EOF
     > * Router 侧的 AS 为 `23000`, 集群节点侧 AS 为 `64512`。Router 与节点之间为 `ebgp`, 节点之间为 `ibgp`
     > * 需要关闭 `ebgp-requires-policy`, 否则 BGP 会话无法建立
     > * 172.16.13.11/21 为集群节点 IP
-    >     
+    >
     > 更多配置参考 [frrouting](https://docs.frrouting.org/en/latest/bgp.html)。
 
 2. 配置 Calico 的 BGP 邻居
@@ -151,7 +148,7 @@ EOF
     ```
 
     > peerIP 为 BGP Router 的 IP 地址
-    > 
+    >
     > asNumber 为 BGP Router 的 AS 号
 
     查看 BGP 会话是否成功建立:
@@ -182,7 +179,7 @@ cat << EOF | calicoctl apply -f -
 apiVersion: projectcalico.org/v3
 kind: IPPool
 metadata:
-  name: spiderpool-subnet
+  name: spiderpool-ippool
 spec:
   blockSize: 26
   cidr: 10.244.0.0/16
@@ -194,7 +191,7 @@ EOF
 ```
 
 > cidr 需要对应 Spiderpool 的子网: `10.244.0.0/16`
-> 
+>
 > 设置 ipipMode 和 vxlanMode 为: Never
 
 ## 切换 Calico 的 `IPAM` 为 Spiderpool
@@ -225,8 +222,7 @@ spec:
   template:
     metadata:
       annotations:
-        ipam.spidernet.io/subnet: '{"ipv4":["nginx-subnet-v4"]}'
-        ipam.spidernet.io/ippool-ip-number: '+3'
+        ipam.spidernet.io/ippool: '{"ipv4":["nginx-ippool-v4"]}'
       labels:
         app: nginx
     spec:
@@ -241,21 +237,18 @@ spec:
 EOF
 ```
 
-> `ipam.spidernet.io/subnet`: 从 "nginx-subnet-v4" SpiderSubnet 中分配固定 IP
-> 
-> `ipam.spidernet.io/ippool-ip-number`: '+3' 表示应用分配的固定 IP 数量比应用副本数多 3 个，用于应用滚动发布时有临时 IP 可用
+> `ipam.spidernet.io/ippool`: 从 "nginx-ippool-v4" SpiderIPPool 中分配固定 IP
+>
 
-当应用 Pod 被创建，Spiderpool 从 annnotations 指定的 `subnet: nginx-subnet-v4` 中自动创建了一个名为 `auto-nginx-v4-eth0-452e737e5e12` 的 IP 池，并与应用绑定。IP 范围为: `10.244.100.90-10.244.100.95`, 池 IP 数量为 `5`:
+当应用 Pod 被创建，Spiderpool 从 annnotations 指定的 `ippool: nginx-ippool-v4` 中给 Pod 分配 IP。
 
 ```shell
 [root@master1 ~]# kubectl get sp
-NAME                              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-nginx-v4-eth0-452e737e5e12   4         10.244.0.0/16   2                    5                false     false
-[root@master ~]# kubectl get sp auto-nginx-v4-eth0-452e737e5e12 -o jsonpath='{.spec.ips}' 
-["10.244.100.90-10.244.100.95"]
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+nginx-ippool-v4   4         10.244.0.0/16   2                    25602            false     false
 ```
 
-当副本重启，其 IP 都被固定在 `auto-nginx-v4-eth0-452e737e5e12` 的 IP 池范围内:
+当副本重启，其 IP 都被固定在 `nginx-ippool-v4` 的 IP 池范围内:
 
 ```shell
 [root@master1 ~]# kubectl get po -o wide
@@ -264,7 +257,7 @@ nginx-644659db67-szgcg   1/1     Running       0          23s     10.244.100.90 
 nginx-644659db67-98rcg   1/1     Running       0          23s     10.244.100.92    master1   <none>           <none>
 ```
 
-扩容副本数到 `3`, 新副本的 IP 地址仍然从自动池: `auto-nginx-v4-eth0-452e737e5e12(10.244.100.90-10.244.100.95)` 中分配:
+扩容副本数到 `3`, 新副本的 IP 地址仍然从 IP 池: `nginx-ippool-v4` 中分配:
 
 ```shell
 [root@master1 ~]# kubectl scale deploy nginx --replicas 3  # scale pods
@@ -276,12 +269,12 @@ nginx-644659db67-98rcg   1/1     Running       0          1m     10.244.100.92  
 nginx-644659db67-brqdg   1/1     Running       0          10s    10.244.100.94    master1   <none>           <none>
 ```
 
-查看自动池: `auto-nginx-v4-eth0-452e737e5e12` 的 `ALLOCATED-IP-COUNT` 和 `TOTAL-IP-COUNT` 都新增 1 :
+查看 IP 池: `nginx-ippool-v4` 的 `ALLOCATED-IP-COUNT` 新增 1 :
 
 ```shell
 [root@master1 ~]# kubectl get sp
-NAME                              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-nginx-v4-eth0-452e737e5e12   4         10.244.0.0/16   3                    6                false     false
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+nginx-ippool-v4   4         10.244.0.0/16   3                    25602            false     false
 ```
 
 ## 结论

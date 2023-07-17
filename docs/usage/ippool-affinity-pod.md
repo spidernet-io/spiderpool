@@ -13,26 +13,7 @@ The example shows how `sepc.podAffinity` works.
 
 ### Set up Spiderpool
 
-Follow the [installation guide](./install/install.md) to install Spiderpool.
-
-### Create SpiderSubnet
-
-Create a subnet to allocate IP addresses for the IPPool, from which both the Shared IPPool and the Occupied IPPool will receive their IP addresses.
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/static-ipv4-subnet.yaml
-```
-
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderSubnet
-metadata:
-  name: static-ipv4-subnet
-spec:
-  subnet: 172.18.41.0/24
-  ips:
-    - 172.18.41.40-172.18.41.47
-```
+Follow the [installation guide](./install/underlay/get-started-kind.md) to install Spiderpool.
 
 ### Shared IPPool
 
@@ -215,7 +196,6 @@ kubectl delete \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/occupied-static-ippool-deploy.yaml \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/wrong-static-ippool-deploy.yaml \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/occupied-static-ipv4-ippool.yaml \
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/static-ipv4-subnet.yaml   \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/shared-static-ippool-deploy.yaml  \
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/shared-static-ipv4-ippool.yaml  \
 --ignore-not-found=true

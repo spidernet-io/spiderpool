@@ -56,10 +56,10 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	}
 
 	config := &models.CoordinatorConfig{
-		TuneMode:           coord.Spec.TuneMode,
-		PodCIDR:            coord.Status.PodCIDR,
+		Mode:               coord.Spec.Mode,
+		OverlayPodCIDR:     coord.Status.OverlayPodCIDR,
 		ServiceCIDR:        coord.Status.ServiceCIDR,
-		ExtraCIDR:          coord.Spec.ExtraCIDR,
+		HijackCIDR:         coord.Spec.HijackCIDR,
 		PodMACPrefix:       prefix,
 		TunePodRoutes:      coord.Spec.TunePodRoutes,
 		PodDefaultRouteNIC: nic,

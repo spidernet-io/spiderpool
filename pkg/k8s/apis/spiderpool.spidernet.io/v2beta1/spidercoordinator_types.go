@@ -12,13 +12,13 @@ type CoordinatorSpec struct {
 	// +kubebuilder:default=underlay
 	// +kubebuilder:validation:Enum=underlay;overlay;disabled
 	// +kubebuilder:validation:Optional
-	TuneMode *string `json:"tuneMode,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 
 	// +kubebuilder:validation:Required
 	PodCIDRType string `json:"podCIDRType"`
 
 	// +kubebuilder:validation:Optional
-	ExtraCIDR []string `json:"extraCIDR,omitempty"`
+	HijackCIDR []string `json:"hijackCIDR,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	PodMACPrefix *string `json:"podMACPrefix,omitempty"`
@@ -53,7 +53,7 @@ type CoordinatorStatus struct {
 	Phase string `json:"phase"`
 
 	// +kubebuilder:validation:Optional
-	PodCIDR []string `json:"podCIDR,omitempty"`
+	OverlayPodCIDR []string `json:"overlayPodCIDR,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	ServiceCIDR []string `json:"serviceCIDR,omitempty"`

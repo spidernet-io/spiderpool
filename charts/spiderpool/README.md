@@ -106,6 +106,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `global.commonAnnotations`      | Annotations to add to all deployed objects          | `{}`                                 |
 | `global.commonLabels`           | Labels to add to all deployed objects               | `{}`                                 |
 | `global.ipamBinHostPath`        | the host path of the IPAM plugin directory.         | `/opt/cni/bin`                       |
+| `global.cniConfHostPath`        | the host path of the cni config directory           | `/etc/cni/net.d`                     |
 | `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin | `/var/run/spidernet/spiderpool.sock` |
 | `global.configName`             | the configmap name                                  | `spiderpool-conf`                    |
 
@@ -135,11 +136,12 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | ------------------------------ | ------------------------------------------------------------------------- | ---------- |
 | `coordinator.enabled`          | enable SpiderCoordinator                                                  | `true`     |
 | `coordinator.name`             | the name of the default SpiderCoordinator CR                              | `default`  |
-| `coordinator.tuneMode`         | optional network mode, ["underlay", "overlay", "disabled"]                | `underlay` |
+| `coordinator.mode`             | optional network mode, ["underlay", "overlay", "disabled"]                | `underlay` |
 | `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ] | `cluster`  |
-| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `true`     |
-| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `true`     |
+| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `false`    |
+| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `false`    |
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`     |
+| `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward           | `[]`       |
 
 
 ### multus parameters

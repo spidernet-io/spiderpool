@@ -45,7 +45,7 @@ spec:
               detectIPConflict:
                 default: false
                 type: boolean
-              extraCIDR:
+              hijackCIDR:
                 items:
                   type: string
                 type: array
@@ -55,18 +55,18 @@ spec:
               hostRuleTable:
                 default: 500
                 type: integer
-              podCIDRType:
-                type: string
-              podDefaultRouteNIC:
-                type: string
-              podMACPrefix:
-                type: string
-              tuneMode:
+              mode:
                 default: underlay
                 enum:
                 - underlay
                 - overlay
                 - disabled
+                type: string
+              podCIDRType:
+                type: string
+              podDefaultRouteNIC:
+                type: string
+              podMACPrefix:
                 type: string
               tunePodRoutes:
                 default: true
@@ -77,12 +77,12 @@ spec:
           status:
             description: CoordinationStatus defines the observed state of SpiderCoordinator.
             properties:
-              phase:
-                type: string
-              podCIDR:
+              overlayPodCIDR:
                 items:
                   type: string
                 type: array
+              phase:
+                type: string
               serviceCIDR:
                 items:
                   type: string

@@ -217,9 +217,14 @@ spec:
           imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}
           image: {{ include "spiderpool.multus.image" . | quote }}
           command:
-            - "cp"
-            - "/usr/src/multus-cni/bin/multus"
-            - "/host/opt/cni/bin/multus"
+            - "/bin/sh"
+            - "-c"
+            - |
+              cp  /usr/src/multus-cni/bin/multus /host/opt/cni/bin/multus
+              # TODO: We can revert the changes if https://github.com/k8snetworkplumbingwg/multus-cni/pull/1119 merged.
+              {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
+              cp /host/etc/cni/net.d/*.conf* /host/etc/cni/multus/net.d/
+              {{- end }}
           resources:
             requests:
               cpu: "10m"
@@ -230,6 +235,12 @@ spec:
             - name: cnibin
               mountPath: /host/opt/cni/bin
               mountPropagation: Bidirectional
+            {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
+            - mountPath: /host/etc/cni/net.d
+              name: cni
+            - mountPath: /host/etc/cni/multus/net.d
+              name: multus-cni-dir
+            {{- end }}
       terminationGracePeriodSeconds: 10
       volumes:
         - name: cni
@@ -245,6 +256,11 @@ spec:
             items:
               - key: cni-conf.json
                 path: 00-multus.conf
+        {{- else }}
+        - hostPath:
+            path: /etc/cni/multus/net.d
+            type: DirectoryOrCreate
+          name: multus-cni-dir
         {{- end }}
         {{- if .Values.multus.multusCNI.extraVolumeMounts }}
         {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 8 }}

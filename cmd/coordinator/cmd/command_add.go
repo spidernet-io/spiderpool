@@ -56,7 +56,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return err
 	}
-	if conf.TuneMode == ModeDisable {
+	if conf.Mode == ModeDisable {
 		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 	}
 
@@ -75,7 +75,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
-	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.TuneMode))
+	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.Mode))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
@@ -91,15 +91,15 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	c := &coordinator{
-		HijackCIDR:       conf.ClusterCIDR,
+		HijackCIDR:       conf.OverlayPodCIDR,
 		hostRuleTable:    int(*conf.HostRuleTable),
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
-		tuneMode:         conf.TuneMode,
-		interfacePrefix:  conf.InterfacePrefix,
+		tuneMode:         conf.Mode,
+		interfacePrefix:  conf.MultusNicPrefix,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
-	c.HijackCIDR = append(c.HijackCIDR, conf.ExtraCIDR...)
+	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)
 
 	c.netns, err = ns.GetNS(args.Netns)
 	if err != nil {
@@ -109,14 +109,14 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	defer c.netns.Close()
 
 	// check if it's first time invoke
-	err = c.coordinatorFirstInvoke(conf.PodFirstInterface)
+	err = c.coordinatorFirstInvoke(conf.PodDefaultCniNic)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 
 	// get basic info
-	switch conf.TuneMode {
+	switch conf.Mode {
 	case ModeUnderlay:
 		c.podVethName = defaultUnderlayVethName
 		c.hostVethName = getHostVethName(args.ContainerID)
@@ -140,8 +140,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Info("TuneMode is disable, nothing to do")
 		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 	default:
-		logger.Error("Unknown tuneMode", zap.String("invalid tuneMode", string(conf.TuneMode)))
-		return fmt.Errorf("unknown tuneMode: %s", conf.TuneMode)
+		logger.Error("Unknown tuneMode", zap.String("invalid tuneMode", string(conf.Mode)))
+		return fmt.Errorf("unknown tuneMode: %s", conf.Mode)
 	}
 
 	logger.Sugar().Infof("Get coordinator config: %v", c)
@@ -198,10 +198,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		}
 
 		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
-		if conf.OnlyHardware {
-			logger.Debug("Only override hardware address, exit now")
-			return types.PrintResult(conf.PrevResult, conf.CNIVersion)
-		}
 	}
 
 	// get all ip address on the node

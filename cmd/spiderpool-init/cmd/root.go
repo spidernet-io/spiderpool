@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -42,13 +43,14 @@ func Execute() {
 				Name: config.CoordinatorName,
 			},
 			Spec: spiderpoolv2beta1.CoordinatorSpec{
-				TuneMode:           &config.CoordinatorTuneMode,
+				Mode:               &config.CoordinatorMode,
 				PodCIDRType:        config.CoordinatorPodCIDRType,
 				TunePodRoutes:      &config.CoordinatorTunePodRoutes,
 				DetectIPConflict:   &config.CoordinatorDetectIPConflict,
 				DetectGateway:      &config.CoordinatorDetectGateway,
 				PodDefaultRouteNIC: &config.CoordinatorPodDefaultRouteNic,
 				PodMACPrefix:       &config.CoordinatorPodMACPrefix,
+				HijackCIDR:         config.CoordinatorHijackCIDR,
 			},
 		}
 		if err := client.WaitForCoordinatorCreated(ctx, coord); err != nil {
@@ -146,8 +148,43 @@ func Execute() {
 		}
 	}
 
+	// create multuscniconfig for default network
+	if config.DefaultCNIName == "" {
+		logger.Sugar().Infof("Try to create MultusCniConfig default network in %s", config.DefaultCNIDir)
+		if err = InitDefaultMultusCNIConfig(ctx, client, config.DefaultCNIDir); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+
 	logger.Info("Finish init")
 
 	// Wait for helm --wait.
 	time.Sleep(300 * time.Second)
+}
+
+func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir string) error {
+	defaultCNIConfPath, err := findDefaultCNIConf(cniDir)
+	if err != nil {
+		logger.Sugar().Errorf("failed to findDefaultCNIConf: %v", err)
+		return fmt.Errorf("failed to findDefaultCNIConf: %v", err)
+	}
+
+	if defaultCNIConfPath == "" {
+		// no networks in /etc/cni/net.d
+		logger.Sugar().Warnf("No network found in %s, Skip create multuscniconfig", cniDir)
+		return nil
+	}
+
+	// parse default cni config
+	cniName, cniType, err := parseCNIFromConfig(defaultCNIConfPath)
+	if err != nil {
+		logger.Sugar().Errorf("failed to parseCNIFromConfig: %v", err)
+		return fmt.Errorf("failed to parseCNIFromConfig: %v", err)
+	}
+
+	if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig(cniName, cniType)); err != nil {
+		return fmt.Errorf("failed to WaitMultusCNIConfigCreated: %v", err)
+	}
+
+	return nil
 }

@@ -39,8 +39,13 @@ spec:
             description: Spec is the specification of the MultusCNIConfig
             properties:
               cniType:
-                description: macvlan、ipvlan、sriov、custom
+                description: calico、cilium-cni、flannel、weave-net、kube-ovn、macvlan、ipvlan、sriov、custom
                 enum:
+                - calico
+                - cilium-cni
+                - flannel
+                - weave-net
+                - kube-ovn
                 - macvlan
                 - ipvlan
                 - sriov
@@ -55,7 +60,7 @@ spec:
                   detectIPConflict:
                     default: false
                     type: boolean
-                  extraCIDR:
+                  hijackCIDR:
                     items:
                       type: string
                     type: array
@@ -65,18 +70,18 @@ spec:
                   hostRuleTable:
                     default: 500
                     type: integer
-                  podCIDRType:
-                    type: string
-                  podDefaultRouteNIC:
-                    type: string
-                  podMACPrefix:
-                    type: string
-                  tuneMode:
+                  mode:
                     default: underlay
                     enum:
                     - underlay
                     - overlay
                     - disabled
+                    type: string
+                  podCIDRType:
+                    type: string
+                  podDefaultRouteNIC:
+                    type: string
+                  podMACPrefix:
                     type: string
                   tunePodRoutes:
                     default: true

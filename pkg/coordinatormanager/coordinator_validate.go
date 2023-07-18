@@ -51,7 +51,7 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec) *field.Err
 	if err := validateCoordinatorPodCIDRType(spec.PodCIDRType); err != nil {
 		return err
 	}
-	if err := validateCoordinatorExtraCIDR(spec.ExtraCIDR); err != nil {
+	if err := validateCoordinatorExtraCIDR(spec.HijackCIDR); err != nil {
 		return err
 	}
 	if err := validateCoordinatorPodMACPrefix(spec.PodMACPrefix); err != nil {

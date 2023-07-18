@@ -142,7 +142,7 @@ function install_cilium() {
                                    --set ipv6.enabled=true "
           ;;
         *)
-          echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
+          echo "the value of E2E_IP_FAMILY: ipv4 or ipv6 or dual"
           exit 1
       esac
 

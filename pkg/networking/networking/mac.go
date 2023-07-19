@@ -150,14 +150,9 @@ func GetHostVethName(netns ns.NetNS, podVethPairName string) (string, error) {
 }
 
 // AddStaticNeighborTable add a static neighborhood table
-func AddStaticNeighborTable(iface string, dstIP net.IP, hwAddress net.HardwareAddr) error {
-	link, err := netlink.LinkByName(iface)
-	if err != nil {
-		return fmt.Errorf("failed to get link: %v", err)
-	}
-
+func AddStaticNeighborTable(linkIndex int, dstIP net.IP, hwAddress net.HardwareAddr) error {
 	neigh := &netlink.Neigh{
-		LinkIndex:    link.Attrs().Index,
+		LinkIndex:    linkIndex,
 		State:        netlink.NUD_PERMANENT,
 		Type:         netlink.NDA_LLADDR,
 		IP:           dstIP,

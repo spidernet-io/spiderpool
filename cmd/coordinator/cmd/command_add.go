@@ -178,11 +178,11 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	if conf.IPConflict != nil && *conf.IPConflict {
-		ipc, err := ipchecking.NewIPChecker(c.ipFamily, conf.DetectOptions.Retry, c.currentInterface, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
+		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
 		if err != nil {
 			return fmt.Errorf("failed to run NewIPChecker: %w", err)
 		}
-		ipc.DoIPConflictChecking(prevResult.IPs, errg)
+		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, errg)
 	}
 
 	if err = errg.Wait(); err != nil {

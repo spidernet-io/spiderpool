@@ -16,7 +16,6 @@ import (
 	"github.com/mdlayher/arp"
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/ndp"
-	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -33,7 +32,7 @@ type IPChecker struct {
 	logger    *zap.Logger
 }
 
-func NewIPChecker(ipfamily, retries int, iface, interval, timeout string, netns ns.NetNS, logger *zap.Logger) (*IPChecker, error) {
+func NewIPChecker(retries int, interval, timeout string, netns ns.NetNS, logger *zap.Logger) (*IPChecker, error) {
 	var err error
 
 	ipc := new(IPChecker)
@@ -48,52 +47,46 @@ func NewIPChecker(ipfamily, retries int, iface, interval, timeout string, netns 
 		return nil, fmt.Errorf("failed to parse timeoute %v: %v", timeout, err)
 	}
 
-	err = netns.Do(func(netNS ns.NetNS) error {
-		ipc.ifi, err = net.InterfaceByName(iface)
-		if err != nil {
-			return fmt.Errorf("failed to InterfaceByName %s: %w", iface, err)
-		}
-		return nil
-	})
-
 	if err != nil {
 		return nil, err
 	}
 
-	if ipfamily != netlink.FAMILY_V6 {
-		ipc.arpClient, err = arp.Dial(ipc.ifi)
-		if err != nil {
-			return nil, fmt.Errorf("failed to init arp client: %w", err)
-		}
-	}
-
-	if ipfamily != netlink.FAMILY_V4 {
-		ipc.ndpClient, _, err = ndp.Listen(ipc.ifi, ndp.LinkLocal)
-		if err != nil {
-			return nil, fmt.Errorf("failed to init ndp client: %w", err)
-		}
-	}
 	ipc.netns = netns
 	ipc.logger = logger
 	return ipc, nil
 }
 
-func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, errg *errgroup.Group) {
+func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, iface string, errg *errgroup.Group) {
 	ipc.logger.Debug("DoIPConflictChecking", zap.String("interval", ipc.interval.String()), zap.Int("retries", ipc.retries))
 	if len(ipconfigs) == 0 {
 		ipc.logger.Info("No ips found in pod, ignore pod ip's conflict checking")
 		return
 	}
+
+	var err error
 	_ = ipc.netns.Do(func(netNS ns.NetNS) error {
+		ipc.ifi, err = net.InterfaceByName(iface)
+		if err != nil {
+			return fmt.Errorf("failed to InterfaceByName %s: %w", iface, err)
+		}
+
 		for idx := range ipconfigs {
 			target := netip.MustParseAddr(ipconfigs[idx].Address.IP.String())
 			if target.Is4() {
 				ipc.logger.Debug("IPCheckingByARP", zap.String("ipv4 address", target.String()))
 				ipc.ip4 = target
+				ipc.arpClient, err = arp.Dial(ipc.ifi)
+				if err != nil {
+					return fmt.Errorf("failed to init arp client: %w", err)
+				}
 				errg.Go(ipc.ipCheckingByARP)
 			} else {
 				ipc.logger.Debug("IPCheckingByNDP", zap.String("ipv6 address", target.String()))
 				ipc.ip6 = target
+				ipc.ndpClient, _, err = ndp.Listen(ipc.ifi, ndp.LinkLocal)
+				if err != nil {
+					return fmt.Errorf("failed to init ndp client: %w", err)
+				}
 				errg.Go(ipc.ipCheckingByNDP)
 			}
 		}
@@ -102,13 +95,13 @@ func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, errg 
 }
 
 func (ipc *IPChecker) ipCheckingByARP() error {
-	defer ipc.arpClient.Close()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var conflictingMac string
 	var err error
+	defer ipc.arpClient.Close()
+
+	var conflictingMac string
 	// start a goroutine to receive arp response
 	go func() {
 		var packet *arp.Packet
@@ -179,6 +172,7 @@ var errRetry = errors.New("retry")
 var NDPFoundReply error = errors.New("found ndp reply")
 
 func (ipc *IPChecker) ipCheckingByNDP() error {
+	var err error
 	defer ipc.ndpClient.Close()
 
 	m := &ndp.NeighborSolicitation{
@@ -192,7 +186,6 @@ func (ipc *IPChecker) ipCheckingByNDP() error {
 	}
 
 	var replyMac string
-	var err error
 	replyMac, err = ipc.sendReceiveLoop(m)
 	if err != nil {
 		if err.Error() == NDPFoundReply.Error() {
@@ -200,8 +193,6 @@ func (ipc *IPChecker) ipCheckingByNDP() error {
 				ipc.logger.Error("Found IPv6 address conflicting", zap.String("Conflicting IP", ipc.ip6.String()), zap.String("Host", replyMac))
 				return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ipc.ifi.Name,
 					ipc.ip6.String(), ipc.ip6.String(), replyMac)
-			} else {
-				return fmt.Errorf("failed to checking ipv6 address conflicting: %v", err)
 			}
 		}
 	}

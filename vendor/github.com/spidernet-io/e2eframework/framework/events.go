@@ -56,3 +56,19 @@ func (f *Framework) WaitExceptEventOccurred(ctx context.Context, eventKind, objN
 		}
 	}
 }
+
+func (f *Framework) GetEvents(ctx context.Context, eventKind, objName, objNamespace string) (*corev1.EventList, error) {
+	l := &client.ListOptions{
+		Raw: &metav1.ListOptions{
+			TypeMeta:      metav1.TypeMeta{Kind: eventKind},
+			FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.namespace=%s", objName, objNamespace),
+		},
+	}
+
+	events := &corev1.EventList{}
+	if err := f.KClient.List(ctx, events, l); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}

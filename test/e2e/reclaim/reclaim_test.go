@@ -406,10 +406,10 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			}
 
 			// generate dirty ip, pod name and dirty containerID
-			dirtyIPv4 = common.GenerateExampleIpv4Address()
+			dirtyIPv4 = common.GenerateRandomIPV4()
 			GinkgoWriter.Printf("generate dirty IPv4 :%v \n", dirtyIPv4)
 
-			dirtyIPv6 = common.GenerateExampleIpv6Address()
+			dirtyIPv6 = common.GenerateRandomIPV6()
 			GinkgoWriter.Printf("generate dirty IPv6:%v\n", dirtyIPv6)
 
 			dirtyPodName = "dirtyPod-" + tools.RandomName()

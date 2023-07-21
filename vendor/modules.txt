@@ -440,8 +440,8 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/spidernet-io/e2eframework v0.0.0-20230403061847-445757b963b3
-## explicit; go 1.19
+# github.com/spidernet-io/e2eframework v0.0.0-20230721034001-0ebb34260e8f
+## explicit; go 1.20
 github.com/spidernet-io/e2eframework/framework
 github.com/spidernet-io/e2eframework/tools
 # github.com/spidernet-io/spiderdoctor v0.3.0

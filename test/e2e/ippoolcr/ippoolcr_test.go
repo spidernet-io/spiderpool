@@ -203,8 +203,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		var v4Pool, v6Pool *spiderpoolv2beta1.SpiderIPPool
 
 		// Generate Invalid Gateway and Dst
-		v4InvalidGateway = common.GenerateExampleIpv4Gateway()
-		v6InvalidGateway = common.GenerateExampleIpv6Gateway()
+		v4InvalidGateway = common.GenerateRandomIPV4()
+		v6InvalidGateway = common.GenerateRandomIPV6()
 
 		annoPodIPPools := types.AnnoPodIPPoolsValue{
 			types.AnnoIPPoolItem{

@@ -196,11 +196,11 @@ setup_spiderpool:
 			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
 			docker pull $${IMAGE_MULTUS} ; \
 		 	kind load docker-image $${IMAGE_MULTUS}  --name $(E2E_CLUSTER_NAME); \
-				if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
-					HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
-				else \
-					HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
-				fi ; \
+			if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
+				HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
+			else \
+				HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
+			fi ; \
 		else \
 		    HELM_OPTION+=" --set multus.multusCNI.install=false " ; \
 		fi ; \

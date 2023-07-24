@@ -254,7 +254,7 @@ webhooks:
         - CREATE
         - UPDATE
       resources:
-        - spidermultusconfig
+        - spidermultusconfigs
   sideEffects: None
 {{- end }}
 

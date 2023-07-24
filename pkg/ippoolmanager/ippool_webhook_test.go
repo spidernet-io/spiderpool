@@ -521,6 +521,53 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					},
 				))
 			})
+
+			It("inherit subnet properties from SpiderSubnet", func() {
+				ipVersion := constant.IPv4
+				subnet := "172.18.50.0/24"
+				cidr, err := spiderpoolip.CIDRToLabelValue(ipVersion, subnet)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cidr).NotTo(BeEmpty())
+
+				ipPoolWebhook.EnableSpiderSubnet = true
+				subnetT.SetUID(uuid.NewUUID())
+				subnetT.Labels[constant.LabelSubnetCIDR] = cidr
+				subnetT.Spec.IPVersion = pointer.Int64(ipVersion)
+				subnetT.Spec.Subnet = subnet
+				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+					[]string{
+						"172.18.50.1-172.18.50.2",
+						"172.18.50.10",
+					}...,
+				)
+
+				subnetT.Spec.Gateway = pointer.String("172.18.50.0")
+				subnetT.Spec.Vlan = pointer.Int64(50)
+				subnetT.Spec.Routes = []spiderpoolv2beta1.Route{
+					{
+						Dst: "0.0.0.0/0",
+						Gw:  "172.18.50.0",
+					},
+				}
+
+				err = fakeClient.Create(ctx, subnetT)
+				Expect(err).NotTo(HaveOccurred())
+
+				ipPoolT.Spec.Subnet = subnet
+				err = ipPoolWebhook.Default(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				controlled := metav1.IsControlledBy(ipPoolT, subnetT)
+				Expect(controlled).To(BeTrue())
+
+				v, ok := ipPoolT.Labels[constant.LabelIPPoolOwnerSpiderSubnet]
+				Expect(ok).To(BeTrue())
+				Expect(v).To(Equal(subnetName))
+
+				Expect(ipPoolT.Spec.Gateway).To(Equal(subnetT.Spec.Gateway))
+				Expect(ipPoolT.Spec.Vlan).To(Equal(subnetT.Spec.Vlan))
+				Expect(ipPoolT.Spec.Routes).To(Equal(subnetT.Spec.Routes))
+			})
 		})
 
 		Describe("ValidateCreate", func() {

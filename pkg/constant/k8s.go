@@ -91,6 +91,14 @@ const (
 	AnnoNetAttachConfName      = MultusConfAnnoPre + "/cr-name"
 	AnnoMultusConfigCNIVersion = MultusConfAnnoPre + "/cni-version"
 
+	AnnoMultusInstancePrefix      = "v1.multus-underlay-cni.io"
+	MultusInstanceShowLabel       = AnnoMultusInstancePrefix + "/instance-status"
+	MultusInstanceTypeLabel       = AnnoMultusInstancePrefix + "/instance-type"
+	MultusInstanceIsDefaultLabel  = AnnoMultusInstancePrefix + "/default-cni"
+	MultusInstanceIsUnderlayLabel = AnnoMultusInstancePrefix + "/underlay-cni"
+	MultusInstanceVlanIDLabel     = AnnoMultusInstancePrefix + "/vlanId"
+	MultusInstanceCoexistLabel    = AnnoMultusInstancePrefix + "/coexist-types"
+
 	// Coordinator
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 )

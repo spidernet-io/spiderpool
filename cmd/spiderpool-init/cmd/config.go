@@ -317,7 +317,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 }
 
 func getMultusCniConfig(cniName, cniType string) *spiderpoolv2beta1.SpiderMultusConfig {
-	annotations := make(map[string]string)
+	annotations := getDefaultAnnotations()
 	// change calico cni name from k8s-pod-network to calico
 	// more datails see:
 	// https://github.com/projectcalico/calico/issues/7837
@@ -330,10 +330,23 @@ func getMultusCniConfig(cniName, cniType string) *spiderpoolv2beta1.SpiderMultus
 			Name:        cniName,
 			Namespace:   "kube-system",
 			Annotations: annotations,
+			Labels: map[string]string{
+				constant.MultusInstanceShowLabel: "enable",
+			},
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
 			CniType:           spiderpoolv2beta1.CniType(cniType),
 			EnableCoordinator: pointer.Bool(false),
 		},
 	}
+}
+
+func getDefaultAnnotations() (annotations map[string]string) {
+	annotations = make(map[string]string)
+	annotations[constant.MultusInstanceIsDefaultLabel] = "true"
+	annotations[constant.MultusInstanceIsUnderlayLabel] = "false"
+	annotations[constant.MultusInstanceTypeLabel] = "default"
+	annotations[constant.MultusInstanceCoexistLabel] = "[\"macvlan_overlay\",\"ipvlan_overlay\",\"sriov_overlay\"]"
+	annotations[constant.MultusInstanceVlanIDLabel] = "0"
+	return annotations
 }

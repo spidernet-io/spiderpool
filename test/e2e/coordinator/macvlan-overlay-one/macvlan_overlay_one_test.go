@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -173,6 +174,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 	Context("coordinator's gateway, macperfix's authentication", func() {
 		var v4PoolName, v6PoolName, namespace, macPrefix, depName, mode, multusNadName string
 		var v4Gateway, v6Gateway string
+		var podCidrType string
 
 		BeforeEach(func() {
 			// generate some test data
@@ -181,6 +183,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			namespace = "ns-" + common.GenerateString(10, true)
 			depName = "dep-name-" + common.GenerateString(10, true)
 			multusNadName = "test-multus-" + common.GenerateString(10, true)
+			podCidrType = "cluster"
 
 			// create namespace and ippool
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
@@ -219,6 +222,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						PodMACPrefix:       &macPrefix,
 						PodDefaultRouteNIC: &common.NIC2,
 						Mode:               &mode,
+						PodCIDRType:        podCidrType,
 					},
 				},
 			}
@@ -321,6 +325,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:          &mode,
 						DetectGateway: &detectGateway,
+						PodCIDRType:   podCidrType,
 					},
 				},
 			}
@@ -354,7 +359,10 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				GinkgoWriter.Printf("The v4 gateway detects an abnormal message %v \n", networkV4ErrString)
 			}
 			if frame.Info.IpV6Enabled {
-				networkV6ErrString = fmt.Sprintf("gateway %v is unreachable", v6Gateway)
+				// The ipv6 address on the network interface will be abbreviated. For example fd00:0c3d::2 becomes fd00:c3d::2.
+				// Abbreviate the expected ipv6 address and use it in subsequent assertions.
+				v6GatewayNetIP := net.ParseIP(v6Gateway)
+				networkV6ErrString = fmt.Sprintf("gateway %v is unreachable", v6GatewayNetIP.String())
 				GinkgoWriter.Printf("The v6 gateway detects an abnormal message %v \n", networkV6ErrString)
 			}
 
@@ -388,7 +396,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 	Context("ip conflict detection (ipv4, ipv6)", func() {
 		var v4IpConflict, v6IpConflict string
-		var depName, namespace, v4PoolName, v6PoolName, mode string
+		var depName, namespace, v4PoolName, v6PoolName, mode, podCidrType string
 		var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
 		var ipConflict bool
 		var multusNadName = "test-multus-" + common.GenerateString(10, true)
@@ -398,6 +406,8 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			namespace = "ns-" + common.GenerateString(10, true)
 			mode = "overlay"
 			ipConflict = true
+			podCidrType = "cluster"
+
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -415,6 +425,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:             &mode,
 						DetectIPConflict: &ipConflict,
+						PodCIDRType:      podCidrType,
 					},
 				},
 			}

@@ -31,6 +31,7 @@ const (
 	ResourceDeleteTimeout      = time.Minute * 5
 	BatchCreateTimeout         = time.Minute * 5
 	KdoctorCheckTime           = time.Minute * 10
+	SpiderSyncMultusTime       = time.Minute
 )
 
 var ForcedWaitingTime = time.Second

@@ -2,32 +2,35 @@
 
 A SpiderReservedIP resource represents a collection of IP addresses that Spiderpool expects not to be allocated.
 
-## CRD definition
+For details on using this CRD, please read the [SpiderReservedIP guide](./../usage/reserved-ip.md).
 
-The SpiderReservedIP custom resource is modeled after a standard Kubernetes resource
-and is split into a `spec` section:
+## Sample YAML
 
-```text
-// SpiderReservedIP is the Schema for the spiderreservedips API
-type SpiderReservedIP struct {
-    metav1.TypeMeta   `json:",inline"`
-    metav1.ObjectMeta `json:"metadata,omitempty"`
-
-    Spec ReservedIPSpec `json:"spec,omitempty"`
-}
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: exclude-ips
+spec:
+  subnet: 172.18.41.0/24
+  ips:
+    - 172.18.41.40-172.18.41.44
+    - 172.18.41.46-172.18.41.50
 ```
 
-### SpiderReservedIP spec
+## SpiderReservedIP definition
 
-The `spec` section embeds a specific ReservedIP field which allows to define the list of all reserved IPs:
+### Metadata
 
-```text
-// ReservedIPSpec defines the desired state of SpiderReservedIP
-type ReservedIPSpec struct {
-    // IP version
-    IPVersion *int64 `json:"ipVersion,omitempty"`
-ni
-    // reserved IPs
-    IPs []string `json:"ips"`
-}
-```
+| Field | Description                                | Schema | Validation |
+|-------|--------------------------------------------|--------|------------|
+| name  | the name of this SpiderReservedIP resource | string | required   |
+
+### Spec
+
+This is the SpiderReservedIP spec for users to configure.
+
+| Field             | Description                                           | Schema                                   | Validation | Values                                   |
+|-------------------|-------------------------------------------------------|------------------------------------------|------------|------------------------------------------|
+| ipVersion         | IP version of this resource                           | int                                      | optional   | 4,6                                      |
+| ips               | IP ranges for this resource that we expect not to use | list of strings                          | optional   | array of IP ranges and single IP address |

@@ -73,6 +73,14 @@ func DelToRuleTable(dst *net.IPNet, ruleTable int) error {
 	return netlink.RuleDel(rule)
 }
 
+func AddRuleTableWithMark(mark, ruleTable, ipFamily int) error {
+	rule := netlink.NewRule()
+	rule.Mark = mark
+	rule.Table = ruleTable
+	rule.Family = ipFamily
+	return netlink.RuleAdd(rule)
+}
+
 // AddFromRuleTable add route rule for calico/cilium cidr(ipv4 and ipv6)
 // Equivalent to: `ip rule add from <cidr> `
 func AddFromRuleTable(src *net.IPNet, ruleTable int) error {
@@ -91,7 +99,7 @@ func DelFromRuleTable(src *net.IPNet, ruleTable int) error {
 }
 
 // AddRoute add static route to specify rule table
-func AddRoute(logger *zap.Logger, ruleTable int, scope netlink.Scope, iface string, dst *net.IPNet, v4Gw, v6Gw net.IP) error {
+func AddRoute(logger *zap.Logger, ruleTable, ipFamily int, scope netlink.Scope, iface string, dst *net.IPNet, v4Gw, v6Gw net.IP) error {
 	link, err := netlink.LinkByName(iface)
 	if err != nil {
 		logger.Error(err.Error())
@@ -105,17 +113,30 @@ func AddRoute(logger *zap.Logger, ruleTable int, scope netlink.Scope, iface stri
 		Table:     ruleTable,
 	}
 
-	if dst.IP.To4() != nil && v4Gw != nil {
-		route.Gw = v4Gw
-	}
+	switch ipFamily {
+	case netlink.FAMILY_V4:
+		if v4Gw != nil {
+			route.Gw = v4Gw
+		}
+	case netlink.FAMILY_V6:
+		if v6Gw != nil {
+			route.Gw = v6Gw
+		}
+	case netlink.FAMILY_ALL:
+		if dst != nil && dst.IP.To4() != nil && v4Gw != nil {
+			route.Gw = v4Gw
+		}
 
-	if dst.IP.To4() == nil && v6Gw != nil {
-		route.Gw = v6Gw
+		if dst != nil && dst.IP.To4() == nil && v6Gw != nil {
+			route.Gw = v6Gw
+		}
+	default:
+		return fmt.Errorf("unknown ipFamily %v", ipFamily)
 	}
 
 	if err = netlink.RouteAdd(route); err != nil && !os.IsExist(err) {
 		logger.Error("failed to RouteAdd", zap.String("route", route.String()), zap.Error(err))
-		return err
+		return fmt.Errorf("failed to add route table(%v): %v", route.String(), err)
 	}
 	return nil
 }

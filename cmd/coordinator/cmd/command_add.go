@@ -250,7 +250,16 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if err = c.setupHijackRoutes(logger, c.currentRuleTable); err != nil {
 		logger.Error("failed to setupHijackRoutes", zap.Error(err))
-		return fmt.Errorf("failed to setupHijackRoutes: %v", err)
+		return err
+	}
+
+	if c.tuneMode == ModeUnderlay {
+		if err = c.makeReplyPacketViaVeth(logger); err != nil {
+			logger.Error("failed to makeReplyPacketViaVeth", zap.Error(err))
+			return fmt.Errorf("failed to makeReplyPacketViaVeth: %v", err)
+		} else {
+			logger.Sugar().Infof("Successfully to ensure reply packet is forward by veth0")
+		}
 	}
 
 	if conf.TunePodRoutes != nil && *conf.TunePodRoutes && (!c.firstInvoke || c.tuneMode == ModeOverlay) {

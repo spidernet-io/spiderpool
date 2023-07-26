@@ -25,6 +25,7 @@ import (
 var (
 	defaultLogPath          = "/var/log/spidernet/coordinator.log"
 	defaultUnderlayVethName = "veth0"
+	defaultMarkBit          = 0 //ox1
 	// by default, k8s pod's first NIC is eth0
 	defaultOverlayVethName = "eth0"
 	defaultPodRuleTable    = 100

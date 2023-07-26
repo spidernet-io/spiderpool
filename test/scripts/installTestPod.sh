@@ -60,6 +60,7 @@ EOF
 
 echo "waiting for deployment/${NAME} ready"
 if ! kubectl rollout status  deployment/${NAME} --kubeconfig ${E2E_KUBECONFIG} -w --timeout=120s ; then
+    kubectl describe po --kubeconfig ${E2E_KUBECONFIG}
     echo "error, failed to create a test pod"
     exit 1
 fi

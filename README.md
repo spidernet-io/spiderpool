@@ -300,6 +300,36 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 * [Metrics](./docs/concepts/metrics.md)
 
+## blogs
+
+* [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
+
+* [云原生 Spiderpool：基于跨越网络区域的 IP 分配](https://mp.weixin.qq.com/s/9OOtZ-q2kQcrWDs4_x5QxA)
+
+* [SpiderPool：Calico 固定应用 IP 的一种新选择](https://mp.weixin.qq.com/s/5yh_guVE6JqriqMAmdKR1A)
+
+* [云原生网络新玩法：一种支持固定多网卡IP的 Underlay 网络解决方案](https://mp.weixin.qq.com/s/ScXR70qCCiAb6Tee9eQewA)
+
+* [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
+
+## Governance
+
+The project is governed by a group of [Maintainers and Committers](./AUTHORS)
+
+## Slack
+
+If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
+and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
+
+## Adopters
+
+A list of adopters who are deploying Spiderpool in production, and of their use cases, can be found in [file](./docs/USERS.md).
+
+## Community
+
+We welcome contributions of any kind.
+If you have any questions about contributing, please consult the [contributing documentation](./docs/develop/contributing.md).
+
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0.

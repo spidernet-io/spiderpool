@@ -451,7 +451,15 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				v4PoolObj.Spec.Subnet = spiderPoolIPv4SubnetVlan200.Spec.Subnet
 				v4PoolObj.Spec.Gateway = spiderPoolIPv4SubnetVlan200.Spec.Gateway
 				v4PoolObj.Spec.Vlan = spiderPoolIPv4SubnetVlan200.Spec.Vlan
-				v4RandNum := r.Intn(200) + 2
+
+				// Do not use the gateway address as the conflicting ip, and the use case will remove the IP address in the subsequent steps.
+				// If the gateway address is removed, it will affect the connectivity of other use cases.
+				var v4RandNum int
+				Eventually(func() bool {
+					v4RandNum = r.Intn(99) + 1
+					v4Ips := strings.Split(spiderPoolIPv4SubnetVlan200.Spec.Subnet, "0/")[0] + strconv.Itoa(v4RandNum)
+					return v4Ips != *spiderPoolIPv4SubnetVlan200.Spec.Gateway
+				}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
 				v4PoolObj.Spec.IPs = []string{strings.Split(spiderPoolIPv4SubnetVlan200.Spec.Subnet, "0/")[0] + strconv.Itoa(v4RandNum)}
 				v4IpConflict = v4PoolObj.Spec.IPs[0]
 				err = common.CreateIppool(frame, v4PoolObj)
@@ -461,7 +469,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 				defer cancel()
 				addV4IpCmdString := fmt.Sprintf("ip a add %s/%v dev %s", v4IpConflict, strings.Split(v4PoolObj.Spec.Subnet, "/")[1], common.NIC4)
-				GinkgoWriter.Printf("%v \n", addV4IpCmdString)
+				GinkgoWriter.Println("add v4 ip conflict command: ", addV4IpCmdString)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, addV4IpCmdString)
 				Expect(err).NotTo(HaveOccurred(), "Failed to add v4 conflicting ip of docker container, error is: %v,log: %v.", err, string(output))
 				podAnno.IPv4Pools = []string{v4PoolName}
@@ -475,7 +483,14 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				v6PoolObj.Spec.Subnet = spiderPoolIPv6SubnetVlan200.Spec.Subnet
 				v6PoolObj.Spec.Gateway = spiderPoolIPv6SubnetVlan200.Spec.Gateway
 				v6PoolObj.Spec.Vlan = spiderPoolIPv6SubnetVlan200.Spec.Vlan
-				v6RandNum := r.Intn(200) + 2
+				// Do not use the gateway address as the conflicting ip, and the use case will remove the IP address in the subsequent steps.
+				// If the gateway address is removed, it will affect the connectivity of other use cases.
+				var v6RandNum int
+				Eventually(func() bool {
+					v6RandNum = r.Intn(99) + 1
+					v6Ips := strings.Split(spiderPoolIPv6SubnetVlan200.Spec.Subnet, "/")[0] + strconv.Itoa(v6RandNum)
+					return v6Ips != *spiderPoolIPv6SubnetVlan200.Spec.Gateway
+				}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
 				v6PoolObj.Spec.IPs = []string{strings.Split(spiderPoolIPv6SubnetVlan200.Spec.Subnet, "/")[0] + strconv.Itoa(v6RandNum)}
 				v6IpConflict = v6PoolObj.Spec.IPs[0]
 				err = common.CreateIppool(frame, v6PoolObj)
@@ -485,6 +500,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 				defer cancel()
 				addV6IpCmdString := fmt.Sprintf("ip a add %s/%v dev %s", v6IpConflict, strings.Split(v6PoolObj.Spec.Subnet, "/")[1], common.NIC4)
+				GinkgoWriter.Println("add v6 ip conflict command: ", addV6IpCmdString)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, addV6IpCmdString)
 				Expect(err).NotTo(HaveOccurred(), "Failed to add v6 conflicting ip of docker container, error is: %v, log: %v.", err, string(output))
 				podAnno.IPv6Pools = []string{v6PoolName}

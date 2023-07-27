@@ -237,6 +237,35 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 * [指标](./docs/concepts/metrics.md)
 
+## blogs
+
+* [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
+
+* [云原生 Spiderpool：基于跨越网络区域的 IP 分配](https://mp.weixin.qq.com/s/9OOtZ-q2kQcrWDs4_x5QxA)
+
+* [SpiderPool：Calico 固定应用 IP 的一种新选择](https://mp.weixin.qq.com/s/5yh_guVE6JqriqMAmdKR1A)
+
+* [云原生网络新玩法：一种支持固定多网卡IP的 Underlay 网络解决方案](https://mp.weixin.qq.com/s/ScXR70qCCiAb6Tee9eQewA)
+
+* [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
+
+## Governance
+
+[Maintainers and Committers](./docs/USERS.md)
+
+## Slack
+
+[#Spiderpool](https://cloud-native.slack.com/messages/spiderpool)
+
+## 使用者
+
+使用了 spiderpool 项目的用户 [file](./docs/USERS.md).
+
+## 参与开发
+
+可参考 [开发搭建文档](./docs/develop/contributing.md).
+
+
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.

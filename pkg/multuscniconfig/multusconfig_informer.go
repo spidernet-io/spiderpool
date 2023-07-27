@@ -13,6 +13,7 @@ import (
 
 	"github.com/containernetworking/cni/pkg/types"
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -538,8 +539,10 @@ func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondC
 	}
 
 	if bond != nil {
-		netConf.Bond.Name = bond.Name
-		netConf.Bond.Mode = int(bond.Mode)
+		netConf.Bond = &ifacercmd.Bond{
+			Name: bond.Name,
+			Mode: int(bond.Mode),
+		}
 
 		if bond.Options != nil {
 			netConf.Bond.Options = *bond.Options

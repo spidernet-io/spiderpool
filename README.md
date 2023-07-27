@@ -304,9 +304,9 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 * [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
 
-* [云原生 Spiderpool：基于跨越网络区域的 IP 分配](https://mp.weixin.qq.com/s/9OOtZ-q2kQcrWDs4_x5QxA)
+* [Cloud-Native Spiderpool: IP Allocation Across Network Zones](https://blog.daocloud.io/8962.html)
 
-* [SpiderPool：Calico 固定应用 IP 的一种新选择](https://mp.weixin.qq.com/s/5yh_guVE6JqriqMAmdKR1A)
+* [Spiderpool: a new solution to fixed application IPs for Calico](https://blog.daocloud.io/8949.html)
 
 * [云原生网络新玩法：一种支持固定多网卡IP的 Underlay 网络解决方案](https://mp.weixin.qq.com/s/ScXR70qCCiAb6Tee9eQewA)
 

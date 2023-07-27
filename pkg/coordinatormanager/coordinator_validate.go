@@ -120,7 +120,7 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 		return errInvalid
 	}
 
-	bb := fmt.Sprintf("%b", fb)
+	bb := fmt.Sprintf("%08b", fb)
 	if string(bb[7]) != "0" {
 		return field.Invalid(podMACPrefixField, *prefix, "not a unicast MAC")
 	}

@@ -17,7 +17,7 @@ Here are some annotations that you should write down on the application template
 
 2. In annotation `ipam.spidernet.io/subnet` mode, it will use default interface name `eth0` if you do not set `interface` property.
 
-3. For annotation `ipam.spidernet.io/ippool-ip-number`, you can use '2' for fixed IP number or '+2' for flexible mode. The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas. If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas. This is an optional annotation. If left unset, it will use the `clusterSubnetDefaultFlexibleIPNumber` property from the `spiderpool-conf` ConfigMap as the flexible IP number in flexible mode. Refer to [config](../concepts/config.md) for details.
+3. For annotation `ipam.spidernet.io/ippool-ip-number`, you can use '2' for fixed IP number or '+2' for flexible mode. The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas. If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas. This is an optional annotation. If left unset, it will use the `clusterSubnetDefaultFlexibleIPNumber` property from the `spiderpool-conf` ConfigMap as the flexible IP number in flexible mode. Refer to [config](../reference/configmap.md) for details.
 
 4. The current version only supports using one SpiderSubnet V4/V6 CR for one Interface. You shouldn't specify two or more SpiderSubnet V4 CRs. The system will choose the first one to use.
 

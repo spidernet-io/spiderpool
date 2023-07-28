@@ -43,7 +43,7 @@ nav:
   - README.md
   - Installation:
       - Installation: usage/install/install.md
-      - Upgrading: usage/upgrade.md
+      - Upgrading: usage/install/upgrade.md
       - Certificates: usage/install/certificate.md
   - Usage:
       - SpiderSubnet: usage/spider-subnet.md
@@ -58,26 +58,33 @@ nav:
       - Third-party controllers: usage/third-party-controller.md
       - Reclaim IP: usage/gc.md
       - Route support: usage/route.md
+      - Plugin coordinator: usage/coordinator.md
+      - Plugin ifacer: usage/ifacer.md
+      - Calico: usage/get-started-calico.md
+      - node-based topology: usage/network-topology.md
       - Spiderpool Performance Testing: usage/performance.md
       - FAQ: usage/debug.md
   - Concepts:
-      - Annotations: concepts/annotation.md
       - Architecture: concepts/arch.md
-      - Configuration: concepts/config.md
       - IP Allocation: concepts/allocation.md
       - Metrics: concepts/metrics.md
       - Resource Reclaim: concepts/gc.md
-      - SpiderEndpoint: concepts/spiderendpoint.md
-      - SpiderIPPool: concepts/spiderippool.md
-      - SpiderReservedIP: concepts/spiderreservedip.md
-      - SpiderSubnet: concepts/spidersubnet.md
       - Underlay and overlay solutions: concepts/solution.md
-  - CLI Reference:
+  - Reference:
+      - Annotations: reference/annotation.md
+      - Configmap: reference/configmap.md
       - spiderpool-controller: reference/spiderpool-controller.md
       - spiderpool-agent: reference/spiderpool-agent.md
+      - SpiderSubnet: reference/crd-spidersubnet.md
+      - SpiderIPPool: reference/crd-spiderippool.md
+      - Spidermultusconfig: reference/crd-spidermultusconfig.md
+      - SpiderEndpoint: reference/crd-spiderendpoint.md
+      - SpiderReservedIP: reference/crd-spiderreservedip.md
+      - Ifacer: reference/plugin-ifacer.md
+      - Ipam: reference/plugin-ipam.md
   - Development:
       - Contribution Guide: develop/contributing.md
-      - Code of Conduct: develop/contributing.md
+      - Code of Conduct: develop/CODE-OF-CONDUCT.md
       - Release workflow: develop/release.md
       - Roadmap: develop/roadmap.md
       - Swagger OpenAPI: develop/swagger_openapi.md

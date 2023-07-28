@@ -14,16 +14,18 @@ Run the spiderpool controller daemon.
 
 ### ENV
 
-```
-    SPIDERPOOL_LOG_LEVEL                        log level (DEBUG|INFO|ERROR)
-    SPIDERPOOL_ENABLED_METRIC                   enable metrics (true|false)
-    SPIDERPOOL_METRIC_HTTP_PORT                 metric port (default to 5721)
-    SPIDERPOOL_GC_IP_ENABLED                    enable GC ip in ippool, prior to other GC environment (true|false, default to true)
-    SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED    enable GC ip of terminating pod whose graceful-time times out (true|false, default to true)
-    SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY        delay to GC ip after graceful-time times out (second, default to 0)
-    SPIDERPOOL_HEALTH_PORT                      http port  (default to 5710)
-    SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION     all intervals of GC (second, default to 600)
-```
+| env                                      | default | description                                                                        |
+|------------------------------------------|---------|------------------------------------------------------------------------------------|
+| SPIDERPOOL_LOG_LEVEL                     | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
+| SPIDERPOOL_ENABLED_METRIC                | false   | Enable/disable metrics.                                                            |
+| SPIDERPOOL_HEALTH_PORT                   | 5720    | Spiderpool-controller backend HTTP server port.                                    |
+| SPIDERPOOL_METRIC_HTTP_PORT              | 5721    | Metric HTTP server port.                                                           |
+| SPIDERPOOL_WEBHOOK_PORT                  | 5722    | Webhook HTTP server port.                                                          |
+| SPIDERPOOL_CLI_PORT                      | 5723    | Spiderpool-CLI HTTP server port.                                                   |
+| SPIDERPOOL_GOPS_LISTEN_PORT              | 5724    | Port that gops is listening on. Disabled if empty.                                 |
+| SPIDERPOOL_GC_IP_ENABLED                 | true    | Enable/disable IP GC.                                                              |
+| SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED | true    | Enable/disable IP GC for Terminating pod.                                          |
+
 
 ## spiderpool-controller shutdown
 

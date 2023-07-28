@@ -15,6 +15,8 @@ import (
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
+	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
+	"k8s.io/utils/exec"
 
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 )
@@ -218,13 +220,13 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 				return err
 			}
 
-			if err := networking.AddRoute(logger, ruleTable, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
+			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
 				logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 				return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 			}
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
+				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
 					logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 					return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 				}
@@ -248,13 +250,13 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		// eq: "ip r add <ipAddressOnNode> dev veth0/eth0 table <ruleTable>"
 		for _, hostAddress := range c.hostAddress {
 			ipNet := networking.ConvertMaxMaskIPNet(hostAddress.IP)
-			if err = networking.AddRoute(logger, c.currentRuleTable, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
+			if err = networking.AddRoute(logger, c.currentRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
 				logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
 				return fmt.Errorf("failed to AddRouteTable for ipAddressOnNode: %v", err)
 			}
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				if err = networking.AddRoute(logger, unix.RT_TABLE_MAIN, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
+				if err = networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
 					logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
 					return fmt.Errorf("failed to AddRouteTable for ipAddressOnNode: %v", err)
 				}
@@ -318,7 +320,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 
 		// set routes for host
 		// equivalent: ip add  <chainedIPs> dev <hostVethName> table  on host
-		if err = networking.AddRoute(logger, c.hostRuleTable, netlink.SCOPE_LINK, c.hostVethName, ipNet, nil, nil); err != nil {
+		if err = networking.AddRoute(logger, c.hostRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.hostVethName, ipNet, nil, nil); err != nil {
 			logger.Error("failed to AddRouteTable for preInterfaceIPAddress", zap.Error(err))
 			return fmt.Errorf("failed to AddRouteTable for preInterfaceIPAddress: %v", err)
 		}
@@ -524,6 +526,50 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 	return nil
 }
 
+// makeReplyPacketViaVeth make sure that tcp replay packet is forward by veth0
+// NOTE: underlay mode only.
+func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
+	v4Gw, v6Gw, err := networking.GetGatewayIP(c.currentAddress)
+	if err != nil {
+		return fmt.Errorf("failed to get gateway ips: %v", err)
+	}
+
+	var iptablesInterface []utiliptables.Interface
+	var ipFamily []int
+	execer := exec.New()
+	markInt := getMarkInt(defaultMarkBit)
+	switch c.ipFamily {
+	case netlink.FAMILY_V4:
+		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv4))
+		ipFamily = append(ipFamily, netlink.FAMILY_V4)
+	case netlink.FAMILY_V6:
+		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv6))
+		ipFamily = append(ipFamily, netlink.FAMILY_V6)
+	case netlink.FAMILY_ALL:
+		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv4))
+		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv6))
+		ipFamily = append(ipFamily, netlink.FAMILY_V4)
+		ipFamily = append(ipFamily, netlink.FAMILY_V6)
+	}
+
+	return c.netns.Do(func(_ ns.NetNS) error {
+		if err := c.ensureIPtablesRule(iptablesInterface); err != nil {
+			return err
+		}
+
+		for _, family := range ipFamily {
+			if err := networking.AddRuleTableWithMark(markInt, c.hostRuleTable, family); err != nil {
+				return fmt.Errorf("failed to add rule table with mark: %v", err)
+			}
+
+			if err = networking.AddRoute(logger, c.hostRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, nil, v4Gw, v6Gw); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // getHostVethName select the first 11 characters of the containerID for the host veth.
 func getHostVethName(containerID string) string {
 	return fmt.Sprintf("veth%s", containerID[:min(len(containerID))])
@@ -534,4 +580,50 @@ func min(len int) int {
 		return 11
 	}
 	return len
+}
+
+func getMarkInt(markBit int) int {
+	return 1 << markBit
+}
+
+func getMarkString(mark int) string {
+	return fmt.Sprintf("%#08x", mark)
+}
+
+func (c *coordinator) ensureIPtablesRule(iptablesInterfaces []utiliptables.Interface) error {
+	markStr := getMarkString(getMarkInt(0))
+	for _, ipt := range iptablesInterfaces {
+		if ipt == nil {
+			continue
+		}
+		_, err := ipt.EnsureRule(utiliptables.Append, utiliptables.TableMangle, utiliptables.ChainPrerouting, []string{
+			"-i", defaultUnderlayVethName,
+			"-m", "conntrack",
+			"--ctstate", "NEW",
+			"-j", "MARK",
+			"--set-xmark", markStr,
+		}...)
+		if err != nil {
+			return fmt.Errorf("iptables ensureRule err: failed to set-xmark: %v", err)
+		}
+
+		_, err = ipt.EnsureRule(utiliptables.Append, utiliptables.TableMangle, utiliptables.ChainPrerouting, []string{
+			"-m", "mark",
+			"--mark", markStr,
+			"-j", "CONNMARK",
+			"--save-mark",
+		}...)
+		if err != nil {
+			return fmt.Errorf("iptables ensureRule err: failed to save-mark: %v", err)
+		}
+
+		_, err = ipt.EnsureRule(utiliptables.Append, utiliptables.TableMangle, utiliptables.ChainOutput, []string{
+			"-j", "CONNMARK",
+			"--restore-mark",
+		}...)
+		if err != nil {
+			return fmt.Errorf("iptables ensureRule err: failed to restore-mark: %v", err)
+		}
+	}
+	return nil
 }

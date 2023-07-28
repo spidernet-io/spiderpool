@@ -37,9 +37,9 @@ This is the SpiderReservedIP spec for users to configure.
 | Field             | Description                                       | Schema                                                                   | Validation | Values                      | Default |
 |-------------------|---------------------------------------------------|--------------------------------------------------------------------------|------------|-----------------------------|---------|
 | cniType           | expected main CNI type                            | string                                                                   | require    | macvlan,ipvlan,sriov,custom |         |
-| macvlan           | macvlan CNI configuration                         | [SpiderMacvlanCniConfig](./spidermultusconfig.md#SpiderMacvlanCniConfig) | optional   |                             |         |
-| ipvlan            | ipvlan CNI configuration                          | [SpiderIPvlanCniConfig](./spidermultusconfig.md#SpiderIPvlanCniConfig)   | optional   |                             |         |
-| sriov             | sriov CNI configuration                           | [SpiderSRIOVCniConfig](./spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                             |         |
+| macvlan           | macvlan CNI configuration                         | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#SpiderMacvlanCniConfig) | optional   |                             |         |
+| ipvlan            | ipvlan CNI configuration                          | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#SpiderIPvlanCniConfig)   | optional   |                             |         |
+| sriov             | sriov CNI configuration                           | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                             |         |
 | enableCoordinator | enable coordinator or not                         | boolean                                                                  | optional   | true,false                  | true    |
 | coordinator       | coordinator CNI configuration                     | CoordinatorSpec                                                          | optional   |                             |         |
 | customCNI         | a string that represents custom CNI configuration | string                                                                   | optional   |                             |         |
@@ -50,8 +50,8 @@ This is the SpiderReservedIP spec for users to configure.
 |---------|------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|------------|----------|
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                            | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                        | optional   | [0,4095] |
-| bond    | expected bond Interface configurations                                                                                             | [BondConfig](./spidermultusconfig.md#BondConfig)           | optional   |          |
-| ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./spidermultusconfig.md#SpiderpoolPools) | optional   |          |
+| bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#BondConfig)           | optional   |          |
+| ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |          |
 
 #### SpiderIPvlanCniConfig
 
@@ -59,8 +59,8 @@ This is the SpiderReservedIP spec for users to configure.
 |---------|------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|------------|----------|
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                            | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                        | optional   | [0,4095] |
-| bond    | expected bond Interface configurations                                                                                             | [BondConfig](./spidermultusconfig.md#BondConfig)           | optional   |          |
-| ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./spidermultusconfig.md#SpiderpoolPools) | optional   |          |
+| bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#BondConfig)           | optional   |          |
+| ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |          |
 
 #### SpiderSRIOVCniConfig
 
@@ -68,7 +68,7 @@ This is the SpiderReservedIP spec for users to configure.
 |--------------|-------------------------------------------------------------------------------------------|------------------------------------------------------------|------------|
 | resourceName | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                     | required   |
 | vlanID       | vlan ID                                                                                   | int                                                        | optional   |
-| ippools      | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./spidermultusconfig.md#SpiderpoolPools) | optional   |
+| ippools      | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
 
 #### BondConfig
 

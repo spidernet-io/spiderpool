@@ -1,3 +1,3 @@
 # ifacer Quick Start
 
-**简体中文** | [**English**](./ifacer.md)
+**简体中文** | [**English**](./config-ifacer.md)

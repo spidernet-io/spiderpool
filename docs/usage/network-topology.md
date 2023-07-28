@@ -10,11 +10,11 @@
 
 spiderpool在分配IP的时候，可支持多池备选功能，一个Pod不仅仅只能从某个具体的IPPool中分配出一个IP。该功能设计的意义是当使用某个池来为一组Pod分配IP时，若第一个IPPool的IP不够分，那么可顺序的从后续的备选IPPool中分出IP。
 
-+ 使用annotation来指定IPPools，可给Pod打上 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 的annotation来指定IPPool，详情可见 [Pod Annotation](../concepts/annotation.md)
++ 使用annotation来指定IPPools，可给Pod打上 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 的annotation来指定IPPool，详情可见 [Pod Annotation](../reference/annotation.md)
 
-+ 使用CNI配置文件来指定IPPools，可在 `default_ipv4_ippool` 和 `default_ipv6_ippool` 中设置期望使用的IPPools，详情可见 [configuration](../concepts/config.md)
++ 使用CNI配置文件来指定IPPools，可在 `default_ipv4_ippool` 和 `default_ipv6_ippool` 中设置期望使用的IPPools，详情可见 [configuration](../reference/plugin-ipam.md)
 
-+ 设置缺省IPPool, 可给 SpiderIPPool CR实例设置 `default`来指定一系列的缺省IP池，详情可见SpiderIPPool的CRD定义 [SpiderIPPool](../concepts/spiderippool.md)
++ 设置缺省IPPool, 可给 SpiderIPPool CR实例设置 `default`来指定一系列的缺省IP池，详情可见SpiderIPPool的CRD定义 [SpiderIPPool](../reference/crd-spiderippool.md)
 
 ### IPPool亲和性设置
 

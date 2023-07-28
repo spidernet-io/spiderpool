@@ -8,13 +8,13 @@ When a pod is creating, it will follow steps below to get IP allocations.
 
     * SpiderSubnet annotation. `ipam.spidernet.io/subnets` and `ipam.spidernet.io/subnet` will choose to use auto-created ippool if the SpiderSubnet feature is enabled. See [SpiderSubnet](../usage/spider-subnet.md) for details.
 
-    * Honor pod annotation. `ipam.spidernet.io/ippools" and "ipam.spidernet.io/ippool` could be used to specify an ippool. See [Pod Annotation](../concepts/annotation.md) for details.
+    * Honor pod annotation. `ipam.spidernet.io/ippools" and "ipam.spidernet.io/ippool` could be used to specify an ippool. See [Pod Annotation](../reference/annotation.md) for details.
 
-    * Namespace annotation. `ipam.spidernet.io/defaultv4ippool` and `ipam.spidernet.io/defaultv6ippool` could be used to specify an ippool. See [namespace annotation](../concepts/annotation.md) for details.
+    * Namespace annotation. `ipam.spidernet.io/defaultv4ippool` and `ipam.spidernet.io/defaultv6ippool` could be used to specify an ippool. See [namespace annotation](../reference/annotation.md) for details.
 
-    * CNI configuration file. It can be set to `default_ipv4_ippool` and `default_ipv6_ippool` in the CNI configuration file. See [configuration](../concepts/config.md) for details.
+    * CNI configuration file. It can be set to `default_ipv4_ippool` and `default_ipv6_ippool` in the CNI configuration file. See [configuration](../reference/plugin-ipam.md) for details.
 
-    * Cluster default IPPool. We can set SpiderIPPool CR object with `default` property, in which we'll regard it as a default pool in cluster.  See [configuration](../concepts/spiderippool.md) for details.
+    * Cluster default IPPool. We can set SpiderIPPool CR object with `default` property, in which we'll regard it as a default pool in cluster.  See [configuration](../reference/crd-spiderippool.md) for details.
 
 2. Filter valid IPPool candidates.
 

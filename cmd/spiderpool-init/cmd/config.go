@@ -18,6 +18,7 @@ import (
 
 	"github.com/containernetworking/cni/libcni"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 )
 
 const (
@@ -313,7 +314,18 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("error loading CNI config file %s: %v", cniConfigPath, err)
 	}
-	return conf.Network.Name, conf.Network.Type, nil
+
+	cniType := multuscniconfig.CustomType
+	switch conf.Network.Type {
+	case multuscniconfig.MacVlanType:
+		cniType = multuscniconfig.MacVlanType
+	case multuscniconfig.IpVlanType:
+		cniType = multuscniconfig.IpVlanType
+	case multuscniconfig.SriovType:
+		cniType = multuscniconfig.SriovType
+	}
+
+	return conf.Network.Name, cniType, nil
 }
 
 func getMultusCniConfig(cniName, cniType string) *spiderpoolv2beta1.SpiderMultusConfig {
@@ -332,7 +344,7 @@ func getMultusCniConfig(cniName, cniType string) *spiderpoolv2beta1.SpiderMultus
 			Annotations: annotations,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-			CniType:           spiderpoolv2beta1.CniType(cniType),
+			CniType:           cniType,
 			EnableCoordinator: pointer.Bool(false),
 		},
 	}

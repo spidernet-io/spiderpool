@@ -34,10 +34,10 @@ import (
 )
 
 const (
-	MacVlanType spiderpoolv2beta1.CniType = "macvlan"
-	IpVlanType  spiderpoolv2beta1.CniType = "ipvlan"
-	SriovType   spiderpoolv2beta1.CniType = "sriov"
-	CustomType  spiderpoolv2beta1.CniType = "custom"
+	MacVlanType = "macvlan"
+	IpVlanType  = "ipvlan"
+	SriovType   = "sriov"
+	CustomType  = "custom"
 )
 
 type MacvlanNetConf struct {

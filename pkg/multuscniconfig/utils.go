@@ -30,19 +30,13 @@ import (
 
 	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
 const (
-	CalicoType  spiderpoolv2beta1.CniType = "calico"
-	CiliumType  spiderpoolv2beta1.CniType = "cilium-cni"
-	FlannelType spiderpoolv2beta1.CniType = "flannel"
-	WeaveType   spiderpoolv2beta1.CniType = "weave-net"
-	KubeOvnType spiderpoolv2beta1.CniType = "kube-ovn"
-	MacVlanType spiderpoolv2beta1.CniType = "macvlan"
-	IpVlanType  spiderpoolv2beta1.CniType = "ipvlan"
-	SriovType   spiderpoolv2beta1.CniType = "sriov"
-	CustomType  spiderpoolv2beta1.CniType = "custom"
+	MacVlanType = "macvlan"
+	IpVlanType  = "ipvlan"
+	SriovType   = "sriov"
+	CustomType  = "custom"
 )
 
 type MacvlanNetConf struct {
@@ -129,9 +123,9 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 		}
 
 		// compatibility pre v3.2, will be removed in v4.0
-		//if n.DeprecatedInterfaceRequest != "" && n.InterfaceRequest == "" {
+		// if n.DeprecatedInterfaceRequest != "" && n.InterfaceRequest == "" {
 		//	n.InterfaceRequest = n.DeprecatedInterfaceRequest
-		//}
+		// }
 	}
 
 	return networks, nil

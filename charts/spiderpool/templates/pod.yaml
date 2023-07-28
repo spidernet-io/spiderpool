@@ -123,6 +123,8 @@ spec:
       value: {{ .Values.multus.enableMultusConfig | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAME
       value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
+    - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE
+      value: {{ .Release.Namespace | quote }}
     {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_DIR
       value: {{ .Values.global.cniConfHostPath | quote }}

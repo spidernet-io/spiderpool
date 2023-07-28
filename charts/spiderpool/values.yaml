@@ -142,7 +142,7 @@ multus:
       imagePullSecrets: []
       # - name: "image-pull-secret"
 
-    ## @param multus.multusCNI.defaultCniCRName please create the related NetworkAttachmentDefinition for default CNI after installation, if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
+    ## @param multus.multusCNI.defaultCniCRName please create the related NetworkAttachmentDefinition for default CNI after installation, expamle "macvlan". The namespace of defaultCniCRName follows with the release namespace of spdierpool. if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
     defaultCniCRName: ""
 
     resources:

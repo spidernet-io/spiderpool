@@ -1,33 +1,45 @@
 # roadmap
 
-The following features are considered for the near future
-
-## support CLI 
-
-provide a CLI tool to debug and operate
-
-* check which pod an IP is taken by 
-
-* check IP usage
-
-* trigger GC 
-
-## support multi-cluster 
-
-* when multi-cluster use Spiderpool to assign underlay IP address in the same CIDR, spiderpool could 
-    synchronize ippool resource within a same subnet from other cluster, so it could help avoid IP conflict 
-
-* when multi-cluster use Spiderpool to manager underlay IP address, leader cluster could
-    synchronize all Spiderpool resource from member clusters, which help manager all underlay IP address
-
-## integrate more CNI 
-
-* integrate more CNI addon to solve underlay network needs 
-
-## egress gateway for underlay solution 
-
-## Enhance ovs cni
-
-## integrate API to set spiderippool for public cloud enviroment
-
-## RDMA features
+| feature            | description                                                                                                                                                                                                                                                    | status        |
+|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| ippool             | ip settings                                                                                                                                                                                                                                                    | done in 0.2.0 |
+|                    | namesapce affinity                                                                                                                                                                                                                                             | done in 0.4.0 |
+|                    | application affinity                                                                                                                                                                                                                                           | done in 0.4.0 |
+|                    | multiple default ippool                                                                                                                                                                                                                                        | done in 0.6.0 |
+|                    | multusname                                                                                                                                                                                                                                                     | done in 0.6.0 |
+|                    | nodename                                                                                                                                                                                                                                                       | done in 0.6.0 |
+|                    | default cluster ippool                                                                                                                                                                                                                                         | done in 0.2.0 |
+|                    | default namespace ippool                                                                                                                                                                                                                                       | done in 0.4.0 |
+|                    | default CNI ippool                                                                                                                                                                                                                                             | done in 0.4.0 |
+|                    | annotation ippool                                                                                                                                                                                                                                              | done in 0.2.0 |
+|                    | annotation route                                                                                                                                                                                                                                               | done in 0.2.0 |
+| subnet             | automatically create ippool                                                                                                                                                                                                                                    | done in 0.4.0 |
+|                    | automatically scaling and deletion ip according to application                                                                                                                                                                                                 | done in 0.4.0 |
+|                    | automatically delete ippool                                                                                                                                                                                                                                    | done in 0.5.0 |
+|                    | support annotation for multiple interface                                                                                                                                                                                                                      | done in 0.4.0 |
+|                    | keep ippool after deleting application                                                                                                                                                                                                                         | done in 0.5.0 |
+|                    | support deployment, statefulset, job, replicaset                                                                                                                                                                                                               | done in 0.4.0 |
+|                    | support operator controller                                                                                                                                                                                                                                    | done in 0.4.0 |
+|                    | flexible ip number                                                                                                                                                                                                                                             | done in 0.5.0 |
+|                    | ippool inherit route and gateway attribute from its subnet                                                                                                                                                                                                     | done in 0.6.0 |
+| reservedIP         | reservedIP                                                                                                                                                                                                                                                     | done in 0.4.0 |
+| fixed ip           | fixed ip for each pod of statefulset                                                                                                                                                                                                                           | done in 0.5.0 |
+|                    | fixed ip ranges for statefulset, deployment, replicaset                                                                                                                                                                                                        | done in 0.4.0 |
+| spidermultusconfig | support macvlan ipvlan sriov custom                                                                                                                                                                                                                            | done in 0.6.0 |
+| ipam plugin        | cni v1.0.0                                                                                                                                                                                                                                                     | done in 0.4.0 |
+| ifacer plugin      | bond interface                                                                                                                                                                                                                                                 | done in 0.6.0 |
+|                    | vlan interface                                                                                                                                                                                                                                                 | done in 0.6.0 |
+| coodinator  plugin | support underlay and overlay mode                                                                                                                                                                                                                              | done in 0.6.0 |
+|                    | CRD spidercoordinators for configuration                                                                                                                                                                                                                       | done in 0.6.0 |
+|                    | tune policy route                                                                                                                                                                                                                                              | done in 0.6.0 |
+|                    | detect ip conflict and gateway                                                                                                                                                                                                                                 | done in 0.6.0 |
+|                    | specify the MAC of pod                                                                                                                                                                                                                                         | done in 0.6.0 |
+|                    | specify the default route of pod interface                                                                                                                                                                                                                     | done in 0.6.0 |
+| recycle IP         | recycle IP taken by deleted pod                                                                                                                                                                                                                                | done in 0.4.0 |
+|                    | recycle IP taken by deleting pod                                                                                                                                                                                                                               | done in 0.4.0 |
+| dual-stack         | dual-stack                                                                                                                                                                                                                                                     | done in 0.2.0 |
+| CLI                | debug and operate. check which pod an IP is taken by, check IP usage , trigger GC                                                                                                                                                                              | in plan       |
+| multi-cluster      | (1) spiderpool could synchronize ippool resource within a same subnet from other cluster, so it could help avoid IP conflict  <br>(2)leader cluster could synchronize all Spiderpool resource from member clusters, which help manager all underlay IP address | in plan       |
+| cilium             | cooperate with cilium                                                                                                                                                                                                                                          | in plan       |
+| RDMA               | RDMA                                                                                                                                                                                                                                                           | in plan       |
+| egressGateway      | egressGateway                                                                                                                                                                                                                                                  | in plan       |

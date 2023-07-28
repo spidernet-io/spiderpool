@@ -49,30 +49,18 @@ if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
 Install::MultusCR(){
 
 MACVLAN_CR_TEMPLATE='
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
 metadata:
   name: <<CNI_NAME>>
   namespace: <<NAMESPACE>>
 spec:
-  config: |-
-    {
-        "cniVersion": "0.3.1",
-        "name": "<<CNI_NAME>>",
-        "plugins": [
-            {
-                "type": "macvlan",
-                "master": "<<MASTER>>",
-                "mode": "bridge",
-                "ipam": {
-                    "type": "spiderpool"
-                }
-            },{
-                "type": "coordinator",
-                "mode": "<<MODE>>"
-            }
-        ]
-    }
+  cniType: macvlan
+  macvlan:
+    master: ["<<MASTER>>"]
+    vlanID: <<VLAN>>
+  coordinator:
+    mode: "<<MODE>>"
 '
 
   echo "${MACVLAN_CR_TEMPLATE}" \
@@ -80,35 +68,39 @@ spec:
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?underlay?g' \
     | sed 's?<<MASTER>>?eth0?g' \
+    | sed 's?<<VLAN>>?0?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?underlay?g' \
-    | sed 's?<<MASTER>>?eth0.100?g' \
+    | sed 's?<<MASTER>>?eth0?g' \
+    | sed 's?<<VLAN>>?100?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN100}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?overlay?g' \
-    | sed 's?<<MASTER>>?eth0.100?g' \
+    | sed 's?<<MASTER>>?eth0?g' \
+    | sed 's?<<VLAN>>?100?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN200}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?overlay?g' \
-    | sed 's?<<MASTER>>?eth0.200?g' \
+    | sed 's?<<MASTER>>?eth0?g' \
+    | sed 's?<<VLAN>>?200?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
     | sed 's?<<MODE>>?underlay?g' \
-    | sed 's?<<MASTER>>?eth0.200?g' \
+    | sed 's?<<MASTER>>?eth0?g' \
+    | sed 's?<<VLAN>>?200?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
 }

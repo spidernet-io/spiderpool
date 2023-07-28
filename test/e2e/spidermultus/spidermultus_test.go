@@ -40,7 +40,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:        &mode, //	mode = "disabled"
-						PodCIDRType: podCidrType,
+						PodCIDRType: &podCidrType,
 					},
 				},
 			}

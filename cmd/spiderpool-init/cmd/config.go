@@ -17,8 +17,8 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 
 	"github.com/containernetworking/cni/libcni"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -45,9 +45,10 @@ const (
 	ENVDefaultIPv6IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
 	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
 
-	ENVEnableMultusConfig = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
-	ENVDefaultCNIDir      = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
-	ENVDefaultCNIName     = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
+	ENVEnableMultusConfig  = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
+	ENVDefaultCNIDir       = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
+	ENVDefaultCNIName      = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
+	ENVDefaultCNINamespace = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
 )
 
 var (
@@ -82,9 +83,10 @@ type InitDefaultConfig struct {
 	V6Gateway    string
 
 	// multuscniconfig
-	enableMultusConfig bool
-	DefaultCNIDir      string
-	DefaultCNIName     string
+	enableMultusConfig  bool
+	DefaultCNIDir       string
+	DefaultCNIName      string
+	DefaultCNINamespace string
 }
 
 func NewInitDefaultConfig() InitDefaultConfig {
@@ -269,6 +271,7 @@ func parseENVAsDefault() InitDefaultConfig {
 	}
 
 	config.DefaultCNIName = strings.ReplaceAll(os.Getenv(ENVDefaultCNIName), "\"", "")
+	config.DefaultCNINamespace = strings.ReplaceAll(os.Getenv(ENVDefaultCNINamespace), "\"", "")
 
 	logger.Sugar().Infof("Init default config: %+v", config)
 
@@ -328,7 +331,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	return conf.Network.Name, cniType, nil
 }
 
-func getMultusCniConfig(cniName, cniType string) *spiderpoolv2beta1.SpiderMultusConfig {
+func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.SpiderMultusConfig {
 	annotations := make(map[string]string)
 	// change calico cni name from k8s-pod-network to calico
 	// more datails see:
@@ -340,7 +343,7 @@ func getMultusCniConfig(cniName, cniType string) *spiderpoolv2beta1.SpiderMultus
 	return &spiderpoolv2beta1.SpiderMultusConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        cniName,
-			Namespace:   "kube-system",
+			Namespace:   ns,
 			Annotations: annotations,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{

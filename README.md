@@ -300,7 +300,7 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 * [Metrics](./docs/concepts/metrics.md)
 
-## blogs
+## Blogs
 
 * [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
 

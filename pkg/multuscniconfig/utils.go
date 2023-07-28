@@ -30,14 +30,13 @@ import (
 
 	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
 const (
-	MacVlanType spiderpoolv2beta1.CniType = "macvlan"
-	IpVlanType  spiderpoolv2beta1.CniType = "ipvlan"
-	SriovType   spiderpoolv2beta1.CniType = "sriov"
-	CustomType  spiderpoolv2beta1.CniType = "custom"
+	MacVlanType = "macvlan"
+	IpVlanType  = "ipvlan"
+	SriovType   = "sriov"
+	CustomType  = "custom"
 )
 
 type MacvlanNetConf struct {

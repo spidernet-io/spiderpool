@@ -249,9 +249,13 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 * [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
 
+## Roadmap
+
+[roadmap](./docs/develop/roadmap.md)
+
 ## Governance
 
-[Maintainers and Committers](./docs/USERS.md)
+[Maintainers and Committers](./docs/USERS.md)， 遵循 [governance document](./docs/develop/CODE-OF-CONDUCT.md).
 
 ## Slack
 

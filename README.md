@@ -312,9 +312,13 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 * [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
 
+## Roadmap
+
+[roadmap](./docs/develop/roadmap.md)
+
 ## Governance
 
-The project is governed by a group of [Maintainers and Committers](./AUTHORS)
+The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./docs/develop/CODE-OF-CONDUCT.md).
 
 ## Slack
 

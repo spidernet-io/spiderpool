@@ -25,14 +25,11 @@ type SpiderMultusConfigList struct {
 	Items []SpiderMultusConfig `json:"items"`
 }
 
-// calico、cilium-cni、flannel、weave-net、kube-ovn、macvlan、ipvlan、sriov、custom
-type CniType string
-
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=calico;cilium-cni;flannel;weave-net;kube-ovn;macvlan;ipvlan;sriov;custom
-	CniType CniType `json:"cniType"`
+	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;custom
+	CniType string `json:"cniType"`
 
 	// +kubebuilder:validation:Optional
 	MacvlanConfig *SpiderMacvlanCniConfig `json:"macvlan,omitempty"`

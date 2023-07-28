@@ -34,11 +34,6 @@ import (
 )
 
 const (
-	CalicoType  spiderpoolv2beta1.CniType = "calico"
-	CiliumType  spiderpoolv2beta1.CniType = "cilium-cni"
-	FlannelType spiderpoolv2beta1.CniType = "flannel"
-	WeaveType   spiderpoolv2beta1.CniType = "weave-net"
-	KubeOvnType spiderpoolv2beta1.CniType = "kube-ovn"
 	MacVlanType spiderpoolv2beta1.CniType = "macvlan"
 	IpVlanType  spiderpoolv2beta1.CniType = "ipvlan"
 	SriovType   spiderpoolv2beta1.CniType = "sriov"
@@ -129,9 +124,9 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 		}
 
 		// compatibility pre v3.2, will be removed in v4.0
-		//if n.DeprecatedInterfaceRequest != "" && n.InterfaceRequest == "" {
+		// if n.DeprecatedInterfaceRequest != "" && n.InterfaceRequest == "" {
 		//	n.InterfaceRequest = n.DeprecatedInterfaceRequest
-		//}
+		// }
 	}
 
 	return networks, nil

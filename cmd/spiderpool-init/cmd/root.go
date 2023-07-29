@@ -44,7 +44,7 @@ func Execute() {
 			},
 			Spec: spiderpoolv2beta1.CoordinatorSpec{
 				Mode:               &config.CoordinatorMode,
-				PodCIDRType:        config.CoordinatorPodCIDRType,
+				PodCIDRType:        &config.CoordinatorPodCIDRType,
 				TunePodRoutes:      &config.CoordinatorTunePodRoutes,
 				DetectIPConflict:   &config.CoordinatorDetectIPConflict,
 				DetectGateway:      &config.CoordinatorDetectGateway,

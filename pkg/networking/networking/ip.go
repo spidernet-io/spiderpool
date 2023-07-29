@@ -19,7 +19,7 @@ import (
 var DefaultInterfacesToExclude = []string{
 	"docker.*", "cbr.*", "dummy.*",
 	"virbr.*", "lxcbr.*", "veth.*", "lo",
-	"cali.*", "tunl.*", "flannel.*", "kube-ipvs.*",
+	"^cali.*", "flannel.*", "kube-ipvs.*",
 	"cni.*", "vx-submariner", "cilium*",
 }
 
@@ -106,6 +106,8 @@ func IPAddressOnNode(logger *zap.Logger, ipFamily int) ([]netlink.Addr, error) {
 	var allIPAddress []netlink.Addr
 	for idx := range links {
 		iLink := links[idx]
+
+		// TODO: this may be dangerous, it should not filter the node IP who is calculated by `ip r get POD_IP`
 		if excludeRegexp.MatchString(iLink.Attrs().Name) {
 			continue
 		}

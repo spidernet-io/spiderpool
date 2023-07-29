@@ -76,6 +76,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
 	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.Mode))
+	logger.Debug(fmt.Sprintf("api configuration: %+v", *coordinatorConfig))
+	logger.Debug(fmt.Sprintf("final configuration: %+v", *conf))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
@@ -144,13 +146,13 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("unknown tuneMode: %s", conf.Mode)
 	}
 
-	logger.Sugar().Infof("Get coordinator config: %v", c)
+	logger.Sugar().Infof("Get coordinator config: %+v", c)
 
 	errg, ctx := errgroup.WithContext(context.Background())
 	defer ctx.Done()
 
 	//  we do detect gateway connection firstly
-	if *conf.DetectGateway {
+	if conf.DetectGateway != nil && *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
 
 		var gws []string
@@ -175,14 +177,19 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			}
 			errg.Go(p.DetectGateway)
 		}
+	} else {
+		logger.Debug("disable detect gateway")
 	}
 
 	if conf.IPConflict != nil && *conf.IPConflict {
+		logger.Debug("Try to detect ip conflict")
 		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
 		if err != nil {
 			return fmt.Errorf("failed to run NewIPChecker: %w", err)
 		}
 		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, errg)
+	} else {
+		logger.Debug("disable detect ip conflict")
 	}
 
 	if err = errg.Wait(); err != nil {
@@ -196,7 +203,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		if err != nil {
 			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %v", args.IfName, conf.MacPrefix, err)
 		}
-
 		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
 	}
 

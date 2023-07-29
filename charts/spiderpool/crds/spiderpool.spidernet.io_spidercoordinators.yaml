@@ -40,39 +40,39 @@ spec:
             description: CoordinationSpec defines the desired state of SpiderCoordinator.
             properties:
               detectGateway:
-                default: false
                 type: boolean
               detectIPConflict:
-                default: false
                 type: boolean
               hijackCIDR:
                 items:
                   type: string
                 type: array
               hostRPFilter:
-                default: 0
                 type: integer
               hostRuleTable:
-                default: 500
                 type: integer
               mode:
-                default: underlay
                 enum:
                 - underlay
                 - overlay
                 - disabled
                 type: string
               podCIDRType:
+                description: CoordinatorSpec is used by SpiderCoordinator and SpiderMultusConfig
+                  in spidermultusconfig CRD , podCIDRType should not be required,
+                  which could be merged from SpiderCoordinator CR but in SpiderCoordinator
+                  CRD, podCIDRType should be required
+                enum:
+                - cluster
+                - calico
+                - cilium
                 type: string
               podDefaultRouteNIC:
                 type: string
               podMACPrefix:
                 type: string
               tunePodRoutes:
-                default: true
                 type: boolean
-            required:
-            - podCIDRType
             type: object
           status:
             description: CoordinationStatus defines the observed state of SpiderCoordinator.

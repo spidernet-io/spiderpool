@@ -2,6 +2,12 @@
 
 ***
 
+## unitest
+
+run the following command to check unitest
+
+`make unitest-tests`
+
 ## setup cluster and run test
 
 1. check required developing tools on you local host. If something missing, please run 'test/scripts/install-tools.sh' to install them
@@ -111,10 +117,10 @@
         $ make e2e_test_underlay_subnet 
 
         # Run all e2e tests for enableSpiderSubnet=false cluster
-        $ make e2e_test_overlay_calico
+        $ make e2e_test_calico
 
         # Run all e2e tests for enableSpiderSubnet=false cluster
-        $ make e2e_test_overlay_cilium 
+        $ make e2e_test_cilium 
 
         $ ls e2ereport.json
 

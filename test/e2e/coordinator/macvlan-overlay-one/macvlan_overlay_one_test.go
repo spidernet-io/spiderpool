@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"math/rand"
 	"net"
 	"strconv"
@@ -222,7 +223,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						PodMACPrefix:       &macPrefix,
 						PodDefaultRouteNIC: &common.NIC2,
 						Mode:               &mode,
-						PodCIDRType:        podCidrType,
+						PodCIDRType:        &podCidrType,
 					},
 				},
 			}
@@ -325,7 +326,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:          &mode,
 						DetectGateway: &detectGateway,
-						PodCIDRType:   podCidrType,
+						PodCIDRType:   &podCidrType,
 					},
 				},
 			}
@@ -420,12 +421,13 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
 					CniType: "macvlan",
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
-						Master: []string{common.NIC4},
+						Master: []string{common.NIC1},
+						VlanID: pointer.Int32(200),
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:             &mode,
 						DetectIPConflict: &ipConflict,
-						PodCIDRType:      podCidrType,
+						PodCIDRType:      &podCidrType,
 					},
 				},
 			}

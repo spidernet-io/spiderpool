@@ -634,6 +634,7 @@ func GetAllHostIPRouteForPod(c *coordinator, ipFamily int, allPodIp []netlink.Ad
 	finalNodeIpList = []net.IP{}
 
 OUTER1:
+	// get node ip by `ip r get podIP`
 	for _, item := range allPodIp {
 		var t net.IP
 		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr{item})
@@ -655,11 +656,12 @@ OUTER1:
 
 	var DefaultNodeInterfacesToExclude = []string{
 		"docker.*", "cbr.*", "dummy.*",
-		"virbr.*", "lxcbr.*", "veth.*", "lo",
-		"^cali.*", "flannel.*", "kube-ipvs.*",
+		"virbr.*", "lxcbr.*", "veth.*", `^lo$`,
+		`^cali.*`, "flannel.*", "kube-ipvs.*",
 		"cni.*", "vx-submariner", "cilium*",
 	}
 
+	// get additional host ip
 	additionalIp, err := networking.GetAllIPAddress(ipFamily, DefaultNodeInterfacesToExclude)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get IPAddressOnNode: %v", err)

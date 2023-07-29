@@ -210,7 +210,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// get all ip of pod
 	var allPodIp []netlink.Addr
 	err = c.netns.Do(func(netNS ns.NetNS) error {
-		allPodIp, err = networking.GetAllIPAddress(ipFamily, nil)
+		allPodIp, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
 		if err != nil {
 			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
 		}

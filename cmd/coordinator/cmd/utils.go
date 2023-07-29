@@ -631,7 +631,7 @@ func (c *coordinator) ensureIPtablesRule(iptablesInterfaces []utiliptables.Inter
 
 func GetAllHostIPRouteForPod(c *coordinator, ipFamily int, allPodIp []netlink.Addr) (finalNodeIpList []net.IP, e error) {
 
-	finalNodeIpList := []net.IP{}
+	finalNodeIpList = []net.IP{}
 
 OUTER1:
 	for _, item := range allPodIp {

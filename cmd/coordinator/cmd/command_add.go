@@ -13,7 +13,6 @@ import (
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"net"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
@@ -211,7 +210,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// get all ip of pod
 	var allPodIp []netlink.Addr
 	err = c.netns.Do(func(netNS ns.NetNS) error {
-		allPodIp, err = networking.GetAllIPAddress(logger, ipFamily, nil)
+		allPodIp, err = networking.GetAllIPAddress(ipFamily, nil)
 		if err != nil {
 			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
 		}

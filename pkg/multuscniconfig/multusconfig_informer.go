@@ -413,7 +413,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
 		}
-	case CalicoType, CiliumType, FlannelType, WeaveType, KubeOvnType, CustomType:
+	case CustomType:
 		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
 			confStr = *multusConfSpec.CustomCNIConfig
 		}

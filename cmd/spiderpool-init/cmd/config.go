@@ -315,7 +315,6 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 		cniName = confList.Name
 		cniType = confList.Plugins[0].Network.Type
 
-		return confList.Name, confList.Plugins[0].Network.Type, nil
 	} else {
 		conf, err := libcni.ConfFromFile(cniConfigPath)
 		if err != nil {

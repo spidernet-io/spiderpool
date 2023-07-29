@@ -222,13 +222,13 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
 
-	// get all ip address on the node
+	// get ip addresses of the node
 	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
 	if err != nil {
 		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
 		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
 	}
-	logger.Debug(fmt.Sprintf("hostIPRouteForPod: %+v", c.hostIPRouteForPod))
+	logger.Debug(fmt.Sprintf("host IP for route to Pod: %+v", c.hostIPRouteForPod))
 
 	// =================================
 

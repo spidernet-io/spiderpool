@@ -67,7 +67,7 @@ EOF
 
 网络拓扑如下:
 
-![calico-bgp](../images/calico-bgp.svg)
+![calico-bgp](../../../images/calico-bgp.svg)
 
 1. 配置机器外的一台主机作为 BGP Router
 

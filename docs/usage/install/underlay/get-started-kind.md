@@ -113,7 +113,7 @@ NAME                        READY   STATUS    RESTARTS   AGE     IP             
 test-app-84d5699474-dbtl5   1/1     Running   0          6m23s   172.18.40.112   spider-control-plane   <none>           <none>
 ```
 
-As tested, everything works fine with the Kind cluster. You can test and experience more features of Spiderpool based on kind clusters, see [Quick start](./docs/usage/install.md).
+As tested, everything works fine with the Kind cluster. You can test and experience more features of Spiderpool based on kind clusters.
 
 ## Uninstall
 

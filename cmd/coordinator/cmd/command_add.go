@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	"time"
-
+	"net"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -207,11 +207,43 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	// get all ip address on the node
-	c.hostAddress, err = networking.IPAddressOnNode(logger, ipFamily)
+	c.hostAddress, err = networking.GetAllIPAddress(logger, ipFamily, networking.DefaultNodeInterfacesToExclude)
 	if err != nil {
 		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
 		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
 	}
+
+	// =================================
+	// get pod
+	var podAllAddress []netlink.Addr
+	err = c.netns.Do(func(netNS ns.NetNS) error {
+		podAllAddress, err = networking.GetAllIPAddress(logger, ipFamily, networking.DefaultNodeInterfacesToExclude)
+		if err != nil {
+			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
+			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	logger.Debug("all pod ip: %+v", podAllAddress)
+	var hostSrcIpList []net.IP
+	for _, item := range podAllAddress {
+		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr[item])
+		if err != nil {
+			logger.Error("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
+			return fmt.Errorf("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
+		}
+		if len(v4Gw) > 0 {
+			hostSrcIpList = append(hostSrcIpList, v4Gw)
+		} else if len(v6Gw) > 0 {
+			hostSrcIpList = append(hostSrcIpList, v6Gw)
+		}
+	}
+	logger.Debug("all src ip of node: %+v", hostSrcIpList)
+
+	// =================================
 
 	// get ips of this interface(preInterfaceName) from, including ipv4 and ipv6
 	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)

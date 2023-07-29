@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var DefaultInterfacesToExclude = []string{
+var DefaultNodeInterfacesToExclude = []string{
 	"docker.*", "cbr.*", "dummy.*",
 	"virbr.*", "lxcbr.*", "veth.*", "lo",
 	"^cali.*", "flannel.*", "kube-ipvs.*",
@@ -89,12 +89,15 @@ func IPAddressByName(netns ns.NetNS, interfacenName string, ipFamily int) ([]net
 
 // IPAddressOnNode return all ip addresses on the node, filter by ipFamily
 // skipping any interfaces whose name matches any of the exclusion list regexes
-func IPAddressOnNode(logger *zap.Logger, ipFamily int) ([]netlink.Addr, error) {
+func GetAllIPAddress(logger *zap.Logger, ipFamily int, excludeInterface []string) ([]netlink.Addr, error) {
 	var err error
 	var excludeRegexp *regexp.Regexp
-	if excludeRegexp, err = regexp.Compile("(" + strings.Join(DefaultInterfacesToExclude, ")|(") + ")"); err != nil {
-		logger.Error(err.Error())
-		return nil, err
+
+	if excludeInterface != nil {
+		if excludeRegexp, err = regexp.Compile("(" + strings.Join(excludeInterface, ")|(") + ")"); err != nil {
+			logger.Error(err.Error())
+			return nil, err
+		}
 	}
 
 	links, err := netlink.LinkList()
@@ -107,8 +110,7 @@ func IPAddressOnNode(logger *zap.Logger, ipFamily int) ([]netlink.Addr, error) {
 	for idx := range links {
 		iLink := links[idx]
 
-		// TODO: this may be dangerous, it should not filter the node IP who is calculated by `ip r get POD_IP`
-		if excludeRegexp.MatchString(iLink.Attrs().Name) {
+		if excludeRegexp != nil && excludeRegexp.MatchString(iLink.Attrs().Name) {
 			continue
 		}
 

@@ -230,7 +230,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Debug(fmt.Sprintf("all pod ip: %+v", podAllAddress))
 	var hostSrcIpList []net.IP
 	for _, item := range podAllAddress {
-		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr[item])
+		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr{item]})
 		if err != nil {
 			logger.Error("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
 			return fmt.Errorf("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))

@@ -287,7 +287,7 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
   already taken by hosts out of the cluster. See [example](./docs/usage/reserved-ip.md) for details.
 
 * Outstanding performance for assigning and releasing Pod IPs, showcased in the
- [test report](./docs/usage/performance.md).
+ [test report](./docs/concepts/performance.md).
 
 * Well-designed IP reclaim mechanism could help assign IP address in time and
   quickly recover from the breakdown for the cluster or application.

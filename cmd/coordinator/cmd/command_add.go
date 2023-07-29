@@ -6,8 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -15,6 +13,7 @@ import (
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"time"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -206,12 +205,33 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
 	}
 
-	// get all ip address on the node
-	c.hostAddress, err = networking.IPAddressOnNode(logger, ipFamily)
+	// =================================
+
+	// get all ip of pod
+	var allPodIp []netlink.Addr
+	err = c.netns.Do(func(netNS ns.NetNS) error {
+		allPodIp, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
+		if err != nil {
+			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
+			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to all ip of pod", zap.Error(err))
+		return err
+	}
+	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
+
+	// get ip addresses of the node
+	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
 	if err != nil {
 		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
 		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
 	}
+	logger.Debug(fmt.Sprintf("host IP for route to Pod: %+v", c.hostIPRouteForPod))
+
+	// =================================
 
 	// get ips of this interface(preInterfaceName) from, including ipv4 and ipv6
 	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)

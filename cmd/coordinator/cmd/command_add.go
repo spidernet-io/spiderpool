@@ -206,42 +206,30 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
 	}
 
-	// get all ip address on the node
-	c.hostAddress, err = networking.GetAllIPAddress(logger, ipFamily, networking.DefaultNodeInterfacesToExclude)
-	if err != nil {
-		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
-		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
-	}
-
 	// =================================
-	// get pod
-	var podAllAddress []netlink.Addr
+
+	// get all ip of pod
+	var allPodIp []netlink.Addr
 	err = c.netns.Do(func(netNS ns.NetNS) error {
-		podAllAddress, err = networking.GetAllIPAddress(logger, ipFamily, networking.DefaultNodeInterfacesToExclude)
+		allPodIp, err = networking.GetAllIPAddress(logger, ipFamily, nil)
 		if err != nil {
-			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
 			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
 		}
 		return nil
 	})
 	if err != nil {
+		logger.Error("failed to all ip of pod", zap.Error(err))
 		return err
 	}
-	logger.Debug(fmt.Sprintf("all pod ip: %+v", podAllAddress))
-	var hostSrcIpList []net.IP
-	for _, item := range podAllAddress {
-		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr{item})
-		if err != nil {
-			logger.Error(fmt.Sprintf("failed to GetGatewayIP for pod ip %+v ", item), zap.Error(err))
-			return fmt.Errorf("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
-		}
-		if len(v4Gw) > 0 {
-			hostSrcIpList = append(hostSrcIpList, v4Gw)
-		} else if len(v6Gw) > 0 {
-			hostSrcIpList = append(hostSrcIpList, v6Gw)
-		}
+	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
+
+	// get all ip address on the node
+	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
+	if err != nil {
+		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
+		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
 	}
-	logger.Debug(fmt.Sprintf("all src ip of node: %+v", hostSrcIpList))
+	logger.Debug(fmt.Sprintf("hostIPRouteForPod: %+v", c.hostIPRouteForPod))
 
 	// =================================
 

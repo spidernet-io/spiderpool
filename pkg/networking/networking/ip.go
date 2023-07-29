@@ -16,13 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var DefaultNodeInterfacesToExclude = []string{
-	"docker.*", "cbr.*", "dummy.*",
-	"virbr.*", "lxcbr.*", "veth.*", "lo",
-	"^cali.*", "flannel.*", "kube-ipvs.*",
-	"cni.*", "vx-submariner", "cilium*",
-}
-
 // GetIPFamilyByResult return IPFamily by parse CNI Result
 func GetIPFamilyByResult(prevResult *current.Result) (int, error) {
 	if len(prevResult.Interfaces) == 0 {
@@ -89,20 +82,18 @@ func IPAddressByName(netns ns.NetNS, interfacenName string, ipFamily int) ([]net
 
 // IPAddressOnNode return all ip addresses on the node, filter by ipFamily
 // skipping any interfaces whose name matches any of the exclusion list regexes
-func GetAllIPAddress(logger *zap.Logger, ipFamily int, excludeInterface []string) ([]netlink.Addr, error) {
+func GetAllIPAddress(ipFamily int, excludeInterface []string) ([]netlink.Addr, error) {
 	var err error
 	var excludeRegexp *regexp.Regexp
 
 	if excludeInterface != nil {
 		if excludeRegexp, err = regexp.Compile("(" + strings.Join(excludeInterface, ")|(") + ")"); err != nil {
-			logger.Error(err.Error())
 			return nil, err
 		}
 	}
 
 	links, err := netlink.LinkList()
 	if err != nil {
-		logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -116,12 +107,10 @@ func GetAllIPAddress(logger *zap.Logger, ipFamily int, excludeInterface []string
 
 		ipAddress, err := GetAddersByLink(iLink, ipFamily)
 		if err != nil {
-			logger.Error(err.Error())
 			return nil, err
 		}
 		allIPAddress = append(allIPAddress, ipAddress...)
 	}
-	logger.Debug("Get IPAddressOnNode", zap.Any("allIPAddress", allIPAddress))
 	return allIPAddress, nil
 }
 

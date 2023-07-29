@@ -29,7 +29,8 @@ type coordinator struct {
 	HijackCIDR                                                   []string
 	netns                                                        ns.NetNS
 	hostVethHwAddress, podVethHwAddress                          net.HardwareAddr
-	hostAddress, currentAddress                                  []netlink.Addr
+	currentAddress                                               []netlink.Addr
+	hostIPRouteForPod                                            []net.IP
 }
 
 // firstInvoke check if coordinator is first called and do some checks:
@@ -183,8 +184,8 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 			return fmt.Errorf("failed to setup neigh table, couldn't find pod veth link: %v", err)
 		}
 
-		for _, ipAddr := range c.hostAddress {
-			if err := networking.AddStaticNeighborTable(podVethlink.Attrs().Index, ipAddr.IP, c.hostVethHwAddress); err != nil {
+		for _, ipAddr := range c.hostIPRouteForPod {
+			if err := networking.AddStaticNeighborTable(podVethlink.Attrs().Index, ipAddr, c.hostVethHwAddress); err != nil {
 				return err
 			}
 		}
@@ -248,8 +249,8 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 	err = c.netns.Do(func(_ ns.NetNS) error {
 		// traffic sent to the pod its node is forwarded via veth0/eth0
 		// eq: "ip r add <ipAddressOnNode> dev veth0/eth0 table <ruleTable>"
-		for _, hostAddress := range c.hostAddress {
-			ipNet := networking.ConvertMaxMaskIPNet(hostAddress.IP)
+		for _, hostAddress := range c.hostIPRouteForPod {
+			ipNet := networking.ConvertMaxMaskIPNet(hostAddress)
 			if err = networking.AddRoute(logger, c.currentRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
 				logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
 				return fmt.Errorf("failed to AddRouteTable for ipAddressOnNode: %v", err)
@@ -506,13 +507,13 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 			}
 		}
 
-		//for idx, _ := range c.hostAddress {
-		//	ipNet := networking.ConvertMaxMaskIPNet(c.hostAddress[idx].IP)
+		// for idx, _ := range c.hostIPRouteForPod {
+		//	ipNet := networking.ConvertMaxMaskIPNet(c.hostIPRouteForPod[idx])
 		//	if err = networking.DelToRuleTable(ipNet, c.hostRuleTable); err != nil {
 		//		logger.Error("failed to AddToRuleTable", zap.String("Dst", ipNet.String()), zap.Error(err))
 		//		// return fmt.Errorf("failed to AddToRuleTable: %v", err)
 		//	}
-		//}
+		// }
 
 		logger.Info("tunePodRoutes successfully", zap.String("configDefaultRouteInterface", configDefaultRouteNIC), zap.String("currentDefaultRouteInterface", podDefaultRouteNIC))
 		return nil
@@ -626,4 +627,64 @@ func (c *coordinator) ensureIPtablesRule(iptablesInterfaces []utiliptables.Inter
 		}
 	}
 	return nil
+}
+
+func GetAllHostIPRouteForPod(c *coordinator, ipFamily int, allPodIp []netlink.Addr) (finalNodeIpList []net.IP, e error) {
+
+	finalNodeIpList := []net.IP{}
+
+OUTER1:
+	for _, item := range allPodIp {
+		var t net.IP
+		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr{item})
+		if err != nil {
+			return nil, fmt.Errorf("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
+		}
+		if len(v4Gw) > 0 && (ipFamily == netlink.FAMILY_V4 || ipFamily == netlink.FAMILY_ALL) {
+			t = v4Gw
+		} else if len(v6Gw) > 0 && (ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL) {
+			t = v6Gw
+		}
+		for _, k := range finalNodeIpList {
+			if k.Equal(t) {
+				continue OUTER1
+			}
+		}
+		finalNodeIpList = append(finalNodeIpList, t)
+	}
+
+	var DefaultNodeInterfacesToExclude = []string{
+		"docker.*", "cbr.*", "dummy.*",
+		"virbr.*", "lxcbr.*", "veth.*", "lo",
+		"^cali.*", "flannel.*", "kube-ipvs.*",
+		"cni.*", "vx-submariner", "cilium*",
+	}
+
+	additionalIp, err := networking.GetAllIPAddress(ipFamily, DefaultNodeInterfacesToExclude)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get IPAddressOnNode: %v", err)
+	}
+OUTER2:
+	for _, t := range additionalIp {
+		if len(t.IP) == 0 {
+			continue OUTER2
+		}
+
+		for _, k := range finalNodeIpList {
+			if k.Equal(t.IP) {
+				continue OUTER2
+			}
+		}
+		if t.IP.To4() != nil {
+			if ipFamily == netlink.FAMILY_V4 || ipFamily == netlink.FAMILY_ALL {
+				finalNodeIpList = append(finalNodeIpList, t.IP)
+			}
+		} else {
+			if ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL {
+				finalNodeIpList = append(finalNodeIpList, t.IP)
+			}
+		}
+	}
+
+	return finalNodeIpList, nil
 }

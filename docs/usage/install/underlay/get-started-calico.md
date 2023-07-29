@@ -69,7 +69,7 @@ In this example, we want Calico to work in underlay mode and announce the Spider
 
 The network topology is as follows:
 
-![calico-bgp](../images/calico-bgp.svg)
+![calico-bgp](../../../images/calico-bgp.svg)
 
 1. Configure a host outside the cluster as BGP Router
 

@@ -13,7 +13,7 @@ The example shows how `sepc.podAffinity` works.
 
 ### Set up Spiderpool
 
-Follow the [installation guide](./install.md) to install Spiderpool.
+Follow the [installation guide](./install/install.md) to install Spiderpool.
 
 ### Create SpiderSubnet
 

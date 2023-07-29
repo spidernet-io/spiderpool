@@ -31,7 +31,7 @@ When the number of statefulset replicas is not scaled up or down, all Pods could
 
 ### Enable StatefulSet support
 
-Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to [install](./install.md) for details.
+Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to [install](./install/install.md) for details.
 
 Check whether the property `enableStatefulSet` of the configmap `spiderpool-conf` is already set to `true` or not.
 

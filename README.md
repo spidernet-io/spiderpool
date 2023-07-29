@@ -260,25 +260,25 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
   [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
-  to access clusterIP and pod healthy check ([example](./docs/usage/get-started-macvlan.md)),
-  to detect IP conflict and gateway reachability ([example](./docs/usage/coodinator.md)).
+  to access clusterIP and pod healthy check ([example](./docs/usage/install/underlay/get-started-macvlan.md)),
+  to detect IP conflict and gateway reachability ([example](./docs/usage/coordinator.md)).
 
 * Node based IP pool, supporting underlay CNI running on bare metal
-  ([example](./docs/usage/install/underlay/get-started-cloud.md)),
-  vmware virtual machine ([example](./docs/usage/install/underlay/get-started-vmware.md)),
-  openstack virtual machine ([example](./docs/usage/install/underlay/get-started-openstack.md)),
-  public cloud ([example](./docs/usage/install/underlay/get-started-cloud.md)).
+  ([example](./docs/usage/network-topology.md)),
+  vmware virtual machine ([example](./docs/usage/install/cloud/get-started-vmware.md)),
+  openstack virtual machine ([example](./docs/usage/install/cloud/get-started-openstack.md)),
+  public cloud ([example](./docs/usage/install/cloud/get-started-alibaba.md)).
 
 * When starting the Pod, it could help dynamically build the bond interface and vlan interface
   for the master interface of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan).
-  See [example](./docs/usage/ifcacer.md) for details.
+  See [example](./docs/usage/ifacer.md) for details.
 
 * It could specify customized routes by IP pool and pod annotation. See [example](./docs/usage/route.md) for details.
 
 * Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition
   custom resources with best-practice CNI configuration, also ensure well formatted JSON
-  to improve experience. See [example](./docs/concepts/multus.md) for details.
+  to improve experience. See [example](./docs/concepts/multusconfig.md) for details.
 
 * Multiple IP pools can be set for the application for prevent IP address from running out.
   See [example](./docs/usage/ippool-multi.md) for details.

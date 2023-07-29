@@ -43,12 +43,26 @@ nav:
   - README.md
   - Installation:
       - Installation: usage/install/install.md
+      - Underlay installation:
+          - Calico: usage/install/underlay/get-started-calico.md
+          - Weave: usage/install/underlay/get-started-weave.md
+          - Macvlan: usage/install/underlay/get-started-kind.md
+          - Ovs: usage/install/underlay/get-started-ovs.md
+          - SRIOV: usage/install/underlay/get-started-sriov.md
+      - Overlay installation:
+          - Calico: usage/install/overlay/get-started-calico.md
+          - Cilium: usage/install/overlay/get-started-cilium.md
+      - Public cloud installation:
+          - alibaba cloud: usage/install/cloud/get-started-alibaba.md
+          - vmware vsphere: usage/install/cloud/get-started-vmware.md
+          - openstack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md
       - Certificates: usage/install/certificate.md
   - Usage:
       - SpiderSubnet: usage/spider-subnet.md
       - Default IPPool at namespace: usage/ippool-namespace.md
-      - Back up IPPool: usage/ippool-multi.md
+      - Multiple interfaces: usage/multi-interfaces-annotation.md
+      - Backup IPPool: usage/ippool-multi.md
       - Namespace affinity of IPPool: usage/ippool-affinity-namespace.md
       - Node affinity of IPPool: usage/ippool-affinity-node.md
       - Pod affinity of IPPool: usage/ippool-affinity-pod.md
@@ -60,28 +74,28 @@ nav:
       - Route support: usage/route.md
       - Plugin coordinator: usage/coordinator.md
       - Plugin ifacer: usage/ifacer.md
-      - Calico: usage/get-started-calico.md
       - node-based topology: usage/network-topology.md
-      - Spiderpool Performance Testing: usage/performance.md
       - FAQ: usage/debug.md
   - Concepts:
       - Architecture: concepts/arch.md
       - IP Allocation: concepts/allocation.md
       - Metrics: concepts/metrics.md
-      - Resource Reclaim: concepts/gc.md
+      - Multus: concepts/multusconfig.md
+      - Recyle IP: concepts/gc.md
       - Underlay and overlay solutions: concepts/solution.md
+      - IPAM Performance: usage/performance.md
   - Reference:
       - Annotations: reference/annotation.md
       - Configmap: reference/configmap.md
       - spiderpool-controller: reference/spiderpool-controller.md
       - spiderpool-agent: reference/spiderpool-agent.md
-      - SpiderSubnet: reference/crd-spidersubnet.md
-      - SpiderIPPool: reference/crd-spiderippool.md
-      - Spidermultusconfig: reference/crd-spidermultusconfig.md
-      - SpiderEndpoint: reference/crd-spiderendpoint.md
-      - SpiderReservedIP: reference/crd-spiderreservedip.md
-      - Ifacer: reference/plugin-ifacer.md
-      - Ipam: reference/plugin-ipam.md
+      - CRD SpiderSubnet: reference/crd-spidersubnet.md
+      - CRD SpiderIPPool: reference/crd-spiderippool.md
+      - CRD Spidermultusconfig: reference/crd-spidermultusconfig.md
+      - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
+      - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
+      - Ifacer plugin: reference/plugin-ifacer.md
+      - IPAM plugin: reference/plugin-ipam.md
   - Development:
       - Contribution Guide: develop/contributing.md
       - Code of Conduct: develop/CODE-OF-CONDUCT.md

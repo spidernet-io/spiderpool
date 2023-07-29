@@ -29,7 +29,7 @@ Here are some annotations that you should write down on the application template
 
 ### Enable SpiderSubnet feature
 
-Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to [install](./install.md) for details.
+Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to [install](./install/install.md) for details.
 
 Check configmap `spiderpool-conf` property `enableSpiderSubnet` whether is already set to `true` or not.
 

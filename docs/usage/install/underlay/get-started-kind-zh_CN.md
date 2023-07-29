@@ -113,7 +113,7 @@ NAME                        READY   STATUS    RESTARTS   AGE     IP             
 test-app-84d5699474-dbtl5   1/1     Running   0          6m23s   172.18.40.112   spider-control-plane   <none>           <none>
 ```
 
-通过测试，Kind 集群一切正常，您可以基于它测试与体验 Spiderpool 的更多功能，请参阅 [快速启动](./docs/usage/install.md)。
+通过测试，Kind 集群一切正常，您可以基于它测试与体验 Spiderpool 的更多功能。
 
 ## 卸载
 

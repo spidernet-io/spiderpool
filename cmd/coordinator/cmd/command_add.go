@@ -232,7 +232,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	for _, item := range podAllAddress {
 		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr{item})
 		if err != nil {
-			logger.Error("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
+			logger.Error(fmt.Sprintf("failed to GetGatewayIP for pod ip %+v ", item), zap.Error(err))
 			return fmt.Errorf("failed to GetGatewayIP for pod ip %+v : %+v ", item, zap.Error(err))
 		}
 		if len(v4Gw) > 0 {

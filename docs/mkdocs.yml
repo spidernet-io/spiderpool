@@ -81,7 +81,7 @@ nav:
       - IP Allocation: concepts/allocation.md
       - Metrics: concepts/metrics.md
       - Multus: concepts/multusconfig.md
-      - Recyle IP: concepts/gc.md
+      - Recycle IP: concepts/gc.md
       - Underlay and overlay solutions: concepts/solution.md
       - IPAM Performance: usage/performance.md
   - Reference:

@@ -371,8 +371,8 @@ build_doc:
 	@echo "build doc html " ; \
 		docker run --rm --name doc_builder  \
 		-v ${PROJECT_DOC_DIR}:/host/docs \
-        --entrypoint sh \
-        squidfunk/mkdocs-material:8.5.11 -c "cd /host ; cp ./docs/mkdocs.yml ./ ; mkdocs build ; cd site ; tar -czvf site.tar.gz * ; mv ${OUTPUT_TAR} ../docs/"
+                --entrypoint sh \
+                squidfunk/mkdocs-material:8.5.11 -c "cd /host && cp ./docs/mkdocs.yml ./ && mkdocs build && cd site && tar -czvf site.tar.gz * && mv ${OUTPUT_TAR} ../docs/"
 	@ [ -f "$(PROJECT_DOC_DIR)/$(OUTPUT_TAR)" ] || { echo "failed to build site to $(PROJECT_DOC_DIR)/$(OUTPUT_TAR) " ; exit 1 ; }
 	@ echo "succeeded to build site to $(PROJECT_DOC_DIR)/$(OUTPUT_TAR) "
 
@@ -386,10 +386,10 @@ check_doc:
 	[ -f "docs/mkdocs.yml" ] || { echo "error, miss docs/mkdocs.yml "; exit 1 ; }
 	-@ rm -f ./docs/$(OUTPUT_TAR)
 	@echo "check doc" ; \
-		MESSAGE=`docker run --rm --name doc_builder  \
+	MESSAGE=`docker run --rm --name doc_builder  \
 		-v ${PROJECT_DOC_DIR}:/host/docs \
-        --entrypoint sh \
-        squidfunk/mkdocs-material:8.5.11 -c "cd /host && cp ./docs/mkdocs.yml ./ && mkdocs build 2>&1 && cd site && tar -czvf site.tar.gz * && mv ${OUTPUT_TAR} ../docs/" 2>&1` ; \
+                --entrypoint sh \
+                squidfunk/mkdocs-material:8.5.11 -c "cd /host && cp ./docs/mkdocs.yml ./ && mkdocs build 2>&1 && cd site && tar -czvf site.tar.gz * && mv ${OUTPUT_TAR} ../docs/" 2>&1` ; \
         if (( $$? !=0 )) ; then \
         	echo "!!! error, failed to build doc" ; \
         	exit 1 ; \

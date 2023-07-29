@@ -6,8 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
-	"net"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -15,6 +13,8 @@ import (
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"net"
+	"time"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -227,7 +227,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return err
 	}
-	logger.Debug("all pod ip: %+v", podAllAddress)
+	logger.Debug(fmt.Sprintf("all pod ip: %+v", podAllAddress))
 	var hostSrcIpList []net.IP
 	for _, item := range podAllAddress {
 		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr[item])
@@ -241,7 +241,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			hostSrcIpList = append(hostSrcIpList, v6Gw)
 		}
 	}
-	logger.Debug("all src ip of node: %+v", hostSrcIpList)
+	logger.Debug(fmt.Sprintf("all src ip of node: %+v", hostSrcIpList))
 
 	// =================================
 

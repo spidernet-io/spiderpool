@@ -305,30 +305,38 @@ func findDefaultCNIConf(cniDir string) (string, error) {
 
 // parseCNIFromConfig parse cni's name and type from given cni config path
 func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
+	var cniName, cniType string
+
 	if strings.HasSuffix(cniConfigPath, ".conflist") {
 		confList, err := libcni.ConfListFromFile(cniConfigPath)
 		if err != nil {
 			return "", "", fmt.Errorf("error loading CNI conflist file %s: %v", cniConfigPath, err)
 		}
+		cniName = confList.Name
+		cniType = confList.Plugins[0].Network.Type
+
 		return confList.Name, confList.Plugins[0].Network.Type, nil
+	} else {
+		conf, err := libcni.ConfFromFile(cniConfigPath)
+		if err != nil {
+			return "", "", fmt.Errorf("error loading CNI config file %s: %v", cniConfigPath, err)
+		}
+		cniName = conf.Network.Name
+		cniType = conf.Network.Type
 	}
 
-	conf, err := libcni.ConfFromFile(cniConfigPath)
-	if err != nil {
-		return "", "", fmt.Errorf("error loading CNI config file %s: %v", cniConfigPath, err)
-	}
-
-	cniType := multuscniconfig.CustomType
-	switch conf.Network.Type {
+	switch cniType {
 	case multuscniconfig.MacVlanType:
 		cniType = multuscniconfig.MacVlanType
 	case multuscniconfig.IpVlanType:
 		cniType = multuscniconfig.IpVlanType
 	case multuscniconfig.SriovType:
 		cniType = multuscniconfig.SriovType
+	default:
+		cniType = multuscniconfig.CustomType
 	}
 
-	return conf.Network.Name, cniType, nil
+	return cniName, cniType, nil
 }
 
 func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.SpiderMultusConfig {

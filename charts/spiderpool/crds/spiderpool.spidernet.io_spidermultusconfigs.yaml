@@ -39,13 +39,7 @@ spec:
             description: Spec is the specification of the MultusCNIConfig
             properties:
               cniType:
-                description: calico、cilium-cni、flannel、weave-net、kube-ovn、macvlan、ipvlan、sriov、custom
                 enum:
-                - calico
-                - cilium-cni
-                - flannel
-                - weave-net
-                - kube-ovn
                 - macvlan
                 - ipvlan
                 - sriov

@@ -151,7 +151,7 @@ func Execute() {
 	// create multuscniconfig for default network
 	if config.DefaultCNIName == "" {
 		logger.Sugar().Infof("Try to create MultusCniConfig default network in %s", config.DefaultCNIDir)
-		if err = InitDefaultMultusCNIConfig(ctx, client, config.DefaultCNIDir); err != nil {
+		if err = InitDefaultMultusCNIConfig(ctx, client, config.DefaultCNIDir, config.DefaultCNINamespace); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -162,7 +162,7 @@ func Execute() {
 	time.Sleep(300 * time.Second)
 }
 
-func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir string) error {
+func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir string, ns string) error {
 	defaultCNIConfPath, err := findDefaultCNIConf(cniDir)
 	if err != nil {
 		logger.Sugar().Errorf("failed to findDefaultCNIConf: %v", err)
@@ -182,7 +182,7 @@ func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir 
 		return fmt.Errorf("failed to parseCNIFromConfig: %v", err)
 	}
 
-	if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig(cniName, cniType)); err != nil {
+	if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig(cniName, cniType, ns)); err != nil {
 		return fmt.Errorf("failed to WaitMultusCNIConfigCreated: %v", err)
 	}
 

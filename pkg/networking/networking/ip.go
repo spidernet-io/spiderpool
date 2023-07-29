@@ -15,6 +15,7 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
+
 // GetIPFamilyByResult return IPFamily by parse CNI Result
 func GetIPFamilyByResult(prevResult *current.Result) (int, error) {
 	if len(prevResult.Interfaces) == 0 {

@@ -83,7 +83,7 @@ nav:
       - Multus: concepts/multusconfig.md
       - Recycle IP: concepts/gc.md
       - Underlay and overlay solutions: concepts/solution.md
-      - IPAM Performance: usage/performance.md
+      - IPAM Performance: concepts/performance.md
   - Reference:
       - Annotations: reference/annotation.md
       - Configmap: reference/configmap.md

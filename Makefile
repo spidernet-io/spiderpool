@@ -394,7 +394,7 @@ check_doc:
         	echo "!!! error, failed to build doc" ; \
         	exit 1 ; \
         fi ; \
-        if grep -E "WARNING .* contains a link to .* which is not found" <<< "$${MESSAGE}" ; then  \
+        if grep -E "WARNING .* which is not found" <<< "$${MESSAGE}" ; then  \
         	echo "!!! error, some link is bad" ; \
         	exit 1 ; \
         fi

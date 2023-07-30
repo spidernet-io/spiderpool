@@ -123,6 +123,14 @@ data:
       "systemNamespaces": [],
       "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
     }
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: {{ .Values.multus.multusCNI.defaultCniCRName | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  cniType: "custom"
 {{- end }}
 ---
 apiVersion: apps/v1

@@ -20,8 +20,7 @@ update-versions:
 		chart_version=` echo $(VERSION) | tr -d 'v' ` ; \
 		sed -i 's/version: "*'$(VERSION_REGEX)'"*/version: '$$chart_version'/g' $(CHART_FILE);		\
 		sed -i 's/appVersion: "*'$(VERSION_REGEX)'"*/appVersion: "'$$chart_version'"/g' $(CHART_FILE);	\
-		sed -i 's/tag: .*/tag: '$$spiderpool_version'/g' $(VALUES_FILE);					\
-		sed -i 's/tag: .*/tag: '$$spiderpool_version'/g' $(VALUES_FILE);
+		sed -i 's/tag: ""/tag: '$$spiderpool_version'/g' $(VALUES_FILE)
 
 lint: update-versions
 	$(QUIET)helm lint --with-subcharts --values ./spiderpool/values.yaml ./spiderpool

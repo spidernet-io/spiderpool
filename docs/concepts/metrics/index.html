@@ -1020,7 +1020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/performance.md" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         IPAM Performance
       </a>
     </li>
@@ -1497,7 +1497,7 @@ And spiderpool metrics provide the insight of Spiderpool Agent and Spiderpool Co
 </table>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-metric-support">Enable Metric support</h3>
-<p>Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer <a href="../install/install.md">install</a> for details</p>
+<p>Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer <a href="../../usage/install/install/">install</a> for details</p>
 <p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of the daemonset <code>spiderpool-agent</code> for whether it is already set to <code>true</code> or not.</p>
 <p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of deployment <code>spiderpool-controller</code> for whether it is already set to <code>true</code> or not.</p>
 <div class="highlight"><pre><span></span><code>kubectl -n kube-system get daemonset spiderpool-agent -o yaml

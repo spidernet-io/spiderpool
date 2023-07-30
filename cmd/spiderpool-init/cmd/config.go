@@ -4,12 +4,21 @@
 package cmd
 
 import (
+	"fmt"
+	"k8s.io/utils/pointer"
+	"net/netip"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+
+	"github.com/containernetworking/cni/libcni"
+	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -17,11 +26,12 @@ const (
 	ENVSpiderpoolControllerName = "SPIDERPOOL_CONTROLLER_NAME"
 
 	ENVDefaultCoordinatorName             = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME"
-	ENVDefaultCoordinatorTuneMode         = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_MODE"
+	ENVDefaultCoordinatorTuneMode         = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_MODE"
 	ENVDefaultCoordinatorPodCIDRType      = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_POD_CIDR_TYPE"
 	ENVDefaultCoordinatorDetectGateway    = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_GATEWAY"
 	ENVDefaultCoordinatorDetectIPConflict = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_IP_CONFLICT"
 	ENVDefaultCoordinatorTunePodRoutes    = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_POD_ROUTES"
+	ENVDefaultCoordiantorHijackCIDR       = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_HIJACK_CIDR"
 
 	ENVDefaultIPv4SubnetName = "SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME"
 	ENVDefaultIPv4IPPoolName = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME"
@@ -34,6 +44,16 @@ const (
 	ENVDefaultIPv6CIDR       = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET"
 	ENVDefaultIPv6IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
 	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
+
+	ENVEnableMultusConfig  = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
+	ENVDefaultCNIDir       = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
+	ENVDefaultCNIName      = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
+	ENVDefaultCNINamespace = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
+)
+
+var (
+	legacyCalicoCniName = "k8s-pod-network"
+	calicoCniName       = "calico"
 )
 
 type InitDefaultConfig struct {
@@ -41,13 +61,14 @@ type InitDefaultConfig struct {
 	ControllerName string
 
 	CoordinatorName               string
-	CoordinatorTuneMode           string
+	CoordinatorMode               string
 	CoordinatorPodCIDRType        string
 	CoordinatorPodDefaultRouteNic string
 	CoordinatorPodMACPrefix       string
 	CoordinatorDetectGateway      bool
 	CoordinatorDetectIPConflict   bool
 	CoordinatorTunePodRoutes      bool
+	CoordinatorHijackCIDR         []string
 
 	V4SubnetName string
 	V4IPPoolName string
@@ -60,6 +81,12 @@ type InitDefaultConfig struct {
 	V6CIDR       string
 	V6IPRanges   []string
 	V6Gateway    string
+
+	// multuscniconfig
+	enableMultusConfig  bool
+	DefaultCNIDir       string
+	DefaultCNIName      string
+	DefaultCNINamespace string
 }
 
 func NewInitDefaultConfig() InitDefaultConfig {
@@ -80,7 +107,7 @@ func parseENVAsDefault() InitDefaultConfig {
 	// Coordinator
 	config.CoordinatorName = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorName), "\"", "")
 	if len(config.CoordinatorName) != 0 {
-		config.CoordinatorTuneMode = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTuneMode), "\"", "")
+		config.CoordinatorMode = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTuneMode), "\"", "")
 		config.CoordinatorPodCIDRType = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorPodCIDRType), "\"", "")
 
 		edg := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectGateway), "\"", "")
@@ -103,13 +130,30 @@ func parseENVAsDefault() InitDefaultConfig {
 			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorTunePodRoutes, etpr, err)
 		}
 		config.CoordinatorTunePodRoutes = tpr
-		switch config.CoordinatorTuneMode {
+		switch config.CoordinatorMode {
 		case "underlay":
 			config.CoordinatorPodDefaultRouteNic = "eth0"
 		case "overlay":
 			config.CoordinatorPodDefaultRouteNic = "net1"
 		}
 		config.CoordinatorPodMACPrefix = ""
+		v := os.Getenv(ENVDefaultCoordiantorHijackCIDR)
+		if len(v) > 0 {
+			v = strings.ReplaceAll(v, "\"", "")
+			v = strings.ReplaceAll(v, "\\", "")
+			v = strings.ReplaceAll(v, "[", "")
+			v = strings.ReplaceAll(v, "]", "")
+			v = strings.ReplaceAll(v, ",", " ")
+			subnets := strings.Fields(v)
+
+			for _, r := range subnets {
+				_, err := netip.ParsePrefix(r)
+				if err != nil {
+					logger.Sugar().Fatalf("ENV %s invalid: %v", ENVDefaultCoordiantorHijackCIDR, err)
+				}
+			}
+			config.CoordinatorHijackCIDR = subnets
+		}
 	} else {
 		logger.Info("Ignore creating default Coordinator")
 	}
@@ -210,7 +254,108 @@ func parseENVAsDefault() InitDefaultConfig {
 			config.V6IPPoolName,
 		)
 	}
+
+	var err error
+	enableMultusConfig := strings.ReplaceAll(os.Getenv(ENVEnableMultusConfig), "\"", "")
+	config.enableMultusConfig, err = strconv.ParseBool(enableMultusConfig)
+	if err != nil {
+		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVEnableMultusConfig, enableMultusConfig, err)
+	}
+
+	config.DefaultCNIDir = strings.ReplaceAll(os.Getenv(ENVDefaultCNIDir), "\"", "")
+	if config.DefaultCNIDir != "" {
+		_, err = os.ReadDir(config.DefaultCNIDir)
+		if err != nil {
+			logger.Sugar().Fatalf("ENV %s:%s invalid: %v", ENVDefaultCNIDir, config.DefaultCNIDir, err)
+		}
+	}
+
+	config.DefaultCNIName = strings.ReplaceAll(os.Getenv(ENVDefaultCNIName), "\"", "")
+	config.DefaultCNINamespace = strings.ReplaceAll(os.Getenv(ENVDefaultCNINamespace), "\"", "")
+
 	logger.Sugar().Infof("Init default config: %+v", config)
 
 	return config
+}
+
+func findDefaultCNIConf(cniDir string) (string, error) {
+	cnifiles, err := libcni.ConfFiles(cniDir, []string{".conf", ".conflist"})
+	if err != nil {
+		return "", fmt.Errorf("failed to load cni files in %s: %v", cniDir, err)
+	}
+
+	logger.Sugar().Infof("found cni config in %s: %v", cniDir, cnifiles)
+
+	var cniPluginConfigs []string
+	for _, file := range cnifiles {
+		if strings.Contains(file, "00-multus") {
+			continue
+		}
+		cniPluginConfigs = append(cniPluginConfigs, file)
+	}
+
+	if len(cniPluginConfigs) == 0 {
+		return "", nil
+	}
+	sort.Strings(cniPluginConfigs)
+
+	logger.Sugar().Infof("the cni config file \"%s\" is the alphabetically first name in the %s directory on each node", cniPluginConfigs[0], cniDir)
+	return cniPluginConfigs[0], nil
+}
+
+// parseCNIFromConfig parse cni's name and type from given cni config path
+func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
+	var cniName, cniType string
+
+	if strings.HasSuffix(cniConfigPath, ".conflist") {
+		confList, err := libcni.ConfListFromFile(cniConfigPath)
+		if err != nil {
+			return "", "", fmt.Errorf("error loading CNI conflist file %s: %v", cniConfigPath, err)
+		}
+		cniName = confList.Name
+		cniType = confList.Plugins[0].Network.Type
+
+	} else {
+		conf, err := libcni.ConfFromFile(cniConfigPath)
+		if err != nil {
+			return "", "", fmt.Errorf("error loading CNI config file %s: %v", cniConfigPath, err)
+		}
+		cniName = conf.Network.Name
+		cniType = conf.Network.Type
+	}
+
+	switch cniType {
+	case multuscniconfig.MacVlanType:
+		cniType = multuscniconfig.MacVlanType
+	case multuscniconfig.IpVlanType:
+		cniType = multuscniconfig.IpVlanType
+	case multuscniconfig.SriovType:
+		cniType = multuscniconfig.SriovType
+	default:
+		cniType = multuscniconfig.CustomType
+	}
+
+	return cniName, cniType, nil
+}
+
+func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.SpiderMultusConfig {
+	annotations := make(map[string]string)
+	// change calico cni name from k8s-pod-network to calico
+	// more datails see:
+	// https://github.com/projectcalico/calico/issues/7837
+	if cniName == legacyCalicoCniName {
+		cniName = calicoCniName
+		annotations[constant.AnnoNetAttachConfName] = legacyCalicoCniName
+	}
+	return &spiderpoolv2beta1.SpiderMultusConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        cniName,
+			Namespace:   ns,
+			Annotations: annotations,
+		},
+		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			CniType:           cniType,
+			EnableCoordinator: pointer.Bool(false),
+		},
+	}
 }

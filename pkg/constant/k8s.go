@@ -99,6 +99,8 @@ const (
 	Spiderpool           = "spiderpool"
 	SpiderpoolAgent      = "spiderpool-agent"
 	SpiderpoolController = "spiderpool-controller"
+	Coordinator          = "coordinator"
+	Ifacer               = "ifacer"
 )
 
 const (
@@ -135,3 +137,10 @@ const (
 )
 
 const ClusterDefaultInterfaceName = "eth0"
+
+// multus-cni annotation
+const (
+	MultusDefaultNetAnnot        = "v1.multus-cni.io/default-network"
+	MultusNetworkAttachmentAnnot = "k8s.v1.cni.cncf.io/networks"
+	ResourceNameAnnot            = "k8s.v1.cni.cncf.io/resourceName"
+)

@@ -30,6 +30,8 @@ const (
 	NodeReadyTimeout           = time.Minute
 	ResourceDeleteTimeout      = time.Minute * 5
 	BatchCreateTimeout         = time.Minute * 5
+	KdoctorCheckTime           = time.Minute * 10
+	SpiderSyncMultusTime       = time.Minute * 2
 )
 
 var ForcedWaitingTime = time.Second
@@ -59,22 +61,18 @@ var (
 	SpiderPoolIPv4SubnetVlan200 string = "vlan200-v4"
 	SpiderPoolIPv6SubnetVlan200 string = "vlan200-v6"
 
-	SpiderPoolIPPoolAnnotationKey  = "ipam.spidernet.io/ippool"
-	SpiderPoolIPPoolsAnnotationKey = "ipam.spidernet.io/ippools"
-	SpiderPoolSubnetAnnotationKey  = "ipam.spidernet.io/subnet"
-	SpiderPoolSubnetsAnnotationKey = "ipam.spidernet.io/subnets"
-
 	MultusNs                = "kube-system"
 	SpiderDoctorAgentNs     = "kube-system"
 	SpiderDoctorAgentDSName = "spiderdoctor-agent"
 
-	// Route
-	V4Dst string = "0.0.0.0/0"
-	V6Dst string = "::/0"
+	// gateway and check for ip conflicting machines
+	VlanGatewayContainer = "vlan-gateway"
 
 	// Network Name
 	NIC1 string = "eth0"
 	NIC2 string = "net1"
+	NIC3 string = "eth0.100"
+	NIC4 string = "eth0.200"
 )
 
 // Error
@@ -95,5 +93,5 @@ const (
 )
 
 func init() {
-	MultusNs = os.Getenv("MULTUS_CNI_NAMESPACE")
+	MultusNs = os.Getenv("RELEASE_NAMESPACE")
 }

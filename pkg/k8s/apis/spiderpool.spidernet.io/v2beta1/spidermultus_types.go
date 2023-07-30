@@ -25,14 +25,11 @@ type SpiderMultusConfigList struct {
 	Items []SpiderMultusConfig `json:"items"`
 }
 
-// macvlan、ipvlan、sriov、custom
-type CniType string
-
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;custom
-	CniType CniType `json:"cniType"`
+	CniType string `json:"cniType"`
 
 	// +kubebuilder:validation:Optional
 	MacvlanConfig *SpiderMacvlanCniConfig `json:"macvlan,omitempty"`
@@ -68,7 +65,7 @@ type SpiderMacvlanCniConfig struct {
 	Bond *BondConfig `json:"bond,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"spiderpoolConfigPools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
 }
 
 type SpiderIPvlanCniConfig struct {
@@ -84,7 +81,7 @@ type SpiderIPvlanCniConfig struct {
 	Bond *BondConfig `json:"bond,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"spiderpoolConfigPools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
 }
 
 type SpiderSRIOVCniConfig struct {
@@ -97,7 +94,7 @@ type SpiderSRIOVCniConfig struct {
 	VlanID *int32 `json:"vlanID,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"spiderpoolConfigPools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
 }
 
 type BondConfig struct {
@@ -115,8 +112,11 @@ type BondConfig struct {
 
 // SpiderpoolPools could specify the IPAM spiderpool CNI configuration default IPv4&IPv6 pools.
 type SpiderpoolPools struct {
-	IPv4IPPool []string `json:"IPv4IPPool,omitempty"`
-	IPv6IPPool []string `json:"IPv6IPPool,omitempty"`
+	// +kubebuilder:validation:Optional
+	IPv4IPPool []string `json:"ipv4,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	IPv6IPPool []string `json:"ipv6,omitempty"`
 }
 
 func init() {

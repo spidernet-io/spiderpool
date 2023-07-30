@@ -39,7 +39,6 @@ spec:
             description: Spec is the specification of the MultusCNIConfig
             properties:
               cniType:
-                description: macvlan、ipvlan、sriov、custom
                 enum:
                 - macvlan
                 - ipvlan
@@ -50,39 +49,39 @@ spec:
                 description: CoordinationSpec defines the desired state of SpiderCoordinator.
                 properties:
                   detectGateway:
-                    default: false
                     type: boolean
                   detectIPConflict:
-                    default: false
                     type: boolean
-                  extraCIDR:
+                  hijackCIDR:
                     items:
                       type: string
                     type: array
                   hostRPFilter:
-                    default: 0
                     type: integer
                   hostRuleTable:
-                    default: 500
                     type: integer
-                  podCIDRType:
-                    type: string
-                  podDefaultRouteNIC:
-                    type: string
-                  podMACPrefix:
-                    type: string
-                  tuneMode:
-                    default: underlay
+                  mode:
                     enum:
                     - underlay
                     - overlay
                     - disabled
                     type: string
+                  podCIDRType:
+                    description: CoordinatorSpec is used by SpiderCoordinator and
+                      SpiderMultusConfig in spidermultusconfig CRD , podCIDRType should
+                      not be required, which could be merged from SpiderCoordinator
+                      CR but in SpiderCoordinator CRD, podCIDRType should be required
+                    enum:
+                    - cluster
+                    - calico
+                    - cilium
+                    type: string
+                  podDefaultRouteNIC:
+                    type: string
+                  podMACPrefix:
+                    type: string
                   tunePodRoutes:
-                    default: true
                     type: boolean
-                required:
-                - podCIDRType
                 type: object
               customCNI:
                 description: OtherCniTypeConfig only used for CniType custom, valid
@@ -108,23 +107,23 @@ spec:
                     - mode
                     - name
                     type: object
-                  master:
-                    items:
-                      type: string
-                    type: array
-                  spiderpoolConfigPools:
+                  ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
                     properties:
-                      IPv4IPPool:
+                      ipv4:
                         items:
                           type: string
                         type: array
-                      IPv6IPPool:
+                      ipv6:
                         items:
                           type: string
                         type: array
                     type: object
+                  master:
+                    items:
+                      type: string
+                    type: array
                   vlanID:
                     format: int32
                     maximum: 4094
@@ -150,23 +149,23 @@ spec:
                     - mode
                     - name
                     type: object
-                  master:
-                    items:
-                      type: string
-                    type: array
-                  spiderpoolConfigPools:
+                  ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
                     properties:
-                      IPv4IPPool:
+                      ipv4:
                         items:
                           type: string
                         type: array
-                      IPv6IPPool:
+                      ipv6:
                         items:
                           type: string
                         type: array
                     type: object
+                  master:
+                    items:
+                      type: string
+                    type: array
                   vlanID:
                     format: int32
                     maximum: 4094
@@ -177,21 +176,21 @@ spec:
                 type: object
               sriov:
                 properties:
-                  resourceName:
-                    type: string
-                  spiderpoolConfigPools:
+                  ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
                     properties:
-                      IPv4IPPool:
+                      ipv4:
                         items:
                           type: string
                         type: array
-                      IPv6IPPool:
+                      ipv6:
                         items:
                           type: string
                         type: array
                     type: object
+                  resourceName:
+                    type: string
                   vlanID:
                     format: int32
                     maximum: 4094

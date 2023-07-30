@@ -5,21 +5,21 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types"
-	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"os"
 
-	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
-
 	"github.com/containernetworking/cni/pkg/skel"
+	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 func CmdDel(args *skel.CmdArgs) (err error) {
@@ -28,7 +28,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to load CNI ENV args: %w", err)
 	}
 
-	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
+	client, err := openapi.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
 	if err != nil {
 		return err
 	}
@@ -49,6 +49,10 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
+	if conf.Mode == ModeDisable {
+		return nil
+	}
+
 	logger, err := logutils.SetupFileLogging(conf.LogOptions.LogLevel,
 		conf.LogOptions.LogFilePath, conf.LogOptions.LogFileMaxSize,
 		conf.LogOptions.LogFileMaxAge, conf.LogOptions.LogFileMaxCount)
@@ -62,7 +66,8 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		zap.String("Netns", args.Netns),
 		zap.String("IfName", args.IfName),
 	)
-	logger.Info(fmt.Sprintf("start to implement DELETE command in %v mode", conf.TuneMode))
+
+	logger.Info(fmt.Sprintf("start to implement DELETE command in %v mode", conf.Mode))
 
 	c := &coordinator{
 		hostRuleTable: int(*conf.HostRuleTable),
@@ -70,54 +75,52 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 
 	c.netns, err = ns.GetNS(args.Netns)
 	if err != nil {
-		_, ok := err.(ns.NSPathNotExistErr)
-		if ok {
-			logger.Debug("Pod's netns already gone.  Nothing to do.")
-		} else {
-			logger.Warn("failed to GetNS, container maybe gone, ignore ", zap.Error(err))
-		}
-	} else {
-		defer c.netns.Close()
-
-		err = c.netns.Do(func(netNS ns.NetNS) error {
-			c.currentAddress, err = networking.GetAddersByName(args.IfName, netlink.FAMILY_ALL)
-			if err != nil {
-				logger.Error("failed to GetAddersByName", zap.String("interface", args.IfName))
-				return err
-			}
+		if _, ok := err.(ns.NSPathNotExistErr); ok {
+			logger.Sugar().Debug("Pod's netns already gone. Nothing to do.")
 			return nil
-		})
-		if err != nil {
-			// ignore err
-			logger.Warn("failed to GetAddersByName, ignore error", zap.Error(err))
-		} else {
-			for idx := range c.currentAddress {
-				ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
-				err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
-				if err != nil && !os.IsNotExist(err) {
-					logger.Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
-				}
-			}
 		}
+		logger.Sugar().Error("failed to GetNS,", zap.Error(err))
+		return fmt.Errorf("failed to GetNS %s: %v", args.Netns, err)
 	}
+	defer c.netns.Close()
 
-	if conf.TuneMode == ModeUnderlay {
+	if conf.Mode == ModeUnderlay {
 		hostVeth := getHostVethName(args.ContainerID)
 		vethLink, err := netlink.LinkByName(hostVeth)
 		if err != nil {
 			if _, ok := err.(netlink.LinkNotFoundError); ok {
-				logger.Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
-			} else {
-				logger.Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
-				return fmt.Errorf("failed to get host veth device %s: %v", hostVeth, err)
+				logger.Sugar().Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
+				return nil
 			}
-		} else {
-			if err = netlink.LinkDel(vethLink); err != nil {
-				logger.Warn("failed to del hostVeth", zap.Error(err))
-				return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)
-			} else {
-				logger.Debug("success to del hostVeth", zap.String("HostVeth", hostVeth))
-			}
+			logger.Sugar().Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
+			return fmt.Errorf("failed to get host veth device %s: %v", hostVeth, err)
+		}
+		if err = netlink.LinkDel(vethLink); err != nil {
+			logger.Sugar().Warn("failed to del hostVeth", zap.Error(err))
+			return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)
+		}
+		logger.Sugar().Debug("success to del hostVeth", zap.String("HostVeth", hostVeth))
+	}
+
+	err = c.netns.Do(func(netNS ns.NetNS) error {
+		c.currentAddress, err = networking.GetAddersByName(args.IfName, netlink.FAMILY_ALL)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		// ignore err
+		logger.Sugar().Warn("failed to GetAddersByName, ignore error", zap.Error(err))
+	}
+
+	for idx := range c.currentAddress {
+		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
+		err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
+		if err != nil && !os.IsNotExist(err) {
+			logger.Sugar().Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
+			return fmt.Errorf("failed to DelToRuleTable: %v", err)
 		}
 	}
 

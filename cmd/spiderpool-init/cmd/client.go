@@ -154,3 +154,29 @@ func (c *CoreClient) CheckEndpointsAvailable(ctx context.Context, namespace, nam
 
 	return false
 }
+
+func (c *CoreClient) WaitMultusCNIConfigCreated(ctx context.Context, multuscniconfig *spiderpoolv2beta1.SpiderMultusConfig) error {
+	logger := logutils.FromContext(ctx)
+
+	for {
+		err := c.Create(ctx, multuscniconfig)
+		if err == nil {
+			logger.Sugar().Infof("Succeed to create multuscniconfig %s/%s: %+v", multuscniconfig.Namespace, multuscniconfig.Name, multuscniconfig)
+			return nil
+		}
+
+		if apierrors.IsAlreadyExists(err) {
+			logger.Sugar().Infof("multuscniconfig %s/%s is already exists, ignore creating", multuscniconfig.Namespace, multuscniconfig.Name)
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			interval := retryIntervalSec * time.Second
+			logger.Sugar().Infof("Failed to create multuscniconfig %s/%s, recreate in %s: %v", multuscniconfig.Namespace, multuscniconfig.Name, interval, err)
+			time.Sleep(interval)
+		}
+	}
+}

@@ -41,7 +41,7 @@ spec:
     metadata:
       annotations:
         $(if [[ "${E2E_MULTUS_ENABLED}" == "true" ]];then
-        echo "v1.multus-cni.io/default-network: ${MULTUS_CNI_NAMESPACE}/${MULTUS_DEFAULT_CNI_NAME}"
+        echo "v1.multus-cni.io/default-network: ${RELEASE_NAMESPACE}/${MULTUS_DEFAULT_CNI_NAME}"
         fi)
       name: $NAME
       labels:
@@ -60,6 +60,7 @@ EOF
 
 echo "waiting for deployment/${NAME} ready"
 if ! kubectl rollout status  deployment/${NAME} --kubeconfig ${E2E_KUBECONFIG} -w --timeout=120s ; then
+    kubectl describe po --kubeconfig ${E2E_KUBECONFIG}
     echo "error, failed to create a test pod"
     exit 1
 fi

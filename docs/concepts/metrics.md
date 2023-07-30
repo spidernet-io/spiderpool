@@ -27,7 +27,7 @@ The metrics of spiderpool agent is set by the following pod environment:
 
 ### Enable Metric support
 
-Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer [install](./install.md) for details
+Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer [install](../usage/install/install.md) for details
 
 Check the environment variable `SPIDERPOOL_ENABLED_METRIC` of the daemonset `spiderpool-agent` for whether it is already set to `true` or not.
 

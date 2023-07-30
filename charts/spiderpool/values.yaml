@@ -26,6 +26,9 @@ global:
   ## @param global.ipamBinHostPath the host path of the IPAM plugin directory.
   ipamBinHostPath: /opt/cni/bin
 
+  ## @param global.cniConfHostPath the host path of the cni config directory
+  cniConfHostPath: /etc/cni/net.d
+
   ## @param global.ipamUNIXSocketHostPath the host path of unix domain socket for ipam plugin
   ipamUNIXSocketHostPath: /var/run/spidernet/spiderpool.sock
 
@@ -87,20 +90,23 @@ coordinator:
   ## @param coordinator.name the name of the default SpiderCoordinator CR
   name: "default"
 
-  ## @param coordinator.tuneMode optional network mode, ["underlay", "overlay", "disabled"]
-  tuneMode: "underlay"
+  ## @param coordinator.mode optional network mode, ["underlay", "overlay", "disabled"]
+  mode: "underlay"
 
   ## @param coordinator.podCIDRType Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]
   podCIDRType: "cluster"
 
   ## @param coordinator.detectGateway detect the reachability of the gateway
-  detectGateway: true
+  detectGateway: false
 
   ## @param coordinator.detectIPConflict detect IP address conflicts
-  detectIPConflict: true
+  detectIPConflict: false
 
   ## @param coordinator.tunePodRoutes tune Pod routes
   tunePodRoutes: true
+
+  ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward
+  hijackCIDR: []
 
 ## @section multus parameters
 ##
@@ -136,7 +142,7 @@ multus:
       imagePullSecrets: []
       # - name: "image-pull-secret"
 
-    ## @param multus.multusCNI.defaultCniCRName please create the related NetworkAttachmentDefinition for default CNI after installation, if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
+    ## @param multus.multusCNI.defaultCniCRName please create the related NetworkAttachmentDefinition for default CNI after installation, expamle "macvlan". The namespace of defaultCniCRName follows with the release namespace of spdierpool. if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
     defaultCniCRName: ""
 
     resources:

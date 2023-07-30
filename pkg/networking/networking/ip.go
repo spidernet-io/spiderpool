@@ -5,23 +5,14 @@ package networking
 
 import (
 	"fmt"
+	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
 	"net"
 	"os"
 	"regexp"
 	"strings"
-
-	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 )
-
-var DefaultInterfacesToExclude = []string{
-	"docker.*", "cbr.*", "dummy.*",
-	"virbr.*", "lxcbr.*", "veth.*", "lo",
-	"cali.*", "tunl.*", "flannel.*", "kube-ipvs.*",
-	"cni.*", "vx-submariner", "cilium*",
-}
 
 // GetIPFamilyByResult return IPFamily by parse CNI Result
 func GetIPFamilyByResult(prevResult *current.Result) (int, error) {
@@ -89,35 +80,35 @@ func IPAddressByName(netns ns.NetNS, interfacenName string, ipFamily int) ([]net
 
 // IPAddressOnNode return all ip addresses on the node, filter by ipFamily
 // skipping any interfaces whose name matches any of the exclusion list regexes
-func IPAddressOnNode(logger *zap.Logger, ipFamily int) ([]netlink.Addr, error) {
+func GetAllIPAddress(ipFamily int, excludeInterface []string) ([]netlink.Addr, error) {
 	var err error
 	var excludeRegexp *regexp.Regexp
-	if excludeRegexp, err = regexp.Compile("(" + strings.Join(DefaultInterfacesToExclude, ")|(") + ")"); err != nil {
-		logger.Error(err.Error())
-		return nil, err
+
+	if excludeInterface != nil {
+		if excludeRegexp, err = regexp.Compile("(" + strings.Join(excludeInterface, ")|(") + ")"); err != nil {
+			return nil, err
+		}
 	}
 
 	links, err := netlink.LinkList()
 	if err != nil {
-		logger.Error(err.Error())
 		return nil, err
 	}
 
 	var allIPAddress []netlink.Addr
 	for idx := range links {
 		iLink := links[idx]
-		if excludeRegexp.MatchString(iLink.Attrs().Name) {
+
+		if excludeRegexp != nil && excludeRegexp.MatchString(iLink.Attrs().Name) {
 			continue
 		}
 
 		ipAddress, err := GetAddersByLink(iLink, ipFamily)
 		if err != nil {
-			logger.Error(err.Error())
 			return nil, err
 		}
 		allIPAddress = append(allIPAddress, ipAddress...)
 	}
-	logger.Debug("Get IPAddressOnNode", zap.Any("allIPAddress", allIPAddress))
 	return allIPAddress, nil
 }
 
@@ -208,4 +199,18 @@ func linkAddAndSetUp(link netlink.Link) error {
 		return fmt.Errorf("failed to set %s up: %w", link.Attrs().Name, err)
 	}
 	return nil
+}
+
+// IPNetEqual returns true iff both IPNet are equal
+// Copyright Authors of vishvananda/netlink
+func IPNetEqual(ipn1 *net.IPNet, ipn2 *net.IPNet) bool {
+	if ipn1 == ipn2 {
+		return true
+	}
+	if ipn1 == nil || ipn2 == nil {
+		return false
+	}
+	m1, _ := ipn1.Mask.Size()
+	m2, _ := ipn2.Mask.Size()
+	return m1 == m2 && ipn1.IP.Equal(ipn2.IP)
 }

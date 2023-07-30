@@ -18,7 +18,7 @@ It could have two kinds of scenes to install spiderpool:
 
     When one or more NIC of different NIC in a pod, spiderpool could help assign IP address, tune routes, connect the pod and local node, detect IP conflict etc.
 
-## Install for underlay NICs
+## Installation for underlay NICs
 
 Any CNI project compatible with third-party IPAM plugins, can work well with spiderpool, such as:
 [macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
@@ -44,25 +44,25 @@ The following examples are guides to install spiderpool:
 
 * [ovs CNI](./underlay/get-started-ovs.md), this is suitable for scenes like bare metal host.
 
-* [ipvlan CNI on public cloud](./underlay/get-started-cloud.md)
-
-* [ipvlan CNI on VMWARE](./underlay/get-started-vmware.md)
-
-* [ipvlan CNI on openstack](./underlay/get-started-openstack.md)
-
 The following examples are advanced to use two CNI in a cluster:
 
-* [SRIOV and macvlan](./get-started-macvlan-and-sriov.md), this is suitable for scenes like bare metal hosts, some nodes has SRIOV NIC and some nodes do not have
+* [SRIOV and macvlan](./underlay/get-started-macvlan-and-sriov.md), this is suitable for scenes like bare metal hosts, some nodes has SRIOV NIC and some nodes do not have
 
-## Install for overlay and underlay NICs
+## Installation for underlay CNI on Cloud infrastruct
+
+* [alibaba cloud](./cloud/get-started-alibaba.md)
+
+* [vmware vsphere](./cloud/get-started-vmware.md)
+
+* [openstack](./cloud/get-started-openstack.md)
+
+## Installation for adding an auxiliary underlay CNI NIC for overlay CNI
 
 The following examples are guides to install spiderpool:
 
-* [calico and macvlan CNI](./overlay/get-started-calico-macvlan.md)
+* [calico and macvlan CNI](./overlay/get-started-calico.md)
 
-* [cilium and macvlan CNI](./overlay/get-started-cilium-macvlan.md)
-
-* [antrea and macvlan CNI](./overlay/get-started-antrea-macvlan.md)
+* [cilium and macvlan CNI](./overlay/get-started-cilium.md)
 
 ## Uninstall
 

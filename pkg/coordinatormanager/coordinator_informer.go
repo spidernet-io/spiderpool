@@ -45,6 +45,8 @@ const (
 	cilium  = "cilium"
 )
 
+var SupportedPodCIDRType = []string{cluster, calico, cilium}
+
 const (
 	calicoConfig = "calico-config"
 	ciliumConfig = "cilium-config"
@@ -204,12 +206,12 @@ func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj inter
 		zap.String("Operation", "UPDATE"),
 	)
 
-	if newCoord.Spec.PodCIDRType != oldCoord.Spec.PodCIDRType {
+	if newCoord.Spec.PodCIDRType != oldCoord.Spec.PodCIDRType && *newCoord.Spec.PodCIDRType != *oldCoord.Spec.PodCIDRType {
 		event.EventRecorder.Eventf(
 			newCoord,
 			corev1.EventTypeNormal,
 			"PodCIDRTypeChanged",
-			"Pod CIDR type changed from %s to %s", oldCoord.Spec.PodCIDRType, newCoord.Spec.PodCIDRType,
+			"Pod CIDR type changed from %s to %s", *oldCoord.Spec.PodCIDRType, *newCoord.Spec.PodCIDRType,
 		)
 	}
 
@@ -341,14 +343,14 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	}
 
 	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(&cmPodList.Items[0])
-	switch coord.Spec.PodCIDRType {
+	switch *coord.Spec.PodCIDRType {
 	case cluster:
 		if cc.caliCtrlCanncel != nil {
 			cc.caliCtrlCanncel()
 			cc.caliCtrlCanncel = nil
 		}
 		coordCopy.Status.Phase = synced
-		coordCopy.Status.PodCIDR = k8sPodCIDR
+		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 	case calico:
 		if _, err := cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(calicoConfig); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -425,9 +427,9 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			break
 		}
 		coordCopy.Status.Phase = synced
-		coordCopy.Status.PodCIDR = ciliumPodCIDR
+		coordCopy.Status.OverlayPodCIDR = ciliumPodCIDR
 		if ipam == "kubernetes" {
-			coordCopy.Status.PodCIDR = k8sPodCIDR
+			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 		}
 	}
 

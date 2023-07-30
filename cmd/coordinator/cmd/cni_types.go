@@ -25,6 +25,7 @@ import (
 var (
 	defaultLogPath          = "/var/log/spidernet/coordinator.log"
 	defaultUnderlayVethName = "veth0"
+	defaultMarkBit          = 0 // ox1
 	// by default, k8s pod's first NIC is eth0
 	defaultOverlayVethName = "eth0"
 	defaultPodRuleTable    = 100
@@ -42,17 +43,16 @@ const (
 
 type Config struct {
 	types.NetConf
-	OnlyHardware       bool           `json:"onlyHardware,omitempty"`
 	DetectGateway      *bool          `json:"detectGateway,omitempty"`
 	MacPrefix          string         `json:"podMACPrefix,omitempty"`
-	InterfacePrefix    string         `json:"ifacePrefix,omitempty"`
-	PodFirstInterface  string         `json:"podDefaultInterface,omitempty"`
-	ClusterCIDR        []string       `json:"podCIDR,omitempty"`
+	MultusNicPrefix    string         `json:"multusNicPrefix,omitempty"`
+	PodDefaultCniNic   string         `json:"podDefaultCniNic,omitempty"`
+	OverlayPodCIDR     []string       `json:"overlayPodCIDR,omitempty"`
 	ServiceCIDR        []string       `json:"serviceCIDR,omitempty"`
-	ExtraCIDR          []string       `json:"extraCIDR,omitempty"`
+	HijackCIDR         []string       `json:"hijackCIDR,omitempty"`
 	TunePodRoutes      *bool          `json:"tunePodRoutes,omitempty"`
 	PodDefaultRouteNIC string         `json:"podDefaultRouteNic,omitempty"`
-	TuneMode           Mode           `json:"tuneMode,omitempty"`
+	Mode               Mode           `json:"mode,omitempty"`
 	HostRuleTable      *int64         `json:"hostRuleTable,omitempty"`
 	RPFilter           int32          `json:"hostRPFilter,omitempty" `
 	IPConflict         *bool          `json:"detectIPConflict,omitempty"`
@@ -102,12 +102,12 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		return nil, err
 	}
 
-	if conf.PodFirstInterface == "" {
-		conf.PodFirstInterface = defaultOverlayVethName
+	if conf.PodDefaultCniNic == "" {
+		conf.PodDefaultCniNic = defaultOverlayVethName
 	}
 
-	if conf.InterfacePrefix == "" {
-		conf.InterfacePrefix = defaultNICPrefix
+	if conf.MultusNicPrefix == "" {
+		conf.MultusNicPrefix = defaultNICPrefix
 	}
 
 	if conf.LogOptions == nil {
@@ -167,8 +167,8 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		conf.TunePodRoutes = coordinatorConfig.TunePodRoutes
 	}
 
-	if conf.TuneMode == "" {
-		conf.TuneMode = Mode(*coordinatorConfig.TuneMode)
+	if conf.Mode == "" {
+		conf.Mode = Mode(*coordinatorConfig.Mode)
 	}
 
 	if conf.PodDefaultRouteNIC == "" && coordinatorConfig.PodDefaultRouteNIC != "" {
@@ -199,12 +199,12 @@ func ValidateRoutes(conf *Config, coordinatorConfig *models.CoordinatorConfig) e
 		conf.ServiceCIDR = coordinatorConfig.ServiceCIDR
 	}
 
-	if len(conf.ClusterCIDR) == 0 {
-		conf.ClusterCIDR = coordinatorConfig.PodCIDR
+	if len(conf.OverlayPodCIDR) == 0 {
+		conf.OverlayPodCIDR = coordinatorConfig.OverlayPodCIDR
 	}
 
-	if len(conf.ExtraCIDR) == 0 {
-		conf.ExtraCIDR = coordinatorConfig.ExtraCIDR
+	if len(conf.HijackCIDR) == 0 {
+		conf.HijackCIDR = coordinatorConfig.HijackCIDR
 	}
 
 	var err error
@@ -213,12 +213,12 @@ func ValidateRoutes(conf *Config, coordinatorConfig *models.CoordinatorConfig) e
 		return err
 	}
 
-	err = validateRoutes(conf.ClusterCIDR)
+	err = validateRoutes(conf.OverlayPodCIDR)
 	if err != nil {
 		return err
 	}
 
-	err = validateRoutes(conf.ExtraCIDR)
+	err = validateRoutes(conf.HijackCIDR)
 	if err != nil {
 		return err
 	}

@@ -122,12 +122,12 @@ function install_cilium() {
                             --set bpf.vlanBypass=0 "
       case ${E2E_IP_FAMILY} in
         ipv4)
-            CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv4PodCIDR=${CILIUM_CLUSTER_POD_SUBNET_V4} \
+            CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv4PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V4} \
                                    --set ipv4.enabled=true \
                                    --set ipv6.enabled=false "
           ;;
         ipv6)
-            CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv6PodCIDR=${CILIUM_CLUSTER_POD_SUBNET_V6} \
+            CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv6PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V6} \
                                    --set ipv4.enabled=false \
                                    --set ipv6.enabled=true \
                                    --set tunnel=disabled \
@@ -136,13 +136,13 @@ function install_cilium() {
                                    --set enableIPv6Masquerade=true "
           ;;
         dual)
-            CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv4PodCIDR=${CILIUM_CLUSTER_POD_SUBNET_V4} \
-                                   --set ipam.operator.clusterPoolIPv6PodCIDR=${CILIUM_CLUSTER_POD_SUBNET_V6} \
+            CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv4PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V4} \
+                                   --set ipam.operator.clusterPoolIPv6PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V6} \
                                    --set ipv4.enabled=true \
                                    --set ipv6.enabled=true "
           ;;
         *)
-          echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
+          echo "the value of E2E_IP_FAMILY: ipv4 or ipv6 or dual"
           exit 1
       esac
 
@@ -186,6 +186,9 @@ function install_cilium() {
 
     # Install cilium
     helm upgrade --install cilium cilium/cilium --wait -n kube-system --debug --kubeconfig ${E2E_KUBECONFIG} ${CILIUM_HELM_OPTIONS}
+
+    # no matching resources found
+    sleep 3
     kubectl wait --for=condition=ready -l k8s-app=cilium --timeout=${INSTALL_TIME_OUT} pod -n kube-system \
     --kubeconfig ${E2E_KUBECONFIG}
 

@@ -21,6 +21,7 @@ kind-init: check_env prepare
 		E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		INSTALL_NETTOOLS=$(INSTALL_NETTOOLS) \
 		E2E_VLAN_GATEWAY_IMAGE=$(E2E_VLAN_GATEWAY_IMAGE) \
+		VLAN_GATEWAY_CONTAINER=$(VLAN_GATEWAY_CONTAINER) \
 		$(QUIET) bash scripts/config-network.sh
 	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
 	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
@@ -55,7 +56,7 @@ ifeq ($(INSTALL_MULTUS),true)
 		MULTUS_DEFAULT_CNI_VLAN200=$(MULTUS_DEFAULT_CNI_VLAN200) \
 		MULTUS_ADDITIONAL_CNI_VLAN100=$(MULTUS_ADDITIONAL_CNI_VLAN100) \
 		MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
-		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
+		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
@@ -77,15 +78,15 @@ ifeq ($(INSTALL_SPIDERDOCTOR),true)
 endif
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE_NAME=$(TEST_IMAGE_NAME) \
-		MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) \
+		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
 		scripts/installTestPod.sh $(E2E_KUBECONFIG) $(INSTALL_MULTUS)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"
-	@echo "       multus default CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
-	@echo "       multus addon CNI: $(MULTUS_CNI_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
+	@echo "       multus default CNI: $(RELEASE_NAMESPACE)/$(MULTUS_DEFAULT_CNI_NAME) "
+	@echo "       multus addon CNI: $(RELEASE_NAMESPACE)/$(MULTUS_ADDITIONAL_CNI_NAME) "
 	@echo ""
 	@echo -e "    succeeded to setup cluster $(E2E_CLUSTER_NAME) "
 	@echo -e "    you could use following command to access the cluster "
@@ -96,7 +97,6 @@ endif
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
 	@ KUBECONFIG=$(E2E_KUBECONFIG) kubectl get pods -o wide -A
-
 
 .PHONY: setup_kind
 setup_kind:
@@ -188,19 +188,19 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
 		    if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
-		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
+			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
 		    else \
-		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
 		    fi ; \
 			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
 			docker pull $${IMAGE_MULTUS} ; \
 		 	kind load docker-image $${IMAGE_MULTUS}  --name $(E2E_CLUSTER_NAME); \
-				if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
-					HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
-				else \
-					HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
-				fi ; \
+			if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
+				HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
+			else \
+				HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
+			fi ; \
 		else \
 		    HELM_OPTION+=" --set multus.multusCNI.install=false " ; \
 		fi ; \
@@ -281,6 +281,8 @@ clean:
 	-@  kind get clusters | xargs -n1  kind delete cluster --name
 	-@ docker stop $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
 	-@ docker rm $(PYROSCOPE_CONTAINER_NAME) &>/dev/null
+	-@ docker stop $(VLAN_GATEWAY_CONTAINER) &>/dev/null
+	-@ docker rm $(VLAN_GATEWAY_CONTAINER) &>/dev/null
 
 .PHONY: net-tools
 net-tools:
@@ -332,9 +334,9 @@ e2e_test:
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=true ; \
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
-		export MULTUS_CNI_NAMESPACE=$(MULTUS_CNI_NAMESPACE) ; \
+		export RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) ; \
 		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
-		export E2E_SPIDERPOOL_ENABLE_SUBNET=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
+		export E2E_SPIDERSUBNET_ENABLED=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
 		rm -f $(E2E_LOG_FILE) || true  ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \

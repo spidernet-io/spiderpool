@@ -136,6 +136,18 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
+  - spidermultusconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
   - spiderreservedips
   verbs:
   - create

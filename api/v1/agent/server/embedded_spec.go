@@ -263,8 +263,8 @@ func init() {
       "description": "Coordinator config",
       "type": "object",
       "required": [
-        "tuneMode",
-        "podCIDR",
+        "mode",
+        "overlayPodCIDR",
         "serviceCIDR",
         "tunePodRoutes"
       ],
@@ -275,7 +275,7 @@ func init() {
         "detectIPConflict": {
           "type": "boolean"
         },
-        "extraCIDR": {
+        "hijackCIDR": {
           "type": "array",
           "items": {
             "type": "string"
@@ -287,7 +287,10 @@ func init() {
         "hostRuleTable": {
           "type": "integer"
         },
-        "podCIDR": {
+        "mode": {
+          "type": "string"
+        },
+        "overlayPodCIDR": {
           "type": "array",
           "items": {
             "type": "string"
@@ -304,9 +307,6 @@ func init() {
           "items": {
             "type": "string"
           }
-        },
-        "tuneMode": {
-          "type": "string"
         },
         "tunePodRoutes": {
           "type": "boolean"
@@ -760,8 +760,8 @@ func init() {
       "description": "Coordinator config",
       "type": "object",
       "required": [
-        "tuneMode",
-        "podCIDR",
+        "mode",
+        "overlayPodCIDR",
         "serviceCIDR",
         "tunePodRoutes"
       ],
@@ -772,7 +772,7 @@ func init() {
         "detectIPConflict": {
           "type": "boolean"
         },
-        "extraCIDR": {
+        "hijackCIDR": {
           "type": "array",
           "items": {
             "type": "string"
@@ -784,7 +784,10 @@ func init() {
         "hostRuleTable": {
           "type": "integer"
         },
-        "podCIDR": {
+        "mode": {
+          "type": "string"
+        },
+        "overlayPodCIDR": {
           "type": "array",
           "items": {
             "type": "string"
@@ -801,9 +804,6 @@ func init() {
           "items": {
             "type": "string"
           }
-        },
-        "tuneMode": {
-          "type": "string"
         },
         "tunePodRoutes": {
           "type": "boolean"

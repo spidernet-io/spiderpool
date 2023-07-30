@@ -300,9 +300,9 @@ definitions:
     description: Coordinator config
     type: object
     properties:
-      tuneMode:
+      mode:
         type: string
-      podCIDR:
+      overlayPodCIDR:
         type: array
         items:
           type: string
@@ -310,7 +310,7 @@ definitions:
         type: array
         items:
           type: string
-      extraCIDR:
+      hijackCIDR:
         type: array
         items:
           type: string
@@ -329,8 +329,8 @@ definitions:
       detectGateway:
         type: boolean
     required:
-      - tuneMode
-      - podCIDR
+      - mode
+      - overlayPodCIDR
       - serviceCIDR
       - tunePodRoutes
   GetCoordinatorArgs:

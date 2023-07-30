@@ -8,7 +8,7 @@ Spiderpool supports the configuration of routing information.
 
 ### Set up Spiderpool
 
-follow the guide [installation](./get-started-macvlan.md) to install Spiderpool.
+follow the guide [installation](./install/underlay/get-started-macvlan.md) to install Spiderpool.
 
 ### Create Subnet
 

@@ -5,8 +5,9 @@ package gwconnection
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"time"
+
+	"go.uber.org/zap"
 
 	ping "github.com/prometheus-community/pro-bing"
 )
@@ -31,6 +32,7 @@ func NewPinger(count int, interval, timeout, gw string, logger *zap.Logger) (*Pi
 		return nil, err
 	}
 	pinger.Timeout = timeoutDuration
+	pinger.SetPrivileged(true)
 
 	return &Pinger{logger, pinger}, nil
 }

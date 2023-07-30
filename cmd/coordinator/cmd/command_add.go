@@ -6,19 +6,17 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
-	"time"
-
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+	"time"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -26,6 +24,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/networking/ipchecking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 func CmdAdd(args *skel.CmdArgs) (err error) {
@@ -36,7 +35,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to load CNI ENV args: %w", err)
 	}
 
-	client, err := cmd.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
+	client, err := openapi.NewAgentOpenAPIUnixClient(constant.DefaultIPAMUnixSocketPath)
 	if err != nil {
 		return err
 	}
@@ -56,7 +55,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return err
 	}
-	if conf.TuneMode == ModeDisable {
+	if conf.Mode == ModeDisable {
 		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 	}
 
@@ -75,7 +74,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.String("PodName", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE)),
 	)
-	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.TuneMode))
+	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.Mode))
+	logger.Debug(fmt.Sprintf("api configuration: %+v", *coordinatorConfig))
+	logger.Debug(fmt.Sprintf("final configuration: %+v", *conf))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
@@ -91,15 +92,15 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	c := &coordinator{
-		HijackCIDR:       conf.ClusterCIDR,
+		HijackCIDR:       conf.OverlayPodCIDR,
 		hostRuleTable:    int(*conf.HostRuleTable),
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
-		tuneMode:         conf.TuneMode,
-		interfacePrefix:  conf.InterfacePrefix,
+		tuneMode:         conf.Mode,
+		interfacePrefix:  conf.MultusNicPrefix,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
-	c.HijackCIDR = append(c.HijackCIDR, conf.ExtraCIDR...)
+	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)
 
 	c.netns, err = ns.GetNS(args.Netns)
 	if err != nil {
@@ -109,14 +110,14 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	defer c.netns.Close()
 
 	// check if it's first time invoke
-	err = c.coordinatorFirstInvoke(conf.PodFirstInterface)
+	err = c.coordinatorFirstInvoke(conf.PodDefaultCniNic)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 
 	// get basic info
-	switch conf.TuneMode {
+	switch conf.Mode {
 	case ModeUnderlay:
 		c.podVethName = defaultUnderlayVethName
 		c.hostVethName = getHostVethName(args.ContainerID)
@@ -140,17 +141,17 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Info("TuneMode is disable, nothing to do")
 		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 	default:
-		logger.Error("Unknown tuneMode", zap.String("invalid tuneMode", string(conf.TuneMode)))
-		return fmt.Errorf("unknown tuneMode: %s", conf.TuneMode)
+		logger.Error("Unknown tuneMode", zap.String("invalid tuneMode", string(conf.Mode)))
+		return fmt.Errorf("unknown tuneMode: %s", conf.Mode)
 	}
 
-	logger.Sugar().Infof("Get coordinator config: %v", c)
+	logger.Sugar().Infof("Get coordinator config: %+v", c)
 
 	errg, ctx := errgroup.WithContext(context.Background())
 	defer ctx.Done()
 
 	//  we do detect gateway connection firstly
-	if *conf.DetectGateway {
+	if conf.DetectGateway != nil && *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
 
 		var gws []string
@@ -175,14 +176,19 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			}
 			errg.Go(p.DetectGateway)
 		}
+	} else {
+		logger.Debug("disable detect gateway")
 	}
 
 	if conf.IPConflict != nil && *conf.IPConflict {
-		ipc, err := ipchecking.NewIPChecker(c.ipFamily, conf.DetectOptions.Retry, c.currentInterface, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
+		logger.Debug("Try to detect ip conflict")
+		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
 		if err != nil {
 			return fmt.Errorf("failed to run NewIPChecker: %w", err)
 		}
-		ipc.DoIPConflictChecking(prevResult.IPs, errg)
+		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, errg)
+	} else {
+		logger.Debug("disable detect ip conflict")
 	}
 
 	if err = errg.Wait(); err != nil {
@@ -196,20 +202,36 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		if err != nil {
 			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %v", args.IfName, conf.MacPrefix, err)
 		}
-
 		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
-		if conf.OnlyHardware {
-			logger.Debug("Only override hardware address, exit now")
-			return types.PrintResult(conf.PrevResult, conf.CNIVersion)
-		}
 	}
 
-	// get all ip address on the node
-	c.hostAddress, err = networking.IPAddressOnNode(logger, ipFamily)
+	// =================================
+
+	// get all ip of pod
+	var allPodIp []netlink.Addr
+	err = c.netns.Do(func(netNS ns.NetNS) error {
+		allPodIp, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
+		if err != nil {
+			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
+			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to all ip of pod", zap.Error(err))
+		return err
+	}
+	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
+
+	// get ip addresses of the node
+	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
 	if err != nil {
 		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
 		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
 	}
+	logger.Debug(fmt.Sprintf("host IP for route to Pod: %+v", c.hostIPRouteForPod))
+
+	// =================================
 
 	// get ips of this interface(preInterfaceName) from, including ipv4 and ipv6
 	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)
@@ -254,7 +276,16 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if err = c.setupHijackRoutes(logger, c.currentRuleTable); err != nil {
 		logger.Error("failed to setupHijackRoutes", zap.Error(err))
-		return fmt.Errorf("failed to setupHijackRoutes: %v", err)
+		return err
+	}
+
+	if c.tuneMode == ModeUnderlay {
+		if err = c.makeReplyPacketViaVeth(logger); err != nil {
+			logger.Error("failed to makeReplyPacketViaVeth", zap.Error(err))
+			return fmt.Errorf("failed to makeReplyPacketViaVeth: %v", err)
+		} else {
+			logger.Sugar().Infof("Successfully to ensure reply packet is forward by veth0")
+		}
 	}
 
 	if conf.TunePodRoutes != nil && *conf.TunePodRoutes && (!c.firstInvoke || c.tuneMode == ModeOverlay) {

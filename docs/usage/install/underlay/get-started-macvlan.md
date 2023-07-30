@@ -195,7 +195,7 @@ chmod +x /opt/cni/bin/veth
 
     * `ipam.spidernet.io/subnet`: defines which subnets to be used to assign IP addresses to Pods.
 
-        > For more information on Spiderpool annotations, refer to [Spiderpool Annotations](../concepts/annotation.md).
+        > For more information on Spiderpool annotations, refer to [Spiderpool Annotations](../../../reference/annotation.md).
 
     * `v1.multus-cni.io/default-network`：specifies the CNI configuration for Multus.
 

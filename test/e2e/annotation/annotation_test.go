@@ -548,13 +548,12 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				GinkgoWriter.Println("Pod IP is successfully released")
 			})
 	})
+
 	It("succeeded to running pod after added valid route field", Label("A00002"), func() {
-		var v4PoolName, v6PoolName, ipv4Gw, ipv6Gw string
+		var v4PoolName, v6PoolName, ipv4Dst, ipv6Dst, ipv4Gw, ipv6Gw string
 		var v4Pool, v6Pool *spiderpool.SpiderIPPool
 		var err error
 
-		v4Dst := "0.0.0.0/0"
-		v6Dst := "::/0"
 		annoPodRouteValue := new(types.AnnoPodRoutesValue)
 		annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
 
@@ -573,10 +572,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			}
 			Expect(err).To(Succeed(), "failed to create v4 ippool %v ,err is %v\n", v4PoolName, err)
 
-			subnet := v4Pool.Spec.Subnet
-			ipv4Gw = strings.Split(subnet, "0/")[0] + "1"
+			ipv4Dst = v4Pool.Spec.Subnet
+			ipv4Gw = strings.Split(v4Pool.Spec.Subnet, "0/")[0] + "1"
 			*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
-				Dst: v4Dst,
+				Dst: ipv4Dst,
 				Gw:  ipv4Gw,
 			})
 			annoPodIPPoolValue.IPv4Pools = []string{v4PoolName}
@@ -595,10 +594,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			}
 			Expect(err).To(Succeed(), "failed to create v6 ippool %v ,err is %v\n", v6PoolName, err)
 
-			subnet := v6Pool.Spec.Subnet
-			ipv6Gw = strings.Split(subnet, "/")[0] + "1"
+			ipv6Dst = v6Pool.Spec.Subnet
+			ipv6Gw = strings.Split(v6Pool.Spec.Subnet, "/")[0] + "1"
 			*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
-				Dst: v6Dst,
+				Dst: ipv6Dst,
 				Gw:  ipv6Gw,
 			})
 			annoPodIPPoolValue.IPv6Pools = []string{v6PoolName}
@@ -634,20 +633,22 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		// check whether the route is effective
 		GinkgoWriter.Println("check whether the route is effective")
 		if frame.Info.IpV4Enabled {
-			command := fmt.Sprintf("ip r | grep 'default via %s'", ipv4Gw)
-			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-			defer cancel()
-			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
-			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
-		}
-		if frame.Info.IpV6Enabled {
-			command := "ip -6 r | grep 'default via'| awk '{print $3}' "
+			command := fmt.Sprintf("ip r | grep '%s via %s'", ipv4Dst, ipv4Gw)
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
 			out, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
-			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v\n", command)
-			effectiveIpv6GwStr := strings.TrimSpace(string(out))
-			Expect(common.ContrastIpv6ToIntValues(effectiveIpv6GwStr, ipv6Gw)).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v , error is %v, %v \n", command, err, string(out))
+		}
+		if frame.Info.IpV6Enabled {
+			// The ipv6 address on the network interface will be abbreviated. For example fd00:0c3d::2 becomes fd00:c3d::2.
+			// Abbreviate the expected ipv6 address and use it in subsequent assertions.
+			ipv6Dst = strings.Replace(ipv6Dst, ":0", ":", -1)
+			ipv6Gw = strings.Replace(ipv6Gw, ":0", ":", -1)
+			command := fmt.Sprintf("ip -6 r | grep '%s via %s'", ipv6Dst, ipv6Gw)
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			out, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v , error is %v, %v \n", command, err, string(out))
 		}
 
 		// delete pod
@@ -666,8 +667,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	})
 
 	It("Successfully run pods with multi-NIC ippools annotations", Label("A00010"), func() {
-		var v4PoolName, v6PoolName string
+		var v4PoolName, v6PoolName, newv4SubnetName, newv6SubnetName string
 		var v4Pool, v6Pool *spiderpool.SpiderIPPool
+		var newv4SubnetObject, newv6SubnetObject *spiderpool.SpiderSubnet
 		var err error
 
 		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -677,7 +679,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
 			Expect(v4Pool).NotTo(BeNil())
 			if frame.Info.SpiderSubnetEnabled {
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, 1)
+				newv4SubnetName, newv4SubnetObject = common.GenerateExampleV4SubnetObject(100)
+				Expect(newv4SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, newv4SubnetObject)).NotTo(HaveOccurred())
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool, 1)
 			} else {
 				err = common.CreateIppool(frame, v4Pool)
 			}
@@ -688,7 +693,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
 			Expect(v6Pool).NotTo(BeNil())
 			if frame.Info.SpiderSubnetEnabled {
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, 1)
+				newv6SubnetName, newv6SubnetObject = common.GenerateExampleV6SubnetObject(100)
+				Expect(newv6SubnetObject).NotTo(BeNil())
+				Expect(common.CreateSubnet(frame, newv6SubnetObject)).NotTo(HaveOccurred())
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool, 1)
 			} else {
 				err = common.CreateIppool(frame, v6Pool)
 			}
@@ -737,18 +745,21 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		GinkgoWriter.Println("Check for another NIC comment to take effect.")
 		if frame.Info.IpV4Enabled {
-			command := fmt.Sprintf("ip a | grep '%s' |grep '%s'", common.NIC2, v4Pool.Spec.IPs[0])
+			command := fmt.Sprintf("ip a show '%s' |grep '%s'", common.NIC2, v4Pool.Spec.IPs[0])
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
-			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
-			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v. \n", command)
+			errOut, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v, error is %v, %v \n", command, err, string(errOut))
 		}
 		if frame.Info.IpV6Enabled {
-			command := fmt.Sprintf("ip a | grep '%s' -A5 | grep '%s'", common.NIC2, v6Pool.Spec.IPs[0])
+			// The ipv6 address on the network interface will be abbreviated. For example fd00:0c3d::2 becomes fd00:c3d::2.
+			// Abbreviate the expected ipv6 address and use it in subsequent assertions.
+			ipv6Addr := strings.Replace(v6Pool.Spec.IPs[0], ":0", ":", -1)
+			command := fmt.Sprintf("ip -6 a show '%s' | grep '%s'", common.NIC2, ipv6Addr)
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
-			_, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
-			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v. \n", command)
+			errOut, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v, error is %v, %v \n", command, err, string(errOut))
 		}
 
 		GinkgoWriter.Printf("delete pod %v/%v. \n", nsName, podName)
@@ -758,10 +769,16 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		if frame.Info.IpV4Enabled {
 			GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
 			Expect(common.DeleteIPPoolByName(frame, v4PoolName)).To(Succeed())
+			if frame.Info.SpiderSubnetEnabled {
+				Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+			}
 		}
 		if frame.Info.IpV6Enabled {
 			GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
 			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+			if frame.Info.SpiderSubnetEnabled {
+				Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+			}
 		}
 	})
 })

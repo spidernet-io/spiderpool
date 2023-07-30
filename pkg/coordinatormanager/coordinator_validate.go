@@ -23,7 +23,7 @@ var (
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
 	var errs field.ErrorList
-	if err := ValidateCoordinatorSpec(coord.Spec.DeepCopy()); err != nil {
+	if err := ValidateCoordinatorSpec(coord.Spec.DeepCopy(), true); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -36,7 +36,7 @@ func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field
 
 func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
 	var errs field.ErrorList
-	if err := ValidateCoordinatorSpec(newCoord.Spec.DeepCopy()); err != nil {
+	if err := ValidateCoordinatorSpec(newCoord.Spec.DeepCopy(), true); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -47,18 +47,42 @@ func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoord
 	return errs
 }
 
-func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec) *field.Error {
-	if err := validateCoordinatorPodCIDRType(spec.PodCIDRType); err != nil {
-		return err
+func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOptionalType bool) *field.Error {
+
+	if requireOptionalType && spec.PodCIDRType == nil {
+		return field.NotSupported(
+			podCIDRTypeField,
+			"",
+			SupportedPodCIDRType,
+		)
 	}
-	if err := validateCoordinatorExtraCIDR(spec.ExtraCIDR); err != nil {
+	if spec.PodCIDRType != nil {
+		if err := validateCoordinatorPodCIDRType(*spec.PodCIDRType); err != nil {
+			return err
+		}
+	}
+
+	if err := validateCoordinatorExtraCIDR(spec.HijackCIDR); err != nil {
 		return err
 	}
 	if err := validateCoordinatorPodMACPrefix(spec.PodMACPrefix); err != nil {
 		return err
 	}
 
-	return validateCoordinatorhostRPFilter(spec.HostRPFilter)
+	if requireOptionalType && spec.HostRPFilter == nil {
+		return field.NotSupported(
+			hostRPFilterField,
+			nil,
+			[]string{"0", "1", "2"},
+		)
+	}
+	if spec.HostRPFilter != nil {
+		if err := validateCoordinatorhostRPFilter(spec.HostRPFilter); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func validateCoordinatorPodCIDRType(t string) *field.Error {
@@ -66,7 +90,7 @@ func validateCoordinatorPodCIDRType(t string) *field.Error {
 		return field.NotSupported(
 			podCIDRTypeField,
 			t,
-			[]string{cluster, calico, cilium},
+			SupportedPodCIDRType,
 		)
 	}
 
@@ -120,7 +144,7 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 		return errInvalid
 	}
 
-	bb := fmt.Sprintf("%b", fb)
+	bb := fmt.Sprintf("%08b", fb)
 	if string(bb[7]) != "0" {
 		return field.Invalid(podMACPrefixField, *prefix, "not a unicast MAC")
 	}

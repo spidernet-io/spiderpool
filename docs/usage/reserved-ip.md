@@ -39,7 +39,7 @@ Field `excludeIPs` will make sure that any Pod that allocates IP addresses from 
 
 ## Use SpiderReservedIP
 
-Unlike configuring field `excluedIPs` in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a Kubernetes cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/concepts/spiderreservedip.md).
+Unlike configuring field `excluedIPs` in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a Kubernetes cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/reference/crd-spiderreservedip.md).
 
 ### Set up Spiderpool
 

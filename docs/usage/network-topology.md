@@ -81,5 +81,3 @@ spec:
     matchLabels:
       role: worker
 ```
-
-

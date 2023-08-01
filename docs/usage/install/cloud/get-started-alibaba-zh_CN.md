@@ -242,7 +242,7 @@ spec:
         v1.multus-cni.io/default-network: kube-system/ipvlan-eth1
     spec:
       containers:
-      - image: busybox
+      - image: nginx
         imagePullPolicy: IfNotPresent
         name: test-app-2
         ports:
@@ -255,7 +255,7 @@ kind: Service
 metadata:
   name: test-svc
   labels:
-    app: test-app-1
+    app: test-app-2
 spec:
   type: ClusterIP
   ports:
@@ -263,7 +263,7 @@ spec:
       protocol: TCP
       targetPort: 80
   selector:
-    app: test-app-1
+    app: test-app-2
 EOF
 ```
 

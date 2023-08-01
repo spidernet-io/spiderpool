@@ -435,7 +435,7 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	}
 	var v4Ipversion = new(types.IPVersion)
 	*v4Ipversion = constant.IPv4
-	var v4PoolName string = "v4pool-" + tools.RandomName()
+	var v4PoolName string = "v4pool-" + GenerateString(15, true)
 	var randomNumber1 string = GenerateRandomNumber(255)
 	var randomNumber2 string = GenerateRandomNumber(255)
 
@@ -473,7 +473,7 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 
 	var v6Ipversion = new(types.IPVersion)
 	*v6Ipversion = constant.IPv6
-	var v6PoolName string = "v6pool-" + tools.RandomName()
+	var v6PoolName string = "v6pool-" + GenerateString(15, true)
 	var randomNumber string = GenerateString(4, true)
 
 	iPv6PoolObj := &v1.SpiderIPPool{

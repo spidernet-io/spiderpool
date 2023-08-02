@@ -67,7 +67,7 @@ func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
 		}
 
 		if exist {
-			return fmt.Errorf("in overlay mode, it detects that the auxiliary interface %s of underlay mode exists. It seems thant the previous interface work in underlay mode. ", defaultUnderlayVethName)
+			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the auxiliary interface %s of underlay mode exists. It seems thant the previous interface work in underlay mode. ", c.currentInterface, defaultUnderlayVethName)
 		}
 
 		c.firstInvoke, err = networking.IsFirstModeOverlayInvoke(c.netns, c.interfacePrefix)

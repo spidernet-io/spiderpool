@@ -42,7 +42,9 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
     ```
    
    > You may need to label SR-IOV worker nodes using node-role.kubernetes.io/worker="" label, if not already.
+   > 
    > By default, SR-IOV Operator will be deployed in namespace 'openshift-sriov-network-operator'.
+   > 
    > After installation, the node may reboot automatically. If necessary, install sriov-network-operator to the designated worker nodes.
    
 2. Configure sriov-network-operator
@@ -153,7 +155,7 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
 
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
 
-2. Create a SpiderSubnet instance.
+2. Create a SpiderIPPool instance.
 
     The Pod will obtain an IP address from this subnet for underlying network communication, so the subnet needs to correspond to the underlying subnet that is being accessed.
     Here is an example of creating a SpiderSubnet instance:：
@@ -161,14 +163,16 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
     ```shell
     cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
+    kind: SpiderIPPool
     metadata:
-      name: subnet-test
+      name: ippool-test
     spec:
+      default: true
       ips:
       - "10.20.168.190-10.20.168.199"
       subnet: 10.20.0.0/16
       gateway: 10.20.0.1
+      multusName: kube-system/sriov-test
     EOF
     ```
 
@@ -186,6 +190,8 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
       sriov:
         resourceName: spidernet.io/sriov_netdevice
       ```
+
+    > Note: SpiderIPPool.Spec.multusName: 'kube-system/sriov-test' must be to match the Name and Namespace of the SpiderMultusConfig instance created.
 
 ## Create applications
 
@@ -205,10 +211,6 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
       template:
         metadata:
           annotations:
-            ipam.spidernet.io/subnet: |-
-              {
-                "ipv4": ["subnet-test"]
-              }
             v1.multus-cni.io/default-network: kube-system/sriov-test
           labels:
             app: sriov-deploy
@@ -261,17 +263,17 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
     sriov-deploy-9b4b9f6d9-xfsvj   1/1     Running   0          6m54s   10.20.168.190   master-11   <none>           <none>
     ```
 
-3. Spiderpool has created fixed IP pools for applications, ensuring that the applications' IPs are automatically fixed within the defined ranges.
+3. Spiderpool ensuring that the applications' IPs are automatically fixed within the defined ranges.
 
     ```shell
     ~# kubectl get spiderippool
-    NAME                                     VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-    auto-sriov-deploy-v4-eth0-f5488b112fd9   4         10.20.0.0/16   2                    2                false     false
+    NAME         VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+    ippool-test  4         10.20.0.0/16   2                    10               true      false
    
     ~#  kubectl get spiderendpoints
-    NAME                           INTERFACE   IPV4POOL                                 IPV4               IPV6POOL   IPV6   NODE
-    sriov-deploy-9b4b9f6d9-mmpsm   eth0        auto-sriov-deploy-v4-eth0-f5488b112fd9   10.20.168.191/16                     worker-12
-    sriov-deploy-9b4b9f6d9-xfsvj   eth0        auto-sriov-deploy-v4-eth0-f5488b112fd9   10.20.168.190/16                     master-11
+    NAME                           INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE
+    sriov-deploy-9b4b9f6d9-mmpsm   eth0        ippool-test   10.20.168.191/16                     worker-12
+    sriov-deploy-9b4b9f6d9-xfsvj   eth0        ippool-test   10.20.168.190/16                     master-11
     ```
 
 4. Test the communication between Pods:

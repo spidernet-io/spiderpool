@@ -18,16 +18,20 @@ Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等
 
     确认 calico 开启了 fullmesh 方式的 BGP 配置。
 
+* 确认 SpiderPool 开启 Subnet 功能。
+
 * Helm、Calicoctl 二进制工具
 
 ## 安装 Spiderpool
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system 
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true
 ```
 
 > Spiderpool 默认 IPv4-Only, 如需启用 IPv6 请参考 [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md)
+> 
+> `ipam.enableSpiderSubnet=true`: Spiderpool 的 subnet 功能需要被打开。
 > 
 > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 

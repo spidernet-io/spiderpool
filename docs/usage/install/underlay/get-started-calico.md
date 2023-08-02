@@ -16,7 +16,9 @@ Spiderpool is able to provide static IPs to Deployments, StatefulSets, and other
 
     Make sure that Calico is not configured to use IPIP or VXLAN tunneling as we'll demonstrate how to use Calico for underlay networks.
 
-    Confirm that Calico has enabled BGP configuration in full-mesh mode。
+    Confirm that Calico has enabled BGP configuration in full-mesh mode.
+
+* SpiderPool's subnet feature needs to be enabled.
 
 * Helm and Calicoctl
 
@@ -24,11 +26,13 @@ Spiderpool is able to provide static IPs to Deployments, StatefulSets, and other
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system 
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true
 ```
 
 > Spiderpool is IPv4-Only by default. If you want to enable IPv6, refer to [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md).
 >
+> `ipam.enableSpiderSubnet=true`: SpiderPool's subnet feature needs to be enabled.
+> 
 > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
 
 Create a subnet for a Pod (SpiderSubnet):

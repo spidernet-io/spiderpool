@@ -26,7 +26,7 @@ Spiderpool is able to provide static IPs to Deployments, StatefulSets, and other
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
 ```
 
 > Spiderpool is IPv4-Only by default. If you want to enable IPv6, refer to [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md).

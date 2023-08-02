@@ -26,7 +26,7 @@ Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等
 
 ```shell
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
 ```
 
 > Spiderpool 默认 IPv4-Only, 如需启用 IPv6 请参考 [Spiderpool IPv6](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md)

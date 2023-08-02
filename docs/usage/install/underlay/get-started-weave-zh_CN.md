@@ -29,7 +29,8 @@
 
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true
+    helm repo update spiderpool 
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
     ```
    
     > `ipam.enableSpiderSubnet=true`: SpiderPool 的 subnet 功能需要被打开。

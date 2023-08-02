@@ -42,7 +42,9 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     ```
    
    > 如果组件未就绪, 可能需要给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'
+   > 
    > sriov-network-operator 默认安装在 sriov-network-operator 命名空间下
+   > 
    > 安装 sriov-network-operator 后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，安装到工作节点。
 
 2. 配置 sriov-network-operator
@@ -155,22 +157,24 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
 
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
-2. 创建 SpiderSubnet 实例。
+2. 创建 SpiderIPPool 实例。
 
     Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。
-    以下是创建相关的 SpiderSubnet 示例
+    以下是创建相关的 SpiderIPPool 示例
 
     ```shell
     cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderSubnet
+    kind: SpiderIPPool
     metadata:
-      name: subnet-test
+      name: ippool-test
     spec:
+      default: true
       ips:
       - "10.20.168.190-10.20.168.199"
       subnet: 10.20.0.0/16
       gateway: 10.20.0.1
+      multusName: kube-system/sriov-test
     EOF
     ```
 
@@ -189,6 +193,8 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
         resourceName: spidernet.io/sriov_netdevice
     EOF
     ```
+   
+    > 注意: SpiderIPPool.Spec.multusName: `kube-system/sriov-test` 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
 
 ## 创建应用
 
@@ -208,10 +214,6 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
       template:
         metadata:
           annotations:
-            ipam.spidernet.io/subnet: |-
-              {
-                "ipv4": ["subnet-test"]
-              }
             v1.multus-cni.io/default-network: kube-system/sriov-test
           labels:
             app: sriov-deploy
@@ -264,17 +266,17 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     sriov-deploy-9b4b9f6d9-xfsvj   1/1     Running   0          6m54s   10.20.168.190   master-11   <none>           <none>
     ```
 
-3. Spiderpool 自动为应用创建了 IP 固定池，应用的 IP 将会自动固定在该 IP 范围内
+3. 应用的 IP 将会自动固定在该 IP 范围内:
 
     ```shell
     ~# kubectl get spiderippool
-    NAME                                     VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-    auto-sriov-deploy-v4-eth0-f5488b112fd9   4         10.20.0.0/16   2                    2                false     false
+    NAME         VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+    ippool-test  4         10.20.0.0/16   2                    10               true      false
    
     ~#  kubectl get spiderendpoints
-    NAME                           INTERFACE   IPV4POOL                                 IPV4               IPV6POOL   IPV6   NODE
-    sriov-deploy-9b4b9f6d9-mmpsm   eth0        auto-sriov-deploy-v4-eth0-f5488b112fd9   10.20.168.191/16                     worker-12
-    sriov-deploy-9b4b9f6d9-xfsvj   eth0        auto-sriov-deploy-v4-eth0-f5488b112fd9   10.20.168.190/16                     master-11
+    NAME                           INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE
+    sriov-deploy-9b4b9f6d9-mmpsm   eth0        ippool-test   10.20.168.191/16                     worker-12
+    sriov-deploy-9b4b9f6d9-xfsvj   eth0        ippool-test   10.20.168.190/16                     master-11
     ```
 
 4. 测试 Pod 与 Pod 的通讯

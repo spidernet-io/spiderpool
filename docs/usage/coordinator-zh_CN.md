@@ -103,7 +103,9 @@ default via 10.6.0.1 dev eth0
 
 - 因为 calico 会用到一些封装技术，性能会得到影响
 - 大多都不支持 Pod 的 IP 地址固定
-- 如果通过 Multus 为 Pod 附加多张网卡时，Pod 通信时常常遇到来回路径不一致的问题，导致 Pod 无法正常通信
+- 如果通过 Multus 为 Pod 附加多张网卡时，Pod 通信时常常遇到数据包来回路径不一致的问题，导致 Pod 无法正常通信
+
+> 当 Pod 附加了多张网卡时，极大可能出现 Pod 通信数据包来回路径不一致的问题。如果数据链路上存在一些安全设备，由于数据包的来回路径不一致，流量可能被安全设备认为是 "半连接"(没有 TCP SYN 报文的记录，但收到 TCP ACK 报文 )，在这种情况下，安全设备会阻断掉该连接，造成 Pod 通信异常。
 
 上述问题我们可以通过设置 coordinator 运行在 overlay 模式解决。 在此模式下，`coordinator` 不会创建 veth 设备，而是设置一些策略路由，确保 Pod 访问 ClusterIP 时从 eth0(通常由 Calico、Cilium等CNI创建) 转发，Pod 访问集群外部目标时从 net1 (通常由 Macvlan、IPvlan 等CNI创建) 转发。
 

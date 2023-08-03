@@ -31,8 +31,20 @@ jobs:
           set -x
           echo "============ print var ======== "
               grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
-          PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
-              [ -n "${PR_NUMBER}" ] || { echo "no PR number, ignore" ; }
+          echo "try to get PR from commit"
+          COMMIT=` echo "${JSON}" | jq '.event.commits[0].id' | tr -d '"' ` || true
+          if [ -n "${COMMIT}" ]; then
+              PR_NUMBER=`curl -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+          else
+              echo "error, failed to get any commit ID"
+          fi
+          if [ -z "${PR_NUMBER}" ] ; then 
+              PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
+          fi
+          if [ -z "${PR_NUMBER}" ] ; then
+              echo "error, failed to get PR NUMBER"
+              exit 1
+          fi
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
           ACTION_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
               grep '"username":'  <<< "${JSON}"

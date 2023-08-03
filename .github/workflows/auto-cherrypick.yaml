@@ -38,7 +38,7 @@ jobs:
           else
               echo "error, failed to get any commit ID"
           fi
-          if [ -z "${PR_NUMBER}" ] ; then 
+          if [ -z "${PR_NUMBER}" ] ; then
               PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
           fi
           if [ -z "${PR_NUMBER}" ] ; then

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -642,9 +643,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		if frame.Info.IpV6Enabled {
 			// The ipv6 address on the network interface will be abbreviated. For example fd00:0c3d::2 becomes fd00:c3d::2.
 			// Abbreviate the expected ipv6 address and use it in subsequent assertions.
-			ipv6Dst = strings.Replace(ipv6Dst, ":0", ":", -1)
-			ipv6Gw = strings.Replace(ipv6Gw, ":0", ":", -1)
-			command := fmt.Sprintf("ip -6 r | grep '%s via %s'", ipv6Dst, ipv6Gw)
+			_, ipv6Dst, err := net.ParseCIDR(ipv6Dst)
+			Expect(err).NotTo(HaveOccurred())
+			ipv6Gw := net.ParseIP(ipv6Gw)
+			command := fmt.Sprintf("ip -6 r | grep '%s via %s'", ipv6Dst.String(), ipv6Gw.String())
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
 			out, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
@@ -754,8 +756,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		if frame.Info.IpV6Enabled {
 			// The ipv6 address on the network interface will be abbreviated. For example fd00:0c3d::2 becomes fd00:c3d::2.
 			// Abbreviate the expected ipv6 address and use it in subsequent assertions.
-			ipv6Addr := strings.Replace(v6Pool.Spec.IPs[0], ":0", ":", -1)
-			command := fmt.Sprintf("ip -6 a show '%s' | grep '%s'", common.NIC2, ipv6Addr)
+			ipv6Addr := net.ParseIP(v6Pool.Spec.IPs[0])
+			command := fmt.Sprintf("ip -6 a show '%s' | grep '%s'", common.NIC2, ipv6Addr.String())
 			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 			defer cancel()
 			errOut, err := frame.ExecCommandInPod(podName, nsName, command, ctx)

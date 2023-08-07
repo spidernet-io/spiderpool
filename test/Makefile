@@ -182,7 +182,9 @@ setup_spiderpool:
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		HELM_OPTION+=" --set coordinator.detectIPConflict=false --set coordinator.detectGateway=false " ; \
+		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ] && [ "$(INSTALL_CILIUM)" == "true" ] ; then \
+			HELM_OPTION+=" --set coordinator.podCIDRType=cilium " ; \
+		fi ; \
 		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
 		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \

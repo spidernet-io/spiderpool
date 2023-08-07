@@ -23,6 +23,9 @@ ClusterIP 的路由，导致无法访问。
 
 ### 配置 coordinator 运行在 underlay 模式
 
+> 在默认情况下 mode 的值为auto(spidercoordinator CR 中 spec.mode 为 auto), coordinator 将通过对比当前 CNI 网卡是否是 `eth0`, 如果是，则自动判断为 Underlay 模式。
+> 如果当前网卡不是 `eth0`，那么 coordinator 将检测 Pod 中是否存在 `veth0` 网卡，如果是，则判断为 Underlay 模式。
+
 当您的业务部署在"传统网络"或者 IAAS 环境上时，业务 Pod 的 IP 地址可能直接从宿主机的 IP 子网分配。应用 Pod 可直接使用自己的 IP 地址进行东西向和南北向通。
 
 该模式的优点有:
@@ -69,7 +72,7 @@ spec:
     }
 ```
 
-- mode: 指定 coordinator 运行在 underlay 模式
+- mode: 指定 coordinator 运行在 underlay 模式。或默认为 auto 模式，您只需要在 Pod 注入注解: `v1.multus-cni.io/default-network: kube-system/macvlan-underlay`, coordinator 将会自动判断 mode 为 underlay。 
 
 当以 macvlan-underlay 创建 Pod，我们进入到 Pod 内部，看看路由等信息:
 
@@ -99,6 +102,8 @@ default via 10.6.0.1 dev eth0
 ### 配置 coordinator 运行在 overlay 模式
 
 与 Underlay 模式相对应，我们有时候并不关心集群部署环境的底层网络是什么，我们希望集群能够运行在大多数的底层网络。常常会用到如[Calico](https://github.com/projectcalico/calico) 和 [Cilium](https://github.com/cilium/cilium) 等CNI, 这些插件多数使用了 vxlan 等隧道技术，搭建起一个 Overlay 网络平面，再借用 NAT 技术实现南北向的通信。
+
+> 在默认情况下 mode 的值为auto(spidercoordinator CR 中 spec.mode 为 auto), coordinator 将通过对比当前 CNI 调用网卡是否不是 `eth0`。如果不是，确认 Pod 中不存在 `veth0` 网卡，则自动判断为 overlay 模式。
 
 此模式的优点有:
 
@@ -146,7 +151,7 @@ spec:
     }
 ```
 
-- mode: 指定 coordinator 运行在 overlay 模式
+- mode: 指定 coordinator 运行在 overlay 模式。或默认为 auto 模式，您只需要在 Pod 注入注解: `k8s.v1.cni.cncf.io/networks: kube-system/macvlan-overlay`，coordinator 将会自动判断 mode 为 overlay。
 
 当以 macvlan-overlay 创建 Pod，我们进入到 Pod 内部，看看路由等信息:
 

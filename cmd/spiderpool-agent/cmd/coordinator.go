@@ -13,6 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var unixGetCoordinatorConfig = &_unixGetCoordinatorConfig{}
@@ -24,6 +25,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	ctx := params.HTTPRequest.Context()
 	crdClient := agentContext.CRDManager.GetClient()
 	podClient := agentContext.PodManager
+	epClient := agentContext.EndpointManager
 
 	var coordList spiderpoolv2beta1.SpiderCoordinatorList
 	if err := crdClient.List(ctx, &coordList); err != nil {
@@ -39,11 +41,25 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("spidercoordinator: %s no ready", coord.Name)))
 	}
 
-	var pod *corev1.Pod
 	var err error
+	var spNics []string
+	var se *spiderpoolv2beta1.SpiderEndpoint
+	// get spiderendpoint
+	se, err = epClient.GetEndpointByName(ctx, params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName, constant.UseCache)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("failed to get spiderendpoint %s/%s", params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName)))
+	}
+
+	if se != nil {
+		for _, spip := range se.Status.Current.IPs {
+			spNics = append(spNics, spip.NIC)
+		}
+	}
+
+	var pod *corev1.Pod
 	pod, err = podClient.GetPodByName(ctx, params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName, constant.UseCache)
 	if err != nil {
-		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("failed to get coordinator config: pod %s/%s not found", params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName)))
+		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("failed to get pod %s/%s", params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName)))
 	}
 
 	var prefix string
@@ -73,7 +89,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		HostRPFilter:       int64(*coord.Spec.HostRPFilter),
 		DetectGateway:      *coord.Spec.DetectGateway,
 		DetectIPConflict:   *coord.Spec.DetectIPConflict,
+		PodNICs:            spNics,
 	}
-
 	return daemonset.NewGetCoordinatorConfigOK().WithPayload(config)
 }

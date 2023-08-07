@@ -36,6 +36,7 @@ var (
 type Mode string
 
 const (
+	ModeAuto     Mode = "auto"
 	ModeUnderlay Mode = "underlay"
 	ModeOverlay  Mode = "overlay"
 	ModeDisable  Mode = "disable"

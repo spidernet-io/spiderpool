@@ -53,11 +53,10 @@ type IPvlanNetConf struct {
 }
 
 type SRIOVNetConf struct {
-	Type         string                   `json:"type"`
-	ResourceName string                   `json:"resourceName"` // required
-	IPAM         spiderpoolcmd.IPAMConfig `json:"ipam"`
-	Vlan         *int32                   `json:"vlan,omitempty"`
-	DeviceID     string                   `json:"deviceID,omitempty"`
+	Type     string                   `json:"type"`
+	IPAM     spiderpoolcmd.IPAMConfig `json:"ipam"`
+	Vlan     *int32                   `json:"vlan,omitempty"`
+	DeviceID string                   `json:"deviceID,omitempty"`
 }
 
 type IfacerNetConf = ifacercmd.Ifacer

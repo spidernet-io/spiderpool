@@ -215,10 +215,20 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 		// make sure that veth0/eth0 forwards traffic within the cluster
 		// eq: ip route add <cluster/service cidr> dev veth0/eth0
 		for _, hijack := range c.HijackCIDR {
-			_, ipNet, err := net.ParseCIDR(hijack)
+			nip, ipNet, err := net.ParseCIDR(hijack)
 			if err != nil {
 				logger.Error("Invalid Hijack Cidr", zap.String("Cidr", hijack), zap.Error(err))
 				return err
+			}
+
+			if nip.To4() != nil && v4Gw == nil {
+				logger.Warn("ignore adding hijack routing table(ipv4), due to ipv4 gateway is nil", zap.String("IPv4 Hijack cidr", hijack))
+				continue
+			}
+
+			if nip.To4() == nil && v6Gw == nil {
+				logger.Warn("ignore adding hijack routing table(ipv6), due to ipv6 gateway is nil", zap.String("IPv6 Hijack cidr", hijack))
+				continue
 			}
 
 			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {

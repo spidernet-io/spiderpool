@@ -51,14 +51,14 @@ func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
 			}
 
 			if !exist {
-				return fmt.Errorf("in multi-NIC mode, underlay mode can only work with underlay mode. please check pod's multus annotations")
+				return fmt.Errorf("when creating interface %s in underlay mode, it detects that the auxiliary interface %s was not created by previous interface. please enable coordinator plugin in previous interface", c.currentInterface, podFirstInterface)
 			}
 		}
 		return nil
 	case ModeOverlay:
 		// in overlay mode, it should no veth0 and currentInterface isn't eth0
 		if c.currentInterface == podFirstInterface {
-			return fmt.Errorf("in overlay mode, underlay mode can only work with underlay mode. please check pod's multus annotations")
+			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the current interface is first interface named %s, this plugin should not work for it. please modify in the CNI configuration", c.currentInterface, podFirstInterface)
 		}
 
 		exist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
@@ -67,7 +67,7 @@ func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
 		}
 
 		if exist {
-			return fmt.Errorf("in multi-NIC mode, overlay mode can't work with underlay mode. please check pod's multus annotations")
+			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the auxiliary interface %s of underlay mode exists. It seems that the previous interface work in underlay mode. ", c.currentInterface, defaultUnderlayVethName)
 		}
 
 		c.firstInvoke, err = networking.IsFirstModeOverlayInvoke(c.netns, c.interfacePrefix)

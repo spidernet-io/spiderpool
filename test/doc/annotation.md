@@ -13,3 +13,4 @@
 | A00009  | Modify the annotated IPPool for a specified Deployment pod<br />Modify the annotated IPPool for a specified StatefulSet pod                 | p2       |       |  done   |       |
 | A00010  | Modify the annotated IPPool for a pod running on multiple NICs       | p3       |       | done   |       |
 | A00011  | Use the ippool route with `cleanGateway=false` in the pod annotation as a default route | p3     |     |  done  |         |
+| A00012  | Specify the default NIC through Pod annotations  | p2     |     |    |         |

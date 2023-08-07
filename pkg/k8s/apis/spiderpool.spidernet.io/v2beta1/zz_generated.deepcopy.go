@@ -41,6 +41,11 @@ func (in *CoordinatorSpec) DeepCopyInto(out *CoordinatorSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.PodCIDRType != nil {
+		in, out := &in.PodCIDRType, &out.PodCIDRType
+		*out = new(string)
+		**out = **in
+	}
 	if in.HijackCIDR != nil {
 		in, out := &in.HijackCIDR, &out.HijackCIDR
 		*out = make([]string, len(*in))

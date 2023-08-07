@@ -5,7 +5,7 @@
 ## @section Global parameters
 ##
 global:
-  ## @param global.imageRegistryOverride Global Docker image registry
+  ## @param global.imageRegistryOverride Global Docker image registry for spiderpool images, but not for multus tag
   imageRegistryOverride: ""
 
   ## @param global.nameOverride instance name
@@ -142,8 +142,8 @@ multus:
       imagePullSecrets: []
       # - name: "image-pull-secret"
 
-    ## @param multus.multusCNI.defaultCniCRName please create the related NetworkAttachmentDefinition for default CNI after installation, expamle "macvlan". The namespace of defaultCniCRName follows with the release namespace of spdierpool. if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
-    defaultCniCRName: ""
+    ## @param multus.multusCNI.defaultCniCRName please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool. if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
+    defaultCniCRName: "default"
 
     resources:
       limits:

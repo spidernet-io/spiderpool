@@ -477,3 +477,8 @@ lint_chart_trivy:
           aquasec/trivy:$(TRIVY_VERSION) config --exit-code 1  --severity $(LINT_TRIVY_SEVERITY_LEVEL) /tmp/src/charts  ; \
       (($$?==0)) || { echo "error, failed to check chart trivy" && exit 1 ; } ; \
       echo "chart trivy check: pass"
+
+
+.PHONY: build-chart
+build-chart:
+	@ cd charts ; make

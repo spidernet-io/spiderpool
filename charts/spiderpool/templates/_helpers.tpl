@@ -179,9 +179,7 @@ return the multus image
 {{- define "spiderpool.multus.image" -}}
 {{- $registryName := .Values.multus.multusCNI.image.registry -}}
 {{- $repositoryName := .Values.multus.multusCNI.image.repository -}}
-{{- if .Values.global.imageRegistryOverride }}
-    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
-{{ else if $registryName }}
+{{- if $registryName }}
     {{- printf "%s/%s" $registryName $repositoryName -}}
 {{- else -}}
     {{- printf "%s" $repositoryName -}}
@@ -190,8 +188,6 @@ return the multus image
     {{- print "@" .Values.multus.multusCNI.image.digest -}}
 {{- else if .Values.multus.multusCNI.image.tag -}}
     {{- printf ":%s" .Values.multus.multusCNI.image.tag -}}
-{{- else -}}
-    {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
 

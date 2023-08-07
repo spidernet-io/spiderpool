@@ -29,9 +29,12 @@
 
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system 
+    helm repo update spiderpool 
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
     ```
-    
+   
+    > `ipam.enableSpiderSubnet=true`: SpiderPool 的 subnet 功能需要被打开。
+    > 
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
     等待 Pod Running， 创建 Pod 的子网(SpiderSubnet):

@@ -29,11 +29,14 @@
 
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system 
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.install=false
     ```
     
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
-
+    > 
+    > "ipam.enableSpiderSubnet=true": SpiderPool's subnet feature needs to be enabled.
+   
     Wait for Pod Running and create a subnet for Pod (SpiderSubnet):
 
      ```shell

@@ -8,3 +8,4 @@
 | M00004  | Manually delete the net-attach-conf of multus, it will be created automatically | p1      |  smoke  |    |       |
 | M00005  | Customize net-attach-conf name via annotation multus.spidernet.io/cr-name | p2       |       |    |       |
 | M00006  | Change net-attach-conf version via annotation multus.spidernet.io/cni-version | p2     |       |    |       |
+| M00007  | spidermultusconfig webhook verification, including vlan, cnitype and other fields | p3     |       |    |       |

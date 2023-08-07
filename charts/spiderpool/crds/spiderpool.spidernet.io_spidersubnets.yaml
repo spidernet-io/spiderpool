@@ -89,7 +89,7 @@ spec:
               vlan:
                 default: 0
                 format: int64
-                maximum: 4095
+                maximum: 4094
                 minimum: 0
                 type: integer
             required:

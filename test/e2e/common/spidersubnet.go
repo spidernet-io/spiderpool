@@ -37,7 +37,7 @@ func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
 	}
-	subnetName := "v4-ss-" + tools.RandomName()
+	subnetName := "v4-ss-" + GenerateString(15, true)
 	randNum1 := GenerateRandomNumber(255)
 	randNum2 := GenerateRandomNumber(255)
 
@@ -76,7 +76,7 @@ func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 		Fail("the IP range should be between 1 and 65533")
 	}
 
-	subnetName := "v6-ss-" + tools.RandomName()
+	subnetName := "v6-ss-" + GenerateString(15, true)
 	randNum := GenerateString(4, true)
 	subnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{

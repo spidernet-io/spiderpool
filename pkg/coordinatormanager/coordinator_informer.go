@@ -43,9 +43,10 @@ const (
 	cluster = "cluster"
 	calico  = "calico"
 	cilium  = "cilium"
+	none    = "none"
 )
 
-var SupportedPodCIDRType = []string{cluster, calico, cilium}
+var SupportedPodCIDRType = []string{cluster, calico, cilium, none}
 
 const (
 	calicoConfig = "calico-config"
@@ -431,6 +432,10 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		if ipam == "kubernetes" {
 			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 		}
+	case none:
+		coordCopy.Status.Phase = synced
+		coordCopy.Status.OverlayPodCIDR = []string{}
+		coordCopy.Status.ServiceCIDR = []string{}
 	}
 
 	coordCopy.Status.ServiceCIDR = k8sServiceCIDR

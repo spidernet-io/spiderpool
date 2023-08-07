@@ -1,6 +1,6 @@
-# Spidercoordinators
+# Spidercoordinator
 
-A Spidercoordinators resource represents the global default configuration of the cni meta-plugin: coordinator.
+A Spidercoordinator resource represents the global default configuration of the cni meta-plugin: coordinator.
 
 > There is only one instance of this resource, which is automatically generated while you install Spiderpool and does not need to be created manually.
 

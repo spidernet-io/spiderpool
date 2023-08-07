@@ -9,3 +9,8 @@
 | D00005  | A "true" value of IPPool/Spec/disabled should forbid IP allocation, but still allow ip de-allocation | p2       |       | done   |       |
 | D00006  | Successfully create and delete IPPools in batch                  | p2      |       | done   |       |
 | D00007  | Add, delete, modify, and query ippools that are created manually | p1      |       | done   |       |
+| D00008  | Manually ippool inherits subnet attributes (including routes, vlanId, etc.) | p3      |       |     |       |
+| D00009  | ippool cr: multusName affinity                                   | p2      |       |     |       |
+| D00010  | ippool cr: nodeName affinity                                     | p2      |       |     |       |
+| D00011  | ippool cr: namespaceName affinity                                | p2      |       |     |       |
+| D00012  | Multiple default IP pools can be set by `default: true`          | p3      |       |     |       |

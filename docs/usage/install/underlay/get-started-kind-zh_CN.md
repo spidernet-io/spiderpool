@@ -2,39 +2,53 @@
 
 [**English**](./get-started-kind.md) | **简体中文**
 
-Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具。Spiderpool 提供了安装 Kind 集群的脚本，能快速搭建一套以 Macvlan 为 main CNI 搭配 Multus、Spiderpool 的 Kind 集群，您可以使用它来进行 Spiderpool 的测试与体验。
+Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具。Spiderpool 提供了安装 Kind 集群的脚本，您可以使用它来部署符合您需求的集群，进行 Spiderpool 的测试与体验。
 
 ## 先决条件
 
 * 已安装 [Go](https://go.dev/)
 
-## Kind 上集群部署 Spiderpool
+* 克隆 Spiderpool 代码仓库到本地主机上，并进入 Spiderpool 工程的根目录。
 
-1. 克隆 Spiderpool 代码仓库到本地主机上，并进入 Spiderpool 工程的根目录。
-  
     ```bash
     git clone https://github.com/spidernet-io/spiderpool.git && cd spiderpool
     ```
 
-2. 执行 `make dev-doctor`，检查本地主机上的开发工具是否满足部署 Kind 集群与 Spiderpool 的条件，如果缺少组件会为您自动安装。
-
-3. 通过以下方式获取 Spiderpool 的最新镜像。
+* 通过以下方式获取 Spiderpool 的最新镜像。
 
     ```bash
     ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
     ```
 
-4. 执行以下命令，创建 Kind 集群，并为您安装 Multus、Macvlan、Spiderpool。
+* 执行 `make dev-doctor`，检查本地主机上的开发工具是否满足部署 Kind 集群与 Spiderpool 的条件，如果缺少组件会为您自动安装。
 
-    ```bash
-    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
-    ```
+## Spiderpool 脚本支持的多种安装模式
 
-    注意：如果您是国内用户，您可以使用如下命令，避免拉取 Spiderpool 与 Multus 镜像失败。
+如果您在中国大陆，安装时可以额外指定参数 `-e E2E_CHINA_IMAGE_REGISTRY=true` ，以帮助您更快的拉取镜像。
 
-    ```bash
-    ~# make e2e_init -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG -e SPIDERPOOL_REGISTER=ghcr.m.daocloud.io -e E2E_MULTUS_IMAGE_REGISTER=ghcr.m.daocloud.io
-    ```
+### 安装不带子网功能的 Spiderpool 在 Underlay CNI（Macvlan） 集群
+  
+  ```bash
+  ~# make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
+
+### 安装具有子网功能的 Spiderpool 在 Underlay CNI（Macvlan）集群
+
+  ```bash
+  ~# make e2e_init_underlay_subnet -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
+
+### 安装 Spiderpool 在 Calico Overlay CNI 集群
+
+  ```bash
+  ~# make e2e_init_overlay_calico -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
+
+### 安装 Spiderpool 在 Cilium Overlay CNI 集群
+
+  ```bash
+  ~# make e2e_init_overlay_cilium -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
 
 ## 验证安装
 
@@ -44,30 +58,32 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 ~# export KUBECONFIG=$(pwd)/test/.cluster/spider/.kube/config
 ```
 
-您可以看到如下的内容输出：
+您可以看到类似如下的内容输出：
 
 ```bash
-~# kubectl get nodes 
+~# kubectl get nodes
 NAME                   STATUS   ROLES           AGE     VERSION
 spider-control-plane   Ready    control-plane   2m29s   v1.26.2
 spider-worker          Ready    <none>          2m58s   v1.26.2
 
 ~# kubectll get po -n kube-sysem | grep spiderpool
-spiderpool-agent-fmx74                         1/1     Running   0               4m26s
-spiderpool-agent-jzfh8                         1/1     Running   0               4m26s
-spiderpool-controller-79fcd4d75f-n9kmd         1/1     Running   0               4m25s
-spiderpool-controller-79fcd4d75f-scw2v         1/1     Running   0               4m25s
-spiderpool-init                                1/1     Running   0               4m26s
-
-~# kubectl get spidersubnet
-NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-default-v4-subnet   4         172.18.0.0/16             253                  253
-default-v6-subnet   6         fc00:f853:ccd:e793::/64   253                  253
+NAME                                           READY   STATUS      RESTARTS   AGE                                
+spiderpool-agent-4dr97                         1/1     Running     0          3m
+spiderpool-agent-4fkm4                         1/1     Running     0          3m
+spiderpool-controller-7864477fc7-c5dk4         1/1     Running     0          3m
+spiderpool-controller-7864477fc7-wpgjn         1/1     Running     0          3m
+spiderpool-init                                0/1     Completed   0          3m
+spiderpool-multus-66xnx                        1/1     Running     0          3m
+spiderpool-multus-xwxv4                        1/1     Running     0          3m
 
 ~# kubectl get spiderippool
-NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-default-v4-ippool   4         172.18.0.0/16             5                    253              true      false
-default-v6-ippool   6         fc00:f853:ccd:e793::/64   5                    253              true      false
+NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
+default-v4-ippool   4         172.18.0.0/16             5                    253              true      
+default-v6-ippool   6         fc00:f853:ccd:e793::/64   5                    253              true      
+vlan100-v4          4         172.100.0.0/16            0                    2559             false
+vlan100-v6          6         fd00:172:100::/64         0                    65009            false
+vlan100-v4          4         172.200.0.0/16            0                    2559             false
+vlan200-v6          6         fd00:172:200::/64         0                    65009            false
 ```
 
 Spiderpool 提供的快速安装 Kind 集群脚本会自动为您创建一个应用，以验证您的 Kind 集群是否能够正常工作，以下是应用的运行状态：
@@ -124,6 +140,6 @@ test-app-84d5699474-dbtl5   1/1     Running   0          6m23s   172.18.40.112  
 * 删除测试镜像
 
     ```bash
-    ~# docker rmi -f $(docker images | grep spiderpool | awk '{print $3}') 
+    ~# docker rmi -f $(docker images | grep spiderpool | awk '{print $3}')
     ~# docker rmi -f $(docker images | grep multus | awk '{print $3}')
     ```

@@ -117,7 +117,7 @@ After a while, only one of these Pods using IP `172.18.42.50` can run successful
 
 ```bash
 kubectl get po -l app=reservedip-deploy -o wide
-NAME                                 READY   STATUS              RESTARTS   AGE   IP             NODE            
+NAME                                 READY   STATUS              RESTARTS   AGE   IP             NODE
 reservedip-deploy-6cf9858886-cm7bp   0/1     ContainerCreating   0          35s   <none>         spider-worker
 reservedip-deploy-6cf9858886-lb7cr   0/1     ContainerCreating   0          35s   <none>         spider-worker
 reservedip-deploy-6cf9858886-pkcfl   1/1     Running             0          35s   172.18.42.50   spider-worker

@@ -2,11 +2,11 @@
 
 *Spiderpool supports affinity between IP pools and Namespaces. It means only Pods running under these Namespaces can use the IP pools that have an affinity to these Namespaces.*
 
->*Namespace affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*
+> *Namespace affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*
 
 ## Set up Spiderpool
 
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+If you have not deployed Spiderpool yet, follow the guide [installation](./install/underlay/get-started-kind.md) for instructions on how to deploy and easily configure Spiderpool.
 
 ## Get started
 
@@ -36,7 +36,7 @@ spec:
       kubernetes.io/metadata.name: test-ns
 ```
 
->For convenience, this example uses a native Namespace label `kubernetes.io/metadata.name` as the matching condition of IPPool affinity. You can replace them with desired labels to match the corresponding Namespaces.
+> For convenience, this example uses a native Namespace label `kubernetes.io/metadata.name` as the matching condition of IPPool affinity. You can replace them with desired labels to match the corresponding Namespaces.
 
 Next, create two Deployments under `test-ns` and `default` Namespaces respectively, and configure the Pods therein to get IP addresses from the IPPool above.
 
@@ -74,7 +74,7 @@ Events:
 
 Obviously, this Pod has no permission to get IP addresses from IPPool `test-ns-ipv4-ippool`.
 
->You can specify a [default IP pool for a Namespace](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-namespace.md) and set the corresponding `namespaceAffinity` for the IPPool to achieve the effect of "a Namespace static IP pool".
+> You can specify a [default IP pool for a Namespace](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ippool-namespace.md) and set the corresponding `namespaceAffinity` for the IPPool to achieve the effect of "a Namespace static IP pool".
 
 ## Clean up
 

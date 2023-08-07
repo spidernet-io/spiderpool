@@ -1,5 +1,7 @@
 # Spiderpool Performance Testing
 
+**English** | [**简体中文**](./performance-zh_CN.md)
+
 *[Spiderpool](https://github.com/spidernet-io/spiderpool) is a high-performance IPAM CNI plugin for underlay networks. This report will compare its performance with the mainstream underlay IPAM CNI plugins (such as  [Whereabouts](https://github.com/k8snetworkplumbingwg/whereabouts), [Kube-OVN](https://github.com/kubeovn/kube-ovn)) and the widely used overlay IPAM CNI plugin [calico-ipam](https://github.com/projectcalico/calico) under the "1000 Pod" scenario.*
 
 ## Background
@@ -17,29 +19,29 @@ Why do we need to do performance testing on the underlay IPAM CNI plugin?
 - OS: `CentOS Linux 8`
 - kernel: `4.18.0-348.7.1.el8_5.x86_64`
 
-| Node     | Role          | CPU  | Memory |
-| -------- | ------------- | ---- | ------ |
-| master1  | control-plane | 4C   | 8Gi    |
-| master2  | control-plane | 4C   | 8Gi    |
-| master3  | control-plane | 4C   | 8Gi    |
-| worker4  |               | 3C   | 8Gi    |
-| worker5  |               | 3C   | 8Gi    |
-| worker6  |               | 3C   | 8Gi    |
-| worker7  |               | 3C   | 8Gi    |
-| worker8  |               | 3C   | 8Gi    |
-| worker9  |               | 3C   | 8Gi    |
-| worker10 |               | 3C   | 8Gi    |
+| Node     | Role          | CPU | Memory |
+| -------- | ------------- | --- | ------ |
+| master1  | control-plane | 4C  | 8Gi    |
+| master2  | control-plane | 4C  | 8Gi    |
+| master3  | control-plane | 4C  | 8Gi    |
+| worker4  |               | 3C  | 8Gi    |
+| worker5  |               | 3C  | 8Gi    |
+| worker6  |               | 3C  | 8Gi    |
+| worker7  |               | 3C  | 8Gi    |
+| worker8  |               | 3C  | 8Gi    |
+| worker9  |               | 3C  | 8Gi    |
+| worker10 |               | 3C  | 8Gi    |
 
 ## Objects
 
 This test is based on the [CNI Specification](https://www.cni.dev/docs/spec/) `0.3.1`, using [macvlan](https://www.cni.dev/plugins/current/main/macvlan/)with Spiderpool, and selecting several other underlay network solutions in the open source community for comparison:
 
-| Main CNI            | Main CNI Version | IPAM CNI                  | IPAM CNI Version | Features                                                     |
-| ------------------- | ---------------- | ------------------------- | ---------------- | ------------------------------------------------------------ |
+| Main CNI            | Main CNI Version | IPAM CNI                  | IPAM CNI Version | Features                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | ---------------- | ------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | macvlan             | `v1.1.1`         | Spiderpool                | `v0.4.1`         | There are multiple IP pools in a cluster, and the IP addresses in each pool can be used by Pods on any Node in the cluster. Competition occurs when multiple Pods in a cluster allocate IP addresses from the same pool. Support hosting the entire lifecycle of an IP pool, synchronizing it with workload creation, scaling, deletion, and reducing concurrency or storage issues caused by overly large shared pools. |
-| macvlan             | `v1.1.1`         | Whereabouts (CRD backend) | `v0.6.1`         | Each Node can define its own available IP pool ranges. If there are duplicate IP addresses defined between Nodes, these IP addresses are promoted as a shared resource. |
-| Kube-OVN (underlay) | `v1.11.3`        | Kube-OVN                  | `v1.11.3`        | IP addresses are organized by Subnet. Each Namespace can belong to a specific Subnet. Pods under the Namespace will automatically obtain IP addresses from the Subnet they belong to. Subnets are also a cluster resource, and the IP addresses of the same Subnet can be distributed on any Node. |
-| Calico              | `v3.23.3`        | calico-ipam (CRD backend) | `v3.23.3`        | Each Node has one or more IP blocks exclusively, and the Pods on each Node only use the IP addresses in the local IP block. There is no competition or conflict between Nodes, and the allocation efficiency is very high. |
+| macvlan             | `v1.1.1`         | Whereabouts (CRD backend) | `v0.6.1`         | Each Node can define its own available IP pool ranges. If there are duplicate IP addresses defined between Nodes, these IP addresses are promoted as a shared resource.                                                                                                                                                                                                                                                  |
+| Kube-OVN (underlay) | `v1.11.3`        | Kube-OVN                  | `v1.11.3`        | IP addresses are organized by Subnet. Each Namespace can belong to a specific Subnet. Pods under the Namespace will automatically obtain IP addresses from the Subnet they belong to. Subnets are also a cluster resource, and the IP addresses of the same Subnet can be distributed on any Node.                                                                                                                       |
+| Calico              | `v3.23.3`        | calico-ipam (CRD backend) | `v3.23.3`        | Each Node has one or more IP blocks exclusively, and the Pods on each Node only use the IP addresses in the local IP block. There is no competition or conflict between Nodes, and the allocation efficiency is very high.                                                                                                                                                                                               |
 
 ## Plan
 

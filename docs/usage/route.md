@@ -8,7 +8,7 @@ Spiderpool supports the configuration of routing information.
 
 ### Set up Spiderpool
 
-follow the guide [installation](./install/underlay/get-started-macvlan.md) to install Spiderpool.
+follow the guide [installation](./install/underlay/get-started-kind.md) to install Spiderpool.
 
 ### Create Subnet
 
@@ -102,8 +102,8 @@ After the created Pod has obtained an IP from the automatic IPPool, the route se
 
 ```bash
 ~# kubectl exec -it route-test-app-bdc84f8f5-2bxbr  -- ip r
-172.18.41.0/24 dev eth0 scope link  src 172.18.41.41 
-172.18.42.0/24 via 172.18.41.1 dev eth0 
+172.18.41.0/24 dev eth0 scope link  src 172.18.41.41
+172.18.42.0/24 via 172.18.41.1 dev eth0
 ```
 
 ### Create IPPool
@@ -130,7 +130,7 @@ spec:
 
 ### Create Deployment By IPPool
 
-Create a Deployment whose Pods sets the Pod annotation `ipam.spidernet.io/ippool` to  explicitly specify the IPPool.
+Create a Deployment whose Pods sets the Pod annotation `ipam.spidernet.io/ippool` to explicitly specify the IPPool.
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/ippool-route-deploy.yaml
@@ -175,19 +175,19 @@ After the created Pod has obtained an IP from IPPool, the route set in IPPool is
 
 ```bash
 ~# kubectl exec -it ippool-test-app-66fd47d895-pthx5  -- ip r
-172.18.41.0/24 dev eth0 scope link  src 172.18.41.53 
-172.18.42.0/24 via 172.18.41.1 dev eth0 
+172.18.41.0/24 dev eth0 scope link  src 172.18.41.53
+172.18.42.0/24 via 172.18.41.1 dev eth0
 ```
 
 ### Clean up
 
 Clean the relevant resources so that you can run this tutorial again
 
-   ```bash
-   kubectl delete \
-   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/subnet-route.yaml \
-   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/subnet-route-deploy.yaml \
-   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/ippool-route.yaml \
-   -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/ippool-route-deploy.yaml \
-   --ignore-not-found=true
-   ```
+```bash
+kubectl delete \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/subnet-route.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/subnet-route-deploy.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/ippool-route.yaml \
+-f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/ippool-route-deploy.yaml \
+--ignore-not-found=true
+```

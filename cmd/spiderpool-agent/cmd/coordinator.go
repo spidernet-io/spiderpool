@@ -5,10 +5,12 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -31,6 +33,11 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	if len(coordList.Items) == 0 {
 		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error("coordinator config not found"))
 	}
+	coord := coordList.Items[0]
+
+	if coord.Status.Phase != coordinatormanager.Synced {
+		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("spidercoordinator: %s no ready", coord.Name)))
+	}
 
 	var pod *corev1.Pod
 	var err error
@@ -39,7 +46,6 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("failed to get coordinator config: pod %s/%s not found", params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName)))
 	}
 
-	coord := coordList.Items[0]
 	var prefix string
 	if coord.Spec.PodMACPrefix != nil {
 		prefix = *coord.Spec.PodMACPrefix

@@ -41,15 +41,13 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
     ```
    
-   > 如果组件未就绪, 可能需要给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'
+   > 必须给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'，sriov-operator 相关组件才会就绪。
    > 
    > sriov-network-operator 默认安装在 sriov-network-operator 命名空间下
-   > 
-   > 安装 sriov-network-operator 后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，安装到工作节点。
 
 2. 配置 sriov-network-operator
 
-    首先检查  SriovNetworkNodeState CRs 的状态，确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
+    如果 SriovNetworkNodeState CRs 的状态为 `InProgress`, 说明 sriov-operator 正在同步节点状态，等待状态为 `Suncceeded` 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
 
     ```shell
     $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
@@ -101,6 +99,9 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
       resourceName: sriov_netdevice
     EOF
     ```
+   
+    >  下发后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
+    >  resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_"。
 
     在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VFs 已经得到配置:
 
@@ -130,7 +131,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     ...
     ```
 
-    查看 Node 发现名为 `spidernet/sriov_netdevice` 的 sriov 资源已经生效，其中 VF 的数量为 8:
+    查看 Node 发现名为 `spidernet.io/sriov_netdevice` 的 sriov 资源已经生效，其中 VF 的数量为 8:
 
     ```shell
     ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
@@ -139,7 +140,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
       "ephemeral-storage": "94580335255",
       "hugepages-1Gi": "0",
       "hugepages-2Mi": "0",
-      "spidernet/sriov_netdevice": "8",
+      "spidernet.io/sriov_netdevice": "8",
       "memory": "16247944Ki",
       "pods": "110"
     }
@@ -195,6 +196,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     ```
    
     > 注意: SpiderIPPool.Spec.multusName: `kube-system/sriov-test` 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
+    > resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成 
 
 ## 创建应用
 
@@ -228,9 +230,9 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
               protocol: TCP
             resources:
               requests:
-                spidernet/sriov_netdevice: '1' 
+                spidernet.io/sriov_netdevice: '1' 
               limits:
-                spidernet/sriov_netdevice: '1'  
+                spidernet.io/sriov_netdevice: '1'  
     ---
     apiVersion: v1
     kind: Service

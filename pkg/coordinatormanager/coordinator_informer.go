@@ -53,8 +53,8 @@ const (
 )
 
 const (
-	notReady = "NotReady"
-	synced   = "Synced"
+	NotReady = "NotReady"
+	Synced   = "Synced"
 )
 
 const messageEnqueueCoordiantor = "Enqueue Coordinator"
@@ -314,8 +314,10 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			err.Error(),
 		)
 
-		if coordCopy.Status.Phase != notReady {
-			coordCopy.Status.Phase = notReady
+		if coordCopy.Status.Phase != NotReady {
+			coordCopy.Status.Phase = NotReady
+			coordCopy.Status.OverlayPodCIDR = []string{}
+			coordCopy.Status.ServiceCIDR = []string{}
 			if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 				return err
 			}
@@ -332,8 +334,10 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			msg,
 		)
 
-		if coordCopy.Status.Phase != notReady {
-			coordCopy.Status.Phase = notReady
+		if coordCopy.Status.Phase != NotReady {
+			coordCopy.Status.Phase = NotReady
+			coordCopy.Status.OverlayPodCIDR = []string{}
+			coordCopy.Status.ServiceCIDR = []string{}
 			if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 				return err
 			}
@@ -349,7 +353,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			cc.caliCtrlCanncel()
 			cc.caliCtrlCanncel = nil
 		}
-		coordCopy.Status.Phase = synced
+		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 	case calico:
 		if _, err := cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(calicoConfig); err != nil {
@@ -361,8 +365,10 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 					"Calico needs to be installed first",
 				)
 			}
-			if coordCopy.Status.Phase != notReady {
-				coordCopy.Status.Phase = notReady
+			if coordCopy.Status.Phase != NotReady {
+				coordCopy.Status.Phase = NotReady
+				coordCopy.Status.OverlayPodCIDR = []string{}
+				coordCopy.Status.ServiceCIDR = []string{}
 				if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 					return err
 				}
@@ -407,8 +413,10 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 					"Cilium needs to be installed first",
 				)
 			}
-			if coordCopy.Status.Phase != notReady {
-				coordCopy.Status.Phase = notReady
+			if coordCopy.Status.Phase != NotReady {
+				coordCopy.Status.Phase = NotReady
+				coordCopy.Status.OverlayPodCIDR = []string{}
+				coordCopy.Status.ServiceCIDR = []string{}
 				if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 					return err
 				}
@@ -418,15 +426,17 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		ipam, ciliumPodCIDR, err := extractCiliumCIDR(ccm)
 		if err != nil {
 			logger.Sugar().Warnf("Failed to gather Pod CIDR form Cilium: %v", err)
-			if coordCopy.Status.Phase != notReady {
-				coordCopy.Status.Phase = notReady
+			if coordCopy.Status.Phase != NotReady {
+				coordCopy.Status.Phase = NotReady
+				coordCopy.Status.OverlayPodCIDR = []string{}
+				coordCopy.Status.ServiceCIDR = []string{}
 				if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 					return err
 				}
 			}
 			break
 		}
-		coordCopy.Status.Phase = synced
+		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = ciliumPodCIDR
 		if ipam == "kubernetes" {
 			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR

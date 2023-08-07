@@ -302,6 +302,8 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 
 ## Blogs
 
+* [Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案](https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag)
+
 * [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
 
 * [Cloud-Native Spiderpool: IP Allocation Across Network Zones](https://blog.daocloud.io/8962.html)

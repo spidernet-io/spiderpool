@@ -75,6 +75,7 @@ spec:
                     - cluster
                     - calico
                     - cilium
+                    - none
                     type: string
                   podDefaultRouteNIC:
                     type: string

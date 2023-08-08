@@ -47,7 +47,7 @@ type IPAllocationDetail struct {
 	IPv6Pool *string `json:"ipv6Pool,omitempty"`
 
 	// +kubebuilder:default=0
-	// +kubebuilder:validation:Maximum=4095
+	// +kubebuilder:validation:Maximum=4094
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	Vlan *int64 `json:"vlan,omitempty"`

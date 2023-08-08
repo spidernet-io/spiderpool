@@ -443,7 +443,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 		}
 	case none:
-		coordCopy.Status.Phase = synced
+		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = []string{}
 		coordCopy.Status.ServiceCIDR = []string{}
 	}

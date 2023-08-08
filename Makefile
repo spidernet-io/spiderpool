@@ -417,6 +417,10 @@ clean: clean_e2e
 	-$(QUIET) rm -rf $(DESTDIR_BIN)
 	-$(QUIET) rm -rf $(DESTDIR_BASH_COMPLETION)
 
+.PHONY: clean_e2e_spiderpool
+clean_e2e_spiderpool:
+	-$(QUIET) make -C test uninstall_spiderpool
+
 .PHONY: codegen
 codegen:
 	@echo "Generate k8s SDK with code-generator."

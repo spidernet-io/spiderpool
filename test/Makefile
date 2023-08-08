@@ -273,7 +273,34 @@ setup_spiderpool:
 			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 		exit 0
 
+.PHONY: clean_spiderpool_crd
+clean_spiderpool_crd:
+	@echo -e "\033[35m [clean spiderpool CRD] \033[0m"
+	@-$(QUIET) $(ROOT_DIR)/tools/scripts/cleanCRD.sh
+	@CRD_NUM=` kubectl get crd -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) | grep "spiderpool.spidernet.io" | wc -l `
+	CRD_LIST=` kubectl get crd -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) | grep "spiderpool.spidernet.io" ` ; \
+	[ "$$CRD_NUM" -eq 0 ] || { echo "failed to clean spiderpool crd " ; } ; \
+    for CRD in $${CRD_LIST} ; do \
+	  echo -e "\033[35m [describe crd: $${CRD] \033[0m" ; \
+	  kubectl describe crd $${CRD} --kubeconfig $(E2E_KUBECONFIG) ; \
+	  echo -e "\033[35m [get crd -ojson: $${CRD] \033[0m" ; \
+	  kubectl get crd $${CRD} -ojson --kubeconfig $(E2E_KUBECONFIG) ; \
+	done ; \
+	exit 1
 
+.PHONY: helm_uninstall_spiderpool
+helm_uninstall_spiderpool:
+	@echo -e "\033[35m [helm uninstall spiderpool] \033[0m"
+	set -x ; \
+	helm uninstall $(RELEASE_NAME) --wait --debug -n $(RELEASE_NAMESPACE) \
+	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+	exit 0
+
+.PHONY: uninstall_spiderpool
+uninstall_spiderpool:
+	@echo -e "\033[35m [uninstall spiderpool] \033[0m"
+	@ make helm_uninstall_spiderpool
+	@ make clean_spiderpool_crd
 
 .PHONY: clean
 clean:

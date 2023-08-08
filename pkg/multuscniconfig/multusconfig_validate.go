@@ -7,8 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/strings/slices"
 
+	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
@@ -19,7 +23,29 @@ var (
 	ipvlanConfigField    = field.NewPath("spec").Child("ipvlanConfig")
 	sriovConfigField     = field.NewPath("spec").Child("sriovConfig")
 	customCniConfigField = field.NewPath("spec").Child("customCniTypeConfig")
+	annotationField      = field.NewPath("metadata").Child("annotations")
 )
+
+func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+	if oldMultusConfig != nil {
+		err := validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, multusConfig)
+		if nil != err {
+			return err
+		}
+	}
+
+	err := validateAnnotation(multusConfig)
+	if nil != err {
+		return err
+	}
+
+	err = validateCNIConfig(multusConfig)
+	if nil != err {
+		return err
+	}
+
+	return nil
+}
 
 func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
 	switch multusConfig.Spec.CniType {
@@ -122,5 +148,41 @@ func validateVlanId(vlanId int32) error {
 	if vlanId < 0 || vlanId > 4094 {
 		return fmt.Errorf("invalid vlanId %v, please make sure vlanId in range [0,4094]", vlanId)
 	}
+	return nil
+}
+
+func validateAnnotation(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+	// validate the custom net-attach-def resource name
+	customMultusName, ok := multusConfig.Annotations[constant.AnnoNetAttachConfName]
+	if ok && customMultusName == "" {
+		return field.Invalid(annotationField, multusConfig.Annotations, "invalid custom net-attach-def resource empty name")
+	}
+	if len(customMultusName) > k8svalidation.DNS1123SubdomainMaxLength {
+		return field.Invalid(annotationField, multusConfig.Annotations,
+			fmt.Sprintf("the custom net-attach-def resource name must be no more than %d characters", k8svalidation.DNS1123SubdomainMaxLength))
+	}
+
+	// validate the custom net-attach-def CNI version
+	cniVersion, ok := multusConfig.Annotations[constant.AnnoMultusConfigCNIVersion]
+	if ok && !slices.Contains(cmd.SupportCNIVersions, cniVersion) {
+		return field.Invalid(annotationField, multusConfig.Annotations, fmt.Sprintf("unsupported CNI version %s", cniVersion))
+	}
+	return nil
+}
+
+func validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, newMultusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+	oldCustomMultusName, oldOK := oldMultusConfig.Annotations[constant.AnnoNetAttachConfName]
+	newCustomMultusName, newOK := newMultusConfig.Annotations[constant.AnnoNetAttachConfName]
+
+	if (oldOK && newOK) && oldCustomMultusName != newCustomMultusName {
+		return field.Invalid(annotationField, oldMultusConfig.Annotations[constant.AnnoNetAttachConfName],
+			fmt.Sprintf("it's unsupported to change customized Multus net-attach-def resource name from '%s' to '%s'", oldCustomMultusName, newCustomMultusName))
+	}
+
+	if !oldOK && newOK {
+		return field.Invalid(annotationField, newMultusConfig.Annotations[constant.AnnoNetAttachConfName],
+			fmt.Sprintf("it's unsupported to changed Multus net-attach-def '%s' to customized name '%s'", oldMultusConfig.Name, newCustomMultusName))
+	}
+
 	return nil
 }

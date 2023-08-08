@@ -13,7 +13,6 @@ import (
 
 	"github.com/containernetworking/cni/pkg/types"
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,11 +22,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
-	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
+	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -358,12 +357,10 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	}
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
+	// the annotation custom CNI version is already validated by webhook.
 	cniVersion := cmd.CniVersion031
-	if annCniVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
-		if !slices.Contains(cmd.SupportCNIVersions, annCniVersion) {
-			return nil, fmt.Errorf("%w: unsupported CNI version %s", constant.ErrWrongInput, annCniVersion)
-		}
-		cniVersion = annCniVersion
+	if customCNIVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
+		cniVersion = customCNIVersion
 	}
 
 	var confStr string
@@ -425,8 +422,6 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// It's impossible get into the default branch
 		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, multusConfSpec.CniType)
 	}
-
-	fmt.Printf("Length: %d, Cap: %d\n", len(plugins), cap(plugins))
 
 	netAttachDef := &netv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{

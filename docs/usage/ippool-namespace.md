@@ -4,7 +4,7 @@
 
 ## Set up Spiderpool
 
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+If you have not deployed Spiderpool yet, follow the guide [installation](./install/underlay/get-started-kind.md) for instructions on how to deploy and easily configure Spiderpool.
 
 ## Get started
 

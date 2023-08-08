@@ -4,12 +4,12 @@ The Spiderpool owns a CRD SpiderSubnet, which can help applications (such as Dep
 
 Here are some annotations that you should write down on the application template Pod annotation:
 
-| Annotation                         | Description                                                                                                            | Example                                                                     |
-|------------------------------------|------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| Annotation                         | Description                                                                                                            | Example                                                                    |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | ipam.spidernet.io/subnet           | Choose one SpiderSubnet V4 and V6 CR to use                                                                            | {"interface":"eth0", "ipv4":["subnet-demo-v4"], "ipv6":["subnet-demo-v6"]} |
-| ipam.spidernet.io/subnets          | Choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one)              | [{"interface":"eth0", "ipv4":["v4-subnet1"], "ipv6":["v6-subnet1"]}]        |
-| ipam.spidernet.io/ippool-ip-number | The IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1')                  | +2                                                                          |
-| ipam.spidernet.io/ippool-reclaim   | Specify the corresponding SpiderIPPool to delete or not once the application was deleted (optional and default 'true') | true                                                                        |
+| ipam.spidernet.io/subnets          | Choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one)              | [{"interface":"eth0", "ipv4":["v4-subnet1"], "ipv6":["v6-subnet1"]}]       |
+| ipam.spidernet.io/ippool-ip-number | The IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1')                  | +2                                                                         |
+| ipam.spidernet.io/ippool-reclaim   | Specify the corresponding SpiderIPPool to delete or not once the application was deleted (optional and default 'true') | true                                                                       |
 
 ## Notice
 
@@ -29,7 +29,7 @@ Here are some annotations that you should write down on the application template
 
 ### Enable SpiderSubnet feature
 
-Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to [install](./install/install.md) for details.
+Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to [install](./install/underlay/get-started-kind.md) for details.
 
 Check configmap `spiderpool-conf` property `enableSpiderSubnet` whether is already set to `true` or not.
 
@@ -114,7 +114,7 @@ status:
   allocatedIPs: '{"172.16.41.1":{"interface":"eth0","pod":"default/demo-deploy-subnet-778786474b-kls7s","podUid":"cc310a87-8c5a-4bff-9a84-0c4975bd5921"}}'
   totalIPCount: 3
 
-$ kubectl get po -o wide 
+$ kubectl get po -o wide
 NAME                                  READY   STATUS    RESTARTS   AGE     IP             NODE            NOMINATED NODE   READINESS GATES
 demo-deploy-subnet-778786474b-kls7s   1/1     Running   0          3m10s   172.16.41.1    spider-worker   <none>           <none>
 ```
@@ -203,7 +203,7 @@ Make sure the interface name and use `ipam.spidernet.io/subnets` annotation just
       annotations:
         k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni2
         ipam.spidernet.io/subnets: |-
-          [{"interface": "eth0", "ipv4": ["subnet-demo-v4-1"], "ipv6": ["subnet-demo-v6-1"]}, 
+          [{"interface": "eth0", "ipv4": ["subnet-demo-v4-1"], "ipv6": ["subnet-demo-v6-1"]},
            {"interface": "net2", "ipv4": ["subnet-demo-v4-2"], "ipv6": ["subnet-demo-v6-2"]}]
 ```
 

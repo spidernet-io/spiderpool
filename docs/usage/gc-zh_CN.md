@@ -2,53 +2,18 @@
 
 [**English**](./gc.md) | **简体中文**
 
-Spiderpool 有一个 IP 垃圾回收机制，它可以帮助清理 CNI `cmdDel` 失败后泄漏的 IP。
+## 介绍
 
-## 启用 IP 回收支持
+在 Kubernetes 中，垃圾回收（Garbage Collection，简称GC）对于 IP 地址的回收非常重要。IP 地址的可用性关系到 Pod 是否能够启动成功。GC 机制可以自动回收这些不再使用的 IP 地址，避免资源浪费和 IP 地址的耗尽。本文将介绍 Spiderpool 优秀的 GC 能力。
 
-检查 `spiderpool-controller` Kubernetes 部署的 `SPIDERPOOL_GC_IP_ENABLED` 环境属性是否已设置为 `true`（默认已启用）。
+## 项目功能
 
-```shell
-kubectl edit deploy spiderpool-controller -n kube-system
-```
+在 IPAM 中记录了分配给 Pod 使用的 IP 地址，但是这些 Pod 在 Kubernetes 集群中已经不复存在，这些 IP 可称为 `僵尸 IP` ，Spiderpool 可针对 `僵尸 IP` 进行回收，它的实现原理如下：
 
-## 设计
+在集群中 `delete Pod` 时，但由于`网络异常`或 `cni 二进制 crash` 等问题，导致调用 `cni delete` 失败，从而导致 IP 地址无法被 cni 回收。
 
-spiderpool-controller 使用 `Pod informer` 和定期间隔扫描所有 SpiderIPPool 实例来清理泄漏的 IP 及其相应的
-SpiderEndpoint 对象。使用内存缓存来追踪应该清理的具有相应 IP 和 SpiderEndpoint 对象的 Pod。
+- 在 `cni delete 失败` 等故障场景，如果一个曾经分配了 IP 的 Pod 被销毁后，但在 IPAM 中还记录分配着IP 地址，形成了僵尸 IP 的现象。Spiderpool 针对这种问题，会基于周期和事件扫描机制，自动回收这些僵尸 IP 地址。
 
-以下是释放 IP 的几种情况：
+节点意外宕机后，集群中的 Pod 永久处于 `deleting` 状态，Pod 占用的 IP 地址无法被释放。
 
-* Pod 被 `deleted`，不包括 StatefulSet 重启其 Pod 的情况。
-
-* Pod 正在 `Terminating`，我们将在 `spec.terminationGracePeriodSecond` 后释放其 IP，
-  您可以设置 `AdditionalGraceDelay`（默认为 0 秒）环境变量以添加延迟时间。
-  您还可以使用环境变量 `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`（默认已启用）确定是否回收
-  `Terminating` 状态的 Pod。此环境变量可能在以下两种情况中有所帮助：
-  
-    1. 如果集群中的某个节点挂了，您必须依靠 IP GC 来释放这些 IP。
-    2. 在某些基础模式下，如果不释放正在终止 Pod 的 IP，新 Pod 将因为缺少 IP 资源无法获取可用的 IP 去运行。
-
-    然而，有一种特殊情况需要注意：如果节点由于接口或网络问题与 Master API 服务器失去连接，
-    则 Pod 网络仍然可以正常工作。在这种情况下，如果我们释放其 IP 并将其分配给其他 Pod，会导致 IP 冲突。
-
-* Pod 处于 `Succeeded` 或 `Failed` 阶段，我们将在 `pod.DeletionGracePeriodSeconds` 后清理 Pod 的 IP，
-  您可以设置 `AdditionalGraceDelay`（默认为 0 秒）环境变量以添加延迟时间。
-
-* SpiderIPPool 分配的 IP 所对应的 Pod 在 Kubernetes 中不存在，不包括 StatefulSet 重启其 Pod 的情况。
-
-* Pod UID 不同于 SpiderIPPool IP 分配的 Pod UID。
-
-## 注意事项
-
-* `spiderpool-controller` 有多个副本并使用领导者选举。IP 垃圾回收 `pod informer` 仅为 `Master` 服务。
-  但是，每个备份都会使用 `scan all SpiderIPPool` 以立即释放应清理的泄漏 IP。
-  在上述 Pod 状态下，它不会追踪内存缓存中的 Pod。
-
-* 我们可以使用环境变量 `SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY`（默认为 5 秒）更改追踪 Pod `AdditionalGraceDelay`。
-
-* 如果集群中有一个节点损坏，且启用了 `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED` 环境变量，
-  IP GC 将强制释放不可达的 Pod 对应的 IP。还有一种罕见情况，即在 Pod 的 `DeletionGracePeriod` 时间之后，
-  您的 Pod 仍然存活。IP GC 仍将强制释放无法访问的 Pod 对应的 IP。对于这两种情况，我们建议 Main CNI 具有检查
-  IP 冲突的功能。[Veth](https://github.com/spidernet-io/plugins) 插件已经实现了此功能，
-  您可以协调使用 `Macvlan` 或 `SR-IOV` CNI。
+- 对处于 `Terminating` 状态的 Pod，Spiderpool 将在 Pod 的 `spec.terminationGracePeriodSecond` 后，自动释放其 IP 地址。该功能可通过环境变量 `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED` 来控制。该能力能够用以解决 `节点意外宕机` 的故障场景。

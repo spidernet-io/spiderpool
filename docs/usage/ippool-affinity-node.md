@@ -2,11 +2,11 @@
 
 *Spiderpool supports affinity between IP pools and Nodes. It means only Pods running on these Nodes can use the IP pools that have an affinity to these Nodes.*
 
->*Node affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*
+> *Node affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*
 
 ## Set up Spiderpool
 
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+If you have not deployed Spiderpool yet, follow the guide [installation](./install/underlay/get-started-kind.md) for instructions on how to deploy and easily configure Spiderpool.
 
 ## Get started
 
@@ -74,7 +74,7 @@ spec:
       app: node-affinity-deploy
   template:
     metadata:
-      annotations:   
+      annotations:
         ipam.spidernet.io/ippool: |-
           {
             "ipv4": ["master-ipv4-ippool", "worker-ipv4-ippool"]

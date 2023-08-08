@@ -514,7 +514,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			subnetAnno := types.AnnoSubnetItem{}
 			if frame.Info.IpV4Enabled {
 				*v4Ipversion = int64(4)
-				if i, err := strconv.Atoi(common.GenerateRandomNumber(4095)); err != nil {
+				if i, err := strconv.Atoi(common.GenerateRandomNumber(4094)); err != nil {
 					*ipv4Vlan = int64(i)
 				}
 				subnetAnno.IPv4 = []string{v4SubnetName}
@@ -541,7 +541,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			if frame.Info.IpV6Enabled {
 				*v6Ipversion = int64(6)
-				if i, err := strconv.Atoi(common.GenerateRandomNumber(4095)); err != nil {
+				if i, err := strconv.Atoi(common.GenerateRandomNumber(4094)); err != nil {
 					*ipv6Vlan = int64(i)
 				}
 				subnetAnno.IPv6 = []string{v6SubnetName}

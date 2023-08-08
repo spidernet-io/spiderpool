@@ -4,6 +4,7 @@
 package multuscniconfig
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -83,6 +84,12 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		// multusConfig.Spec.CustomCNIConfig can be empty
 		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.SriovConfig != nil {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", CustomType, customCniConfigField.String()))
+		}
+
+		if multusConfig.Spec.CustomCNIConfig != nil && *multusConfig.Spec.CustomCNIConfig != "" {
+			if !json.Valid([]byte(*multusConfig.Spec.CustomCNIConfig)) {
+				return field.Forbidden(customCniConfigField, "customCniConfig isn't a valid JSON encoding")
+			}
 		}
 	}
 

@@ -6,6 +6,7 @@
 | M00002  | testing creating spiderMultusConfig with cniType: ipvlan and checking the net-attach-conf config if works | p1       |   smoke    |    |       |
 | M00003  | testing creating spiderMultusConfig with cniType: sriov and checking the net-attach-conf config if works | p1       |   smoke    |    |       |
 | M00004  | testing creating spiderMultusConfig with cniType: custom and checking the net-attach-conf config if works | p1       |   smoke    |    |       |
+| M00004  | testing creating spiderMultusConfig with cniType: custom and invalid json config, expect error happened | p1       |   smoke    |    |       |
 | M00005  | testing creating spiderMultusConfig with cniType: macvlan with vlanId with one master and checking the net-attach-conf config if works | p1       |   smoke    |    |       |
 | M00006  | testing creating spiderMultusConfig with cniType: macvlan with vlanId with two master with bond config and checking the net-attach-conf config if works | p1       |   smoke    |    |       |
 | M00007  | After deleting spiderMultusConfig, the corresponding net-attach-conf will also be deleted  | p1      |  smoke  |    |       |

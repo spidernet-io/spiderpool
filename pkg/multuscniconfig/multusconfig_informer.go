@@ -415,8 +415,12 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 	case CustomType:
 		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
+			if !json.Valid([]byte(*multusConfSpec.CustomCNIConfig)) {
+				return nil, fmt.Errorf("customCniConfig isn't a valid JSON encoding")
+			}
 			confStr = *multusConfSpec.CustomCNIConfig
 		}
+
 	default:
 		// It's impossible get into the default branch
 		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, multusConfSpec.CniType)

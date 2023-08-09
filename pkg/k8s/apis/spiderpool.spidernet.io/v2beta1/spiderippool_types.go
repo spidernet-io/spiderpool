@@ -99,8 +99,8 @@ type PoolIPAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=".status.totalIPCount",description="totalIPCount",name="TOTAL-IP-COUNT",type=integer
 // +kubebuilder:printcolumn:JSONPath=".spec.default",description="default",name="DEFAULT",type=boolean
 // +kubebuilder:printcolumn:JSONPath=".spec.disable",description="disable",name="DISABLE",type=boolean,priority=10
-// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",description="disable",name="NodeName",type=string,priority=10
-// +kubebuilder:printcolumn:JSONPath=".spec.multusName",description="disable",name="MultusName",type=string,priority=10
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",description="nodeName",name="NodeName",type=string,priority=10
+// +kubebuilder:printcolumn:JSONPath=".spec.multusName",description="multusName",name="MultusName",type=string,priority=10
 // +kubebuilder:printcolumn:JSONPath=`.spec.podAffinity.matchLabels['ipam\.spidernet\.io/app\-namespace']`,description="AppNamespace",name="APP-NAMESPACE",type=string,priority=10
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

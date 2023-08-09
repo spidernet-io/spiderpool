@@ -45,12 +45,12 @@ spec:
       name: DISABLE
       priority: 10
       type: boolean
-    - description: disable
+    - description: nodeName
       jsonPath: .spec.nodeName
       name: NodeName
       priority: 10
       type: string
-    - description: disable
+    - description: multusName
       jsonPath: .spec.multusName
       name: MultusName
       priority: 10

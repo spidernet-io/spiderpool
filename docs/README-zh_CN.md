@@ -239,6 +239,8 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 ## Blogs
 
+* [Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案](https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag)
+
 * [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
 
 * [云原生 Spiderpool：基于跨越网络区域的 IP 分配](https://mp.weixin.qq.com/s/9OOtZ-q2kQcrWDs4_x5QxA)

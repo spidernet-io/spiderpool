@@ -55,7 +55,7 @@ func (in *IPPoolStatus) String() string {
 	}
 
 	s := strings.Join([]string{`&IPPoolStatus{`,
-		`AllocatedIPs:` + fmt.Sprintf("%+v", in.AllocatedIPs) + `,`,
+		`AllocatedIPs:` + stringutil.ValueToStringGenerated(in.AllocatedIPs) + `,`,
 		`TotalIPCount:` + stringutil.ValueToStringGenerated(in.TotalIPCount) + `,`,
 		`AllocatedIPCount:` + stringutil.ValueToStringGenerated(in.AllocatedIPCount) + `,`,
 		`}`,
@@ -204,7 +204,7 @@ func (in *SubnetStatus) String() string {
 	}
 
 	s := strings.Join([]string{`SubnetStatus{`,
-		`ControlledIPPools:` + fmt.Sprintf("%v", in.ControlledIPPools) + `,`,
+		`ControlledIPPools:` + stringutil.ValueToStringGenerated(in.ControlledIPPools) + `,`,
 		`TotalIPCount:` + stringutil.ValueToStringGenerated(in.TotalIPCount) + `,`,
 		`AllocatedIPCount:` + stringutil.ValueToStringGenerated(in.AllocatedIPCount) + `,`,
 		`}`,

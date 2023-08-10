@@ -599,7 +599,7 @@ func (sc *SubnetController) removeFinalizer(ctx context.Context, subnet *spiderp
 func (sc *SubnetController) monitorThirdController(ctx context.Context, appNamespacedName spiderpooltypes.AppNamespacedName) error {
 	log := logutils.FromContext(ctx)
 
-	gvr, err := applicationinformers.GenerateGVR(appNamespacedName)
+	gvr, err := applicationinformers.GenerateGVR(appNamespacedName.APIVersion, appNamespacedName.Kind)
 	if nil != err {
 		return err
 	}

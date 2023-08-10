@@ -24,8 +24,9 @@ type AppNamespacedName struct {
 
 type PodTopController struct {
 	AppNamespacedName
-	UID apitypes.UID
-	APP metav1.Object
+	UID      apitypes.UID
+	APP      metav1.Object
+	Replicas *int
 }
 
 type AnnoPodIPPoolValue struct {

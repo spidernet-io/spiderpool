@@ -245,6 +245,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	podManager, err := podmanager.NewPodManager(
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
+		controllerContext.DynamicClient,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())

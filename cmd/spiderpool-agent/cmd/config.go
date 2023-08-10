@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v3"
+	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client"
@@ -109,6 +110,8 @@ type AgentContext struct {
 	// It will be cancelled after receiving an interrupt or termination signal.
 	InnerCtx    context.Context
 	InnerCancel context.CancelFunc
+
+	DynamicClient *dynamic.DynamicClient
 
 	// manager
 	IPAM              ipam.IPAM

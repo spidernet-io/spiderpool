@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"net"
 
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/strings/slices"
 
@@ -85,27 +83,14 @@ func getAutoPoolIPNumber(pod *corev1.Pod, podController types.PodTopController) 
 
 	if slices.Contains(constant.K8sAPIVersions, podController.APIVersion) {
 		switch podController.Kind {
-		// orphan pod
+		// orphan pod, impossible because we filter it in the top function
 		case constant.KindPod:
 			return 1, nil
-		case constant.KindDeployment:
-			deployment := podController.APP.(*appsv1.Deployment)
-			appReplicas = subnetmanagercontrollers.GetAppReplicas(deployment.Spec.Replicas)
-		case constant.KindReplicaSet:
-			replicaSet := podController.APP.(*appsv1.ReplicaSet)
-			appReplicas = subnetmanagercontrollers.GetAppReplicas(replicaSet.Spec.Replicas)
-		case constant.KindStatefulSet:
-			statefulSet := podController.APP.(*appsv1.StatefulSet)
-			appReplicas = subnetmanagercontrollers.GetAppReplicas(statefulSet.Spec.Replicas)
-		case constant.KindDaemonSet:
-			daemonSet := podController.APP.(*appsv1.DaemonSet)
-			appReplicas = int(daemonSet.Status.DesiredNumberScheduled)
-		case constant.KindJob:
-			job := podController.APP.(*batchv1.Job)
-			appReplicas = subnetmanagercontrollers.CalculateJobPodNum(job.Spec.Parallelism, job.Spec.Completions)
-		case constant.KindCronJob:
-			cronJob := podController.APP.(*batchv1.CronJob)
-			appReplicas = subnetmanagercontrollers.CalculateJobPodNum(cronJob.Spec.JobTemplate.Spec.Parallelism, cronJob.Spec.JobTemplate.Spec.Completions)
+		case constant.KindDeployment, constant.KindReplicaSet, constant.KindStatefulSet,
+			constant.KindDaemonSet, constant.KindJob, constant.KindCronJob:
+			if podController.Replicas != nil {
+				appReplicas = *podController.Replicas
+			}
 		default:
 			isThirdPartyController = true
 		}
@@ -134,12 +119,13 @@ func getAutoPoolIPNumber(pod *corev1.Pod, podController types.PodTopController) 
 		// flexible IP Number
 		flexibleIPNum = ipNum
 	} else {
-		// third party controller only supports fixed auto-created IPPool IP number
-		if isThirdPartyController {
-			return -1, fmt.Errorf("%s/%s/%s only supports fixed auto-created IPPool IP Number", podController.Kind, podController.Namespace, podController.Name)
-		}
+		// default to use Cluster Subnet Default Flexible IPNumber
+		flexibleIPNum = *subnetmanagercontrollers.ClusterSubnetDefaultFlexibleIPNumber
+	}
 
-		flexibleIPNum = 0
+	// third party controller only supports fixed auto-created IPPool IP number
+	if isThirdPartyController {
+		return -1, fmt.Errorf("%s/%s/%s only supports fixed auto-created IPPool IP Number", podController.Kind, podController.Namespace, podController.Name)
 	}
 
 	// collect application replicas and custom flexible IP number

@@ -729,8 +729,8 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 				Namespace:  app.GetNamespace(),
 				Name:       app.GetName(),
 			},
-			UID: app.GetUID(),
-			APP: app,
+			UID:      app.GetUID(),
+			Replicas: &appReplicas,
 		},
 		appReplicas)
 	if nil != err {

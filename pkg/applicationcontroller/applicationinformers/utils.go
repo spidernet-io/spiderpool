@@ -452,7 +452,7 @@ func IsAppExist(ctx context.Context, cacheClient client.Client, dynamicClient dy
 
 	var unstructuredObject *unstructured.Unstructured
 	if isThird {
-		gvr, e := GenerateGVR(appNamespacedName)
+		gvr, e := GenerateGVR(appNamespacedName.APIVersion, appNamespacedName.Kind)
 		if nil != e {
 			return false, "", e
 		}
@@ -479,13 +479,13 @@ func IsAppExist(ctx context.Context, cacheClient client.Client, dynamicClient dy
 	return true, appUID, nil
 }
 
-func GenerateGVR(appNamespacedName types.AppNamespacedName) (schema.GroupVersionResource, error) {
-	gv, err := schema.ParseGroupVersion(appNamespacedName.APIVersion)
+func GenerateGVR(apiVersion, kind string) (schema.GroupVersionResource, error) {
+	gv, err := schema.ParseGroupVersion(apiVersion)
 	if nil != err {
 		return schema.GroupVersionResource{}, err
 	}
 
-	gvk := gv.WithKind(appNamespacedName.Kind)
+	gvk := gv.WithKind(kind)
 	gvrPlural, _ := meta.UnsafeGuessKindToResource(gvk)
 
 	return gvrPlural, nil

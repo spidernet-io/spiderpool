@@ -546,7 +546,7 @@ var _ = Describe("Utils", func() {
 				Namespace:  "test-ns",
 				Name:       "test-name",
 			}
-			gvr, err := GenerateGVR(appNamespacedName)
+			gvr, err := GenerateGVR(appNamespacedName.APIVersion, appNamespacedName.Kind)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gvr.Group).To(Equal(appsv1.SchemeGroupVersion.Group))
 			Expect(gvr.Version).To(Equal(appsv1.SchemeGroupVersion.Version))
@@ -560,7 +560,7 @@ var _ = Describe("Utils", func() {
 				Namespace:  "test-ns",
 				Name:       "test-name",
 			}
-			gvr, err := GenerateGVR(appNamespacedName)
+			gvr, err := GenerateGVR(appNamespacedName.APIVersion, appNamespacedName.Kind)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gvr.Group).To(BeEmpty())
 			Expect(gvr.Version).To(Equal(corev1.SchemeGroupVersion.Version))
@@ -574,7 +574,7 @@ var _ = Describe("Utils", func() {
 				Namespace:  "test-ns",
 				Name:       "test-name",
 			}
-			_, err := GenerateGVR(appNamespacedName)
+			_, err := GenerateGVR(appNamespacedName.APIVersion, appNamespacedName.Kind)
 			Expect(err).To(HaveOccurred())
 		})
 	})

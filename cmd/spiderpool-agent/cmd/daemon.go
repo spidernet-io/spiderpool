@@ -18,10 +18,12 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/grafana/pyroscope-go"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -118,6 +120,13 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
 	initAgentMetricsServer(agentContext.InnerCtx)
+
+	logger.Debug("Begin to initial K8s dynamic client")
+	dynamicClient, err := initDynamicClient()
+	if nil != err {
+		logger.Fatal(err.Error())
+	}
+	agentContext.DynamicClient = dynamicClient
 
 	logger.Info("Begin to initialize spiderpool-agent runtime manager")
 	mgr, err := newCRDManager()
@@ -324,6 +333,7 @@ func initAgentServiceManagers(ctx context.Context) {
 	podManager, err := podmanager.NewPodManager(
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),
+		agentContext.DynamicClient,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -385,7 +395,18 @@ func initAgentServiceManagers(ctx context.Context) {
 			logger.Fatal(err.Error())
 		}
 		agentContext.SubnetManager = subnetManager
+		logger.Sugar().Debugf("Begin to initialize cluster Subnet default flexible IP number to %d", agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
+		*applicationinformers.ClusterSubnetDefaultFlexibleIPNumber = agentContext.Cfg.ClusterSubnetDefaultFlexibleIPNum
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}
+}
+
+func initDynamicClient() (*dynamic.DynamicClient, error) {
+	dynamicClient, err := dynamic.NewForConfig(ctrl.GetConfigOrDie())
+	if nil != err {
+		return nil, fmt.Errorf("failed to init Kubernetes dynamic client: %v", err)
+	}
+
+	return dynamicClient, nil
 }

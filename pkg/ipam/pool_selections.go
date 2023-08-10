@@ -27,8 +27,6 @@ import (
 )
 
 func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, podController types.PodTopController) (ToBeAllocateds, error) {
-	log := logutils.FromContext(ctx)
-
 	// If feature SpiderSubnet is enabled, select IPPool candidates through the
 	// Pod annotations "ipam.spidernet.io/subnet" or "ipam.spidernet.io/subnets". (expect orphan Pod controller)
 	if i.config.EnableSpiderSubnet {
@@ -37,13 +35,7 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 			return nil, fmt.Errorf("failed to get IPPool candidates from Subnet: %v", err)
 		}
 		if fromSubnet != nil {
-			// The SpiderSubnet feature doesn't support orphan Pod.
-			// So the orphan pod would get the IPPool candidates from the other traditional IPPool rules.
-			if podController.APIVersion == corev1.SchemeGroupVersion.String() && podController.Kind == constant.KindPod {
-				log.Sugar().Warnf("SpiderSubnet feature doesn't support no-controller pod, try to allocate IPs in traditional IPPool way")
-			} else {
-				return ToBeAllocateds{fromSubnet}, nil
-			}
+			return ToBeAllocateds{fromSubnet}, nil
 		}
 	}
 
@@ -94,9 +86,18 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		return nil, err
 	}
 
-	// default IPPool mode
-	if applicationinformers.IsDefaultIPPoolMode(subnetAnnoConfig) {
-		return nil, nil
+	{
+		// default IPPool mode
+		if applicationinformers.IsDefaultIPPoolMode(subnetAnnoConfig) {
+			return nil, nil
+		}
+
+		// The SpiderSubnet feature doesn't support orphan Pod.
+		// So the orphan pod would get the IPPool candidates from the other traditional IPPool rules.
+		if podController.APIVersion == corev1.SchemeGroupVersion.String() && podController.Kind == constant.KindPod {
+			logger.Sugar().Warnf("SpiderSubnet feature doesn't support no-controller pod, try to allocate IPs in traditional IPPool way")
+			return nil, nil
+		}
 	}
 
 	var subnetItem types.AnnoSubnetItem

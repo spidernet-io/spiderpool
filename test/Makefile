@@ -275,26 +275,26 @@ setup_spiderpool:
 
 .PHONY: clean_spiderpool_crd
 clean_spiderpool_crd:
-	@echo -e "\033[35m [clean spiderpool CRD] \033[0m"
-	@-$(QUIET) $(ROOT_DIR)/tools/scripts/cleanCRD.sh
-	@CRD_NUM=` kubectl get crd -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) | grep "spiderpool.spidernet.io" | wc -l `
-	CRD_LIST=` kubectl get crd -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) | grep "spiderpool.spidernet.io" ` ; \
-	[ "$$CRD_NUM" -eq 0 ] || { echo "failed to clean spiderpool crd " ; } ; \
-    for CRD in $${CRD_LIST} ; do \
-	  echo -e "\033[35m [describe crd: $${CRD] \033[0m" ; \
-	  kubectl describe crd $${CRD} --kubeconfig $(E2E_KUBECONFIG) ; \
-	  echo -e "\033[35m [get crd -ojson: $${CRD] \033[0m" ; \
-	  kubectl get crd $${CRD} -ojson --kubeconfig $(E2E_KUBECONFIG) ; \
+	@echo -e "\033[35m [clean spiderpool crd] \033[0m"
+	@-$(QUIET) export KUBECONFIG=$(E2E_KUBECONFIG); $(ROOT_DIR)/tools/scripts/cleanCRD.sh
+	@ALL_CRD=`kubectl get crd -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG)  | awk '{print $$1 } ' ` ; FAIL="false" ; \
+	for CRD in $$ALL_CRD ; do \
+		echo $${CRD} | grep -q 'spiderpool.spidernet.io' && FAIL="true" && echo "error, failed to clean spiderpool crd: $${CRD}" ; \
+	    if [ "$$FAIL" == "true" ] ; then \
+           echo -e "\033[35m [===== describe crd: $${CRD} =====] \033[0m" ; \
+		   kubectl describe crd $${CRD} --kubeconfig $(E2E_KUBECONFIG) ; \
+		   echo -e "\033[35m [===== get crd: $${CRD} -ojson =====] \033[0m" ; \
+           kubectl get crd $${CRD} -ojson --kubeconfig $(E2E_KUBECONFIG) ; \
+		fi ; \
 	done ; \
-	exit 1
+	[ "$$FAIL" == "true" ] && echo "spiderpool crd cleanup failed" && exit 1 ; \
+	echo -e "\033[35m [done] all spiderpool crd cleaned up !!! \033[0m"
 
 .PHONY: helm_uninstall_spiderpool
 helm_uninstall_spiderpool:
 	@echo -e "\033[35m [helm uninstall spiderpool] \033[0m"
-	set -x ; \
 	helm uninstall $(RELEASE_NAME) --wait --debug -n $(RELEASE_NAMESPACE) \
 	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
-	exit 0
 
 .PHONY: uninstall_spiderpool
 uninstall_spiderpool:

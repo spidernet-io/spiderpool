@@ -218,6 +218,7 @@ func (sc *SubnetController) enqueueSubnetOnUpdate(oldObj, newObj interface{}) {
 	logger.Debug(messageEnqueueSubnet)
 }
 
+// enqueueSubnetOnIPPoolChange receives the IPPool resources events
 func (sc *SubnetController) enqueueSubnetOnIPPoolChange(obj interface{}) {
 	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
 	ownerSubnet, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]
@@ -384,6 +385,7 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	return nil
 }
 
+// syncMetadata add "ipam.spidernet.io/subnet-cidr" label for the SpiderSubnet object
 func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
 	if err != nil {
@@ -406,6 +408,7 @@ func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpool
 	return nil
 }
 
+// syncControllerSubnet would set ownerReference and add "ipam.spidernet.io/owner-spider-subnet" label for the previous orphan IPPool
 func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	ipPools, err := sc.IPPoolsLister.List(labels.Everything())
 	if err != nil {

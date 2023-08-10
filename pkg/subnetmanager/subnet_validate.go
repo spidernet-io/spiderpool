@@ -211,6 +211,49 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 		}
 	}
 
+	return sw.validateOrphanIPPool(ctx, subnet)
+}
+
+// validateOrphanIPPool will check the SpiderSubnet.Spec.Subnet whether overlaps with the cluster orphan SpiderIPPool.Spec.Subnet.
+// And we also require the IPPool.Spec.IPs belong to Subnet.Spec.IPs if they are in the same subnet
+func (sw *SubnetWebhook) validateOrphanIPPool(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
+	poolList := spiderpoolv2beta1.SpiderIPPoolList{}
+	err := sw.APIReader.List(ctx, &poolList)
+	if nil != err {
+		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
+	}
+
+	for _, tmpPool := range poolList.Items {
+		if *tmpPool.Spec.IPVersion != *subnet.Spec.IPVersion {
+			continue
+		}
+
+		// validate the Spec.Subnet whether overlaps or not
+		if tmpPool.Spec.Subnet != subnet.Spec.Subnet {
+			isCIDROverlap, err := spiderpoolip.IsCIDROverlap(*subnet.Spec.IPVersion, tmpPool.Spec.Subnet, subnet.Spec.Subnet)
+			if nil != err {
+				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps with SpiderIPPool '%s', error: %v", tmpPool.Name, err))
+			}
+			if isCIDROverlap {
+				return field.Invalid(subnetField, subnet.Spec.Subnet, fmt.Sprintf("overlap with SpiderIPPool '%s' resource 'spec.subnet' %s", tmpPool.Name, tmpPool.Spec.Subnet))
+			}
+		} else {
+			// validate the Spec.IPs whether contains or not
+			poolIPs, err := spiderpoolip.AssembleTotalIPs(*tmpPool.Spec.IPVersion, tmpPool.Spec.IPs, tmpPool.Spec.ExcludeIPs)
+			if nil != err {
+				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool '%s', error: %v", tmpPool.Name, err))
+			}
+			subnetIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+			if nil != err {
+				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet '%s', error: %v", subnet.Name, err))
+			}
+			diffSet := spiderpoolip.IPsDiffSet(poolIPs, subnetIPs, false)
+			if len(diffSet) != 0 {
+				return field.Invalid(ipsField, subnet.Spec.IPs, fmt.Sprintf("SpiderIPPool '%s' owns some IP addresses that SpiderSubnet '%s' can't control", tmpPool.Name, subnet.Name))
+			}
+		}
+	}
+
 	return nil
 }
 

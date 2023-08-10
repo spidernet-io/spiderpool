@@ -37,8 +37,6 @@ jobs:
         include:
           - e2e_init_mode: e2e_init_underlay
             e2e_test_mode: e2e_test_underlay
-          - e2e_init_mode: e2e_init_underlay_subnet
-            e2e_test_mode: e2e_test_underlay_subnet
           - e2e_init_mode: e2e_init_calico
             e2e_test_mode: e2e_test_calico
           - e2e_init_mode: e2e_init_cilium
@@ -186,7 +184,7 @@ jobs:
 
       - name: Get the E2E Performance Result For Dual-stack
         id: get_performance
-        if: ${{ inputs.run_e2e == 'true' && inputs.ip_family == 'dual' && ( matrix.e2e_test_mode == 'e2e_test_underlay' || matrix.e2e_test_mode == 'e2e_test_underlay_subnet' ) }}
+        if: ${{ inputs.run_e2e == 'true' && inputs.ip_family == 'dual' && matrix.e2e_test_mode == 'e2e_test_underlay' }}
         shell: bash
         run: |
           # sudo apt-get install -y jq

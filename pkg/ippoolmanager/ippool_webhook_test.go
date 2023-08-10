@@ -1053,7 +1053,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolWebhook.EnableSpiderSubnet = true
 				})
 
-				It("is orphan IPPool", func() {
+				It("succeed to create orphan IPPool", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
@@ -1064,7 +1064,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 
 					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("sets owner reference to non-existent Subnet", func() {
@@ -1786,7 +1786,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolWebhook.EnableSpiderSubnet = true
 				})
 
-				It("updates orphan IPPool", func() {
+				It("succeed to update orphan IPPool", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
@@ -1795,7 +1795,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
 					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("updates the IPPool that sets the owner reference to non-existent Subnet", func() {

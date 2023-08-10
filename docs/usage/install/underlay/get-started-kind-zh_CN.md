@@ -26,16 +26,10 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 
 如果您在中国大陆，安装时可以额外指定参数 `-e E2E_CHINA_IMAGE_REGISTRY=true` ，以帮助您更快的拉取镜像。
 
-### 安装不带子网功能的 Spiderpool 在 Underlay CNI（Macvlan） 集群
+### 安装 Spiderpool 在 Underlay CNI（Macvlan） 集群
   
   ```bash
   ~# make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
-  ```
-
-### 安装具有子网功能的 Spiderpool 在 Underlay CNI（Macvlan）集群
-
-  ```bash
-  ~# make e2e_init_underlay_subnet -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
 ### 安装 Spiderpool 在 Calico Overlay CNI 集群

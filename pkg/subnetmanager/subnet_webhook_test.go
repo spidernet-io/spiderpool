@@ -516,6 +516,47 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					err = subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
+
+				It("overlaps with existing orphan IPPool resource", func() {
+					orphanPool := &spiderpoolv2beta1.SpiderIPPool{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       constant.KindSpiderIPPool,
+							APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "orphanPool",
+						},
+						Spec: spiderpoolv2beta1.IPPoolSpec{
+							IPVersion: pointer.Int64(constant.IPv4),
+							Subnet:    "172.18.40.0/25",
+							IPs:       []string{"172.18.40.40"},
+						},
+					}
+					DeferCleanup(func() {
+						err := tracker.Delete(
+							schema.GroupVersionResource{
+								Group:    constant.SpiderpoolAPIGroup,
+								Version:  constant.SpiderpoolAPIVersion,
+								Resource: "spiderippools",
+							}, orphanPool.Namespace, orphanPool.Name)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					err := tracker.Add(orphanPool)
+					Expect(err).NotTo(HaveOccurred())
+
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/24"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.1-172.18.40.2",
+							"172.18.40.10",
+						}...,
+					)
+
+					err = subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
 			})
 
 			When("Validating 'spec.ips'", func() {
@@ -539,6 +580,46 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 
 					err := subnetWebhook.ValidateCreate(ctx, subnetT)
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				})
+
+				It("orphan IPPool with extra IPs", func() {
+					orphanPool := &spiderpoolv2beta1.SpiderIPPool{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       constant.KindSpiderIPPool,
+							APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "orphanPool",
+						},
+						Spec: spiderpoolv2beta1.IPPoolSpec{
+							IPVersion: pointer.Int64(constant.IPv4),
+							Subnet:    "172.18.40.0/25",
+							IPs:       []string{"172.18.40.40-172.18.40.45"},
+						},
+					}
+					DeferCleanup(func() {
+						err := tracker.Delete(
+							schema.GroupVersionResource{
+								Group:    constant.SpiderpoolAPIGroup,
+								Version:  constant.SpiderpoolAPIVersion,
+								Resource: "spiderippools",
+							}, orphanPool.Namespace, orphanPool.Name)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					err := tracker.Add(orphanPool)
+					Expect(err).NotTo(HaveOccurred())
+
+					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.Subnet = "172.18.40.0/25"
+					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+						[]string{
+							"172.18.40.41-172.18.40.45",
+						}...,
+					)
+
+					err = subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
 				})
 			})
@@ -787,6 +868,46 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				)
 
 				err := subnetWebhook.ValidateCreate(ctx, subnetT)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("create IPv4 Subnet with orphan IPPool exist", func() {
+				orphanPool := &spiderpoolv2beta1.SpiderIPPool{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       constant.KindSpiderIPPool,
+						APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "orphanPool",
+					},
+					Spec: spiderpoolv2beta1.IPPoolSpec{
+						IPVersion: pointer.Int64(constant.IPv4),
+						Subnet:    "172.18.40.0/25",
+						IPs:       []string{"172.18.40.40-172.18.40.41"},
+					},
+				}
+				DeferCleanup(func() {
+					err := tracker.Delete(
+						schema.GroupVersionResource{
+							Group:    constant.SpiderpoolAPIGroup,
+							Version:  constant.SpiderpoolAPIVersion,
+							Resource: "spiderippools",
+						}, orphanPool.Namespace, orphanPool.Name)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				err := tracker.Add(orphanPool)
+				Expect(err).NotTo(HaveOccurred())
+
+				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.Subnet = "172.18.40.0/25"
+				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
+					[]string{
+						"172.18.40.40-172.18.40.45",
+					}...,
+				)
+
+				err = subnetWebhook.ValidateCreate(ctx, subnetT)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})

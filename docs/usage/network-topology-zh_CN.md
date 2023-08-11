@@ -98,7 +98,7 @@ spec:
     - ${MACVLAN_MASTER_INTERFACE}
 ```
 
-在本文示例中，使用如上配置，创建如下的两个 Macvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR，它对应了宿主机的 `eth0` 网卡。
+在本文示例中，使用如上配置，创建如下的 Macvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR，它对应了宿主机的 `eth0` 网卡。
 
 ```bash
 ~# ~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system

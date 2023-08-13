@@ -28,11 +28,11 @@ Spiderpool 有节点拓扑、解决 MAC 地址合法性、对接基于 `spec.ext
 
 - 准备一套阿里云环境，给虚拟机分配 2 个网卡，每张网卡均分配一些辅助私网 IP，如图：
 
-![alicloud-web-network](../../../images/alicloud-network-web.png)
+    ![alicloud-web-network](../../../images/alicloud-network-web.png)
 
 - 使用上述配置的虚拟机，搭建一套 Kubernetes 集群，节点的可用 IP 及集群网络拓扑图如下：
 
-![网络拓扑](../../../images/alicloud-k8s-network.png)
+    ![网络拓扑](../../../images/alicloud-k8s-network.png)
 
 ### 安装 Spiderpool
 
@@ -115,9 +115,9 @@ ipvlan-eth1   10m
 
 Spiderpool 的 CRD：`SpiderIPPool` 提供了 `nodeName`、`multusName` 与 `ips` 字段：
 
-- `nodeName`：当 nodeName 不为空时，Pod 在某个节点上启动，并尝试从 SpiderIPPool 分配 IP 地址, 若 Pod 所在节点符合该 nodeName ，则能从该 SpiderIPPool 中成功分配出 IP，若 Pod 所在节点不符合 nodeName，则无法从该 SpiderIPPool 中分配出 IP。当 nodeName 为空时，Spiderpool 对 Pod 不实施任何分配限制。
+- `nodeName`：当 `nodeName` 不为空时，Pod 在某个节点上启动，并尝试从 SpiderIPPool 分配 IP 地址, 若 Pod 所在节点符合该 `nodeName`，则能从该 SpiderIPPool 中成功分配出 IP，若 Pod 所在节点不符合 `nodeName`，则无法从该 SpiderIPPool 中分配出 IP。当 `nodeName` 为空时，Spiderpool 对 Pod 不实施任何分配限制。
 
-- `multusName`：Spiderpool 通过该字段与 Multus CNI 深度结合以应对多网卡场景。当 multusName 不为空时，SpiderIPPool 会使用对应的 Multus CR 实例为 Pod 配置网络，若 multusName 对应的 Multus CR 不存在，那么 Spiderpool 将无法为 Pod 指定 Multus CR。当 multusName 为空时，Spiderpool 对 Pod 所使用的 Multus CR 不作限制。
+- `multusName`：Spiderpool 通过该字段与 Multus CNI 深度结合以应对多网卡场景。当 `multusName` 不为空时，SpiderIPPool 会使用对应的 Multus CR 实例为 Pod 配置网络，若 `multusName` 对应的 Multus CR 不存在，那么 Spiderpool 将无法为 Pod 指定 Multus CR。当 `multusName` 为空时，Spiderpool 对 Pod 所使用的 Multus CR 不作限制。
 
 - `spec.ips`：该字段的值必须设置。由于阿里云限制了节点可使用的 IP 地址，故该值的范围必须在 `nodeName` 对应主机的辅助私网 IP 范围内，您可以从阿里云的弹性网卡界面获取。
 
@@ -189,7 +189,7 @@ EOF
 
 ### 创建应用
 
-以下的示例 Yaml 中，会创建 2 组 daemonSet 应用和 1 个 `type` 为 ClusterIP 的 service ，其中：
+以下的示例 Yaml 中，会创建 2 组 DaemonSet 应用和 1 个 `type` 为 ClusterIP 的 service ，其中：
 
 - `v1.multus-cni.io/default-network`：用于指定应用所使用的子网，示例中的应用分别使用了不同的子网。
 
@@ -293,62 +293,62 @@ worker-192   4         192.168.0.0/24    1                    5                t
 
 - 测试 Pod 与宿主机的通讯情况：
 
-```bash
-~# kubectl get nodes -owide
-NAME     STATUS   ROLES           AGE     VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION              CONTAINER-RUNTIME
-master   Ready    control-plane   2d12h   v1.27.3   172.31.199.183   <none>        CentOS Linux 7 (Core)   6.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
-worker   Ready    <none>          2d12h   v1.27.3   172.31.199.184   <none>        CentOS Linux 7 (Core)   6.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
+    ```bash
+    ~# kubectl get nodes -owide
+    NAME     STATUS   ROLES           AGE     VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION              CONTAINER-RUNTIME
+    master   Ready    control-plane   2d12h   v1.27.3   172.31.199.183   <none>        CentOS Linux 7 (Core)   6.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
+    worker   Ready    <none>          2d12h   v1.27.3   172.31.199.184   <none>        CentOS Linux 7 (Core)   6.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
 
-~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 172.31.199.183 -c 2
-PING 172.31.199.183 (172.31.199.183): 56 data bytes
-64 bytes from 172.31.199.183: seq=0 ttl=64 time=0.088 ms
-64 bytes from 172.31.199.183: seq=1 ttl=64 time=0.054 ms
+    ~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 172.31.199.183 -c 2
+    PING 172.31.199.183 (172.31.199.183): 56 data bytes
+    64 bytes from 172.31.199.183: seq=0 ttl=64 time=0.088 ms
+    64 bytes from 172.31.199.183: seq=1 ttl=64 time=0.054 ms
 
---- 172.31.199.183 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 0.054/0.071/0.088 ms
-```
+    --- 172.31.199.183 ping statistics ---
+    2 packets transmitted, 2 packets received, 0% packet loss
+    round-trip min/avg/max = 0.054/0.071/0.088 ms
+    ```
 
 - 测试 Pod 与跨节点、跨子网 Pod 的通讯情况
 
-```shell
-~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 172.31.199.193 -c 2
-PING 172.31.199.193 (172.31.199.193): 56 data bytes
-64 bytes from 172.31.199.193: seq=0 ttl=64 time=0.460 ms
-64 bytes from 172.31.199.193: seq=1 ttl=64 time=0.210 ms
+    ```shell
+    ~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 172.31.199.193 -c 2
+    PING 172.31.199.193 (172.31.199.193): 56 data bytes
+    64 bytes from 172.31.199.193: seq=0 ttl=64 time=0.460 ms
+    64 bytes from 172.31.199.193: seq=1 ttl=64 time=0.210 ms
 
---- 172.31.199.193 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 0.210/0.335/0.460 ms
+    --- 172.31.199.193 ping statistics ---
+    2 packets transmitted, 2 packets received, 0% packet loss
+    round-trip min/avg/max = 0.210/0.335/0.460 ms
 
-~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 192.168.0.161 -c 2
-PING 192.168.0.161 (192.168.0.161): 56 data bytes
-64 bytes from 192.168.0.161: seq=0 ttl=64 time=0.408 ms
-64 bytes from 192.168.0.161: seq=1 ttl=64 time=0.194 ms
+    ~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 192.168.0.161 -c 2
+    PING 192.168.0.161 (192.168.0.161): 56 data bytes
+    64 bytes from 192.168.0.161: seq=0 ttl=64 time=0.408 ms
+    64 bytes from 192.168.0.161: seq=1 ttl=64 time=0.194 ms
 
---- 192.168.0.161 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 0.194/0.301/0.408 ms
-```
+    --- 192.168.0.161 ping statistics ---
+    2 packets transmitted, 2 packets received, 0% packet loss
+    round-trip min/avg/max = 0.194/0.301/0.408 ms
+    ```
 
 - 测试 Pod 与 ClusterIP 的通讯情况：
 
-```bash
-~# kubectl get svc test-svc
-NAME       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-test-svc   ClusterIP   10.233.23.194   <none>        80/TCP    26s
+    ```bash
+    ~# kubectl get svc test-svc
+    NAME       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+    test-svc   ClusterIP   10.233.23.194   <none>        80/TCP    26s
 
-~# kubectl exec -ti test-app-2-7c56876fc6-7brhf -- curl 10.233.23.194 -I
-HTTP/1.1 200 OK
-Server: nginx/1.10.1
-Date: Fri, 21 Jul 2023 06:45:56 GMT
-Content-Type: text/html
-Content-Length: 4086
-Last-Modified: Fri, 21 Jul 2023 06:38:41 GMT
-Connection: keep-alive
-ETag: "64ba27f1-ff6"
-Accept-Ranges: bytes
-```
+    ~# kubectl exec -ti test-app-2-7c56876fc6-7brhf -- curl 10.233.23.194 -I
+    HTTP/1.1 200 OK
+    Server: nginx/1.10.1
+    Date: Fri, 21 Jul 2023 06:45:56 GMT
+    Content-Type: text/html
+    Content-Length: 4086
+    Last-Modified: Fri, 21 Jul 2023 06:38:41 GMT
+    Connection: keep-alive
+    ETag: "64ba27f1-ff6"
+    Accept-Ranges: bytes
+    ```
 
 ### 测试集群南北向连通性
 
@@ -360,20 +360,20 @@ Accept-Ranges: bytes
 
 - 测试集群内 Pod 的流量出口访问
 
-```bash
-~# kubectl exec -ti test-app-2-7c56876fc6-7brhf -- curl www.baidu.com -I
-HTTP/1.1 200 OK
-Accept-Ranges: bytes
-Cache-Control: private, no-cache, no-store, proxy-revalidate, no-transform
-Connection: keep-alive
-Content-Length: 277
-Content-Type: text/html
-Date: Fri, 21 Jul 2023 08:42:17 GMT
-Etag: "575e1f60-115"
-Last-Modified: Mon, 13 Jun 2016 02:50:08 GMT
-Pragma: no-cache
-Server: bfe/1.0.8.18
-```
+    ```bash
+    ~# kubectl exec -ti test-app-2-7c56876fc6-7brhf -- curl www.baidu.com -I
+    HTTP/1.1 200 OK
+    Accept-Ranges: bytes
+    Cache-Control: private, no-cache, no-store, proxy-revalidate, no-transform
+    Connection: keep-alive
+    Content-Length: 277
+    Content-Type: text/html
+    Date: Fri, 21 Jul 2023 08:42:17 GMT
+    Etag: "575e1f60-115"
+    Last-Modified: Mon, 13 Jun 2016 02:50:08 GMT
+    Pragma: no-cache
+    Server: bfe/1.0.8.18
+    ```
 
 #### 负载均衡流量入口访问
 
@@ -383,7 +383,7 @@ CCM（Cloud Controller Manager）是阿里云提供的一个用于 Kubernetes �
 
 1. 集群节点配置 `providerID`
 
-    务必在集群中的每个节点上，分别执行如下命令，从而获取每个节点各自的 `providerID`。`http://100.100.100.200/latest/meta-data` 是阿里云 CLI 提供获取实例元数据的 API 入口，在下列示例中无需修改它。更多用法可参考[实例元数据](https://help.aliyun.com/document_detail/49150.html?spm=a2c4g.170249.0.0.3ffc59d7JhEqHl)
+    务必在集群中的每个节点上，分别执行如下命令，从而获取每个节点各自的 `providerID`。<http://100.100.100.200/latest/meta-data> 是阿里云 CLI 提供获取实例元数据的 API 入口，在下列示例中无需修改它。更多用法可参考[实例元数据](https://help.aliyun.com/document_detail/49150.html?spm=a2c4g.170249.0.0.3ffc59d7JhEqHl)
 
     ```bash
     ~# META_EP=http://100.100.100.200/latest/meta-data

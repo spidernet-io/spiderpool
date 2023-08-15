@@ -206,10 +206,11 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
   并且，能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](./usage/coordinator.md)。
 
-* 基于节点拓扑的 IP 池功能，支持运行在裸金属[例子](./usage/network-topology-zh_CN.md)、
-  vmware 虚拟机[例子](./usage/install/cloud/get-started-vmware-zh_CN.md)、
-  openstack 虚拟机[例子](./usage/install/cloud/get-started-openstack-zh_CN.md)、
-  公有云[例子](./usage/install/cloud/get-started-alibaba-zh_CN.md)等场景。
+* 基于节点拓扑的 IP 池功能，满足每个节点精细化的子网规划需求，可参考[例子](./docs/usage/network-topology-zh_CN.md)
+
+* 在 vmware vsphere 平台上，无需打开 vswitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html)，即可运行 underlay CNI 解决方案，从而确保 vsphere 平台的转发性能。参考[例子](./docs/usage/install/cloud/get-started-vmware-zh_CN.md)
+
+* spiderpool 能在任意厂商的公有云平台、openstack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./docs/usage/install/cloud/get-started-alibaba-zh_CN.md)
 
 * 在 Pod 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助
   [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)

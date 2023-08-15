@@ -263,11 +263,11 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
   to access clusterIP and pod healthy check ([example](./usage/install/underlay/get-started-macvlan.md)),
   to detect IP conflict and gateway reachability ([example](./usage/coordinator.md)).
 
-* Node based IP pool, supporting underlay CNI running on bare metal
-  ([example](./usage/network-topology.md)),
-  vmware virtual machine ([example](./usage/install/cloud/get-started-vmware.md)),
-  openstack virtual machine ([example](./usage/install/cloud/get-started-openstack.md)),
-  public cloud ([example](./usage/install/cloud/get-started-alibaba.md)).
+* Node-based IP pool feature meets the complex subnet design of each node. refer to [example](./usage/network-topology.md)
+
+* On vmware vsphere platform, Spiderpool underlay network solution does not require ["hybrid forwarding" mode of the Vswitch](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html), which ensures the network performance of vsphere platform. refer to [example](./usage/install/cloud/get-started-vmware-zh_CN.md)
+
+* Spiderpool underlay network solution could run on public cloud of any vendors, and openstack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to [alibabaCloud](./usage/install/cloud/get-started-alibaba-zh_CN.md)
 
 * When starting the Pod, it could help dynamically build the bond interface and vlan interface
   for the master interface of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),

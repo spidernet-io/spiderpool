@@ -21,13 +21,18 @@ import (
 )
 
 var (
-	ipVersionField   *field.Path = field.NewPath("spec").Child("ipVersion")
-	subnetField      *field.Path = field.NewPath("spec").Child("subnet")
-	ipsField         *field.Path = field.NewPath("spec").Child("ips")
-	excludeIPsField  *field.Path = field.NewPath("spec").Child("excludeIPs")
-	gatewayField     *field.Path = field.NewPath("spec").Child("gateway")
-	routesField      *field.Path = field.NewPath("spec").Child("routes")
-	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
+	ipVersionField         *field.Path = field.NewPath("spec").Child("ipVersion")
+	subnetField            *field.Path = field.NewPath("spec").Child("subnet")
+	ipsField               *field.Path = field.NewPath("spec").Child("ips")
+	excludeIPsField        *field.Path = field.NewPath("spec").Child("excludeIPs")
+	gatewayField           *field.Path = field.NewPath("spec").Child("gateway")
+	routesField            *field.Path = field.NewPath("spec").Child("routes")
+	podAffinityField       *field.Path = field.NewPath("spec").Child("podAffinity")
+	nodeAffinityField      *field.Path = field.NewPath("")
+	nodeNameField          *field.Path = field.NewPath("")
+	namespaceAffinityField *field.Path = field.NewPath("")
+	namespaceNameField     *field.Path = field.NewPath("")
+	multusNameField        *field.Path = field.NewPath("")
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
@@ -44,7 +49,7 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 		errs = append(errs, err)
 	}
 
-	errorList := validateIPPoolPodAffinity(podAffinityField, ipPool)
+	errorList := validateAffinity(ipPool)
 	if len(errorList) != 0 {
 		errs = append(errs, errorList...)
 	}
@@ -69,7 +74,7 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 		return field.ErrorList{err}
 	}
 
-	errorList := validateIPPoolPodAffinity(podAffinityField, newIPPool)
+	errorList := validateAffinity(newIPPool)
 	if len(errorList) != 0 {
 		return errorList
 	}
@@ -412,7 +417,82 @@ func ValidateContainsIP(fieldPath *field.Path, version types.IPVersion, subnet s
 	return nil
 }
 
-func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+func validateAffinity(ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+	var allErrs field.ErrorList
+
+	allErrs = append(allErrs, validateIPPoolPodAffinity(ipPool)...)
+	allErrs = append(allErrs, validateIPPoolNamespaceAffinity(ipPool)...)
+	allErrs = append(allErrs, validateIPPoolNodeAffinity(ipPool)...)
+	allErrs = append(allErrs, validateIPPoolMutusAffinity(ipPool)...)
+
+	return allErrs
+}
+
+func validateIPPoolNamespaceAffinity(ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if ipPool.Spec.NamespaceAffinity != nil {
+		errList := validation.ValidateLabelSelector(ipPool.Spec.NamespaceAffinity,
+			validation.LabelSelectorValidationOptions{AllowInvalidLabelValueInSelector: false},
+			namespaceAffinityField)
+		if nil != errList {
+			allErrs = append(allErrs, errList...)
+		}
+
+		// validate NamespaceAffinity with empty properties
+		if len(ipPool.Spec.NamespaceAffinity.MatchLabels)+len(ipPool.Spec.NamespaceAffinity.MatchExpressions) == 0 {
+			allErrs = append(allErrs, field.Invalid(namespaceAffinityField, ipPool.Spec.NamespaceAffinity, "empty nodeAffinity is invalid for SpiderIPPool"))
+		}
+	}
+
+	for _, namespaceName := range ipPool.Spec.NamespaceName {
+		if namespaceName == "" {
+			allErrs = append(allErrs, field.Invalid(namespaceNameField, ipPool.Spec.NamespaceName, "it's invalid to add empty string to NamespaceName"))
+		}
+	}
+
+	return allErrs
+}
+
+func validateIPPoolNodeAffinity(ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if ipPool.Spec.NodeAffinity != nil {
+		errList := validation.ValidateLabelSelector(ipPool.Spec.NodeAffinity,
+			validation.LabelSelectorValidationOptions{AllowInvalidLabelValueInSelector: false},
+			nodeAffinityField)
+		if nil != errList {
+			allErrs = append(allErrs, errList...)
+		}
+
+		// validate NodeAffinity with empty properties
+		if len(ipPool.Spec.NodeAffinity.MatchLabels)+len(ipPool.Spec.NodeAffinity.MatchExpressions) == 0 {
+			allErrs = append(allErrs, field.Invalid(nodeAffinityField, ipPool.Spec.NodeAffinity, "empty nodeAffinity is invalid for SpiderIPPool"))
+		}
+	}
+
+	for _, nodeName := range ipPool.Spec.NodeName {
+		if nodeName == "" {
+			allErrs = append(allErrs, field.Invalid(nodeNameField, ipPool.Spec.NodeName, "it's invalid to add empty string to NodeName"))
+		}
+	}
+
+	return allErrs
+}
+
+func validateIPPoolMutusAffinity(ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+	var allErrs field.ErrorList
+
+	for _, multusName := range ipPool.Spec.MultusName {
+		if multusName == "" {
+			allErrs = append(allErrs, field.Invalid(multusNameField, ipPool.Spec.MultusName, "it's invalid to add empty string to MultusName"))
+		}
+	}
+
+	return allErrs
+}
+
+func validateIPPoolPodAffinity(ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
 	if ipPool.Spec.PodAffinity == nil {
 		return nil
 	}
@@ -438,11 +518,12 @@ func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv2beta1.
 	// normal IPPool podAffinity validation
 	errList := validation.ValidateLabelSelector(ipPool.Spec.PodAffinity,
 		validation.LabelSelectorValidationOptions{AllowInvalidLabelValueInSelector: false},
-		fieldPath)
+		podAffinityField)
 	if errList != nil {
 		allErrs = append(allErrs, errList...)
 	}
 
+	// validate PodAffinity with empty properties
 	if len(ipPool.Spec.PodAffinity.MatchLabels)+len(ipPool.Spec.PodAffinity.MatchExpressions) == 0 {
 		allErrs = append(allErrs, field.Invalid(podAffinityField, ipPool.Spec.PodAffinity, "empty podAffinity is invalid for SpiderIPPool"))
 	}

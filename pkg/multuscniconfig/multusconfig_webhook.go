@@ -45,7 +45,7 @@ func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.
 	)
 	log.Sugar().Debugf("Request MultusConfig: %+v", *multusConfig)
 
-	err := validateCNIConfig(multusConfig)
+	err := validate(nil, multusConfig)
 	if nil != err {
 		return apierrors.NewInvalid(
 			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
@@ -68,9 +68,7 @@ func (mcw *MultusConfigWebhook) ValidateUpdate(ctx context.Context, oldObj, newO
 	log.Sugar().Debugf("Request old MultusConfig: %+v", *oldMultusConfig)
 	log.Sugar().Debugf("Request new MultusConfig: %+v", *newMultusConfig)
 
-	// no need to validate the old object
-	// because the already exist object must have been validated before.
-	err := validateCNIConfig(newMultusConfig)
+	err := validate(oldMultusConfig, newMultusConfig)
 	if nil != err {
 		return apierrors.NewInvalid(
 			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),

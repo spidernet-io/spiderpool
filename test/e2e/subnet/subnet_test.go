@@ -1217,7 +1217,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			deployName = "deploy-" + tools.RandomName()
 			deployObj := common.GenerateExampleDeploymentYaml(deployName, namespace, 1)
 			deployObj.Spec.Template.Annotations = map[string]string{
-				common.MultusNetworks: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan100),
+				common.MultusNetworks: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 				// second Interface
 				constant.AnnoSpiderSubnets: string(subnetsAnnoMarshal),
 			}
@@ -1685,7 +1685,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			GinkgoWriter.Printf("Generate multi-NIC annotations for same name app  %v/%v \n", namespace, longAppName)
 			annotationMap[constant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
-			annotationMap[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan100)
+			annotationMap[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100)
 
 			// Delete Single Card Annotations
 			delete(annotationMap, constant.AnnoSpiderSubnet)

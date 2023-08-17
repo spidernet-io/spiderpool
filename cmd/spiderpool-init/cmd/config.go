@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -108,6 +109,9 @@ func parseENVAsDefault() InitDefaultConfig {
 	config.CoordinatorName = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorName), "\"", "")
 	if len(config.CoordinatorName) != 0 {
 		config.CoordinatorMode = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTuneMode), "\"", "")
+		if config.CoordinatorMode == "" {
+			config.CoordinatorMode = string(coordinatorcmd.ModeAuto)
+		}
 		config.CoordinatorPodCIDRType = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorPodCIDRType), "\"", "")
 
 		edg := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectGateway), "\"", "")
@@ -130,12 +134,7 @@ func parseENVAsDefault() InitDefaultConfig {
 			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorTunePodRoutes, etpr, err)
 		}
 		config.CoordinatorTunePodRoutes = tpr
-		switch config.CoordinatorMode {
-		case "underlay":
-			config.CoordinatorPodDefaultRouteNic = "eth0"
-		case "overlay":
-			config.CoordinatorPodDefaultRouteNic = "net1"
-		}
+		config.CoordinatorPodDefaultRouteNic = ""
 		config.CoordinatorPodMACPrefix = ""
 		v := os.Getenv(ENVDefaultCoordiantorHijackCIDR)
 		if len(v) > 0 {

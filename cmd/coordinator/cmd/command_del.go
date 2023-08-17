@@ -84,17 +84,16 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	}
 	defer c.netns.Close()
 
-	if conf.Mode == ModeUnderlay {
-		hostVeth := getHostVethName(args.ContainerID)
-		vethLink, err := netlink.LinkByName(hostVeth)
-		if err != nil {
-			if _, ok := err.(netlink.LinkNotFoundError); ok {
-				logger.Sugar().Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
-				return nil
-			}
+	hostVeth := getHostVethName(args.ContainerID)
+	vethLink, err := netlink.LinkByName(hostVeth)
+	if err != nil {
+		if _, ok := err.(netlink.LinkNotFoundError); ok {
+			logger.Sugar().Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
+		} else {
 			logger.Sugar().Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
 			return fmt.Errorf("failed to get host veth device %s: %v", hostVeth, err)
 		}
+	} else {
 		if err = netlink.LinkDel(vethLink); err != nil {
 			logger.Sugar().Warn("failed to del hostVeth", zap.Error(err))
 			return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)

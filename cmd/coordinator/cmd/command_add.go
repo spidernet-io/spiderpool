@@ -55,6 +55,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return err
 	}
+
 	if conf.Mode == ModeDisable {
 		return types.PrintResult(conf.PrevResult, conf.CNIVersion)
 	}
@@ -98,6 +99,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
 		interfacePrefix:  conf.MultusNicPrefix,
+		podNics:          coordinatorConfig.PodNICs,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
 	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)
@@ -110,14 +112,14 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	defer c.netns.Close()
 
 	// check if it's first time invoke
-	err = c.coordinatorFirstInvoke(conf.PodDefaultCniNic)
+	err = c.coordinatorModeAndFirstInvoke(logger, conf.PodDefaultCniNic)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 
 	// get basic info
-	switch conf.Mode {
+	switch c.tuneMode {
 	case ModeUnderlay:
 		c.podVethName = defaultUnderlayVethName
 		c.hostVethName = getHostVethName(args.ContainerID)

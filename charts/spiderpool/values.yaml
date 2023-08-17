@@ -90,8 +90,8 @@ coordinator:
   ## @param coordinator.name the name of the default SpiderCoordinator CR
   name: "default"
 
-  ## @param coordinator.mode optional network mode, ["underlay", "overlay", "disabled"]
-  mode: "underlay"
+  ## @param coordinator.mode optional network mode, ["auto","underlay", "overlay", "disabled"]
+  mode: "auto"
 
   ## @param coordinator.podCIDRType Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]
   podCIDRType: "cluster"

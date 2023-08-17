@@ -175,6 +175,12 @@ elif [ "$TYPE"x == "detail"x ] ; then
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
         echo "--------- coordinator logs from node ${NODE}"
         docker exec $NODE cat /var/log/spidernet/coordinator.log
+        echo "--------- ip rule from ${NODE}"
+        ip rule
+        echo "--------- ip route show table 500 from ${NODE}"
+        ip route show table 500
+        echo "--------- ip link show from ${NODE}"
+        ip link show
     done
 
 

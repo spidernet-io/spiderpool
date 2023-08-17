@@ -35,12 +35,6 @@ echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN100 $MULTUS_DEFAULT_CNI_VLAN100
 [ -z "$MULTUS_DEFAULT_CNI_VLAN200" ] && echo "error, miss MULTUS_DEFAULT_CNI_VLAN200" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN200 $MULTUS_DEFAULT_CNI_VLAN200 "
 
-[ -z "$MULTUS_ADDITIONAL_CNI_VLAN100" ] && echo "error, miss MULTUS_ADDITIONAL_CNI_VLAN100" && exit 1
-echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN100 $MULTUS_ADDITIONAL_CNI_VLAN100 "
-
-[ -z "$MULTUS_ADDITIONAL_CNI_VLAN200" ] && echo "error, miss MULTUS_ADDITIONAL_CNI_VLAN200" && exit 1
-echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN200 $MULTUS_ADDITIONAL_CNI_VLAN200 "
-
 #==============
 OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
@@ -59,50 +53,75 @@ spec:
   macvlan:
     master: ["<<MASTER>>"]
     vlanID: <<VLAN>>
+    ippools:
+      ipv4: [<<DEFAULT_IPV4_IPPOOLS>>]
+      ipv6: [<<DEFAULT_IPV6_IPPOOLS>>]
   coordinator:
     mode: "<<MODE>>"
 '
 
+  case ${E2E_IP_FAMILY} in
+    ipv4)
+      DEFAULT_IPV4_IPPOOLS=\"default-v4-ippool\"
+      DEFAULT_IPV6_IPPOOLS=""
+      VLAN100_IPV4_IPPOOLS=vlan100-v4
+      VLAN100_IPV6_IPPOOLS=""
+      VLAN200_IPV4_IPPOOLS=vlan200-v4
+      VLAN200_IPV6_IPPOOLS=""
+      ;;
+
+    ipv6)
+      DEFAULT_IPV4_IPPOOLS=''
+      DEFAULT_IPV6_IPPOOLS=\"default-v6-ippool\"
+      VLAN100_IPV4_IPPOOLS=''
+      VLAN100_IPV6_IPPOOLS=vlan100-v6
+      VLAN200_IPV4_IPPOOLS=''
+      VLAN200_IPV6_IPPOOLS=vlan200-v6
+      ;;
+
+    dual)
+      DEFAULT_IPV4_IPPOOLS=\"default-v4-ippool\"
+      DEFAULT_IPV6_IPPOOLS=\"default-v6-ippool\"
+      VLAN100_IPV4_IPPOOLS=vlan100-v4
+      VLAN100_IPV6_IPPOOLS=vlan100-v6
+      VLAN200_IPV4_IPPOOLS=vlan200-v4
+      VLAN200_IPV6_IPPOOLS=vlan200-v6
+      ;;
+
+    *)
+      echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
+      exit 1
+  esac
+
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<MODE>>?underlay?g' \
+    | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?0?g' \
+    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${DEFAULT_IPV4_IPPOOLS}""'?g' \
+    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${DEFAULT_IPV6_IPPOOLS}""'?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<MODE>>?underlay?g' \
+    | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?100?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-
-  echo "${MACVLAN_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN100}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<MODE>>?overlay?g' \
-    | sed 's?<<MASTER>>?eth0?g' \
-    | sed 's?<<VLAN>>?100?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-
-  echo "${MACVLAN_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_ADDITIONAL_CNI_VLAN200}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<MODE>>?overlay?g' \
-    | sed 's?<<MASTER>>?eth0?g' \
-    | sed 's?<<VLAN>>?200?g' \
+    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?vlan100-v4?g' \
+    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?vlan100-v6?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<MODE>>?underlay?g' \
+    | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?200?g' \
+    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?vlan200-v4?g' \
+    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?vlan200-v6?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
-
 }
 
 

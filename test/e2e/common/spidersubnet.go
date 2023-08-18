@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
@@ -50,23 +49,15 @@ func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 		},
 	}
 	if ipNum <= 253 {
-		gateway := fmt.Sprintf("10.%s.%s.1", randNum1, randNum2)
-		subnetObj.Spec.Gateway = &gateway
 		subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
-		if ipNum == 1 {
-			subnetObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2", randNum1, randNum2)}
-		} else {
-			a := strconv.Itoa(ipNum + 1)
-			subnetObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2-10.%s.%s.%s", randNum1, randNum2, randNum1, randNum2, a)}
-		}
 	} else {
-		gateway := fmt.Sprintf("10.%s.0.1", randNum1)
-		subnetObj.Spec.Gateway = &gateway
 		subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
-		a := fmt.Sprintf("%.0f", float64((ipNum+1)/256))
-		b := strconv.Itoa((ipNum + 1) % 256)
-		subnetObj.Spec.IPs = []string{fmt.Sprintf("10.%s.0.2-10.%s.%s.%s", randNum1, randNum2, a, b)}
 	}
+	ips, err := GenerateIPs(subnetObj.Spec.Subnet, ipNum+1)
+	Expect(err).NotTo(HaveOccurred())
+	gateway := ips[0]
+	subnetObj.Spec.Gateway = &gateway
+	subnetObj.Spec.IPs = ips[1:]
 	return subnetName, subnetObj
 }
 
@@ -86,23 +77,17 @@ func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 			IPVersion: pointer.Int64(6),
 		},
 	}
-
 	if ipNum <= 253 {
-		gateway := fmt.Sprintf("fd00:%s::1", randNum)
-		subnetObj.Spec.Gateway = &gateway
 		subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
 	} else {
-		gateway := fmt.Sprintf("fd00:%s::1", randNum)
-		subnetObj.Spec.Gateway = &gateway
 		subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
 	}
 
-	if ipNum == 1 {
-		subnetObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2", randNum)}
-	} else {
-		bStr := strconv.FormatInt(int64(ipNum+1), 16)
-		subnetObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2-fd00:%s::%s", randNum, randNum, bStr)}
-	}
+	ips, err := GenerateIPs(subnetObj.Spec.Subnet, ipNum+1)
+	Expect(err).NotTo(HaveOccurred())
+	gateway := ips[0]
+	subnetObj.Spec.Gateway = &gateway
+	subnetObj.Spec.IPs = ips[1:]
 	return subnetName, subnetObj
 }
 

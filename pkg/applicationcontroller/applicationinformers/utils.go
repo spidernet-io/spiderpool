@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/utils/pointer"
 	"k8s.io/utils/strings/slices"
@@ -41,7 +42,7 @@ var errInvalidInput = func(str string) error {
 }
 
 const (
-	maxNameLength = 63
+	maxNameLength = k8svalidation.DNS1123SubdomainMaxLength
 	randomLength  = 5
 )
 

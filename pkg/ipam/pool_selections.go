@@ -105,12 +105,12 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		return nil, fmt.Errorf("there are no subnet specified: %v", subnetAnnoConfig)
 	}
 
-	if i.config.EnableIPv4 && len(subnetItem.IPv4) == 0 {
-		return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv4 SpiderSubnet")
-	}
-	if i.config.EnableIPv6 && len(subnetItem.IPv6) == 0 {
-		return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv6 SpiderSubnet")
-	}
+	//if i.config.EnableIPv4 && len(subnetItem.IPv4) == 0 {
+	//	return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv4 SpiderSubnet")
+	//}
+	//if i.config.EnableIPv6 && len(subnetItem.IPv6) == 0 {
+	//	return nil, fmt.Errorf("the pod subnetAnnotation doesn't specify IPv6 SpiderSubnet")
+	//}
 
 	result := &ToBeAllocated{
 		NIC:          nic,

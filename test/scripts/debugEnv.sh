@@ -17,7 +17,7 @@ E2E_FILE_NAME="$3"
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
 NAMESPACE="kube-system"
-COMPONENT_GOROUTINE_MAX=300
+COMPONENT_GOROUTINE_MAX=350
 COMPONENT_PS_PROCESS_MAX=50
 
 
@@ -175,6 +175,14 @@ elif [ "$TYPE"x == "detail"x ] ; then
         docker exec $NODE cat /var/log/spidernet/spiderpool.log
         echo "--------- coordinator logs from node ${NODE}"
         docker exec $NODE cat /var/log/spidernet/coordinator.log
+        echo "--------- ip rule from ${NODE}"
+        docker exec $NODE ip rule || true
+        docker exec $NODE ip -6 rule || true
+        echo "--------- ip route show table 500 from ${NODE}"
+        docker exec $NODE ip route show table 500 || true 
+        docker exec $NODE ip -6 route show table 500 || true 
+        echo "--------- ip link show from ${NODE}"
+        docker exec $NODE ip link show
     done
 
 

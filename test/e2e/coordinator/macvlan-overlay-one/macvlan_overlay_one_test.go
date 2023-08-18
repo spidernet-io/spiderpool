@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"math/rand"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	spiderdoctorV1 "github.com/spidernet-io/spiderdoctor/pkg/k8s/apis/spiderdoctor.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -45,7 +46,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			condition = new(spiderdoctorV1.NetSuccessCondition)
 			name = "one-macvlan-overlay-" + tools.RandomName()
 
-			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanOverlayVlan100)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100)
 			if frame.Info.IpV4Enabled && frame.Info.IpV6Enabled {
 				annotations[constant.AnnoPodIPPool] = `{"interface": "net1", "ipv4": ["vlan100-v4"], "ipv6": ["vlan100-v6"]}`
 			} else if frame.Info.IpV4Enabled && !frame.Info.IpV6Enabled {

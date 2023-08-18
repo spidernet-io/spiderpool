@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
@@ -284,39 +283,6 @@ func getDefaultRouteIface(linkIndex int, ignore string) (string, error) {
 		return "", nil
 	}
 	return link.Attrs().Name, nil
-}
-
-// IsFirstModeOverlayInvoke return true if the number of NICs in the pod prefixed with interfacePrefix is equal to 1
-func IsFirstModeOverlayInvoke(netns ns.NetNS, interfacePrefix string) (bool, error) {
-	var interfaces []net.Interface
-	var err error
-
-	err = netns.Do(func(netNS ns.NetNS) error {
-		interfaces, err = net.Interfaces()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if err != nil {
-		return false, err
-	}
-
-	count := 0
-	for _, iface := range interfaces {
-		if strings.HasPrefix(iface.Name, interfacePrefix) {
-			count += 1
-		}
-	}
-
-	if count > 1 {
-		return false, nil
-	} else if count == 1 {
-		return true, nil
-	} else {
-		return false, fmt.Errorf("overlay mode can't work with multus pod's annotation: v1.multus-cni.io/default-network")
-	}
 }
 
 func ConvertMaxMaskIPNet(nip net.IP) *net.IPNet {

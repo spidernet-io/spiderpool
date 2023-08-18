@@ -53,6 +53,7 @@ spec:
                 type: integer
               mode:
                 enum:
+                - auto
                 - underlay
                 - overlay
                 - disabled

@@ -328,6 +328,10 @@ definitions:
         type: boolean
       detectGateway:
         type: boolean
+      podNICs:
+        type: array
+        items:
+          type: string
     required:
       - mode
       - overlayPodCIDR

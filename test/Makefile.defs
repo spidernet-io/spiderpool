@@ -108,11 +108,9 @@ VLAN_GATEWAY_CONTAINER := vlan-gateway
 #================= multus
 MULTUS_DEFAULT_CNI_CALICO := k8s-pod-network
 MULTUS_DEFAULT_CNI_CILIUM := cilium
-MULTUS_DEFAULT_CNI_VLAN0 := macvlan-vlan0-underlay
-MULTUS_DEFAULT_CNI_VLAN100 := macvlan-vlan100-underlay
-MULTUS_DEFAULT_CNI_VLAN200 := macvlan-vlan200-underlay
-MULTUS_ADDITIONAL_CNI_VLAN100 := macvlan-vlan100-overlay
-MULTUS_ADDITIONAL_CNI_VLAN200 := macvlan-vlan200-overlay
+MULTUS_DEFAULT_CNI_VLAN0 := macvlan-vlan0
+MULTUS_DEFAULT_CNI_VLAN100 := macvlan-vlan100
+MULTUS_DEFAULT_CNI_VLAN200 := macvlan-vlan200
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
     E2E_MULTUS_IMAGE_REGISTER ?= ghcr.m.daocloud.io

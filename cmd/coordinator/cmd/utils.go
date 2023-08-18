@@ -26,20 +26,56 @@ type coordinator struct {
 	ipFamily, currentRuleTable, hostRuleTable                    int
 	tuneMode                                                     Mode
 	hostVethName, podVethName, currentInterface, interfacePrefix string
-	HijackCIDR                                                   []string
+	HijackCIDR, podNics                                          []string
 	netns                                                        ns.NetNS
 	hostVethHwAddress, podVethHwAddress                          net.HardwareAddr
 	currentAddress                                               []netlink.Addr
 	hostIPRouteForPod                                            []net.IP
 }
 
+func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string) error {
+	if mode != ModeAuto {
+		return nil
+	}
+
+	if c.currentInterface == podFirstInterface {
+		c.firstInvoke = true
+		c.tuneMode = ModeUnderlay
+		return nil
+	}
+
+	// veth0 must be present in underlay mode
+	vethExist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
+	if err != nil {
+		return fmt.Errorf("failed to check interface: %v exist: %v", defaultUnderlayVethName, err)
+	}
+
+	if vethExist {
+		c.tuneMode = ModeUnderlay
+	} else {
+		c.tuneMode = ModeOverlay
+		// If spinderpool only assigns a NIC to the pod, Indicates that it is the first invoke
+		if len(c.podNics) == 1 {
+			c.firstInvoke = true
+		}
+	}
+
+	return nil
+}
+
 // firstInvoke check if coordinator is first called and do some checks:
 // underlay mode only works with underlay mode, which can't work with overlay
 // mode, and which can't be called in first cni invoked by using multus's
 // annotations: v1.multus-cni.io/default-network
-func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
+func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirstInterface string) error {
 	var err error
 	switch c.tuneMode {
+	case ModeAuto:
+		if err = c.autoModeToSpecificMode(ModeAuto, podFirstInterface); err != nil {
+			return err
+		}
+		logger.Sugar().Infof("Successfully auto detect mode, change mode from auto to %v", c.tuneMode)
+		return nil
 	case ModeUnderlay:
 		c.firstInvoke = c.currentInterface == podFirstInterface
 		// underlay mode can't work with calico/cilium(overlay)
@@ -70,8 +106,8 @@ func (c *coordinator) coordinatorFirstInvoke(podFirstInterface string) error {
 			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the auxiliary interface %s of underlay mode exists. It seems that the previous interface work in underlay mode. ", c.currentInterface, defaultUnderlayVethName)
 		}
 
-		c.firstInvoke, err = networking.IsFirstModeOverlayInvoke(c.netns, c.interfacePrefix)
-		return err
+		c.firstInvoke = len(c.podNics) == 1
+		return nil
 	case ModeDisable:
 		return nil
 	}

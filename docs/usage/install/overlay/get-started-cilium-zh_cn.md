@@ -2,13 +2,13 @@
 
 [**English**](./get-started-calico.md) | **简体中文**
 
-本文将介绍在一个 [Cilium](https://github.com/cilium/cilium) 作为缺省 CNI 的集群，通过 `Spiderpool` 这一完整的 Underlay 网络解决方案，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多张网卡之间路由调协问题。该方案可实现以下效果:
+本文将介绍在一个 [Cilium](https://github.com/cilium/cilium) 作为缺省 CNI 的集群，通过 `Spiderpool` 这一完整的 Underlay 网络解决方案，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多张网卡之间路由调协问题。该方案可实现以下效果: 
 
 - Pod 附加了 Cilium 和 Macvlan 两张网卡
 - Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)，Pod 访问集群南北向流量从 Macvlan 创建的网卡(net1)转发。
 - Pod 多网卡的路由调协，使 Pod 对内对外访问正常
 
-> 注: 本文中 `NAD` 为 Multus **N**etwork-**A**ttachment-**D**efinition CR的简写。
+> 本文中 `NAD` 为 Multus **N**etwork-**A**ttachment-**D**efinition CR 的简写。
 
 ## 先决条件
 
@@ -75,13 +75,11 @@ spec:
 EOF
 ```
 
-Note:
-
 > subnet 应该与节点网卡 ens192 的子网保持一致，并且不与现有任何 IP 冲突。
 
 ### 创建 SpiderMultusConfig 
 
-本文使用 Spidermultusconfig 创建 Multus 的 NAD实例:
+本文使用 Spidermultusconfig 创建 Multus 的 NAD 实例:
 
 ```shell
 cat << EOF | kubectl apply -f -
@@ -101,11 +99,9 @@ spec:
 EOF
 ```
 
-Note:
+> `spec.macvlan.master` 设置为 `ens192`, `ens192`必须存在于主机上。并且 `spec.macvlan.ippools.ipv4` 设置的子网和 `ens192` 的子网保持一致。
 
-> `spec.macvlan.master` 设置为 `ens192`, `ens192`必须存在于主机上。并且 `spec.macvlan.ippools.ipv4` 设置的子网和  `ens192` 的子网保持一致。
-
-创建成功后, 查看 Multus NAD是否成功创建:
+创建成功后, 查看 Multus NAD 是否成功创建:
 
 ```shell
 ~# kubectl  get network-attachment-definitions.k8s.cni.cncf.io  macvlan-ens192 -o yaml
@@ -233,12 +229,12 @@ default via 10.233.65.96 dev eth0
 以上信息解释:
 
 > Pod 分配了两张网卡: eth0(cilium)、net1(macvlan),对应的 IPv4 地址分别为: 10.233.120.101 和 10.6.212.202
-> 10.233.0.0/18 和 10.233.64.0/18 是集群的 CIDR, Pod访问该子网时从 eth0 转发, 每个 route table 都会插入此路由
+> 10.233.0.0/18 和 10.233.64.0/18 是集群的 CIDR, Pod 访问该子网时从 eth0 转发, 每个 route table 都会插入此路由
 > 10.6.212.131 是 Pod 所在节点的地址，此路由确保 Pod 访问该主机时从 eth0 转发
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
 > 在默认情况下，Pod 的默认路由保留在 net1。如果想要保留在 eth0，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: eth0" 实现。
 
-测试 Pod 访问集群东西向流量的连通性，以访问 coredns 的 Pod 和 Service 为例:
+测试 Pod 访问集群东西向流量的连通性，以访问 CoreDNS 的 Pod 和 Service 为例:
 
 ```shell
 ~# kubectl  get all -n kube-system -l k8s-app=kube-dns -o wide

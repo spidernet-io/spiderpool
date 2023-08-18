@@ -3,31 +3,41 @@
 package spidermultus_test
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/utils/pointer"
+
+	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	api_errors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
+	var namespace string
+
+	BeforeEach(func() {
+		// create namespace
+		namespace = "ns-" + common.GenerateString(10, true)
+		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+		Expect(err).NotTo(HaveOccurred())
+
+		DeferCleanup(func() {
+			err := frame.DeleteNamespace(namespace)
+			Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v")
+		})
+	})
 
 	Context("Creation, update, deletion of spider multus", func() {
-		var namespace, mode, spiderMultusNadName, podCidrType string
+		var mode, spiderMultusNadName, podCidrType string
 
 		BeforeEach(func() {
 			spiderMultusNadName = "test-multus-" + common.GenerateString(10, true)
 			mode = "disabled"
 			podCidrType = "cluster"
-			namespace = "ns-" + common.GenerateString(10, true)
-
-			// create namespace
-			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
-			Expect(err).NotTo(HaveOccurred())
 
 			// Define multus cni NetworkAttachmentDefinition and create
 			nad := &spiderpoolv2beta1.SpiderMultusConfig{
@@ -47,16 +57,10 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				},
 			}
 			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
-
-			// Clean test env
-			DeferCleanup(func() {
-				err := frame.DeleteNamespace(namespace)
-				Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v")
-			})
 		})
 
 		It(`Delete multus nad and spidermultus, the deletion of the former will be automatically restored, 
-		    and the deletion of the latter will clean up all resources synchronously`, Label("M00001", "M00002", "M00004"), func() {
+		    and the deletion of the latter will clean up all resources synchronously`, Label("M00001", "M00008", "M00011"), func() {
 			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(spiderMultusConfig).NotTo(BeNil())
@@ -107,20 +111,15 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 	})
 
 	Context("Change multus attributes via spidermultus annotation", func() {
-		var namespace, spiderMultusNadName, mode string
-		var nad *spiderpoolv2beta1.SpiderMultusConfig
+		var spiderMultusNadName, mode string
+		var smc *spiderpoolv2beta1.SpiderMultusConfig
 
 		BeforeEach(func() {
 			spiderMultusNadName = "test-multus-" + common.GenerateString(10, true)
-			namespace = "ns-" + common.GenerateString(10, true)
 			mode = "disabled"
 
-			// create namespace
-			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
-			Expect(err).NotTo(HaveOccurred())
-
 			// Define spidermultus cr and create
-			nad = &spiderpoolv2beta1.SpiderMultusConfig{
+			smc = &spiderpoolv2beta1.SpiderMultusConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderMultusNadName,
 					Namespace: namespace,
@@ -135,21 +134,15 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 					},
 				},
 			}
-			GinkgoWriter.Printf("spidermultus cr: %+v \n", nad)
-
-			// Clean test env
-			// DeferCleanup(func() {
-			// 	err := frame.DeleteNamespace(namespace)
-			// 	Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v")
-			// })
+			GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
 		})
 
-		It("Customize net-attach-conf name via annotation multus.spidernet.io/cr-name", Label("M00005"), func() {
+		It("Customize net-attach-conf name via annotation multus.spidernet.io/cr-name", Label("M00012"), func() {
 			multusNadName := "test-custom-multus-" + common.GenerateString(10, true)
-			nad.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: multusNadName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", nad)
+			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: multusNadName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
 
-			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+			Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
 
 			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
 			Expect(err).NotTo(HaveOccurred())
@@ -169,28 +162,23 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		PIt("annotating custom names that are too long or too short should fail", Label("M00009"), func() {
-			// TODO(ty-dc), Is it a bug ？Customize the name by annotation, and its length should conform to 1-63 (k8s resource)
-			longMultusName := common.GenerateString(64, true)
-			nad.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longMultusName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", nad)
-			Expect(frame.CreateSpiderMultusInstance(nad)).To(HaveOccurred())
+		It("annotating custom names that are too long or empty should fail", Label("M00013"), func() {
+			longCustomizedName := common.GenerateString(k8svalidation.DNS1123SubdomainMaxLength+1, true)
+			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", smc)
+			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
 
-			// TODO(ty-dc), Is it a bug ？
-			// The custom name is an empty string, shouldn't it be possible to create?
-			// Instead of creating a spidermultus cr but no corresponding multus cr ?
-			// This doesn't match the function definition of spidermultus?
-			shortMultusName := ""
-			nad.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: shortMultusName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", nad)
-			Expect(frame.CreateSpiderMultusInstance(nad)).To(HaveOccurred())
+			emptyCustomizedName := ""
+			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: emptyCustomizedName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
+			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
 		})
 
-		It("Change net-attach-conf version via annotation multus.spidernet.io/cni-version", Label("M00006"), func() {
+		It("Change net-attach-conf version via annotation multus.spidernet.io/cni-version", Label("M00014"), func() {
 			cniVersion := "0.4.0"
-			nad.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", nad)
-			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
+			Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
 
 			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
 			Expect(err).NotTo(HaveOccurred())
@@ -211,23 +199,124 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("Should build fail for unsupported cni versions? ", Label("M00006"), func() {
+		It("fail to customize unsupported CNI version", Label("M00015"), func() {
 			mismatchCNIVersion := "x.y.z"
-			nad.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: mismatchCNIVersion}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", nad)
+			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: mismatchCNIVersion}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
 			// Mismatched versions, when doing a build, the error should occur here?
-			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
-
-			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(spiderMultusConfig).NotTo(BeNil())
-			GinkgoWriter.Printf("spiderMultusConfig %+v \n", spiderMultusConfig)
-
-			// Mismatched versions, can't automatically create multus cr?
-			time.Sleep(time.Second * 20)
-			multusConfig, err := frame.GetMultusInstance(spiderMultusNadName, namespace)
-			GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
-			Expect(api_errors.IsNotFound(err)).To(BeTrue())
+			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
 		})
+	})
+
+	It("Already have multus cr, spidermultus should take care of it", Label("M00017"), func() {
+		var alreadyExistingNadName string = "already-multus-" + common.GenerateString(10, true)
+
+		// Create a multus cr in advance
+		nadObj := &v1.NetworkAttachmentDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      alreadyExistingNadName,
+				Namespace: namespace,
+			},
+		}
+		GinkgoWriter.Printf("multus cr: %+v \n", nadObj)
+		err := frame.CreateMultusInstance(nadObj)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Define spidermultus cr and create
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      alreadyExistingNadName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "macvlan",
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			multusConfig, err := frame.GetMultusInstance(alreadyExistingNadName, namespace)
+			GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+			if api_errors.IsNotFound(err) {
+				return false
+			}
+			// This value may be empty before managed by spidermultus
+			if multusConfig.ObjectMeta.OwnerReferences == nil {
+				return false
+			}
+			// The automatically generated multus configuration should be associated with spidermultus
+			if multusConfig.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return false
+			}
+			return true
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("The value of webhook verification cniType is inconsistent with cniConf", Label("M00019"), func() {
+		var smcName string = "multus-" + common.GenerateString(10, true)
+
+		// Define Spidermultus cr where cniType does not agree with cniConf and create.
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "ipvlan",
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("vlanID is not in the range of 0-4094 and will not be created", Label("M00020"), func() {
+		var smcName string = "multus-" + common.GenerateString(10, true)
+
+		// Define Spidermultus cr with vlanID -1
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "macvlan",
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+					VlanID: pointer.Int32(-1),
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("should fail to create, the error is: %v \n", err.Error())
+		Expect(err).To(HaveOccurred())
+
+		// Define Spidermultus cr with vlanID 4095
+		smc = &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "macvlan",
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+					VlanID: pointer.Int32(4095),
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err = frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("should fail to create, the error is: %v \n", err.Error())
+		Expect(err).To(HaveOccurred())
 	})
 })

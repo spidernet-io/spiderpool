@@ -2,7 +2,7 @@
 
 [**English**](./get-started-calico.md) | **简体中文**
 
-本文将介绍在一个 [Calico](https://github.com/projectcalico/calico) 作为缺省 CNI 的集群，通过 `Spiderpool` 这一完整的 Underlay 网络解决方案，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：
+本文将介绍在一个 [Calico](https://github.com/projectcalico/calico) 作为缺省 CNI 的集群，通过 `Spiderpool` 这一完整的 Underlay 网络解决方案，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：
 
 - 当 Pod 附加了 Calico 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
 - 集群外部访问 NodePort 时，可借助 Calico 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
@@ -74,9 +74,7 @@ spec:
 EOF
 ```
 
-Note: 
-
-> subnet 应该与节点网卡 ens192 的子网保持一致，并且 ips 不与现有任何 IP 冲突
+> subnet 应该与节点网卡 `ens192` 的子网保持一致，并且 ips 不与现有任何 IP 冲突。
 
 ### 创建 SpiderMultusConfig
 
@@ -100,11 +98,9 @@ spec:
 EOF
 ```
 
-Note: 
-
 > `spec.macvlan.master` 设置为 `ens192`, `ens192`必须存在于主机上。并且 `spec.macvlan.spiderpoolConfigPools.IPv4IPPool`设置的子网和 `ens192`保持一致。
 
-创建成功后, 查看 Multus NAD是否成功创建:
+创建成功后, 查看 Multus NAD 是否成功创建:
 
 ```shell
 ~# kubectl  get network-attachment-definitions.k8s.cni.cncf.io  macvlan-ens192 -o yaml
@@ -239,7 +235,7 @@ default via 169.254.1.1 dev eth0
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
 > 在默认情况下，Pod 的默认路由保留在 net1。如果想要保留在 eth0，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: eth0" 实现。
 
-下面测试 Pod 基本网络连通性，以访问 coredns 的 Pod 和 Service 为例:
+下面测试 Pod 基本网络连通性，以访问 CoreDNS 的 Pod 和 Service 为例:
 
 ```shell
 ~# kubectl  get all -n kube-system -l k8s-app=kube-dns -o wide
@@ -250,7 +246,7 @@ pod/coredns-57fbf68cf6-kvcwl   1/1     Running   3 (91d ago)   91d   10.233.73.1
 NAME              TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE   SELECTOR
 service/coredns   ClusterIP   10.233.0.3   <none>        53/UDP,53/TCP,9153/TCP   91d   k8s-app=kube-dns
 
-~# 跨节点访问 coredns 的 pod
+~# 跨节点访问 CoreDNS 的 Pod
 ~# kubectl  exec nginx-4653bc4f24-rswak -- ping 10.233.73.195 -c 2
 PING 10.233.73.195 (10.233.73.195): 56 data bytes
 64 bytes from 10.233.73.195: seq=0 ttl=62 time=2.348 ms
@@ -260,7 +256,7 @@ PING 10.233.73.195 (10.233.73.195): 56 data bytes
 2 packets transmitted, 2 packets received, 0% packet loss
 round-trip min/avg/max = 0.586/1.467/2.348 ms
 
-~# 访问 coredns 的 service
+~# 访问 CoreDNS 的 service
 ~# kubectl exec  nginx-4653bc4f24-rswak -- curl 10.233.0.3:53 -I
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed

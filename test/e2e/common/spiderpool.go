@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
@@ -447,21 +446,14 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 			IPVersion: v4Ipversion,
 		},
 	}
-
 	if ipNum <= 253 {
 		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randomNumber1, randomNumber2)
-		if ipNum == 1 {
-			iPv4PoolObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2", randomNumber1, randomNumber2)}
-		} else {
-			a := strconv.Itoa(ipNum + 1)
-			iPv4PoolObj.Spec.IPs = []string{fmt.Sprintf("10.%s.%s.2-10.%s.%s.%s", randomNumber1, randomNumber2, randomNumber1, randomNumber2, a)}
-		}
 	} else {
 		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randomNumber1)
-		a := fmt.Sprintf("%.0f", float64((ipNum+1)/256))
-		b := strconv.Itoa((ipNum + 1) % 256)
-		iPv4PoolObj.Spec.IPs = []string{fmt.Sprintf("10.%s.0.2-10.%s.%s.%s", randomNumber1, randomNumber1, a, b)}
 	}
+	ips, err := GenerateIPs(iPv4PoolObj.Spec.Subnet, ipNum+1)
+	Expect(err).NotTo(HaveOccurred())
+	iPv4PoolObj.Spec.IPs = ips[1:]
 	return v4PoolName, iPv4PoolObj
 }
 
@@ -491,12 +483,9 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randomNumber)
 	}
 
-	if ipNum == 1 {
-		iPv6PoolObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2", randomNumber)}
-	} else {
-		bStr := strconv.FormatInt(int64(ipNum+1), 16)
-		iPv6PoolObj.Spec.IPs = []string{fmt.Sprintf("fd00:%s::2-fd00:%s::%s", randomNumber, randomNumber, bStr)}
-	}
+	ips, err := GenerateIPs(iPv6PoolObj.Spec.Subnet, ipNum+1)
+	Expect(err).NotTo(HaveOccurred())
+	iPv6PoolObj.Spec.IPs = ips[1:]
 	return v6PoolName, iPv6PoolObj
 }
 

@@ -10,7 +10,7 @@
 
     对于这一使用场景，集群可以使用一个或多个 Underlay CNI 来运行 Pod。
 
-    当 Pod 中有一个或多个 Underlay NIC 时，Spiderpool 可以帮助其分配 IP 地址、调整路由、连接 Pod 和本地节点、检测 IP 冲突等。
+    当 Pod 中有一个或多个 Underlay CNI 时，Spiderpool 可以帮助其分配 IP 地址、调整路由、连接 Pod 和本地节点、检测 IP 冲突等。
 
 - 为 Overlay CNI 的 Pod 添加 Underaly CNI 的辅助网卡
 

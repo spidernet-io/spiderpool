@@ -98,7 +98,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
-		interfacePrefix:  conf.MultusNicPrefix,
 		podNics:          coordinatorConfig.PodNICs,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
@@ -264,11 +263,10 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	c.currentRuleTable = c.getRuleNumber(c.currentInterface)
+	c.currentRuleTable = c.mustGetRuleNumber(c.podNics)
 	if c.currentRuleTable < 0 {
-		logger.Error("failed to getRuleNumber, maybe the pod's multus annotations doesn't match the tuneMode",
-			zap.String("currentInterface", c.currentInterface), zap.String("interfacePrefix", c.interfacePrefix))
-		return fmt.Errorf("failed to getRuleNumber, maybe the pod's multus annotations doesn't match the tuneMode")
+		logger.Error("coordinator must be working with spiderpool: no spiderendpoint records found", zap.Strings("spiderNics", c.podNics))
+		return fmt.Errorf("coordinator must be working with spiderpool: no spiderendpoint records found")
 	}
 
 	if err = c.setupHostRoutes(logger); err != nil {

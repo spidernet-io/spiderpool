@@ -23,3 +23,4 @@
 | C00019  | Set mode to disabled, coordinator will not be called  | p3     |    |    |       |
 | C00020  | TunePodRoutes If false, no routing will be coordinated  | p3     |    |    |       |
 | C00021  | The table can be customized by hostRuleTable            | p3     |    |    |       |
+| C00022  | overwrite pod's interface name to a random name via multus and see if works           | p2     |    |    |       |

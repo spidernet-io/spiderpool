@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
@@ -22,15 +20,15 @@ import (
 )
 
 type coordinator struct {
-	firstInvoke                                                  bool
-	ipFamily, currentRuleTable, hostRuleTable                    int
-	tuneMode                                                     Mode
-	hostVethName, podVethName, currentInterface, interfacePrefix string
-	HijackCIDR, podNics                                          []string
-	netns                                                        ns.NetNS
-	hostVethHwAddress, podVethHwAddress                          net.HardwareAddr
-	currentAddress                                               []netlink.Addr
-	hostIPRouteForPod                                            []net.IP
+	firstInvoke                                 bool
+	ipFamily, currentRuleTable, hostRuleTable   int
+	tuneMode                                    Mode
+	hostVethName, podVethName, currentInterface string
+	HijackCIDR, podNics                         []string
+	netns                                       ns.NetNS
+	hostVethHwAddress, podVethHwAddress         net.HardwareAddr
+	currentAddress                              []netlink.Addr
+	hostIPRouteForPod                           []net.IP
 }
 
 func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string) error {
@@ -55,7 +53,7 @@ func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string
 	} else {
 		c.tuneMode = ModeOverlay
 		// If spinderpool only assigns a NIC to the pod, Indicates that it is the first invoke
-		if len(c.podNics) == 1 {
+		if c.podNics[0] == c.currentInterface {
 			c.firstInvoke = true
 		}
 	}
@@ -106,7 +104,7 @@ func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirst
 			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the auxiliary interface %s of underlay mode exists. It seems that the previous interface work in underlay mode. ", c.currentInterface, defaultUnderlayVethName)
 		}
 
-		c.firstInvoke = len(c.podNics) == 1
+		c.firstInvoke = c.podNics[0] == c.currentInterface
 		return nil
 	case ModeDisable:
 		return nil
@@ -116,24 +114,21 @@ func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirst
 }
 
 // getRuleNumber return the number of rule table corresponding to the previous interface from the given interface.
-// the input format must be 'net+number'
 // for example:
 // input: net1, output: 100(eth0)
 // input: net2, output: 101(net1)
-func (c *coordinator) getRuleNumber(iface string) int {
-	if iface == defaultOverlayVethName {
-		return unix.RT_TABLE_MAIN
-	}
-	if !strings.HasPrefix(iface, c.interfacePrefix) {
+func (c *coordinator) mustGetRuleNumber(spiderNics []string) int {
+	if len(spiderNics) == 0 {
 		return -1
 	}
 
-	numStr := strings.Trim(iface, c.interfacePrefix)
-	num, err := strconv.Atoi(numStr)
-	if err != nil {
-		return -1
+	if c.currentInterface == defaultOverlayVethName {
+		return unix.RT_TABLE_MAIN
+	} else if spiderNics[0] == c.currentInterface {
+		return defaultPodRuleTable
+	} else {
+		return defaultPodRuleTable + len(spiderNics) - 1
 	}
-	return defaultPodRuleTable + num - 1
 }
 
 // setupVeth sets up a pair of virtual ethernet devices. move one to the host and other
@@ -317,31 +312,27 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		return err
 	}
 
+	var ipFamilies []int
+	if c.ipFamily == netlink.FAMILY_ALL {
+		ipFamilies = append(ipFamilies, netlink.FAMILY_V4, netlink.FAMILY_V6)
+	} else {
+		ipFamilies = append(ipFamilies, c.ipFamily)
+	}
+
+	// make sure `ip rule from all lookup 500 pref 32765` exist
+	rule := netlink.NewRule()
+	rule.Table = c.hostRuleTable
+	rule.Priority = defaultHostRulePriority
+	for _, ipfamily := range ipFamilies {
+		rule.Family = ipfamily
+		if err = netlink.RuleAdd(rule); err != nil && !os.IsExist(err) {
+			logger.Error("failed to Add ToRuleTable for host", zap.String("rule", rule.String()), zap.Error(err))
+			return fmt.Errorf("failed to Add ToRuleTable for host(%+v): %v", rule.String(), err)
+		}
+	}
+
 	for idx := range c.currentAddress {
 		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
-
-		// do any cleans dirty rule tables
-		filterRule := netlink.NewRule()
-		filterRule.Table = c.hostRuleTable
-		filterRule.Dst = ipNet
-		filtedRules, err := netlink.RuleListFiltered(netlink.FAMILY_V4, filterRule, netlink.RT_FILTER_DST)
-		if err != nil {
-			logger.Warn("failed to fetch rule list filter by RT_FILTER_DST, ignore clean dirty rule table")
-		}
-
-		for idx := range filtedRules {
-			if err = netlink.RuleDel(&filtedRules[idx]); err != nil && !os.IsNotExist(err) {
-				logger.Warn("failed to clean dirty rule table, it may cause the pod can't communicate with the node, please clean it up manually",
-					zap.String("dirty rule table", filtedRules[idx].String()))
-			} else {
-				logger.Debug("successfully cleaned up the dirty rule table", zap.String("dirty rule table", filtedRules[idx].String()))
-			}
-		}
-
-		if err = networking.AddToRuleTable(ipNet, c.hostRuleTable); err != nil {
-			logger.Error("failed to AddToRuleTable", zap.String("Dst", ipNet.String()), zap.Error(err))
-			return fmt.Errorf("failed to AddToRuleTable: %v", err)
-		}
 
 		// do any cleans dirty route tables
 		filterRoute := &netlink.Route{
@@ -524,9 +515,9 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 				return fmt.Errorf("failed to GetAddrs for configDefaultRouteNIC: %v", err)
 			}
 
-			ruleTable := c.getRuleNumber(configDefaultRouteNIC)
+			ruleTable := c.mustGetRuleNumber(c.podNics)
 			if ruleTable < 0 {
-				return fmt.Errorf("failed to getRuleNumber for podDefaultRouteNIC: podDefaultRouteNIC %s don't match NICPrefix %s", configDefaultRouteNIC, c.interfacePrefix)
+				return fmt.Errorf("coordinator must be working with spiderpool: no spiderendpoint records found")
 			}
 
 			// 1. cleanup ip rule to cidr for configDefaultRouteNIC interface
@@ -605,7 +596,7 @@ func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 		}
 
 		for _, family := range ipFamily {
-			if err := networking.AddRuleTableWithMark(markInt, c.hostRuleTable, family); err != nil {
+			if err := networking.AddRuleTableWithMark(markInt, c.hostRuleTable, family); err != nil && !os.IsExist(err) {
 				return fmt.Errorf("failed to add rule table with mark: %v", err)
 			}
 

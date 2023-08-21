@@ -6,6 +6,7 @@ package ipam
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -276,6 +277,9 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 		return nil, err
 	}
 	logger.Info("All IPPool candidates are valid")
+
+	// sort IPPool candidates
+	sortPoolCandidates(preliminary)
 
 	return preliminary, nil
 }
@@ -606,4 +610,28 @@ func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {
 	// the same subnet.
 
 	return nil
+}
+
+// sortPoolCandidates would sort IPPool candidates sequence depends on the IPPool multiple affinities.
+func sortPoolCandidates(preliminary ToBeAllocateds) {
+	for _, toBeAllocate := range preliminary {
+		for _, poolCandidate := range (*toBeAllocate).PoolCandidates {
+			// new IPPool candidate names
+			poolNameList := []string{}
+
+			// collect all IPPool resource from PoolCandidate.PToIPPool
+			pools := []*spiderpoolv2beta1.SpiderIPPool{}
+			for _, tmpPool := range poolCandidate.PToIPPool {
+				pools = append(pools, tmpPool.DeepCopy())
+			}
+			// make it order with ippoolmanager.ByPoolPriority interface rules
+			sort.Sort(ippoolmanager.ByPoolPriority(pools))
+			for _, tmpPool := range pools {
+				poolNameList = append(poolNameList, tmpPool.Name)
+			}
+
+			// set the new IPPool candidate names to PoolCandidate.Pools
+			(*poolCandidate).Pools = poolNameList
+		}
+	}
 }

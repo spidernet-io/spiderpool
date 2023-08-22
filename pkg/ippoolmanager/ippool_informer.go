@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -282,11 +283,11 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 	// metrics
 	if pool.Status.TotalIPCount != nil {
 		attr := attribute.String(constant.KindSpiderIPPool, pool.Name)
-		metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
+		metric.IPPoolTotalIPCounts.Add(ctx, *pool.Status.TotalIPCount, otelapi.WithAttributes(attr))
 		if pool.Status.AllocatedIPCount != nil {
-			metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), attr)
+			metric.IPPoolAvailableIPCounts.Add(ctx, (*pool.Status.TotalIPCount)-(*pool.Status.AllocatedIPCount), otelapi.WithAttributes(attr))
 		} else {
-			metric.IPPoolAvailableIPCounts.Add(ctx, *pool.Status.TotalIPCount, attr)
+			metric.IPPoolAvailableIPCounts.Add(ctx, *pool.Status.TotalIPCount, otelapi.WithAttributes(attr))
 		}
 	}
 

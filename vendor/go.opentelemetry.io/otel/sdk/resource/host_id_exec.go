@@ -12,9 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package unit provides units.
-//
-// This package is currently in a pre-GA phase. Backwards incompatible changes
-// may be introduced in subsequent minor version releases as we work to track
-// the evolving OpenTelemetry specification and user feedback.
-package unit // import "go.opentelemetry.io/otel/metric/unit"
+//go:build darwin || dragonfly || freebsd || netbsd || openbsd || solaris
+
+package resource // import "go.opentelemetry.io/otel/sdk/resource"
+
+import "os/exec"
+
+func execCommand(name string, arg ...string) (string, error) {
+	cmd := exec.Command(name, arg...)
+	b, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
+}

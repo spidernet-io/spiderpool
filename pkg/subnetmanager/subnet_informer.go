@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -374,11 +375,11 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 
 	if subnetCopy.Status.TotalIPCount != nil {
 		attr := attribute.String(constant.KindSpiderSubnet, subnetName)
-		metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
+		metric.SubnetTotalIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, otelapi.WithAttributes(attr))
 		if subnetCopy.Status.AllocatedIPCount != nil {
-			metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), attr)
+			metric.SubnetAvailableIPCounts.Add(ctx, (*subnetCopy.Status.TotalIPCount)-(*subnetCopy.Status.AllocatedIPCount), otelapi.WithAttributes(attr))
 		} else {
-			metric.SubnetAvailableIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, attr)
+			metric.SubnetAvailableIPCounts.Add(ctx, *subnetCopy.Status.TotalIPCount, otelapi.WithAttributes(attr))
 		}
 	}
 

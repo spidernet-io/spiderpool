@@ -16,6 +16,7 @@ package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -43,8 +44,8 @@ type periodicReaderConfig struct {
 // options.
 func newPeriodicReaderConfig(options []PeriodicReaderOption) periodicReaderConfig {
 	c := periodicReaderConfig{
-		interval: defaultInterval,
-		timeout:  defaultTimeout,
+		interval: envDuration(envInterval, defaultInterval),
+		timeout:  envDuration(envTimeout, defaultTimeout),
 	}
 	for _, o := range options {
 		c = o.applyPeriodic(c)
@@ -68,6 +69,9 @@ func (o periodicReaderOptionFunc) applyPeriodic(conf periodicReaderConfig) perio
 // WithTimeout configures the time a PeriodicReader waits for an export to
 // complete before canceling it.
 //
+// This option overrides any value set for the
+// OTEL_METRIC_EXPORT_TIMEOUT environment variable.
+//
 // If this option is not used or d is less than or equal to zero, 30 seconds
 // is used as the default.
 func WithTimeout(d time.Duration) PeriodicReaderOption {
@@ -82,6 +86,9 @@ func WithTimeout(d time.Duration) PeriodicReaderOption {
 
 // WithInterval configures the intervening time between exports for a
 // PeriodicReader.
+//
+// This option overrides any value set for the
+// OTEL_METRIC_EXPORT_INTERVAL environment variable.
 //
 // If this option is not used or d is less than or equal to zero, 60 seconds
 // is used as the default.
@@ -113,6 +120,10 @@ func NewPeriodicReader(exporter Exporter, options ...PeriodicReaderOption) Reade
 		flushCh:  make(chan chan error),
 		cancel:   cancel,
 		done:     make(chan struct{}),
+		rmPool: sync.Pool{
+			New: func() interface{} {
+				return &metricdata.ResourceMetrics{}
+			}},
 	}
 	r.externalProducers.Store([]Producer{})
 
@@ -140,6 +151,8 @@ type periodicReader struct {
 	done         chan struct{}
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
+
+	rmPool sync.Pool
 }
 
 // Compile time check the periodicReader implements Reader and is comparable.
@@ -206,27 +219,34 @@ func (r *periodicReader) aggregation(kind InstrumentKind) aggregation.Aggregatio
 // collectAndExport gather all metric data related to the periodicReader r from
 // the SDK and exports it with r's exporter.
 func (r *periodicReader) collectAndExport(ctx context.Context) error {
-	m, err := r.Collect(ctx)
+	// TODO (#3047): Use a sync.Pool or persistent pointer instead of allocating rm every Collect.
+	rm := r.rmPool.Get().(*metricdata.ResourceMetrics)
+	err := r.Collect(ctx, rm)
 	if err == nil {
-		err = r.export(ctx, m)
+		err = r.export(ctx, rm)
 	}
+	r.rmPool.Put(rm)
 	return err
 }
 
 // Collect gathers and returns all metric data related to the Reader from
-// the SDK and other Producers. The returned metric data is not exported
-// to the configured exporter, it is left to the caller to handle that if
-// desired.
+// the SDK and other Producers and stores the result in rm. The returned metric
+// data is not exported to the configured exporter, it is left to the caller to
+// handle that if desired.
 //
-// An error is returned if this is called after Shutdown.
-func (r *periodicReader) Collect(ctx context.Context) (metricdata.ResourceMetrics, error) {
-	return r.collect(ctx, r.sdkProducer.Load())
+// An error is returned if this is called after Shutdown. An error is return if rm is nil.
+func (r *periodicReader) Collect(ctx context.Context, rm *metricdata.ResourceMetrics) error {
+	if rm == nil {
+		return errors.New("periodic reader: *metricdata.ResourceMetrics is nil")
+	}
+	// TODO (#3047): When collect is updated to accept output as param, pass rm.
+	return r.collect(ctx, r.sdkProducer.Load(), rm)
 }
 
 // collect unwraps p as a produceHolder and returns its produce results.
-func (r *periodicReader) collect(ctx context.Context, p interface{}) (metricdata.ResourceMetrics, error) {
+func (r *periodicReader) collect(ctx context.Context, p interface{}, rm *metricdata.ResourceMetrics) error {
 	if p == nil {
-		return metricdata.ResourceMetrics{}, ErrReaderNotRegistered
+		return ErrReaderNotRegistered
 	}
 
 	ph, ok := p.(produceHolder)
@@ -236,12 +256,12 @@ func (r *periodicReader) collect(ctx context.Context, p interface{}) (metricdata
 		// happen, return an error instead of panicking so a users code does
 		// not halt in the processes.
 		err := fmt.Errorf("periodic reader: invalid producer: %T", p)
-		return metricdata.ResourceMetrics{}, err
+		return err
 	}
 
-	rm, err := ph.produce(ctx)
+	err := ph.produce(ctx, rm)
 	if err != nil {
-		return metricdata.ResourceMetrics{}, err
+		return err
 	}
 	var errs []error
 	for _, producer := range r.externalProducers.Load().([]Producer) {
@@ -251,11 +271,11 @@ func (r *periodicReader) collect(ctx context.Context, p interface{}) (metricdata
 		}
 		rm.ScopeMetrics = append(rm.ScopeMetrics, externalMetrics...)
 	}
-	return rm, unifyErrors(errs)
+	return unifyErrors(errs)
 }
 
 // export exports metric data m using r's exporter.
-func (r *periodicReader) export(ctx context.Context, m metricdata.ResourceMetrics) error {
+func (r *periodicReader) export(ctx context.Context, m *metricdata.ResourceMetrics) error {
 	c, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 	return r.exporter.Export(c, m)
@@ -298,11 +318,12 @@ func (r *periodicReader) Shutdown(ctx context.Context) error {
 
 		if ph != nil { // Reader was registered.
 			// Flush pending telemetry.
-			var m metricdata.ResourceMetrics
-			m, err = r.collect(ctx, ph)
+			m := r.rmPool.Get().(*metricdata.ResourceMetrics)
+			err = r.collect(ctx, ph, m)
 			if err == nil {
 				err = r.export(ctx, m)
 			}
+			r.rmPool.Put(m)
 		}
 
 		sErr := r.exporter.Shutdown(ctx)

@@ -122,35 +122,23 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
     ~# 
     ```
 
-4. Create a NetworkAttachmentDefinition for ovs-cni.
+4. To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating an ovs-cni SpiderMultusConfig configuration:
 
-    The following parameters need to be confirmed:
+* Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
 
-     * Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
-
-    ```bash
+    ```shell
+    BRIDGE_NAME="br1"
     cat <<EOF | kubectl apply -f -
-    apiVersion: k8s.cni.cncf.io/v1
-    kind: NetworkAttachmentDefinition
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
     metadata:
       name: ovs-conf
       namespace: kube-system
     spec:
-      config: |-
-        {
-            "cniVersion": "0.3.1",
-            "name": "ovs-conf",
-            "plugins": [
-                {
-                    "type": "ovs",
-                    "bridge": "br1",
-                    "ipam": {
-                        "type": "spiderpool",
-                    }
-                }
-            ]
-        }
-    EOF
+      cniType: ovs
+      ovs:
+        bridge: "${BRIDGE_NAME}"
+  EOF
     ```
 
 ## Create applications

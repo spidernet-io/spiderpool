@@ -40,7 +40,7 @@ func ParseConfig(stdin []byte) (*Ifacer, error) {
 	}
 
 	if conf.VlanID < 0 || conf.VlanID > 4094 {
-		return nil, fmt.Errorf("invalid vlanID %v: vlanID must be in range [0,4094]", conf.VlanID)
+		return nil, fmt.Errorf("invalid vlan tag %v: vlan tag must be in range [0,4094]", conf.VlanID)
 	}
 
 	if conf.Bond != nil && conf.Bond.Name == "" {

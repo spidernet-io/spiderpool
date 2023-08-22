@@ -28,38 +28,66 @@ import (
 
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 
-	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
+	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
 const (
 	MacVlanType = "macvlan"
 	IpVlanType  = "ipvlan"
 	SriovType   = "sriov"
+	OvsType     = "ovs"
 	CustomType  = "custom"
 )
 
 type MacvlanNetConf struct {
 	Type   string                   `json:"type"`
-	IPAM   spiderpoolcmd.IPAMConfig `json:"ipam"`
 	Master string                   `json:"master"`
 	Mode   string                   `json:"mode"`
+	IPAM   spiderpoolcmd.IPAMConfig `json:"ipam"`
 }
 
 type IPvlanNetConf struct {
 	Type   string                   `json:"type"`
-	IPAM   spiderpoolcmd.IPAMConfig `json:"ipam"`
 	Master string                   `json:"master"`
+	IPAM   spiderpoolcmd.IPAMConfig `json:"ipam"`
 }
 
 type SRIOVNetConf struct {
-	Type     string                   `json:"type"`
-	IPAM     spiderpoolcmd.IPAMConfig `json:"ipam"`
 	Vlan     *int32                   `json:"vlan,omitempty"`
+	Type     string                   `json:"type"`
 	DeviceID string                   `json:"deviceID,omitempty"`
+	IPAM     spiderpoolcmd.IPAMConfig `json:"ipam"`
 }
 
-type IfacerNetConf = ifacercmd.Ifacer
+type OvsNetConf struct {
+	Vlan     *int32                     `json:"vlan,omitempty"`
+	Type     string                     `json:"type"`
+	BrName   string                     `json:"bridge"`
+	DeviceID string                     `json:"deviceID,omitempty"`
+	IPAM     spiderpoolcmd.IPAMConfig   `json:"ipam"`
+	Trunk    []*spiderpoolv2beta1.Trunk `json:"trunk,omitempty"`
+}
+
+type IfacerNetConf struct {
+	VlanID     int                           `json:"vlanID,omitempty"`
+	Type       string                        `json:"type"`
+	Interfaces []string                      `json:"interfaces,omitempty"`
+	Bond       *spiderpoolv2beta1.BondConfig `json:"bond,omitempty"`
+}
+
+type CoordinatorConfig struct {
+	IPConflict         *bool               `json:"detectIPConflict,omitempty"`
+	DetectGateway      *bool               `json:"detectGateway,omitempty"`
+	MacPrefix          string              `json:"podMACPrefix,omitempty"`
+	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`
+	Type               string              `json:"type"`
+	PodDefaultRouteNIC string              `json:"podDefaultRouteNic,omitempty"`
+	OverlayPodCIDR     []string            `json:"overlayPodCIDR,omitempty"`
+	ServiceCIDR        []string            `json:"serviceCIDR,omitempty"`
+	HijackCIDR         []string            `json:"hijackCIDR,omitempty"`
+}
 
 func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.NetworkSelectionElement, error) {
 	var networks []*netv1.NetworkSelectionElement

@@ -22,6 +22,7 @@ var (
 	macvlanConfigField   = field.NewPath("spec").Child("macvlanConfig")
 	ipvlanConfigField    = field.NewPath("spec").Child("ipvlanConfig")
 	sriovConfigField     = field.NewPath("spec").Child("sriovConfig")
+	ovsConfigField       = field.NewPath("spec").Child("ovsConfig")
 	customCniConfigField = field.NewPath("spec").Child("customCniTypeConfig")
 	annotationField      = field.NewPath("metadata").Child("annotations")
 )
@@ -104,6 +105,39 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.CustomCNIConfig != nil {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", SriovType, sriovConfigField.String()))
+		}
+
+	case OvsType:
+		if multusConfig.Spec.OvsConfig == nil {
+			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", ovsConfigField.String()))
+		}
+
+		if multusConfig.Spec.OvsConfig.VlanTag != nil {
+			if err := validateVlanId(*multusConfig.Spec.OvsConfig.VlanTag); err != nil {
+				return field.Invalid(ovsConfigField, *multusConfig.Spec.OvsConfig.VlanTag, err.Error())
+			}
+		}
+
+		for idx, trunk := range multusConfig.Spec.OvsConfig.Trunk {
+			if trunk.MinID != nil {
+				if *trunk.MinID > 4094 {
+					return field.Invalid(ovsConfigField, multusConfig.Spec.OvsConfig.Trunk[idx], "incorrect trunk minID parameter")
+				}
+			}
+			if trunk.MaxID != nil {
+				if *trunk.MaxID > 4094 {
+					return field.Invalid(ovsConfigField, multusConfig.Spec.OvsConfig.Trunk[idx], "incorrect trunk maxID parameter")
+				}
+				if *trunk.MaxID < *trunk.MinID {
+					return field.Invalid(ovsConfigField, multusConfig.Spec.OvsConfig.Trunk[idx], "minID is greater than maxID in trunk parameter")
+				}
+			}
+
+			if trunk.ID != nil {
+				if *trunk.ID > 4096 {
+					return field.Invalid(ovsConfigField, multusConfig.Spec.OvsConfig.Trunk[idx], "incorrect trunk id parameter")
+				}
+			}
 		}
 
 	case CustomType:

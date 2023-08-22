@@ -120,31 +120,23 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
     ~# 
     ```
 
-4. 为 ovs-cni 创建 multus NetworkAttachmentDefinition CR
+4. Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Ovs SpiderMultusConfig 配置的示例：
 
-    ```bash
+* 确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:
+
+    ```shell
+    BRIDGE_NAME="br1"
     cat <<EOF | kubectl apply -f -
-    apiVersion: k8s.cni.cncf.io/v1
-    kind: NetworkAttachmentDefinition
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
     metadata:
       name: ovs-conf
       namespace: kube-system
     spec:
-      config: |-
-        {
-            "cniVersion": "0.3.1",
-            "name": "ovs-conf",
-            "plugins": [
-                {
-                    "type": "ovs",
-                    "bridge": "br1",
-                    "ipam": {
-                        "type": "spiderpool",
-                    }
-                }
-            ]
-        }
-    EOF
+      cniType: ovs
+      ovs:
+        bridge: "${BRIDGE_NAME}"
+  EOF
     ```
 
 ## 创建应用

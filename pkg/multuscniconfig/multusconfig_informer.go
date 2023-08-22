@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/containernetworking/cni/pkg/types"
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,12 +20,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
-	ifacercmd "github.com/spidernet-io/spiderpool/cmd/ifacer/cmd"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -408,7 +405,17 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
+			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
+		}
+	case OvsType:
+		ovsConf := generateOvsCNIConf(multusConfSpec)
+		plugins = append([]interface{}{ovsConf}, plugins...)
+		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal ovs cniConfig to String: %w", err)
+		}
+		if multusConfSpec.OvsConfig.DeviceID != "" {
+			anno[constant.ResourceNameAnnot] = fmt.Sprintf("%s/%s", constant.ResourceNameOvsCniValue, multusConfSpec.OvsConfig.BrName)
 		}
 	case CustomType:
 		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
@@ -528,34 +535,51 @@ func generateSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) 
 	return netConf
 }
 
+func generateOvsCNIConf(multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+	netConf := OvsNetConf{
+		Type: OvsType,
+		IPAM: spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		},
+	}
+
+	if multusConfSpec.OvsConfig != nil {
+		if multusConfSpec.OvsConfig.VlanTag != nil {
+			netConf.Vlan = multusConfSpec.OvsConfig.VlanTag
+		}
+
+		if len(multusConfSpec.OvsConfig.Trunk) > 0 {
+			netConf.Trunk = multusConfSpec.OvsConfig.Trunk
+		}
+
+		if multusConfSpec.OvsConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
+
+		netConf.BrName = multusConfSpec.OvsConfig.BrName
+		netConf.DeviceID = multusConfSpec.OvsConfig.DeviceID
+	}
+	return netConf
+}
+
 func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondConfig) interface{} {
 	netConf := IfacerNetConf{
-		NetConf: types.NetConf{
-			Type: constant.Ifacer,
-		},
+		Type:       constant.Ifacer,
 		Interfaces: master,
 		VlanID:     int(vlanID),
 	}
 
 	if bond != nil {
-		netConf.Bond = &ifacercmd.Bond{
-			Name: bond.Name,
-			Mode: int(bond.Mode),
-		}
-
-		if bond.Options != nil {
-			netConf.Bond.Options = *bond.Options
-		}
+		netConf.Bond = bond
 	}
 
 	return netConf
 }
 
 func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSpec) interface{} {
-	coordinatorNetConf := coordinatorcmd.Config{
-		NetConf: types.NetConf{
-			Type: constant.Coordinator,
-		},
+	coordinatorNetConf := CoordinatorConfig{
+		Type: constant.Coordinator,
 	}
 
 	// coordinatorSpec could be nil, and we just need the coorinator CNI specified and use the default configuration
@@ -569,17 +593,8 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if coordinatorSpec.PodMACPrefix != nil {
 			coordinatorNetConf.MacPrefix = *coordinatorSpec.PodMACPrefix
 		}
-		if coordinatorSpec.TunePodRoutes != nil {
-			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes
-		}
 		if coordinatorSpec.PodDefaultRouteNIC != nil {
 			coordinatorNetConf.PodDefaultRouteNIC = *coordinatorSpec.PodDefaultRouteNIC
-		}
-		if coordinatorSpec.HostRuleTable != nil {
-			coordinatorNetConf.HostRuleTable = pointer.Int64(int64(*coordinatorSpec.HostRuleTable))
-		}
-		if coordinatorSpec.HostRPFilter != nil {
-			coordinatorNetConf.RPFilter = int32(*coordinatorSpec.HostRPFilter)
 		}
 		if coordinatorSpec.DetectIPConflict != nil {
 			coordinatorNetConf.IPConflict = coordinatorSpec.DetectIPConflict

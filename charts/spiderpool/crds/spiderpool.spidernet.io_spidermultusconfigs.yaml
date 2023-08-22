@@ -43,6 +43,7 @@ spec:
                 - macvlan
                 - ipvlan
                 - sriov
+                - ovs
                 - custom
                 type: string
               coordinator:
@@ -175,6 +176,49 @@ spec:
                     type: integer
                 required:
                 - master
+                type: object
+              ovs:
+                properties:
+                  bridge:
+                    type: string
+                  deviceID:
+                    description: PCI address of a VF in valid sysfs format
+                    type: string
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  trunk:
+                    items:
+                      properties:
+                        id:
+                          maximum: 4094
+                          minimum: 0
+                          type: integer
+                        maxID:
+                          maximum: 4094
+                          minimum: 0
+                          type: integer
+                        minID:
+                          maximum: 4094
+                          minimum: 0
+                          type: integer
+                      type: object
+                    type: array
+                  vlan:
+                    format: int32
+                    type: integer
+                required:
+                - bridge
                 type: object
               sriov:
                 properties:

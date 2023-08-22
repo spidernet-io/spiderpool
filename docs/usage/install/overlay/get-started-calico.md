@@ -229,9 +229,9 @@ default via 169.254.1.1 dev eth0
 
 Explanation of the above:
 
-> The Pod is allocated two interfaces: Calico (eth0) and Macvlan (net1), having IPv4 addresses of 10.233.73.210 and 10.6.212.145, respectively.
+> The Pod is allocated two interfaces: eth0 (Calico) and net1 (Macvlan), having IPv4 addresses of 10.233.73.210 and 10.6.212.145, respectively.
 > 10.233.0.0/18 and 10.233.64.0/18 represent the cluster's CIDR. When the Pod accesses this subnet, traffic will be forwarded through eth0. Each route table will include this route.
-> The IP address 10.6.212.132 belongs to the node where the Pod has been scheduled. This route ensures that when the Pod accesses the host, it will be forwarded through eth0.
+> 10.6.212.132 is the IP address of the node where the Pod has been scheduled. This route ensures that when the Pod accesses the host, it will be forwarded through eth0.
 > This series of routing rules guarantees that the Pod will forward traffic through eth0 when accessing targets within the cluster and through net1 for external targets.
 > By default, the Pod's default route is reserved in net1. To reserve it in eth0, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: eth0".
 
@@ -246,7 +246,7 @@ pod/coredns-57fbf68cf6-kvcwl   1/1     Running   3 (91d ago)   91d   10.233.73.1
 NAME              TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE   SELECTOR
 service/coredns   ClusterIP   10.233.0.3   <none>        53/UDP,53/TCP,9153/TCP   91d   k8s-app=kube-dns
 
-~# Access the CoreDNS Pod across multiple nodes
+~# Access the CoreDNS Pod across nodes
 ~# kubectl  exec nginx-4653bc4f24-rswak -- ping 10.233.73.195 -c 2
 PING 10.233.73.195 (10.233.73.195): 56 data bytes
 64 bytes from 10.233.73.195: seq=0 ttl=62 time=2.348 ms

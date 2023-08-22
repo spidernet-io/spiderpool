@@ -39,12 +39,11 @@ run the following command to check unitest
 
     before start the test, you shoud know there are test scenes as following 
 
-    | kind                                     | setup cluster                    | test                          |
-    |------------------------------------------|----------------------------------|-------------------------------|
-    | test underlay CNI without subnet feature | make    e2e_init_underlay        | make e2e_test_underlay        |
-    | test underlay CNI with subnet feature    | make    e2e_init_underlay_subnet | make e2e_test_underlay_subnet |
-    | test overlay CNI for calico              | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
-    | test overlay CNI for cilium              | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
+    | kind                                  | setup cluster                    | test                          |
+    |---------------------------------------|----------------------------------|-------------------------------|
+    | test underlay CNI                     | make    e2e_init_underlay        | make e2e_test_underlay        |
+    | test overlay CNI for calico           | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
+    | test overlay CNI for cilium           | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
 
     if you are in China, it could add `-e E2E_CHINA_IMAGE_REGISTRY=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
 
@@ -83,9 +82,6 @@ run the following command to check unitest
         # it pulls images from another image registry and just use http proxy to pull chart 
         $ make e2e_init_underlay  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
-        # setup cluster with subnet feature
-        $ make e2e_init_underlay_subnet -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
-
         # setup cluster with calico cni
         $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
@@ -112,9 +108,6 @@ run the following command to check unitest
 
         # example: run a case until fails
         $ make e2e_test_underlay -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
-
-        # Run all e2e tests for enableSpiderSubnet=false cluster
-        $ make e2e_test_underlay_subnet 
 
         # Run all e2e tests for enableSpiderSubnet=false cluster
         $ make e2e_test_calico

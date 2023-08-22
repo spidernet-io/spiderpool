@@ -197,6 +197,45 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			}).Should(Succeed())
 		})
 
+		It("sets the owner reference for the orphan IPPool", func() {
+			ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			ipPoolT.Spec.Subnet = "172.18.40.0/24"
+
+			err := fakeClient.Create(ctx, ipPoolT)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ipPoolIndexer.Add(ipPoolT)
+			Expect(err).NotTo(HaveOccurred())
+
+			subnetT.SetUID(uuid.NewUUID())
+			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			subnetT.Spec.Subnet = "172.18.40.0/24"
+
+			err = fakeClient.Create(ctx, subnetT)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = subnetIndexer.Add(subnetT)
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeSubnetWatch.Add(subnetT)
+			Eventually(func(g Gomega) {
+				var subnetR spiderpoolv2beta1.SpiderSubnet
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				var ipPoolR spiderpoolv2beta1.SpiderIPPool
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPoolR)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				controlled := metav1.IsControlledBy(&ipPoolR, &subnetR)
+				g.Expect(controlled).To(BeTrue())
+
+				v, ok := ipPoolR.Labels[constant.LabelIPPoolOwnerSpiderSubnet]
+				g.Expect(ok).To(BeTrue())
+				g.Expect(v).To(Equal(subnetR.Name))
+			}).Should(Succeed())
+		})
+
 		It("aggregates pre-allocation status", func() {
 			subnetT.SetUID(uuid.NewUUID())
 			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -340,5 +379,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				g.Expect(subnetR.Status.ControlledIPPools).To(BeNil())
 			}).Should(Succeed())
 		})
+
 	})
 })

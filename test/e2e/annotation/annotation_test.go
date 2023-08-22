@@ -440,9 +440,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 			It(`the namespace annotation has precedence over global default ippool`, Label("A00006", "smoke"), func() {
 				// Generate a pod yaml with namespace annotations
-				if frame.Info.SpiderSubnetEnabled {
-					Skip("The subnet function is enabled, the namespace annotation has a lower priority than the default subnet")
-				}
 				podYaml := common.GenerateExamplePodYaml(podName, nsName)
 				Expect(podYaml).NotTo(BeNil())
 				// The namespace annotation has precedence over global default ippool

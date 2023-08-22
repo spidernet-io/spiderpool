@@ -26,16 +26,10 @@ Kind is a tool for running local Kubernetes clusters using Docker container "nod
 
 If you are mainland user who is not available to access ghcr.io, Additional parameter `-e E2E_CHINA_IMAGE_REGISTRY=true` can be specified during installation to help you pull images faster.
 
-### Install Spiderpool without subnet function in Underlay CNI (Macvlan) cluster
+### Install Spiderpool in Underlay CNI (Macvlan) cluster
 
   ```bash
   ~# make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
-  ```
-
-### Install Spiderpool with subnets in Underlay CNI (Macvlan) cluster
-
-  ```bash
-  ~# make e2e_init_underlay_subnet -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
 ### Install Spiderpool on Calico Overlay CNI cluster

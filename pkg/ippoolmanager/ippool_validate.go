@@ -189,10 +189,6 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 		)
 	}
 
-	if iw.EnableSpiderSubnet {
-		return nil
-	}
-
 	// TODO(iiiceoo): Use label selector.
 	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
 	if err := iw.APIReader.List(ctx, &ipPoolList); err != nil {

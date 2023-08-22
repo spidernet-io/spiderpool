@@ -308,10 +308,6 @@ e2e_init:
 
 .PHONY: e2e_init_underlay
 e2e_init_underlay:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
-
-.PHONY: e2e_init_underlay_subnet
-e2e_init_underlay_subnet:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
 
 .PHONY: e2e_init_calico
@@ -329,10 +325,6 @@ e2e_test:
 
 .PHONY: e2e_test_underlay
 e2e_test_underlay:
-	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
-
-.PHONY: e2e_test_underlay_subnet
-e2e_test_underlay_subnet:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
 
 .PHONY: e2e_test_calico

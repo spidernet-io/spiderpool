@@ -545,9 +545,6 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		nsName1 = "ns1" + tools.RandomName()
 
 		BeforeEach(func() {
-			if frame.Info.SpiderSubnetEnabled {
-				Skip("The subnet function is enabled, the namespace annotation has a lower priority than the default subnet")
-			}
 			// Create another namespace
 			GinkgoWriter.Printf("create another namespace %v \n", nsName1)
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName1, common.ServiceAccountReadyTimeout)

@@ -378,10 +378,6 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	})
 
 	It("create and delete batch of ippool and check time cost", Label("D00006"), func() {
-		if frame.Info.SpiderSubnetEnabled {
-			Skip("Suitable for no subnets")
-		}
-
 		var ipv4PoolNameList, ipv6PoolNameList []string
 		var err error
 		const ippoolNumber = 10

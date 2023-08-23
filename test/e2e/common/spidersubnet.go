@@ -31,15 +31,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var usedSubnets map[string]bool
+var usedSubnetsLock = new(lock.Mutex)
+
 func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet) {
+	usedSubnetsLock.Lock()
+	defer usedSubnetsLock.Unlock()
+
 	if ipNum < 1 || ipNum > 65533 {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
 	}
 	subnetName := "v4-ss-" + GenerateString(15, true)
-	randNum1 := GenerateRandomNumber(255)
-	randNum2 := GenerateRandomNumber(255)
-
 	subnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: subnetName,
@@ -48,10 +51,23 @@ func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 			IPVersion: pointer.Int64(4),
 		},
 	}
-	if ipNum <= 253 {
-		subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
-	} else {
-		subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
+
+	for i := 0; i < 5; i++ {
+		randNum1 := GenerateRandomNumber(255)
+		randNum2 := GenerateRandomNumber(255)
+		if ipNum <= 253 {
+			subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
+		} else {
+			subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
+		}
+		if usedSubnets == nil {
+			usedSubnets = make(map[string]bool)
+		}
+		_, ok := usedSubnets[subnetObj.Spec.Subnet]
+		if !ok {
+			usedSubnets[subnetObj.Spec.Subnet] = true
+			break
+		}
 	}
 	ips, err := GenerateIPs(subnetObj.Spec.Subnet, ipNum+1)
 	Expect(err).NotTo(HaveOccurred())
@@ -62,13 +78,15 @@ func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 }
 
 func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet) {
+	usedSubnetsLock.Lock()
+	defer usedSubnetsLock.Unlock()
+
 	if ipNum < 1 || ipNum > 65533 {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
 	}
 
 	subnetName := "v6-ss-" + GenerateString(15, true)
-	randNum := GenerateString(4, true)
 	subnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: subnetName,
@@ -77,12 +95,22 @@ func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 			IPVersion: pointer.Int64(6),
 		},
 	}
-	if ipNum <= 253 {
-		subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
-	} else {
-		subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
+	for i := 0; i < 5; i++ {
+		randNum := GenerateString(4, true)
+		if ipNum <= 253 {
+			subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
+		} else {
+			subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
+		}
+		if usedSubnets == nil {
+			usedSubnets = make(map[string]bool)
+		}
+		_, ok := usedSubnets[subnetObj.Spec.Subnet]
+		if !ok {
+			usedSubnets[subnetObj.Spec.Subnet] = true
+			break
+		}
 	}
-
 	ips, err := GenerateIPs(subnetObj.Spec.Subnet, ipNum+1)
 	Expect(err).NotTo(HaveOccurred())
 	gateway := ips[0]

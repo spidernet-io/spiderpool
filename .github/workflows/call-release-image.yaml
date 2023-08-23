@@ -66,7 +66,7 @@ jobs:
               echo ::set-output name=imagetag::${{ inputs.tagoverride }}
           else
               # it is invalid if the ref is branch name "xx/xx/xx"
-              echo ::set-output name=imagetag::${image_ref##*/}          
+              echo ::set-output name=imagetag::${image_ref##*/}
           fi
           exit 0
 

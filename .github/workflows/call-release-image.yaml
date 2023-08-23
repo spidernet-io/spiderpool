@@ -48,10 +48,6 @@ jobs:
       - name: Getting Image Ref
         id: ref
         run: |
-          if ${{ inputs.tagoverride != '' }} ; then
-              echo ::set-output name=imagetag::${{ inputs.tagoverride }}
-              exit 0
-          fi
           if ${{ inputs.ref != '' }} ; then
               echo "call by workflow_call"
               image_ref=${{ inputs.ref }}
@@ -66,8 +62,12 @@ jobs:
           fi
           echo ::set-output name=ref::${image_ref}
           [ -n "${image_suffix}" ] && echo ::set-output name=suffix::-${image_suffix}
-          # it is invalid if the ref is branch name "xx/xx/xx"
-          echo ::set-output name=imagetag::${image_ref##*/}
+          if ${{ inputs.tagoverride != '' }} ; then
+              echo ::set-output name=imagetag::${{ inputs.tagoverride }}
+          else
+              # it is invalid if the ref is branch name "xx/xx/xx"
+              echo ::set-output name=imagetag::${image_ref##*/}
+          fi
           exit 0
 
       - name: Checkout Source Code

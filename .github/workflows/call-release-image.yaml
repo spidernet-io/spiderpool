@@ -15,6 +15,9 @@ on:
       suffix:
         required: false
         type: string
+      tagoverride:
+        required: false
+        type: string
 
 permissions: write-all
 
@@ -45,6 +48,10 @@ jobs:
       - name: Getting Image Ref
         id: ref
         run: |
+          if ${{ inputs.tagoverride != '' }} ; then
+              echo ::set-output name=imagetag::${{ inputs.tagoverride }}
+              exit 0
+          fi
           if ${{ inputs.ref != '' }} ; then
               echo "call by workflow_call"
               image_ref=${{ inputs.ref }}

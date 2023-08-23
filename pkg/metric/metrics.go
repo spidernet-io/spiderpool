@@ -12,8 +12,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	api "go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/sdk"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -39,6 +39,7 @@ func InitMetric(ctx context.Context, meterName string, enableMetric, enableDebug
 
 	globalEnableMetric = enableMetric
 	otelResource, err := resource.New(ctx,
+		resource.WithTelemetrySDK(),
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(constant.SpiderpoolAPIGroup),
 		))
@@ -63,15 +64,14 @@ func InitMetric(ctx context.Context, meterName string, enableMetric, enableDebug
 			}},
 		)),
 	)
-	global.SetMeterProvider(provider)
 
 	debugMeterName := fmt.Sprintf("%s-%s", meterName, debugMetrics)
-	meter = api.NewNoopMeterProvider().Meter(meterName)
-	debugLevelMeter = api.NewNoopMeterProvider().Meter(debugMeterName)
+	meter = noop.NewMeterProvider().Meter("")
+	debugLevelMeter = noop.NewMeterProvider().Meter("")
 	if globalEnableMetric {
-		meter = global.Meter(meterName)
+		meter = provider.Meter(meterName, api.WithInstrumentationVersion(sdk.Version()))
 		if enableDebugLevelMetrics {
-			debugLevelMeter = global.Meter(debugMeterName)
+			debugLevelMeter = provider.Meter(debugMeterName, api.WithInstrumentationVersion(sdk.Version()))
 		}
 	}
 
@@ -80,7 +80,7 @@ func InitMetric(ctx context.Context, meterName string, enableMetric, enableDebug
 
 // newMetricInt64Counter will create otel Int64Counter metric.
 // The first param metricName is required and the second param is optional.
-func newMetricInt64Counter(metricName string, description string, isDebugLevel bool) (instrument.Int64Counter, error) {
+func newMetricInt64Counter(metricName string, description string, isDebugLevel bool) (api.Int64Counter, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Int64Counter, metric name is asked to be set")
 	}
@@ -89,14 +89,14 @@ func newMetricInt64Counter(metricName string, description string, isDebugLevel b
 	if isDebugLevel {
 		m = debugLevelMeter
 	}
-	return m.Int64Counter(metricName, instrument.WithDescription(description))
+	return m.Int64Counter(metricName, api.WithDescription(description))
 }
 
 // newMetricFloat64Histogram will create otel Float64Histogram metric.
 // The first param metricName is required and the second param is optional.
 // Notice: if you want to match the quantile {0.1, 0.3, 0.5, 1, 3, 5, 7, 10, 15}, please let the metric name match regex "*_histogram",
 // otherwise it will match the  otel default quantile.
-func newMetricFloat64Histogram(metricName string, description string, isDebugLevel bool) (instrument.Float64Histogram, error) {
+func newMetricFloat64Histogram(metricName string, description string, isDebugLevel bool) (api.Float64Histogram, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Histogram, metric name is asked to be set")
 	}
@@ -105,12 +105,12 @@ func newMetricFloat64Histogram(metricName string, description string, isDebugLev
 	if isDebugLevel {
 		m = debugLevelMeter
 	}
-	return m.Float64Histogram(metricName, instrument.WithDescription(description))
+	return m.Float64Histogram(metricName, api.WithDescription(description))
 }
 
 // newMetricFloat64Gauge will create otel Float64Gauge metric.
 // The first param metricName is required and the second param is optional.
-func newMetricFloat64Gauge(metricName string, description string, isDebugLevel bool) (instrument.Float64ObservableGauge, error) {
+func newMetricFloat64Gauge(metricName string, description string, isDebugLevel bool) (api.Float64ObservableGauge, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Guage, metric name is asked to be set")
 	}
@@ -119,12 +119,12 @@ func newMetricFloat64Gauge(metricName string, description string, isDebugLevel b
 	if isDebugLevel {
 		m = debugLevelMeter
 	}
-	return m.Float64ObservableGauge(metricName, instrument.WithDescription(description))
+	return m.Float64ObservableGauge(metricName, api.WithDescription(description))
 }
 
 // newMetricInt64Gauge will create otel Int64Gauge metric.
 // The first param metricName is required and the second param is optional.
-func newMetricInt64Gauge(metricName string, description string, isDebugLevel bool) (instrument.Int64ObservableGauge, error) {
+func newMetricInt64Gauge(metricName string, description string, isDebugLevel bool) (api.Int64ObservableGauge, error) {
 	if len(metricName) == 0 {
 		return nil, fmt.Errorf("failed to create metric Float64Guage, metric name is asked to be set")
 	}
@@ -133,7 +133,7 @@ func newMetricInt64Gauge(metricName string, description string, isDebugLevel boo
 	if isDebugLevel {
 		m = debugLevelMeter
 	}
-	return m.Int64ObservableGauge(metricName, instrument.WithDescription(description))
+	return m.Int64ObservableGauge(metricName, api.WithDescription(description))
 }
 
 var _ TimeRecorder = &timeRecorder{}

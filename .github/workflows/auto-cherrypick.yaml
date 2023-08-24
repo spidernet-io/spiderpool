@@ -12,6 +12,11 @@ on:
     branches:
       - 'release-*'
       - 'main'
+  workflow_dispatch:
+    inputs:
+      prNumber:
+        description: 'pr number'
+        required: true
 
 jobs:
   cherry_pick:
@@ -30,41 +35,47 @@ jobs:
         run: |
           set -x
           echo "============ print var ======== "
-              grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
-          echo "try to get PR from commit"
-          COMMIT=` echo "${JSON}" | jq '.event.commits[0].id' | tr -d '"' ` || true
-          if [ -n "${COMMIT}" ]; then
-              PR_NUMBER=`curl -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+                PR_NUMBER=${{ github.event.inputs.prNumber }}
           else
-              echo "error, failed to get any commit ID"
+                    grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
+                echo "try to get PR from commit"
+                COMMIT=` echo "${JSON}" | jq '.event.commits[0].id' | tr -d '"' ` || true
+                if [ -n "${COMMIT}" ]; then
+                    PR_NUMBER=`curl -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+                else
+                    echo "error, failed to get any commit ID"
+                fi
+                if [ -z "${PR_NUMBER}" ] ; then
+                    PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
+                fi
+                if [ -z "${PR_NUMBER}" ] ; then
+                    echo "error, failed to get PR NUMBER"
+                    exit 1
+                fi
+                #    grep -Ei "https://github.com/.*/commit" <<< "${JSON}"
+                #PR_COMMITS=` grep -Ei "https://github.com/.*/commit" <<< "${JSON}" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
+                #    grep '"username":'  <<< "${JSON}"
+                #PR_AUTHOR=` grep '"username":' <<< "${JSON}" | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
+                #    [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
+          #
           fi
-          if [ -z "${PR_NUMBER}" ] ; then
-              PR_NUMBER=` grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" | grep -Eo "[0-9]+" | uniq ` || true
-          fi
-          if [ -z "${PR_NUMBER}" ] ; then
-              echo "error, failed to get PR NUMBER"
-              exit 1
-          fi
+          RP_API_BODY=` curl https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER} -s -H "Accept: application/vnd.github.groot-preview+json" `
+          PR_COMMITS=` echo "${RP_API_BODY}" |  jq ' .merge_commit_sha ' | tr -d '"' `
+          PR_AUTHOR=` echo "${RP_API_BODY}" |  jq ' .user.login ' | tr -d '"' `
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
           ACTION_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-              grep '"username":'  <<< "${JSON}"
-          #PR_AUTHOR=` grep '"username":' <<< "${JSON}" | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
-          PR_AUTHOR=` echo "${JSON}" | jq '.event.commits[0].author.username' | tr -d '"' `
-              [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
-          gh pr view ${PR_NUMBER}
-          PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
-              [ -n "${PR_LABEL}" ] || { echo "no PR_LABEL, ignore" ; }
-          PR_TITLE=`gh pr view ${PR_NUMBER} | sed -n '1 p' `
-               [ -n "${PR_TITLE}" ] || { echo "error, no PR_TITLE " ; exit 1 ; }
+          #gh pr view ${PR_NUMBER} || { echo "failed to get pr ${PR_NUMBER}" ; exit 1 ; }
+          #PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
+          #    [ -n "${PR_LABEL}" ] || { echo "no PR_LABEL, ignore" ; }
+          PR_LABEL=` echo "${RP_API_BODY}" |  jq ' .labels[].name ' | tr -d '"' | tr '\n' ' ' `
+          #PR_TITLE=`gh pr view ${PR_NUMBER} | sed -n '1 p' `
+          #     [ -n "${PR_TITLE}" ] || { echo "error, no PR_TITLE " ; exit 1 ; }
+          PR_TITLE=` echo "${RP_API_BODY}" |  jq ' .title ' | tr -d '"' `
           #
-              grep -Ei "https://github.com/.*/commit" <<< "${JSON}"
-          #PR_COMMITS=` grep -Ei "https://github.com/.*/commit" <<< "${JSON}" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
-          PR_COMMITS=` echo "${JSON}"  | jq '.event.commits[].id' | tr -d '"'  | tr '\n' ' ' `
-          if [ -z "${PR_COMMITS}" ] ; then
-              echo "error, failed to get COMMIT"
-              exit 1
+          if [ -z "${PR_COMMITS}" ]; then
+              echo "error, failed to get pr commits"
           fi
-          #
           echo "number: ${PR_NUMBER}"
           echo "action url: ${ACTION_URL}"
           echo "PR_COMMITS: ${PR_COMMITS}"

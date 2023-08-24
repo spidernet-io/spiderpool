@@ -19,7 +19,7 @@ on:
         required: true
       destBranch:
         description: 'dest branch, if empty, follow the pr label'
-        required: true
+        required: false
 
 jobs:
   cherry_pick:

@@ -48,7 +48,8 @@ jobs:
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
           ACTION_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
               grep '"username":'  <<< "${JSON}"
-          PR_AUTHOR=` grep '"username":' <<< "${JSON}" | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
+          #PR_AUTHOR=` grep '"username":' <<< "${JSON}" | awk -F'"' '{print $4}' | sort | uniq  | grep -v "web-flow"  | head -1 | tr -d '\n' `
+          PR_AUTHOR=` echo "${JSON}" | jq '.event.commits[0].author.username' | tr -d '"' `
               [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
           gh pr view ${PR_NUMBER}
           PR_LABEL=` gh pr view ${PR_NUMBER} | grep -i "^labels:" | tr ',' ' ' | tr -s ' ' | sed 's/labels://g' `
@@ -57,8 +58,12 @@ jobs:
                [ -n "${PR_TITLE}" ] || { echo "error, no PR_TITLE " ; exit 1 ; }
           #
               grep -Ei "https://github.com/.*/commit" <<< "${JSON}"
-          PR_COMMITS=` grep -Ei "https://github.com/.*/commit" <<< "${JSON}" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
-              [ -n "${PR_COMMITS}" ] || { echo "no PR_COMMITS, ignore" ; }
+          #PR_COMMITS=` grep -Ei "https://github.com/.*/commit" <<< "${JSON}" | awk -F'"' '{print $4}' | uniq -c | awk '{ if ($1 == 1 ) print $2}' | awk -F'/' '{print $NF}' | tr '\n' ' '  `
+          PR_COMMITS=` echo "${JSON}"  | jq '.event.commits[].id' | tr -d '"'  | tr '\n' ' ' `
+          if [ -z "${PR_COMMITS}" ] ; then
+              echo "error, failed to get COMMIT"
+              exit 1
+          fi
           #
           echo "number: ${PR_NUMBER}"
           echo "action url: ${ACTION_URL}"

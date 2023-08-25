@@ -346,6 +346,9 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
 	multusConfSpec := multusConf.Spec.DeepCopy()
 	anno := multusConf.Annotations
+	if anno == nil {
+		anno = make(map[string]string)
+	}
 
 	var plugins []interface{}
 

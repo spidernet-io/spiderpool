@@ -27,10 +27,10 @@ var (
 	defaultUnderlayVethName = "veth0"
 	defaultMarkBit          = 0 // ox1
 	// by default, k8s pod's first NIC is eth0
-	defaultOverlayVethName = "eth0"
-	defaultPodRuleTable    = 100
-	defaultNICPrefix       = "net"
-	BinNamePlugin          = filepath.Base(os.Args[0])
+	defaultOverlayVethName  = "eth0"
+	defaultPodRuleTable     = 100
+	defaultHostRulePriority = 1000
+	BinNamePlugin           = filepath.Base(os.Args[0])
 )
 
 type Mode string
@@ -105,10 +105,6 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 
 	if conf.PodDefaultCniNic == "" {
 		conf.PodDefaultCniNic = defaultOverlayVethName
-	}
-
-	if conf.MultusNicPrefix == "" {
-		conf.MultusNicPrefix = defaultNICPrefix
 	}
 
 	if conf.LogOptions == nil {

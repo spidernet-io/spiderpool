@@ -13,6 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	defaultRulePriority = 1000
+)
+
 // GetRoutesByName return all routes is belonged to specify interface
 // filter by family also
 func GetRoutesByName(iface string, ipfamily int) (routes []netlink.Route, err error) {
@@ -77,6 +81,7 @@ func AddRuleTableWithMark(mark, ruleTable, ipFamily int) error {
 	rule.Mark = mark
 	rule.Table = ruleTable
 	rule.Family = ipFamily
+	rule.Priority = defaultRulePriority
 	return netlink.RuleAdd(rule)
 }
 

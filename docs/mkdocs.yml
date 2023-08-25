@@ -96,6 +96,7 @@ nav:
       - CRD Spidercoordinator: reference/crd-spidercoordinator.md
       - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
       - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
+      - Coordinatorr plugin: reference/plugin-coordinator.md
       - Ifacer plugin: reference/plugin-ifacer.md
       - IPAM plugin: reference/plugin-ipam.md
   - Development:

@@ -110,7 +110,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                        | `/var/run/spidernet/spiderpool.sock` |
 | `global.configName`             | the configmap name                                                         | `spiderpool-conf`                    |
 
-
 ### ipam parameters
 
 | Name                                   | Description                                                                                      | Value   |
@@ -129,7 +128,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `grafanaDashboard.annotations`         | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
 | `grafanaDashboard.labels`              | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
 
-
 ### coordinator parameters
 
 | Name                           | Description                                                               | Value     |
@@ -143,13 +141,13 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`    |
 | `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward           | `[]`      |
 
-
 ### multus parameters
 
 | Name                                          | Description                                                                                                                                                                                                                                                                                      | Value                             |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
 | `multus.enableMultusConfig`                   | enable SpiderMultusConfig                                                                                                                                                                                                                                                                        | `true`                            |
 | `multus.multusCNI.install`                    | enable install multus-CNI                                                                                                                                                                                                                                                                        | `true`                            |
+| `multus.multusCNI.uninstall`                  | enable remove multus-CNI configuration and binary files on multus-ds pod shutdown. Enable this if you uninstall multus from your cluster. Disable this in the multus upgrade phase to prevent CNI configuration file from being removed, which may cause pods start failure                      | `false`                           |
 | `multus.multusCNI.name`                       | the name of spiderpool multus                                                                                                                                                                                                                                                                    | `spiderpool-multus`               |
 | `multus.multusCNI.image.registry`             | the multus-CNI image registry                                                                                                                                                                                                                                                                    | `ghcr.io`                         |
 | `multus.multusCNI.image.repository`           | the multus-CNI image repository                                                                                                                                                                                                                                                                  | `k8snetworkplumbingwg/multus-cni` |
@@ -171,7 +169,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `multus.multusCNI.log.logLevel`               | the multus-CNI daemonset pod log level                                                                                                                                                                                                                                                           | `debug`                           |
 | `multus.multusCNI.log.logFile`                | the multus-CNI daemonset pod log file                                                                                                                                                                                                                                                            | `/var/log/multus.log`             |
 
-
 ### clusterDefaultPool parameters
 
 | Name                                   | Description                                                                  | Value               |
@@ -188,7 +185,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `clusterDefaultPool.ipv6IPRanges`      | the available IP of ipv6 spiderpool instance                                 | `[]`                |
 | `clusterDefaultPool.ipv4Gateway`       | the gateway of ipv4 subnet                                                   | `""`                |
 | `clusterDefaultPool.ipv6Gateway`       | the gateway of ipv6 subnet                                                   | `""`                |
-
 
 ### spiderpoolAgent parameters
 
@@ -245,7 +241,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolAgent.prometheus.prometheusRule.enableWarningIPAMReleaseOverTime`         | the additional rule of spiderpoolAgent prometheusRule                                            | `true`                                     |
 | `spiderpoolAgent.debug.logLevel`                                                     | the log level of spiderpool agent [debug, info, warn, error, fatal, panic]                       | `info`                                     |
 | `spiderpoolAgent.debug.gopsPort`                                                     | the gops port of spiderpool agent                                                                | `5712`                                     |
-
 
 ### spiderpoolController parameters
 
@@ -317,7 +312,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolController.tls.auto.extraIpAddresses`                                | extra IP addresses of server certificate for auto method                                                                          | `[]`                                            |
 | `spiderpoolController.tls.auto.extraDnsNames`                                   | extra DNS names of server cert for auto method                                                                                    | `[]`                                            |
 
-
 ### spiderpoolInit parameters
 
 | Name                                        | Description                                                                                                                 | Value                                           |
@@ -343,5 +337,3 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolInit.podAnnotations`             | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
 | `spiderpoolInit.podLabels`                  | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
 | `spiderpoolInit.serviceAccount.annotations` | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
-
-

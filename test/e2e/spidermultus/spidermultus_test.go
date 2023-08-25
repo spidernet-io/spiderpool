@@ -3,6 +3,8 @@
 package spidermultus_test
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -12,6 +14,7 @@ import (
 
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -318,5 +321,115 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 		err = frame.CreateSpiderMultusInstance(smc)
 		GinkgoWriter.Printf("should fail to create, the error is: %v \n", err.Error())
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("testing creating spiderMultusConfig with cniType: ipvlan and checking the net-attach-conf config if works", Label("M00002"), func() {
+		var smcName string = "ipvlan-" + common.GenerateString(10, true)
+
+		// Define Spidermultus cr with ipvlan
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "ipvlan",
+				IPVlanConfig: &spiderpoolv2beta1.SpiderIPvlanCniConfig{
+					Master: []string{common.NIC3},
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr with ipvlan: %+v \n", smc)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			ipvlanMultusConfig, err := frame.GetMultusInstance(smcName, namespace)
+			GinkgoWriter.Printf("auto-generated ipvlan nad configuration %+v \n", ipvlanMultusConfig)
+			if api_errors.IsNotFound(err) {
+				return false
+			}
+			// The automatically generated multus configuration should be associated with spidermultus
+			if ipvlanMultusConfig.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return false
+			}
+			return true
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("testing creating spiderMultusConfig with cniType: sriov and checking the net-attach-conf config if works", Label("M00003"), func() {
+		var smcName string = "sriov-" + common.GenerateString(10, true)
+
+		// Define Spidermultus cr with sriov
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "sriov",
+				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
+					ResourceName: "sriov-test",
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr with sriov: %+v \n", smc)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			sriovMultusConfig, err := frame.GetMultusInstance(smcName, namespace)
+			GinkgoWriter.Printf("auto-generated sriov nad configuration %+v \n", sriovMultusConfig)
+			if api_errors.IsNotFound(err) {
+				return false
+			}
+			// The automatically generated multus configuration should be associated with spidermultus
+			if sriovMultusConfig.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return false
+			}
+			return true
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("testing creating spiderMultusConfig with cniType: custom and invalid/valid json config", Label("M00005", "M00004"), func() {
+		var smcName string = "custom-multus" + common.GenerateString(10, true)
+
+		invalidJson := `{ "invalid" }`
+		// Define Spidermultus cr with invalid json config
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType:         "custom",
+				CustomCNIConfig: &invalidJson,
+			},
+		}
+
+		GinkgoWriter.Printf("spidermultus cr with invalid json config: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("failed to create spidermultusconfig with invalid json config, error is %v", err)
+		Expect(err).To(HaveOccurred())
+
+		// Define valid json config
+		validString := `{"cniVersion":"0.3.1","name":"macvlan-conf","plugins":[{"type":"macvlan","master":"eth0","mode":"bridge","ipam":{"type":"spiderpool",{"mode":"auto","type":"coordinator"}]}`
+		validJson, err := json.Marshal(validString)
+		Expect(err).NotTo(HaveOccurred())
+		validJsonString := string(validJson)
+		smc.Spec.CustomCNIConfig = &validJsonString
+		GinkgoWriter.Printf("spidermultus cr with invalid json config: %+v \n", smc)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred(), "failed to create spidermultusconfig with valid json config, error is %v", err)
+
+		Eventually(func() bool {
+			customMultusConfig, err := frame.GetMultusInstance(smcName, namespace)
+			GinkgoWriter.Printf("auto-generated custom nad configuration %+v \n", customMultusConfig)
+			if api_errors.IsNotFound(err) {
+				return false
+			}
+			// The automatically generated multus configuration should be associated with spidermultus
+			if customMultusConfig.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return false
+			}
+			return true
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 })

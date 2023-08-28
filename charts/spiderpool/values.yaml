@@ -118,6 +118,9 @@ multus:
     ## @param multus.multusCNI.install enable install multus-CNI
     install: true
 
+    ## @param multus.multusCNI.uninstall enable remove multus-CNI configuration and binary files on multus-ds pod shutdown. Enable this if you uninstall multus from your cluster. Disable this in the multus upgrade phase to prevent CNI configuration file from being removed, which may cause pods start failure
+    uninstall: false
+
     ## @param multus.multusCNI.name the name of spiderpool multus
     name: "spiderpool-multus"
 

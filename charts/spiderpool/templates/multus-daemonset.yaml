@@ -212,6 +212,18 @@ spec:
             {{- if .Values.multus.multusCNI.extraVolumes }}
             {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
             {{- end }}
+          {{- if .Values.multus.multusCNI.uninstall }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - "/bin/sh"
+                  - "-c"
+                  - |
+                    rm -f /host/opt/cni/bin/multus || true
+                    rm -rf /host/etc/cni/net.d/multus.d || true
+                    rm -f /host/etc/cni/net.d/00-multus.conf || true
+          {{- end }}
       initContainers:
         - name: install-multus-binary
           imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy}}

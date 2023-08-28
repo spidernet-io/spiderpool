@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-ippool-deploy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: multi-ippool-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["default-ipv4-ippool", "backup-ipv4-ippool"]
+          }
+      labels:
+        app: multi-ippool-deploy
+    spec:
+      containers:
+        - name: multi-ippool-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

@@ -18,5 +18,3 @@
 | D00014  | The namespace where the pod is located matches the namespaceName, and the IP can be assigned     | p2      |       |     |       |
 | D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned      | p2      |       |     |       |
 | D00016  | namespaceName has higher priority than namespaceAffinity                                | p3      |       |     |       |
-| D00017  | Multiple default IP pools can be set by `default: true`          | p3      |       |     |       |
-| D00018 | Specify multiple multus cr through `k8s.v1.cni.cncf.io/networks` annotation to realize multi-nics function | p3     |       |    |       |

@@ -24,5 +24,3 @@
 | I00020  | Redundant IPs for automatic IPPool, which cannot be used by other applications                                                      | p3       |       | done    |       |
 | I00021  | Pod works correctly when multiple NICs are specified by annotations for applications of the same name                               | p3       |       | done    |       |
 | I00022  | Dirty data in the subnet should be recycled.                                                                                        | p3       |       | done    |       |
-| I00023  | Orphan IPPool creation in SpiderSubnet feature.(validate spec.subnet overlaps)                                                      | p3       |       | ongoing |       |
-| I00024  | New SpiderSubnet resource controls orphan IPPool resource.(validate OwnerRef, IPs ranges containing, cascade deletion)              | p3       |       | ongoing |       |

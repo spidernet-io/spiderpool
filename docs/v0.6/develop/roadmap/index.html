@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Roadmap - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Roadmap";
+        var mkdocs_page_input_path = "develop/roadmap.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Roadmap</a>
+    <ul class="current">
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Development &raquo;</li>
+      <li class="breadcrumb-item active">Roadmap</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/develop/roadmap.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="roadmap">roadmap</h1>
+<table>
+<thead>
+<tr>
+<th>feature</th>
+<th>description</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ippool</td>
+<td>ip settings</td>
+<td>done in v0.2.0</td>
+</tr>
+<tr>
+<td></td>
+<td>namesapce affinity</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>application affinity</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>multiple default ippool</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>multusname</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>nodename</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>default cluster ippool</td>
+<td>done in v0.2.0</td>
+</tr>
+<tr>
+<td></td>
+<td>default namespace ippool</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>default CNI ippool</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>annotation ippool</td>
+<td>done in v0.2.0</td>
+</tr>
+<tr>
+<td></td>
+<td>annotation route</td>
+<td>done in v0.2.0</td>
+</tr>
+<tr>
+<td>subnet</td>
+<td>automatically create ippool</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>automatically scaling and deletion ip according to application</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>automatically delete ippool</td>
+<td>done in v0.5.0</td>
+</tr>
+<tr>
+<td></td>
+<td>support annotation for multiple interface</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>keep ippool after deleting application</td>
+<td>done in v0.5.0</td>
+</tr>
+<tr>
+<td></td>
+<td>support deployment, statefulset, job, replicaset</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>support operator controller</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>flexible ip number</td>
+<td>done in v0.5.0</td>
+</tr>
+<tr>
+<td></td>
+<td>ippool inherit route and gateway attribute from its subnet</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td>reservedIP</td>
+<td>reservedIP</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td>fixed ip</td>
+<td>fixed ip for each pod of statefulset</td>
+<td>done in v0.5.0</td>
+</tr>
+<tr>
+<td></td>
+<td>fixed ip ranges for statefulset, deployment, replicaset</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td>spidermultusconfig</td>
+<td>support macvlan ipvlan sriov custom</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td>ipam plugin</td>
+<td>cni v1.0.0</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td>ifacer plugin</td>
+<td>bond interface</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>vlan interface</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td>coordinator plugin</td>
+<td>support underlay and overlay mode</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>CRD spidercoordinators for configuration</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>tune policy route for overlay and underlay mode</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>detect ip conflict and gateway</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>specify the MAC of pod</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>specify the default route of pod interface</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td>ovs/macvlan/sriov/ipvlan</td>
+<td>visit clusterIP</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>visit local node to guarantee the pod health check</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td></td>
+<td>visit nodePort with spec.externalTrafficPolicy=local or spec.externalTrafficPolicy=cluster</td>
+<td>done in v0.6.0</td>
+</tr>
+<tr>
+<td>calico/weave</td>
+<td>fixed ip</td>
+<td>done in v0.5.0</td>
+</tr>
+<tr>
+<td>recycle IP</td>
+<td>recycle IP taken by deleted pod</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>recycle IP taken by deleting pod</td>
+<td>done in v0.4.0</td>
+</tr>
+<tr>
+<td>dual-stack</td>
+<td>dual-stack</td>
+<td>done in v0.2.0</td>
+</tr>
+<tr>
+<td>CLI</td>
+<td>debug and operate. check which pod an IP is taken by, check IP usage , trigger GC</td>
+<td>in plan</td>
+</tr>
+<tr>
+<td>multi-cluster</td>
+<td>(1) spiderpool could synchronize ippool resource within a same subnet from other cluster, so it could help avoid IP conflict  <br>(2)leader cluster could synchronize all Spiderpool resource from member clusters, which help manager all underlay IP address</td>
+<td>in plan</td>
+</tr>
+<tr>
+<td>cilium</td>
+<td>cooperate with cilium</td>
+<td>in plan</td>
+</tr>
+<tr>
+<td>RDMA</td>
+<td>RDMA</td>
+<td>in plan</td>
+</tr>
+<tr>
+<td>egressGateway</td>
+<td>egressGateway</td>
+<td>in plan</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../release/" class="btn btn-neutral float-left" title="Release workflow"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../swagger_openapi/" class="btn btn-neutral float-right" title="Swagger OpenAPI">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../release/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../swagger_openapi/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

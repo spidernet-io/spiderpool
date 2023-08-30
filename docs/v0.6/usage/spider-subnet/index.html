@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>SpiderSubnet - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "SpiderSubnet";
+        var mkdocs_page_input_path = "usage/spider-subnet.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">SpiderSubnet</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#notice">Notice</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#get-started">Get Started</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Usage &raquo;</li>
+      <li class="breadcrumb-item active">SpiderSubnet</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/spider-subnet.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="spidersubnet">SpiderSubnet</h1>
+<p>The Spiderpool owns a CRD SpiderSubnet, which can help applications (such as Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet) to create a corresponding SpiderIPPool.</p>
+<p>Here are some annotations that you should write down on the application template Pod annotation:</p>
+<table>
+<thead>
+<tr>
+<th>Annotation</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ipam.spidernet.io/subnet</td>
+<td>Choose one SpiderSubnet V4 and V6 CR to use</td>
+<td>{"interface":"eth0", "ipv4":["subnet-demo-v4"], "ipv6":["subnet-demo-v6"]}</td>
+</tr>
+<tr>
+<td>ipam.spidernet.io/subnets</td>
+<td>Choose multiple SpiderSubnet V4 and V6 CR to use (the current version only supports to use the first one)</td>
+<td>[{"interface":"eth0", "ipv4":["v4-subnet1"], "ipv6":["v6-subnet1"]}]</td>
+</tr>
+<tr>
+<td>ipam.spidernet.io/ippool-ip-number</td>
+<td>The IP numbers of the corresponding SpiderIPPool (fixed and flexible mode, optional and default '+1')</td>
+<td>+2</td>
+</tr>
+<tr>
+<td>ipam.spidernet.io/ippool-reclaim</td>
+<td>Specify the corresponding SpiderIPPool to delete or not once the application was deleted (optional and default 'true')</td>
+<td>true</td>
+</tr>
+</tbody>
+</table>
+<h2 id="notice">Notice</h2>
+<ol>
+<li>
+<p>The annotation <code>ipam.spidernet.io/subnets</code> has higher priority over <code>ipam.spidernet.io/subnet</code>. If you specify both of them two, it only uses <code>ipam.spidernet.io/subnets</code> mode.</p>
+</li>
+<li>
+<p>In annotation <code>ipam.spidernet.io/subnet</code> mode, it will use default interface name <code>eth0</code> if you do not set <code>interface</code> property.</p>
+</li>
+<li>
+<p>For annotation <code>ipam.spidernet.io/ippool-ip-number</code>, you can use '2' for fixed IP number or '+2' for flexible mode. The value '+2' means the SpiderSubnet auto-created IPPool will add 2 more IPs based on your application replicas. If you choose to use flexible mode, the auto-created IPPool IPs will expand or shrink dynamically by your application replicas. This is an optional annotation. If left unset, it will use the <code>clusterSubnetDefaultFlexibleIPNumber</code> property from the <code>spiderpool-conf</code> ConfigMap as the flexible IP number in flexible mode. Refer to <a href="../../reference/configmap/">config</a> for details.</p>
+</li>
+<li>
+<p>The current version only supports using one SpiderSubnet V4/V6 CR for one Interface. You shouldn't specify two or more SpiderSubnet V4 CRs. The system will choose the first one to use.</p>
+</li>
+<li>
+<p>It's invalid to modify the Auto-created IPPool <code>Spec.IPs</code> by users.</p>
+</li>
+<li>
+<p>The auto-created IPPool will only serve your specified application, and the system will bind a special Spiderpool podAffinity to it. If you want to use <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code> annotations to specify the 'reserved' auto-created IPPool, you should edit the IPPool to remove its special Spiderpool podAffinity and annotations <code>ipam.spidernet.io/owner-application*</code>.</p>
+</li>
+</ol>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-spidersubnet-feature">Enable SpiderSubnet feature</h3>
+<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="../install/underlay/get-started-kind/">install</a> for details.</p>
+<p>Check configmap <code>spiderpool-conf</code> property <code>enableSpiderSubnet</code> whether is already set to <code>true</code> or not.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>configmap<span class="w"> </span>spiderpool-conf<span class="w"> </span>-o<span class="w"> </span>yaml
+</code></pre></div>
+<p>If you want to set it <code>true</code>, just execute <code>helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableSpiderSubnet=true -n kube-system</code>.</p>
+<h3 id="create-a-spidersubnet">Create a SpiderSubnet</h3>
+<p>Install a SpiderSubnet example:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/subnet-demo.yaml
+kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/deploy-use-subnet.yaml
+</code></pre></div>
+<h3 id="check-the-related-cr-data">Check the related CR data</h3>
+<p>Here's the SpiderSubnet, SpiderIPPool, and Pod information.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get ss
+NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
+subnet-demo-v4      4         172.16.0.0/16             3                    200
+subnet-demo-v6      6         fc00:f853:ccd:e790::/64   3                    200
+
+$ kubectl get sp -o wide
+NAME                                  VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE   APP-NAMESPACE
+auto4-demo-deploy-subnet-eth0-337bc   4         172.16.0.0/16             1                    3                false     false     default
+auto6-demo-deploy-subnet-eth0-337bc   6         fc00:f853:ccd:e790::/64   1                    3                false     false     default
+------------------------------------------------------------------------------------------
+$ kubectl get sp auto4-demo-deploy-subnet-eth0-337bc -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  annotations:
+    ipam.spidernet.io/ippool-ip-number: &quot;+2&quot;
+  creationTimestamp: &quot;2023-05-09T09:25:24Z&quot;
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 1
+  labels:
+    ipam.spidernet.io/interface: eth0
+    ipam.spidernet.io/ip-version: IPv4
+    ipam.spidernet.io/ippool-cidr: 172-16-0-0-16
+    ipam.spidernet.io/ippool-reclaim: &quot;true&quot;
+    ipam.spidernet.io/owner-application-gv: apps_v1
+    ipam.spidernet.io/owner-application-kind: Deployment
+    ipam.spidernet.io/owner-application-name: demo-deploy-subnet
+    ipam.spidernet.io/owner-application-namespace: default
+    ipam.spidernet.io/owner-application-uid: bea129aa-acf5-40cb-8669-337bc1e95a41
+    ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
+  name: auto4-demo-deploy-subnet-eth0-337bc
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderSubnet
+    name: subnet-demo-v4
+    uid: 3f5882a0-12e6-40f5-a103-431de700195f
+  resourceVersion: &quot;1381&quot;
+  uid: 4ebc5725-5d3d-448a-889f-ce9e3943b2aa
+spec:
+  default: false
+  disable: false
+  ipVersion: 4
+  ips:
+  - 172.16.41.1-172.16.41.3
+  podAffinity:
+    matchLabels:
+      ipam.spidernet.io/app-api-group: apps
+      ipam.spidernet.io/app-api-version: v1
+      ipam.spidernet.io/app-kind: Deployment
+      ipam.spidernet.io/app-name: demo-deploy-subnet
+      ipam.spidernet.io/app-namespace: default
+  subnet: 172.16.0.0/16
+  vlan: 0
+status:
+  allocatedIPCount: 1
+  allocatedIPs: &#39;{&quot;172.16.41.1&quot;:{&quot;interface&quot;:&quot;eth0&quot;,&quot;pod&quot;:&quot;default/demo-deploy-subnet-778786474b-kls7s&quot;,&quot;podUid&quot;:&quot;cc310a87-8c5a-4bff-9a84-0c4975bd5921&quot;}}&#39;
+  totalIPCount: 3
+
+$ kubectl get po -o wide
+NAME                                  READY   STATUS    RESTARTS   AGE     IP             NODE            NOMINATED NODE   READINESS GATES
+demo-deploy-subnet-778786474b-kls7s   1/1     Running   0          3m10s   172.16.41.1    spider-worker   &lt;none&gt;           &lt;none&gt;
+</code></pre></div>
+<p>Try to scale the deployment replicas and check the SpiderIPPool.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl patch deploy demo-deploy-subnet --patch &#39;{&quot;spec&quot;: {&quot;replicas&quot;: 2}}&#39;
+deployment.apps/demo-deploy-subnet patched
+------------------------------------------------------------------------------------------
+$ kubectl get ss
+NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
+subnet-demo-v4      4         172.16.0.0/16             4                    200
+subnet-demo-v6      6         fc00:f853:ccd:e790::/64   4                    200
+------------------------------------------------------------------------------------------
+$ kubectl get sp -o wide
+NAME                                  VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE   APP-NAMESPACE
+auto4-demo-deploy-subnet-eth0-337bc   4         172.16.0.0/16             2                    4                false     false     default
+auto6-demo-deploy-subnet-eth0-337bc   6         fc00:f853:ccd:e790::/64   2                    4                false     false     default
+------------------------------------------------------------------------------------------
+$ kubectl get sp auto4-demo-deploy-subnet-eth0-337bc -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  annotations:
+    ipam.spidernet.io/ippool-ip-number: &quot;+2&quot;
+  creationTimestamp: &quot;2023-05-09T09:25:24Z&quot;
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 2
+  labels:
+    ipam.spidernet.io/interface: eth0
+    ipam.spidernet.io/ip-version: IPv4
+    ipam.spidernet.io/ippool-cidr: 172-16-0-0-16
+    ipam.spidernet.io/ippool-reclaim: &quot;true&quot;
+    ipam.spidernet.io/owner-application-gv: apps_v1
+    ipam.spidernet.io/owner-application-kind: Deployment
+    ipam.spidernet.io/owner-application-name: demo-deploy-subnet
+    ipam.spidernet.io/owner-application-namespace: default
+    ipam.spidernet.io/owner-application-uid: bea129aa-acf5-40cb-8669-337bc1e95a41
+    ipam.spidernet.io/owner-spider-subnet: subnet-demo-v4
+  name: auto4-demo-deploy-subnet-eth0-337bc
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderSubnet
+    name: subnet-demo-v4
+    uid: 3f5882a0-12e6-40f5-a103-431de700195f
+  resourceVersion: &quot;2004&quot;
+  uid: 4ebc5725-5d3d-448a-889f-ce9e3943b2aa
+spec:
+  default: false
+  disable: false
+  ipVersion: 4
+  ips:
+  - 172.16.41.1-172.16.41.4
+  podAffinity:
+    matchLabels:
+      ipam.spidernet.io/app-api-group: apps
+      ipam.spidernet.io/app-api-version: v1
+      ipam.spidernet.io/app-kind: Deployment
+      ipam.spidernet.io/app-name: demo-deploy-subnet
+      ipam.spidernet.io/app-namespace: default
+  subnet: 172.16.0.0/16
+  vlan: 0
+status:
+  allocatedIPCount: 2
+  allocatedIPs: &#39;{&quot;172.16.41.1&quot;:{&quot;interface&quot;:&quot;eth0&quot;,&quot;pod&quot;:&quot;default/demo-deploy-subnet-778786474b-kls7s&quot;,&quot;podUid&quot;:&quot;cc310a87-8c5a-4bff-9a84-0c4975bd5921&quot;},&quot;172.16.41.2&quot;:{&quot;interface&quot;:&quot;eth0&quot;,&quot;pod&quot;:&quot;default/demo-deploy-subnet-778786474b-2kf24&quot;,&quot;podUid&quot;:&quot;0a239f85-be47-4b98-bf29-c8bf02b6b59e&quot;}}&#39;
+  totalIPCount: 4
+------------------------------------------------------------------------------------------
+$ kubectl get po -o wide
+NAME                                  READY   STATUS    RESTARTS   AGE     IP             NODE                   NOMINATED NODE   READINESS GATES
+demo-deploy-subnet-778786474b-2kf24   1/1     Running   0          63s     172.16.41.2    spider-control-plane   &lt;none&gt;           &lt;none&gt;
+demo-deploy-subnet-778786474b-kls7s   1/1     Running   0          4m39s   172.16.41.1    spider-worker          &lt;none&gt;           &lt;none&gt;
+</code></pre></div>
+<p>As you can see, the SpiderSubnet object <code>subnet-demo-v4</code> allocates another IP to SpiderIPPool <code>auto4-demo-deploy-subnet-eth0-337bc</code>
+and SpiderSubnet object <code>subnet-demo-v6</code> allocates another IP to SpiderIPPool <code>auto6-demo-deploy-subnet-eth0-337bc</code>.</p>
+<h3 id="spidersubnet-with-multiple-interfaces">SpiderSubnet with multiple interfaces</h3>
+<p>Make sure the interface name and use <code>ipam.spidernet.io/subnets</code> annotation just like this:</p>
+<div class="highlight"><pre><span></span><code>      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni2
+        ipam.spidernet.io/subnets: |-
+          [{&quot;interface&quot;: &quot;eth0&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-1&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-1&quot;]},
+           {&quot;interface&quot;: &quot;net2&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-2&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-2&quot;]}]
+</code></pre></div>
+<p>Install the example:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/spider-subnet/multiple-interfaces.yaml
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../install/certificate/" class="btn btn-neutral float-left" title="Certificates"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../ippool-namespace/" class="btn btn-neutral float-right" title="Default IPPool at namespace">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../install/certificate/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../ippool-namespace/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>Weave Quick Start - spiderpool</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Weave Quick Start";
+        var mkdocs_page_input_path = "usage/install/underlay/get-started-weave-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">Weave Quick Start</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/underlay/get-started-weave-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="weave-quick-start">Weave Quick Start</h1>
+<p><a href="../get-started-weave/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<p><code>Weave</code> 是一款开源的网络解决方案, 它通过创建一个虚拟网络、自动发现和连接不同的容器, 为容器提供网络连通和网络策略等能力。同时它可作为 Kubernetes 容器网络解决方案(CNI)的一种选择，<code>Weave</code> 默认使用内置的 <code>IPAM</code> 为 Pod 提供 IP 分配能力, 其 <code>IPAM</code> 能力对用户并不可见，缺乏 Pod IP 地址的管理分配能力。 本文将介绍 Spiderpool 搭配 <code>Weave</code>, 在保留 <code>Weave</code> 原有功能的基础上, 结合 <code>Spiderpool</code> 扩展 <code>Weave</code> 的 <code>IPAM</code> 能力。</p>
+<h2 id="_1">先决条件</h2>
+<ul>
+<li>准备好一个 Kubernetes 集群, 没有安装任何的 CNI</li>
+<li>Helm、Kubectl、Jq(可选) 二进制工具</li>
+</ul>
+<h2 id="_2">安装</h2>
+<ol>
+<li>
+<p>安装 Weave :</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w">  </span>https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+</code></pre></div>
+<p>等待 Pod Running:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system  | grep weave</span>
+weave-net-ck849<span class="w">                         </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">     </span><span class="m">4</span><span class="w">     </span><span class="m">0</span><span class="w">   </span>1m
+weave-net-vhmqx<span class="w">                         </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">     </span><span class="m">4</span><span class="w">     </span><span class="m">0</span><span class="w">   </span>1m
+</code></pre></div>
+</li>
+<li>
+<p>安装 Spiderpool</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
+</code></pre></div>
+<blockquote>
+<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+</blockquote>
+<p>等待 Pod Running， 创建 Pod 所使用的 IP 池:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: weave-ippool-v4</span>
+<span class="s">  labels:  </span>
+<span class="s">    ipam.spidernet.io/subnet-cidr: 10-32-0-0-12</span>
+<span class="s">spec:</span>
+<span class="s">  ips:</span>
+<span class="s">  - 10.32.0.100-10.32.50.200</span>
+<span class="s">  subnet: 10.32.0.0/12</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p><code>Weave</code> 使用 <code>10.32.0.0/12</code> 作为集群默认子网。所以需要创建一个相同子网内 SpiderIPPool。</p>
+</blockquote>
+</li>
+<li>
+<p>验证安装</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system | grep spiderpool</span>
+<span class="w"> </span>spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w"> </span>spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w"> </span>spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w"> </span>spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w"> </span><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+<span class="w"> </span>NAME<span class="w">               </span>VERSION<span class="w">   </span>SUBNET<span class="w">         </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DISABLE
+<span class="w"> </span>weave-ippool-v4<span class="w">    </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.32.0.0/12<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">12901</span><span class="w">            </span><span class="nb">false</span>
+</code></pre></div>
+<h2 id="weave-ipam-spiderpool">切换 <code>Weave</code> 的 <code>IPAM</code> 为 <code>Spiderpool</code></h2>
+<p>修改每个节点上: <code>/etc/cni/net.d/10-weave.conflist</code> 的 <code>ipam</code>字段:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat /etc/cni/net.d/10-weave.conflist</span>
+<span class="o">{</span>
+<span class="w">    </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.0&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;weave&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="o">{</span>
+<span class="w">            </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;weave&quot;</span>,
+<span class="w">            </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;weave-net&quot;</span>,
+<span class="w">            </span><span class="s2">&quot;hairpinMode&quot;</span>:<span class="w"> </span><span class="nb">true</span>
+<span class="w">        </span><span class="o">}</span>,
+<span class="w">        </span><span class="o">{</span>
+<span class="w">            </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;portmap&quot;</span>,
+<span class="w">            </span><span class="s2">&quot;capabilities&quot;</span>:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;portMappings&quot;</span>:<span class="w"> </span>true<span class="o">}</span>,
+<span class="w">            </span><span class="s2">&quot;snat&quot;</span>:<span class="w"> </span><span class="nb">true</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="w">    </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>修改为:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;cniVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.3.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weave&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;plugins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weave&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weave-net&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;ipam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="nt">&quot;hairpinMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;portmap&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;capabilities&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;portMappings&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">            </span><span class="nt">&quot;snat&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>或可通过 <code>jq</code>  工具一键修改。如没有 <code>jq</code> 可先使用以下命令安装:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 以 centos7 为例</span>
+yum<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>jq
+</code></pre></div>
+<p>修改 CNI 配置文件:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="o">&lt;&lt;&lt;</span><span class="w"> </span><span class="k">$(</span>jq<span class="w"> </span><span class="s1">&#39;.plugins[0].ipam.type = &quot;spiderpool&quot; &#39;</span><span class="w"> </span>/etc/cni/net.d/10-weave.conflist<span class="k">)</span><span class="w"> </span>&gt;<span class="w"> </span>/etc/cni/net.d/10-weave.conflist
+</code></pre></div>
+<blockquote>
+<p>注意需要在每个节点上执行</p>
+</blockquote>
+<h2 id="_3">创建应用</h2>
+<p>使用注解: <code>ipam.spidernet.io/ippool</code> 指定 Pod 从该 SpiderIPPool 中分配 IP:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">2</span>
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>nginx
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>ipam.spidernet.io/ippool:<span class="w"> </span><span class="s1">&#39;{&quot;ipv4&quot;:[&quot;weave-ippool-v4&quot;]}&#39;</span>
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>nginx
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+<span class="w">        </span>lifecycle:<span class="w"> </span><span class="o">{}</span>
+<span class="w">        </span>name:<span class="w"> </span>container-1
+EOF
+</code></pre></div>
+<blockquote>
+<p><em>spec.template.metadata.annotations.ipam.spidernet.io/ippool</em>：指定 Pod 从 SpiderIPPool:  <code>weave-ippool-v4</code> 中分配 IP</p>
+</blockquote>
+<p>Pod 成功创建, 并且从 Spiderpool 中分配 IP 地址:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po  -o wide</span>
+NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+nginx-5745d9b5d7-2rvn7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>8s<span class="w">    </span><span class="m">10</span>.32.22.190<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-5745d9b5d7-5ssck<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>8s<span class="w">    </span><span class="m">10</span>.32.35.87<span class="w">    </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+<span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DISABLE
+weave-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.32.0.0/12<span class="w">    </span><span class="m">2</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span>
+</code></pre></div>
+<p>测试连通性，以 Pod 跨节点通信为例:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl exec  nginx-5745d9b5d7-2rvn7 -- ping 10.32.35.87 -c 2</span>
+PING<span class="w"> </span><span class="m">10</span>.32.35.87<span class="w"> </span><span class="o">(</span><span class="m">10</span>.32.35.87<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.32.35.87:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">4</span>.561<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.32.35.87:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.632<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">10</span>.32.35.87<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.632/2.596/4.561<span class="w"> </span>ms
+</code></pre></div>
+<p>测试结果表明，IP 分配正常、网络连接正常。 通过<code>Spiderpool</code>, 确实扩展了 <code>Weave</code> 的 <code>IPAM</code> 能力。接下来，你可以参考 <a href="https://spidernet-io.github.io/spiderpool/">Spiderpool 使用</a>，体验 <code>Spiderpool</code> 其他的功能。</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../../..";</script>
+    <script src="../../../../js/theme_extra.js"></script>
+    <script src="../../../../js/theme.js"></script>
+      <script src="../../../../search/main.js"></script>
+      <script src="../../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

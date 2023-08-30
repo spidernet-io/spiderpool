@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>StatefulSet - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "StatefulSet";
+        var mkdocs_page_input_path = "usage/statefulset.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">StatefulSet</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#description">Description</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#get-started">Get Started</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Usage &raquo;</li>
+      <li class="breadcrumb-item active">StatefulSet</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/statefulset.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="statefulset">StatefulSet</h1>
+<h2 id="description">Description</h2>
+<p>The spiderpool supports IP assignment for StatefulSet.</p>
+<p>When the number of statefulset replicas is not scaled up or down, all Pods could hold same IP address even when the Pod is restarting or rebuilding.</p>
+<ul>
+<li>
+<p>Pod restarts</p>
+<p>Once a Pod restarts (its pause container restarts), Spiderpool will keep use the previous IP,
+and change the IPPool CR property ContainerID with the new pause container ID.</p>
+<p>In the meanwhile, spiderendpoint will still keep the previous IP but refresh the ContainerID property.</p>
+</li>
+<li>
+<p>Pod is deleted and re-created</p>
+<p>After deleting a StatefulSet Pod, kubernetes will re-create a Pod with the same name.</p>
+<p>In this case, Spiderpool will also keep the previous IP and update the ContainerID.</p>
+</li>
+</ul>
+<h3 id="notice">Notice</h3>
+<ul>
+<li>
+<p>Currently, it's not allowed to change StatefulSet annotation for using another pool when a StatefulSet is ready and its Pods are running.</p>
+</li>
+<li>
+<p>When the statefulset is scaled down and then scaled up, the scaled-up Pod is not guaranteed to get the previous IP.</p>
+</li>
+<li>
+<p>The <a href="../gc/">IP-GC</a> feature (reclaim IP for the Pod of graceful-period timeout) does work for StatefulSet Pod.</p>
+</li>
+</ul>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-statefulset-support">Enable StatefulSet support</h3>
+<p>Firstly, please ensure you have installed the spiderpool and configure the CNI file. Refer to <a href="../install/install/">install</a> for details.</p>
+<p>Check whether the property <code>enableStatefulSet</code> of the configmap <code>spiderpool-conf</code> is already set to <code>true</code> or not.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>configmap<span class="w"> </span>spiderpool-conf<span class="w"> </span>-o<span class="w"> </span>yaml
+</code></pre></div>
+<p>If you want to set it <code>true</code>, run <code>helm upgrade spiderpool spiderpool/spiderpool --set ipam.enableStatefulSet=true -n kube-system</code>.</p>
+<h3 id="create-a-statefulset">Create a StatefulSet</h3>
+<p>This is an example to install a StatefulSet.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/statefulset/statefulset-demo.yaml
+</code></pre></div>
+<h3 id="validate-the-spiderpool-related-cr-data">Validate the Spiderpool related CR data</h3>
+<p>Here's the created Pod, spiderippool, and spiderendpoint CR information:</p>
+<div class="highlight"><pre><span></span><code>$ kubectl get po -o wide
+NAME                       READY   STATUS    RESTARTS   AGE   IP              NODE            NOMINATED NODE   READINESS GATES
+demo-sts-0                 1/1     Running   0          8s    172.22.40.181   spider-worker   &lt;none&gt;           &lt;none&gt;
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get sp default-v4-ippool -o yaml
+
+...
+&quot;172.22.40.181&quot;:{&quot;interface&quot;:&quot;eth0&quot;,&quot;pod&quot;:&quot;default/demo-sts-0&quot;,&quot;podUid&quot;:&quot;fa50a7c2-99e7-4e97-a3f1-8d6503067b54&quot;}
+...
+
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get se demo-sts-0 -o yaml
+
+...
+status:
+  current:
+    ips:
+    - interface: eth0
+      ipv4: 172.22.40.181/16
+      ipv4Pool: default-v4-ippool
+      ipv6: fc00:f853:ccd:e793:f::d/64
+      ipv6Pool: default-v6-ippool
+      vlan: 0
+    node: spider-worker
+    uid: fa50a7c2-99e7-4e97-a3f1-8d6503067b54
+  ownerControllerName: demo-sts
+  ownerControllerType: StatefulSet
+...
+</code></pre></div>
+<p>Try to delete Pod <code>demo-sts-0</code> and check whether the rebuilding Pod keeps the previous IP or not.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl delete po demo-sts-0
+pod &quot;demo-sts-0&quot; deleted
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get po -o wide
+NAME                       READY   STATUS    RESTARTS   AGE   IP              NODE            NOMINATED NODE   READINESS GATES
+demo-sts-0                 1/1     Running   0          12s   172.22.40.181   spider-worker   &lt;none&gt;           &lt;none&gt;
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get sp default-v4-ippool -o yaml
+
+...
+&quot;172.22.40.181&quot;:{&quot;interface&quot;:&quot;eth0&quot;,&quot;pod&quot;:&quot;default/demo-sts-0&quot;,&quot;podUid&quot;:&quot;425d6552-63bb-4b4c-aab2-b2db95de0ab1&quot;}
+...
+
+---------------------------------------------------------------------------------------------------------------------
+$ kubectl get se demo-sts-0 -o yaml
+
+...
+status:
+  current:
+    ips:
+    - interface: eth0
+      ipv4: 172.22.40.181/16
+      ipv4Pool: default-v4-ippool
+      ipv6: fc00:f853:ccd:e793:f::d/64
+      ipv6Pool: default-v6-ippool
+      vlan: 0
+    node: spider-worker
+    uid: 425d6552-63bb-4b4c-aab2-b2db95de0ab1
+  ownerControllerName: demo-sts
+  ownerControllerType: StatefulSet
+...
+</code></pre></div>
+<p>And you can see, the re-created Pod still holds the previous IP, spiderippool, and spiderendpoint updated containerID property.</p>
+<h3 id="clean-up">clean up</h3>
+<p>Delete the StatefulSet object: <code>demo-sts</code>.</p>
+<div class="highlight"><pre><span></span><code>$ kubectl delete sts demo-sts
+statefulset.apps &quot;demo-sts&quot; deleted
+
+---------------------------------------------------------------------------------------------------------------------
+
+$ kubectl get sp default-v4-ippool -o yaml | grep demo-sts-0
+
+---------------------------------------------------------------------------------------------------------------------
+
+$ kubectl get se demo-sts-0 -o yaml
+Error from server (NotFound): spiderendpoints.spiderpool.spidernet.io &quot;demo-sts-0&quot; not found
+</code></pre></div>
+<p>The related data is cleaned up now.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../ipv6/" class="btn btn-neutral float-left" title="IPv6 support"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../reserved-ip/" class="btn btn-neutral float-right" title="Reserved IP">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../ipv6/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../reserved-ip/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

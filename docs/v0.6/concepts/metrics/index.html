@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Metrics - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Metrics";
+        var mkdocs_page_input_path = "concepts/metrics.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Metrics</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#spiderpool-controller">spiderpool controller</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#spiderpool-agent">spiderpool agent</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#get-started">Get Started</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#metric-reference">Metric reference</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Concepts &raquo;</li>
+      <li class="breadcrumb-item active">Metrics</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/concepts/metrics.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="metric">Metric</h1>
+<p>Spiderpool can be configured to serve <a href="https://opentelemetry.io/">Opentelemetry</a> metrics.
+And spiderpool metrics provide the insight of Spiderpool Agent and Spiderpool Controller.</p>
+<h2 id="spiderpool-controller">spiderpool controller</h2>
+<p>The metrics of spiderpool controller is set by the following pod environment:</p>
+<table>
+<thead>
+<tr>
+<th>environment</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPIDERPOOL_ENABLED_METRIC</td>
+<td>enable metrics</td>
+<td>false</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_ENABLED_DEBUG_METRIC</td>
+<td>enable debug level metrics</td>
+<td>false</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
+<td>metrics port</td>
+<td>5721</td>
+</tr>
+</tbody>
+</table>
+<h2 id="spiderpool-agent">spiderpool agent</h2>
+<p>The metrics of spiderpool agent is set by the following pod environment:</p>
+<table>
+<thead>
+<tr>
+<th>environment</th>
+<th>description</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPIDERPOOL_ENABLED_METRIC</td>
+<td>enable metrics</td>
+<td>false</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_ENABLED_DEBUG_METRIC</td>
+<td>enable debug level metrics</td>
+<td>false</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
+<td>metrics port</td>
+<td>5711</td>
+</tr>
+</tbody>
+</table>
+<h2 id="get-started">Get Started</h2>
+<h3 id="enable-metric-support">Enable Metric support</h3>
+<p>Firstly, please ensure you have installed the spiderpool and configured the CNI file, refer <a href="../../usage/install/install/">install</a> for details</p>
+<p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of the daemonset <code>spiderpool-agent</code> for whether it is already set to <code>true</code> or not.</p>
+<p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of deployment <code>spiderpool-controller</code> for whether it is already set to <code>true</code> or not.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>daemonset<span class="w"> </span>spiderpool-agent<span class="w"> </span>-o<span class="w"> </span>yaml
+------
+kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>deployment<span class="w"> </span>spiderpool-controller<span class="w"> </span>-o<span class="w"> </span>yaml
+</code></pre></div>
+<p>You can set one or both of them to <code>true</code>.
+For example, let's enable spiderpool agent metrics by running <code>helm upgrade --set spiderpoolAgent.prometheus.enabled=true</code>.</p>
+<h2 id="metric-reference">Metric reference</h2>
+<h3 id="spiderpool-agent_1">Spiderpool Agent</h3>
+<p>Spiderpool agent exports some metrics related with IPAM allocation and release. Currently, those include:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spiderpool_ipam_allocation_counts</td>
+<td>Number of IPAM allocation requests that Spiderpool Agent received , prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_failure_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation failures, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_update_ippool_conflict_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation update IPPool conflicts, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_internal_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation internal errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_no_available_pool_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation no available IPPool errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_retries_exhausted_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation retries exhausted errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_err_ip_used_out_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation IP addresses used out errors, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_average_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent allocation processes, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_max_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_min_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_latest_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent allocation process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_duration_seconds</td>
+<td>Histogram of IPAM allocation duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_average_limit_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_max_limit_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_min_limit_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_latest_limit_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent allocation queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_allocation_limit_duration_seconds</td>
+<td>Histogram of IPAM allocation queuing duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_counts</td>
+<td>Count of the number of Spiderpool Agent received the IPAM release requests, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_failure_counts</td>
+<td>Number of Spiderpool Agent IPAM release failure, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_update_ippool_conflict_counts</td>
+<td>Number of Spiderpool Agent IPAM release update IPPool conflicts, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_err_internal_counts</td>
+<td>Number of Spiderpool Agent IPAM releasing internal error, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_err_retries_exhausted_counts</td>
+<td>Number of Spiderpool Agent IPAM releasing retries exhausted error, prometheus type: counter</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_average_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent release processes, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_max_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent release process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_min_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent release process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_latest_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent release process (per-process), prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_duration_seconds</td>
+<td>Histogram of IPAM release duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_average_limit_duration_seconds</td>
+<td>The average duration of all Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_max_limit_duration_seconds</td>
+<td>The maximum duration of Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_min_limit_duration_seconds</td>
+<td>The minimum duration of Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_latest_limit_duration_seconds</td>
+<td>The latest duration of Spiderpool Agent release queuing, prometheus type: gauge</td>
+</tr>
+<tr>
+<td>spiderpool_ipam_release_limit_duration_seconds</td>
+<td>Histogram of IPAM release queuing duration in seconds, prometheus type: histogram</td>
+</tr>
+<tr>
+<td>spiderpool_debug_auto_pool_waited_for_available_counts</td>
+<td>Number of Spiderpool Agent IPAM allocation wait for auto-created IPPool available, prometheus type: counter. (debug level metric)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="spiderpool-controller_1">Spiderpool Controller</h3>
+<p>Spiderpool controller exports some metrics related with SpiderIPPool IP garbage collection. Currently, those include:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spiderpool_ip_gc_counts</td>
+<td>Number of Spiderpool Controller IP garbage collection, prometheus type: counter.</td>
+</tr>
+<tr>
+<td>spiderpool_ip_gc_failure_counts</td>
+<td>Number of Spiderpool Controller IP garbage collection failures, prometheus type: counter.</td>
+</tr>
+<tr>
+<td>spiderpool_total_ippool_counts</td>
+<td>Number of Spiderpool IPPools, prometheus type: gauge.</td>
+</tr>
+<tr>
+<td>spiderpool_debug_ippool_total_ip_counts</td>
+<td>Number of Spiderpool IPPool corresponding total IPs (per-IPPool), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_ippool_available_ip_counts</td>
+<td>Number of Spiderpool IPPool corresponding availbale IPs (per-IPPool), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_total_subnet_counts</td>
+<td>Number of Spiderpool Subnets, prometheus type: gauge.</td>
+</tr>
+<tr>
+<td>spiderpool_debug_subnet_ippool_counts</td>
+<td>Number of Spiderpool Subnet corresponding IPPools (per-Subnet), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_subnet_total_ip_counts</td>
+<td>Number of Spiderpool Subnet corresponding total IPs (per-Subnet), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_subnet_available_ip_counts</td>
+<td>Number of Spiderpool Subnet corresponding availbale IPs (per-Subnet), prometheus type: gauge. (debug level metric)</td>
+</tr>
+<tr>
+<td>spiderpool_debug_auto_pool_waited_for_available_counts</td>
+<td>Number of waiting for auto-created IPPool available, prometheus type: couter. (debug level metric)</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../allocation/" class="btn btn-neutral float-left" title="IP Allocation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../multusconfig/" class="btn btn-neutral float-right" title="Multus">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../allocation/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../multusconfig/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

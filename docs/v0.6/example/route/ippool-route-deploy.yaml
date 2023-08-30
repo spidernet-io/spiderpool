@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ippool-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ippool-test-app
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["ipv4-ippool-route"]
+          }
+      labels:
+        app: ippool-test-app
+    spec:
+      containers:
+        - name: route-test
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

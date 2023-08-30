@@ -111,11 +111,11 @@ jobs:
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
-        if: ${{ env.SUBMIT == 'true' }}
+        if: ${{ env.SUBMIT == 'true' && env.SKIP_ALL_JOB != 'true' }}
         uses: peter-evans/create-pull-request@v5.0.2
         with:
-          title: "robot update website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
-          commit-message: "robot update website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          title: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "
+          commit-message: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
           delete-branch: true

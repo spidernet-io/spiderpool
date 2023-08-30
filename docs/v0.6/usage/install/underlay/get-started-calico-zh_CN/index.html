@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>Calico Quick Start - spiderpool</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Calico Quick Start";
+        var mkdocs_page_input_path = "usage/install/underlay/get-started-calico-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">Calico Quick Start</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/underlay/get-started-calico-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="calico-quick-start">Calico Quick Start</h1>
+<p><a href="../get-started-calico/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<p>Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等类型应用提供固定 IP 功能的一种解决方案。 本文将介绍在 Calico + BGP 模式下: 搭建一套完整的 Underlay 网络环境，搭配 Spiderpool 实现应用的固定 IP 功能，该方案可满足:</p>
+<ul>
+<li>
+<p>应用分配到固定的 IP 地址</p>
+</li>
+<li>
+<p>IP 池能随着应用副本自动扩缩容</p>
+</li>
+<li>
+<p>集群外客户端可直接跳过应用 IP 访问应用</p>
+</li>
+</ul>
+<h2 id="_1">先决条件</h2>
+<ul>
+<li>
+<p>一个 <strong><em>Kubernetes</em></strong> 集群(推荐 k8s version &gt; 1.22), 并安装 <strong><em>Calico</em></strong> 作为集群的默认 CNI。</p>
+<p>确认 calico 不配置使用 IPIP 或者 vxlan 隧道，因为本例将演示如何使用 calico 对接 underlay 网络。</p>
+<p>确认 calico 开启了 fullmesh 方式的 BGP 配置。</p>
+</li>
+<li>
+<p>Helm、Calicoctl 二进制工具</p>
+</li>
+</ul>
+<h2 id="spiderpool">安装 Spiderpool</h2>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
+</code></pre></div>
+<blockquote>
+<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+</blockquote>
+<p>创建 Pod 使用的 SpiderIPPool 实例:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: nginx-ippool-v4</span>
+<span class="s">  labels:  </span>
+<span class="s">    ipam.spidernet.io/subnet-cidr: 10-244-0-0-16</span>
+<span class="s">spec:</span>
+<span class="s">  ips:</span>
+<span class="s">  - 10.244.100.0-10.244.200.1</span>
+<span class="s">  subnet: 10.244.0.0/16</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>验证安装：</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system |grep spiderpool</span>
+<span class="w">  </span>spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w">  </span>spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w">  </span>spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w">  </span>spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
+<span class="w">  </span><span class="o">[</span>root@master<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+<span class="w">  </span>NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT
+<span class="w">  </span>nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">25602</span>
+</code></pre></div>
+<h2 id="calico-bgp">配置 Calico BGP [可选]</h2>
+<p>本例希望 calico 以 underlay 方式工作，将 Spiderpool 的 IP 池所在的子网(<code>10.244.0.0/16</code>)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。</p>
+<blockquote>
+<p>如果您并不需要集群外部可以直接访问到 Pod IP，可忽略本步骤。</p>
+</blockquote>
+<p>网络拓扑如下:</p>
+<p><img alt="calico-bgp" src="../../../../images/calico-bgp.svg" /></p>
+<ol>
+<li>
+<p>配置机器外的一台主机作为 BGP Router</p>
+<p>本次示例将一台 <em>Ubuntu</em> 服务器作为 BGP Router。需要前置安装 FRR:</p>
+<div class="highlight"><pre><span></span><code>root@router:~#<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>frr
+</code></pre></div>
+<p>FRR 开启 BGP 功能:</p>
+<div class="highlight"><pre><span></span><code>root@router:~#<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/bgpd=no/bgpd=yes/&#39;</span><span class="w"> </span>/etc/frr/daemons
+root@router:~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>frr
+</code></pre></div>
+<p>配置 FRR:</p>
+<div class="highlight"><pre><span></span><code>root@router:~#<span class="w"> </span>vtysh
+router#<span class="w"> </span>config
+router<span class="o">(</span>config<span class="o">)</span><span class="c1"># router bgp 23000 </span>
+router<span class="o">(</span>config<span class="o">)</span><span class="c1"># bgp router-id 172.16.13.1 </span>
+router<span class="o">(</span>config<span class="o">)</span><span class="c1"># neighbor 172.16.13.11 remote-as 64512 </span>
+router<span class="o">(</span>config<span class="o">)</span><span class="c1"># neighbor 172.16.13.21 remote-as 64512  </span>
+router<span class="o">(</span>config<span class="o">)</span><span class="c1"># no bgp ebgp-requires-policy </span>
+</code></pre></div>
+<blockquote>
+<p>配置解释:</p>
+<ul>
+<li>Router 侧的 AS 为 <code>23000</code>, 集群节点侧 AS 为 <code>64512</code>。Router 与节点之间为 <code>ebgp</code>, 节点之间为 <code>ibgp</code></li>
+<li>需要关闭 <code>ebgp-requires-policy</code>, 否则 BGP 会话无法建立</li>
+<li>172.16.13.11/21 为集群节点 IP</li>
+</ul>
+<p>更多配置参考 <a href="https://docs.frrouting.org/en/latest/bgp.html">frrouting</a>。</p>
+</blockquote>
+</li>
+<li>
+<p>配置 Calico 的 BGP 邻居</p>
+<p>Calico 需要配置 <code>calico_backend: bird</code>, 否则无法建立 BGP 会话:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get cm -n kube-system calico-config -o yaml</span>
+apiVersion:<span class="w"> </span>v1
+data:
+<span class="w">  </span>calico_backend:<span class="w"> </span>bird
+<span class="w">  </span>cluster_type:<span class="w"> </span>kubespray,bgp
+kind:<span class="w"> </span>ConfigMap
+metadata:
+<span class="w">  </span>annotations:
+<span class="w">    </span>kubectl.kubernetes.io/last-applied-configuration:<span class="w"> </span><span class="p">|</span>
+<span class="w">      </span><span class="o">{</span><span class="s2">&quot;apiVersion&quot;</span>:<span class="s2">&quot;v1&quot;</span>,<span class="s2">&quot;data&quot;</span>:<span class="o">{</span><span class="s2">&quot;calico_backend&quot;</span>:<span class="s2">&quot;bird&quot;</span>,<span class="s2">&quot;cluster_type&quot;</span>:<span class="s2">&quot;kubespray,bgp&quot;</span><span class="o">}</span>,<span class="s2">&quot;kind&quot;</span>:<span class="s2">&quot;ConfigMap&quot;</span>,<span class="s2">&quot;metadata&quot;</span>:<span class="o">{</span><span class="s2">&quot;annotations&quot;</span>:<span class="o">{}</span>,<span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;calico-config&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;kube-system&quot;</span><span class="o">}}</span>
+creationTimestamp:<span class="w"> </span><span class="s2">&quot;2023-02-26T15:16:35Z&quot;</span>
+name:<span class="w"> </span>calico-config
+namespace:<span class="w"> </span>kube-system
+resourceVersion:<span class="w"> </span><span class="s2">&quot;2056&quot;</span>
+uid:<span class="w"> </span>001bbd09-9e6f-42c6-9339-39f71f81d363
+</code></pre></div>
+<p>本例节点的默认路由在 BGP Router, 节点之间不需要相互同步路由，只需要将其自身路由同步给 BGP Router，所以关闭 <em>Calico BGP Full-Mesh</em>:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># calicoctl patch bgpconfiguration default -p &#39;{&quot;spec&quot;: {&quot;nodeToNodeMeshEnabled&quot;: false}}&#39;</span>
+</code></pre></div>
+<p>创建 BGPPeer:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | calicoctl apply -f -</span>
+apiVersion:<span class="w"> </span>projectcalico.org/v3
+kind:<span class="w"> </span>BGPPeer
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>my-global-peer
+spec:
+<span class="w">  </span>peerIP:<span class="w"> </span><span class="m">172</span>.16.13.1
+<span class="w">  </span>asNumber:<span class="w"> </span><span class="m">23000</span>
+EOF
+</code></pre></div>
+<blockquote>
+<p>peerIP 为 BGP Router 的 IP 地址</p>
+<p>asNumber 为 BGP Router 的 AS 号</p>
+</blockquote>
+<p>查看 BGP 会话是否成功建立:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># calicoctl node status</span>
+Calico<span class="w"> </span>process<span class="w"> </span>is<span class="w"> </span>running.
+
+IPv4<span class="w"> </span>BGP<span class="w"> </span>status
++--------------+-----------+-------+------------+-------------+
+<span class="p">|</span><span class="w"> </span>PEER<span class="w"> </span>ADDRESS<span class="w"> </span><span class="p">|</span><span class="w"> </span>PEER<span class="w"> </span>TYPE<span class="w"> </span><span class="p">|</span><span class="w"> </span>STATE<span class="w"> </span><span class="p">|</span><span class="w">   </span>SINCE<span class="w">    </span><span class="p">|</span><span class="w">    </span>INFO<span class="w">     </span><span class="p">|</span>
++--------------+-----------+-------+------------+-------------+
+<span class="p">|</span><span class="w"> </span><span class="m">172</span>.16.13.1<span class="w">  </span><span class="p">|</span><span class="w"> </span>global<span class="w">    </span><span class="p">|</span><span class="w"> </span>up<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-03-15<span class="w"> </span><span class="p">|</span><span class="w"> </span>Established<span class="w"> </span><span class="p">|</span>
++--------------+-----------+-------+------------+-------------+
+
+IPv6<span class="w"> </span>BGP<span class="w"> </span>status
+No<span class="w"> </span>IPv6<span class="w"> </span>peers<span class="w"> </span>found.
+</code></pre></div>
+<p>更多 Calico BGP 配置, 请参考 <a href="https://docs.tigera.io/calico/3.25/networking/configuring/bgp">Calico BGP</a></p>
+</li>
+</ol>
+<h2 id="calico-ip">创建同子网的 Calico IP 池</h2>
+<p>我们需要创建一个与 Spiderpool 子网 CIDR 相同的 Calico IP 池, 否则 Calico 不会宣告 Spiderpool 子网的路由:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | calicoctl apply -f -</span>
+<span class="s">apiVersion: projectcalico.org/v3</span>
+<span class="s">kind: IPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: spiderpool-ippool</span>
+<span class="s">spec:</span>
+<span class="s">  blockSize: 26</span>
+<span class="s">  cidr: 10.244.0.0/16</span>
+<span class="s">  ipipMode: Never</span>
+<span class="s">  natOutgoing: false</span>
+<span class="s">  nodeSelector: all()</span>
+<span class="s">  vxlanMode: Never</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p>cidr 需要对应 Spiderpool 的子网: <code>10.244.0.0/16</code></p>
+<p>设置 ipipMode 和 vxlanMode 为: Never</p>
+</blockquote>
+<h2 id="calico-ipam-spiderpool">切换 Calico 的 <code>IPAM</code> 为 Spiderpool</h2>
+<p>修改每个节点上 Calico 的 CNI 配置文件: <code>/etc/cni/net.d/10-calico.conflist</code>, 将 ipam 字段切换为 Spiderpool:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;ipam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
+<span class="p">},</span>
+</code></pre></div>
+<h2 id="_2">创建应用</h2>
+<p>以 Nginx 应用为例:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: nginx</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: nginx</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/ippool: &#39;{&quot;ipv4&quot;:[&quot;nginx-ippool-v4&quot;]}&#39;</span>
+<span class="s">      labels:</span>
+<span class="s">        app: nginx</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: nginx</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p><code>ipam.spidernet.io/ippool</code>: 从 "nginx-ippool-v4" SpiderIPPool 中分配固定 IP
+</p>
+</blockquote>
+<p>当应用 Pod 被创建，Spiderpool 从 annnotations 指定的 <code>ippool: nginx-ippool-v4</code> 中给 Pod 分配 IP。</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">25602</span><span class="w">            </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+</code></pre></div>
+<p>当副本重启，其 IP 都被固定在 <code>nginx-ippool-v4</code> 的 IP 池范围内:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
+NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+nginx-644659db67-szgcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>23s<span class="w">     </span><span class="m">10</span>.244.100.90<span class="w">    </span>worker5<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-644659db67-98rcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>23s<span class="w">     </span><span class="m">10</span>.244.100.92<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<p>扩容副本数到 <code>3</code>, 新副本的 IP 地址仍然从 IP 池: <code>nginx-ippool-v4</code> 中分配:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale pods</span>
+deployment.apps/nginx<span class="w"> </span>scaled
+<span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
+NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+nginx-644659db67-szgcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>1m<span class="w">     </span><span class="m">10</span>.244.100.90<span class="w">    </span>worker5<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-644659db67-98rcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>1m<span class="w">     </span><span class="m">10</span>.244.100.92<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-644659db67-brqdg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>10s<span class="w">    </span><span class="m">10</span>.244.100.94<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<p>查看 IP 池: <code>nginx-ippool-v4</code> 的 <code>ALLOCATED-IP-COUNT</code> 新增 1 :</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">3</span><span class="w">                    </span><span class="m">25602</span><span class="w">            </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+</code></pre></div>
+<h2 id="_3">结论</h2>
+<p>经过测试: 集群外客户端可直接通过 Nginx Pod 的 IP 正常访问，集群内部通讯 Nginx Pod 跨节点也都通信正常(包括跨 Calico 子网)。在 Calico BGP 模式下，Spiderpool 可搭配 Calico 实现 Deployment 等类型应用固定 IP 的需求。</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../../..";</script>
+    <script src="../../../../js/theme_extra.js"></script>
+    <script src="../../../../js/theme.js"></script>
+      <script src="../../../../search/main.js"></script>
+      <script src="../../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

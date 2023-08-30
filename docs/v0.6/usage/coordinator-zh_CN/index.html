@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Coordinator - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Coordinator";
+        var mkdocs_page_input_path = "usage/coordinator-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">Coordinator</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/coordinator-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="coordinator">Coordinator</h1>
+<p>Spiderpool 内置一个叫 <code>coordinator</code> 的 CNI meta-plugin, 它在 Main CNI被调用之后再工作，它主要提供以下几个主要功能:</p>
+<ul>
+<li>解决 Underlay Pod 无法访问 ClusterIP 的问题</li>
+<li>在 Pod 多网卡时，调谐 Pod 的路由，确保数据包来回路径一致</li>
+<li>支持检测 Pod 的 IP 是否冲突</li>
+<li>支持检测 Pod 的网关是否可达</li>
+<li>支持固定 Pod 的 Mac 地址前缀</li>
+</ul>
+<p>下面我们将详细的介绍 coordinator 如何解决或实现这些功能。</p>
+<blockquote>
+<p>注意: </p>
+<p>如果您通过 <code>SpinderMultusConfig CR</code>  帮助创建 NetworkAttachmentDefinition CR，您可以在 <code>SpinderMultusConfig</code> 中配置 <code>coordinator</code> (所有字段)。参考: <a href="../../reference/crd-spidermultusconfig/">SpinderMultusConfig</a>。</p>
+<p><code>Spidercoordinators CR</code> 作为 <code>coordinator</code> 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 <code>Spidercoordinators CR</code> 作为缺省值。更多详情参考: <a href="../../reference/crd-spidercoordinator/">Spidercoordinator</a>。</p>
+</blockquote>
+<h2 id="underlay-pod-clusterip">解决 Underlay Pod 无法访问 ClusterIP 的问题</h2>
+<p>我们在使用一些如 Macvlan、IPvlan、Sriov 等 Underlay CNI时，会遇到其 Pod 无法访问 ClusterIP 的问题，这常常是因为 underlay pod 访问 CLusterIP 需要经过在交换机的网关，但网关上并没有去往
+ClusterIP 的路由，导致无法访问。</p>
+<h3 id="coordinator-underlay">配置 coordinator 运行在 underlay 模式</h3>
+<p>当您的业务部署在"传统网络"或者 IAAS 环境上时，业务 Pod 的 IP 地址可能直接从宿主机的 IP 子网分配。应用 Pod 可直接使用自己的 IP 地址进行东西向和南北向通。</p>
+<p>该模式的优点有:</p>
+<ul>
+<li>没有 NAT 映射的干扰，Pod 最大程度保留源 IP</li>
+<li>能够利用底层网络设备对 Pod 做访问控制</li>
+<li>不依赖隧道技术，Pod 网络通信的性能得到显著提高</li>
+</ul>
+<p>使用注意: </p>
+<ul>
+<li>Pod 访问集群东西向流量(ClusterIP)时，流量会先跳给本地宿主机，本地宿主机使用自己的IP去访问目的pod，因此，流量的转发可能借助外部路由器进行三层跳转，因此，请确保相关三层网络的通达。</li>
+</ul>
+<p>对于这个问题，我们可以通过设置 coordinator 运行在 underlay 模式解决。在此模式下，<code>coordinator</code> 插件将创建一对 Veth 设备，将一端放置于主机，另一端放置与 Pod 的 network namespace 中，然后在 Pod 里面设置一些路由规则，
+使 Pod 访问 ClusterIP 时从 veth 设备转发。Pod 访问集群外部目标时从 eth0 或 net1 转发。</p>
+<p><img alt="underlay" src="../../images/spiderpool-underlay.jpg" /></p>
+<p>下面将通过一些例子介绍:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-underlay</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-underlay&quot;,</span>
+<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
+<span class="w">            </span><span class="no">{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
+<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
+<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
+<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
+<span class="w">                </span><span class="no">}</span>
+<span class="w">            </span><span class="no">},{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;underlay&quot;</span>
+<span class="w">            </span><span class="no">}</span>
+<span class="w">        </span><span class="no">]</span>
+<span class="w">    </span><span class="no">}</span>
+</code></pre></div>
+<ul>
+<li>mode: 指定 coordinator 运行在 underlay 模式</li>
+</ul>
+<p>当以 macvlan-underlay 创建 Pod，我们进入到 Pod 内部，看看路由等信息:</p>
+<div class="highlight"><pre><span></span><code>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-underlay-5496bb9c9b-c7rnp<span class="w"> </span>sh
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
+<span class="c1">#</span>
+<span class="c1"># ip a show veth0</span>
+<span class="m">5</span>:<span class="w"> </span>veth0@if428513:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default
+<span class="w">    </span>link/ether<span class="w"> </span>4a:fe:19:22:65:05<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff<span class="w"> </span>link-netnsid<span class="w"> </span><span class="m">0</span>
+<span class="w">    </span>inet6<span class="w"> </span>fe80::48fe:19ff:fe22:6505/64<span class="w"> </span>scope<span class="w"> </span>link
+<span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+<span class="c1"># ip r</span>
+default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>eth0
+<span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.6.212.241
+<span class="m">10</span>.6.212.101<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w"> </span>scope<span class="w"> </span>link
+<span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.101<span class="w"> </span>dev<span class="w"> </span>veth0
+</code></pre></div>
+<ul>
+<li><strong>10.6.212.101 dev veth0 scope link</strong>: 10.6.212.101 是节点的 IP,确保 Pod 访问本节点时从 veth0 转发。</li>
+<li><strong>10.233.64.0/18 via 10.6.212.101 dev veth0</strong>: 10.233.64.0/18 是集群 Service 的 CIDR, 确保 Pod 访问 ClusterIP 时从 veth0 转发。</li>
+</ul>
+<p>这个方案强烈依赖与 kube-proxy 的 MASQUERADE 。 在一些特殊的场景下，我们需要设置 kube-proxy 的 <code>masqueradeAll</code> 为 true。</p>
+<blockquote>
+<p>在默认情况下，Pod 的 underlay 子网与集群的 clusterCIDR 不同， 无需开启 <code>masqueradeAll</code>, 它们之间的访问将会被 SNAT。但如果 Pod 的 underlay 子网与集群的 clusterCIDR 相同，那我们必须要设置 <code>masqueradeAll</code> 为 true.</p>
+</blockquote>
+<h3 id="coordinator-overlay">配置 coordinator 运行在 overlay 模式</h3>
+<p>与 Underlay 模式相对应，我们有时候并不关心集群部署环境的底层网络是什么，我们希望集群能够运行在大多数的底层网络。常常会用到如<a href="https://github.com/projectcalico/calico">Calico</a> 和 <a href="https://github.com/cilium/cilium">Cilium</a> 等CNI, 这些插件多数使用了 vxlan 等隧道技术，搭建起一个 Overlay 网络平面，再借用 NAT 技术实现南北向的通信。</p>
+<p>此模式的优点有:</p>
+<ul>
+<li>IP 地址充沛，几乎不存在地址短缺的问题</li>
+<li>兼容性强，能够运行在大多数底层网络下</li>
+</ul>
+<p>但这种模式下存在以下的问题:</p>
+<ul>
+<li>因为 calico 会用到一些封装技术，性能会得到影响</li>
+<li>大多都不支持 Pod 的 IP 地址固定</li>
+<li>如果通过 Multus 为 Pod 附加多张网卡时，Pod 通信时常常遇到数据包来回路径不一致的问题，导致 Pod 无法正常通信</li>
+</ul>
+<blockquote>
+<p>当 Pod 附加了多张网卡时，极大可能出现 Pod 通信数据包来回路径不一致的问题。如果数据链路上存在一些安全设备，由于数据包的来回路径不一致，流量可能被安全设备认为是 "半连接"(没有 TCP SYN 报文的记录，但收到 TCP ACK 报文 )，在这种情况下，安全设备会阻断掉该连接，造成 Pod 通信异常。</p>
+</blockquote>
+<p>上述问题我们可以通过设置 coordinator 运行在 overlay 模式解决。 在此模式下，<code>coordinator</code> 不会创建 veth 设备，而是设置一些策略路由，确保 Pod 访问 ClusterIP 时从 eth0(通常由 Calico、Cilium等CNI创建) 转发，Pod 访问集群外部目标时从 net1 (通常由 Macvlan、IPvlan 等CNI创建) 转发。</p>
+<p><img alt="overlay" src="../../images/spiderpool-overlay.jpg" /></p>
+<p>我们通过一些例子来介绍这个模式:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-overlay</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-overlay&quot;,</span>
+<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
+<span class="w">            </span><span class="no">{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
+<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
+<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
+<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
+<span class="w">                </span><span class="no">}</span>
+<span class="w">            </span><span class="no">},{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;overlay&quot;</span>
+<span class="w">            </span><span class="no">}</span>
+<span class="w">        </span><span class="no">]</span>
+<span class="w">    </span><span class="no">}</span>
+</code></pre></div>
+<ul>
+<li>mode: 指定 coordinator 运行在 overlay 模式</li>
+</ul>
+<p>当以 macvlan-overlay 创建 Pod，我们进入到 Pod 内部，看看路由等信息:</p>
+<div class="highlight"><pre><span></span><code>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-overlay-97bf89fdd-kdgrb<span class="w"> </span>sh
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
+<span class="c1">#</span>
+<span class="c1"># ip rule</span>
+<span class="m">0</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
+<span class="m">32759</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.233.105.154<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
+<span class="m">32761</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>to<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
+<span class="m">32762</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>to<span class="w"> </span><span class="m">10</span>.233.64.0/18<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
+<span class="m">32763</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>to<span class="w"> </span><span class="m">10</span>.233.0.0/18<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
+<span class="m">32765</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>to<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
+<span class="m">32766</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
+<span class="m">32767</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
+<span class="c1"># ip r</span>
+default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>net1
+<span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.6.212.227
+<span class="c1"># ip r show table 100</span>
+default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
+<span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+<span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0
+<span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0
+<span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+</code></pre></div>
+<p>这些策略路由:</p>
+<ul>
+<li><strong>32759: from 10.233.105.154 lookup 100</strong>: 确保从 eth0(calico 网卡)发出的数据包走table 100</li>
+<li><strong>32762: from all to 10.233.64.0/18 lookup 100</strong>: 确保 Pod 访问 ClusterIP 时走 table 100，从 eth0 转发出去。</li>
+<li>默认情况下，net1 的所有子网路由保留在 Main 表; eth0 的子网路由保留在 Table 100。</li>
+</ul>
+<p>在 Overlay 模式下, Pod 访问 ClusterIP 完全借助于 Overlay CNI 的网卡(eth0)，无需其他特殊配置。</p>
+<h2 id="pod-ip">支持检测 Pod 的 IP 是否冲突</h2>
+<p>在创建 Pod 时，我们可借助 <code>coordinator</code> 检测 Pod 的 IP 是否冲突，支持检测 IPv4 和 IPv6 地址。我们通过发送 ARP 或 NDP 探测报文，如果发现回复报文的 Mac 地址不是 Pod 本身，那我们认为这个 IP 是冲突的。</p>
+<p>我们可以通过下面的方式配置:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-underlay</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-underlay&quot;,</span>
+<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
+<span class="w">            </span><span class="no">{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
+<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
+<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
+<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
+<span class="w">                </span><span class="no">}</span>
+<span class="w">            </span><span class="no">},{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;underlay&quot;,</span>
+<span class="w">                </span><span class="no">&quot;detectGateway&quot;: false,</span>
+<span class="w">                </span><span class="no">&quot;detectIPConflict&quot;: true</span>
+<span class="w">            </span><span class="no">}</span>
+<span class="w">        </span><span class="no">]</span>
+<span class="w">    </span><span class="no">}</span>
+</code></pre></div>
+<p>如果发现 Pod 的 IP 是冲突，那么 Pod 将会创建失败。在 Pod 的 Event 事件中，我们可以看到冲突 IP 的主机的物理地址。</p>
+<h2 id="pod">支持检测 Pod 的网关是否可达</h2>
+<p>在创建 Pod 时，我们可借助 <code>coordinator</code> 检测 Pod 的网关是否可达，支持检测 IPv4 和 IPv6 的网关地址。我们通过发送 ICMP 报文，探测网关地址是否可达。</p>
+<p>我们可以通过下面的方式配置:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-underlay</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-underlay&quot;,</span>
+<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
+<span class="w">            </span><span class="no">{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
+<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
+<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
+<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
+<span class="w">                </span><span class="no">}</span>
+<span class="w">            </span><span class="no">},{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;underlay&quot;,</span>
+<span class="w">                </span><span class="no">&quot;detectGateway&quot;: true</span>
+<span class="w">            </span><span class="no">}</span>
+<span class="w">        </span><span class="no">]</span>
+<span class="w">    </span><span class="no">}</span>
+</code></pre></div>
+<p>如果发现 Pod 的网关不可达，那么 Pod 将会创建失败。在 Pod 的 Event 事件中，我们可以看到有 Pod 的网关不可达的类似错误。</p>
+<h2 id="pod-mac">支持固定 Pod 的 Mac 地址前缀</h2>
+<p>我们可以通过 <code>coordinator</code> 插件固定 Pod 的 Mac 地址前缀，Pod 的 Mac 地址将由配置的 Mac 地址前缀 + Pod's IP 组成。</p>
+<p>我们可以通过下面的方式配置:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-underlay</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-underlay&quot;,</span>
+<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
+<span class="w">            </span><span class="no">{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
+<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
+<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
+<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
+<span class="w">                </span><span class="no">}</span>
+<span class="w">            </span><span class="no">},{</span>
+<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
+<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;underlay&quot;,</span>
+<span class="w">                </span><span class="no">&quot;podMACPrefix&quot;: &quot;0a:1b&quot;</span>
+<span class="w">            </span><span class="no">}</span>
+<span class="w">        </span><span class="no">]</span>
+<span class="w">    </span><span class="no">}</span>
+</code></pre></div>
+<p>当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"</p>
+<h2 id="_1">已知问题</h2>
+<ul>
+<li>Underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败</li>
+</ul>
+<p>此问题是因为数据包来回路径不一致导致，发出的请求报文匹配源Pod 侧的路由，会通过 veth0 转发到主机侧，再由主机侧转发至目标 Pod。 目标 Pod 看见数据包的源 IP 为 源 Pod 的 Underlay IP，直接走 Underlay 网络而不会经过源 Pod 所在主机。
+在该主机看来这是一个非法的数据包(意外的收到 TCP 的第二次握手报文，认为是 conntrack table invalid), 所以被 kube-proxy 的一条 iptables 规则显式的 drop 。 目前可以通过切换 kube-proxy 的模式为 ipvs 规避。</p>
+<ul>
+<li>Overlay 模式下, 当 Pod 附加多张网卡时。如果集群的缺省CNI 为 Cilium, Pod 的 underlay 网卡 无法与节点通信。</li>
+</ul>
+<p>我们借助缺省CNI创建 Veth 设备，实现 Pod 的 underlay IP 与节点通信(正常情况下，macvlan 在 bridge 模式下， 其父子接口无法直接)，但 Cilium 不允许非 Cilium 子网的 IP 从 Veth 设备转发。</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

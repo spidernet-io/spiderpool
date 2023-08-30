@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>Ovs-cni Quick Start - spiderpool</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Ovs-cni Quick Start";
+        var mkdocs_page_input_path = "usage/install/underlay/get-started-ovs-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">Ovs-cni Quick Start</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/underlay/get-started-ovs-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="ovs-cni-quick-start">Ovs-cni Quick Start</h1>
+<p><a href="../get-started-ovs/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<p>Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>、<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">Ovs-cni</a> 、<a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> 为例，搭建一套完整的 Underlay 网络解决方案，该方案能将可用的网桥公开为节点资源，供集群使用。</p>
+<h2 id="_1">先决条件</h2>
+<ol>
+<li>
+<p>一个多节点的 Kubernetes 集群</p>
+</li>
+<li>
+<p><a href="https://helm.sh/docs/intro/install/">Helm 工具</a></p>
+</li>
+<li>
+<p>必须在主机上安装并运行 Open vSwitch，可参考<a href="https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages">官方安装说明</a></p>
+<p>以下示例是基于 Ubuntu 22.04.1。主机系统不同，安装方式可能不同。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>openvswitch-switch
+~#<span class="w"> </span>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>openvswitch-switch
+</code></pre></div>
+</li>
+</ol>
+<h2 id="ovs-cni">安装 Ovs-cni</h2>
+<p><a href="https://github.com/k8snetworkplumbingwg/ovs-cni"><code>ovs-cni</code></a> 是一个基于 Open vSwitch（OVS）的 Kubernetes CNI 插件，它提供了一种在 Kubernetes 集群中使用 OVS 进行网络虚拟化的方式。</p>
+<p>确认节点上是否存在二进制文件 /opt/cni/bin/ovs 。如果节点上不存在该二进制文件，可参考如下命令，在所有节点上下载安装：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>wget<span class="w"> </span>https://github.com/k8snetworkplumbingwg/ovs-cni/releases/download/v0.31.1/plugin
+
+~#<span class="w"> </span>mv<span class="w"> </span>./plugin<span class="w"> </span>/opt/cni/bin/ovs
+
+~#<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/opt/cni/bin/ovs
+</code></pre></div>
+<p>Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、L3 网络。以下是创建网桥的示例，请在每个节点上执行：</p>
+<ol>
+<li>
+<p>创建 Open vSwitch 网桥。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
+</code></pre></div>
+</li>
+<li>
+<p>网络接口连接到网桥</p>
+<p>此过程取决于您的平台，以下命令只是示例说明，它可能会破坏您的系统。首先使用 <code>ip link show</code> 查询主机的可用接口，示例中使用主机上的接口：<code>eth0</code> 为例。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
+~#<span class="w"> </span>ip<span class="w"> </span>addr<span class="w"> </span>add<span class="w"> </span>&lt;IP地址&gt;/&lt;子网掩码&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
+~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;默认网关IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+</code></pre></div>
+</li>
+</ol>
+<p>创建后，可以在每个节点上查看到如下的网桥信息：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+<span class="w">    </span>Bridge<span class="w"> </span>br1
+<span class="w">        </span>Port<span class="w"> </span>eth0
+<span class="w">            </span>Interface<span class="w"> </span>eth0
+<span class="w">        </span>Port<span class="w"> </span>br1
+<span class="w">            </span>Interface<span class="w"> </span>br1
+<span class="w">                </span>type:<span class="w"> </span>internal
+<span class="w">        </span>Port<span class="w"> </span>veth97fb4795
+<span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
+<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+</code></pre></div>
+<h2 id="spiderpool">安装 Spiderpool</h2>
+<ol>
+<li>
+<p>安装 Spiderpool。</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ovs-conf&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 以帮助您快速的拉取镜像。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。</p>
+</blockquote>
+</li>
+<li>
+<p>创建 SpiderIPPool 实例。</p>
+<p>Pod 会从该 IP 池中获取 IP，进行 Underlay 的网络通讯，所以该 IP 池的子网需要与接入的 Underlay 子网对应。以下是创建相关的 SpiderIPPool 示例：</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ippool-test</span>
+<span class="s">spec:</span>
+<span class="s">  ipVersion: 4</span>
+<span class="s">  ips:</span>
+<span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
+<span class="s">  subnet: 172.18.0.0/16</span>
+<span class="s">  gateway: 172.18.0.1</span>
+<span class="s">  multusName: </span>
+<span class="s">  - ovs-conf</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+<li>
+<p>验证安装：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>spiderpool
+spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-multus-7vkm2<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-multus-rwzjn<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sp<span class="w"> </span>ippool-test<span class="w">       </span>
+NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
+~#<span class="w"> </span>
+</code></pre></div>
+</li>
+<li>
+<p>为 ovs-cni 创建 multus NetworkAttachmentDefinition CR</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
+<span class="s">kind: NetworkAttachmentDefinition</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ovs-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  config: |-</span>
+<span class="s">    {</span>
+<span class="s">        &quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="s">        &quot;name&quot;: &quot;ovs-conf&quot;,</span>
+<span class="s">        &quot;plugins&quot;: [</span>
+<span class="s">            {</span>
+<span class="s">                &quot;type&quot;: &quot;ovs&quot;,</span>
+<span class="s">                &quot;bridge&quot;: &quot;br1&quot;,</span>
+<span class="s">                &quot;ipam&quot;: {</span>
+<span class="s">                    &quot;type&quot;: &quot;spiderpool&quot;,</span>
+<span class="s">                }</span>
+<span class="s">            }</span>
+<span class="s">        ]</span>
+<span class="s">    }</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+</ol>
+<h2 id="_2">创建应用</h2>
+<p>以下的示例 Yaml 中， 会创建 2 个副本的 Deployment，其中：</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network</code>：用于指定 Multus 的 NetworkAttachmentDefinition 配置，会基于它为应用创建一张默认网卡。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
+<span class="s">          {</span>
+<span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
+<span class="s">          }</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app</span>
+<span class="s">    spec:</span>
+<span class="s">      affinity:</span>
+<span class="s">        podAntiAffinity:</span>
+<span class="s">          requiredDuringSchedulingIgnoredDuringExecution:</span>
+<span class="s">            - labelSelector:</span>
+<span class="s">                matchLabels:</span>
+<span class="s">                  app: test-app</span>
+<span class="s">              topologyKey: kubernetes.io/hostname</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>SpiderIPPool 为应用分配了 IP，应用的 IP 将会自动固定在该 IP 范围内：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                 </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-6f8dddd88d-hstg7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.131<span class="w">   </span>ipv4-worker<span class="w">          </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-6f8dddd88d-rj7sm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.132<span class="w">   </span>ipv4-control-plane<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderendpoints
+NAME<span class="w">                        </span>INTERFACE<span class="w">   </span>IPV4POOL<span class="w">      </span>IPV4<span class="w">               </span>IPV6POOL<span class="w">   </span>IPV6<span class="w">   </span>NODE
+test-app-6f8dddd88d-hstg7<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.131/16<span class="w">                     </span>ipv4-worker
+test-app-6f8dddd88d-rj7sm<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.132/16<span class="w">                     </span>ipv4-control-plane
+</code></pre></div>
+<p>测试 Pod 与 Pod 的通讯情况，以跨节点 Pod 为例：</p>
+<div class="highlight"><pre><span></span><code>~#kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-6f8dddd88d-hstg7<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
+
+PING<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span><span class="o">(</span><span class="m">172</span>.18.30.132<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.882<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.195<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.195/1.038/1.882<span class="w"> </span>ms
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../../..";</script>
+    <script src="../../../../js/theme_extra.js"></script>
+    <script src="../../../../js/theme.js"></script>
+      <script src="../../../../search/main.js"></script>
+      <script src="../../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

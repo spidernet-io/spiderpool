@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>Weave - spiderpool</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Weave";
+        var mkdocs_page_input_path = "usage/install/underlay/get-started-weave.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Underlay installation</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Installation &raquo;</li>
+          <li>Underlay installation &raquo;</li>
+      <li class="breadcrumb-item active">Weave</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/underlay/get-started-weave.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="weave-quick-start">Weave Quick Start</h1>
+<p><strong>English</strong> | <a href="../get-started-weave-zh_CN/"><strong>简体中文</strong></a></p>
+<p><code>Weave</code>, an open-source network solution, provides network connectivity and policies for containers by creating a virtual network, automatically discovering and connecting containers. Also known as a Kubernetes Container Network Interface (CNI) solution, <code>Weave</code> utilizes the built-in <code>IPAM</code> to allocate IP addresses for Pods by default, with limited visibility and IPAM capabilities for Pods. This page demonstrates how <code>Weave</code> and <code>Spiderpool</code> can be integrated to extend <code>Weave</code>'s IPAM capabilities while preserving its original functions.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>A ready Kubernetes cluster without any CNI installed</li>
+<li>Helm, Kubectl and Jq (optional)</li>
+</ul>
+<h2 id="install">Install</h2>
+<ol>
+<li>
+<p>Install Weave:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w">  </span>https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+</code></pre></div>
+<p>Wait for Pod Running:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system  | grep weave</span>
+weave-net-ck849<span class="w">                         </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">     </span><span class="m">4</span><span class="w">     </span><span class="m">0</span><span class="w">   </span>1m
+weave-net-vhmqx<span class="w">                         </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">     </span><span class="m">4</span><span class="w">     </span><span class="m">0</span><span class="w">   </span>1m
+</code></pre></div>
+</li>
+<li>
+<p>Install Spiderpool</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
+</code></pre></div>
+<blockquote>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+</blockquote>
+<p>Wait for Pod Running and create the IPPool used by Pod:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: weave-ippool-v4</span>
+<span class="s">  labels:  </span>
+<span class="s">    ipam.spidernet.io/subnet-cidr: 10-32-0-0-12</span>
+<span class="s">spec:</span>
+<span class="s">  ips:</span>
+<span class="s">  - 10.32.0.100-10.32.50.200</span>
+<span class="s">  subnet: 10.32.0.0/12</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p><code>Weave</code> uses <code>10.32.0.0/12</code> as the cluster's default subnet, and thus a SpiderIPPool with the same subnet needs to be created in this case.</p>
+</blockquote>
+</li>
+<li>
+<p>Verify installation</p>
+<p><code>shell
+[root@node1 ~]# kubectl get po -n kube-system | grep spiderpool
+spiderpool-agent-7hhkz                   1/1     Running     0              13m
+spiderpool-agent-kxf27                   1/1     Running     0              13m
+spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+spiderpool-init                          0/1     Completed   0              13m
+[root@node1 ~]# kubectl get sp
+NAME               VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+weave-ippool-v4    4         10.32.0.0/12   0                    12901            false</code></p>
+</li>
+</ol>
+<h2 id="switch-weaves-ipam-to-spiderpool">Switch <code>Weave</code>'s <code>IPAM</code> to Spiderpool</h2>
+<p>Change the <code>ipam</code> field of <code>/etc/cni/net.d/10-weave.conflist</code> on each node:</p>
+<p>Change the following:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat /etc/cni/net.d/10-weave.conflist</span>
+<span class="o">{</span>
+<span class="w">    </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.0&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;weave&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="o">{</span>
+<span class="w">            </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;weave&quot;</span>,
+<span class="w">            </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;weave-net&quot;</span>,
+<span class="w">            </span><span class="s2">&quot;hairpinMode&quot;</span>:<span class="w"> </span><span class="nb">true</span>
+<span class="w">        </span><span class="o">}</span>,
+<span class="w">        </span><span class="o">{</span>
+<span class="w">            </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;portmap&quot;</span>,
+<span class="w">            </span><span class="s2">&quot;capabilities&quot;</span>:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;portMappings&quot;</span>:<span class="w"> </span>true<span class="o">}</span>,
+<span class="w">            </span><span class="s2">&quot;snat&quot;</span>:<span class="w"> </span><span class="nb">true</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="w">    </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>To:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;cniVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.3.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weave&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;plugins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weave&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weave-net&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;ipam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="nt">&quot;hairpinMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;portmap&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;capabilities&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;portMappings&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">            </span><span class="nt">&quot;snat&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Alternatively, it can be changed with <code>jq</code> in one step. If <code>jq</code> is not installed, you can use the following command to install it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Take centos7 as an example</span>
+yum<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>jq
+</code></pre></div>
+<p>Change the CNI configuration file:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="o">&lt;&lt;&lt;</span><span class="w"> </span><span class="k">$(</span>jq<span class="w"> </span><span class="s1">&#39;.plugins[0].ipam.type = &quot;spiderpool&quot; &#39;</span><span class="w"> </span>/etc/cni/net.d/10-weave.conflist<span class="k">)</span><span class="w"> </span>&gt;<span class="w"> </span>/etc/cni/net.d/10-weave.conflist
+</code></pre></div>
+<blockquote>
+<p>Make sure to run this command at each node</p>
+</blockquote>
+<h2 id="create-applications">Create applications</h2>
+<p>Specify that the Pods will be allocated IPs from that SpiderSubnet via the annotation <code>ipam.spidernet.io/ippool</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">2</span>
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>nginx
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>ipam.spidernet.io/ippool:<span class="w"> </span><span class="s1">&#39;{&quot;ipv4&quot;:[&quot;weave-ippool-v4&quot;]}&#39;</span>
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>nginx
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+<span class="w">        </span>lifecycle:<span class="w"> </span><span class="o">{}</span>
+<span class="w">        </span>name:<span class="w"> </span>container-1
+EOF
+</code></pre></div>
+<blockquote>
+<p><em>spec.template.metadata.annotations.ipam.spidernet.io/subnet</em>: specifies that the Pods will be assigned IPs from SpiderSubnet: <code>weave-ippool-v4</code>.</p>
+</blockquote>
+<p>The Pods have been created and allocated IP addresses from Spiderpool Subnets:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po  -o wide</span>
+NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+nginx-5745d9b5d7-2rvn7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>8s<span class="w">    </span><span class="m">10</span>.32.22.190<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-5745d9b5d7-5ssck<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>8s<span class="w">    </span><span class="m">10</span>.32.35.87<span class="w">    </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+<span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DISABLE
+weave-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.32.0.0/12<span class="w">    </span><span class="m">2</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span>
+</code></pre></div>
+<p>To test connectivity, let's use inter-node communication between Pods as an example:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl exec  nginx-5745d9b5d7-2rvn7 -- ping 10.32.35.87 -c 2</span>
+PING<span class="w"> </span><span class="m">10</span>.32.35.87<span class="w"> </span><span class="o">(</span><span class="m">10</span>.32.35.87<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.32.35.87:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">4</span>.561<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.32.35.87:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.632<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">10</span>.32.35.87<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.632/2.596/4.561<span class="w"> </span>ms
+</code></pre></div>
+<p>The test results indicate that IP allocation and network connectivity are normal. <code>Spiderpool</code> has extended the capabilities of Weave's IPAM. Next, you can go to <a href="https://spidernet-io.github.io/spiderpool/">Spiderpool</a> to explore other features of <code>Spiderpool</code>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../get-started-calico/" class="btn btn-neutral float-left" title="Calico"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../get-started-kind/" class="btn btn-neutral float-right" title="Macvlan">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../get-started-calico/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../get-started-kind/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../../..";</script>
+    <script src="../../../../js/theme_extra.js"></script>
+    <script src="../../../../js/theme.js"></script>
+      <script src="../../../../search/main.js"></script>
+      <script src="../../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

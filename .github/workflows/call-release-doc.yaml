@@ -25,7 +25,7 @@ env:
   SRC_DIRECTORY: 'docs'
   DEST_DIRECTORY: 'docs'
   PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: weizhoublue
+  PR_REVIWER: ty-dc
 
 jobs:
   release_doc:

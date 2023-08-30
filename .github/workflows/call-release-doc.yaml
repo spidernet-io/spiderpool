@@ -111,8 +111,10 @@ jobs:
           rm -rf ./mkdocs.yml
           git checkout -f  ${{ env.MERGE_BRANCH }}
           if ${{ env.SUBMIT != 'true' }}; then
-            rm -rf ./changelogs
-            tar -czvf site.tar.gz * && mv site.tar.gz ./docs/
+            cd docs
+            rm -rf ./charts
+            rm -rf ./index.yaml
+            tar -czvf site.tar.gz * && mv site.tar.gz ../docs/
             ls
             ls ./docs
             echo "Automatic release, offline package ready"
@@ -121,7 +123,7 @@ jobs:
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.2
-        if: ${{ env.SUBMIT != 'true' || env.SKIP_ALL_JOB != 'true' }}
+        if: ${{ env.SUBMIT != 'true' && env.SKIP_ALL_JOB != 'true' }}
         with:
           name: website_package_artifact
           path: docs/site.tar.gz
@@ -141,6 +143,6 @@ jobs:
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}

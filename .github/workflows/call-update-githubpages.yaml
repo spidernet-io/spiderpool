@@ -40,8 +40,15 @@ jobs:
         run: |
           rm -rf _oldCharts
           cp -rf ${{ env.DEST_DIRECTORY }}/charts _oldCharts
-          rm -rf ${{ env.DEST_DIRECTORY }}/charts
+          rm -rf ${{ env.DEST_DIRECTORY }}
+          mkdir ${{ env.DEST_DIRECTORY }}
           mkdir ${{ env.DEST_DIRECTORY }}/charts
+
+      - name: Download Website Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.site_artifact_name }}
+          path: ${{ env.DEST_DIRECTORY }}
 
       - name: Download Chart Artifact
         uses: actions/download-artifact@v3
@@ -51,7 +58,16 @@ jobs:
 
       - name: Untar Artifact
         run: |
+          # untar website html
+          cd ${{ env.DEST_DIRECTORY }}
+          ALL_TAR_FILE=`ls *.tar.gz`
+          for ITEM in $ALL_TAR_FILE ; do
+            echo "untar $ITEM "
+            tar -xzvf $ITEM
+            rm -f $ITEM
+          done
           # restore old charts
+          cd ..
           # do not overwrite new chart tar
           cp -n _oldCharts/* ${{ env.DEST_DIRECTORY }}/charts
           rm -rf _oldCharts
@@ -73,5 +89,5 @@ jobs:
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}

@@ -5,7 +5,7 @@ repo_name: spidernet-io/spiderpool
 repo_url: https://github.com/spidernet-io/spiderpool
 remote_branch: github_pages
 theme:
-  name: readthedocs
+  name: material
   custom_dir: docs/overrides
   # The maximum depth of the navigation tree in the sidebar
   navigation_depth: 2

@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1180,6 +1194,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1196,6 +1224,20 @@
     <li class="md-nav__item">
       <a href="../crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1568,7 +1610,7 @@
 </tr>
 <tr>
 <td>routes</td>
-<td>custom routes in this pool</td>
+<td>custom routes in this pool (please don't set default route <code>0.0.0.0/0</code> if property <code>gateway</code> exists)</td>
 <td>list of <a href="./#Route">route</a></td>
 <td>optional</td>
 <td></td>
@@ -1592,7 +1634,7 @@
 </tr>
 <tr>
 <td>namespaceName</td>
-<td>specify which namespaces pods can use this pool</td>
+<td>specify which namespaces pods can use this pool (The priority is higher than property <code>namespaceAffinity</code>)</td>
 <td>list of strings</td>
 <td>optional</td>
 <td></td>
@@ -1608,7 +1650,7 @@
 </tr>
 <tr>
 <td>nodeName</td>
-<td>specify which nodes pods can use this pool</td>
+<td>specify which nodes pods can use this pool (The priority is higher than property <code>nodeAffinity</code>)</td>
 <td>list of strings</td>
 <td>optional</td>
 <td></td>

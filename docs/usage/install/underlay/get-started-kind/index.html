@@ -365,8 +365,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-spiderpool-on-a-kind-cluster" class="md-nav__link">
-    Deploying Spiderpool on a Kind cluster
+  <a href="#various-installation-modes-supported-by-spiderpool-script" class="md-nav__link">
+    Various installation modes supported by Spiderpool script
+  </a>
+  
+    <nav class="md-nav" aria-label="Various installation modes supported by Spiderpool script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool-in-underlay-cni-macvlan-cluster" class="md-nav__link">
+    Install Spiderpool in Underlay CNI (Macvlan) cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool-on-calico-overlay-cni-cluster" class="md-nav__link">
+    Install Spiderpool on Calico Overlay CNI cluster
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-spiderpool-on-cilium-overlay-cni-cluster" class="md-nav__link">
+    Install Spiderpool on Cilium Overlay CNI cluster
   </a>
   
 </li>
@@ -635,6 +662,20 @@
     <li class="md-nav__item">
       <a href="../../../spider-subnet/" class="md-nav__link">
         SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
       </a>
     </li>
   
@@ -1135,6 +1176,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1151,6 +1206,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1329,8 +1398,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-spiderpool-on-a-kind-cluster" class="md-nav__link">
-    Deploying Spiderpool on a Kind cluster
+  <a href="#various-installation-modes-supported-by-spiderpool-script" class="md-nav__link">
+    Various installation modes supported by Spiderpool script
+  </a>
+  
+    <nav class="md-nav" aria-label="Various installation modes supported by Spiderpool script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool-in-underlay-cni-macvlan-cluster" class="md-nav__link">
+    Install Spiderpool in Underlay CNI (Macvlan) cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool-on-calico-overlay-cni-cluster" class="md-nav__link">
+    Install Spiderpool on Calico Overlay CNI cluster
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-spiderpool-on-cilium-overlay-cni-cluster" class="md-nav__link">
+    Install Spiderpool on Cilium Overlay CNI cluster
   </a>
   
 </li>
@@ -1374,20 +1470,16 @@
 
 <h1 id="kind-quick-start">Kind Quick Start</h1>
 <p><strong>English</strong> | <a href="../get-started-kind-zh_CN/"><strong>简体中文</strong></a></p>
-<p>kind is a tool for running local Kubernetes clusters using Docker container “nodes”. Spiderpool provides a script for installing a Kind cluster, which allows you to quickly build a set of Kind clusters with Macvlan as the main CNI and Multus and Spiderpool, which you can use to test and experience Spiderpool.</p>
+<p>Kind is a tool for running local Kubernetes clusters using Docker container "nodes". Spiderpool provides a script to install the Kind cluster, you can use it to deploy a cluster that meets your needs, and test and experience Spiderpool.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li><a href="https://go.dev/">Go</a> has already been installed.</li>
-</ul>
-<h2 id="deploying-spiderpool-on-a-kind-cluster">Deploying Spiderpool on a Kind cluster</h2>
-<ol>
+<li>
+<p><a href="https://go.dev/">Go</a> has already been installed.</p>
+</li>
 <li>
 <p>Clone the Spiderpool code repository to the local host and go to the root directory of the Spiderpool project.</p>
 <div class="highlight"><pre><span></span><code>~# git clone https://github.com/spidernet-io/spiderpool.git <span class="o">&amp;&amp;</span> <span class="nb">cd</span> spiderpool
 </code></pre></div>
-</li>
-<li>
-<p>Execute <code>make dev-doctor</code> to check that the development tools on the local host meet the conditions for deploying a Kind cluster with Spiderpool, and that the components are automatically installed for you if they are missing.</p>
 </li>
 <li>
 <p>Get the latest image of Spiderpool.</p>
@@ -1395,40 +1487,48 @@
 </code></pre></div>
 </li>
 <li>
-<p>Execute the following command to create a Kind cluster and install Multus, Macvlan, Spiderpool for you.</p>
-<div class="highlight"><pre><span></span><code>~# make e2e_init -e <span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
-</code></pre></div>
-<p>Note: If you are mainland user who is not available to access ghcr.io, you can use the following command to avoid failures in pulling Spiderpool and Multus images.</p>
-<div class="highlight"><pre><span></span><code>~# make e2e_init -e <span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span> -e <span class="nv">SPIDERPOOL_REGISTER</span><span class="o">=</span>ghcr.m.daocloud.io -e <span class="nv">E2E_MULTUS_IMAGE_REGISTER</span><span class="o">=</span>ghcr.m.daocloud.io
-</code></pre></div>
+<p>Execute <code>make dev-doctor</code> to check that the development tools on the local host meet the conditions for deploying a Kind cluster with Spiderpool, and that the components are automatically installed for you if they are missing.</p>
 </li>
-</ol>
+</ul>
+<h2 id="various-installation-modes-supported-by-spiderpool-script">Various installation modes supported by Spiderpool script</h2>
+<p>If you are mainland user who is not available to access ghcr.io, Additional parameter <code>-e E2E_CHINA_IMAGE_REGISTRY=true</code> can be specified during installation to help you pull images faster.</p>
+<h3 id="install-spiderpool-in-underlay-cni-macvlan-cluster">Install Spiderpool in Underlay CNI (Macvlan) cluster</h3>
+<div class="highlight"><pre><span></span><code>~# make e2e_init_underlay -e <span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
+</code></pre></div>
+<h3 id="install-spiderpool-on-calico-overlay-cni-cluster">Install Spiderpool on Calico Overlay CNI cluster</h3>
+<div class="highlight"><pre><span></span><code>~# make e2e_init_overlay_calico -e <span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
+</code></pre></div>
+<h2 id="install-spiderpool-on-cilium-overlay-cni-cluster">Install Spiderpool on Cilium Overlay CNI cluster</h2>
+<div class="highlight"><pre><span></span><code>~# make e2e_init_overlay_cilium -e <span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
+</code></pre></div>
 <h2 id="check-that-everything-is-working">Check that everything is working</h2>
 <p>Execute the following command in the root directory of the Spiderpool project to configure KUBECONFIG for the Kind cluster for kubectl.</p>
 <div class="highlight"><pre><span></span><code>~# <span class="nb">export</span> <span class="nv">KUBECONFIG</span><span class="o">=</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/test/.cluster/spider/.kube/config
 </code></pre></div>
 <p>It should be possible to observe the following:</p>
-<div class="highlight"><pre><span></span><code>~# kubectl get nodes 
+<div class="highlight"><pre><span></span><code>~# kubectl get nodes
 NAME                   STATUS   ROLES           AGE     VERSION
 spider-control-plane   Ready    control-plane   2m29s   v1.26.2
 spider-worker          Ready    &lt;none&gt;          2m58s   v1.26.2
 
 ~# kubectll get po -n kube-sysem <span class="p">|</span> grep spiderpool
-spiderpool-agent-fmx74                         <span class="m">1</span>/1     Running   <span class="m">0</span>               4m26s
-spiderpool-agent-jzfh8                         <span class="m">1</span>/1     Running   <span class="m">0</span>               4m26s
-spiderpool-controller-79fcd4d75f-n9kmd         <span class="m">1</span>/1     Running   <span class="m">0</span>               4m25s
-spiderpool-controller-79fcd4d75f-scw2v         <span class="m">1</span>/1     Running   <span class="m">0</span>               4m25s
-spiderpool-init                                <span class="m">1</span>/1     Running   <span class="m">0</span>               4m26s
-
-~# kubectl get spidersubnet
-NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-default-v4-subnet   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16             <span class="m">253</span>                  <span class="m">253</span>
-default-v6-subnet   <span class="m">6</span>         fc00:f853:ccd:e793::/64   <span class="m">253</span>                  <span class="m">253</span>
+NAME                                           READY   STATUS      RESTARTS   AGE                                
+spiderpool-agent-4dr97                         <span class="m">1</span>/1     Running     <span class="m">0</span>          3m
+spiderpool-agent-4fkm4                         <span class="m">1</span>/1     Running     <span class="m">0</span>          3m
+spiderpool-controller-7864477fc7-c5dk4         <span class="m">1</span>/1     Running     <span class="m">0</span>          3m
+spiderpool-controller-7864477fc7-wpgjn         <span class="m">1</span>/1     Running     <span class="m">0</span>          3m
+spiderpool-init                                <span class="m">0</span>/1     Completed   <span class="m">0</span>          3m
+spiderpool-multus-66xnx                        <span class="m">1</span>/1     Running     <span class="m">0</span>          3m
+spiderpool-multus-xwxv4                        <span class="m">1</span>/1     Running     <span class="m">0</span>          3m
 
 ~# kubectl get spiderippool
-NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-default-v4-ippool   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16             <span class="m">5</span>                    <span class="m">253</span>              <span class="nb">true</span>      <span class="nb">false</span>
-default-v6-ippool   <span class="m">6</span>         fc00:f853:ccd:e793::/64   <span class="m">5</span>                    <span class="m">253</span>              <span class="nb">true</span>      <span class="nb">false</span>
+NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
+default-v4-ippool   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16             <span class="m">5</span>                    <span class="m">253</span>              <span class="nb">true</span>      
+default-v6-ippool   <span class="m">6</span>         fc00:f853:ccd:e793::/64   <span class="m">5</span>                    <span class="m">253</span>              <span class="nb">true</span>      
+vlan100-v4          <span class="m">4</span>         <span class="m">172</span>.100.0.0/16            <span class="m">0</span>                    <span class="m">2559</span>             <span class="nb">false</span>
+vlan100-v6          <span class="m">6</span>         fd00:172:100::/64         <span class="m">0</span>                    <span class="m">65009</span>            <span class="nb">false</span>
+vlan100-v4          <span class="m">4</span>         <span class="m">172</span>.200.0.0/16            <span class="m">0</span>                    <span class="m">2559</span>             <span class="nb">false</span>
+vlan200-v6          <span class="m">6</span>         fd00:172:200::/64         <span class="m">0</span>                    <span class="m">65009</span>            <span class="nb">false</span>
 </code></pre></div>
 <p>The Quick Install Kind Cluster script provided by Spiderpool will automatically create an application for you to verify that your Kind cluster is working properly and the following is the running state of the application:</p>
 <div class="highlight"><pre><span></span><code>~# kubectl get po -l <span class="nv">app</span><span class="o">=</span>test-pod -o wide
@@ -1474,7 +1574,7 @@ test-app-84d5699474-dbtl5   <span class="m">1</span>/1     Running   <span class
 </li>
 <li>
 <p>Delete test's images</p>
-<div class="highlight"><pre><span></span><code>~# docker rmi -f <span class="k">$(</span>docker images <span class="p">|</span> grep spiderpool <span class="p">|</span> awk <span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span> 
+<div class="highlight"><pre><span></span><code>~# docker rmi -f <span class="k">$(</span>docker images <span class="p">|</span> grep spiderpool <span class="p">|</span> awk <span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span>
 ~# docker rmi -f <span class="k">$(</span>docker images <span class="p">|</span> grep multus <span class="p">|</span> awk <span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span>
 </code></pre></div>
 </li>

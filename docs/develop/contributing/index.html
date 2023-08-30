@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1069,6 +1083,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1085,6 +1113,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1555,14 +1597,9 @@ finish checking e2e tools
 </thead>
 <tbody>
 <tr>
-<td>test underlay CNI without subnet feature</td>
+<td>test underlay CNI</td>
 <td>make    e2e_init_underlay</td>
 <td>make e2e_test_underlay</td>
-</tr>
-<tr>
-<td>test underlay CNI with subnet feature</td>
-<td>make    e2e_init_underlay_subnet</td>
-<td>make e2e_test_underlay_subnet</td>
 </tr>
 <tr>
 <td>test overlay CNI for calico</td>
@@ -1610,9 +1647,6 @@ $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
 # it pulls images from another image registry and just use http proxy to pull chart 
 $ make e2e_init_underlay  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
-# setup cluster with subnet feature
-$ make e2e_init_underlay_subnet -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
-
 # setup cluster with calico cni
 $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
@@ -1638,9 +1672,6 @@ $ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repe
 
 # example: run a case until fails
 $ make e2e_test_underlay -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
-
-# Run all e2e tests for enableSpiderSubnet=false cluster
-$ make e2e_test_underlay_subnet
 
 # Run all e2e tests for enableSpiderSubnet=false cluster
 $ make e2e_test_calico

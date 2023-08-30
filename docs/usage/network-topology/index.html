@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ip" class="md-skip">
+        <a href="#based-on-ip-allocation-across-network-zones" class="md-skip">
           Skip to content
         </a>
       
@@ -583,6 +583,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -813,23 +827,58 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderpool" class="md-nav__link">
-    Spiderpool相关功能介绍
+  <a href="#introduce" class="md-nav__link">
+    Introduce
   </a>
   
-    <nav class="md-nav" aria-label="Spiderpool相关功能介绍">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-functions" class="md-nav__link">
+    Project Functions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-requirements" class="md-nav__link">
+    Implementation Requirements
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    多池备选
+  <a href="#clusters-spanning-network-regions" class="md-nav__link">
+    Clusters spanning network regions
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#ippool" class="md-nav__link">
-    IPPool亲和性设置
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-cni-configuration" class="md-nav__link">
+    Install CNI configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-ippools" class="md-nav__link">
+    Create IPPools
   </a>
   
 </li>
@@ -840,8 +889,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    场景示例
+  <a href="#create-the-application" class="md-nav__link">
+    Create the application
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summarize" class="md-nav__link">
+    Summarize
   </a>
   
 </li>
@@ -1139,6 +1195,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1155,6 +1225,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1326,23 +1410,58 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#spiderpool" class="md-nav__link">
-    Spiderpool相关功能介绍
+  <a href="#introduce" class="md-nav__link">
+    Introduce
   </a>
   
-    <nav class="md-nav" aria-label="Spiderpool相关功能介绍">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-functions" class="md-nav__link">
+    Project Functions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-requirements" class="md-nav__link">
+    Implementation Requirements
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    多池备选
+  <a href="#clusters-spanning-network-regions" class="md-nav__link">
+    Clusters spanning network regions
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#ippool" class="md-nav__link">
-    IPPool亲和性设置
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-cni-configuration" class="md-nav__link">
+    Install CNI configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-ippools" class="md-nav__link">
+    Create IPPools
   </a>
   
 </li>
@@ -1353,8 +1472,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    场景示例
+  <a href="#create-the-application" class="md-nav__link">
+    Create the application
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summarize" class="md-nav__link">
+    Summarize
   </a>
   
 </li>
@@ -1382,80 +1508,193 @@
   </a>
 
 
-<h1 id="ip">基于节点网络区域的IP分配</h1>
-<p>对于一些基础设施有特殊需求的用户，例如集群的节点是跨网段一个节点对应一个子网的场景，我们的SpiderPool也可以轻松应对。</p>
-<p><img alt="network-topology" src="../../images/network-topology.png" /></p>
-<h2 id="spiderpool">Spiderpool相关功能介绍</h2>
-<h3 id="_1">多池备选</h3>
-<p>spiderpool在分配IP的时候，可支持多池备选功能，一个Pod不仅仅只能从某个具体的IPPool中分配出一个IP。该功能设计的意义是当使用某个池来为一组Pod分配IP时，若第一个IPPool的IP不够分，那么可顺序的从后续的备选IPPool中分出IP。</p>
+<h1 id="based-on-ip-allocation-across-network-zones">Based on IP allocation across network zones</h1>
+<p><strong>English</strong> | <a href="../network-topology-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="introduce">Introduce</h2>
+<p>The rising popularity of private cloud data centers has made underlay networks  essential components of data center network architecture by offering efficient network transmission and improved network topology management capabilities. Underlay is widely used in the following scenarios due to its low latency, reliability, and security:</p>
 <ul>
 <li>
-<p>使用annotation来指定IPPools，可给Pod打上 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 的annotation来指定IPPool，详情可见 <a href="../../reference/annotation/">Pod Annotation</a></p>
+<p>Latency-sensitive applications: applications in specific industries, such as financial trading and real-time video transmission, are highly sensitive to network latency. Underlay networks directly control physical and link-layer connections to reduce data transmission time, providing an ideal solution for these applications.</p>
 </li>
 <li>
-<p>使用CNI配置文件来指定IPPools，可在 <code>default_ipv4_ippool</code> 和 <code>default_ipv6_ippool</code> 中设置期望使用的IPPools，详情可见 <a href="../../reference/plugin-ipam/">configuration</a></p>
-</li>
-<li>
-<p>设置缺省IPPool, 可给 SpiderIPPool CR实例设置 <code>default</code>来指定一系列的缺省IP池，详情可见SpiderIPPool的CRD定义 <a href="../../reference/crd-spiderippool/">SpiderIPPool</a></p>
+<p>Firewall security control and management: firewalls are often used to manage north-south traffic,  namely communication between internal and external networks, by checking, filtering, and restricting communication traffic. IP address management (IPAM) solutions of underlay networks that allocate fixed egress IP addresses for applications can provide better communication management and control between the cluster and external networks, further enhancing overall network security.</p>
 </li>
 </ul>
-<h3 id="ippool">IPPool亲和性设置</h3>
-<p>一个IP池可以根据亲和性绑定给某个Node，这意味着当一个Pod指定使用多个拥有nodeAffinity的IP池的时候，spiderpool只会使用与Pod当前所在节点亲和的IP池来分配IP。 详情可见 <a href="../ippool-affinity-node/">IPPool-NodeAffinity</a></p>
-<h2 id="_2">场景示例</h2>
-<p>例如在IPv4的单栈集群中拥有两个节点分别名为master和worker，并且限制每个节点仅仅只能使用对应的IPPool(pool-master,pool-worker)。在此场景下，可使用以上 "多池备选" 篇章中介绍的3种方案实现。</p>
-<p>第一步，先给Node以及对应的IPPool设置亲和绑定来强制限定某些池仅能使用于哪些节点。</p>
-<p>第二步，选择一个方案来指定多池备选。</p>
+<p>In the cluster of the Underlay network, when its nodes are distributed in different regions or data centers, and some node regions can only use specific subnets, it will bring challenges to IP address management (IPAM). This article will introduce a method that can realize A complete underlay network solution for IP allocation across network regions.</p>
+<p><img alt="network-topology" src="../../images/ip-allocation-across-networks-1.png" /></p>
+<h2 id="project-functions">Project Functions</h2>
+<p>Spiderpool provides the function of node topology, which can help solve the problem of IP allocation across network regions. Its implementation principle is as follows.</p>
 <ul>
-<li>例如给Pod指定Annotation</li>
+<li>A cluster, but the nodes of the cluster are distributed in different regions or data centers, some nodes' regions can only use the subnet 10.6.1.0/24, and some nodes' regions can only use the subnet 172.16.2.0/24.</li>
 </ul>
-<div class="highlight"><pre><span></span><code>ipam.spidernet.io/ippool: |-
-  {
-    &quot;ipv4&quot;: [&quot;pool-master&quot;, &quot;pool-worker&quot;],
-  }
+<p>In the appeal scenario, when an application deploys copies across subnets, IPAM is required to assign IP addresses that match the subnet to different Pods under the same application on different nodes. Spiderpool's CR: <code>SpiderIPPool</code> The nodeName field is provided to realize the affinity between the IP pool and the node, so that when the Pod is scheduled to a certain node, it can obtain the IP address from the Underlay subnet where the node is located, and realize the node topology function.</p>
+<h2 id="implementation-requirements">Implementation Requirements</h2>
+<ol>
+<li>Installed <a href="https://helm.sh/docs/intro/install/">Helm</a>.</li>
+</ol>
+<h2 id="steps">Steps</h2>
+<h3 id="clusters-spanning-network-regions">Clusters spanning network regions</h3>
+<p>Prepare a set of clusters that span the network area. For example, node 1 uses <code>10.6.0.0/16</code> and node 2 uses <code>10.7.0.0/16</code> subnet. The following is the cluster information and network topology used:</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get nodes -owide
+NAME                STATUS   ROLES           AGE  VERSION   INTERNAL-IP   EXTERNAL-IP
+controller-node-1   Ready    control-plane   1h   v1.25.3   <span class="m">10</span>.6.168.71   &lt;none&gt;
+worker-node-1       Ready    &lt;none&gt;          1h   v1.25.3   <span class="m">10</span>.7.168.73   &lt;none&gt;        
+
+~# kubectl get nodes --show-labels
+NAME                STATUS   ROLES                  AGE  VERSION   LABELS
+controller-node-1   Ready    control-plane,master   1h   v1.25.3   node-subnet<span class="o">=</span>subnet-6, ...
+worker-node-1       Ready    &lt;none&gt;                 1h   v1.25.3   node-subnet<span class="o">=</span>subnet-7, ...
 </code></pre></div>
-<ul>
-<li>例如设置好CNI配置文件，此场景下就无需为Pod打上Annotation</li>
-</ul>
-<div class="highlight"><pre><span></span><code>{
-    &quot;cniVersion&quot;: &quot;0.3.1&quot;,
-    &quot;name&quot;: &quot;mynet&quot;,
-    &quot;type&quot;: &quot;macvlan&quot;,
-    &quot;master&quot;: &quot;eth0&quot;,
-    &quot;ipam&quot;:{
-        &quot;type&quot;:&quot;spiderpool&quot;,
-        &quot;default_ipv4_ippool&quot;: [&quot;pool-master&quot;,&quot;pool-worker&quot;],
-    }
-}
+<p><img alt="network-topology" src="../../images/ip-allocation-across-networks-2.png" /></p>
+<h3 id="install-spiderpool">Install Spiderpool</h3>
+<p>Install Spiderpool via helm.</p>
+<div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+
+helm repo update spiderpool
+
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span>
 </code></pre></div>
+<blockquote>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+<p>Specify the Multus clusterNetwork of the cluster through <code>multus.multusCNI.defaultCniCRName</code>, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.</p>
+</blockquote>
+<p>Verify the installation：</p>
+<div class="highlight"><pre><span></span><code>~# kubectll get po -n kube-sysem <span class="p">|</span> grep spiderpool
+NAME                                     READY   STATUS      RESTARTS   AGE                                
+spiderpool-agent-7hhkz                   <span class="m">1</span>/1     Running     <span class="m">0</span>          13m
+spiderpool-agent-kxf27                   <span class="m">1</span>/1     Running     <span class="m">0</span>          13m
+spiderpool-controller-76798dbb68-xnktr   <span class="m">1</span>/1     Running     <span class="m">0</span>          13m
+spiderpool-init                          <span class="m">0</span>/1     Completed   <span class="m">0</span>          13m
+spiderpool-multus-7vkm2                  <span class="m">1</span>/1     Running     <span class="m">0</span>          13m
+spiderpool-multus-rwzjn                  <span class="m">1</span>/1     Running     <span class="m">0</span>          13m
+</code></pre></div>
+<h3 id="install-cni-configuration">Install CNI configuration</h3>
+<p>To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating an IPvlan SpiderMultusConfig configuration:</p>
 <ul>
-<li>例如给IPPool的CR实例设置default字段作为缺省池使用，此场景下就无需为Pod打上Annotation或者去修改CNI配置文件</li>
+<li>master: In this example the interface <code>eth0</code> is used as the parameter for master, this parameter should match the interface name on the nodes where the cluster spans network zones.</li>
 </ul>
-<div class="highlight"><pre><span></span><code>apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: pool-master
+<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
+<span class="nv">MACVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span>
+
+cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${MACVLAN_MULTUS_NAME</span><span class="o">}</span>
+  namespace: kube-system
 spec:
-  default: true
-  ips:
-  - 10.125.177.2-10.125.177.61
-  subnet: 10.125.177.0/24
-  nodeAffinity:
-    matchLabels:
-      role: master
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: pool-worker
-spec:
-  default: true
-  ips:
-  - 172.22.40.2-172.22.40.254
-  subnet: 172.22.0.0/16
-  nodeAffinity:
-    matchLabels:
-      role: worker
+  cniType: macvlan
+  coordinator:
+    mode: underlay
+    tunePodRoutes: <span class="nb">true</span>
+    podCIDRType: cluster
+  enableCoordinator: <span class="nb">true</span>
+  macvlan:
+    master:
+    - <span class="si">${</span><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="si">}</span>
 </code></pre></div>
+<p>In the example of this article, use the above configuration to create the following two Macvlan SpiderMultusConfig, which will be automatically generated based on the Multus NetworkAttachmentDefinition CR, which corresponds to the <code>eth0</code> network card of the host.</p>
+<div class="highlight"><pre><span></span><code>~# ~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system
+NAME           AGE
+macvlan-conf   10m
+
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system
+
+NAME           AGE
+macvlan-conf   10m
+</code></pre></div>
+<h3 id="create-ippools">Create IPPools</h3>
+<p>CRD of Spiderpool: SpiderIPPool provides <code>nodeName</code> field. When nodeName is not empty, when Pod starts on a node and tries to allocate IP from SpiderIPPool, if the node where Pod is located matches the nodeName setting, it can be retrieved from SpiderIPPool The IP is allocated successfully, otherwise the IP cannot be allocated from the SpiderIPPool. When nodeName is empty, Spiderpool does not enforce any allocation limit on Pods.</p>
+<p>As above, using the following Yaml, create 2 SpiderIPPools that will provide IP addresses to Pods on different nodes.</p>
+<div class="highlight"><pre><span></span><code>~# cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-ippool-6</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 10.6.0.0/16</span>
+<span class="s">  ips:</span>
+<span class="s">    - 10.6.168.60-10.6.168.69</span>
+<span class="s">  gateway: 10.6.0.1</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - controller-node-1</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-ippool-7</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 10.7.0.0/16</span>
+<span class="s">  ips:</span>
+<span class="s">    - 10.7.168.60-10.7.168.69</span>
+<span class="s">  gateway: 10.7.0.1</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - worker-node-1</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<h2 id="create-the-application">Create the application</h2>
+<p>The following sample yaml creates a daemonSet application where:</p>
+<ul>
+<li>
+<p>ipam.spidernet.io/ippool: It is used to specify the IP pool of Spiderpool. Multiple IP pools can be set as alternative pools. Spiderpool will try to allocate IP addresses in sequence according to the order of elements in the "IP pool array". When assigning IP in the network area scenario, if the node to which the application copy is scheduled meets the IPPool.spec.nodeAffinity annotation of the first IP pool, the Pod will obtain the IP allocation from the pool. Select the IP pool in the selected pool and continue to allocate IPs for Pods until all candidate pools fail to be screened. You can learn more about usage with alternative pools.</p>
+</li>
+<li>
+<p>v1.multus-cni.io/default-network: Used to specify the NetworkAttachmentDefinition configuration of Multus, which will create a default network card for the application.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~# cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: DaemonSet</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:   </span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
+<span class="s">          {</span>
+<span class="s">            &quot;ipv4&quot;: [&quot;test-ippool-6&quot;, &quot;test-ippool-7&quot;]</span>
+<span class="s">          }</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>After creating an application, it can be observed that each Pod's IP address is assigned from an IP pool belonging to the same subnet as its node.</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get po -l <span class="nv">app</span><span class="o">=</span>test-app -o wide
+NAME             READY   STATUS    RESTARTS   AGE   IP            NODE                NOMINATED NODE   READINESS GATES
+test-app-j9ftl   <span class="m">1</span>/1     Running   <span class="m">0</span>          45s   <span class="m">10</span>.6.168.65   controller-node-1   &lt;none&gt;           &lt;none&gt;
+test-app-nkq5h   <span class="m">1</span>/1     Running   <span class="m">0</span>          45s   <span class="m">10</span>.7.168.61   worker-node-1       &lt;none&gt;           &lt;none&gt;
+
+~# kubectl get spiderippool
+NAME            VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+test-ippool-6   <span class="m">4</span>         <span class="m">10</span>.6.0.0/16   <span class="m">1</span>                    <span class="m">10</span>               <span class="nb">false</span>     <span class="nb">false</span>
+test-ippool-7   <span class="m">4</span>         <span class="m">10</span>.7.0.0/16   <span class="m">1</span>                    <span class="m">10</span>               <span class="nb">false</span>     <span class="nb">false</span>
+</code></pre></div>
+<p>Communication between Pods across network zones:</p>
+<div class="highlight"><pre><span></span><code>~# kubectl <span class="nb">exec</span> -ti test-app-j9ftl -- ping <span class="m">10</span>.7.168.61 -c <span class="m">2</span>
+
+PING <span class="m">10</span>.7.168.61 <span class="o">(</span><span class="m">10</span>.7.168.61<span class="o">)</span> <span class="m">56</span><span class="o">(</span><span class="m">84</span><span class="o">)</span> bytes of data.
+<span class="m">64</span> bytes from <span class="m">10</span>.7.168.61: <span class="nv">icmp_seq</span><span class="o">=</span><span class="m">1</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">63</span> <span class="nv">time</span><span class="o">=</span><span class="m">1</span>.06 ms
+<span class="m">64</span> bytes from <span class="m">10</span>.7.168.61: <span class="nv">icmp_seq</span><span class="o">=</span><span class="m">2</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">63</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.515 ms
+
+--- <span class="m">10</span>.7.168.61 ping statistics ---
+<span class="m">2</span> packets transmitted, <span class="m">2</span> received, <span class="m">0</span>% packet loss, <span class="nb">time</span> 1002ms
+rtt min/avg/max/mdev <span class="o">=</span> <span class="m">0</span>.515/0.789/1.063/0.274 ms
+</code></pre></div>
+<h2 id="summarize">Summarize</h2>
+<p>Pods in different network areas can communicate normally, and Spiderpool can well meet the IP allocation requirements based on cross-network areas.</p>
 
 
 

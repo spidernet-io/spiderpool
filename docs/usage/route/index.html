@@ -583,6 +583,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1167,6 +1181,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1183,6 +1211,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1443,7 +1485,7 @@
 <p>Spiderpool supports the configuration of routing information.</p>
 <h2 id="get-started">Get Started</h2>
 <h3 id="set-up-spiderpool">Set up Spiderpool</h3>
-<p>follow the guide <a href="../install/underlay/get-started-macvlan/">installation</a> to install Spiderpool.</p>
+<p>follow the guide <a href="../install/underlay/get-started-kind/">installation</a> to install Spiderpool.</p>
 <h3 id="create-subnet">Create Subnet</h3>
 <p>Create a SpiderSubnet and set up a subnet routes, a Pod and get the IP address from the AutoIPPool of the subnet, then see the routes configured in the subnet that exist in the AutoIPPool and Pod.</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/subnet-route.yaml
@@ -1516,8 +1558,8 @@ subnet-test-app-59df44fc57-clp8t   <span class="m">1</span>/1     Running   <spa
 </code></pre></div>
 <p>After the created Pod has obtained an IP from the automatic IPPool, the route set in the subnet, which is inherited by the automatic pool and takes effect in the Pod, you can view it via IP r as follows:</p>
 <div class="highlight"><pre><span></span><code>~# kubectl <span class="nb">exec</span> -it route-test-app-bdc84f8f5-2bxbr  -- ip r
-<span class="m">172</span>.18.41.0/24 dev eth0 scope link  src <span class="m">172</span>.18.41.41 
-<span class="m">172</span>.18.42.0/24 via <span class="m">172</span>.18.41.1 dev eth0 
+<span class="m">172</span>.18.41.0/24 dev eth0 scope link  src <span class="m">172</span>.18.41.41
+<span class="m">172</span>.18.42.0/24 via <span class="m">172</span>.18.41.1 dev eth0
 </code></pre></div>
 <h3 id="create-ippool">Create IPPool</h3>
 <p>Create a SpiderIPPool and set up the routes for the IPPool, create the Pod and assign IP addresses from the IPPool, you can see the routing information in the ippool pool taking effect within the Pod.</p>
@@ -1536,7 +1578,7 @@ subnet-test-app-59df44fc57-clp8t   <span class="m">1</span>/1     Running   <spa
 <span class="w">      </span><span class="nt">gw</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.1</span><span class="w"></span>
 </code></pre></div>
 <h3 id="create-deployment-by-ippool">Create Deployment By IPPool</h3>
-<p>Create a Deployment whose Pods sets the Pod annotation <code>ipam.spidernet.io/ippool</code> to  explicitly specify the IPPool.</p>
+<p>Create a Deployment whose Pods sets the Pod annotation <code>ipam.spidernet.io/ippool</code> to explicitly specify the IPPool.</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/route/ippool-route-deploy.yaml
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span><span class="w"></span>
@@ -1571,8 +1613,8 @@ ippool-test-app-66fd47d895-pthx5   <span class="m">1</span>/1     Running   <spa
 </code></pre></div>
 <p>After the created Pod has obtained an IP from IPPool, the route set in IPPool is already in effect in the Pod and you can view it via IP r as follows:</p>
 <div class="highlight"><pre><span></span><code>~# kubectl <span class="nb">exec</span> -it ippool-test-app-66fd47d895-pthx5  -- ip r
-<span class="m">172</span>.18.41.0/24 dev eth0 scope link  src <span class="m">172</span>.18.41.53 
-<span class="m">172</span>.18.42.0/24 via <span class="m">172</span>.18.41.1 dev eth0 
+<span class="m">172</span>.18.41.0/24 dev eth0 scope link  src <span class="m">172</span>.18.41.53
+<span class="m">172</span>.18.42.0/24 via <span class="m">172</span>.18.41.1 dev eth0
 </code></pre></div>
 <h3 id="clean-up">Clean up</h3>
 <p>Clean the relevant resources so that you can run this tutorial again</p>

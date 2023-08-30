@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1069,6 +1083,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1085,6 +1113,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1354,18 +1396,18 @@
 </ul>
 <h2 id="spiderpool">安装 Spiderpool</h2>
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system 
+helm repo update spiderpool
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
 </code></pre></div>
 <blockquote>
-<p>Spiderpool 默认 IPv4-Only, 如需启用 IPv6 请参考 <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/ipv6.md">Spiderpool IPv6</a></p>
 <p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
 </blockquote>
-<p>创建 Pod 的子网(SpiderSubnet):</p>
+<p>创建 Pod 使用的 SpiderIPPool 实例:</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderSubnet</span>
+<span class="s">kind: SpiderIPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: nginx-subnet-v4</span>
+<span class="s">  name: nginx-ippool-v4</span>
 <span class="s">  labels:  </span>
 <span class="s">    ipam.spidernet.io/subnet-cidr: 10-244-0-0-16</span>
 <span class="s">spec:</span>
@@ -1375,17 +1417,20 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 <span class="s">EOF</span>
 </code></pre></div>
 <p>验证安装：</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system  | grep spiderpool</span>
-  spiderpool-agent-27fr2                     <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
-  spiderpool-agent-8vwxj                     <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
-  spiderpool-controller-bc8d67b5f-xwsql      <span class="m">1</span>/1     Running     <span class="m">0</span>          2m
-  <span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get ss</span>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system |grep spiderpool</span>
+  spiderpool-agent-7hhkz                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+  spiderpool-agent-kxf27                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+  spiderpool-controller-76798dbb68-xnktr   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+  spiderpool-init                          <span class="m">0</span>/1     Completed   <span class="m">0</span>              13m
+  <span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get sp</span>
   NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-  nginx-subnet-v4   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">0</span>                    <span class="m">25602</span>
+  nginx-ippool-v4   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">0</span>                    <span class="m">25602</span>
 </code></pre></div>
 <h2 id="calico-bgp">配置 Calico BGP [可选]</h2>
-<p>本例希望 calico 以 underlay 方式工作，将 Spiderpool 子网(<code>10.244.0.0/16</code>)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。
-如果您并不需要集群外部可以直接访问到 pod ip，可忽略本步骤。</p>
+<p>本例希望 calico 以 underlay 方式工作，将 Spiderpool 的 IP 池所在的子网(<code>10.244.0.0/16</code>)通过 BGP 协议宣告至 BGP Router，确保集群外的客户端可以通过 BGP Router 直接访问 Pod 真实的 IP 地址。</p>
+<blockquote>
+<p>如果您并不需要集群外部可以直接访问到 Pod IP，可忽略本步骤。</p>
+</blockquote>
 <p>网络拓扑如下:</p>
 <p><img alt="calico-bgp" src="../../../../images/calico-bgp.svg" /></p>
 <ol>
@@ -1477,7 +1522,7 @@ No IPv6 peers found.
 <span class="s">apiVersion: projectcalico.org/v3</span>
 <span class="s">kind: IPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: spiderpool-subnet</span>
+<span class="s">  name: spiderpool-ippool</span>
 <span class="s">spec:</span>
 <span class="s">  blockSize: 26</span>
 <span class="s">  cidr: 10.244.0.0/16</span>
@@ -1512,8 +1557,7 @@ No IPv6 peers found.
 <span class="s">  template:</span>
 <span class="s">    metadata:</span>
 <span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/subnet: &#39;{&quot;ipv4&quot;:[&quot;nginx-subnet-v4&quot;]}&#39;</span>
-<span class="s">        ipam.spidernet.io/ippool-ip-number: &#39;+3&#39;</span>
+<span class="s">        ipam.spidernet.io/ippool: &#39;{&quot;ipv4&quot;:[&quot;nginx-ippool-v4&quot;]}&#39;</span>
 <span class="s">      labels:</span>
 <span class="s">        app: nginx</span>
 <span class="s">    spec:</span>
@@ -1528,23 +1572,21 @@ No IPv6 peers found.
 <span class="s">EOF</span>
 </code></pre></div>
 <blockquote>
-<p><code>ipam.spidernet.io/subnet</code>: 从 "nginx-subnet-v4" SpiderSubnet 中分配固定 IP</p>
-<p><code>ipam.spidernet.io/ippool-ip-number</code>: '+3' 表示应用分配的固定 IP 数量比应用副本数多 3 个，用于应用滚动发布时有临时 IP 可用</p>
+<p><code>ipam.spidernet.io/ippool</code>: 从 "nginx-ippool-v4" SpiderIPPool 中分配固定 IP
+</p>
 </blockquote>
-<p>当应用 Pod 被创建，Spiderpool 从 annnotations 指定的 <code>subnet: nginx-subnet-v4</code> 中自动创建了一个名为 <code>auto-nginx-v4-eth0-452e737e5e12</code> 的 IP 池，并与应用绑定。IP 范围为: <code>10.244.100.90-10.244.100.95</code>, 池 IP 数量为 <code>5</code>:</p>
+<p>当应用 Pod 被创建，Spiderpool 从 annnotations 指定的 <code>ippool: nginx-ippool-v4</code> 中给 Pod 分配 IP。</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl get sp</span>
-NAME                              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-nginx-v4-eth0-452e737e5e12   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">2</span>                    <span class="m">5</span>                <span class="nb">false</span>     <span class="nb">false</span>
-<span class="o">[</span>root@master ~<span class="o">]</span><span class="c1"># kubectl get sp auto-nginx-v4-eth0-452e737e5e12 -o jsonpath=&#39;{.spec.ips}&#39; </span>
-<span class="o">[</span><span class="s2">&quot;10.244.100.90-10.244.100.95&quot;</span><span class="o">]</span>
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+nginx-ippool-v4   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">2</span>                    <span class="m">25602</span>            <span class="nb">false</span>     <span class="nb">false</span>
 </code></pre></div>
-<p>当副本重启，其 IP 都被固定在 <code>auto-nginx-v4-eth0-452e737e5e12</code> 的 IP 池范围内:</p>
+<p>当副本重启，其 IP 都被固定在 <code>nginx-ippool-v4</code> 的 IP 池范围内:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
 NAME                     READY   STATUS        RESTARTS   AGE     IP              NODE      NOMINATED NODE   READINESS GATES
 nginx-644659db67-szgcg   <span class="m">1</span>/1     Running       <span class="m">0</span>          23s     <span class="m">10</span>.244.100.90    worker5   &lt;none&gt;           &lt;none&gt;
 nginx-644659db67-98rcg   <span class="m">1</span>/1     Running       <span class="m">0</span>          23s     <span class="m">10</span>.244.100.92    master1   &lt;none&gt;           &lt;none&gt;
 </code></pre></div>
-<p>扩容副本数到 <code>3</code>, 新副本的 IP 地址仍然从自动池: <code>auto-nginx-v4-eth0-452e737e5e12(10.244.100.90-10.244.100.95)</code> 中分配:</p>
+<p>扩容副本数到 <code>3</code>, 新副本的 IP 地址仍然从 IP 池: <code>nginx-ippool-v4</code> 中分配:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale pods</span>
 deployment.apps/nginx scaled
 <span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
@@ -1553,10 +1595,10 @@ nginx-644659db67-szgcg   <span class="m">1</span>/1     Running       <span clas
 nginx-644659db67-98rcg   <span class="m">1</span>/1     Running       <span class="m">0</span>          1m     <span class="m">10</span>.244.100.92    master1   &lt;none&gt;           &lt;none&gt;
 nginx-644659db67-brqdg   <span class="m">1</span>/1     Running       <span class="m">0</span>          10s    <span class="m">10</span>.244.100.94    master1   &lt;none&gt;           &lt;none&gt;
 </code></pre></div>
-<p>查看自动池: <code>auto-nginx-v4-eth0-452e737e5e12</code> 的 <code>ALLOCATED-IP-COUNT</code> 和 <code>TOTAL-IP-COUNT</code> 都新增 1 :</p>
+<p>查看 IP 池: <code>nginx-ippool-v4</code> 的 <code>ALLOCATED-IP-COUNT</code> 新增 1 :</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1 ~<span class="o">]</span><span class="c1"># kubectl get sp</span>
-NAME                              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-nginx-v4-eth0-452e737e5e12   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">3</span>                    <span class="m">6</span>                <span class="nb">false</span>     <span class="nb">false</span>
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+nginx-ippool-v4   <span class="m">4</span>         <span class="m">10</span>.244.0.0/16   <span class="m">3</span>                    <span class="m">25602</span>            <span class="nb">false</span>     <span class="nb">false</span>
 </code></pre></div>
 <h2 id="_3">结论</h2>
 <p>经过测试: 集群外客户端可直接通过 Nginx Pod 的 IP 正常访问，集群内部通讯 Nginx Pod 跨节点也都通信正常(包括跨 Calico 子网)。在 Calico BGP 模式下，Spiderpool 可搭配 Calico 实现 Deployment 等类型应用固定 IP 的需求。</p>

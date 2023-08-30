@@ -583,6 +583,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1153,6 +1167,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1169,6 +1197,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1496,7 +1538,7 @@
 </code></pre></div>
 <p>After a while, only one of these Pods using IP <code>172.18.42.50</code> can run successfully because "all IP used out".</p>
 <div class="highlight"><pre><span></span><code>kubectl get po -l <span class="nv">app</span><span class="o">=</span>reservedip-deploy -o wide
-NAME                                 READY   STATUS              RESTARTS   AGE   IP             NODE            
+NAME                                 READY   STATUS              RESTARTS   AGE   IP             NODE
 reservedip-deploy-6cf9858886-cm7bp   <span class="m">0</span>/1     ContainerCreating   <span class="m">0</span>          35s   &lt;none&gt;         spider-worker
 reservedip-deploy-6cf9858886-lb7cr   <span class="m">0</span>/1     ContainerCreating   <span class="m">0</span>          35s   &lt;none&gt;         spider-worker
 reservedip-deploy-6cf9858886-pkcfl   <span class="m">1</span>/1     Running             <span class="m">0</span>          35s   <span class="m">172</span>.18.42.50   spider-worker

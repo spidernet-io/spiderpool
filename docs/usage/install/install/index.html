@@ -295,8 +295,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation-for-underlay-nics" class="md-nav__link">
-    Installation for underlay NICs
+  <a href="#install-spiderpool-in-underlay-nics" class="md-nav__link">
+    Install Spiderpool in Underlay NICs
   </a>
   
 </li>
@@ -640,6 +640,20 @@
     <li class="md-nav__item">
       <a href="../../spider-subnet/" class="md-nav__link">
         SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
       </a>
     </li>
   
@@ -1140,6 +1154,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1156,6 +1184,20 @@
     <li class="md-nav__item">
       <a href="../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1334,8 +1376,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation-for-underlay-nics" class="md-nav__link">
-    Installation for underlay NICs
+  <a href="#install-spiderpool-in-underlay-nics" class="md-nav__link">
+    Install Spiderpool in Underlay NICs
   </a>
   
 </li>
@@ -1400,23 +1442,20 @@
 <p>When one or more NIC of different NIC in a pod, spiderpool could help assign IP address, tune routes, connect the pod and local node, detect IP conflict etc.</p>
 </li>
 </ul>
-<h2 id="installation-for-underlay-nics">Installation for underlay NICs</h2>
+<h2 id="install-spiderpool-in-underlay-nics">Install Spiderpool in Underlay NICs</h2>
 <p>Any CNI project compatible with third-party IPAM plugins, can work well with spiderpool, such as:
-<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">macvlan CNI</a>, 
-<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>, 
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">macvlan CNI</a>,
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
-<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">sriov CNI</a>, 
-<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>, 
-<a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>, 
-<a href="https://github.com/projectcalico/calico">calico CNI</a>, 
+<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">sriov CNI</a>,
+<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
+<a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>,
+<a href="https://github.com/projectcalico/calico">calico CNI</a>,
 <a href="https://github.com/weaveworks/weave">weave CNI</a></p>
 <p>The following examples are guides to install spiderpool:</p>
 <ul>
 <li>
 <p><a href="../underlay/get-started-kind/">macvlan in Kind</a></p>
-</li>
-<li>
-<p><a href="../underlay/get-started-macvlan/">macvlan CNI</a>, this is suitable for scenes like bare metal host, vmware VM with promiscuous bridge.</p>
 </li>
 <li>
 <p><a href="../underlay/get-started-sriov/">SRIOV CNI</a>, this is suitable for scenes like bare metal host.</p>

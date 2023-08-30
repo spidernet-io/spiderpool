@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#running-on-public-cloud" class="md-skip">
+        <a href="#running-on-alibaba-cloud" class="md-skip">
           Skip to content
         </a>
       
@@ -469,9 +469,170 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          alibaba cloud
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         alibaba cloud
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alibaba-cloud-environment" class="md-nav__link">
+    Alibaba Cloud Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-cni" class="md-nav__link">
+    Install CNI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-ippools" class="md-nav__link">
+    Create IPPools
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-applications" class="md-nav__link">
+    Create Applications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-east-west-connectivity" class="md-nav__link">
+    Test East-West Connectivity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-north-south-connectivity" class="md-nav__link">
+    Test North-South Connectivity
+  </a>
+  
+    <nav class="md-nav" aria-label="Test North-South Connectivity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-egress-traffic-from-pods-to-external-destinations" class="md-nav__link">
+    Test egress traffic from Pods to external destinations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-balancer-traffic-ingress-access" class="md-nav__link">
+    Load Balancer Traffic Ingress Access
+  </a>
+  
+    <nav class="md-nav" aria-label="Load Balancer Traffic Ingress Access">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-cloud-controller-manager" class="md-nav__link">
+    Deploy Cloud Controller Manager
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-load-balancer-ingress-for-applications" class="md-nav__link">
+    Create Load Balancer Ingress for Applications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-load-balancer-traffic-ingress-access" class="md-nav__link">
+    Verify Load Balancer Traffic Ingress Access
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -583,6 +744,20 @@
     <li class="md-nav__item">
       <a href="../../../spider-subnet/" class="md-nav__link">
         SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
       </a>
     </li>
   
@@ -1083,6 +1258,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1099,6 +1288,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1263,6 +1466,151 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alibaba-cloud-environment" class="md-nav__link">
+    Alibaba Cloud Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-cni" class="md-nav__link">
+    Install CNI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-ippools" class="md-nav__link">
+    Create IPPools
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-applications" class="md-nav__link">
+    Create Applications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-east-west-connectivity" class="md-nav__link">
+    Test East-West Connectivity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-north-south-connectivity" class="md-nav__link">
+    Test North-South Connectivity
+  </a>
+  
+    <nav class="md-nav" aria-label="Test North-South Connectivity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-egress-traffic-from-pods-to-external-destinations" class="md-nav__link">
+    Test egress traffic from Pods to external destinations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-balancer-traffic-ingress-access" class="md-nav__link">
+    Load Balancer Traffic Ingress Access
+  </a>
+  
+    <nav class="md-nav" aria-label="Load Balancer Traffic Ingress Access">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-cloud-controller-manager" class="md-nav__link">
+    Deploy Cloud Controller Manager
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-load-balancer-ingress-for-applications" class="md-nav__link">
+    Create Load Balancer Ingress for Applications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-load-balancer-traffic-ingress-access" class="md-nav__link">
+    Verify Load Balancer Traffic Ingress Access
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1284,8 +1632,510 @@
   </a>
 
 
-<h1 id="running-on-public-cloud">Running On Public Cloud</h1>
+<h1 id="running-on-alibaba-cloud">Running On Alibaba Cloud</h1>
 <p><strong>English</strong> | <a href="../get-started-alibaba-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="introduction">Introduction</h2>
+<p>With a multitude of public cloud providers available, such as Alibaba Cloud, Huawei Cloud, Tencent Cloud, AWS, and more, it can be challenging to use mainstream open-source CNI plugins to operate on these platforms using Underlay networks. Instead, one has to rely on proprietary CNI plugins provided by each cloud vendor, leading to a lack of standardized Underlay solutions for public clouds. This page introduces <a href="../../../../">Spiderpool</a>, an Underlay networking solution designed to work seamlessly in any public cloud environment. A unified CNI solution offers easier management across multiple clouds, particularly in hybrid cloud scenarios.</p>
+<h2 id="features">Features</h2>
+<p>Spiderpool offers features such as node topology, MAC address validation, and integration with services that use <code>spec.externalTrafficPolicy</code> set to Local mode. Spiderpool can run on public cloud environments using the IPVlan Underlay CNI. Here's an overview of its implementation:</p>
+<ol>
+<li>
+<p>When using Underlay networks in a public cloud environment, each network interface of a cloud server can only be assigned a limited number of IP addresses. To enable communication when an application runs on a specific cloud server, it needs to obtain the valid IP addresses allocated to different network interfaces within the VPC network. To address this IP allocation requirement, Spiderpool introduces a CRD named <code>SpiderIPPool</code>. By configuring the nodeName and multusName fields in <code>SpiderIPPool</code>, it enables node topology functionality. Spiderpool leverages the affinity between the IP pool and nodes, as well as the affinity between the IP pool and IPvlan Multus, facilitating the utilization and management of available IP addresses on the nodes. This ensures that applications are assigned valid IP addresses, enabling seamless communication within the VPC network, including communication between Pods and also between Pods and cloud servers.</p>
+</li>
+<li>
+<p>In a public cloud VPC network, network security controls and packet forwarding principles dictate that when network data packets contain MAC and IP addresses unknown to the VPC network, correct forwarding becomes unattainable. This issue arises in scenarios where Macvlan or OVS based Underlay CNI plugins generate new MAC addresses for Pod NICs, resulting in communication failures among Pods. To address this challenge, Spiderpool offers a solution in conjunction with <a href="https://www.cni.dev/plugins/current/main/ipvlan/">IPVlan CNI</a>. The IPVlan CNI operates at the L3 of the network, eliminating the reliance on L2 broadcasts and avoiding the generation of new MAC addresses. Instead, it maintains consistency with the parent interface. By incorporating IPVlan, the legitimacy of MAC addresses in a public cloud environment can be effectively resolved.</p>
+</li>
+<li>
+<p>When the <code>.spec.externalTrafficPolicy</code> of a service is set to <code>Local</code>, the client's source IP can be reserved. However, in self-managed public cloud clusters, using the platform's LoadBalancer component for nodePort forwarding in this mode will lead to access failures. To tackle this problem, Spiderpool offers the coordinator plugin. This plugin utilizes iptables to apply packet marking, ensuring that response packets coming from veth0 are still forwarded through veth0. This resolves the problem of nodePort access in this mode.</p>
+</li>
+</ol>
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+<li>
+<p>The system kernel version must be greater than 4.2 when using IPVlan as the cluster's CNI.</p>
+</li>
+<li>
+<p><a href="https://helm.sh/docs/intro/install/">Helm</a> is installed.</p>
+</li>
+</ol>
+<h2 id="steps">Steps</h2>
+<h3 id="alibaba-cloud-environment">Alibaba Cloud Environment</h3>
+<ul>
+<li>
+<p>Prepare an Alibaba Cloud environment with virtual machines that have 2 network interfaces. Assign a set of auxiliary private IP addresses to each network interface, as shown in the picture:</p>
+<p><img alt="alicloud-web-network" src="../../../../images/alicloud-network-web.png" /></p>
+</li>
+<li>
+<p>Utilize the configured VMs to build a Kubernetes cluster. The available IP addresses for the nodes and the network topology of the cluster are depicted below:</p>
+<p><img alt="网络拓扑" src="../../../../images/alicloud-k8s-network.png" /></p>
+</li>
+</ul>
+<h3 id="install-spiderpool">Install Spiderpool</h3>
+<p>Install Spiderpool via helm:</p>
+<div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+
+helm repo update spiderpool
+
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableStatefulSet<span class="o">=</span><span class="nb">false</span> --set multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ipvlan-eth0&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>If you are using a cloud server from a Chinese mainland cloud provider, you can enhance image pulling speed by specifying the parameter <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code>.</p>
+<p>Spiderpool allows for fixed IP addresses for application replicas with a controller type of <code>StatefulSet</code>. However, in the underlay network scenario of public clouds, cloud instances are limited to using specific IP addresses. When StatefulSet replicas migrate to different nodes, the original fixed IP becomes invalid and unavailable on the new node, causing network unavailability for the new Pods. To address this issue, set <code>ipam.enableStatefulSet</code> to <code>false</code> to disable this feature.</p>
+<p>Specify the Multus clusterNetwork for the cluster using <code>multus.multusCNI.defaultCniCRName</code>. <code>clusterNetwork</code> is a specific field within the Multus plugin used to define the default network interface for Pods.</p>
+</blockquote>
+<h3 id="install-cni">Install CNI</h3>
+<p>To simplify the creation of JSON-formatted Multus CNI configurations, Spiderpool offers the SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CRs. Here is an example of creating an IPvlan SpiderMultusConfig configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">IPVLAN_MASTER_INTERFACE0</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME0</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE0</span><span class="s2">&quot;</span>
+<span class="nv">IPVLAN_MASTER_INTERFACE1</span><span class="o">=</span><span class="s2">&quot;eth1&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME1</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE1</span><span class="s2">&quot;</span>
+
+cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME0}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  coordinator:</span>
+<span class="s">    mode: underlay</span>
+<span class="s">    tunePodRoutes: true</span>
+<span class="s">    podCIDRType: cluster</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE0}</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME1}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  coordinator:</span>
+<span class="s">    mode: underlay</span>
+<span class="s">    tunePodRoutes: true</span>
+<span class="s">    podCIDRType: cluster</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE1}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>This case uses the given configuration to create two IPvlan SpiderMultusConfig instances. These instances will automatically generate corresponding Multus NetworkAttachmentDefinition CRs for the host's <code>eth0</code> and <code>eth1</code> network interfaces.</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system
+NAME          AGE
+ipvlan-eth0   10m
+ipvlan-eth1   10m
+
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system
+NAME          AGE
+ipvlan-eth0   10m
+ipvlan-eth1   10m
+</code></pre></div>
+<h3 id="create-ippools">Create IPPools</h3>
+<p>The Spiderpool's CRD, <code>SpiderIPPool</code>, introduces the following fields: <code>nodeName</code>, <code>multusName</code>, and <code>ips</code>:</p>
+<ul>
+<li>
+<p><code>nodeName</code>: when <code>nodeName</code> is not empty, Pods are scheduled on a specific node and attempt to acquire an IP address from the corresponding SpiderIPPool. If the Pod's node matches the specified <code>nodeName</code>, it successfully obtains an IP. Otherwise, it cannot obtain an IP from that SpiderIPPool. When <code>nodeName</code> is empty, Spiderpool does not impose any allocation restrictions on the Pod.</p>
+</li>
+<li>
+<p><code>multusName</code>：Spiderpool integrates with Multus CNI to cope with cases involving multiple network interface cards. When <code>multusName</code> is not empty, SpiderIPPool utilizes the corresponding Multus CR instance to configure the network for the Pod. If the Multus CR specified by <code>multusName</code> does not exist, Spiderpool cannot assign a Multus CR to the Pod. When <code>multusName</code> is empty, Spiderpool does not impose any restrictions on the Multus CR used by the Pod.</p>
+</li>
+<li>
+<p><code>spec.ips</code>：this field must not be empty. Due to Alibaba Cloud's limitations on available IP addresses for nodes, the specified range of values must fall within the auxiliary private IP range of the host associated with the specified <code>nodeName</code>. You can obtain this information from the Elastic Network Interface page in the Alibaba Cloud console.</p>
+</li>
+</ul>
+<p>Based on the provided information, use the following YAML configuration to create a SpiderIPPool for each network interface (eth0 and eth1) on every node. These SpiderIPPools will assign IP addresses to Pods running on different nodes.</p>
+<div class="highlight"><pre><span></span><code>~# cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-172</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 172.31.199.185-172.31.199.189</span>
+<span class="s">  subnet: 172.31.192.0/20</span>
+<span class="s">  gateway: 172.31.207.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - master</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth0</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-192</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 192.168.0.156-192.168.0.160</span>
+<span class="s">  subnet: 192.168.0.0/24</span>
+<span class="s">  gateway: 192.168.0.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - master</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth1</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker-172</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 172.31.199.190-172.31.199.194</span>
+<span class="s">  subnet: 172.31.192.0/20</span>
+<span class="s">  gateway: 172.31.207.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - worker</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth0</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker-192</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 192.168.0.161-192.168.0.165</span>
+<span class="s">  subnet: 192.168.0.0/24</span>
+<span class="s">  gateway: 192.168.0.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - worker</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth1</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<h3 id="create-applications">Create Applications</h3>
+<p>In the following example YAML, there are 2 sets of DaemonSet applications and 1 service with a type of ClusterIP:</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network</code>: specify the subnet that each application will use. In the example, the applications are assigned different subnets. </li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: DaemonSet</span>
+<span class="s">metadata:</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app-1</span>
+<span class="s">  name: test-app-1</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app-1</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app-1</span>
+<span class="s">      annotations:</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/ipvlan-eth0</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - image: busybox</span>
+<span class="s">        command: [&quot;sleep&quot;, &quot;3600&quot;]</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        name: test-app-1</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">---</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: DaemonSet</span>
+<span class="s">metadata:</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">  name: test-app-2</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app-2</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app-2</span>
+<span class="s">      annotations:</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/ipvlan-eth1</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        name: test-app-2</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">---</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-svc</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">spec:</span>
+<span class="s">  type: ClusterIP</span>
+<span class="s">  ports:</span>
+<span class="s">    - port: 80</span>
+<span class="s">      protocol: TCP</span>
+<span class="s">      targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>Check the status of the running Pods: </p>
+<div class="highlight"><pre><span></span><code>~# kubectl get po -owide
+NAME                          READY   STATUS    RESTARTS   AGE   IP               NODE      NOMINATED NODE   READINESS GATES
+test-app-1-b7765b8d8-422sb    <span class="m">1</span>/1     Running   <span class="m">0</span>          16s   <span class="m">172</span>.31.199.187   master    &lt;none&gt;           &lt;none&gt;
+test-app-1-b7765b8d8-qjgpj    <span class="m">1</span>/1     Running   <span class="m">0</span>          16s   <span class="m">172</span>.31.199.193   worker    &lt;none&gt;           &lt;none&gt;
+test-app-2-7c56876fc6-7brhf   <span class="m">1</span>/1     Running   <span class="m">0</span>          12s   <span class="m">192</span>.168.0.160    master    &lt;none&gt;           &lt;none&gt;
+test-app-2-7c56876fc6-zlxxt   <span class="m">1</span>/1     Running   <span class="m">0</span>          12s   <span class="m">192</span>.168.0.161    worker    &lt;none&gt;           &lt;none&gt;
+</code></pre></div>
+<p>Spiderpool automatically assigns IP addresses to the applications, ensuring that the assigned IPs are within the expected IP pool.</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get spiderippool
+NAME         VERSION   SUBNET            ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
+master-172   <span class="m">4</span>         <span class="m">172</span>.31.192.0/20   <span class="m">1</span>                    <span class="m">5</span>                <span class="nb">true</span>
+master-192   <span class="m">4</span>         <span class="m">192</span>.168.0.0/24    <span class="m">1</span>                    <span class="m">5</span>                <span class="nb">true</span>
+worker-172   <span class="m">4</span>         <span class="m">172</span>.31.192.0/20   <span class="m">1</span>                    <span class="m">5</span>                <span class="nb">true</span>
+worker-192   <span class="m">4</span>         <span class="m">192</span>.168.0.0/24    <span class="m">1</span>                    <span class="m">5</span>                <span class="nb">true</span>
+</code></pre></div>
+<h3 id="test-east-west-connectivity">Test East-West Connectivity</h3>
+<ul>
+<li>
+<p>Test communication between Pods and their hosts:</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get nodes -owide
+NAME     STATUS   ROLES           AGE     VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION              CONTAINER-RUNTIME
+master   Ready    control-plane   2d12h   v1.27.3   <span class="m">172</span>.31.199.183   &lt;none&gt;        CentOS Linux <span class="m">7</span> <span class="o">(</span>Core<span class="o">)</span>   <span class="m">6</span>.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
+worker   Ready    &lt;none&gt;          2d12h   v1.27.3   <span class="m">172</span>.31.199.184   &lt;none&gt;        CentOS Linux <span class="m">7</span> <span class="o">(</span>Core<span class="o">)</span>   <span class="m">6</span>.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
+
+~# kubectl <span class="nb">exec</span> -ti test-app-1-b7765b8d8-422sb -- ping <span class="m">172</span>.31.199.183 -c <span class="m">2</span>
+PING <span class="m">172</span>.31.199.183 <span class="o">(</span><span class="m">172</span>.31.199.183<span class="o">)</span>: <span class="m">56</span> data bytes
+<span class="m">64</span> bytes from <span class="m">172</span>.31.199.183: <span class="nv">seq</span><span class="o">=</span><span class="m">0</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">64</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.088 ms
+<span class="m">64</span> bytes from <span class="m">172</span>.31.199.183: <span class="nv">seq</span><span class="o">=</span><span class="m">1</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">64</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.054 ms
+
+--- <span class="m">172</span>.31.199.183 ping statistics ---
+<span class="m">2</span> packets transmitted, <span class="m">2</span> packets received, <span class="m">0</span>% packet loss
+round-trip min/avg/max <span class="o">=</span> <span class="m">0</span>.054/0.071/0.088 ms
+</code></pre></div>
+</li>
+<li>
+<p>Test communication between Pods across different nodes and subnets:</p>
+<div class="highlight"><pre><span></span><code>~# kubectl <span class="nb">exec</span> -ti test-app-1-b7765b8d8-422sb -- ping <span class="m">172</span>.31.199.193 -c <span class="m">2</span>
+PING <span class="m">172</span>.31.199.193 <span class="o">(</span><span class="m">172</span>.31.199.193<span class="o">)</span>: <span class="m">56</span> data bytes
+<span class="m">64</span> bytes from <span class="m">172</span>.31.199.193: <span class="nv">seq</span><span class="o">=</span><span class="m">0</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">64</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.460 ms
+<span class="m">64</span> bytes from <span class="m">172</span>.31.199.193: <span class="nv">seq</span><span class="o">=</span><span class="m">1</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">64</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.210 ms
+
+--- <span class="m">172</span>.31.199.193 ping statistics ---
+<span class="m">2</span> packets transmitted, <span class="m">2</span> packets received, <span class="m">0</span>% packet loss
+round-trip min/avg/max <span class="o">=</span> <span class="m">0</span>.210/0.335/0.460 ms
+
+~# kubectl <span class="nb">exec</span> -ti test-app-1-b7765b8d8-422sb -- ping <span class="m">192</span>.168.0.161 -c <span class="m">2</span>
+PING <span class="m">192</span>.168.0.161 <span class="o">(</span><span class="m">192</span>.168.0.161<span class="o">)</span>: <span class="m">56</span> data bytes
+<span class="m">64</span> bytes from <span class="m">192</span>.168.0.161: <span class="nv">seq</span><span class="o">=</span><span class="m">0</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">64</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.408 ms
+<span class="m">64</span> bytes from <span class="m">192</span>.168.0.161: <span class="nv">seq</span><span class="o">=</span><span class="m">1</span> <span class="nv">ttl</span><span class="o">=</span><span class="m">64</span> <span class="nv">time</span><span class="o">=</span><span class="m">0</span>.194 ms
+
+--- <span class="m">192</span>.168.0.161 ping statistics ---
+<span class="m">2</span> packets transmitted, <span class="m">2</span> packets received, <span class="m">0</span>% packet loss
+round-trip min/avg/max <span class="o">=</span> <span class="m">0</span>.194/0.301/0.408 ms
+</code></pre></div>
+</li>
+<li>
+<p>Test communication between Pods and ClusterIP services:</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get svc test-svc
+NAME       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT<span class="o">(</span>S<span class="o">)</span>   AGE
+test-svc   ClusterIP   <span class="m">10</span>.233.23.194   &lt;none&gt;        <span class="m">80</span>/TCP    26s
+
+~# kubectl <span class="nb">exec</span> -ti test-app-2-7c56876fc6-7brhf -- curl <span class="m">10</span>.233.23.194 -I
+HTTP/1.1 <span class="m">200</span> OK
+Server: nginx/1.10.1
+Date: Fri, <span class="m">21</span> Jul <span class="m">2023</span> <span class="m">06</span>:45:56 GMT
+Content-Type: text/html
+Content-Length: <span class="m">4086</span>
+Last-Modified: Fri, <span class="m">21</span> Jul <span class="m">2023</span> <span class="m">06</span>:38:41 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;64ba27f1-ff6&quot;</span>
+Accept-Ranges: bytes
+</code></pre></div>
+</li>
+</ul>
+<h3 id="test-north-south-connectivity">Test North-South Connectivity</h3>
+<h4 id="test-egress-traffic-from-pods-to-external-destinations">Test egress traffic from Pods to external destinations</h4>
+<ul>
+<li>Alibaba Cloud's NAT Gateway provides an ingress and egress gateway for public or private network traffic within a VPC environment. By utilizing NAT Gateway, the cluster can have egress connectivity. Please refer to <a href="https://www.alibabacloud.com/help/en/nat-gateway?spm=a2c63.p38356.0.0.1b111b76Rn9rPa">the NAT Gateway documentation</a> for creating a NAT Gateway as depicted in the picture:</li>
+</ul>
+<p><img alt="alicloud-natgateway" src="../../../../images/alicloud-natgateway.png" /></p>
+<ul>
+<li>
+<p>Test egress traffic from Pods</p>
+<div class="highlight"><pre><span></span><code>~# kubectl <span class="nb">exec</span> -ti test-app-2-7c56876fc6-7brhf -- curl www.baidu.com -I
+HTTP/1.1 <span class="m">200</span> OK
+Accept-Ranges: bytes
+Cache-Control: private, no-cache, no-store, proxy-revalidate, no-transform
+Connection: keep-alive
+Content-Length: <span class="m">277</span>
+Content-Type: text/html
+Date: Fri, <span class="m">21</span> Jul <span class="m">2023</span> <span class="m">08</span>:42:17 GMT
+Etag: <span class="s2">&quot;575e1f60-115&quot;</span>
+Last-Modified: Mon, <span class="m">13</span> Jun <span class="m">2016</span> <span class="m">02</span>:50:08 GMT
+Pragma: no-cache
+Server: bfe/1.0.8.18
+</code></pre></div>
+</li>
+</ul>
+<h4 id="load-balancer-traffic-ingress-access">Load Balancer Traffic Ingress Access</h4>
+<h5 id="deploy-cloud-controller-manager">Deploy Cloud Controller Manager</h5>
+<p>Cloud Controller Manager (CCM) is an Alibaba Cloud's component that enables integration between Kubernetes and Alibaba Cloud services. We will use CCM along with Alibaba Cloud infrastructure to facilitate load balancer traffic ingress access. Follow the steps below and refer to <a href="https://github.com/kubernetes/cloud-provider-alibaba-cloud/blob/master/docs/getting-started.md">the CCM documentation</a> for deploying CCM.</p>
+<ol>
+<li>
+<p>Configure <code>providerID</code> on Cluster Nodes</p>
+<p>On each node in the cluster, run the following command to obtain the <code>providerID</code> for each node. <a href="http://100.100.100.200/latest/meta-data">http://100.100.100.200/latest/meta-data</a> is the API entry point provided by Alibaba Cloud CLI for retrieving instance metadata. You don't need to modify it in the provided example. For more information, please refer to <a href="https://www.alibabacloud.com/help/en/ecs/user-guide/overview-of-ecs-instance-metadata?spm=a2c63.p38356.0.0.1c3c592dPUwXMN">ECS instance metadata</a>.</p>
+<div class="highlight"><pre><span></span><code>~# <span class="nv">META_EP</span><span class="o">=</span>http://100.100.100.200/latest/meta-data
+~# <span class="nv">provider_id</span><span class="o">=</span><span class="sb">`</span>curl -s <span class="nv">$META_EP</span>/region-id<span class="sb">`</span>.<span class="sb">`</span>curl -s <span class="nv">$META_EP</span>/instance-id<span class="sb">`</span>
+</code></pre></div>
+<p>On the <code>master</code> node of the cluster, use the <code>kubectl patch</code> command to add the <code>providerID</code> for each node in the cluster. This step is necessary to ensure the proper functioning of the CCM Pod on each corresponding node. Failure to run this step will result in the CCM Pod being unable to run correctly.</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get nodes
+~# kubectl patch node <span class="si">${</span><span class="nv">NODE_NAME</span><span class="si">}</span> -p <span class="s1">&#39;{&quot;spec&quot;:{&quot;providerID&quot;: &quot;${provider_id}&quot;}}&#39;</span>
+</code></pre></div>
+</li>
+<li>
+<p>Create an Alibaba Cloud RAM user and grant authorization.</p>
+<p>A RAM user is an entity within Alibaba Cloud's Resource Access Management (RAM) that represents individuals or applications requiring access to Alibaba Cloud resources. Refer to <a href="https://www.alibabacloud.com/help/en/ram/user-guide/overview-of-ram-users?spm=a2c63.p38356.0.0.435a7b9fxy619R">Overview of RAM users</a> to create a RAM user and assign the necessary permissions for accessing resources.</p>
+<p>To ensure that the RAM user used in the subsequent steps has sufficient privileges, grant the <code>AdministratorAccess</code> and <code>AliyunSLBFullAccess</code> permissions to the RAM user, following the instructions provided here.</p>
+</li>
+<li>
+<p>Obtain the AccessKey &amp; AccessKeySecret for the RAM user.</p>
+<p>Log in to the RAM User account and go to <a href="https://account.alibabacloud.com/login/login.htm?spm=5176.12901015-2.0.0.36cb525cXk2SG0">User Center</a> to retrieve the corresponding AccessKey &amp; AccessKeySecret for the RAM User.</p>
+</li>
+<li>
+<p>Create the Cloud ConfigMap for CCM.</p>
+<p>Use the following method to write the AccessKey &amp; AccessKeySecret obtained in step 3 as environment variables.</p>
+<div class="highlight"><pre><span></span><code>~# <span class="nb">export</span> <span class="nv">ACCESS_KEY_ID</span><span class="o">=</span>LTAI********************
+~# <span class="nb">export</span> <span class="nv">ACCESS_KEY_SECRET</span><span class="o">=</span>HAeS**************************
+</code></pre></div>
+<p>Run the following command to create cloud-config:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">accessKeyIDBase64</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span> -n <span class="s2">&quot;</span><span class="nv">$ACCESS_KEY_ID</span><span class="s2">&quot;</span> <span class="p">|</span>base64 -w <span class="m">0</span><span class="sb">`</span>
+<span class="nv">accessKeySecretBase64</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span> -n <span class="s2">&quot;</span><span class="nv">$ACCESS_KEY_SECRET</span><span class="s2">&quot;</span><span class="p">|</span>base64 -w <span class="m">0</span><span class="sb">`</span>
+
+cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  name: cloud-config</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">data:</span>
+<span class="s">  cloud-config.conf: |-</span>
+<span class="s">    {</span>
+<span class="s">        &quot;Global&quot;: {</span>
+<span class="s">            &quot;accessKeyID&quot;: &quot;$accessKeyIDBase64&quot;,</span>
+<span class="s">            &quot;accessKeySecret&quot;: &quot;$accessKeySecretBase64&quot;</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+<li>
+<p>Retrieve the YAML file and install CCM by running the command <code>kubectl apply -f cloud-controller-manager.yaml</code>. The version of CCM being installed here is v2.5.0.</p>
+<ul>
+<li>Use the following command to obtain the cloud-controller-manager.yaml file and replace <code>&lt;&lt;cluster_cidr&gt;&gt;</code> with the actual cluster CIDR.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~# wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/alicloud/cloud-controller-manager.yaml
+~# kubectl apply -f cloud-controller-manager.yaml
+</code></pre></div>
+</li>
+<li>
+<p>Verify if CCM is installed.</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get po -n kube-system <span class="p">|</span> grep cloud-controller-manager
+NAME                                     READY   STATUS      RESTARTS        AGE
+cloud-controller-manager-72vzr           <span class="m">1</span>/1     Running     <span class="m">0</span>               27s
+cloud-controller-manager-k7jpn           <span class="m">1</span>/1     Running     <span class="m">0</span>               27s
+</code></pre></div>
+</li>
+</ol>
+<h5 id="create-load-balancer-ingress-for-applications">Create Load Balancer Ingress for Applications</h5>
+<p>The following YAML will create two sets of services, one for TCP (layer 4 load balancing) and one for HTTP (layer 7 load balancing), with <code>spec.type</code> set to <code>LoadBalancer</code>.</p>
+<ul>
+<li>
+<p><code>service.beta.kubernetes.io/alibaba-cloud-loadbalancer-protocol-port</code>: this annotation provided by CCM allows you to customize the exposed ports for layer 7 load balancing. For more information, refer to <a href="https://github.com/kubernetes/cloud-provider-alibaba-cloud/blob/master/docs/usage.md">the CCM Usage Documentation</a>.</p>
+</li>
+<li>
+<p><code>.spec.externalTrafficPolicy</code>: indicates whether the service prefers to route external traffic to local or cluster-wide endpoints. It has two options: Cluster (default) and Local. Setting <code>.spec.externalTrafficPolicy</code> to <code>Local</code> preserves the client source IP.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~# cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: tcp-service</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  externalTrafficPolicy: Local</span>
+<span class="s">  ports:</span>
+<span class="s">  - name: tcp</span>
+<span class="s">    port: 999</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">    targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">  type: LoadBalancer</span>
+<span class="s">---</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  annotations:</span>
+<span class="s">    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-protocol-port: &quot;http:80&quot;</span>
+<span class="s">  name: http-service</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  externalTrafficPolicy: Local</span>
+<span class="s">  ports:</span>
+<span class="s">  - port: 80</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">    targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">  type: LoadBalancer</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>After the creation is complete, you can view the following:</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get svc <span class="p">|</span>grep service
+NAME           TYPE           CLUSTER-IP      EXTERNAL-IP      PORT<span class="o">(</span>S<span class="o">)</span>         AGE
+http-service   LoadBalancer   <span class="m">10</span>.233.1.108    <span class="m">121</span>.41.165.119   <span class="m">80</span>:30698/TCP    11s
+tcp-service    LoadBalancer   <span class="m">10</span>.233.4.245    <span class="m">47</span>.98.137.75     <span class="m">999</span>:32635/TCP   15s
+</code></pre></div>
+<p>CCM will automatically create layer 4 and layer 7 load balancers at its IaaS services. You can easily access and manage them through the Alibaba Cloud console, as shown below:</p>
+<p><img alt="alicloud-loadbalancer" src="../../../../images/alicloud-loadbalancer.png" /></p>
+<h5 id="verify-load-balancer-traffic-ingress-access">Verify Load Balancer Traffic Ingress Access</h5>
+<p>On a public machine, access the load balancer's public IP + port to test the traffic ingress:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Access layer 4 load balancing</span>
+$ curl <span class="m">47</span>.98.137.75:999 -I
+HTTP/1.1 <span class="m">200</span> OK
+Server: nginx/1.25.1
+Date: Sun, <span class="m">30</span> Jul <span class="m">2023</span> <span class="m">09</span>:12:46 GMT
+Content-Type: text/html
+Content-Length: <span class="m">615</span>
+Last-Modified: Tue, <span class="m">13</span> Jun <span class="m">2023</span> <span class="m">15</span>:08:10 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;6488865a-267&quot;</span>
+Accept-Ranges: bytes
+
+<span class="c1"># Access layer 7 load balancing</span>
+$ curl <span class="m">121</span>.41.165.119:80 -I
+HTTP/1.1 <span class="m">200</span> OK
+Date: Sun, <span class="m">30</span> Jul <span class="m">2023</span> <span class="m">09</span>:13:17 GMT
+Content-Type: text/html
+Content-Length: <span class="m">615</span>
+Connection: keep-alive
+Last-Modified: Tue, <span class="m">13</span> Jun <span class="m">2023</span> <span class="m">15</span>:08:10 GMT
+ETag: <span class="s2">&quot;6488865a-267&quot;</span>
+Accept-Ranges: bytes
+</code></pre></div>
+<h2 id="summary">Summary</h2>
+<p>Spiderpool is successfully running in an Alibaba Cloud cluster, ensuring normal east-west and north-south traffic.</p>
 
 
 

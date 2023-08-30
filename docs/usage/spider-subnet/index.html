@@ -665,6 +665,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1153,6 +1167,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1169,6 +1197,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1467,7 +1509,7 @@
 </ol>
 <h2 id="get-started">Get Started</h2>
 <h3 id="enable-spidersubnet-feature">Enable SpiderSubnet feature</h3>
-<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="../install/install/">install</a> for details.</p>
+<p>Firstly, please ensure you have installed the Spiderpool and configure the CNI file, refer to <a href="../install/underlay/get-started-kind/">install</a> for details.</p>
 <p>Check configmap <code>spiderpool-conf</code> property <code>enableSpiderSubnet</code> whether is already set to <code>true</code> or not.</p>
 <div class="highlight"><pre><span></span><code>kubectl -n kube-system get configmap spiderpool-conf -o yaml
 </code></pre></div>
@@ -1540,7 +1582,7 @@ status:
   allocatedIPs: &#39;{&quot;172.16.41.1&quot;:{&quot;interface&quot;:&quot;eth0&quot;,&quot;pod&quot;:&quot;default/demo-deploy-subnet-778786474b-kls7s&quot;,&quot;podUid&quot;:&quot;cc310a87-8c5a-4bff-9a84-0c4975bd5921&quot;}}&#39;
   totalIPCount: 3
 
-$ kubectl get po -o wide 
+$ kubectl get po -o wide
 NAME                                  READY   STATUS    RESTARTS   AGE     IP             NODE            NOMINATED NODE   READINESS GATES
 demo-deploy-subnet-778786474b-kls7s   1/1     Running   0          3m10s   172.16.41.1    spider-worker   &lt;none&gt;           &lt;none&gt;
 </code></pre></div>
@@ -1621,7 +1663,7 @@ and SpiderSubnet object <code>subnet-demo-v6</code> allocates another IP to Spid
 <div class="highlight"><pre><span></span><code>      annotations:
         k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni2
         ipam.spidernet.io/subnets: |-
-          [{&quot;interface&quot;: &quot;eth0&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-1&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-1&quot;]}, 
+          [{&quot;interface&quot;: &quot;eth0&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-1&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-1&quot;]},
            {&quot;interface&quot;: &quot;net2&quot;, &quot;ipv4&quot;: [&quot;subnet-demo-v4-2&quot;], &quot;ipv6&quot;: [&quot;subnet-demo-v6-2&quot;]}]
 </code></pre></div>
 <p>Install the example:</p>
@@ -1668,13 +1710,13 @@ and SpiderSubnet object <code>subnet-demo-v6</code> allocates another IP to Spid
       
       
         
-        <a href="../ippool-namespace/" class="md-footer__link md-footer__link--next" aria-label="Next: Default IPPool at namespace" rel="next">
+        <a href="../spider-multus-config/" class="md-footer__link md-footer__link--next" aria-label="Next: SpiderMultusConfig" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Default IPPool at namespace
+              SpiderMultusConfig
             </div>
           </div>
           <div class="md-footer__button md-icon">

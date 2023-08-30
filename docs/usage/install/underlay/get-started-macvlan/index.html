@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1069,6 +1083,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1085,6 +1113,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1270,22 +1312,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#install-veth" class="md-nav__link">
-    Install Veth
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#install-multus" class="md-nav__link">
-    Install Multus
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-cni-configuration" class="md-nav__link">
+    Create CNI configuration
   </a>
   
 </li>
@@ -1322,7 +1357,7 @@
 
 <h1 id="macvlan-quick-start">Macvlan Quick Start</h1>
 <p><strong>English</strong> | <a href="../get-started-macvlan-zh_CN/"><strong>简体中文</strong></a></p>
-<p>Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan</a>, <a href="https://github.com/spidernet-io/plugins">Veth</a>, and <a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a>, which meets the following kinds of requirements:</p>
+<p>Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan</a> and <a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a>, which meets the following kinds of requirements:</p>
 <ul>
 <li>
 <p>Applications can be assigned static Underlay IP addresses through simple operations.</p>
@@ -1350,114 +1385,82 @@
 tar xvfzp ./cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
 chmod +x /opt/cni/bin/macvlan
 </code></pre></div>
-<h2 id="install-veth">Install Veth</h2>
-<p><a href="https://github.com/spidernet-io/plugins"><code>Veth</code></a> is a CNI plugin designed to resolve the following issues in other CNIs like Macvlan and SR-IOV:</p>
-<ul>
-<li>
-<p>Enable clusterIP communication for Pods in Macvlan CNI environments</p>
-</li>
-<li>
-<p>Facilitate connection between Pods and the host during health checks where Pods' Macvlan IPs are unable to communicate with the host</p>
-</li>
-<li>
-<p>Address communication issues in multiple NICs for Pods by automatically coordinating policy routing between NICs</p>
-</li>
-</ul>
-<p>Download and install the Veth binary on all nodes:</p>
-<div class="highlight"><pre><span></span><code>wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
-tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
-chmod +x /opt/cni/bin/veth
-</code></pre></div>
-<h2 id="install-multus">Install Multus</h2>
-<p><a href="https://github.com/k8snetworkplumbingwg/multus-cni"><code>Multus</code></a> is a CNI plugin that allows Pods to have multiple NICs by scheduling third-party CNIs. The management of the Macvlan CNI configuration is simplified through the CRD-based approach provided by Multus, with nothing for manual editing of CNI configuration files on each host.</p>
-<ol>
-<li>
-<p>Install Multus via the manifest:</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-</code></pre></div>
-</li>
-<li>
-<p>Confirm the operational status of Multus:</p>
-<div class="highlight"><pre><span></span><code>~# kubectl get pods -A <span class="p">|</span> grep -i multus
-kube-system          kube-multus-ds-hfzpl                         <span class="m">1</span>/1     Running   <span class="m">0</span>   5m
-kube-system          kube-multus-ds-qm8j7                         <span class="m">1</span>/1     Running   <span class="m">0</span>   5m
-</code></pre></div>
-<p>Verify the existence of the Multus configuration files <code>ls /etc/cni/net.d/00-multus.conf</code> on the node.</p>
-</li>
-<li>
-<p>Create a NetworkAttachmentDefinition for Macvlan.</p>
-<p>The following parameters need to be confirmed:</p>
-<ul>
-<li>
-<p>Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface --eth0.</p>
-</li>
-<li>
-<p>To implement clusterIP communication using Veth, confirm the service CIDR of the cluster through a query command <code>kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service</code> or other methods.</p>
-</li>
-</ul>
-<p>The following is the configuration for creating a NetworkAttachmentDefinition:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">MACLVAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
-<span class="nv">SERVICE_CIDR</span><span class="o">=</span><span class="s2">&quot;10.96.0.0/16&quot;</span>
-
-cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
-<span class="s">kind: NetworkAttachmentDefinition</span>
-<span class="s">metadata:</span>
-<span class="s">  name: macvlan-conf</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  config: |-</span>
-<span class="s">    {</span>
-<span class="s">        &quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
-<span class="s">        &quot;name&quot;: &quot;macvlan-conf&quot;,</span>
-<span class="s">        &quot;plugins&quot;: [</span>
-<span class="s">            {</span>
-<span class="s">                &quot;type&quot;: &quot;macvlan&quot;,</span>
-<span class="s">                &quot;master&quot;: &quot;${MACLVAN_MASTER_INTERFACE}&quot;,</span>
-<span class="s">                &quot;mode&quot;: &quot;bridge&quot;,</span>
-<span class="s">                &quot;ipam&quot;: {</span>
-<span class="s">                    &quot;type&quot;: &quot;spiderpool&quot;</span>
-<span class="s">                }</span>
-<span class="s">            },{</span>
-<span class="s">                  &quot;type&quot;: &quot;veth&quot;,</span>
-<span class="s">                  &quot;service_cidr&quot;: [&quot;${SERVICE_CIDR}&quot;]</span>
-<span class="s">              }</span>
-<span class="s">        ]</span>
-<span class="s">    }</span>
-<span class="s">EOF</span>
-</code></pre></div>
-</li>
-</ol>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
 <p>Install Spiderpool.</p>
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span>
 </code></pre></div>
 <blockquote>
 <p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+<p>Specify the Multus clusterNetwork of the cluster through <code>multus.multusCNI.defaultCniCRName</code>, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.</p>
 </blockquote>
 </li>
 <li>
-<p>Create a SpiderSubnet instance.</p>
-<p>An Underlay subnet for eth0 needs to be created for Pods as Macvlan uses eth0 as the parent interface.
-Here is an example of creating a SpiderSubnet instance:：</p>
+<p>Create a SpiderIPPool instance.</p>
+<p>Create an IP Pool in the same subnet as the network interface <code>eth0</code> for Pods to use, the following is an example of creating a related SpiderIPPool:</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderSubnet</span>
+<span class="s">kind: SpiderIPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: subnet-test</span>
+<span class="s">  name: ippool-test</span>
 <span class="s">spec:</span>
 <span class="s">  ips:</span>
 <span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
 <span class="s">  subnet: 172.18.0.0/16</span>
 <span class="s">  gateway: 172.18.0.1</span>
+<span class="s">  multusName: </span>
+<span class="s">  - macvlan-conf</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>
+<li>
+<p>Verify installation</p>
+</li>
 </ol>
+<div class="highlight"><pre><span></span><code> ~# kubectl get po -n kube-system <span class="p">|</span> grep spiderpool
+ spiderpool-agent-7hhkz                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-agent-kxf27                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-controller-76798dbb68-xnktr   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-init                          <span class="m">0</span>/1     Completed   <span class="m">0</span>              13m
+ spiderpool-multus-7vkm2                  <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-multus-rwzjn                  <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ ~# kubectl get sp
+ NAME            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+ ippool-test     <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">0</span>                    <span class="m">10</span>               <span class="nb">false</span>
+</code></pre></div>
+<h2 id="create-cni-configuration">Create CNI configuration</h2>
+<p>To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating a Macvlan SpiderMultusConfig configuration:</p>
+<ul>
+<li>
+<p>Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface --eth0.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
+cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: macvlan-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">macvlan:</span>
+<span class="s">  master:</span>
+<span class="s">  - ${MACVLAN_MASTER_INTERFACE}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+</ul>
+<p>In the example of this article, use the above configuration to create the following Macvlan SpiderMultusConfig, which will automatically generate Multus NetworkAttachmentDefinition CR based on it, which corresponds to the eth0 network card of the host.</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system
+NAME           AGE
+macvlan-conf   10m
+
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system
+NAME           AGE
+macvlan-conf   10m
+</code></pre></div>
 <h2 id="create-applications">Create applications</h2>
 <ol>
 <li>
@@ -1475,11 +1478,10 @@ Here is an example of creating a SpiderSubnet instance:：</p>
 <span class="s">  template:</span>
 <span class="s">    metadata:</span>
 <span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/subnet: |-</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
 <span class="s">          {</span>
-<span class="s">            &quot;ipv4&quot;: [&quot;subnet-test&quot;]</span>
+<span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
 <span class="s">          }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-conf</span>
 <span class="s">      labels:</span>
 <span class="s">        app: test-app</span>
 <span class="s">    spec:</span>
@@ -1508,21 +1510,6 @@ Here is an example of creating a SpiderSubnet instance:：</p>
 <span class="s">    app: test-app </span>
 <span class="s">EOF</span>
 </code></pre></div>
-<p>Spec descriptions：</p>
-<ul>
-<li>
-<p><code>ipam.spidernet.io/subnet</code>: defines which subnets to be used to assign IP addresses to Pods.</p>
-<blockquote>
-<p>For more information on Spiderpool annotations, refer to <a href="../../../../reference/annotation/">Spiderpool Annotations</a>.</p>
-</blockquote>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>：specifies the CNI configuration for Multus.</p>
-<blockquote>
-<p>For more information on Multus annotations, refer to <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md">Multus Quickstart</a>.</p>
-</blockquote>
-</li>
-</ul>
 </li>
 <li>
 <p>Check the status of Pods:</p>
@@ -1535,13 +1522,13 @@ test-app-f9f94688-8982v   <span class="m">1</span>/1     Running   <span class="
 <li>
 <p>Spiderpool has created fixed IP pools for applications, ensuring that the applications' IPs are automatically fixed within the defined ranges.</p>
 <div class="highlight"><pre><span></span><code>~# kubectl get spiderippool
-NAME                                               VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-auto-deployment-default-test-app-v4-a0ae75eb5d47   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">2</span>                    <span class="m">2</span>                <span class="nb">false</span>
+NAME          VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT    
+ippool-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16    <span class="m">2</span>                    <span class="m">10</span>                <span class="nb">false</span>
 
 ~#  kubectl get spiderendpoints
-NAME                      INTERFACE   IPV4POOL                                           IPV4               IPV6POOL   IPV6   NODE                 CREATETION TIME
-test-app-f9f94688-2srj7   eth0        auto-deployment-default-test-app-v4-a0ae75eb5d47   <span class="m">172</span>.18.30.139/16                     ipv4-worker          3m5s
-test-app-f9f94688-8982v   eth0        auto-deployment-default-test-app-v4-a0ae75eb5d47   <span class="m">172</span>.18.30.138/16                     ipv4-control-plane   3m5s
+NAME                      INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE                 CREATETION TIME
+test-app-f9f94688-2srj7   eth0        ippool-test   <span class="m">172</span>.18.30.139/16                     ipv4-worker          3m5s
+test-app-f9f94688-8982v   eth0        ippool-test   <span class="m">172</span>.18.30.138/16                     ipv4-control-plane   3m5s
 </code></pre></div>
 </li>
 <li>

@@ -583,6 +583,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -697,13 +711,6 @@
           <li class="md-nav__item">
   <a href="#set-up-spiderpool" class="md-nav__link">
     Set up Spiderpool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#create-spidersubnet" class="md-nav__link">
-    Create SpiderSubnet
   </a>
   
 </li>
@@ -1153,6 +1160,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1169,6 +1190,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1355,13 +1390,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#create-spidersubnet" class="md-nav__link">
-    Create SpiderSubnet
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#shared-ippool" class="md-nav__link">
     Shared IPPool
   </a>
@@ -1424,20 +1452,7 @@ could get IP address from it, and another Pods could not even specifying the ann
 <h2 id="get-started">Get started</h2>
 <p>The example shows how <code>sepc.podAffinity</code> works.</p>
 <h3 id="set-up-spiderpool">Set up Spiderpool</h3>
-<p>Follow the <a href="../install/install/">installation guide</a> to install Spiderpool.</p>
-<h3 id="create-spidersubnet">Create SpiderSubnet</h3>
-<p>Create a subnet to allocate IP addresses for the IPPool, from which both the Shared IPPool and the Occupied IPPool will receive their IP addresses.</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/static-ipv4-subnet.yaml
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderSubnet</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">static-ipv4-subnet</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.0/24</span><span class="w"></span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.40-172.18.41.47</span><span class="w"></span>
-</code></pre></div>
+<p>Follow the <a href="../install/underlay/get-started-kind/">installation guide</a> to install Spiderpool.</p>
 <h3 id="shared-ippool">Shared IPPool</h3>
 <ol>
 <li>
@@ -1596,7 +1611,6 @@ Warning  FailedCreatePodSandBox  34s   kubelet            Failed to create pod s
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/occupied-static-ippool-deploy.yaml <span class="se">\</span>
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/wrong-static-ippool-deploy.yaml <span class="se">\</span>
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/occupied-static-ipv4-ippool.yaml <span class="se">\</span>
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/static-ipv4-subnet.yaml   <span class="se">\</span>
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/shared-static-ippool-deploy.yaml  <span class="se">\</span>
 -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/shared-static-ipv4-ippool.yaml  <span class="se">\</span>
 --ignore-not-found<span class="o">=</span><span class="nb">true</span>

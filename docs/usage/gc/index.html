@@ -583,6 +583,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -757,22 +771,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#enable-ip-gc-support" class="md-nav__link">
-    Enable IP GC Support
+  <a href="#introduce" class="md-nav__link">
+    Introduce
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#design" class="md-nav__link">
-    Design
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notice" class="md-nav__link">
-    Notice
+  <a href="#project-functions" class="md-nav__link">
+    Project Functions
   </a>
   
 </li>
@@ -1126,6 +1133,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1142,6 +1163,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1313,22 +1348,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#enable-ip-gc-support" class="md-nav__link">
-    Enable IP GC Support
+  <a href="#introduce" class="md-nav__link">
+    Introduce
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#design" class="md-nav__link">
-    Design
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notice" class="md-nav__link">
-    Notice
+  <a href="#project-functions" class="md-nav__link">
+    Project Functions
   </a>
   
 </li>
@@ -1358,52 +1386,17 @@
 
 <h1 id="reclaim-ip">Reclaim IP</h1>
 <p><strong>English</strong> | <a href="../gc-zh_CN/"><strong>简体中文</strong></a></p>
-<p>Spiderpool has an IP garbage collection mechanism that helps to clean up leaked IPs once CNI cmdDel fails.</p>
-<h2 id="enable-ip-gc-support">Enable IP GC Support</h2>
-<p>Check the <code>SPIDERPOOL_GC_IP_ENABLED</code> environment property of the <code>spiderpool-controller</code> Kubernetes deployment to see if it is already set to <code>true</code>. (It is enabled by default.)</p>
-<div class="highlight"><pre><span></span><code>kubectl edit deploy spiderpool-controller -n kube-system
-</code></pre></div>
-<h2 id="design">Design</h2>
-<p>The spiderpool-controller uses <code>pod informer</code> and regular interval <code>scan all SpiderIPPool</code> to clean up leaked IPs and corresponding SpiderEndpoint objects.
-We used a memory cache to record the Pods object that the corresponding IPs and SpiderEndpoint objects should be cleaned up.</p>
-<p>Here are several cases in which we release IP:</p>
+<h2 id="introduce">Introduce</h2>
+<p>In Kubernetes, garbage collection (Garbage Collection, GC for short) is very important for the recycling of IP addresses. The availability of IP addresses is critical to whether a Pod can start successfully. The GC mechanism can automatically reclaim these unused IP addresses, avoiding waste of resources and exhaustion of IP addresses. This article will introduce Spiderpool's excellent GC capabilities.</p>
+<h2 id="project-functions">Project Functions</h2>
+<p>The IP addresses assigned to Pods are recorded in IPAM, but these Pods no longer exist in the Kubernetes cluster. These IPs can be called <code>zombie IPs</code>. Spiderpool can recycle <code>zombie IPs</code>. Its implementation principle is as follows :</p>
+<p>When <code>deleting Pod</code> in the cluster, but due to problems such as <code>network exception</code> or <code>cni binary crash</code>, the call to <code>cni delete</code> fails, resulting in the IP address not being reclaimed by cni.</p>
 <ul>
-<li>
-<p>Pod was <code>deleted</code>, except StatefulSet restarts its Pod situation.</p>
-</li>
-<li>
-<p>Pod is <code>Terminating</code>, we will release its IPs after <code>spec.terminationGracePeriodSecond</code>, you can set environment <code>AdditionalGraceDelay</code>(default 0 seconds) to add delay duration. you can also determine whether gc <code>Terminating</code> status Pod or not with environment <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. (It would be enabled by default). There are two cases that this env may help:</p>
-<ol>
-<li>If one node encounters downtime in your cluster, you must rely on the IP GC to release the IPs.</li>
-<li>In some underlay mode, if you do not release one IP with terminating Pod and the new Pod cannot fetch available IP to start because of the IP resources shortage.</li>
-</ol>
-<p>But there's a special case we should watch out for: if the node lost the connection with the master API server due to the node Interface or network issues, the Pod network may also be good and still serves well. In this case, if we release its IPs and allocate them to other Pods, this will lead to IP conflict.</p>
-</li>
-<li>
-<p>Pod is in the <code>Succeeded</code> or <code>Failed</code> phase, we'll clean the Pod's IPs after <code>pod.DeletionGracePeriodSeconds</code>, you can set the <code>AdditionalGraceDelay</code>(default 0 seconds) environment variable to add delay duration.</p>
-</li>
-<li>
-<p>SpiderIPPool allocated IP corresponding Pod does not exist in Kubernetes, except StatefulSet restarts its Pod situation.</p>
-</li>
-<li>
-<p>The Pod UID is different from the SpiderIPPool IP allocation Pod UID.</p>
-</li>
+<li>In failure scenarios such as <code>cni delete failure</code>, if a Pod that has been assigned an IP is destroyed, but the IP address is still recorded in the IPAM, a phenomenon of zombie IP is formed. For this kind of problem, Spiderpool will automatically recycle these zombie IP addresses based on the cycle and event scanning mechanism.</li>
 </ul>
-<h2 id="notice">Notice</h2>
+<p>After a node goes down unexpectedly, the Pod in the cluster is permanently in the <code>deleting</code> state, and the IP address occupied by the Pod cannot be released.</p>
 <ul>
-<li>
-<p>The <code>spiderpool-controller</code> has multiple replicas and uses leader election. The IP Garbage Collection <code>pod informer</code> only serves the <code>Master</code>.
-  However, every backup will use <code>scan all SpiderIPPool</code> to release the leaked IPs that should be cleaned up immediately. It will not trace the Pod into memory cache with the upper Pod status cases.</p>
-</li>
-<li>
-<p>We can change tracing Pod <code>AdditionalGraceDelay</code> with the environment <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code>(default 5 seconds).</p>
-</li>
-<li>
-<p>If one node breaks in your cluster, the IP GC will forcibly release the unreachable Pod corresponding IPs if you enable the <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code> environment variable.
-  There is also a rare situation where your Pod is still alive even after the <code>DeletionGracePeriod</code> duration. The IP GC will still forcibly release the unreachable Pod corresponding IPs.
-  For these two cases, we recommend that the Main CNI has the ability to check for IP conflicts.
-  The <a href="https://github.com/spidernet-io/plugins">Veth</a> plugin already implements this feature, and you can use it in collaboration with <code>Macvlan</code> or <code>SR-IOV</code> CNI.</p>
-</li>
+<li>For a Pod in <code>Terminating</code> state, Spiderpool will automatically release its IP address after the Pod's <code>spec.terminationGracePeriodSecond</code>. This feature can be controlled by the environment variable <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. This capability can be used to solve the failure scenario of <code>unexpected node downtime</code>.</li>
 </ul>
 
 

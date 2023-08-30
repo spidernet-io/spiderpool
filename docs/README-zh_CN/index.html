@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../usage/ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1069,6 +1083,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1085,6 +1113,20 @@
     <li class="md-nav__item">
       <a href="../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1574,10 +1616,13 @@
 <p>并且，能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考<a href="../usage/coordinator/">例子</a>。</p>
 <ul>
 <li>
-<p>基于节点拓扑的 IP 池功能，支持运行在裸金属<a href="../usage/network-topology-zh_CN/">例子</a>、
-  vmware 虚拟机<a href="../usage/install/cloud/get-started-vmware-zh_CN/">例子</a>、
-  openstack 虚拟机<a href="../usage/install/cloud/get-started-openstack-zh_CN/">例子</a>、
-  公有云<a href="../usage/install/cloud/get-started-alibaba-zh_CN/">例子</a>等场景。</p>
+<p>基于节点拓扑的 IP 池功能，满足每个节点精细化的子网规划需求，可参考<a href="../usage/network-topology-zh_CN/">例子</a></p>
+</li>
+<li>
+<p>在 vmware vsphere 平台上，无需打开 vswitch 的<a href="https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html">"混杂"转发模式</a>，即可运行 underlay CNI 解决方案，从而确保 vsphere 平台的转发性能。参考<a href="../usage/install/cloud/get-started-vmware-zh_CN/">例子</a></p>
+</li>
+<li>
+<p>spiderpool 能在任意厂商的公有云平台、openstack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考<a href="../usage/install/cloud/get-started-alibaba-zh_CN/">阿里云例子</a></p>
 </li>
 <li>
 <p>在 Pod 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助
@@ -1601,7 +1646,7 @@
   可参考<a href="../usage/reserved-ip/">例子</a>。</p>
 </li>
 <li>
-<p>分配和释放 IP 地址的高效性能，可参考<a href="../concepts/performance-zh_CH/">报告</a>。</p>
+<p>分配和释放 IP 地址的高效性能，可参考<a href="../concepts/performance-zh_CN/">报告</a>。</p>
 </li>
 <li>
 <p>合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考<a href="../usage/gc/">例子</a>。</p>
@@ -1618,6 +1663,9 @@
 </ul>
 <h2 id="blogs">Blogs</h2>
 <ul>
+<li>
+<p><a href="https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag">Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案</a></p>
+</li>
 <li>
 <p><a href="https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ">Spiderpool：如何解决僵尸 IP 回收的问题</a></p>
 </li>

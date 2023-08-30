@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1081,6 +1095,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1097,6 +1125,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1289,37 +1331,46 @@
 <p>Get all IPPool candidates.</p>
 <p>For which IPPool is used by a pod, the following rules are listed from <strong>high to low priority</strong> which means the previous rule would <strong>override</strong> the latter rule.</p>
 <ul>
-<li>
-<p>SpiderSubnet annotation. <code>ipam.spidernet.io/subnets</code> and <code>ipam.spidernet.io/subnet</code> will choose to use auto-created ippool if the SpiderSubnet feature is enabled. See <a href="../../usage/spider-subnet/">SpiderSubnet</a> for details.</p>
-</li>
-<li>
-<p>Honor pod annotation. <code>ipam.spidernet.io/ippools" and "ipam.spidernet.io/ippool</code> could be used to specify an ippool. See <a href="../../reference/annotation/">Pod Annotation</a> for details.</p>
-</li>
-<li>
-<p>Namespace annotation. <code>ipam.spidernet.io/defaultv4ippool</code> and <code>ipam.spidernet.io/defaultv6ippool</code> could be used to specify an ippool. See <a href="../../reference/annotation/">namespace annotation</a> for details.</p>
-</li>
-<li>
-<p>CNI configuration file. It can be set to <code>default_ipv4_ippool</code> and <code>default_ipv6_ippool</code> in the CNI configuration file. See <a href="../../reference/plugin-ipam/">configuration</a> for details.</p>
-</li>
-<li>
-<p>Cluster default IPPool. We can set SpiderIPPool CR object with <code>default</code> property, in which we'll regard it as a default pool in cluster.  See <a href="../../reference/crd-spiderippool/">configuration</a> for details.</p>
-</li>
+<li>SpiderSubnet annotation. <code>ipam.spidernet.io/subnets</code> and <code>ipam.spidernet.io/subnet</code> will choose to use auto-created ippool if the SpiderSubnet feature is enabled. See <a href="../../usage/spider-subnet/">SpiderSubnet</a> for details.</li>
+<li>Honor pod annotation. <code>ipam.spidernet.io/ippools" and "ipam.spidernet.io/ippool</code> could be used to specify an ippool. See <a href="../../reference/annotation/">Pod Annotation</a> for details.</li>
+<li>Namespace annotation. <code>ipam.spidernet.io/defaultv4ippool</code> and <code>ipam.spidernet.io/defaultv6ippool</code> could be used to specify an ippool. See <a href="../../reference/annotation/">namespace annotation</a> for details.</li>
+<li>CNI configuration file. It can be set to <code>default_ipv4_ippool</code> and <code>default_ipv6_ippool</code> in the CNI configuration file. See <a href="../../reference/plugin-ipam/">configuration</a> for details.</li>
+<li>Cluster default IPPool. We can set SpiderIPPool CR object with <code>default</code> property, in which we'll regard it as a default pool in cluster.  See <a href="../../reference/crd-spiderippool/">configuration</a> for details.</li>
 </ul>
 </li>
 <li>
 <p>Filter valid IPPool candidates.</p>
 <p>After getting IPv4 and IPv6 IPPool candidates, it looks into each IPPool and figures out whether it meets following rules, and learns which candidate IPPool is available.</p>
 <ul>
-<li>The "disable" field of the IPPool is "false". This property means the IPPool is not available to be used.</li>
-<li>Check current environment with IP version settings. (dual stack, IPv4 only, IPv6 only)</li>
 <li>Filter terminating IPPools.</li>
+<li>The <code>disable</code> field of the IPPool is <code>false</code>. This property means the IPPool is not available to be used.</li>
 <li>Check <code>IPPool.Spec.NodeName</code> and <code>IPPool.Spec.NodeAffinity</code> properties whether match the scheduled node of the pod or not. If not match, this IPPool would be filtered. (<code>NodeName</code> has higher priority than <code>NodeAffinity</code>)</li>
 <li>Check <code>IPPool.Spec.NamespaceName</code> and <code>IPPool.Spec.NamespaceAffinity</code> properties whether match the namespace of the pod or not. If not match, this IPPool would be filtered. (<code>NamespaceName</code> has higher priority than <code>NamespaceAffinity</code>)</li>
-<li>The "PodAffinity" field of the IPPool must meet the pod</li>
+<li>The <code>IPPool.Spec.PodAffinity</code> field of the IPPool must meet the pod</li>
 <li>Check <code>IPPool.Spec.MultusName</code> properties whether match the pod current NIC Multus configuration or not. If not match, this IPPool would be filtered.</li>
 <li>The available IP resource of the IPPool is not exhausted</li>
 </ul>
 </li>
+<li>
+<p>Sort IPPool candidates.</p>
+</li>
+</ol>
+<p>We'll sort these IPPool candidates with our custom priority rules, then the IPAM prefers allocating IP addresses from the candidates in sequence.</p>
+<ul>
+<li>The IPPool resource with <code>IPPool.Spec.PodAffinity</code> property has the highest priority.</li>
+<li>The IPPool resource with <code>IPPool.Spec.NodeName</code> or <code>IPPool.Spec.NodeAffinity</code> property has the second-highest priority.</li>
+<li>The IPPool resource with <code>IPPool.Spec.NamespaceName</code> or <code>IPPool.Spec.NamespaceAffinity</code> property has the second-highest priority.</li>
+<li>The IPPool resource with <code>IPPool.Spec.MultusName</code> property has the lowest priority.</li>
+</ul>
+<blockquote>
+<p>Notice: here are some simple instance to describe this rule.</p>
+<ol>
+<li><em>IPPoolA</em> with properties <code>IPPool.Spec.PodAffinity</code> and <code>IPPool.Spec.NodeName</code> has higher priority than <em>IPPoolB</em> with single affinity property <code>IPPool.Spec.PodAffinity</code>.</li>
+<li><em>IPPoolA</em> with single property <code>IPPool.Spec.PodAffinity</code> has higher priority than <em>IPPoolB</em> with properties <code>IPPool.Spec.NodeName</code> and <code>IPPool.Spec.NamespaceName</code>.</li>
+<li><em>IPPoolA</em> with properties <code>IPPool.Spec.PodAffinity</code> and <code>IPPool.Spec.NodeName</code> has higher priority than <em>IPPoolB</em> with properties <code>IPPool.Spec.PodAffinity</code>,<code>IPPool.Spec.NamespaceName</code> and <code>IPPool.Spec.MultusName</code>.</li>
+</ol>
+</blockquote>
+<ol>
 <li>
 <p>Assign IP from valid IPPool candidates.</p>
 <p>When trying to assign IP from the IPPool candidates, it follows rules as below.</p>

@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1069,6 +1083,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1085,6 +1113,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1270,22 +1312,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#veth" class="md-nav__link">
-    安装 Veth
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multus" class="md-nav__link">
-    安装 Multus
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#spiderpool" class="md-nav__link">
     安装 Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cni" class="md-nav__link">
+    创建 CNI 配置
   </a>
   
 </li>
@@ -1322,7 +1357,7 @@
 
 <h1 id="macvlan-quick-start">Macvlan Quick Start</h1>
 <p><a href="../get-started-macvlan/"><strong>English</strong></a> | <strong>简体中文</strong></p>
-<p>Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>、<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan</a>、<a href="https://github.com/spidernet-io/plugins">Veth</a>、<a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：</p>
+<p>Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>、<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan</a>、<a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> 为例，搭建一套完整的 underlay 网络解决方案，该方案能够满足以下各种功能需求：</p>
 <ul>
 <li>
 <p>通过简易运维，应用可分配到固定的 Underlay IP 地址</p>
@@ -1352,86 +1387,6 @@
 
 ~# chmod +x /opt/cni/bin/macvlan
 </code></pre></div>
-<h2 id="veth">安装 Veth</h2>
-<p><a href="https://github.com/spidernet-io/plugins"><code>Veth</code></a> 是一个 CNI 插件，它能够帮助一些 CNI （例如 Macvlan、SR-IOV 等）解决如下问题：</p>
-<ul>
-<li>
-<p>在 Macvlan CNI 场景下，帮助 Pod 实现 clusterIP 通信</p>
-</li>
-<li>
-<p>若 Pod 的 Macvlan IP 不能与本地宿主机通信，会影响 Pod 的健康检测。Veth 插件能够帮助 Pod 与宿主机通信，解决健康检测场景下的联通性问题</p>
-</li>
-<li>
-<p>在 Pod 多网卡场景下，Veth 能自动够协调多网卡间的策略路由，解决多网卡通信问题</p>
-</li>
-</ul>
-<p>请在所有的节点上，下载安装 Veth 二进制：</p>
-<div class="highlight"><pre><span></span><code>~# wget https://github.com/spidernet-io/plugins/releases/download/v0.1.4/spider-plugins-linux-amd64-v0.1.4.tar
-
-~# tar xvfzp ./spider-plugins-linux-amd64-v0.1.4.tar -C /opt/cni/bin
-
-~# chmod +x /opt/cni/bin/veth
-</code></pre></div>
-<h2 id="multus">安装 Multus</h2>
-<p><a href="https://github.com/k8snetworkplumbingwg/multus-cni"><code>Multus</code></a> 是一个 CNI 插件项目，它通过调度第三方 CNI 项目，能够实现为 Pod 接入多张网卡。并且，Multus 提供了 CRD 方式管理 Macvlan 的 CNI 配置，避免在每个主机上手动编辑 CNI 配置文件。</p>
-<ol>
-<li>
-<p>通过 manifest 安装 Multus 的组件。</p>
-<div class="highlight"><pre><span></span><code>~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-</code></pre></div>
-</li>
-<li>
-<p>确认 Multus 运维状态：</p>
-<div class="highlight"><pre><span></span><code>~# kubectl get pods -A <span class="p">|</span> grep -i multus
-kube-system          kube-multus-ds-hfzpl                         <span class="m">1</span>/1     Running   <span class="m">0</span>   5m
-kube-system          kube-multus-ds-qm8j7                         <span class="m">1</span>/1     Running   <span class="m">0</span>   5m
-</code></pre></div>
-<p>确认节点上存在 Multus 的配置文件 <code>ls /etc/cni/net.d/00-multus.conf</code></p>
-</li>
-<li>
-<p>为 Macvlan 创建 Multus 的 NetworkAttachmentDefinition 配置。</p>
-<p>需要确认如下参数：</p>
-<ul>
-<li>
-<p>确认 Macvlan 所需的宿主机父接口，本例子以宿主机 eth0 网卡为例，从该网卡创建 Macvlan 子接口给 Pod 使用</p>
-</li>
-<li>
-<p>为使用 Veth 插件来实现 clusterIP 通信，需确认集群的 service CIDR，例如可基于命令 <code>kubectl -n kube-system get configmap kubeadm-config -oyaml | grep service</code> 查询</p>
-</li>
-</ul>
-<p>以下为创建 NetworkAttachmentDefinition 的配置：</p>
-<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
-<span class="nv">SERVICE_CIDR</span><span class="o">=</span><span class="s2">&quot;10.96.0.0/16&quot;</span>
-
-cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
-<span class="s">kind: NetworkAttachmentDefinition</span>
-<span class="s">metadata:</span>
-<span class="s">  name: macvlan-conf</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  config: |-</span>
-<span class="s">    {</span>
-<span class="s">        &quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
-<span class="s">        &quot;name&quot;: &quot;macvlan-conf&quot;,</span>
-<span class="s">        &quot;plugins&quot;: [</span>
-<span class="s">            {</span>
-<span class="s">                &quot;type&quot;: &quot;macvlan&quot;,</span>
-<span class="s">                &quot;master&quot;: &quot;${MACLVAN_MASTER_INTERFACE}&quot;,</span>
-<span class="s">                &quot;mode&quot;: &quot;bridge&quot;,</span>
-<span class="s">                &quot;ipam&quot;: {</span>
-<span class="s">                    &quot;type&quot;: &quot;spiderpool&quot;</span>
-<span class="s">                }</span>
-<span class="s">            },{</span>
-<span class="s">                  &quot;type&quot;: &quot;veth&quot;,</span>
-<span class="s">                  &quot;service_cidr&quot;: [&quot;${SERVICE_CIDR}&quot;]</span>
-<span class="s">              }</span>
-<span class="s">        ]</span>
-<span class="s">    }</span>
-<span class="s">EOF</span>
-</code></pre></div>
-</li>
-</ol>
 <h2 id="spiderpool">安装 Spiderpool</h2>
 <ol>
 <li>
@@ -1440,30 +1395,76 @@ cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 
 helm repo update spiderpool
 
-helm install spiderpool spiderpool/spiderpool --namespace kube-system
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span>
 </code></pre></div>
 <blockquote>
 <p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。</p>
 </blockquote>
 </li>
 <li>
-<p>创建 SpiderSubnet 实例。</p>
-<p>Macvlan 是以宿主机 eth0 为父接口，因此，需要创建 eth0 底层的 Underlay 子网供 Pod 使用。
-以下是创建相关的 SpiderSubnet 示例：</p>
+<p>创建 SpiderIPPool 实例。</p>
+<p>创建与网络接口 <code>eth0</code> 在同一个子网的 IP 池以供 Pod 使用，以下是创建相关的 SpiderIPPool 示例：</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderSubnet</span>
+<span class="s">kind: SpiderIPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: subnet-test</span>
+<span class="s">  name: ippool-test</span>
 <span class="s">spec:</span>
 <span class="s">  ips:</span>
 <span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
 <span class="s">  subnet: 172.18.0.0/16</span>
 <span class="s">  gateway: 172.18.0.1</span>
+<span class="s">  multusName: </span>
+<span class="s">  - macvlan-conf</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>
+<li>
+<p>验证安装</p>
+</li>
 </ol>
+<div class="highlight"><pre><span></span><code> ~# kubectl get po -n kube-system <span class="p">|</span> grep spiderpool
+ spiderpool-agent-7hhkz                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-agent-kxf27                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-controller-76798dbb68-xnktr   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-init                          <span class="m">0</span>/1     Completed   <span class="m">0</span>              13m
+ spiderpool-multus-7vkm2                  <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ spiderpool-multus-rwzjn                  <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+ ~# kubectl get sp
+ NAME            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+ ippool-test     <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">0</span>                    <span class="m">10</span>               <span class="nb">false</span>
+</code></pre></div>
+<h2 id="cni">创建 CNI 配置</h2>
+<p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Macvlan SpiderMultusConfig 配置的示例：</p>
+<ul>
+<li>
+<p>确认 Macvlan 所需的宿主机父接口，本例子以宿主机 eth0 网卡为例，从该网卡创建 Macvlan 子接口给 Pod 使用</p>
+<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
+cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: macvlan-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${MACVLAN_MASTER_INTERFACE}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+</ul>
+<p>在本文示例中，使用如上配置，创建如下的 Macvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR，它对应了宿主机的 eth0 网卡。</p>
+<div class="highlight"><pre><span></span><code>~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system
+NAME           AGE
+macvlan-conf   10m
+
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system
+NAME           AGE
+macvlan-conf   10m
+</code></pre></div>
 <h2 id="_2">创建应用</h2>
 <ol>
 <li>
@@ -1481,11 +1482,10 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 <span class="s">  template:</span>
 <span class="s">    metadata:</span>
 <span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/subnet: |-</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
 <span class="s">          {</span>
-<span class="s">            &quot;ipv4&quot;: [&quot;subnet-test&quot;]</span>
+<span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
 <span class="s">          }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-conf</span>
 <span class="s">      labels:</span>
 <span class="s">        app: test-app</span>
 <span class="s">    spec:</span>
@@ -1514,13 +1514,6 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 <span class="s">    app: test-app </span>
 <span class="s">EOF</span>
 </code></pre></div>
-<p>必要参数说明：
-* <code>ipam.spidernet.io/subnet</code>：该 annotation 指定使用哪个 subnet 分配 IP 地址给 Pod
-    &gt; 更多 Spiderpool 注解的使用请参考 <a href="https://spidernet-io.github.io/spiderpool/concepts/annotation/">Spiderpool 注解</a>。</p>
-<ul>
-<li><code>v1.multus-cni.io/default-network</code>：该 annotation 指定了使用的 Multus 的 CNI 配置。
-    &gt; 更多 Multus 注解使用请参考 <a href="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md">Multus 注解</a>。</li>
-</ul>
 </li>
 <li>
 <p>查看 Pod 运行状态：</p>
@@ -1531,15 +1524,15 @@ test-app-f9f94688-8982v   <span class="m">1</span>/1     Running   <span class="
 </code></pre></div>
 </li>
 <li>
-<p>Spiderpool 自动为应用创建了 IP 固定池，应用的 IP 将会自动固定在该 IP 范围内：</p>
+<p>应用的 IP 将会固定在该 IP 范围内：</p>
 <div class="highlight"><pre><span></span><code>~# kubectl get spiderippool
-NAME                                               VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-auto-deployment-default-test-app-v4-a0ae75eb5d47   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">2</span>                    <span class="m">2</span>                <span class="nb">false</span>
+NAME          VERSION   SUBNET           ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT    
+ippool-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16    <span class="m">2</span>                    <span class="m">10</span>                <span class="nb">false</span>
 
 ~#  kubectl get spiderendpoints
-NAME                      INTERFACE   IPV4POOL                                           IPV4               IPV6POOL   IPV6   NODE                 CREATETION TIME
-test-app-f9f94688-2srj7   eth0        auto-deployment-default-test-app-v4-a0ae75eb5d47   <span class="m">172</span>.18.30.139/16                     ipv4-worker          3m5s
-test-app-f9f94688-8982v   eth0        auto-deployment-default-test-app-v4-a0ae75eb5d47   <span class="m">172</span>.18.30.138/16                     ipv4-control-plane   3m5s
+NAME                      INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE                 CREATETION TIME
+test-app-f9f94688-2srj7   eth0        ippool-test   <span class="m">172</span>.18.30.139/16                     ipv4-worker          3m5s
+test-app-f9f94688-8982v   eth0        ippool-test   <span class="m">172</span>.18.30.138/16                     ipv4-control-plane   3m5s
 </code></pre></div>
 </li>
 <li>

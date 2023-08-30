@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1098,16 +1112,23 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderreservedip-definition" class="md-nav__link">
-    SpiderReservedIP definition
+  <a href="#spidermultusconfig-definition" class="md-nav__link">
+    SpiderMultusConfig definition
   </a>
   
-    <nav class="md-nav" aria-label="SpiderReservedIP definition">
+    <nav class="md-nav" aria-label="SpiderMultusConfig definition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#metadata" class="md-nav__link">
     Metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadataannotations" class="md-nav__link">
+    Metadata.annotations
   </a>
   
 </li>
@@ -1142,8 +1163,22 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#spiderovscniconfig" class="md-nav__link">
+    SpiderOvsCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bondconfig" class="md-nav__link">
     BondConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trunk" class="md-nav__link">
+    Trunk
   </a>
   
 </li>
@@ -1180,6 +1215,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1196,6 +1245,20 @@
     <li class="md-nav__item">
       <a href="../crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1374,16 +1437,23 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderreservedip-definition" class="md-nav__link">
-    SpiderReservedIP definition
+  <a href="#spidermultusconfig-definition" class="md-nav__link">
+    SpiderMultusConfig definition
   </a>
   
-    <nav class="md-nav" aria-label="SpiderReservedIP definition">
+    <nav class="md-nav" aria-label="SpiderMultusConfig definition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#metadata" class="md-nav__link">
     Metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadataannotations" class="md-nav__link">
+    Metadata.annotations
   </a>
   
 </li>
@@ -1418,8 +1488,22 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#spiderovscniconfig" class="md-nav__link">
+    SpiderOvsCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bondconfig" class="md-nav__link">
     BondConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trunk" class="md-nav__link">
+    Trunk
   </a>
   
 </li>
@@ -1466,12 +1550,16 @@
 
 <h1 id="spidermultusconfig">SpiderMultusConfig</h1>
 <p>A SpiderMultusConfig resource represents a best practice to generate a multus net-attach-def CR object for spiderpool to use.</p>
+<p>For details on using this CRD, please read the <a href="../../usage/spider-multus-config/">SpiderMultusConfig guide</a>.</p>
 <h2 id="sample-yaml">Sample YAML</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span><span class="w"></span>
 <span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-100</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">demo</span><span class="w"></span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span><span class="w"></span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">multus.spidernet.io/cr-name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;macvlan-100&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">multus.spidernet.io/cni-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.4.0</span><span class="w"></span>
 <span class="nt">spec</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span><span class="w"></span>
 <span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span><span class="w"></span>
@@ -1481,7 +1569,7 @@
 <span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;default-pool-v4&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 <span class="w">      </span><span class="nt">ipv6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;default-pool-v6&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
-<h2 id="spiderreservedip-definition">SpiderReservedIP definition</h2>
+<h2 id="spidermultusconfig-definition">SpiderMultusConfig definition</h2>
 <h3 id="metadata">Metadata</h3>
 <table>
 <thead>
@@ -1505,6 +1593,42 @@
 <td>string</td>
 <td>required</td>
 </tr>
+<tr>
+<td>annotations</td>
+<td>The annotations of this SpiderMultusConfig resource</td>
+<td>map</td>
+<td>optional</td>
+</tr>
+</tbody>
+</table>
+<h3 id="metadataannotations">Metadata.annotations</h3>
+<p>You can also set annotations for this SpiderMultusConfig resource, then the corresponding Multus net-attach-def resource will inherit these annotations too.<br />
+And you can also use special annotation <code>multus.spidernet.io/cr-name</code> and <code>multus.spidernet.io/cni-version</code> to customize the corresponding Multus net-attach-def resource name and CNI version.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>multus.spidernet.io/cr-name</td>
+<td>The customized Multus net-attach-def resource name</td>
+<td>string</td>
+<td>optional</td>
+<td></td>
+</tr>
+<tr>
+<td>multus.spidernet.io/cni-version</td>
+<td>The customized Multus net-attach-def resource CNI version</td>
+<td>string</td>
+<td>optional</td>
+<td>0.3.1</td>
+</tr>
 </tbody>
 </table>
 <h3 id="spec">Spec</h3>
@@ -1526,7 +1650,7 @@
 <td>expected main CNI type</td>
 <td>string</td>
 <td>require</td>
-<td>macvlan,ipvlan,sriov,custom</td>
+<td>macvlan,ipvlan,sriov,ovs,custom</td>
 <td></td>
 </tr>
 <tr>
@@ -1554,6 +1678,14 @@
 <td></td>
 </tr>
 <tr>
+<td>ovs</td>
+<td>ovs CNI configuration</td>
+<td><a href="./#SpiderOvsCniConfig">SpiderOvsCniConfig</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>enableCoordinator</td>
 <td>enable coordinator or not</td>
 <td>boolean</td>
@@ -1564,7 +1696,7 @@
 <tr>
 <td>coordinator</td>
 <td>coordinator CNI configuration</td>
-<td>CoordinatorSpec</td>
+<td><a href="../crd-spidercoordinator/#Spec">CoordinatorSpec</a></td>
 <td>optional</td>
 <td></td>
 <td></td>
@@ -1603,7 +1735,7 @@
 <td>vlan ID</td>
 <td>int</td>
 <td>optional</td>
-<td>[0,4095]</td>
+<td>[0,4094]</td>
 </tr>
 <tr>
 <td>bond</td>
@@ -1645,7 +1777,7 @@
 <td>vlan ID</td>
 <td>int</td>
 <td>optional</td>
-<td>[0,4095]</td>
+<td>[0,4094]</td>
 </tr>
 <tr>
 <td>bond</td>
@@ -1694,6 +1826,49 @@
 </tr>
 </tbody>
 </table>
+<h4 id="spiderovscniconfig">SpiderOvsCniConfig</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bridge</td>
+<td>name of the bridge to use</td>
+<td>string</td>
+<td>required</td>
+</tr>
+<tr>
+<td>vlan</td>
+<td>vlan ID of attached port. Trunk port if not specified</td>
+<td>int</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>trunk</td>
+<td>List of VLAN ID's and/or ranges of accepted VLAN ID's</td>
+<td><a href="./#Trunk">Trunk</a></td>
+<td>optional</td>
+</tr>
+<tr>
+<td>deviceID</td>
+<td>PCI address of a VF in valid sysfs format</td>
+<td>string</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>ippools</td>
+<td>the default IPPools in your CNI configurations</td>
+<td><a href="./#SpiderpoolPools">SpiderpoolPools</a></td>
+<td>optional</td>
+</tr>
+</tbody>
+</table>
 <h4 id="bondconfig">BondConfig</h4>
 <table>
 <thead>
@@ -1726,6 +1901,41 @@
 <td>string</td>
 <td>optional</td>
 <td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="trunk">Trunk</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>minID</td>
+<td>the min value of vlan ID</td>
+<td>int</td>
+<td>optional</td>
+<td>[0,4094]</td>
+</tr>
+<tr>
+<td>maxID</td>
+<td>the max value of vlan ID</td>
+<td>int</td>
+<td>optional</td>
+<td>[0,4094]</td>
+</tr>
+<tr>
+<td>id</td>
+<td>the value of vlan ID</td>
+<td>int</td>
+<td>optional</td>
+<td>[0,4094]</td>
 </tr>
 </tbody>
 </table>
@@ -1795,13 +2005,13 @@
       
       
         
-        <a href="../crd-spiderendpoint/" class="md-footer__link md-footer__link--next" aria-label="Next: CRD SpiderEndpoint" rel="next">
+        <a href="../crd-spidercoordinator/" class="md-footer__link md-footer__link--next" aria-label="Next: CRD Spidercoordinator" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              CRD SpiderEndpoint
+              CRD Spidercoordinator
             </div>
           </div>
           <div class="md-footer__button md-icon">

@@ -685,6 +685,20 @@
   
   
     <li class="md-nav__item">
+      <a href="usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="usage/ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1173,6 +1187,20 @@
   
   
     <li class="md-nav__item">
+      <a href="reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1189,6 +1217,20 @@
     <li class="md-nav__item">
       <a href="reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1728,11 +1770,13 @@ it provides underlay CNI solutions for various public cloud environments.</p>
   to detect IP conflict and gateway reachability (<a href="usage/coordinator/">example</a>).</p>
 </li>
 <li>
-<p>Node based IP pool, supporting underlay CNI running on bare metal
-  (<a href="usage/network-topology/">example</a>),
-  vmware virtual machine (<a href="usage/install/cloud/get-started-vmware/">example</a>),
-  openstack virtual machine (<a href="usage/install/cloud/get-started-openstack/">example</a>),
-  public cloud (<a href="usage/install/cloud/get-started-alibaba/">example</a>).</p>
+<p>Node-based IP pool feature meets the complex subnet design of each node. refer to <a href="usage/network-topology/">example</a></p>
+</li>
+<li>
+<p>On vmware vsphere platform, Spiderpool underlay network solution does not require <a href="https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html">"hybrid forwarding" mode of the Vswitch</a>, which ensures the network performance of vsphere platform. refer to <a href="usage/install/cloud/get-started-vmware-zh_CN/">example</a></p>
+</li>
+<li>
+<p>Spiderpool underlay network solution could run on public cloud of any vendors, and openstack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to <a href="usage/install/cloud/get-started-alibaba-zh_CN/">alibabaCloud</a></p>
 </li>
 <li>
 <p>When starting the Pod, it could help dynamically build the bond interface and vlan interface
@@ -1778,6 +1822,9 @@ it provides underlay CNI solutions for various public cloud environments.</p>
 </ul>
 <h2 id="blogs">Blogs</h2>
 <ul>
+<li>
+<p><a href="https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag">Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案</a></p>
+</li>
 <li>
 <p><a href="https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ">Spiderpool：如何解决僵尸 IP 回收的问题</a></p>
 </li>

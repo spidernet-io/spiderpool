@@ -581,6 +581,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1069,6 +1083,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1085,6 +1113,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1270,13 +1312,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#multus" class="md-nav__link">
-    安装 Multus
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#spiderpool" class="md-nav__link">
     安装 Spiderpool
   </a>
@@ -1371,94 +1406,78 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
             Interface veth97fb4795
     ovs_version: <span class="s2">&quot;2.17.3&quot;</span>
 </code></pre></div>
-<h2 id="multus">安装 Multus</h2>
-<p><a href="https://github.com/k8snetworkplumbingwg/multus-cni"><code>Multus</code></a> 是一个 CNI 插件项目，它通过调度第三方 CNI 项目，能够实现为 Pod 接入多张网卡。并且 Multus 提供了 CRD 方式管理 Ovs-cni 的 CNI 配置，避免在每个主机上手动编辑 CNI 配置文件，能够降低运维工作量。</p>
-<ol>
-<li>
-<p>通过 manifest 安装 Multus</p>
-<div class="highlight"><pre><span></span><code>~# kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.9/deployments/multus-daemonset.yml
-</code></pre></div>
-</li>
-<li>
-<p>为 Ovs-cni 创建 Multus 的 NetworkAttachmentDefinition 配置</p>
-<p>需要确认如下参数：</p>
-<ul>
-<li>确认 ovs-cni 所需的宿主机网桥，例如可基于命令 <code>ovs-vsctl show</code> 查询，本例子以宿主机的网桥：<code>br1</code> 为例</li>
-</ul>
-</li>
-</ol>
-<div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
-<span class="s">kind: NetworkAttachmentDefinition</span>
-<span class="s">metadata:</span>
-<span class="s">  name: ovs-conf</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  config: |-</span>
-<span class="s">    {</span>
-<span class="s">        &quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
-<span class="s">        &quot;name&quot;: &quot;ovs-conf&quot;,</span>
-<span class="s">        &quot;plugins&quot;: [</span>
-<span class="s">            {</span>
-<span class="s">                &quot;type&quot;: &quot;ovs&quot;,</span>
-<span class="s">                &quot;bridge&quot;: &quot;br1&quot;,</span>
-<span class="s">                &quot;ipam&quot;: {</span>
-<span class="s">                    &quot;type&quot;: &quot;spiderpool&quot;</span>
-<span class="s">                }</span>
-<span class="s">            }</span>
-<span class="s">        ]</span>
-<span class="s">    }</span>
-<span class="s">EOF</span>
-</code></pre></div>
 <h2 id="spiderpool">安装 Spiderpool</h2>
 <ol>
 <li>
 <p>安装 Spiderpool。</p>
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ovs-conf&quot;</span>
 </code></pre></div>
 <blockquote>
-<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 以帮助您快速的拉取镜像。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。</p>
 </blockquote>
 </li>
 <li>
-<p>创建 SpiderSubnet 实例。</p>
-<p>Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。</p>
-<p>以下是创建相关的 SpiderSubnet 示例：</p>
+<p>创建 SpiderIPPool 实例。</p>
+<p>Pod 会从该 IP 池中获取 IP，进行 Underlay 的网络通讯，所以该 IP 池的子网需要与接入的 Underlay 子网对应。以下是创建相关的 SpiderIPPool 示例：</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderSubnet</span>
+<span class="s">kind: SpiderIPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: subnet-test</span>
+<span class="s">  name: ippool-test</span>
 <span class="s">spec:</span>
 <span class="s">  ipVersion: 4</span>
 <span class="s">  ips:</span>
-<span class="s">    - &quot;172.18.30.131-172.18.30.140&quot;</span>
+<span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
 <span class="s">  subnet: 172.18.0.0/16</span>
 <span class="s">  gateway: 172.18.0.1</span>
+<span class="s">  multusName: </span>
+<span class="s">  - ovs-conf</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>
-</ol>
+<li>
 <p>验证安装：</p>
-<div class="highlight"><pre><span></span><code>~# kubectl get po -n kube-system <span class="p">|</span> grep spiderpool
-spiderpool-agent-f899f                       <span class="m">1</span>/1     Running   <span class="m">0</span>             2m
-spiderpool-agent-w69z6                       <span class="m">1</span>/1     Running   <span class="m">0</span>             2m
-spiderpool-controller-5bf7b5ddd9-6vd2w       <span class="m">1</span>/1     Running   <span class="m">0</span>             2m
-~# kubectl get spidersubnet
-NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT
-subnet-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">0</span>                    <span class="m">10</span>
+<div class="highlight"><pre><span></span><code>~# kubectl get po -n kube-system <span class="p">|</span>grep spiderpool
+spiderpool-agent-7hhkz                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+spiderpool-agent-kxf27                   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+spiderpool-controller-76798dbb68-xnktr   <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+spiderpool-init                          <span class="m">0</span>/1     Completed   <span class="m">0</span>              13m
+spiderpool-multus-7vkm2                  <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+spiderpool-multus-rwzjn                  <span class="m">1</span>/1     Running     <span class="m">0</span>              13m
+
+~# kubectl get sp ippool-test       
+NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
+ippool-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">0</span>                    <span class="m">10</span>               <span class="nb">false</span>
+~# 
 </code></pre></div>
+</li>
+<li>
+<p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Ovs SpiderMultusConfig 配置的示例：</p>
+</li>
+<li>
+<p>确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:</p>
+<p><code>shell
+BRIDGE_NAME="br1"
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ovs-conf
+  namespace: kube-system
+spec:
+  cniType: ovs
+  ovs:
+    bridge: "${BRIDGE_NAME}"
+  EOF</code></p>
+</li>
+</ol>
 <h2 id="_2">创建应用</h2>
 <p>以下的示例 Yaml 中， 会创建 2 个副本的 Deployment，其中：</p>
 <ul>
-<li>
-<p><code>ipam.spidernet.io/subnet</code>：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，能实现 IP 固定的效果。</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>：用于指定 Multus 的 NetworkAttachmentDefinition 配置，会基于它为应用创建一张默认网卡。</p>
-</li>
+<li><code>v1.multus-cni.io/default-network</code>：用于指定 Multus 的 NetworkAttachmentDefinition 配置，会基于它为应用创建一张默认网卡。</li>
 </ul>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 <span class="s">apiVersion: apps/v1</span>
@@ -1473,11 +1492,10 @@ subnet-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0
 <span class="s">  template:</span>
 <span class="s">    metadata:</span>
 <span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/subnet: |-</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
 <span class="s">          {</span>
-<span class="s">            &quot;ipv4&quot;: [&quot;subnet-test&quot;]</span>
+<span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
 <span class="s">          }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/ovs-conf</span>
 <span class="s">      labels:</span>
 <span class="s">        app: test-app</span>
 <span class="s">    spec:</span>
@@ -1498,20 +1516,20 @@ subnet-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0
 <span class="s">          protocol: TCP</span>
 <span class="s">EOF</span>
 </code></pre></div>
-<p>Spiderpool 自动为应用创建了 IP 固定池，应用的 IP 将会自动固定在该 IP 范围内：</p>
+<p>SpiderIPPool 为应用分配了 IP，应用的 IP 将会自动固定在该 IP 范围内：</p>
 <div class="highlight"><pre><span></span><code>~# kubectl get po -l <span class="nv">app</span><span class="o">=</span>test-app -o wide
 NAME                        READY   STATUS    RESTARTS   AGE     IP              NODE                 NOMINATED NODE   READINESS GATES
 test-app-6f8dddd88d-hstg7   <span class="m">1</span>/1     Running   <span class="m">0</span>          3m37s   <span class="m">172</span>.18.30.131   ipv4-worker          &lt;none&gt;           &lt;none&gt;
 test-app-6f8dddd88d-rj7sm   <span class="m">1</span>/1     Running   <span class="m">0</span>          3m37s   <span class="m">172</span>.18.30.132   ipv4-control-plane   &lt;none&gt;           &lt;none&gt;
 
 ~# kubectl get spiderippool
-NAME                                 VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
-auto-test-app-v4-eth0-9b208a961acd   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">2</span>                    <span class="m">2</span>                <span class="nb">false</span>     <span class="nb">false</span>
+NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT   DISABLE
+ippool-test   <span class="m">4</span>         <span class="m">172</span>.18.0.0/16   <span class="m">2</span>                    <span class="m">2</span>                <span class="nb">false</span>     <span class="nb">false</span>
 
-~#  kubectl get spiderendpoints
-NAME                        INTERFACE   IPV4POOL                             IPV4               IPV6POOL   IPV6   NODE
-test-app-6f8dddd88d-hstg7   eth0        auto-test-app-v4-eth0-9b208a961acd   <span class="m">172</span>.18.30.131/16                     ipv4-worker
-test-app-6f8dddd88d-rj7sm   eth0        auto-test-app-v4-eth0-9b208a961acd   <span class="m">172</span>.18.30.132/16                     ipv4-control-plane
+~# kubectl get spiderendpoints
+NAME                        INTERFACE   IPV4POOL      IPV4               IPV6POOL   IPV6   NODE
+test-app-6f8dddd88d-hstg7   eth0        ippool-test   <span class="m">172</span>.18.30.131/16                     ipv4-worker
+test-app-6f8dddd88d-rj7sm   eth0        ippool-test   <span class="m">172</span>.18.30.132/16                     ipv4-control-plane
 </code></pre></div>
 <p>测试 Pod 与 Pod 的通讯情况，以跨节点 Pod 为例：</p>
 <div class="highlight"><pre><span></span><code>~#kubectl <span class="nb">exec</span> -ti test-app-6f8dddd88d-hstg7 -- ping <span class="m">172</span>.18.30.132 -c <span class="m">2</span>

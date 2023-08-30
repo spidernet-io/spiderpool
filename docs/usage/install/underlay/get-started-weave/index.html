@@ -647,6 +647,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
       </a>
@@ -1135,6 +1149,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
         CRD SpiderEndpoint
       </a>
@@ -1151,6 +1179,20 @@
     <li class="md-nav__item">
       <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
       </a>
     </li>
   
@@ -1395,17 +1437,18 @@ weave-net-vhmqx                         <span class="m">2</span>/2     Running  
 <li>
 <p>Install Spiderpool</p>
 <div class="highlight"><pre><span></span><code>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system 
+helm repo update spiderpool
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
 </code></pre></div>
 <blockquote>
 <p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
 </blockquote>
-<p>Wait for Pod Running and create a subnet for Pod (SpiderSubnet):</p>
+<p>Wait for Pod Running and create the IPPool used by Pod:</p>
 <div class="highlight"><pre><span></span><code>cat <span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderSubnet</span>
+<span class="s">kind: SpiderIPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: weave-subnet-v4</span>
+<span class="s">  name: weave-ippool-v4</span>
 <span class="s">  labels:  </span>
 <span class="s">    ipam.spidernet.io/subnet-cidr: 10-32-0-0-12</span>
 <span class="s">spec:</span>
@@ -1415,19 +1458,20 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 <span class="s">EOF</span>
 </code></pre></div>
 <blockquote>
-<p><code>Weave</code> uses <code>10.32.0.0/12</code> as the cluster's default subnet, and thus a SpiderSubnet with the same subnet needs to be created in this case</p>
+<p><code>Weave</code> uses <code>10.32.0.0/12</code> as the cluster's default subnet, and thus a SpiderIPPool with the same subnet needs to be created in this case.</p>
 </blockquote>
 </li>
 <li>
 <p>Verify installation</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system | grep spiderpool</span>
-spiderpool-agent-lgdw7                  <span class="m">1</span>/1     Running   <span class="m">0</span>          65s
-spiderpool-agent-x974l                  <span class="m">1</span>/1     Running   <span class="m">0</span>          65s
-spiderpool-controller-9df44bc47-hbhbg   <span class="m">1</span>/1     Running   <span class="m">0</span>          65s
-<span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># kubectl get ss</span>
+<p><code>shell
+[root@node1 ~]# kubectl get po -n kube-system | grep spiderpool
+spiderpool-agent-7hhkz                   1/1     Running     0              13m
+spiderpool-agent-kxf27                   1/1     Running     0              13m
+spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
+spiderpool-init                          0/1     Completed   0              13m
+[root@node1 ~]# kubectl get sp
 NAME               VERSION   SUBNET         ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-weave-subnet-v4    <span class="m">4</span>         <span class="m">10</span>.32.0.0/12   <span class="m">0</span>                    <span class="m">12901</span>            <span class="nb">false</span>
-</code></pre></div>
+weave-ippool-v4    4         10.32.0.0/12   0                    12901            false</code></p>
 </li>
 </ol>
 <h2 id="switch-weaves-ipam-to-spiderpool">Switch <code>Weave</code>'s <code>IPAM</code> to Spiderpool</h2>
@@ -1483,7 +1527,7 @@ yum -y install jq
 <p>Make sure to run this command at each node</p>
 </blockquote>
 <h2 id="create-applications">Create applications</h2>
-<p>Specify that the Pods will be allocated IPs from that SpiderSubnet via the annotation <code>ipam.spidernet.io/subnet</code>:</p>
+<p>Specify that the Pods will be allocated IPs from that SpiderSubnet via the annotation <code>ipam.spidernet.io/ippool</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
 apiVersion: apps/v1
 kind: Deployment
@@ -1497,7 +1541,7 @@ spec:
   template:
     metadata:
       annotations:
-        ipam.spidernet.io/subnet: <span class="s1">&#39;{&quot;ipv4&quot;:[&quot;weave-subnet-v4&quot;]}&#39;</span>
+        ipam.spidernet.io/ippool: <span class="s1">&#39;{&quot;ipv4&quot;:[&quot;weave-ippool-v4&quot;]}&#39;</span>
       labels:
         app: nginx
     spec:
@@ -1509,18 +1553,17 @@ spec:
 EOF
 </code></pre></div>
 <blockquote>
-<p><em>spec.template.metadata.annotations.ipam.spidernet.io/subnet</em>: specifies that the Pods will be assigned IPs from SpiderSubnet: <code>weave-subnet-v4</code>.</p>
+<p><em>spec.template.metadata.annotations.ipam.spidernet.io/subnet</em>: specifies that the Pods will be assigned IPs from SpiderSubnet: <code>weave-ippool-v4</code>.</p>
 </blockquote>
 <p>The Pods have been created and allocated IP addresses from Spiderpool Subnets:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># kubectl get po  -o wide</span>
 NAME                     READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
 nginx-5745d9b5d7-2rvn7   <span class="m">1</span>/1     Running   <span class="m">0</span>          8s    <span class="m">10</span>.32.22.190   node1   &lt;none&gt;           &lt;none&gt;
 nginx-5745d9b5d7-5ssck   <span class="m">1</span>/1     Running   <span class="m">0</span>          8s    <span class="m">10</span>.32.35.87    node2   &lt;none&gt;           &lt;none&gt;
-</code></pre></div>
-<p>Spiderpool has automatically created an IP pool for the Nginx application named <code>auto-deployment-default-nginx-v4-a0ae75eb5d47</code>, with a pool size of 2 IP addresses:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># kubectl get sp</span>
-NAME                                            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
-auto-deployment-default-nginx-v4-a0ae75eb5d47   <span class="m">4</span>         <span class="m">10</span>.32.0.0/12    <span class="m">2</span>                    <span class="m">2</span>                <span class="nb">false</span>
+
+<span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+NAME              VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
+weave-ippool-v4   <span class="m">4</span>         <span class="m">10</span>.32.0.0/12    <span class="m">2</span>                    <span class="m">2</span>                <span class="nb">false</span>
 </code></pre></div>
 <p>To test connectivity, let's use inter-node communication between Pods as an example:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@node1 ~<span class="o">]</span><span class="c1"># kubectl exec  nginx-5745d9b5d7-2rvn7 -- ping 10.32.35.87 -c 2</span>

@@ -117,6 +117,7 @@ jobs:
     needs: [release-doc, release-chart]
     uses: ./.github/workflows/call-update-githubpages.yaml
     with:
+      site_artifact_name: ${{ needs.release-doc.outputs.artifact }}
       chart_artifact_name: ${{ needs.release-chart.outputs.artifact }}
     secrets: inherit
 

@@ -121,6 +121,6 @@ jobs:
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WELAN_PAT }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}

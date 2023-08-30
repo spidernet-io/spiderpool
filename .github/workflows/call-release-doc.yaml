@@ -21,6 +21,7 @@ on:
         required: true
         default: main
 
+
 permissions: write-all
 
 env:
@@ -28,29 +29,25 @@ env:
   SRC_DIRECTORY: 'docs'
   DEST_DIRECTORY: 'docs'
   PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: weizhoublue
+  PR_REVIWER: ty-dc
 
 jobs:
-  prepare_doc:
-    name: prepare doc
+  release_doc:
     runs-on: ubuntu-latest
-    outputs:
-      ref: ${{ steps.get_ref.outputs.ref }}
-      submit: ${{ steps.get_ref.outputs.submit }}
     steps:
       - name: Get Ref
         id: get_ref
         run: |
           pwd
           ls
-          if ${{ inputs.ref != '' }}; then
-              echo "call by workflow_call"
-              echo ::set-output name=ref::${{ inputs.ref }}
-              echo ::set-output name=submit::${{ inputs.submit }}
-          elif ${{ github.event_name == 'workflow_dispatch' }} ; then
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
               echo "call by workflow_dispatch"
-              echo ::set-output name=ref::${{ github.event.inputs.ref }}
-              echo ::set-output name=submit::true
+              echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+              echo "SUBMIT=true" >> $GITHUB_ENV
+          elif ${{ inputs.ref != '' }}; then
+              echo "call by workflow_call"
+              echo "REF=${{ inputs.ref }}" >> $GITHUB_ENV
+              echo "SUBMIT=${{ inputs.submit }}" >> $GITHUB_ENV
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
@@ -59,66 +56,92 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          ref: ${{ steps.get_ref.outputs.ref }}
+          fetch-depth: 0
+          ref: ${{ env.REF }}
 
-      - name: Build Site
+      - name: Extract Version
+        id: extract
         run: |
-          make build_doc
+          if ! grep -E "^[[:space:]]*v[0-9]+.[0-9]+.[0-9]+[[:space:]]*$" VERSION &>/dev/null ; then
+            echo "not a release version, skip generating doc."
+            cat VERSION
+            echo "SKIP_ALL_JOB=true" >> $GITHUB_ENV
+            exit 0
+          fi
+          # for example v0.6.1, the build's documentation version is v0.6
+          docVersion=` cat VERSION  | tr -d ' ' | tr -d '\n' | grep -Eo "v[0-9]+\.[0-9]+" `
+          if [ -n "${docVersion}" ]; then
+              echo "the version intercepted from the branch is: ${docVersion}"
+          else
+              echo "error, failed to get version." && exit 1
+          fi
+          git checkout -f ${{ env.MERGE_BRANCH }}
+          echo "Switch to the branch:${{ env.MERGE_BRANCH }} where the document is located"
+          ls
+          if [ -e "docs/${docVersion}" ]; then
+              echo "doc version:${docVersion} already exists, just update it."
+              echo "SET_LATEST=false" >> $GITHUB_ENV
+          else
+              echo "The doc version:${docVersion} does not exist yet, while generating the doc and set it to latest"
+              echo "SET_LATEST=true" >> $GITHUB_ENV
+          fi
+          echo "the doc version is: ${docVersion}"
+          echo "DOCS_TAG=${docVersion}" >> $GITHUB_ENV
+
+      - name: build doc
+        id: build_doc
+        if: ${{ env.SKIP_ALL_JOB != 'true' }}
+        run: |
+          git checkout ${{ env.REF }}
+          ls
+          echo "switch to the release version branch ${{ env.REF }}"
+          pip install mkdocs==1.5.2 mike==1.1.2 mkdocs-material==8.5.11
+          git config user.email "robot@example.com"
+          git config user.name "robot"
+          cp ./docs/mkdocs.yml ./
+          if ${{ env.SET_LATEST == 'true' }} ;then
+              echo "generate doc version:${{ env.DOCS_TAG }} and set to latest."
+              mike deploy --rebase --prefix ${{ env.DEST_DIRECTORY }} -b ${{ env.MERGE_BRANCH }} --update-aliases ${{env.DOCS_TAG }} latest
+              mike set-default --prefix ${{ env.DEST_DIRECTORY }} -b ${{ env.MERGE_BRANCH }} latest
+          else
+              echo "the version:${{ env.DOCS_TAG }} of the doc does not need to be set to the latest."
+              mike deploy --rebase --prefix ${{ env.DEST_DIRECTORY }} -b ${{ env.MERGE_BRANCH }} ${{ env.DOCS_TAG }}
+          fi
+          rm -rf ./site
+          rm -rf ./mkdocs.yml
+          git checkout -f  ${{ env.MERGE_BRANCH }}
+          if ${{ env.SUBMIT != 'true' }}; then
+            cd docs
+            rm -rf ./charts
+            rm -rf ./index.yaml
+            tar -czvf ./site.tar.gz *
+            ls
+            echo "Automatic release, offline package ready"
+          fi
+          echo "Push a doc version: ${{ env.DOCS_TAG }} from branch: ${{ env.REF }}, update it to latest: ${{ env.SET_LATEST }} "
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.2
+        if: ${{ env.SUBMIT != 'true' && env.SKIP_ALL_JOB != 'true' }}
         with:
           name: website_package_artifact
           path: docs/site.tar.gz
           retention-days: 0
           if-no-files-found: error
 
-  create_pr:
-    name: Create PR
-    needs: prepare_doc
-    if: ${{ needs.prepare_doc.outputs.submit == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ env.MERGE_BRANCH }}
-
-      - name: backup charts
-        run: |
-          rm -rf ./_backupCharts
-          mkdir ./_backupCharts
-          cp -f ${{ env.DEST_DIRECTORY }}/index.yaml ./_backupCharts
-          cp -rf ${{ env.DEST_DIRECTORY }}/charts ./_backupCharts/charts
-          rm -rf ${{ env.DEST_DIRECTORY }}
-          mkdir ${{ env.DEST_DIRECTORY }}
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: site_artifact
-          path: ${{ env.DEST_DIRECTORY }}
-
-      - name: Untar Artifact And Restore Charts
-        run: |
-          cd ${{ env.DEST_DIRECTORY }}
-          tar -xzvf site.tar.gz
-          rm -f site.tar.gz
-          cp -rf ../_backupCharts/* ./
-          rm -rf ../_backupCharts
-
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
+        if: ${{ env.SUBMIT == 'true' && env.SKIP_ALL_JOB != 'true' }}
         uses: peter-evans/create-pull-request@v5.0.2
         with:
-          title: "robot update website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
-          commit-message: "robot update website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          title: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "
+          commit-message: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}

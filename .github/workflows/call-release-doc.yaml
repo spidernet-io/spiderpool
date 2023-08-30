@@ -114,9 +114,8 @@ jobs:
             cd docs
             rm -rf ./charts
             rm -rf ./index.yaml
-            tar -czvf site.tar.gz * && mv site.tar.gz ../docs/
+            tar -czvf ./site.tar.gz *
             ls
-            ls ./docs
             echo "Automatic release, offline package ready"
           fi
           echo "Push a doc version: ${{ env.DOCS_TAG }} from branch: ${{ env.REF }}, update it to latest: ${{ env.SET_LATEST }} "

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="None" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>spiderpool</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Spiderpool";
+        var mkdocs_page_input_path = "README.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Spiderpool</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#underlay-cni">underlay CNI</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use-case-underlay-cnis-access-layer2">Use case: underlay CNIs access layer2</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use-case-adding-an-auxiliary-underlay-cni-nic-for-overlay-cni">Use case: adding an auxiliary underlay CNI NIC for overlay CNI</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use-case-underlay-cni-on-public-cloud-and-vm">Use case: underlay CNI on public cloud and VM</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick start</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#major-features">Major features</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#blogs">Blogs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#roadmap">Roadmap</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="usage/install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/spider-multus-config/">SpiderMultusConfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/plugin-coordinator/">Coordinatorr plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">Spiderpool</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/README.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="spiderpool">Spiderpool</h1>
+<p><a href="https://goreportcard.com/report/github.com/spidernet-io/spiderpool"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/spidernet-io/spiderpool" /></a>
+<a href="https://www.codefactor.io/repository/github/spidernet-io/spiderpool"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge" /></a>
+<a href="https://codecov.io/gh/spidernet-io/spiderpool"><img alt="codecov" src="https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G" /></a>
+<a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml"><img alt="Auto Version Release" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml/badge.svg" /></a>
+<a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml"><img alt="Auto Nightly CI" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg" /></a>
+<a href="https://bestpractices.coreinfrastructure.org/projects/6009"><img alt="CII Best Practices" src="https://bestpractices.coreinfrastructure.org/projects/6009/badge" /></a>
+<a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-diff-k8s-ci.yaml"><img alt="Nightly K8s Matrix" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-diff-k8s-ci.yaml/badge.svg" /></a>
+<img alt="badge" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/7e54bfe38fec206e7710c74ad55a5139/raw/spiderpoolcodeline.json" />
+<img alt="badge" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/e1d3c092d1b9f61f1c8e36f09d2809cb/raw/spiderpoole2e.json" />
+<img alt="badge" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json" />
+<img alt="badge" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json" /></p>
+<hr />
+<p><strong>English</strong> | <a href="README-zh_CN/"><strong>简体中文</strong></a></p>
+<p>Spiderpool is a <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">CNCF Landscape Level Project</a>.</p>
+<p><img alt="CNCF" src="images/cncf-cloud-gophers-transparent.png" /></p>
+<h2 id="introduction">Introduction</h2>
+<p>Spiderpool is a Kubernetes underlay network solution. It provides rich IPAM features
+and CNI integration capabilities, powering CNI projects in the open source community,
+allowing multiple CNIs to collaborate effectively. It enables underlay CNI to run
+perfectly in environments such as <strong>bare metal, virtual machines, and any public cloud</strong>.</p>
+<p>Why developing Spiderpool? Currently, the open source community does not provide
+comprehensive, friendly, and intelligent underlay network solutions, so Spiderpool
+aims to provide many innovative features:</p>
+<ul>
+<li>
+<p>Rich IPAM feature. Shared and dedicated IP pools, assigning fixed IP address,
+  automatic operation of dedicated IP pools for creating, scaling, and reclaiming.
+  It could match kinds of underlay network requirements.</p>
+</li>
+<li>
+<p>Underlay CNI and overlay CNI cooperation, multiple CNI interfaces for pod.
+  Spiderpool helps assign IP address to multiple underlay interfaces, coordinate
+  policy route between interfaces to ensure consistence data path of request and
+  reply packets. Multiple CNIs cooperate to reduce hardware requirements for deploying the cluster.</p>
+</li>
+<li>
+<p>Enhance underlay CNI like <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
+  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
+  <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
+  <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a> to connect Pod and host to
+  access clusterIP and check pod health, and to detect IP conflict and gateway accessibility.</p>
+</li>
+<li>
+<p>Not only limited to bare metal environments in data centers, but also providing
+  a unified underlay CNI solution for openstack, vmware, and various public cloud scenarios.</p>
+</li>
+</ul>
+<h2 id="underlay-cni">underlay CNI</h2>
+<p>There are two technologies in cloud-native networking: "overlay network" and "underlay network".
+Despite no strict definition for underlay and overlay networks in cloud-native networking, we
+can simply abstract their characteristics from many CNI projects. The two technologies meet
+the needs of different scenarios.</p>
+<p>The <a href="concepts/solution/">article</a> provides a brief comparison of IPAM and
+network performance between the two technologies, which offers better insights into
+the unique features and use cases of Spiderpool.</p>
+<p>Why underlay network solutions? The following requirements necessitate underlay network solutions:</p>
+<ul>
+<li>
+<p>Network performance. Network performance advantages, like low latency, high throughput, low forwarding overhead of node’s CPU.  It fits to applications like financial and AI application.</p>
+</li>
+<li>
+<p>Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of netowrk, application can directly use Pod IP for cluster east-west and north-south communication.</p>
+</li>
+<li>
+<p>Network security. In the data center, it may be used to enforce network security to Pod, like firewall and isolating communication with VLAN.  The underlay network solution could expose the Pod packet without tunnel encapsulation, and meet requirements.</p>
+</li>
+<li>
+<p>Bandwitdth. It can help Pod to customize the exit network interface of the node, thereby ensuring bandwidth isolation of the underlying subnet. It can help components such as <a href="https://github.com/kubevirt/kubevirt">kubevirt</a>, storage, and logging, to transmit massive amounts of data.</p>
+</li>
+<li>
+<p>Multi clusters. For multi clusters, all Pods of multi clusters are connected to the underlay network, so they could communicate smoothly without the need to deploy additional components for cluster connectivity.</p>
+</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<p><img alt="arch" src="images/spiderpool-arch.jpg" /></p>
+<p>Spiderpool consists of the following components:</p>
+<ul>
+<li>
+<p>Spiderpool controller: deployment that manage CRD validation, status updates,
+  IP recovery, and automated IP pools</p>
+</li>
+<li>
+<p>Spiderpool agent: daemonset that help Spiderpool plugins by performing
+  IP allocation and coordinator plugin for information synchronization.</p>
+</li>
+<li>
+<p>IPAM plugin: a binary plugin on each host that CNI can utilize to implement IP allocation.</p>
+</li>
+<li>
+<p>coordinator plugin: a binary plugin on each host that CNI can use for multi-NIC route coordination,
+  IP conflict detection, and host connectivity.</p>
+</li>
+<li>
+<p>ifacer plugin: A binary plugin on each host that helps CNIs such as macvlan and
+  ipvlan dynamically create bond and vlan interfaces</p>
+</li>
+</ul>
+<p>On top of its own components, Spiderpool relies on open-source underlay CNIs to allocate
+network interfaces to Pods. You can use <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>
+to manage multiple NICs and CNI configurations.</p>
+<p>Any CNI project compatible with third-party IPAM plugins can work well with Spiderpool, such as:</p>
+<p><a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
+<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
+<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
+<a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>,
+<a href="https://github.com/projectcalico/calico">Calico CNI</a>,
+<a href="https://github.com/weaveworks/weave">Weave CNI</a></p>
+<h2 id="use-case-underlay-cnis-access-layer2">Use case: underlay CNIs access layer2</h2>
+<p><img alt="arch_underlay" src="images/spiderpool-underlay.jpg" /></p>
+<p>In underlay networks, Spiderpool can work with underlay CNIs such as
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>
+, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a> to provide the following benefits:</p>
+<ul>
+<li>
+<p>Rich IPAM capabilities for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation,
+  and dual-stack support</p>
+</li>
+<li>
+<p>One or more underlay NICs for Pods with coordinating routes between multiple NICs to
+  ensure smooth communication with consistent request and reply data paths</p>
+</li>
+<li>
+<p>Enhanced connectivity between open-source underlay CNIs and hosts using additional
+  veth network interfaces and route control. This enables clusterIP access, local health checks
+  of applications, and much more</p>
+</li>
+</ul>
+<p>How can you deploy containers using a single underlay CNI, when a cluster has multiple underlying setups?</p>
+<ul>
+<li>
+<p>Some nodes in the cluster are virtual machines like VMware that don't enable promiscuous mode,
+  while others are bare metal and connected to traditional switch networks.
+  What CNI solution should be deployed on each type of node?</p>
+</li>
+<li>
+<p>Some bare metal nodes only have one SR-IOV high-speed NIC that provides 64 VFs.
+  How can more pods run on such a node?</p>
+</li>
+<li>
+<p>Some bare metal nodes have an SR-IOV high-speed NIC capable of running low-latency applications,
+  while others have only ordinary network cards for running regular applications.
+  What CNI solution should be deployed on each type of node?</p>
+</li>
+</ul>
+<p>By simultaneously deploying multiple underlay CNIs through Multus CNI configuration and
+Spiderpool's IPAM abilities, resources from various infrastructure nodes across the
+cluster can be integrated to solve these problems.</p>
+<p><img alt="underlay" src="images/underlay.jpg" /></p>
+<p>For example, as shown in the above diagram, different nodes with varying networking capabilities
+in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards,
+Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted
+network access (e.g., VMware virtual machines with limited layer 2 network forwarding).</p>
+<h2 id="use-case-adding-an-auxiliary-underlay-cni-nic-for-overlay-cni">Use case: adding an auxiliary underlay CNI NIC for overlay CNI</h2>
+<p><img alt="arch_underlay" src="images/spiderpool-overlay.jpg" /></p>
+<p>In overlay networks, Spiderpool uses Multus to add an overlay NIC
+(such as <a href="https://github.com/projectcalico/calico">Calico</a> or <a href="https://github.com/cilium/cilium">Cilium</a>)
+and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod.
+This offers several benefits:</p>
+<ul>
+<li>
+<p>Rich IPAM features for underlay CNIs, including shared/fixed IPs,
+  multi-NIC IP allocation, and dual-stack support.</p>
+</li>
+<li>
+<p>Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods,
+  ensuring the consistent request and reply data paths for smooth communication.</p>
+</li>
+<li>
+<p>Use the overlay NIC as the default one with route coordination and enable local host
+  connectivity to enable clusterIP access, local health checks of applications, and
+  forwarding overlay network traffic through overlay networks while forwarding
+  underlay network traffic through underlay networks.</p>
+</li>
+</ul>
+<p>The integration of Multus CNI and Spiderpool IPAM enables the collaboration of
+an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes
+of varying network capabilities, Pods on bare-metal nodes can access both
+overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only
+serving east-west services are connected to the Overlay NIC.
+This approach provides several benefits:</p>
+<ul>
+<li>
+<p>Applications providing east-west services can be restricted to being allocated
+  only the overlay NIC while those providing north-south services can simultaneously
+  access overlay and underlay NICs. This results in reduced Underlay IP resource usage,
+  lower manual maintenance costs, and preserved pod connectivity within the cluster.</p>
+</li>
+<li>
+<p>Fully integrate resources from virtual machines and bare-metal nodes.</p>
+</li>
+</ul>
+<p><img alt="overlay" src="images/overlay.jpg" /></p>
+<h2 id="use-case-underlay-cni-on-public-cloud-and-vm">Use case: underlay CNI on public cloud and VM</h2>
+<p>It is hard to implement underlay CNI in public cloud, openstack, vmvare.
+It requires the vendor underlay CNI on specific environments, as these
+environments typically have the following limitations:</p>
+<ul>
+<li>The IAAS network infrastructure implements MAC restrictions for packets.
+  On the one hand, security checks are conducted on the source MAC to ensure
+  that the source MAC address is the same as the MAC address of VM network interface.
+  On the other hand, restrictions have been placed on the destination MAC,
+  which only supports packet forwarding by the MAC address of VM network interfaces.</li>
+</ul>
+<p>The MAC address of the Pod in the common CNI plugin is newly generated,
+  which leads to Pod communication failure.</p>
+<ul>
+<li>The IAAS network infrastructure implements IP restrictions on packets.
+  Only when the destination and source IP of the packet are assigned to VM,
+  packet could be forwarded rightly.</li>
+</ul>
+<p>The common CNI plugin assigns IP addresses to Pods that do not comply with
+  IAAS settings, which leads to Pod communication failure.</p>
+<p>Spiderpool provides IP pool based on node topology, aligning with
+IP allocation settings of VMs. In conjunction with ipvlan CNI,
+it provides underlay CNI solutions for various public cloud environments.</p>
+<h2 id="quick-start">Quick start</h2>
+<p>Refer to <a href="usage/install/install/">Quick start</a>, set up a cluster quickly.</p>
+<h2 id="major-features">Major features</h2>
+<ul>
+<li>For applications requiring static IP addresses, it could be supported by
+  IP pools owning limited IP adddress set and pod affinity.
+  See <a href="usage/ippool-affinity-pod/">example</a> for more details.</li>
+</ul>
+<p>For applications not requiring static IP addresses, they can share an IP pool.
+  See <a href="usage/ippool-affinity-pod/#shared-ippool">example</a> for more details.</p>
+<ul>
+<li>
+<p>For stateful applications, IP addresses can be automatically fixed for each Pod,
+  and the overall IP scaling range can be fixed as well.
+  See <a href="usage/statefulset/">example</a> for more details.</p>
+</li>
+<li>
+<p>Subnet feature, on the one hand, could help to separate the responsibility
+  from the infrastructure administrator and the application administrator.</p>
+</li>
+</ul>
+<p>On the other hand, it supports to automatically create and dynamically scale
+  the fixed IP ippools to each applcation requiring static IPs. which could help
+  reduce operation burden of IP pools burden. See <a href="usage/spider-subnet/">example</a>
+  for more details. In additional to kubernetes-native controller, subnet feature
+  also supports third-party pod controllers based on operator.
+  See <a href="usage/third-party-controller/">example</a> for details.</p>
+<ul>
+<li>
+<p>For Pods of an application run across different network zones,
+  it could assign IP addresses of different subnets.
+  See <a href="usage/ippool-affinity-node/">example</a> for details.</p>
+</li>
+<li>
+<p>Support to assign IP address from different subnets to multiple NICs of a Pod,
+  and help coordinate policy route between interfaces to ensure consistent
+  data path of request and reply packets.</p>
+</li>
+</ul>
+<p>For scenarios involving multiple Underlay NICs,
+  please refer to the <a href="usage/multi-interfaces-annotation/">example</a>.</p>
+<p>For scenarios involving one Overlay NIC and multiple Underlay NICs,
+  please refer to the <a href="usage/install/overlay/get-started-calico/">example</a>.</p>
+<ul>
+<li>
+<p>It supports to set default IP pools for the cluster or for the namespace.
+  Besides, A IP pool could be shared by the whole cluster or bound to a
+  specified namespace. See <a href="usage/ippool-affinity-namespace/">example</a> for details.</p>
+</li>
+<li>
+<p>Strengthen CNI like <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
+  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
+  <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
+  <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
+  to access clusterIP and pod healthy check (<a href="usage/install/underlay/get-started-macvlan/">example</a>),
+  to detect IP conflict and gateway reachability (<a href="usage/coordinator/">example</a>).</p>
+</li>
+<li>
+<p>Node-based IP pool feature meets the complex subnet design of each node. refer to <a href="usage/network-topology/">example</a></p>
+</li>
+<li>
+<p>On vmware vsphere platform, Spiderpool underlay network solution does not require <a href="https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html">"hybrid forwarding" mode of the Vswitch</a>, which ensures the network performance of vsphere platform. refer to <a href="usage/install/cloud/get-started-vmware-zh_CN/">example</a></p>
+</li>
+<li>
+<p>Spiderpool underlay network solution could run on public cloud of any vendors, and openstack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to <a href="usage/install/cloud/get-started-alibaba-zh_CN/">alibabaCloud</a></p>
+</li>
+<li>
+<p>When starting the Pod, it could help dynamically build the bond interface and vlan interface
+  for the master interface of <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
+  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>.
+  See <a href="usage/ifacer/">example</a> for details.</p>
+</li>
+<li>
+<p>It could specify customized routes by IP pool and pod annotation. See <a href="usage/route/">example</a> for details.</p>
+</li>
+<li>
+<p>Easy generation of <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a> NetworkAttachmentDefinition
+  custom resources with best-practice CNI configuration, also ensure well formatted JSON
+  to improve experience. See <a href="concepts/multusconfig/">example</a> for details.</p>
+</li>
+<li>
+<p>Multiple IP pools can be set for the application for prevent IP address from running out.
+  See <a href="usage/ippool-multi/">example</a> for details.</p>
+</li>
+<li>
+<p>Set reserved IPs that will not be assigned to Pods, it can avoid misusing IP addresses
+  already taken by hosts out of the cluster. See <a href="usage/reserved-ip/">example</a> for details.</p>
+</li>
+<li>
+<p>Outstanding performance for assigning and releasing Pod IPs, showcased in the
+  <a href="concepts/performance/">test report</a>.</p>
+</li>
+<li>
+<p>Well-designed IP reclaim mechanism could help assign IP address in time and
+  quickly recover from the breakdown for the cluster or application.
+  See <a href="usage/gc/">example</a> for details.</p>
+</li>
+<li>
+<p>All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios.
+  See <a href="usage/ipv6/">example</a> for details.</p>
+</li>
+<li>
+<p>Support AMD64 and ARM64.</p>
+</li>
+<li>
+<p><a href="concepts/metrics/">Metrics</a></p>
+</li>
+</ul>
+<h2 id="blogs">Blogs</h2>
+<ul>
+<li>
+<p><a href="https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag">Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案</a></p>
+</li>
+<li>
+<p><a href="https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ">Spiderpool：如何解决僵尸 IP 回收的问题</a></p>
+</li>
+<li>
+<p><a href="https://blog.daocloud.io/8962.html">Cloud-Native Spiderpool: IP Allocation Across Network Zones</a></p>
+</li>
+<li>
+<p><a href="https://blog.daocloud.io/8949.html">Spiderpool: a new solution to fixed application IPs for Calico</a></p>
+</li>
+<li>
+<p><a href="https://mp.weixin.qq.com/s/ScXR70qCCiAb6Tee9eQewA">云原生网络新玩法：一种支持固定多网卡IP的 Underlay 网络解决方案</a></p>
+</li>
+<li>
+<p><a href="https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A">SpiderPool - 云原生容器网络 IPAM 插件</a></p>
+</li>
+</ul>
+<h2 id="roadmap">Roadmap</h2>
+<p><a href="develop/roadmap/">roadmap</a></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="usage/install/install/" class="btn btn-neutral float-right" title="Installation">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+      <span><a href="usage/install/install/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+      <script src="js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.5.2
+Build Date UTC : 2023-08-30 03:36:21.890141+00:00
+-->

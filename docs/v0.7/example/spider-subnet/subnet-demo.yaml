@@ -1,0 +1,17 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v4
+spec:
+  subnet: 172.16.0.0/16
+  ips:
+    - 172.16.41.1-172.16.41.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v6
+spec:
+  subnet: fc00:f853:ccd:e790::/64
+  ips:
+    - fc00:f853:ccd:e790:d::1-fc00:f853:ccd:e790:d::c8

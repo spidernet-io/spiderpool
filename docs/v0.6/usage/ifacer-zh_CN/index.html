@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>CNI meta-plugin: ifacer - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "CNI meta-plugin: ifacer";
+        var mkdocs_page_input_path = "usage/ifacer-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">CNI meta-plugin: ifacer</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/ifacer-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="cni-meta-plugin-ifacer">CNI meta-plugin: ifacer</h1>
+<p><a href="../ifacer/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<h2 id="_1">介绍</h2>
+<p>当 Pod 使用 Vlan 网络时，我们可能需要网络管理员提前在节点配置各种 Vlan 或 Bond 接口, 这一过程需要人工参与，配置繁琐且易出错。Spiderpool 提供一个名为 <code>ifacer</code>的 CNI meta-plugins,
+该插件可在创建 Pod 时，根据提供的 <code>ifacer</code> 插件配置, 动态的在节点创建 Vlan 子接口 或 Bond 接口，极大的简化了网络管理员的配置工作。下面我们将会详细介绍这个插件。</p>
+<h2 id="_2">功能</h2>
+<p>该插件支持:</p>
+<ul>
+<li>支持动态的创建 Vlan 子接口</li>
+<li>支持动态的创建 Bond 接口</li>
+</ul>
+<p>注意:</p>
+<blockquote>
+<p>通过该插件创建的 Vlan/Bond 接口，当节点重启时会丢失，但 Pod 重启后会自动创建
+插件不支持删除已创建的 Vlan/Bond 接口
+插件不支持在创建时配置 Vlan/Bond 接口的地址</p>
+</blockquote>
+<h2 id="_3">使用要求</h2>
+<p>使用该插件无特殊的限制: 包括 Kubernetes、Kernel 版本等。安装 Spiderpool 时，会自动安装该插件到每个主机的 <code>/opt/cni/bin/</code> 路径下, 您可以通过检测每个主机该路径下是否存在 <code>ifacer</code> 二进制确认安装成功。</p>
+<h2 id="_4">如何使用</h2>
+<p>我们通过两个例子来展示如何使用 <code>ifacer</code> 插件。在介绍例子之前，我们需要创建两个 IP 池用于测试:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderIPPool
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>vlan100
+spec:
+<span class="w">  </span>gateway:<span class="w"> </span><span class="m">172</span>.100.0.1
+<span class="w">  </span>ipVersion:<span class="w"> </span><span class="m">4</span>
+<span class="w">  </span>ips:
+<span class="w">  </span>-<span class="w"> </span><span class="m">172</span>.100.0.100-172.100.0.200
+<span class="w">  </span>subnet:<span class="w"> </span><span class="m">172</span>.100.0.0/16
+<span class="w">  </span>vlan:<span class="w"> </span><span class="m">100</span>
+EOF
+</code></pre></div>
+<blockquote>
+<p>vlan100 用于动态创建 Vlan 子接口的例子</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderIPPool
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>vlan200
+spec:
+<span class="w">  </span>gateway:<span class="w"> </span><span class="m">172</span>.200.0.1
+<span class="w">  </span>ipVersion:<span class="w"> </span><span class="m">4</span>
+<span class="w">  </span>ips:
+<span class="w">  </span>-<span class="w"> </span><span class="m">172</span>.200.0.100-172.200.0.200
+<span class="w">  </span>subnet:<span class="w"> </span><span class="m">172</span>.200.0.0/16
+<span class="w">  </span>vlan:<span class="w"> </span><span class="m">200</span>
+EOF
+</code></pre></div>
+<blockquote>
+<p>vlan200 用于动态创建 Bond 接口的例子</p>
+</blockquote>
+<h3 id="vlan">动态的创建 Vlan 子接口</h3>
+<p>我们通过 <code>SpiderMultusConfig</code> 为 <code>ifacer</code>生成一个对应的 Multus network-attachment-definition 配置:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f - </span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderMultusConfig
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>macvlan-conf
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+spec:
+<span class="w">  </span>cniType:<span class="w"> </span>macvlan
+<span class="w">  </span>coordinator:
+<span class="w">    </span>mode:<span class="w"> </span>underlay
+<span class="w">  </span>macvlan:
+<span class="w">    </span>master:
+<span class="w">    </span>-<span class="w"> </span>ens192
+<span class="w">    </span>vlanID:<span class="w"> </span><span class="m">100</span>
+<span class="w">    </span>ippools:
+<span class="w">      </span>ipv4:<span class="w"> </span>
+<span class="w">      </span>-<span class="w"> </span>vlan100
+EOF
+spidermultusconfig.spiderpool.spidernet.io/macvlan-conf<span class="w"> </span>created
+</code></pre></div>
+<p>当创建成功，查看对应的 Multus network-attachment-definition 对象:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o=jsonpath=&#39;{.spec.config}&#39; | jq</span>
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan-conf1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ifacer&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;interfaces&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="s2">&quot;ens192&quot;</span>
+<span class="w">      </span><span class="o">]</span>,
+<span class="w">      </span><span class="s2">&quot;vlanID&quot;</span>:<span class="w"> </span><span class="m">100</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;default_ipv4_ippool&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;vlan100&quot;</span><span class="o">]</span>
+<span class="w">      </span><span class="o">}</span>,
+<span class="w">      </span><span class="s2">&quot;master&quot;</span>:<span class="w"> </span><span class="s2">&quot;ens192.100&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="s2">&quot;bridge&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;coordinator&quot;</span>,
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>从配置可以看到:</p>
+<blockquote>
+<p>ifacer 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，ifacer 将基于 <code>ens192</code> 创建一个 vlan tag 为: 100 的子接口
+main cni: macvlan 的 master 字段的值为: <code>ens192.100</code>, 也就是通过 <code>ifacer</code> 创建的 Vlan 子接口: <code>ens192.100</code></p>
+</blockquote>
+<p>如果节点上已经创建好 Vlan 子接口，不需要使用 <code>ifacer</code> 。我们可以直接配置 master 字段为: <code>ens192.100</code>，并且不配置 vlanID 即可, 如下:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-conf</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">master</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ens192.100</span>
+<span class="w">    </span><span class="nt">ippools</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vlan100</span>
+</code></pre></div>
+<p>接下来我们创建测试的业务 Pod:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">1</span>
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>nginx
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span>macvlan-conf
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>nginx
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>name:<span class="w"> </span>nginx
+<span class="w">        </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>name:<span class="w"> </span>http
+<span class="w">          </span>containerPort:<span class="w"> </span><span class="m">80</span>
+<span class="w">          </span>protocol:<span class="w"> </span>TCP
+EOF
+</code></pre></div>
+<p>当 Pod 成功的被创建，我们可以查看该节点一个名为 <code>ens192.100</code> 的 Vlan 子接口被成功创建:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide | grep nginx</span>
+nginx-5d6dc85ff4-gdvkh<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>32s<span class="w">    </span><span class="m">172</span>.100.0.163<span class="w">    </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip l show type vlan</span>
+<span class="m">135508</span>:<span class="w"> </span>ens192.100@ens192:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>mode<span class="w"> </span>DEFAULT<span class="w"> </span>group<span class="w"> </span>default
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:3c:82<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</code></pre></div>
+<p>经过测试，Pod 各种连通性正常。</p>
+<h3 id="bond">动态的创建 Bond 接口</h3>
+<p>我们通过 <code>SpiderMultusConfig</code> 为 <code>ifacer</code> 生成一个对应的 Multus network-attachment-definition 配置:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f - </span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderMultusConfig
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>macvlan-conf
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+spec:
+<span class="w">  </span>cniType:<span class="w"> </span>macvlan
+<span class="w">  </span>coordinator:
+<span class="w">    </span>mode:<span class="w"> </span>underlay
+<span class="w">  </span>macvlan:
+<span class="w">    </span>master:
+<span class="w">    </span>-<span class="w"> </span>ens192
+<span class="w">    </span>-<span class="w"> </span>ens160
+<span class="w">    </span>vlanID:<span class="w"> </span><span class="m">200</span>
+<span class="w">    </span>ippools:
+<span class="w">      </span>ipv4:
+<span class="w">      </span>-<span class="w"> </span>vlan200
+<span class="w">    </span>bond:
+<span class="w">      </span>name:<span class="w"> </span>bond0
+<span class="w">      </span>mode:<span class="w"> </span><span class="m">1</span>
+<span class="w">      </span>options:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+EOF
+spidermultusconfig.spiderpool.spidernet.io/macvlan-conf<span class="w"> </span>created
+</code></pre></div>
+<p>当创建成功，查看对应的 Multus network-attachment-definition 对象:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o jsonpath=&#39;{.spec.config}&#39; | jq</span>
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan-conf&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ifacer&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;interfaces&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="s2">&quot;ens192&quot;</span>
+<span class="w">        </span><span class="s2">&quot;ens160&quot;</span>
+<span class="w">      </span><span class="o">]</span>,
+<span class="w">      </span><span class="s2">&quot;vlanID&quot;</span>:<span class="w"> </span><span class="m">200</span>,
+<span class="w">      </span><span class="s2">&quot;bond&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;bond0&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="m">1</span>
+<span class="w">      </span><span class="o">}</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;default_ipv4_ippool&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;vlan100&quot;</span><span class="o">]</span>
+<span class="w">      </span><span class="o">}</span>,
+<span class="w">      </span><span class="s2">&quot;master&quot;</span>:<span class="w"> </span><span class="s2">&quot;bond0.200&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="s2">&quot;bridge&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;coordinator&quot;</span>,
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>配置说明:</p>
+<blockquote>
+<p>ifacer 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，ifacer 将基于 ["ens192","ens160"] 创建一个名为 <code>bond0</code> 的 bond 接口，mode 为 1(active-backup)。然后再基于 <code>bond0</code> 创建名为 <code>bond0.200</code>的 Vlan 子接口, Vlan tag 为 200
+main cni: macvlan 的 master 字段的值为: <code>bond0.200</code>
+创建 Bond 如果需要更高级的配置，可以通过配置 SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options 实现. 输入格式为: "primary=ens160;arp_interval=1",多个参数用";"连接</p>
+</blockquote>
+<p>接下来我们创建测试的业务 Pod:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">1</span>
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>nginx
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span>macvlan-conf
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>nginx
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>name:<span class="w"> </span>nginx
+<span class="w">        </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>name:<span class="w"> </span>http
+<span class="w">          </span>containerPort:<span class="w"> </span><span class="m">80</span>
+<span class="w">          </span>protocol:<span class="w"> </span>TCP
+EOF
+</code></pre></div>
+<p>当 Pod 成功的被创建，我们可以查看该节点一个名为 <code>bond0</code> 的 Bond 接口 和 <code>bond0.100</code> 的 Vlan 子接口 被成功创建:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide | grep nginx</span>
+nginx-1c8wcv2sg5-jcwla<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>32s<span class="w">    </span><span class="m">172</span>.200.0.163<span class="w">    </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip --details link show type bond</span>
+<span class="m">135510</span>:<span class="w"> </span>bond0:<span class="w"> </span>&lt;BROADCAST,MULTICAST,MASTER,UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>mode<span class="w"> </span>DEFAULT<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:8f:14<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff<span class="w"> </span>promiscuity<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>bond<span class="w"> </span>mode<span class="w"> </span>active-backup<span class="w"> </span>miimon<span class="w"> </span><span class="m">0</span><span class="w"> </span>updelay<span class="w"> </span><span class="m">0</span><span class="w"> </span>downdelay<span class="w"> </span><span class="m">0</span><span class="w"> </span>use_carrier<span class="w"> </span><span class="m">1</span><span class="w"> </span>arp_interval<span class="w"> </span><span class="m">1</span><span class="w"> </span>arp_validate<span class="w"> </span>none<span class="w"> </span>arp_all_targets<span class="w"> </span>any<span class="w"> </span>primary<span class="w"> </span>ens192<span class="w"> </span>primary_reselect<span class="w"> </span>always<span class="w"> </span>fail_over_mac<span class="w"> </span>none<span class="w"> </span>xmit_hash_policy<span class="w"> </span>layer2<span class="w"> </span>resend_igmp<span class="w"> </span><span class="m">1</span><span class="w"> </span>num_grat_arp<span class="w"> </span><span class="m">1</span><span class="w"> </span>all_slaves_active<span class="w"> </span><span class="m">0</span><span class="w"> </span>min_links<span class="w"> </span><span class="m">0</span><span class="w"> </span>lp_interval<span class="w"> </span><span class="m">1</span><span class="w"> </span>packets_per_slave<span class="w"> </span><span class="m">1</span><span class="w"> </span>lacp_rate<span class="w"> </span>slow<span class="w"> </span>ad_select<span class="w"> </span>stable<span class="w"> </span>tlb_dynamic_lb<span class="w"> </span><span class="m">1</span><span class="w"> </span>addrgenmode<span class="w"> </span>eui64<span class="w"> </span>numtxqueues<span class="w"> </span><span class="m">16</span><span class="w"> </span>numrxqueues<span class="w"> </span><span class="m">16</span><span class="w"> </span>gso_max_size<span class="w"> </span><span class="m">65536</span><span class="w"> </span>gso_max_segs<span class="w"> </span><span class="m">65535</span>
+<span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip link show type vlan</span>
+<span class="m">135508</span>:<span class="w"> </span>bond0.100@ens192:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>mode<span class="w"> </span>DEFAULT<span class="w"> </span>group<span class="w"> </span>default
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:3c:82<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</code></pre></div>
+<p>经过测试，Pod 各种连通性正常。</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

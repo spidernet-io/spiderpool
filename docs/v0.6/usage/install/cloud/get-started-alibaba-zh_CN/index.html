@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>阿里云环境运行 - spiderpool</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "\u963f\u91cc\u4e91\u73af\u5883\u8fd0\u884c";
+        var mkdocs_page_input_path = "usage/install/cloud/get-started-alibaba-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">阿里云环境运行</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/cloud/get-started-alibaba-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="_1">阿里云环境运行</h1>
+<p><strong>简体中文</strong> | <a href="../get-started-alibaba/"><strong>English</strong></a></p>
+<h2 id="_2">介绍</h2>
+<p>当前公有云厂商众多，如：阿里云、华为云、腾讯云、AWS 等，但当前开源社区的主流 CNI 插件难以以 Underlay 网络方式运行其上，只能使用每个公有云厂商的专有 CNI 插件，没有统一的公有云 Underlay 解决方案。本文将介绍一种适用于任意的公有云环境中的 Underlay 网络解决方案：<a href="../../../../README-zh_CN/">Spiderpool</a> ，尤其是在混合云场景下，统一的 CNI 方案能够便于多云管理。</p>
+<h2 id="_3">项目功能</h2>
+<p>Spiderpool 有节点拓扑、解决 MAC 地址合法性、对接基于 <code>spec.externalTrafficPolicy</code> 为 Local 模式的 service 等功能。Spiderpool 能基于 IPVlan Underlay CNI 运行在公有云环境上，它的实现原理如下：</p>
+<ol>
+<li>
+<p>公有云下使用 Underlay 网络，但公有云的每个云服务器的每张网卡只能分配有限的 IP 地址，当应用运行在某个云服务器上时，需要同步获取到 VPC 网络中分配给该云服务器不同网卡的合法 IP 地址，才能实现通信。根据上述分配 IP 的特点，Spiderpool 的 CRD：<code>SpiderIPPool</code> 可以设置 nodeName，multusName 实现节点拓扑的功能，通过 IP 池与节点、IPvlan Multus 配置的亲和性，能最大化的利用与管理节点可用的 IP 地址，给应用分配到合法的 IP 地址，让应用在 VPC 网络内自由通信，包括 Pod 与 Pod 通信，Pod 与云服务器通信等。</p>
+</li>
+<li>
+<p>公有云的 VPC 网络中，处于网络安全管控和数据包转发的原理，当网络数据报文中出现 VPC 网络未知的 MAC 和 IP 地址时，它无法得到正确的转发。例如，基于 Macvlan 和 OVS 原理的 Underlay CNI 插件，Pod 网卡中的 MAC 地址是新生成的，会导致 Pod 无法通信。针对该问题，Spiderpool 可搭配 <a href="https://www.cni.dev/plugins/current/main/ipvlan/">IPVlan</a> CNI 进行解决。IPVlan 基于三层网络，无需依赖二层广播，并且不会重新生成 Mac 地址，与父接口保持一致，因此通过 IPvlan 可以解决公有云中关于 MAC 地址合法性的问题。</p>
+</li>
+<li>
+<p>在 service 将 <code>.spec.externalTrafficPolicy</code> 设置为 <code>Local</code>，可以保留客户端源 IP ，但公有云自建集群在这种模式下使用平台的 Loadbalancer 组件进行 nodePort 转发时，会出现访问不通。针对该问题 Spiderpool 提供了 coordinator 插件，该插件通过 iptables 在数据包中打标记，确认从 veth0 进入的数据的回复包仍从 veth0 转发，进而解决在该模式下 nodeport 访问不通的问题。</p>
+</li>
+</ol>
+<h2 id="_4">实施要求</h2>
+<ol>
+<li>
+<p>使用 IPVlan 做集群 CNI 时，系统内核版本必须大于 4.2。</p>
+</li>
+<li>
+<p>已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a>。</p>
+</li>
+</ol>
+<h2 id="_5">步骤</h2>
+<h3 id="_6">阿里云环境</h3>
+<ul>
+<li>准备一套阿里云环境，给虚拟机分配 2 个网卡，每张网卡均分配一些辅助私网 IP，如图：</li>
+</ul>
+<p><img alt="alicloud-web-network" src="../../../../images/alicloud-network-web.png" /></p>
+<ul>
+<li>使用上述配置的虚拟机，搭建一套 Kubernetes 集群，节点的可用 IP 及集群网络拓扑图如下：</li>
+</ul>
+<p><img alt="网络拓扑" src="../../../../images/alicloud-k8s-network.png" /></p>
+<h3 id="spiderpool">安装 Spiderpool</h3>
+<p>通过 helm 安装 Spiderpool。</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>ipam.enableStatefulSet<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ipvlan-eth0&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>如果您使用的是中国大陆的云厂商服务器，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> ，以帮助您更快的拉取镜像。</p>
+<p>Spiderpool 可以为控制器类型为：<code>Statefulset</code> 的应用副本固定 IP 地址。在公有云的 Underlay 网络场景中，云主机只能使用限定的 IP 地址，当 StatefulSet 类型的应用副本漂移到其他节点，但由于原固定的 IP 在其他节点是非法不可用的，新的 Pod 将出现网络不可用的问题。对此场景，将 <code>ipam.enableStatefulSet</code> 设置为 <code>false</code>，禁用该功能。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。</p>
+</blockquote>
+<h3 id="cni">安装 CNI 配置</h3>
+<p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 IPvlan SpiderMultusConfig 配置的示例：</p>
+<div class="highlight"><pre><span></span><code><span class="nv">IPVLAN_MASTER_INTERFACE0</span><span class="o">=</span><span class="s2">&quot;eth0&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME0</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE0</span><span class="s2">&quot;</span>
+<span class="nv">IPVLAN_MASTER_INTERFACE1</span><span class="o">=</span><span class="s2">&quot;eth1&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME1</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE1</span><span class="s2">&quot;</span>
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME0}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  coordinator:</span>
+<span class="s">    mode: underlay</span>
+<span class="s">    tunePodRoutes: true</span>
+<span class="s">    podCIDRType: cluster</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE0}</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME1}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  coordinator:</span>
+<span class="s">    mode: underlay</span>
+<span class="s">    tunePodRoutes: true</span>
+<span class="s">    podCIDRType: cluster</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE1}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>在本文示例中，使用如上配置，创建如下的两个 IPvlan SpiderMultusConfig，将基于它们自动生成的 Multus NetworkAttachmentDefinition CR，它们分别对应了宿主机的 <code>eth0</code> 与 <code>eth1</code> 网卡。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+NAME<span class="w">          </span>AGE
+ipvlan-eth0<span class="w">   </span>10m
+ipvlan-eth1<span class="w">   </span>10m
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+NAME<span class="w">          </span>AGE
+ipvlan-eth0<span class="w">   </span>10m
+ipvlan-eth1<span class="w">   </span>10m
+</code></pre></div>
+<h3 id="ippools">创建 IPPools</h3>
+<p>Spiderpool 的 CRD：<code>SpiderIPPool</code> 提供了 <code>nodeName</code>、<code>multusName</code> 与 <code>ips</code> 字段：</p>
+<ul>
+<li>
+<p><code>nodeName</code>：当 nodeName 不为空时，Pod 在某个节点上启动，并尝试从 SpiderIPPool 分配 IP 地址, 若 Pod 所在节点符合该 nodeName ，则能从该 SpiderIPPool 中成功分配出 IP，若 Pod 所在节点不符合 nodeName，则无法从该 SpiderIPPool 中分配出 IP。当 nodeName 为空时，Spiderpool 对 Pod 不实施任何分配限制。</p>
+</li>
+<li>
+<p><code>multusName</code>：Spiderpool 通过该字段与 Multus CNI 深度结合以应对多网卡场景。当 multusName 不为空时，SpiderIPPool 会使用对应的 Multus CR 实例为 Pod 配置网络，若 multusName 对应的 Multus CR 不存在，那么 Spiderpool 将无法为 Pod 指定 Multus CR。当 multusName 为空时，Spiderpool 对 Pod 所使用的 Multus CR 不作限制。</p>
+</li>
+<li>
+<p><code>spec.ips</code>：该字段的值必须设置。由于阿里云限制了节点可使用的 IP 地址，故该值的范围必须在 <code>nodeName</code> 对应主机的辅助私网 IP 范围内，您可以从阿里云的弹性网卡界面获取。</p>
+</li>
+</ul>
+<p>依据如上所述，使用如下的 Yaml，为每个节点的每张网卡( eth0、eth1 )分别创建了一个 SpiderIPPool，它们将为不同节点上的 Pod 提供 IP 地址。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-172</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 172.31.199.185-172.31.199.189</span>
+<span class="s">  subnet: 172.31.192.0/20</span>
+<span class="s">  gateway: 172.31.207.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - master</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth0</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-192</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 192.168.0.156-192.168.0.160</span>
+<span class="s">  subnet: 192.168.0.0/24</span>
+<span class="s">  gateway: 192.168.0.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - master</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth1</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker-172</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 172.31.199.190-172.31.199.194</span>
+<span class="s">  subnet: 172.31.192.0/20</span>
+<span class="s">  gateway: 172.31.207.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - worker</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth0</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker-192</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - 192.168.0.161-192.168.0.165</span>
+<span class="s">  subnet: 192.168.0.0/24</span>
+<span class="s">  gateway: 192.168.0.253</span>
+<span class="s">  nodeName:</span>
+<span class="s">  - worker</span>
+<span class="s">  multusName:</span>
+<span class="s">  - kube-system/ipvlan-eth1</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<h3 id="_7">创建应用</h3>
+<p>以下的示例 Yaml 中，会创建 2 组 daemonSet 应用和 1 个 <code>type</code> 为 ClusterIP 的 service ，其中：</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network</code>：用于指定应用所使用的子网，示例中的应用分别使用了不同的子网。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: DaemonSet</span>
+<span class="s">metadata:</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app-1</span>
+<span class="s">  name: test-app-1</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app-1</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app-1</span>
+<span class="s">      annotations:</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/ipvlan-eth0</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - image: busybox</span>
+<span class="s">        command: [&quot;sleep&quot;, &quot;3600&quot;]</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        name: test-app-1</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">---</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: DaemonSet</span>
+<span class="s">metadata:</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">  name: test-app-2</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app-2</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app-2</span>
+<span class="s">      annotations:</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/ipvlan-eth1</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        name: test-app-2</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">---</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-svc</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">spec:</span>
+<span class="s">  type: ClusterIP</span>
+<span class="s">  ports:</span>
+<span class="s">    - port: 80</span>
+<span class="s">      protocol: TCP</span>
+<span class="s">      targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>查看 Pod 运行状态：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+NAME<span class="w">                          </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">               </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-1-b7765b8d8-422sb<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>16s<span class="w">   </span><span class="m">172</span>.31.199.187<span class="w">   </span>master<span class="w">    </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-1-b7765b8d8-qjgpj<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>16s<span class="w">   </span><span class="m">172</span>.31.199.193<span class="w">   </span>worker<span class="w">    </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-2-7c56876fc6-7brhf<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>12s<span class="w">   </span><span class="m">192</span>.168.0.160<span class="w">    </span>master<span class="w">    </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-2-7c56876fc6-zlxxt<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>12s<span class="w">   </span><span class="m">192</span>.168.0.161<span class="w">    </span>worker<span class="w">    </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<p>Spiderpool 自动为应用分配 IP 地址，应用的 IP 均在期望的 IP 池内：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">         </span>VERSION<span class="w">   </span>SUBNET<span class="w">            </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+master-172<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.31.192.0/20<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">5</span><span class="w">                </span><span class="nb">true</span>
+master-192<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">192</span>.168.0.0/24<span class="w">    </span><span class="m">1</span><span class="w">                    </span><span class="m">5</span><span class="w">                </span><span class="nb">true</span>
+worker-172<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.31.192.0/20<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">5</span><span class="w">                </span><span class="nb">true</span>
+worker-192<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">192</span>.168.0.0/24<span class="w">    </span><span class="m">1</span><span class="w">                    </span><span class="m">5</span><span class="w">                </span><span class="nb">true</span>
+</code></pre></div>
+<h3 id="_8">测试集群东西向连通性</h3>
+<ul>
+<li>测试 Pod 与宿主机的通讯情况：</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>-owide
+NAME<span class="w">     </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION<span class="w">   </span>INTERNAL-IP<span class="w">      </span>EXTERNAL-IP<span class="w">   </span>OS-IMAGE<span class="w">                </span>KERNEL-VERSION<span class="w">              </span>CONTAINER-RUNTIME
+master<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2d12h<span class="w">   </span>v1.27.3<span class="w">   </span><span class="m">172</span>.31.199.183<span class="w">   </span>&lt;none&gt;<span class="w">        </span>CentOS<span class="w"> </span>Linux<span class="w"> </span><span class="m">7</span><span class="w"> </span><span class="o">(</span>Core<span class="o">)</span><span class="w">   </span><span class="m">6</span>.4.0-1.el7.elrepo.x86_64<span class="w">   </span>containerd://1.7.1
+worker<span class="w">   </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2d12h<span class="w">   </span>v1.27.3<span class="w">   </span><span class="m">172</span>.31.199.184<span class="w">   </span>&lt;none&gt;<span class="w">        </span>CentOS<span class="w"> </span>Linux<span class="w"> </span><span class="m">7</span><span class="w"> </span><span class="o">(</span>Core<span class="o">)</span><span class="w">   </span><span class="m">6</span>.4.0-1.el7.elrepo.x86_64<span class="w">   </span>containerd://1.7.1
+
+~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-1-b7765b8d8-422sb<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">172</span>.31.199.183<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
+PING<span class="w"> </span><span class="m">172</span>.31.199.183<span class="w"> </span><span class="o">(</span><span class="m">172</span>.31.199.183<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.31.199.183:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.088<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.31.199.183:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.054<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">172</span>.31.199.183<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.054/0.071/0.088<span class="w"> </span>ms
+</code></pre></div>
+<ul>
+<li>测试 Pod 与跨节点、跨子网 Pod 的通讯情况</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-1-b7765b8d8-422sb<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">172</span>.31.199.193<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
+PING<span class="w"> </span><span class="m">172</span>.31.199.193<span class="w"> </span><span class="o">(</span><span class="m">172</span>.31.199.193<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.31.199.193:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.460<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.31.199.193:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.210<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">172</span>.31.199.193<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.210/0.335/0.460<span class="w"> </span>ms
+
+~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-1-b7765b8d8-422sb<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">192</span>.168.0.161<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
+PING<span class="w"> </span><span class="m">192</span>.168.0.161<span class="w"> </span><span class="o">(</span><span class="m">192</span>.168.0.161<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">192</span>.168.0.161:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.408<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">192</span>.168.0.161:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.194<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">192</span>.168.0.161<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.194/0.301/0.408<span class="w"> </span>ms
+</code></pre></div>
+<ul>
+<li>测试 Pod 与 ClusterIP 的通讯情况：</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>test-svc
+NAME<span class="w">       </span>TYPE<span class="w">        </span>CLUSTER-IP<span class="w">      </span>EXTERNAL-IP<span class="w">   </span>PORT<span class="o">(</span>S<span class="o">)</span><span class="w">   </span>AGE
+test-svc<span class="w">   </span>ClusterIP<span class="w">   </span><span class="m">10</span>.233.23.194<span class="w">   </span>&lt;none&gt;<span class="w">        </span><span class="m">80</span>/TCP<span class="w">    </span>26s
+
+~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-2-7c56876fc6-7brhf<span class="w"> </span>--<span class="w"> </span>curl<span class="w"> </span><span class="m">10</span>.233.23.194<span class="w"> </span>-I
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+Server:<span class="w"> </span>nginx/1.10.1
+Date:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">21</span><span class="w"> </span>Jul<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">06</span>:45:56<span class="w"> </span>GMT
+Content-Type:<span class="w"> </span>text/html
+Content-Length:<span class="w"> </span><span class="m">4086</span>
+Last-Modified:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">21</span><span class="w"> </span>Jul<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">06</span>:38:41<span class="w"> </span>GMT
+Connection:<span class="w"> </span>keep-alive
+ETag:<span class="w"> </span><span class="s2">&quot;64ba27f1-ff6&quot;</span>
+Accept-Ranges:<span class="w"> </span>bytes
+</code></pre></div>
+<h3 id="_9">测试集群南北向连通性</h3>
+<h4 id="pod">集群内的 Pod 流量出口访问</h4>
+<ul>
+<li>阿里云的 NAT 网关能实现为 VPC 环境下构建一个公网或私网流量的出入口。通过 NAT 网关，实现集群的流量出口访问。参考 <a href="https://help.aliyun.com/product/44413.html?spm=a2c4g.86456.0.0.5ccf56b5vsa5M4">NAT 网关文档</a> 创建 NAT 网关，如图：</li>
+</ul>
+<p><img alt="alicloud-natgateway" src="../../../../images/alicloud-natgateway.png" /></p>
+<ul>
+<li>测试集群内 Pod 的流量出口访问</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-2-7c56876fc6-7brhf<span class="w"> </span>--<span class="w"> </span>curl<span class="w"> </span>www.baidu.com<span class="w"> </span>-I
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+Accept-Ranges:<span class="w"> </span>bytes
+Cache-Control:<span class="w"> </span>private,<span class="w"> </span>no-cache,<span class="w"> </span>no-store,<span class="w"> </span>proxy-revalidate,<span class="w"> </span>no-transform
+Connection:<span class="w"> </span>keep-alive
+Content-Length:<span class="w"> </span><span class="m">277</span>
+Content-Type:<span class="w"> </span>text/html
+Date:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">21</span><span class="w"> </span>Jul<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">08</span>:42:17<span class="w"> </span>GMT
+Etag:<span class="w"> </span><span class="s2">&quot;575e1f60-115&quot;</span>
+Last-Modified:<span class="w"> </span>Mon,<span class="w"> </span><span class="m">13</span><span class="w"> </span>Jun<span class="w"> </span><span class="m">2016</span><span class="w"> </span><span class="m">02</span>:50:08<span class="w"> </span>GMT
+Pragma:<span class="w"> </span>no-cache
+Server:<span class="w"> </span>bfe/1.0.8.18
+</code></pre></div>
+<h4 id="_10">负载均衡流量入口访问</h4>
+<h5 id="cloud-controller-manager">部署 Cloud Controller Manager</h5>
+<p>CCM（Cloud Controller Manager）是阿里云提供的一个用于 Kubernetes 与阿里云基础产品进行对接的组件，本文中通过该组件结合阿里云基础设施完成负载均衡的流量入口访问。参考下列步骤与 <a href="https://github.com/kubernetes/cloud-provider-alibaba-cloud/blob/master/docs/getting-started.md">CCM 文档</a> 完成 CCM 的部署。</p>
+<ol>
+<li>
+<p>集群节点配置 <code>providerID</code></p>
+<p>务必在集群中的每个节点上，分别执行如下命令，从而获取每个节点各自的 <code>providerID</code>。<code>http://100.100.100.200/latest/meta-data</code> 是阿里云 CLI 提供获取实例元数据的 API 入口，在下列示例中无需修改它。更多用法可参考<a href="https://help.aliyun.com/document_detail/49150.html?spm=a2c4g.170249.0.0.3ffc59d7JhEqHl">实例元数据</a></p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">META_EP</span><span class="o">=</span>http://100.100.100.200/latest/meta-data
+~#<span class="w"> </span><span class="nv">provider_id</span><span class="o">=</span><span class="sb">`</span>curl<span class="w"> </span>-s<span class="w"> </span><span class="nv">$META_EP</span>/region-id<span class="sb">`</span>.<span class="sb">`</span>curl<span class="w"> </span>-s<span class="w"> </span><span class="nv">$META_EP</span>/instance-id<span class="sb">`</span>
+</code></pre></div>
+<p>在集群的 <code>master</code> 节点通过 <code>kubectl patch</code> 命令为集群中的 <code>每个节点</code> 补充各自的 <code>providerID</code>，该步骤必须被执行，否则对应节点的 CCM Pod 将无法运行。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes
+~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>node<span class="w"> </span><span class="si">${</span><span class="nv">NODE_NAME</span><span class="si">}</span><span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;providerID&quot;: &quot;${provider_id}&quot;}}&#39;</span>
+</code></pre></div>
+</li>
+<li>
+<p>创建阿里云的 RAM 用户，并授权。</p>
+<p>RAM 用户是 RAM 中的一种实体身份，代表需要访问阿里云的人员或应用程序。通过参阅 <a href="https://help.aliyun.com/zh/ram/user-guide/overview-of-ram-users?spm=a2c4g.11186623.0.0.213e6806eeXInD">RAM 访问控制</a>创建 RAM 用户，并授于需要访问资源的权限。</p>
+<p>为确保后续步骤中所使用的 RAM 用户具备足够的权限，请与本文保持一致，给予 RAM 用户 <code>AdministratorAccess</code> 和 <code>AliyunSLBFullAccess</code> 权限。</p>
+</li>
+<li>
+<p>获取 RAM 用户的 AccessKey &amp; AccessKeySecret</p>
+<p>登录 RAM 用户，访问 <a href="https://usercenter.console.aliyun.com/#/manage/ak">用户中心</a>，获取对应 RAM 用的 AccessKey &amp; AccessKeySecret。</p>
+</li>
+<li>
+<p>创建 CCM 的 Cloud ConfigMap。</p>
+<p>将步骤 3 获取的 AccessKey &amp; AccessKeySecret，参考下列方式写入环境变量。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">ACCESS_KEY_ID</span><span class="o">=</span>LTAI********************
+~#<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">ACCESS_KEY_SECRET</span><span class="o">=</span>HAeS**************************
+</code></pre></div>
+<p>执行如下命令，完成创建 cloud-config。</p>
+<div class="highlight"><pre><span></span><code><span class="nv">accessKeyIDBase64</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ACCESS_KEY_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span>base64<span class="w"> </span>-w<span class="w"> </span><span class="m">0</span><span class="sb">`</span>
+<span class="nv">accessKeySecretBase64</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ACCESS_KEY_SECRET</span><span class="s2">&quot;</span><span class="p">|</span>base64<span class="w"> </span>-w<span class="w"> </span><span class="m">0</span><span class="sb">`</span>
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  name: cloud-config</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">data:</span>
+<span class="s">  cloud-config.conf: |-</span>
+<span class="s">    {</span>
+<span class="s">        &quot;Global&quot;: {</span>
+<span class="s">            &quot;accessKeyID&quot;: &quot;$accessKeyIDBase64&quot;,</span>
+<span class="s">            &quot;accessKeySecret&quot;: &quot;$accessKeySecretBase64&quot;</span>
+<span class="s">        }</span>
+<span class="s">    }</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+<li>
+<p>获取 Yaml ，并通过 <code>kubectl apply -f cloud-controller-manager.yaml</code> 方式安装 CCM，本文中安装的版本为 v2.5.0</p>
+<ul>
+<li>使用如下命令，获取 cloud-controller-manager.yaml，并替换其中 <code>&lt;&lt;cluster_cidr&gt;&gt;</code> 为您真实集群的 cluster cidr 。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/alicloud/cloud-controller-manager.yaml
+~#<span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>cloud-controller-manager.yaml
+</code></pre></div>
+</li>
+<li>
+<p>检查 CCM 安装完成。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cloud-controller-manager
+NAME<span class="w">                                     </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">        </span>AGE
+cloud-controller-manager-72vzr<span class="w">           </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">               </span>27s
+cloud-controller-manager-k7jpn<span class="w">           </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">               </span>27s
+</code></pre></div>
+</li>
+</ol>
+<h5 id="loadbalancer">为应用创建 Loadbalancer 负载均衡访问入口</h5>
+<p>如下的 Yaml 将创建 <code>spec.type</code> 为 <code>LoadBalancer</code> 的 2 组 service，一组为 tcp （四层负载均衡），一组为 http （七层负载均衡）。</p>
+<ul>
+<li>
+<p><code>service.beta.kubernetes.io/alibaba-cloud-loadbalancer-protocol-port</code>：CCM 提供的创建七层负载均衡注解。可以通过它自定义暴露端口。更多用法参考 <a href="https://github.com/kubernetes/cloud-provider-alibaba-cloud/blob/master/docs/usage.md">CCM 使用文档</a> 。</p>
+</li>
+<li>
+<p><code>.spec.externalTrafficPolicy</code>：表示此 Service 是否希望将外部流量路由到节点本地或集群范围的端点。它有两个可用选项：Cluster（默认）和 Local。将<code>.spec.externalTrafficPolicy</code> 设置为 <code>Local</code>，可以保留客户端源 IP。</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: tcp-service</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  externalTrafficPolicy: Local</span>
+<span class="s">  ports:</span>
+<span class="s">  - name: tcp</span>
+<span class="s">    port: 999</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">    targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">  type: LoadBalancer</span>
+<span class="s">---</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  annotations:</span>
+<span class="s">    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-protocol-port: &quot;http:80&quot;</span>
+<span class="s">  name: http-service</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  externalTrafficPolicy: Local</span>
+<span class="s">  ports:</span>
+<span class="s">  - port: 80</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">    targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app-2</span>
+<span class="s">  type: LoadBalancer</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>创建完成后，您可以查看到如下内容：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>service
+NAME<span class="w">           </span>TYPE<span class="w">           </span>CLUSTER-IP<span class="w">      </span>EXTERNAL-IP<span class="w">      </span>PORT<span class="o">(</span>S<span class="o">)</span><span class="w">         </span>AGE
+http-service<span class="w">   </span>LoadBalancer<span class="w">   </span><span class="m">10</span>.233.1.108<span class="w">    </span><span class="m">121</span>.41.165.119<span class="w">   </span><span class="m">80</span>:30698/TCP<span class="w">    </span>11s
+tcp-service<span class="w">    </span>LoadBalancer<span class="w">   </span><span class="m">10</span>.233.4.245<span class="w">    </span><span class="m">47</span>.98.137.75<span class="w">     </span><span class="m">999</span>:32635/TCP<span class="w">   </span>15s
+</code></pre></div>
+<p>CCM 将自动在 IaaS 层创建四层与七层的负载均衡器，可以通过阿里云界面进行查看，如下：</p>
+<p><img alt="alicloud-loadbalancer" src="../../../../images/alicloud-loadbalancer.png" /></p>
+<h5 id="_11">验证负载均衡流量入口访问</h5>
+<p>在公网的机器上，通过负载均衡器的<code>公网 IP + 端口</code>实现流量入口访问</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 访问四层负载均衡</span>
+$<span class="w"> </span>curl<span class="w"> </span><span class="m">47</span>.98.137.75:999<span class="w"> </span>-I
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+Server:<span class="w"> </span>nginx/1.25.1
+Date:<span class="w"> </span>Sun,<span class="w"> </span><span class="m">30</span><span class="w"> </span>Jul<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">09</span>:12:46<span class="w"> </span>GMT
+Content-Type:<span class="w"> </span>text/html
+Content-Length:<span class="w"> </span><span class="m">615</span>
+Last-Modified:<span class="w"> </span>Tue,<span class="w"> </span><span class="m">13</span><span class="w"> </span>Jun<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">15</span>:08:10<span class="w"> </span>GMT
+Connection:<span class="w"> </span>keep-alive
+ETag:<span class="w"> </span><span class="s2">&quot;6488865a-267&quot;</span>
+Accept-Ranges:<span class="w"> </span>bytes
+
+<span class="c1"># 访问七层负载均衡</span>
+$<span class="w"> </span>curl<span class="w"> </span><span class="m">121</span>.41.165.119:80<span class="w"> </span>-I
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+Date:<span class="w"> </span>Sun,<span class="w"> </span><span class="m">30</span><span class="w"> </span>Jul<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">09</span>:13:17<span class="w"> </span>GMT
+Content-Type:<span class="w"> </span>text/html
+Content-Length:<span class="w"> </span><span class="m">615</span>
+Connection:<span class="w"> </span>keep-alive
+Last-Modified:<span class="w"> </span>Tue,<span class="w"> </span><span class="m">13</span><span class="w"> </span>Jun<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">15</span>:08:10<span class="w"> </span>GMT
+ETag:<span class="w"> </span><span class="s2">&quot;6488865a-267&quot;</span>
+Accept-Ranges:<span class="w"> </span>bytes
+</code></pre></div>
+<h2 id="_12">总结</h2>
+<p>Spiderpool 能够运行在阿里云集群中，并且可以保证集群的东西向与南北向流量均正常。</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../../..";</script>
+    <script src="../../../../js/theme_extra.js"></script>
+    <script src="../../../../js/theme.js"></script>
+      <script src="../../../../search/main.js"></script>
+      <script src="../../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

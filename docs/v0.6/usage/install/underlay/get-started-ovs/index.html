@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>Ovs - spiderpool</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Ovs";
+        var mkdocs_page_input_path = "usage/install/underlay/get-started-ovs.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Underlay installation</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Installation &raquo;</li>
+          <li>Underlay installation &raquo;</li>
+      <li class="breadcrumb-item active">Ovs</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/underlay/get-started-ovs.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="ovs-cni-quick-start">Ovs-cni Quick Start</h1>
+<p><strong>English</strong> | <a href="../get-started-ovs-zh_CN/"><strong>简体中文</strong></a></p>
+<p>Spiderpool can be used as a solution to provide fixed IPs in an Underlay network scenario, and this article will use <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a>, <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">Ovs-cni</a>, and <a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> as examples to build a complete Underlay network solution that exposes the available bridges as node resources for use by the cluster.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+<li>
+<p>Make sure a multi-node Kubernetes cluster is ready.</p>
+</li>
+<li>
+<p><a href="https://helm.sh/docs/intro/install/">Helm</a> has been already installed.</p>
+</li>
+<li>
+<p>Open vSwitch must be installed and running on the host. It could refer to <a href="https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages">Installation</a>.</p>
+<p>The following examples are based on Ubuntu 22.04.1. installation may vary depending on the host system.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>openvswitch-switch
+~#<span class="w"> </span>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>openvswitch-switch
+</code></pre></div>
+</li>
+</ol>
+<h2 id="install-ovs-cni">Install Ovs-cni</h2>
+<p><a href="https://github.com/k8snetworkplumbingwg/ovs-cni"><code>ovs-cni</code></a> is a Kubernetes CNI plugin based on Open vSwitch (OVS) that provides a way to use OVS for network virtualization in a Kubernetes cluster in a Kubernetes cluster.</p>
+<p>Verify that the binary /opt/cni/bin/ovs exists on the node. if the binary is missing, you can download it and install it on all nodes using the following command:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>wget<span class="w"> </span>https://github.com/k8snetworkplumbingwg/ovs-cni/releases/download/v0.31.1/plugin
+
+~#<span class="w"> </span>mv<span class="w"> </span>./plugin<span class="w"> </span>/opt/cni/bin/ovs
+
+~#<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/opt/cni/bin/ovs
+</code></pre></div>
+<p>Note: Ovs-cni does not configure bridges, it is up to the user to create them and connect them to L2, L3, The following is an example of creating a bridge, to be executed on each node:</p>
+<ol>
+<li>
+<p>Create an Open vSwitch bridge.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
+</code></pre></div>
+</li>
+<li>
+<p>Network interface connected to the bridge：</p>
+<p>This procedure depends on your platform, the following commands are only example instructions and it may break your system. First use <code>ip link show</code> to query the host for available interfaces, the example uses the interface on the host: <code>eth0</code> as an example.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
+~#<span class="w"> </span>ip<span class="w"> </span>addr<span class="w"> </span>add<span class="w"> </span>&lt;IP地址&gt;/&lt;子网掩码&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
+~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;默认网关IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+</code></pre></div>
+</li>
+</ol>
+<p>Once created, the following bridge information can be viewed on each node:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+<span class="w">    </span>Bridge<span class="w"> </span>br1
+<span class="w">        </span>Port<span class="w"> </span>eth0
+<span class="w">            </span>Interface<span class="w"> </span>eth0
+<span class="w">        </span>Port<span class="w"> </span>br1
+<span class="w">            </span>Interface<span class="w"> </span>br1
+<span class="w">                </span>type:<span class="w"> </span>internal
+<span class="w">        </span>Port<span class="w"> </span>veth97fb4795
+<span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
+<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+</code></pre></div>
+<h2 id="install-spiderpool">Install Spiderpool</h2>
+<ol>
+<li>
+<p>Install Spiderpool</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ovs-conf&quot;</span>
+</code></pre></div>
+<blockquote>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+<p>Specify the Multus clusterNetwork of the cluster through <code>multus.multusCNI.defaultCniCRName</code>, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.</p>
+</blockquote>
+</li>
+<li>
+<p>Create a SpiderIPPool instance.</p>
+<p>The Pod will obtain an IP address from the IPPool for underlying network communication, so the subnet of the IPPool needs to correspond to the underlying subnet being accessed.</p>
+<p>Here is an example of creating a SpiderSubnet instance:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ippool-test</span>
+<span class="s">spec:</span>
+<span class="s">  ipVersion: 4</span>
+<span class="s">  ips:</span>
+<span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
+<span class="s">  subnet: 172.18.0.0/16</span>
+<span class="s">  gateway: 172.18.0.1</span>
+<span class="s">  multusName: </span>
+<span class="s">  - ovs-conf</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+<li>
+<p>Verify the installation：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>spiderpool
+spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-multus-7vkm2<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+spiderpool-multus-rwzjn<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sp<span class="w"> </span>ippool-test<span class="w">       </span>
+NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
+~#<span class="w"> </span>
+</code></pre></div>
+</li>
+<li>
+<p>Create a NetworkAttachmentDefinition for ovs-cni.</p>
+<p>The following parameters need to be confirmed:</p>
+<ul>
+<li>Confirm the required host bridge for ovs-cni, for example based on the command <code>ovs-vsctl show</code>, this example takes the host bridge: <code>br1</code> as an example.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
+<span class="s">kind: NetworkAttachmentDefinition</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ovs-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  config: |-</span>
+<span class="s">    {</span>
+<span class="s">        &quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="s">        &quot;name&quot;: &quot;ovs-conf&quot;,</span>
+<span class="s">        &quot;plugins&quot;: [</span>
+<span class="s">            {</span>
+<span class="s">                &quot;type&quot;: &quot;ovs&quot;,</span>
+<span class="s">                &quot;bridge&quot;: &quot;br1&quot;,</span>
+<span class="s">                &quot;ipam&quot;: {</span>
+<span class="s">                    &quot;type&quot;: &quot;spiderpool&quot;,</span>
+<span class="s">                }</span>
+<span class="s">            }</span>
+<span class="s">        ]</span>
+<span class="s">    }</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+</ol>
+<h2 id="create-applications">Create applications</h2>
+<p>In the following example Yaml, 2 copies of the Deployment are created, of which:</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network</code>: used to specify Multus' NetworkAttachmentDefinition configuration, which will create a default NIC for the application.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
+<span class="s">          {</span>
+<span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
+<span class="s">          }</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app</span>
+<span class="s">    spec:</span>
+<span class="s">      affinity:</span>
+<span class="s">        podAntiAffinity:</span>
+<span class="s">          requiredDuringSchedulingIgnoredDuringExecution:</span>
+<span class="s">            - labelSelector:</span>
+<span class="s">                matchLabels:</span>
+<span class="s">                  app: test-app</span>
+<span class="s">              topologyKey: kubernetes.io/hostname</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>SpiderIPPool assigns an IP to the application, and the application's IP will be automatically fixed within this IP range:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                 </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-6f8dddd88d-hstg7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.131<span class="w">   </span>ipv4-worker<span class="w">          </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-6f8dddd88d-rj7sm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.132<span class="w">   </span>ipv4-control-plane<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderendpoints
+NAME<span class="w">                        </span>INTERFACE<span class="w">   </span>IPV4POOL<span class="w">      </span>IPV4<span class="w">               </span>IPV6POOL<span class="w">   </span>IPV6<span class="w">   </span>NODE
+test-app-6f8dddd88d-hstg7<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.131/16<span class="w">                     </span>ipv4-worker
+test-app-6f8dddd88d-rj7sm<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.132/16<span class="w">                     </span>ipv4-control-plane
+</code></pre></div>
+<p>Testing Pod communication with cross-node Pods:</p>
+<div class="highlight"><pre><span></span><code>~#kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-6f8dddd88d-hstg7<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
+
+PING<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span><span class="o">(</span><span class="m">172</span>.18.30.132<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.882<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.195<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.195/1.038/1.882<span class="w"> </span>ms
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../get-started-kind/" class="btn btn-neutral float-left" title="Macvlan"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../get-started-sriov/" class="btn btn-neutral float-right" title="SRIOV">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../get-started-kind/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../get-started-sriov/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../../..";</script>
+    <script src="../../../../js/theme_extra.js"></script>
+    <script src="../../../../js/theme.js"></script>
+      <script src="../../../../search/main.js"></script>
+      <script src="../../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

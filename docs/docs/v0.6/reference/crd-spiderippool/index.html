@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>CRD SpiderIPPool - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "CRD SpiderIPPool";
+        var mkdocs_page_input_path = "reference/crd-spiderippool.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../usage/install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">CRD SpiderIPPool</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#sample-yaml">Sample YAML</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#spiderippool-definition">SpiderIPPool definition</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Reference &raquo;</li>
+      <li class="breadcrumb-item active">CRD SpiderIPPool</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/reference/crd-spiderippool.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="spiderippool">SpiderIPPool</h1>
+<p>A SpiderIPPool resource represents a collection of IP addresses from which Spiderpool expects endpoint IPs to be assigned.</p>
+<h2 id="sample-yaml">Sample YAML</h2>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master-172</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ipVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.31.192.0/20</span>
+<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.31.199.180-172.31.199.189</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.31.199.205-172.31.199.209</span>
+<span class="w">  </span><span class="nt">excludeIPs</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.31.199.186-172.31.199.188</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.31.199.207</span>
+<span class="w">  </span><span class="nt">gateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.31.207.253</span>
+<span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">disable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div>
+<h2 id="spiderippool-definition">SpiderIPPool definition</h2>
+<h3 id="metadata">Metadata</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>the name of this SpiderIPPool resource</td>
+<td>string</td>
+<td>required</td>
+</tr>
+</tbody>
+</table>
+<h3 id="spec">Spec</h3>
+<p>This is the IPPool spec for users to configure.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ipVersion</td>
+<td>IP version of this pool</td>
+<td>int</td>
+<td>optional</td>
+<td>4,6</td>
+<td></td>
+</tr>
+<tr>
+<td>subnet</td>
+<td>subnet of this pool</td>
+<td>string</td>
+<td>required</td>
+<td>IPv4 or IPv6 CIDR.<br/>Must not overlap</td>
+<td></td>
+</tr>
+<tr>
+<td>ips</td>
+<td>IP ranges for this pool to use</td>
+<td>list of strings</td>
+<td>optional</td>
+<td>array of IP ranges and single IP address</td>
+<td></td>
+</tr>
+<tr>
+<td>excludeIPs</td>
+<td>isolated IP ranges for this pool to filter</td>
+<td>list of strings</td>
+<td>optional</td>
+<td>array of IP ranges and single IP address</td>
+<td></td>
+</tr>
+<tr>
+<td>gateway</td>
+<td>gateway for this pool</td>
+<td>string</td>
+<td>optional</td>
+<td>an IP address</td>
+<td></td>
+</tr>
+<tr>
+<td>vlan</td>
+<td>vlan ID</td>
+<td>int</td>
+<td>optional</td>
+<td>[0,4094]</td>
+<td>0</td>
+</tr>
+<tr>
+<td>routes</td>
+<td>custom routes in this pool</td>
+<td>list of <a href="./#Route">route</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>podAffinity</td>
+<td>specify which pods can use this pool</td>
+<td><a href="https://github.com/kubernetes/kubernetes/blob/v1.27.0/staging/src/k8s.io/apimachinery/pkg/apis/meta/v1/types.go#L1195">labelSelector</a></td>
+<td>optional</td>
+<td>kubernetes LabelSelector</td>
+<td></td>
+</tr>
+<tr>
+<td>namespaceAffinity</td>
+<td>specify which namespaces pods can use this pool</td>
+<td><a href="https://github.com/kubernetes/kubernetes/blob/v1.27.0/staging/src/k8s.io/apimachinery/pkg/apis/meta/v1/types.go#L1195">labelSelector</a></td>
+<td>optional</td>
+<td>kubernetes LabelSelector</td>
+<td></td>
+</tr>
+<tr>
+<td>namespaceName</td>
+<td>specify which namespaces pods can use this pool</td>
+<td>list of strings</td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>nodeAffinity</td>
+<td>specify which nodes pods can use this pool</td>
+<td><a href="https://github.com/kubernetes/kubernetes/blob/v1.27.0/staging/src/k8s.io/apimachinery/pkg/apis/meta/v1/types.go#L1195">labelSelector</a></td>
+<td>optional</td>
+<td>kubernetes LabelSelector</td>
+<td></td>
+</tr>
+<tr>
+<td>nodeName</td>
+<td>specify which nodes pods can use this pool</td>
+<td>list of strings</td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>multusName</td>
+<td>specify which multus net-attach-def objects can use this pool</td>
+<td>list of strings</td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>default</td>
+<td>configure this resource as a default pool for pods</td>
+<td>boolean</td>
+<td>optional</td>
+<td>true,false</td>
+<td>false</td>
+</tr>
+<tr>
+<td>disable</td>
+<td>configure whether the pool is usable</td>
+<td>boolean</td>
+<td>optional</td>
+<td>true,false</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-subresource">Status (subresource)</h3>
+<p>The IPPool status is a subresource that processed automatically by the system to summarize the current state</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>allocatedIPs</td>
+<td>current IP allocations in this pool</td>
+<td>string</td>
+</tr>
+<tr>
+<td>totalIPCount</td>
+<td>total IP counts of this pool to use</td>
+<td>int</td>
+</tr>
+<tr>
+<td>allocatedIPCount</td>
+<td>current allocated IP counts</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h4 id="route">Route</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dst</td>
+<td>destination of this route</td>
+<td>string</td>
+<td>required</td>
+</tr>
+<tr>
+<td>gw</td>
+<td>gateway of this route</td>
+<td>string</td>
+<td>required</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pod-affinity">Pod Affinity</h3>
+<p>For details on configuring SpiderIPPool podAffinity, please read the <a href="../../usage/ippool-affinity-pod/">Pod Affinity of IPPool</a>.</p>
+<h3 id="namespace-affinity">Namespace Affinity</h3>
+<p>For details on configuring SpiderIPPool namespaceAffinity or namespaceName, please read the <a href="../../usage/ippool-affinity-namespace/">Namespace Affinity of IPPool</a>.</p>
+<blockquote>
+<p>Notice: <code>namespaceName</code> has higher priority than <code>namespaceAffinity</code>.</p>
+</blockquote>
+<h3 id="node-affinity">Node Affinity</h3>
+<p>For details on configuring SpiderIPPool nodeAffinity or nodeName, please read the <a href="../../usage/ippool-affinity-node/">Node Affinity of IPPool</a> and <a href="../../usage/network-topology/">Network topology allocation</a>.</p>
+<blockquote>
+<p>Notice: <code>nodeName</code> has higher priority than <code>nodeAffinity</code>.</p>
+</blockquote>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../crd-spidersubnet/" class="btn btn-neutral float-left" title="CRD SpiderSubnet"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../crd-spidermultusconfig/" class="btn btn-neutral float-right" title="CRD Spidermultusconfig">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../crd-spidersubnet/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../crd-spidermultusconfig/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

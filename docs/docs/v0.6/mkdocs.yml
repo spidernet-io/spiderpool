@@ -1,0 +1,110 @@
+site_name: spiderpool
+docs_dir: docs
+site_dir: site
+repo_name: spidernet-io/spiderpool
+repo_url: https://github.com/spidernet-io/spiderpool
+remote_branch: github_pages
+theme:
+  name: readthedocs
+  custom_dir: docs/overrides
+  # The maximum depth of the navigation tree in the sidebar
+  navigation_depth: 2
+  palette:
+    scheme: default
+  features:
+    - navigation.instant
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+    - search.share
+
+plugins:
+  - tags
+  - search
+
+extra:
+  version:
+    provider: mike
+
+markdown_extensions:
+  - meta
+  - toc
+  - tables
+  - fenced_code
+  - tables
+  - attr_list
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+
+nav:
+  - README.md
+  - Installation:
+      - Installation: usage/install/install.md
+      - Underlay installation:
+          - Calico: usage/install/underlay/get-started-calico.md
+          - Weave: usage/install/underlay/get-started-weave.md
+          - Macvlan: usage/install/underlay/get-started-kind.md
+          - Ovs: usage/install/underlay/get-started-ovs.md
+          - SRIOV: usage/install/underlay/get-started-sriov.md
+      - Overlay installation:
+          - Calico: usage/install/overlay/get-started-calico.md
+          - Cilium: usage/install/overlay/get-started-cilium.md
+      - Public cloud installation:
+          - alibaba cloud: usage/install/cloud/get-started-alibaba.md
+          - vmware vsphere: usage/install/cloud/get-started-vmware.md
+          - openstack: usage/install/cloud/get-started-openstack.md
+      - Upgrading: usage/install/upgrade.md
+      - Certificates: usage/install/certificate.md
+  - Usage:
+      - SpiderSubnet: usage/spider-subnet.md
+      - Default IPPool at namespace: usage/ippool-namespace.md
+      - Multiple interfaces: usage/multi-interfaces-annotation.md
+      - Backup IPPool: usage/ippool-multi.md
+      - Namespace affinity of IPPool: usage/ippool-affinity-namespace.md
+      - Node affinity of IPPool: usage/ippool-affinity-node.md
+      - Pod affinity of IPPool: usage/ippool-affinity-pod.md
+      - IPv6 support: usage/ipv6.md
+      - StatefulSet: usage/statefulset.md
+      - Reserved IP: usage/reserved-ip.md
+      - Third-party controllers: usage/third-party-controller.md
+      - Reclaim IP: usage/gc.md
+      - Route support: usage/route.md
+      - Plugin coordinator: usage/coordinator.md
+      - Plugin ifacer: usage/ifacer.md
+      - node-based topology: usage/network-topology.md
+      - FAQ: usage/debug.md
+  - Concepts:
+      - Architecture: concepts/arch.md
+      - IP Allocation: concepts/allocation.md
+      - Metrics: concepts/metrics.md
+      - Multus: concepts/multusconfig.md
+      - Recycle IP: concepts/gc.md
+      - Underlay and overlay solutions: concepts/solution.md
+      - IPAM Performance: concepts/performance.md
+  - Reference:
+      - Annotations: reference/annotation.md
+      - Configmap: reference/configmap.md
+      - spiderpool-controller: reference/spiderpool-controller.md
+      - spiderpool-agent: reference/spiderpool-agent.md
+      - CRD SpiderSubnet: reference/crd-spidersubnet.md
+      - CRD SpiderIPPool: reference/crd-spiderippool.md
+      - CRD Spidermultusconfig: reference/crd-spidermultusconfig.md
+      - CRD Spidercoordinator: reference/crd-spidercoordinator.md
+      - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
+      - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
+      - Ifacer plugin: reference/plugin-ifacer.md
+      - IPAM plugin: reference/plugin-ipam.md
+  - Development:
+      - Contribution Guide: develop/contributing.md
+      - Code of Conduct: develop/CODE-OF-CONDUCT.md
+      - Release workflow: develop/release.md
+      - Roadmap: develop/roadmap.md
+      - Swagger OpenAPI: develop/swagger_openapi.md

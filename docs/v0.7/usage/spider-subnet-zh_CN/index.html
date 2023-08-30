@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>SpiderSubnet - spiderpool</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "SpiderSubnet";
+        var mkdocs_page_input_path = "usage/spider-subnet-zh_CN.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> spiderpool
+        </a>
+        <div class="version">
+          {'provider': 'mike'}
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Spiderpool</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/install/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Underlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-weave/">Weave</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-kind/">Macvlan</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-ovs/">Ovs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/underlay/get-started-sriov/">SRIOV</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Overlay installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-calico/">Calico</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/overlay/get-started-cilium/">Cilium</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Public cloud installation</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-alibaba/">alibaba cloud</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-vmware/">vmware vsphere</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../install/cloud/get-started-openstack/">openstack</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/upgrade/">Upgrading</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/certificate/">Certificates</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../spider-subnet/">SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../spider-multus-config/">SpiderMultusConfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-namespace/">Default IPPool at namespace</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../multi-interfaces-annotation/">Multiple interfaces</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-multi/">Backup IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-namespace/">Namespace affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-node/">Node affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ippool-affinity-pod/">Pod affinity of IPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ipv6/">IPv6 support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../statefulset/">StatefulSet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reserved-ip/">Reserved IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../third-party-controller/">Third-party controllers</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../gc/">Reclaim IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../route/">Route support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../coordinator/">Plugin coordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ifacer/">Plugin ifacer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../network-topology/">node-based topology</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../debug/">FAQ</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/arch/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/allocation/">IP Allocation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/metrics/">Metrics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/multusconfig/">Multus</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/gc/">Recycle IP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/solution/">Underlay and overlay solutions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/performance/">IPAM Performance</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/annotation/">Annotations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/configmap/">Configmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-controller/">spiderpool-controller</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/spiderpool-agent/">spiderpool-agent</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidersubnet/">CRD SpiderSubnet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderippool/">CRD SpiderIPPool</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidermultusconfig/">CRD Spidermultusconfig</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spidercoordinator/">CRD Spidercoordinator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderendpoint/">CRD SpiderEndpoint</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/crd-spiderreservedip/">CRD SpiderReservedIP</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-coordinator/">Coordinatorr plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ifacer/">Ifacer plugin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/plugin-ipam/">IPAM plugin</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/contributing/">Contribution Guide</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/CODE-OF-CONDUCT/">Code of Conduct</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/release/">Release workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../develop/swagger_openapi/">Swagger OpenAPI</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">spiderpool</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li class="breadcrumb-item active">SpiderSubnet</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/spider-subnet-zh_CN.md">Edit on spidernet-io/spiderpool</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="spidersubnet">SpiderSubnet</h1>
+<p><strong>简体中文</strong> | <a href="../spider-subnet/"><strong>English</strong></a></p>
+<h2 id="_1">介绍</h2>
+<p>SpiderSubnet 资源代表 IP 地址的集合，当需要为应用分配固定的 IP 地址时，应用管理员需要平台管理员告知可用的 IP 地址和路由属性等，但双方分属两个不同的运营部门，这使得每一个应用创建的工作流程繁琐，借助于 Spiderpool 的 SpiderSubnet 功能，它能自动从中子网分配 IP 给 SpiderIPPool，并且还能为应用固定 IP 地址，极大的减少了运维的成本。</p>
+<h2 id="spidersubnet_1">SpiderSubnet 功能</h2>
+<p>启用 Subnet 功能时，每一个 IPPool 实例都归属于子网号相同的 Subnet 实例，IPPool 实例中的 IP 地址必须是 Subnet 实例中 IP 地址的子集，IPPool 实例之间不出现重叠 IP 地址，创建 IPPool 实例时的各种路由属性，默认继承 Subnet 实例中的设置。</p>
+<p>在为应用分配固定的 IP 地址时，带来了如下两种实践手段，从而完成应用管理员和网络管理员的职责解耦：</p>
+<ul>
+<li>
+<p>手动创建 IPPool : 应用管理员手动创建 IPPool 实例时，可基于对应的 Subnet 实例中的 IP 地址约束，来获知可使用哪些 IP 地址。</p>
+</li>
+<li>
+<p>自动创建 IPPool : 应用管理员可在 Pod annotation 中注明使用的 Subnet 实例名，在应用创建时，Spiderpool 会自动根据 Subnet 实例中的可用 IP 地址来创建固定 IP 的 IPPool 实例，从中分配 IP 地址给 Pod。并且 Spiderpool 能够自动监控应用的扩缩容和删除事件，自动完成 IPPool 中的 IP 地址扩缩容和删除。</p>
+</li>
+</ul>
+<p>SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考<a href="../third-party-controller/">示例</a></p>
+<h2 id="_2">实施要求</h2>
+<ol>
+<li>
+<p>一套 Kubernetes 集群。</p>
+</li>
+<li>
+<p>已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a>。</p>
+</li>
+</ol>
+<h2 id="_3">步骤</h2>
+<h3 id="spiderpool">安装 Spiderpool</h3>
+<ul>
+<li>通过 helm 安装 Spiderpool。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>ipam.enableSpiderSubnet<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-ens192&quot;</span><span class="w"> </span>
+</code></pre></div>
+<blockquote>
+<p>如果您所在地区是中国大陆，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> ，以帮助您更快的拉取镜像。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。</p>
+</blockquote>
+<ul>
+<li>检查安装完成</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+NAME<span class="w">                                     </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
+spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-multus-7vkm2<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-multus-rwzjn<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+</code></pre></div>
+<h3 id="cni">安装 CNI 配置</h3>
+<p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Macvlan SpiderMultusConfig 配置的示例：</p>
+<ul>
+<li>master：在此示例用接口 <code>ens192</code> 和 <code>ens224</code> 作为 master 的参数。</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE0</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
+<span class="nv">MACVLAN_MULTUS_NAME0</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE0</span><span class="s2">&quot;</span>
+<span class="nv">MACVLAN_MASTER_INTERFACE1</span><span class="o">=</span><span class="s2">&quot;ens224&quot;</span>
+<span class="nv">MACVLAN_MULTUS_NAME1</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE1</span><span class="s2">&quot;</span>
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${MACVLAN_MULTUS_NAME0}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${MACVLAN_MASTER_INTERFACE0}</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${MACVLAN_MULTUS_NAME1}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${MACVLAN_MASTER_INTERFACE1}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>在本文示例中，使用如上配置，创建如下的两个 Macvlan SpiderMultusConfig，将基于它们自动生成的 Multus NetworkAttachmentDefinition CR，它对应了宿主机的 <code>ens192</code> 与 <code>ens224</code> 网卡。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+NAME<span class="w">             </span>AGE
+macvlan-ens192<span class="w">   </span>26m
+macvlan-ens224<span class="w">   </span>26m
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+NAME<span class="w">             </span>AGE
+macvlan-ens192<span class="w">   </span>27m
+macvlan-ens224<span class="w">   </span>27m
+</code></pre></div>
+<h3 id="subnets">创建 Subnets</h3>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderSubnet</span>
+<span class="s">metadata:</span>
+<span class="s">  name: subnet-6</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 10.6.0.0/16</span>
+<span class="s">  gateway: 10.6.0.1</span>
+<span class="s">  ips:</span>
+<span class="s">    - 10.6.168.101-10.6.168.110</span>
+<span class="s">  routes:</span>
+<span class="s">    - dst: 10.7.0.0/16</span>
+<span class="s">      gw: 10.6.0.1</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderSubnet</span>
+<span class="s">metadata:</span>
+<span class="s">  name: subnet-7</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 10.7.0.0/16</span>
+<span class="s">  gateway: 10.7.0.1</span>
+<span class="s">  ips:</span>
+<span class="s">    - 10.7.168.101-10.7.168.110</span>
+<span class="s">  routes:</span>
+<span class="s">    - dst: 10.6.0.0/16</span>
+<span class="s">      gw: 10.7.0.1</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>使用如上的 Yaml，创建 2 个 SpiderSubnet，并分别为其配置网关与路由信息。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidersubnet
+NAME<span class="w">       </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT
+subnet-6<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span>
+subnet-7<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.7.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidersubnet<span class="w"> </span>subnet-6<span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;gateway&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;ipVersion&quot;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">  </span><span class="s2">&quot;ips&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="s2">&quot;10.6.168.101-10.6.168.110&quot;</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;routes&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;dst&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.0/16&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;gw&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;subnet&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.0/16&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;vlan&quot;</span>:<span class="w"> </span><span class="m">0</span>
+<span class="o">}</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidersubnet<span class="w"> </span>subnet-7<span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;gateway&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;ipVersion&quot;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">  </span><span class="s2">&quot;ips&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="s2">&quot;10.7.168.101-10.7.168.110&quot;</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;routes&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;dst&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.0/16&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;gw&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.1&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;subnet&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.0/16&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;vlan&quot;</span>:<span class="w"> </span><span class="m">0</span>
+<span class="o">}</span>
+</code></pre></div>
+<h3 id="ip">自动固定单网卡 IP</h3>
+<p>以下的示例 Yaml 中， 会创建 2 个副本的 Deployment 应用 ，其中：</p>
+<ul>
+<li>
+<p><code>ipam.spidernet.io/subnet</code>：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，实现 IP 固定的效果。在本示例中该注解会为 Pod 创建 1 个对应子网的固定 IP 池。</p>
+</li>
+<li>
+<p><code>ipam.spidernet.io/ippool-ip-number</code>：用于指定创建 IP 池 中 的 IP 数量。该 annotation 的写法支持两种方式：一种是数字的方式指定 IP 池的固定数量，例如 <code>ipam.spidernet.io/ippool-ip-number：1</code>；另一种方式是使用加号和数字指定 IP 池的相对数量，例如<code>ipam.spidernet.io/ippool-ip-number：+1</code>，即表示 IP 池中的数量会自动实时保持在应用的副本数的基础上多 1 个 IP，以解决应用在弹性扩缩容的时有临时的 IP 可用。</p>
+</li>
+<li>
+<p><code>ipam.spidernet.io/ippool-reclaim</code>： 其表示自动创建的固定 IP 池是否随着应用的删除而被回收。</p>
+</li>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app-1</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app-1</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/subnet: |-</span>
+<span class="s">            {      </span>
+<span class="s">              &quot;ipv4&quot;: [&quot;subnet-6&quot;]</span>
+<span class="s">            }</span>
+<span class="s">        ipam.spidernet.io/ippool-ip-number: &#39;+1&#39;</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
+<span class="s">        ipam.spidernet.io/ippool-reclaim: &quot;false&quot;</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app-1</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app-1</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池 与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app-1<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-1-74cbbf654-2ndzl<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>46s<span class="w">   </span><span class="m">10</span>.6.168.101<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-1-74cbbf654-4f2w2<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>46s<span class="w">   </span><span class="m">10</span>.6.168.103<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool<span class="w"> </span>auto4-test-app-1-eth0-a5bd3<span class="w"> </span>-ojsonpath<span class="o">={</span>.spec<span class="o">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;default&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;disable&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;gateway&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;ipVersion&quot;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">  </span><span class="s2">&quot;ips&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="s2">&quot;10.6.168.101-10.6.168.103&quot;</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;podAffinity&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">&quot;matchLabels&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-api-group&quot;</span>:<span class="w"> </span><span class="s2">&quot;apps&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-api-version&quot;</span>:<span class="w"> </span><span class="s2">&quot;v1&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-kind&quot;</span>:<span class="w"> </span><span class="s2">&quot;Deployment&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-name&quot;</span>:<span class="w"> </span><span class="s2">&quot;test-app-1&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-namespace&quot;</span>:<span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">}</span>,
+<span class="w">  </span><span class="s2">&quot;routes&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;dst&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.0/16&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;gw&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;subnet&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.0/16&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;vlan&quot;</span>:<span class="w"> </span><span class="m">0</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>为实现固定 IP 池效果，Spiderpool 会给自动池补充如下的一些特殊的内建 Label 和 PodAffinity，它们用于指向应用，与应用形成绑定关系，明确该池只服务于指定的应用。当 <code>ipam.spidernet.io/ippool-reclaim: false</code> 时，删除应用后，IP会被回收，但自动池不会被回收。如果期望该池能被其他应用所使用，需要手动摘除这些内建 Label 和 PodAffinity。</p>
+<div class="highlight"><pre><span></span><code>Additional<span class="w"> </span>Labels:
+<span class="w">  </span>ipam.spidernet.io/owner-application-gv
+<span class="w">  </span>ipam.spidernet.io/owner-application-kind
+<span class="w">  </span>ipam.spidernet.io/owner-application-namespace
+<span class="w">  </span>ipam.spidernet.io/owner-application-name
+<span class="w">  </span>ipam.spidernet.io/owner-application-uid
+
+Additional<span class="w"> </span>PodAffinity:
+<span class="w">  </span>ipam.spidernet.io/app-api-group
+<span class="w">  </span>ipam.spidernet.io/app-api-version
+<span class="w">  </span>ipam.spidernet.io/app-kind
+<span class="w">  </span>ipam.spidernet.io/app-namespace
+<span class="w">  </span>ipam.spidernet.io/app-name
+</code></pre></div>
+<p>经过多次测试，不断重启 Pod，其 Pod 的 IP 都被固定在 IP 池范围内:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app-1
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app-1<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-1-74cbbf654-7v54p<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>7s<span class="w">    </span><span class="m">10</span>.6.168.101<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-1-74cbbf654-qzxp7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>7s<span class="w">    </span><span class="m">10</span>.6.168.102<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<h3 id="ip-ip">固定 IP 池 IP 数量的动态扩缩容</h3>
+<p>创建应用时指定了注解 <code>ipam.spidernet.io/ippool-ip-number</code>: '+1'，其表示应用分配到的固定 IP 数量比应用的副本数多 1 个，在应用滚动更新时，能够避免旧 Pod 未删除，新 Pod 没有可用 IP 的问题。</p>
+<p>以下演示了扩容场景，将应用的副本数从 2 扩容到 3，应用对应的两个固定 IP 池会自动从 3 个 IP 扩容到 4 个 IP，一直保持一个冗余 IP，符合预期。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>scale<span class="w"> </span>deploy<span class="w"> </span>test-app-1<span class="w"> </span>--replicas<span class="w"> </span><span class="m">3</span>
+deployment.apps/test-app-1<span class="w"> </span>scaled
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app-1<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-1-74cbbf654-7v54p<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>54s<span class="w">   </span><span class="m">10</span>.6.168.101<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-1-74cbbf654-9w8gd<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>19s<span class="w">   </span><span class="m">10</span>.6.168.103<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-1-74cbbf654-qzxp7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>54s<span class="w">   </span><span class="m">10</span>.6.168.102<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">3</span><span class="w">                    </span><span class="m">4</span><span class="w">                </span><span class="nb">false</span>
+</code></pre></div>
+<p>通过上述，Spiderpool 对于应用扩缩容的场景，只需要修改应用的副本数即可。</p>
+<h3 id="ip_1">自动回收 IP 池</h3>
+<p>创建应用时指定了注解 <code>ipam.spidernet.io/ippool-reclaim</code>，该注解默认值为 <code>true</code>，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 <code>false</code>，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收，并且当使用相同配置再次创建同名应用时，会自动继承该 IP 池。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>deploy<span class="w"> </span>test-app-1
+deployment.apps<span class="w"> </span><span class="s2">&quot;test-app-1&quot;</span><span class="w"> </span>deleted
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">4</span><span class="w">                </span><span class="nb">false</span>
+</code></pre></div>
+<p>使用上述所示的应用 Yaml，再次创建同名应用，可以观察到不会再次创建新的 IP 池，将自动复用旧 IP 池，并且其副本数和 IP 池的 IP 分配情况与实际相同。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
+</code></pre></div>
+<h3 id="ip_2">自动固定多网卡 IP</h3>
+<p>如果您希望为 Pod 实现多网卡 IP 的固定，参考本章节。在以下的示例 Yaml 中， 会创建 2 个副本的 Deployment，每个副本拥有多张网卡，其中：</p>
+<ul>
+<li>
+<p><code>ipam.spidernet.io/subnets</code>：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，实现 IP 固定的效果。在本示例中该注解会为 Pod 创建 2 个属于不同 Underlay 子网的固定 IP 池。</p>
+</li>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</p>
+</li>
+<li>
+<p><code>k8s.v1.cni.cncf.io/networks</code>：为应用创建另一张网卡。</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app-2</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app-2</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/subnets: |-</span>
+<span class="s">         [</span>
+<span class="s">            {      </span>
+<span class="s">              &quot;interface&quot;: &quot;eth0&quot;,</span>
+<span class="s">              &quot;ipv4&quot;: [&quot;subnet-6&quot;]</span>
+<span class="s">            },{      </span>
+<span class="s">              &quot;interface&quot;: &quot;net1&quot;,</span>
+<span class="s">              &quot;ipv4&quot;: [&quot;subnet-7&quot;]</span>
+<span class="s">            }</span>
+<span class="s">         ]</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
+<span class="s">        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-ens224</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app-2</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app-2</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>最终, 在应用创建时，Spiderpool 会从指定 2 个 Underlay 子网中随机选择一些 IP 来创建出对应的固定 IP 池，并与应用 Pod 的两张网卡分别形成绑定。每张网卡对应的固定池都将会自动继承其所归属子网的网关、路由等属性。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+auto4-test-app-2-eth0-44037<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
+auto4-test-app-2-net1-44037<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.7.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app-2<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                          </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-2-f5d6b8d6c-8hxvw<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6m22s<span class="w">   </span><span class="m">10</span>.6.168.101<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-2-f5d6b8d6c-rvx55<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6m22s<span class="w">   </span><span class="m">10</span>.6.168.105<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool<span class="w"> </span>auto4-test-app-2-eth0-44037<span class="w"> </span>-ojsonpath<span class="o">={</span>.spec<span class="o">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;default&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;disable&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;gateway&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;ipVersion&quot;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">  </span><span class="s2">&quot;ips&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="s2">&quot;10.6.168.101&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;10.6.168.105-10.6.168.106&quot;</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;podAffinity&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">&quot;matchLabels&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-api-group&quot;</span>:<span class="w"> </span><span class="s2">&quot;apps&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-api-version&quot;</span>:<span class="w"> </span><span class="s2">&quot;v1&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-kind&quot;</span>:<span class="w"> </span><span class="s2">&quot;Deployment&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-name&quot;</span>:<span class="w"> </span><span class="s2">&quot;test-app-2&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-namespace&quot;</span>:<span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">}</span>,
+<span class="w">  </span><span class="s2">&quot;routes&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;dst&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.0/16&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;gw&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;subnet&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.0/16&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;vlan&quot;</span>:<span class="w"> </span><span class="m">0</span>
+<span class="o">}</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool<span class="w"> </span>auto4-test-app-2-net1-44037<span class="w"> </span>-ojsonpath<span class="o">={</span>.spec<span class="o">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;default&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;disable&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;gateway&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;ipVersion&quot;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">  </span><span class="s2">&quot;ips&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="s2">&quot;10.7.168.101-10.7.168.103&quot;</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;podAffinity&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">&quot;matchLabels&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-api-group&quot;</span>:<span class="w"> </span><span class="s2">&quot;apps&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-api-version&quot;</span>:<span class="w"> </span><span class="s2">&quot;v1&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-kind&quot;</span>:<span class="w"> </span><span class="s2">&quot;Deployment&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-name&quot;</span>:<span class="w"> </span><span class="s2">&quot;test-app-2&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam.spidernet.io/app-namespace&quot;</span>:<span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">}</span>,
+<span class="w">  </span><span class="s2">&quot;routes&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;dst&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.0/16&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;gw&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.1&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;subnet&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.0/16&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;vlan&quot;</span>:<span class="w"> </span><span class="m">0</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>SpiderSubnet 也支持多网卡的动态 IP 扩缩容、自动回收 IP 池等功能。</p>
+<h3 id="ippool">手动创建 IPPool 实例继承子网属性</h3>
+<p>如下是一个归属于子网 <code>subnet-6</code>，子网号为：<code>10.6.0.0/16</code> 的 IPPool 实例示例。该 IPPool 实例的可用 IP 范围必须是子网 <code>subnet-6.spec.ips</code> 的子集。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ippool-test</span>
+<span class="s">spec:</span>
+<span class="s">  ips:</span>
+<span class="s">  - 10.6.168.108-10.6.168.110</span>
+<span class="s">  subnet: 10.6.0.0/16</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>使用上述 Yaml，手动创建 IPPool 实例，可以看到它归属于子网号相同的子网，同时继承了对应子网的网关、路由等属性。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidersubnet
+NAME<span class="w">       </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT
+subnet-6<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">3</span><span class="w">                    </span><span class="m">10</span>
+subnet-7<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.7.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span>
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool<span class="w"> </span>ippool-test<span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;default&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;disable&quot;</span>:<span class="w"> </span>false,
+<span class="w">  </span><span class="s2">&quot;gateway&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;ipVersion&quot;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">  </span><span class="s2">&quot;ips&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="s2">&quot;10.6.168.108-10.6.168.110&quot;</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;routes&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;dst&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.7.0.0/16&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;gw&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.1&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>,
+<span class="w">  </span><span class="s2">&quot;subnet&quot;</span>:<span class="w"> </span><span class="s2">&quot;10.6.0.0/16&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;vlan&quot;</span>:<span class="w"> </span><span class="m">0</span>
+<span class="o">}</span>
+</code></pre></div>
+<h2 id="_4">总结</h2>
+<p>SpiderSubnet 功能可以帮助将基础设施管理员和应用程序管理员的责任分开，支持自动创建和动态扩展固定 IPPool 到每个需要静态 IP 的应用程序。</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

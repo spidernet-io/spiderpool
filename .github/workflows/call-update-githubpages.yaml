@@ -3,9 +3,6 @@ name: Call Update githubpages
 on:
   workflow_call:
     inputs:
-      site_artifact_name:
-        required: true
-        type: string
       chart_artifact_name:
         required: true
         type: string

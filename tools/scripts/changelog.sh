@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # usage:
-#  GH_TOKEN=${{ github.token }} LABEL_FEATURE="release/feature-new" LABEL_BUG="release/bug" PROJECT_REPO="spidernet-io/spiderpool" changelog.sh ./ v0.3.6
-#  GH_TOKEN=${{ github.token }} LABEL_FEATURE="release/feature-new" LABEL_BUG="release/bug" PROJECT_REPO="spidernet-io/spiderpool" changelog.sh ./ v0.3.6 v0.3.5
+#  GH_TOKEN=${{ github.token }} LABEL_FEATURE="release/feature-new" LABEL_BUG="release/bug" PROJECT_REPO="spidernet-io/spiderpool" changelog.sh ./ v0.3.6  "spidernet-io/spiderpool"
+#  GH_TOKEN=${{ github.token }} LABEL_FEATURE="release/feature-new" LABEL_BUG="release/bug" PROJECT_REPO="spidernet-io/spiderpool" changelog.sh ./ v0.3.6 v0.3.5  "spidernet-io/spiderpool"
 
 
 CURRENT_DIR_PATH=$(cd `dirname $0`; pwd)
@@ -23,6 +23,8 @@ DEST_TAG=${2}
 # optional
 START_TAG=${3:-""}
 GITHUB_REPO=${4:-"spidernet-io/spiderpool"}
+
+[ -n "${GH_TOKEN}" ] || { echo "error, miss GH_TOKEN"; exit 1 ; }
 
 LABEL_FEATURE=${LABEL_FEATURE:-"release/feature-new"}
 LABEL_BUG=${LABEL_BUG:-"release/bug"}
@@ -119,7 +121,7 @@ for COMMIT in ${ALL_COMMIT} ; do
   # https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#rate-limiting
   # When using GITHUB_TOKEN, the rate limit is 1,000 requests per hour per repository
   # GitHub Enterprise Cloud's rate limit applies, and the limit is 15,000 requests per hour per repository.
-  PR=` curl -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${GITHUB_REPO}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+  PR=` curl -s -H "Accept: application/vnd.github.groot-preview+json" -H "Authorization: ${GH_TOKEN}" https://api.github.com/repos/${GITHUB_REPO}/commits/${COMMIT}/pulls | jq -r '.[].number' `
   [ -n "${PR}" ] || { echo "error, failed to find PR number for commit ${COMMIT} " ; continue ; }
   if grep " ${PR} " <<< " ${PR_LIST} " &>/dev/null ; then
       continue

@@ -12,6 +12,7 @@ import (
 
 	multusv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	calicov1 "github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -28,6 +29,7 @@ func init() {
 	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
 	utilruntime.Must(calicov1.AddToScheme(scheme))
 	utilruntime.Must(multusv1.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 }
 
 func newCRDManager() (ctrl.Manager, error) {

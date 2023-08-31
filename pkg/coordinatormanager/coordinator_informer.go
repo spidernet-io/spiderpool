@@ -16,8 +16,10 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -49,8 +51,8 @@ const (
 var SupportedPodCIDRType = []string{cluster, calico, cilium, none}
 
 const (
-	calicoConfig = "calico-config"
-	ciliumConfig = "cilium-config"
+	calicoIPPoolCRDName = "ippools.crd.projectcalico.org"
+	ciliumConfig        = "cilium-config"
 )
 
 const (
@@ -356,8 +358,11 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		}
 		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
+
 	case calico:
-		if _, err := cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(calicoConfig); err != nil {
+		var crd apiextensionsv1.CustomResourceDefinition
+		err := cc.APIReader.Get(ctx, types.NamespacedName{Name: calicoIPPoolCRDName}, &crd)
+		if nil != err {
 			if apierrors.IsNotFound(err) {
 				event.EventRecorder.Eventf(
 					coordCopy,
@@ -398,6 +403,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 				cc.caliCtrlCanncel = nil
 			}
 		}()
+
 	case cilium:
 		if cc.caliCtrlCanncel != nil {
 			cc.caliCtrlCanncel()
@@ -442,6 +448,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		if ipam == "kubernetes" {
 			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 		}
+
 	case none:
 		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = []string{}

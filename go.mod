@@ -57,11 +57,12 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/spidernet-io/e2eframework v0.0.0-20230724150324-2eee77078275
 	github.com/spidernet-io/spiderdoctor v0.3.0
-	github.com/tigera/operator v1.30.4
+	github.com/tigera/operator v1.30.5
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.10.0
+	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/kubernetes v1.27.4
 )
 
@@ -155,7 +156,6 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	k8s.io/apiextensions-apiserver v0.26.3 // indirect
 	k8s.io/component-base v0.26.3 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect

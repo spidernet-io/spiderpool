@@ -112,7 +112,7 @@ else
 fi
 echo "ALL_COMMIT: ${ALL_COMMIT}"
 
-TOTAL_COUNT=""
+TOTAL_COUNT="0"
 PR_LIST=""
 #
 FEATURE_PR=""
@@ -129,7 +129,7 @@ for COMMIT in ${ALL_COMMIT} ; do
   else
       PR_LIST+=" ${PR} "
   fi
-  (( TOTAL_COUNT++ ))
+  (( TOTAL_COUNT+=1 ))
 	INFO=` gh pr view ${PR}  `
 	TITLE=` grep -E "^title:[[:space:]]+" <<< "$INFO" | sed -E 's/title:[[:space:]]+//' `
 	LABELS=` grep -E "^labels:[[:space:]][^\[]" <<< "$INFO" | sed -E 's/labels://' | tr ',' ' ' ` || true

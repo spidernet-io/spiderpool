@@ -122,7 +122,7 @@ for COMMIT in ${ALL_COMMIT} ; do
   # https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#rate-limiting
   # When using GITHUB_TOKEN, the rate limit is 1,000 requests per hour per repository
   # GitHub Enterprise Cloud's rate limit applies, and the limit is 15,000 requests per hour per repository.
-  PR=` curl -s -H "Accept: application/vnd.github.groot-preview+json" -H "Authorization: ${GH_TOKEN}" https://api.github.com/repos/${GITHUB_REPO}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+  PR=` curl -s -H "Accept: application/vnd.github.groot-preview+json" -H "Authorization: Bearer ${GH_TOKEN}" https://api.github.com/repos/${GITHUB_REPO}/commits/${COMMIT}/pulls | jq -r '.[].number' `
   [ -n "${PR}" ] || { echo "error, failed to find PR number for commit ${COMMIT} " ; continue ; }
   if grep " ${PR} " <<< " ${PR_LIST} " &>/dev/null ; then
       continue

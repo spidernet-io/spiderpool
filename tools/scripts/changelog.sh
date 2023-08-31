@@ -100,10 +100,10 @@ echo "START_TAG=${START_TAG}"
 # check whether tag START_TAG  exists
 ALL_PR_INFO=""
 if [ -z "${ORIGIN_START_TAG}" ] && (( START_X == 0 )) && (( START_Y == 0 )) && (( START_Z == 0 )); then
-	ALL_PR_INFO=`git log ${DEST_TAG} --reverse --merges --oneline` \
+	ALL_PR_INFO=`git log ${DEST_TAG} --reverse --oneline` \
 		|| { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
 else
-	ALL_PR_INFO=`git log ${START_TAG}..${DEST_TAG} --reverse --merges --oneline` \
+	ALL_PR_INFO=`git log ${START_TAG}..${DEST_TAG} --reverse --oneline` \
 		|| { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
 fi
 

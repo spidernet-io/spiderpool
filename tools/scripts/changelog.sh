@@ -22,6 +22,7 @@ OUTPUT_DIR=${1}
 DEST_TAG=${2}
 # optional
 START_TAG=${3:-""}
+GITHUB_REPO=${4:-"spidernet-io/spiderpool"}
 
 LABEL_FEATURE=${LABEL_FEATURE:-"release/feature-new"}
 LABEL_BUG=${LABEL_BUG:-"release/bug"}
@@ -98,22 +99,34 @@ echo "DEST_TAG=${DEST_TAG}"
 echo "START_TAG=${START_TAG}"
 
 # check whether tag START_TAG  exists
-ALL_PR_INFO=""
+ALL_COMMIT=""
 if [ -z "${ORIGIN_START_TAG}" ] && (( START_X == 0 )) && (( START_Y == 0 )) && (( START_Z == 0 )); then
-	ALL_PR_INFO=`git log ${DEST_TAG} --reverse --oneline` \
+	ALL_COMMIT=`git log ${DEST_TAG} --reverse --oneline | awk '{print $1}' | tr '\n'  ' ' ` \
 		|| { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
 else
-	ALL_PR_INFO=`git log ${START_TAG}..${DEST_TAG} --reverse --oneline` \
+	ALL_COMMIT=`git log ${START_TAG}..${DEST_TAG} --reverse  --oneline | awk '{print $1}' | tr '\n'  ' ' ` \
 		|| { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
 fi
+echo "ALL_COMMIT: ${ALL_COMMIT}"
 
-ALL_PR_NUM=` grep -oE " Merge pull request #[0-9]+ " <<< "$ALL_PR_INFO" | grep -oE "[0-9]+" `
-TOTAL_COUNT=` wc -l <<< "${ALL_PR_NUM}" `
-
+TOTAL_COUNT=""
+PR_LIST=""
 #
 FEATURE_PR=""
 FIX_PR=""
-for PR in ${ALL_PR_NUM} ; do
+for COMMIT in ${ALL_COMMIT} ; do
+  # API RATE LIMIT
+  # https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#rate-limiting
+  # When using GITHUB_TOKEN, the rate limit is 1,000 requests per hour per repository
+  # GitHub Enterprise Cloud's rate limit applies, and the limit is 15,000 requests per hour per repository.
+  PR=` curl -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${GITHUB_REPO}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+  [ -n "${PR}" ] || { echo "error, failed to find PR number for commit ${COMMIT} " ; continue ; }
+  if grep " ${PR} " <<< " ${PR_LIST} " &>/dev/null ; then
+      continue
+  else
+      PR_LIST+=" ${PR} "
+  fi
+  (( TOTAL_COUNT++ ))
 	INFO=` gh pr view ${PR}  `
 	TITLE=` grep -E "^title:[[:space:]]+" <<< "$INFO" | sed -E 's/title:[[:space:]]+//' `
 	LABELS=` grep -E "^labels:[[:space:]][^\[]" <<< "$INFO" | sed -E 's/labels://' | tr ',' ' ' ` || true

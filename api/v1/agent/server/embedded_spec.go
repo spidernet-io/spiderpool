@@ -263,9 +263,9 @@ func init() {
       "description": "Coordinator config",
       "type": "object",
       "required": [
-        "mode",
         "overlayPodCIDR",
         "serviceCIDR",
+        "mode",
         "tunePodRoutes"
       ],
       "properties": {
@@ -766,9 +766,9 @@ func init() {
       "description": "Coordinator config",
       "type": "object",
       "required": [
-        "mode",
         "overlayPodCIDR",
         "serviceCIDR",
+        "mode",
         "tunePodRoutes"
       ],
       "properties": {

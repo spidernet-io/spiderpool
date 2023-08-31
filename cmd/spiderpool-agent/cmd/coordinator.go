@@ -91,5 +91,13 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		DetectIPConflict:   *coord.Spec.DetectIPConflict,
 		PodNICs:            spNics,
 	}
+
+	if config.OverlayPodCIDR == nil {
+		config.OverlayPodCIDR = []string{}
+	}
+	if config.ServiceCIDR == nil {
+		config.OverlayPodCIDR = []string{}
+	}
+
 	return daemonset.NewGetCoordinatorConfigOK().WithPayload(config)
 }

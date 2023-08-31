@@ -26,6 +26,7 @@ GITHUB_REPO=${4:-"spidernet-io/spiderpool"}
 
 [ -n "${GH_TOKEN}" ] || { echo "error, miss GH_TOKEN"; exit 1 ; }
 
+
 LABEL_FEATURE=${LABEL_FEATURE:-"release/feature-new"}
 LABEL_BUG=${LABEL_BUG:-"release/bug"}
 PROJECT_REPO=${PROJECT_REPO:-"spidernet-io/spiderpool"}

@@ -88,10 +88,10 @@ jobs:
           export GH_TOKEN=${{ github.token }}
           mkdir changelog
           if ${{ env.RUN_begin_tag == '' }} ; then
-              ${{ env.SCRIPT_PATH }} ./changelog ${{ env.RUN_dest_tag }} \
+              ${{ env.SCRIPT_PATH }} ./changelog ${{ env.RUN_dest_tag }} ${{ github.repository }} \
                 || { echo "error, failed to generate changelog " ; exit 1 ; }
           else
-              ${{ env.SCRIPT_PATH }} ./changelog ${{ env.RUN_dest_tag }} ${{ env.RUN_begin_tag }}  \
+              ${{ env.SCRIPT_PATH }} ./changelog ${{ env.RUN_dest_tag }} ${{ env.RUN_begin_tag }}  ${{ github.repository }} \
                 || { echo "error, failed to generate changelog " ; exit 1 ; }
           fi
           FILE_NAME=` ls changelog `

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/strings/slices"
 
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
@@ -86,7 +87,7 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 }
 
 func validateCoordinatorPodCIDRType(t string) *field.Error {
-	if t != cluster && t != calico && t != cilium {
+	if !slices.Contains(SupportedPodCIDRType, t) {
 		return field.NotSupported(
 			podCIDRTypeField,
 			t,

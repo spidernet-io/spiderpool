@@ -2,8 +2,9 @@ name: Call Release Changelog
 
 env:
   SCRIPT_PATH: "./tools/scripts/changelog.sh"
-  LABEL_FEATURE: "pr/release/feature-new"
-  LABEL_BUG: "pr/release/bug"
+  LABEL_FEATURE: "release/feature-new"
+  LABEL_CHANGED: "release/feature-changed"
+  LABEL_BUG: "release/bug"
   DEST_BRANCH: github_pages
   DEST_DIRECTORY: 'changelogs/'
   PR_LABEL: pr/release/robot_update_githubpage
@@ -26,9 +27,8 @@ on:
         required: true
         default: v0.2.0
       begin_tag:
-        description: 'start commit based on which tag'
+        description: '[optional] start commit based on which tag'
         required: false
-        default: v0.1.0
 
 permissions: write-all
 
@@ -83,6 +83,7 @@ jobs:
         run: |
           set -x
           export LABEL_FEATURE=${{ env.LABEL_FEATURE }}
+          export LABEL_CHANGED=${{ env.LABEL_CHANGED }}
           export LABEL_BUG=${{ env.LABEL_BUG }}
           export PROJECT_REPO=${{ github.repository }}
           export GH_TOKEN=${{ github.token }}

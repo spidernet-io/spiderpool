@@ -333,9 +333,9 @@ definitions:
         items:
           type: string
     required:
-      - mode
       - overlayPodCIDR
       - serviceCIDR
+      - mode
       - tunePodRoutes
   GetCoordinatorArgs:
     description: Get Coordinator Args

@@ -182,8 +182,14 @@ setup_spiderpool:
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ] && [ "$(INSTALL_CILIUM)" == "true" ] ; then \
+		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
+		  if [ "$(INSTALL_CILIUM)" == "true" ] ; then \
 			HELM_OPTION+=" --set coordinator.podCIDRType=cilium " ; \
+		  elif [ "$(INSTALL_CALICO)" == "true" ]; then \
+			HELM_OPTION+=" --set coordinator.podCIDRType=calico " ; \
+          else \
+            HELM_OPTION+=" --set coordinator.podCIDRType=cluster " ; \
+          fi ; \
 		fi ; \
 		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
 		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \

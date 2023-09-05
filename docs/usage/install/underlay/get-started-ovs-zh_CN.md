@@ -52,21 +52,21 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
     ~# ip route add default via <默认网关IP> dev br1
     ```
 
-创建后，可以在每个节点上查看到如下的网桥信息：
+3. 创建后，可以在每个节点上查看到如下的网桥信息：
 
-```bash
-~# ovs-vsctl show
-ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
-    Bridge br1
-        Port eth0
-            Interface eth0
-        Port br1
-            Interface br1
-                type: internal
-        Port veth97fb4795
-            Interface veth97fb4795
-    ovs_version: "2.17.3"
-```
+    ```bash
+    ~# ovs-vsctl show
+    ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+        Bridge br1
+            Port eth0
+                Interface eth0
+            Port br1
+                Interface br1
+                    type: internal
+            Port veth97fb4795
+                Interface veth97fb4795
+        ovs_version: "2.17.3"
+    ```
 
 ## 安装 Spiderpool
 
@@ -122,7 +122,7 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
 
 4. Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Ovs SpiderMultusConfig 配置的示例：
 
-* 确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:
+    * 确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:
 
     ```shell
     BRIDGE_NAME="br1"
@@ -136,7 +136,7 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
       cniType: ovs
       ovs:
         bridge: "${BRIDGE_NAME}"
-  EOF
+    EOF
     ```
 
 ## 创建应用

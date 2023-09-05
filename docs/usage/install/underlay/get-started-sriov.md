@@ -40,16 +40,16 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
     git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
     helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
     ```
-   
+
    > You may need to label SR-IOV worker nodes using node-role.kubernetes.io/worker="" label, if not already.
-   > 
+   >
    > By default, SR-IOV Operator will be deployed in namespace 'openshift-sriov-network-operator'.
-   > 
+   >
    > After installation, the node may reboot automatically. If necessary, install sriov-network-operator to the designated worker nodes.
-   
+
 2. Configure sriov-network-operator
 
-   Firstly, check the status of SriovNetworkNodeState CRs to confirm that sriov-network-operator has found a network card on the node that supports the SR-IOV feature.
+    Firstly, check the status of SriovNetworkNodeState CRs to confirm that sriov-network-operator has found a network card on the node that supports the SR-IOV feature.
 
     ```shell
     $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
@@ -81,7 +81,7 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
       syncStatus: Succeeded
     ```
 
-   As can be seen from the above, interfaces 'enp4s0f0np0' and 'enp4s0f1np1' on node 'node-1' both have SR-IOV capability and support a maximum number of VFs of 8. Below we will configure the VFs by creating SriovNetworkNodePolicy CRs and install sriov-device-plugin:
+    As can be seen from the above, interfaces 'enp4s0f0np0' and 'enp4s0f1np1' on node 'node-1' both have SR-IOV capability and support a maximum number of VFs of 8. Below we will configure the VFs by creating SriovNetworkNodePolicy CRs and install sriov-device-plugin:
 
     ```shell
     $ cat << EOF | kubectl apply -f -

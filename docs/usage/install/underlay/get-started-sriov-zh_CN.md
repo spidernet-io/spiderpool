@@ -29,7 +29,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
         ~# lspci -s 0000:04:00.0 -v |grep SR-IOV
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
-    
+
 ### 安装 Sriov-network-operator
 
 Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sriov-device-plugin。
@@ -40,9 +40,9 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
     helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
     ```
-   
+
    > 必须给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'，sriov-operator 相关组件才会就绪。
-   > 
+   >
    > sriov-network-operator 默认安装在 sriov-network-operator 命名空间下
 
 2. 配置 sriov-network-operator
@@ -78,7 +78,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
         vendor: 15b3
       syncStatus: Succeeded
     ```
-   
+
     从上面可知，节点 `node-1` 上的接口 `enp4s0f0np0` 和 `enp4s0f1np1` 都具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs 来配置 VFs，并且安装 sriov-device-plugin :
 
     ```shell
@@ -99,7 +99,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
       resourceName: sriov_netdevice
     EOF
     ```
-   
+
     >  下发后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
     >  resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_"。
 
@@ -194,7 +194,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
         resourceName: spidernet.io/sriov_netdevice
     EOF
     ```
-   
+
     > 注意: SpiderIPPool.Spec.multusName: `kube-system/sriov-test` 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
     > resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成 
 

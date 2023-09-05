@@ -34,7 +34,7 @@ jobs:
       - name: Delete CI image
         uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           organization: ${{ github.repository_owner }}
           container: ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci
           # Dry-run first, then change to `false`

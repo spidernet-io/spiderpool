@@ -141,5 +141,5 @@ jobs:
           delete-branch: true
           base: ${{ env.DEST_BRANCH }}
           signoff: true
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}

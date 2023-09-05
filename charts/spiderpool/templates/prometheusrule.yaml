@@ -5,7 +5,6 @@ metadata:
   name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ default .Release.Namespace .Values.spiderpoolAgent.prometheus.prometheusRule.namespace }}
   labels:
-    {{- include "insight.labels" . | nindent 4 }}
       {{- if .Values.spiderpoolAgent.prometheus.prometheusRule.labels }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.prometheusRule.labels "context" $ ) | nindent 4 }}
       {{- end }}
@@ -83,10 +82,9 @@ metadata:
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ default .Release.Namespace .Values.spiderpoolController.prometheus.prometheusRule.namespace }}
   labels:
-    {{- include "insight.labels" . | nindent 4 }}
-      {{- if .Values.spiderpoolController.prometheus.prometheusRule.labels }}
-      {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.prometheusRule.labels "context" $ ) | nindent 4 }}
-      {{- end }}
+    {{- if .Values.spiderpoolController.prometheus.prometheusRule.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.prometheusRule.labels "context" $ ) | nindent 4 }}
+    {{- end }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.prometheusRule.annotations }}
   annotations:
     {{- if .Values.global.commonAnnotations }}

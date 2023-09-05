@@ -5,7 +5,6 @@ metadata:
   name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ default .Release.Namespace .Values.spiderpoolAgent.prometheus.serviceMonitor.namespace }}
   labels:
-    {{- include "insight.labels" . | nindent 4 }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.prometheus.serviceMonitor.annotations }}
   annotations:
     {{- if .Values.global.commonAnnotations }}
@@ -40,8 +39,6 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ default .Release.Namespace .Values.spiderpoolController.prometheus.serviceMonitor.namespace }}
-  labels:
-    {{- include "insight.labels" . | nindent 4 }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.serviceMonitor.annotations }}
   annotations:
     {{- if .Values.global.commonAnnotations }}

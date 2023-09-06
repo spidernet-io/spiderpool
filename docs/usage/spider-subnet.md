@@ -1,5 +1,7 @@
 # SpiderSubnet
 
+**English** ｜ [**简体中文**](./spider-subnet-zh_CN.md)
+
 The Spiderpool owns a CRD SpiderSubnet, which can help applications (such as Deployment, ReplicaSet, StatefulSet, Job, CronJob, DaemonSet) to create a corresponding SpiderIPPool.
 
 Here are some annotations that you should write down on the application template Pod annotation:

@@ -224,13 +224,6 @@ generate the CA cert
 {{- end }}
 
 {{/*
-insight labels
-*/}}
-{{- define "insight.labels" -}}
-operator.insight.io/managed-by: insight
-{{- end}}
-
-{{/*
 spiderpool multus Common labels
 */}}
 {{- define "spiderpool.multus.labels" -}}

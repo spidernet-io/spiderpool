@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/netip"
 	"sort"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -205,4 +207,25 @@ func ipToInt(ip net.IP) *big.Int {
 // intToIP converts big.Int to net.IP.
 func intToIP(i *big.Int) net.IP {
 	return net.IP(i.Bytes()).To16()
+}
+
+func ParseIPOrCIDR(s string) (netip.Prefix, error) {
+	if !strings.Contains(s, "/") {
+		nAddr, err := netip.ParseAddr(s)
+		if err != nil {
+			return netip.Prefix{}, err
+		}
+
+		prefix := 32
+		if nAddr.Is6() {
+			prefix = 128
+		}
+		return netip.PrefixFrom(nAddr, prefix), nil
+	}
+
+	nPrefix, err := netip.ParsePrefix(s)
+	if err != nil {
+		return netip.Prefix{}, err
+	}
+	return nPrefix, nil
 }

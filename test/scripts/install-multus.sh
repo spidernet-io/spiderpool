@@ -231,6 +231,7 @@ EOF
 Install::MultusCR
 Install::SpiderpoolCR
 
+kubectl get spidercoordinator default -o yaml --kubeconfig ${E2E_KUBECONFIG}
 kubectl get sp -o wide --kubeconfig ${E2E_KUBECONFIG}
 kubectl get network-attachment-definitions.k8s.cni.cncf.io --kubeconfig ${E2E_KUBECONFIG} -n kube-system -o yaml
 

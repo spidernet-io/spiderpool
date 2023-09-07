@@ -5,13 +5,13 @@ package coordinatormanager
 
 import (
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
 
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
@@ -104,7 +104,7 @@ func validateCoordinatorExtraCIDR(cidrs []string) *field.Error {
 	}
 
 	for i, cidr := range cidrs {
-		_, _, err := net.ParseCIDR(cidr)
+		nPrefix, err := ip.ParseIPOrCIDR(cidr)
 		if err != nil {
 			return field.Invalid(
 				extraCIDRField.Index(i),
@@ -112,8 +112,8 @@ func validateCoordinatorExtraCIDR(cidrs []string) *field.Error {
 				err.Error(),
 			)
 		}
+		cidrs[i] = nPrefix.String()
 	}
-
 	return nil
 }
 

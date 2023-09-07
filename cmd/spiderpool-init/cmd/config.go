@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"k8s.io/utils/pointer"
-	"net/netip"
 	"os"
 	"sort"
 	"strconv"
@@ -145,13 +144,16 @@ func parseENVAsDefault() InitDefaultConfig {
 			v = strings.ReplaceAll(v, ",", " ")
 			subnets := strings.Fields(v)
 
-			for _, r := range subnets {
-				_, err := netip.ParsePrefix(r)
+			for idx, r := range subnets {
+				nPrefix, err := spiderpoolip.ParseIPOrCIDR(r)
 				if err != nil {
 					logger.Sugar().Fatalf("ENV %s invalid: %v", ENVDefaultCoordiantorHijackCIDR, err)
 				}
+				subnets[idx] = nPrefix.String()
 			}
 			config.CoordinatorHijackCIDR = subnets
+		} else {
+			config.CoordinatorHijackCIDR = []string{}
 		}
 	} else {
 		logger.Info("Ignore creating default Coordinator")

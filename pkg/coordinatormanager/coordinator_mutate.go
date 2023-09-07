@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"k8s.io/utils/pointer"
+	"net/netip"
+	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -45,6 +47,21 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 
 	if coord.Spec.PodCIDRType == nil {
 		return fmt.Errorf("PodCIDRType is not allowed to be empty")
+	}
+
+	for idx, cidr := range coord.Spec.HijackCIDR {
+		if !strings.Contains(cidr, "/") {
+			nAddr, err := netip.ParseAddr(cidr)
+			if err != nil {
+				return fmt.Errorf("invalid IP address: %v", cidr)
+			}
+
+			if nAddr.Is4() {
+				coord.Spec.HijackCIDR[idx] = fmt.Sprintf("%s/%d", cidr, 32)
+			} else if nAddr.Is6() {
+				coord.Spec.HijackCIDR[idx] = fmt.Sprintf("%s/%d", cidr, 128)
+			}
+		}
 	}
 
 	if !controllerutil.ContainsFinalizer(coord, constant.SpiderFinalizer) {

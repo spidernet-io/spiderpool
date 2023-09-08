@@ -26,7 +26,7 @@ var DefaultBackoff = wait.Backoff{
 }
 
 func OnErrorWithContext(ctx context.Context, backoff wait.Backoff, retriable func(error) bool, f func(context.Context) error) error {
-	err := wait.ExponentialBackoffWithContext(ctx, backoff, func() (bool, error) {
+	err := wait.ExponentialBackoffWithContext(ctx, backoff, func(context.Context) (bool, error) {
 		err := f(ctx)
 		switch {
 		case err == nil:

@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -65,7 +66,7 @@ func (sw *SubnetWebhook) Default(ctx context.Context, obj runtime.Object) error 
 var _ webhook.CustomValidator = (*SubnetWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Validating").With(
@@ -76,18 +77,18 @@ func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 	if errs := sw.validateCreateSubnet(logutils.IntoContext(ctx, logger), subnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create Subnet: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
+		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
 			subnet.Name,
 			errs,
 		)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	oldSubnet := oldObj.(*spiderpoolv2beta1.SpiderSubnet)
 	newSubnet := newObj.(*spiderpoolv2beta1.SpiderSubnet)
 
@@ -100,10 +101,10 @@ func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 	if newSubnet.DeletionTimestamp != nil {
 		if !controllerutil.ContainsFinalizer(newSubnet, constant.SpiderFinalizer) {
-			return nil
+			return nil, nil
 		}
 
-		return apierrors.NewForbidden(
+		return nil, apierrors.NewForbidden(
 			schema.GroupResource{},
 			"",
 			errors.New("cannot update a terminaing Subnet"),
@@ -112,17 +113,17 @@ func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 	if errs := sw.validateUpdateSubnet(logutils.IntoContext(ctx, logger), oldSubnet, newSubnet); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update Subnet: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
+		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
 			newSubnet.Name,
 			errs,
 		)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (sw *SubnetWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	return nil
+func (sw *SubnetWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
 }

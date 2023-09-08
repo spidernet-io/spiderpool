@@ -128,9 +128,10 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 		return nil
 	})
 	if err != nil {
-		if err == wait.ErrWaitTimeout {
+		if wait.Interrupted(err) {
 			err = fmt.Errorf("%w (%d times), failed to allocate IP from IPPool %s", constant.ErrRetriesExhausted, steps, poolName)
 		}
+
 		return nil, err
 	}
 
@@ -260,7 +261,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 		return nil
 	})
 	if err != nil {
-		if err == wait.ErrWaitTimeout {
+		if wait.Interrupted(err) {
 			err = fmt.Errorf("%w (%d times), failed to release IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, steps, ipAndUIDs, poolName)
 		}
 		return err
@@ -323,7 +324,7 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 		return nil
 	})
 	if err != nil {
-		if err == wait.ErrWaitTimeout {
+		if wait.Interrupted(err) {
 			err = fmt.Errorf("%w (%d times), failed to re-allocate the IP addresses %+v from IPPool %s", constant.ErrRetriesExhausted, steps, ipAndUIDs, poolName)
 		}
 		return err

@@ -292,7 +292,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Return(nil, nil).
 					Times(1)
 
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
 				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -314,7 +314,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Return(nil, nil).
 					Times(5)
 
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
 				defer patches.Reset()
 
 				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
@@ -401,7 +401,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("failed to update IPPool due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
 				data, err := convert.MarshalIPPoolAllocatedIPs(records)
@@ -418,7 +418,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("runs out of retries to update IPPool, but conflicts still occur", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
 				defer patches.Reset()
 
 				data, err := convert.MarshalIPPoolAllocatedIPs(records)
@@ -492,7 +492,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("failed to update IPPool due to some unknown errors", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
 				data, err := convert.MarshalIPPoolAllocatedIPs(records)
@@ -509,7 +509,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("runs out of retries to update IPPool, but conflicts still occur", func() {
-				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
 				defer patches.Reset()
 
 				data, err := convert.MarshalIPPoolAllocatedIPs(records)

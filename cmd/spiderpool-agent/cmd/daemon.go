@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/gops/agent"
-	"github.com/pyroscope-io/client/pyroscope"
+	"github.com/grafana/pyroscope-go"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"

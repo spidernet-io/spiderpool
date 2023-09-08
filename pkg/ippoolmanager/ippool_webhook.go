@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -66,7 +67,7 @@ func (iw *IPPoolWebhook) Default(ctx context.Context, obj runtime.Object) error 
 var _ webhook.CustomValidator = (*IPPoolWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Validating").With(
@@ -77,18 +78,18 @@ func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 	if errs := iw.validateCreateIPPoolWhileEnableSpiderSubnet(logutils.IntoContext(ctx, logger), ipPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create IPPool: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
+		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderIPPool},
 			ipPool.Name,
 			errs,
 		)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	oldIPPool := oldObj.(*spiderpoolv2beta1.SpiderIPPool)
 	newIPPool := newObj.(*spiderpoolv2beta1.SpiderIPPool)
 
@@ -101,10 +102,10 @@ func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 	if newIPPool.DeletionTimestamp != nil {
 		if !controllerutil.ContainsFinalizer(newIPPool, constant.SpiderFinalizer) {
-			return nil
+			return nil, nil
 		}
 
-		return apierrors.NewForbidden(
+		return nil, apierrors.NewForbidden(
 			schema.GroupResource{},
 			"",
 			errors.New("cannot update a terminating IPPool"),
@@ -113,17 +114,17 @@ func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 	if errs := iw.validateUpdateIPPoolWhileEnableSpiderSubnet(logutils.IntoContext(ctx, logger), oldIPPool, newIPPool); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
+		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderIPPool},
 			newIPPool.Name,
 			errs,
 		)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (iw *IPPoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	return nil
+func (iw *IPPoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
 }

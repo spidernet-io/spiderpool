@@ -6,7 +6,6 @@ package subnetmanager_test
 import (
 	"context"
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"sync/atomic"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -281,9 +281,6 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		It("cascades delete Subnet and the IPPools it controls", func() {
 			controllerutil.AddFinalizer(subnetT, constant.SpiderFinalizer)
-			now := metav1.Now()
-			subnetT.SetDeletionTimestamp(&now)
-			subnetT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
 			subnetT.SetUID(uuid.NewUUID())
 			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
@@ -292,6 +289,15 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			err = subnetIndexer.Add(subnetT)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = fakeClient.Delete(ctx, subnetT)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, subnetT)
+			Expect(err).NotTo(HaveOccurred())
+			controllerutil.RemoveFinalizer(subnetT, constant.SpiderFinalizer)
+			err = fakeClient.Update(ctx, subnetT)
 			Expect(err).NotTo(HaveOccurred())
 
 			// TODO(iiiceoo): Depends on K8s GC.

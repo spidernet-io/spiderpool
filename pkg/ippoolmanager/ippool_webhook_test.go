@@ -581,8 +581,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs invalid 'spec.ipVersion'", func() {
@@ -595,8 +596,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates IPv4 IPPool but IPv4 is disbale'", func() {
@@ -610,8 +612,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates IPv6 IPPool but IPv6 is disbale'", func() {
@@ -625,8 +628,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -641,8 +645,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("failed to list IPPools due to some unknown errors", func() {
@@ -658,8 +663,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates an existing IPPool", func() {
@@ -675,8 +681,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := tracker.Add(ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates an IPPool with the same 'spec.subnet'", func() {
@@ -691,8 +698,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.10")
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("failed to compare 'spec.subnet' with existing Subnet", func() {
@@ -712,8 +720,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("overlaps with existing Subnet", func() {
@@ -733,8 +742,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -744,8 +754,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.Default = pointer.Bool(false)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates default IPv4 IPPool", func() {
@@ -753,8 +764,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.Default = pointer.Bool(true)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -764,8 +776,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, constant.InvalidIPRange)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs 'spec.ips' that do not pertains to 'spec.subnet'", func() {
@@ -778,16 +791,18 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("is a empty IPPool", func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("exists invalid IPPool in the cluster", func() {
@@ -814,8 +829,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("overlaps with existing IPPool", func() {
@@ -842,8 +858,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -859,8 +876,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, constant.InvalidIPRange)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs 'spec.excludeIPs' that do not pertains to 'spec.subnet'", func() {
@@ -874,8 +892,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.41.10")
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -891,8 +910,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 					ipPoolT.Spec.Gateway = pointer.String(constant.InvalidIP)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs 'spec.gateway' that do not pertains to 'spec.subnet'", func() {
@@ -906,8 +926,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 					ipPoolT.Spec.Gateway = pointer.String("172.18.41.1")
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("duplicate with 'spec.ips'", func() {
@@ -921,8 +942,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("excludes gateway address through 'spec.excludeIPs'", func() {
@@ -937,8 +959,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.1")
 					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -959,8 +982,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs duplicate routes", func() {
@@ -983,8 +1007,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs invalid destination", func() {
@@ -1003,8 +1028,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs invalid gateway", func() {
@@ -1023,8 +1049,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs gateway that do not pertains to 'spec.subnet'", func() {
@@ -1043,8 +1070,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1063,8 +1091,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("sets owner reference to non-existent Subnet", func() {
@@ -1090,8 +1119,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("is a empty IPPool", func() {
@@ -1114,8 +1144,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("is out of the IP range of the Subnet", func() {
@@ -1144,8 +1175,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 
-					err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1154,8 +1186,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				Context("auto-created IPPool", func() {
@@ -1186,8 +1219,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					})
 
 					It("auto-created IPPool with owner application deployment", func() {
-						err := ipPoolWebhook.ValidateCreate(ctx, autoPool)
+						warns, err := ipPoolWebhook.ValidateCreate(ctx, autoPool)
 						Expect(err).NotTo(HaveOccurred())
+						Expect(warns).To(BeNil())
 					})
 
 					It("auto-created IPPool with modified podAffinity", func() {
@@ -1203,8 +1237,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							},
 						}
 
-						err := ipPoolWebhook.ValidateCreate(ctx, autoPool)
+						warns, err := ipPoolWebhook.ValidateCreate(ctx, autoPool)
 						Expect(err).To(HaveOccurred())
+						Expect(warns).To(BeNil())
 					})
 				})
 
@@ -1219,8 +1254,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							},
 							MatchExpressions: nil,
 						}
-						err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+						warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 						Expect(err).NotTo(HaveOccurred())
+						Expect(warns).To(BeNil())
 					})
 
 					It("invalid podAffinity with invalid label value", func() {
@@ -1233,8 +1269,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							},
 							MatchExpressions: nil,
 						}
-						err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+						warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 						Expect(err).To(HaveOccurred())
+						Expect(warns).To(BeNil())
 					})
 
 					It("empty podAffinity is invalid", func() {
@@ -1245,8 +1282,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							MatchLabels:      map[string]string{},
 							MatchExpressions: []metav1.LabelSelectorRequirement{},
 						}
-						err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+						warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 						Expect(err).To(HaveOccurred())
+						Expect(warns).To(BeNil())
 					})
 				})
 			})
@@ -1288,8 +1326,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				)
 				ipPoolT.Spec.Default = pointer.Bool(true)
 
-				err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+				warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 
 			It("creates IPv6 IPPool with all fields valid", func() {
@@ -1329,8 +1368,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				)
 				ipPoolT.Spec.Default = pointer.Bool(true)
 
-				err = ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
+				warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 		})
 
@@ -1349,8 +1389,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPVersion = nil
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("changes 'spec.ipVersion'", func() {
@@ -1366,8 +1407,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("updates IPv4 IPPool but IPv4 is disbale'", func() {
@@ -1379,8 +1421,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("updates IPv6 IPPool but IPv6 is disbale'", func() {
@@ -1392,8 +1435,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "adbc:1234::a")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1411,8 +1455,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Subnet = "172.18.40.0/25"
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1425,8 +1470,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Default = pointer.Bool(true)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1444,8 +1490,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, constant.InvalidIPRange)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("appends IP range that do not pertains to 'spec.subnet' to 'spec.ips'", func() {
@@ -1456,8 +1503,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.41.10")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("remove all 'spec.ips'", func() {
@@ -1468,8 +1516,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = []string{}
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("exists invalid IPPool in the cluster", func() {
@@ -1494,8 +1543,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("overlaps with existing IPPool", func() {
@@ -1520,8 +1570,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1539,8 +1590,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.ExcludeIPs = append(newIPPoolT.Spec.ExcludeIPs, constant.InvalidIPRange)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("appends IP range that do not pertains to 'spec.subnet' to 'spec.excludeIPs'", func() {
@@ -1556,8 +1608,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.ExcludeIPs = append(newIPPoolT.Spec.ExcludeIPs, "172.18.41.10")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1575,8 +1628,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Gateway = pointer.String(constant.InvalidIP)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("updates 'spec.gateway' to a gateway that do not pertains to 'spec.subnet'", func() {
@@ -1592,8 +1646,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Gateway = pointer.String("172.18.41.1")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("duplicate with 'spec.ips'", func() {
@@ -1609,8 +1664,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("excludes gateway address through 'spec.excludeIPs'", func() {
@@ -1627,8 +1683,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1651,8 +1708,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("appends duplicate route", func() {
@@ -1679,8 +1737,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("appends route with invalid destination", func() {
@@ -1701,8 +1760,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("appends route with invalid gateway", func() {
@@ -1723,8 +1783,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("appends route whose gateway does not pertains to 'spec.subnet'", func() {
@@ -1745,8 +1806,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 					)
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1776,8 +1838,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = newIPPoolT.Spec.IPs[:1]
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1794,8 +1857,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("updates the IPPool that sets the owner reference to non-existent Subnet", func() {
@@ -1819,8 +1883,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("remove all 'spec.ips' of IPPool", func() {
@@ -1842,8 +1907,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = []string{}
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 
 				It("is out of the IP range of the Subnet", func() {
@@ -1865,8 +1931,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newIPPoolT := ipPoolT.DeepCopy()
 					newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("update auto-created IPPool by hand", func() {
@@ -1907,8 +1974,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					newAutoPool := autoPool.DeepCopy()
 					newAutoPool.Spec.IPs = append(newAutoPool.Spec.IPs, "172.18.40.2")
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("update auto-created IPPool annotation", func() {
@@ -1954,8 +2022,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					anno["aaa"] = "test"
 					newAutoPool.Annotations = anno
 
-					err = ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, autoPool, newAutoPool)
 					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1972,8 +2041,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						},
 						MatchExpressions: nil,
 					}
-					err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newPool)
+					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newPool)
 					Expect(err).To(HaveOccurred())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -1986,8 +2056,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				newIPPoolT := ipPoolT.DeepCopy()
 				controllerutil.RemoveFinalizer(newIPPoolT, constant.SpiderFinalizer)
 
-				err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+				warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 
 			It("updates terminating Subnet", func() {
@@ -1998,8 +2069,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				newIPPoolT := ipPoolT.DeepCopy()
 
-				err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+				warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 				Expect(apierrors.IsForbidden(err)).To(BeTrue())
+				Expect(warns).To(BeNil())
 			})
 
 			It("updates IPv4 IPPool with all fields valid", func() {
@@ -2036,8 +2108,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					},
 				)
 
-				err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+				warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 
 			It("updates IPv6 IPPool with all fields valid", func() {
@@ -2074,15 +2147,17 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					},
 				)
 
-				err = ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
+				warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 		})
 
 		Describe("ValidateDelete", func() {
 			It("passes", func() {
-				err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+				warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 		})
 	})

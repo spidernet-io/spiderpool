@@ -37,7 +37,7 @@ func NewCalicoIPPoolController(mgr ctrl.Manager, coordinatorName string) (contro
 	if err != nil {
 		return nil, err
 	}
-	if err := c.Watch(&source.Kind{Type: &calicov1.IPPool{}}, &handler.EnqueueRequestForObject{}); err != nil {
+	if err := c.Watch(source.Kind(mgr.GetCache(), &calicov1.IPPool{}), &handler.EnqueueRequestForObject{}); err != nil {
 		return nil, err
 	}
 

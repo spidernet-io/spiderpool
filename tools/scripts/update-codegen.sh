@@ -53,19 +53,11 @@ GROUPS_WITH_VERSIONS="spiderpool.spidernet.io:v2beta1"
 echo "change directory: ${PROJECT_ROOT}"
 cd "${PROJECT_ROOT}"
 
-go_pkg="${go_path}/src/github.com/spidernet-io/spiderpool"
-go_pkg_dir=$(dirname "${go_pkg}")
-mkdir -p "${go_pkg_dir}"
-
-if [[ ! -e "${go_pkg_dir}" || "$(readlink "${go_pkg_dir}")" != "${PROJECT_ROOT}" ]]; then
-  ln -snf "${PROJECT_ROOT}" "${go_pkg_dir}"
-fi
-export GOPATH="${go_path}"
-
-bash ${PROJECT_ROOT}/${CODEGEN_PKG}/generate-groups.sh "client,informer,lister" \
-  ${MODULE_NAME}/${OUTPUT_PKG} \
-  ${MODULE_NAME}/${APIS_PKG} \
-  ${GROUPS_WITH_VERSIONS} \
-  --go-header-file ${LICENSE_FILE}
+bash ${PROJECT_ROOT}/${CODEGEN_PKG}/kube_codegen.sh kube::codegen::gen_client\
+    --with-watch \
+    --input-pkg-root ${MODULE_NAME}/${OUTPUT_PKG} \
+    --output-pkg-root ${MODULE_NAME}/${APIS_PKG} \
+    --output-base ${PROJECT_ROOT} \
+    --boilerplate ${LICENSE_FILE}
 
 rm -f ${LICENSE_FILE}

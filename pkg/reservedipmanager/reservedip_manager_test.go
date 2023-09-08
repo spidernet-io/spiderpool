@@ -65,7 +65,6 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				Spec: spiderpoolv2beta1.ReservedIPSpec{},
 			}
 
-			now := metav1.Now()
 			terminatingV4RIPT = &spiderpoolv2beta1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderReservedIP,
@@ -73,8 +72,8 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:                       "terminating-ipv4-reservedip",
-					DeletionTimestamp:          &now,
 					DeletionGracePeriodSeconds: pointer.Int64(30),
+					Finalizers:                 []string{constant.SpiderFinalizer},
 				},
 				Spec: spiderpoolv2beta1.ReservedIPSpec{
 					IPVersion: pointer.Int64(constant.IPv4),
@@ -264,6 +263,10 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				err = fakeClient.Create(ctx, terminatingV4RIPT)
+				Expect(err).NotTo(HaveOccurred())
+
+				// set it to terminating
+				err = fakeClient.Delete(ctx, terminatingV4RIPT)
 				Expect(err).NotTo(HaveOccurred())
 
 				ips, err := rIPManager.AssembleReservedIPs(ctx, constant.IPv4)

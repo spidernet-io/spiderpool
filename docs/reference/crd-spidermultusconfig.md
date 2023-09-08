@@ -57,6 +57,7 @@ This is the SpiderReservedIP spec for users to configure.
 | sriov             | sriov CNI configuration                           | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                                 |         |
 | ovs               | ovs CNI configuration                             | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#SpiderOvsCniConfig)         | optional   |                                 |         |
 | enableCoordinator | enable coordinator or not                         | boolean                                                                      | optional   | true,false                      | true    |
+| disableIPAM       | disable IPAM or not                               | boolean                                                                      | optional   | true,false                      | false    |
 | coordinator       | coordinator CNI configuration                     | [CoordinatorSpec](./crd-spidercoordinator.md#Spec)                           | optional   |                                 |         |
 | customCNI         | a string that represents custom CNI configuration | string                                                                       | optional   |                                 |         |
 

@@ -257,14 +257,13 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 		return nil
 	}
 
-	isExist := true
-
 	// use the annotation specified name as the CNI configuration name if set
 	netAttachName := multusConfig.Name
 	if tmpName, ok := multusConfig.Annotations[constant.AnnoNetAttachConfName]; ok {
 		netAttachName = tmpName
 	}
 
+	isExist := true
 	netAttachDef := &netv1.NetworkAttachmentDefinition{}
 	err := mcc.client.Get(ctx, ktypes.NamespacedName{
 		Namespace: multusConfig.Namespace,
@@ -356,6 +355,11 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		plugins = append(plugins, coordinatorCNIConf)
 	}
 
+	disableIPAM := false
+	if multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM {
+		disableIPAM = true
+	}
+
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
 	// the annotation custom CNI version is already validated by webhook.
 	cniVersion := cmd.CniVersion031
@@ -367,7 +371,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	var err error
 	switch multusConfSpec.CniType {
 	case MacVlanType:
-		macvlanCNIConf := generateMacvlanCNIConf(*multusConfSpec)
+		macvlanCNIConf := generateMacvlanCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{macvlanCNIConf}, plugins...)
 		if multusConfSpec.MacvlanConfig.VlanID != nil && *multusConfSpec.MacvlanConfig.VlanID != 0 {
@@ -383,7 +387,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 
 	case IpVlanType:
-		ipvlanCNIConf := generateIPvlanCNIConf(*multusConfSpec)
+		ipvlanCNIConf := generateIPvlanCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{ipvlanCNIConf}, plugins...)
 		if multusConfSpec.IPVlanConfig.VlanID != nil && *multusConfSpec.IPVlanConfig.VlanID != 0 {
@@ -402,7 +406,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
 
-		sriovCNIConf := generateSriovCNIConf(*multusConfSpec)
+		sriovCNIConf := generateSriovCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{sriovCNIConf}, plugins...)
 
@@ -411,7 +415,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
 		}
 	case OvsType:
-		ovsConf := generateOvsCNIConf(multusConfSpec)
+		ovsConf := generateOvsCNIConf(disableIPAM, multusConfSpec)
 		plugins = append([]interface{}{ovsConf}, plugins...)
 		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
 		if err != nil {
@@ -448,7 +452,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	return netAttachDef, nil
 }
 
-func generateMacvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
 	var masterName string
 
 	// choose interface basement name
@@ -467,12 +471,15 @@ func generateMacvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 
 	// TODO(Icarus9913): customize the macvlan mode
 	netConf := MacvlanNetConf{
-		Type: string(MacVlanType),
-		IPAM: spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		},
+		Type:   MacVlanType,
 		Master: masterName,
 		Mode:   "bridge",
+	}
+
+	if !disableIPAM {
+		netConf.IPAM = spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		}
 	}
 
 	// set default IPPools for spiderpool cni configuration
@@ -484,7 +491,7 @@ func generateMacvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 	return netConf
 }
 
-func generateIPvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
 	var masterName string
 
 	// choose interface basement name
@@ -501,11 +508,14 @@ func generateIPvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec)
 	}
 
 	netConf := IPvlanNetConf{
-		Type: string(IpVlanType),
-		IPAM: spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		},
+		Type:   IpVlanType,
 		Master: masterName,
+	}
+
+	if !disableIPAM {
+		netConf.IPAM = spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		}
 	}
 
 	// set default IPPools for spiderpool cni configuration
@@ -517,12 +527,15 @@ func generateIPvlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec)
 	return netConf
 }
 
-func generateSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
 	netConf := SRIOVNetConf{
-		Type: string(SriovType),
-		IPAM: spiderpoolcmd.IPAMConfig{
+		Type: SriovType,
+	}
+
+	if !disableIPAM {
+		netConf.IPAM = spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
-		},
+		}
 	}
 
 	if multusConfSpec.SriovConfig.VlanID != nil {
@@ -538,12 +551,15 @@ func generateSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) 
 	return netConf
 }
 
-func generateOvsCNIConf(multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
 	netConf := OvsNetConf{
 		Type: OvsType,
-		IPAM: spiderpoolcmd.IPAMConfig{
+	}
+
+	if !disableIPAM {
+		netConf.IPAM = spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
-		},
+		}
 	}
 
 	if multusConfSpec.OvsConfig != nil {

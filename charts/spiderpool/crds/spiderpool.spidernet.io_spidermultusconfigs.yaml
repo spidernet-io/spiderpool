@@ -90,6 +90,9 @@ spec:
                 description: OtherCniTypeConfig only used for CniType custom, valid
                   json format, can be empty
                 type: string
+              disableIPAM:
+                default: false
+                type: boolean
               enableCoordinator:
                 default: true
                 type: boolean

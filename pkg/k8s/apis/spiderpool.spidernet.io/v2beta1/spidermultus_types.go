@@ -47,6 +47,10 @@ type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	EnableCoordinator *bool `json:"enableCoordinator"`
 
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	DisableIPAM *bool `json:"disableIPAM"`
+
 	// +kubebuilder:validation:Optional
 	CoordinatorConfig *CoordinatorSpec `json:"coordinator,omitempty"`
 

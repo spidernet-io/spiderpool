@@ -346,4 +346,40 @@ var _ = Describe("IP", Label("ip_test"), func() {
 			)).To(BeNumerically(">", 0))
 		})
 	})
+
+	Describe("Test ParseIPOrCIDR", func() {
+		It("Parse an IPv4 address, expect 32 Bit Mask", func() {
+			nip := "1.1.1.1"
+			expect := "1.1.1.1/32"
+			nPrefix, err := spiderpoolip.ParseIPOrCIDR(nip)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(expect).To(Equal(nPrefix.String()))
+		})
+		It("Parse an IPv6 address, expect 128 Bit Mask", func() {
+			nip := "fd00::1"
+			expect := "fd00::1/128"
+			nPrefix, err := spiderpoolip.ParseIPOrCIDR(nip)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(expect).To(Equal(nPrefix.String()))
+		})
+		It("Parse an IPv4 CIDR", func() {
+			nip := "1.1.0.0/16"
+			expect := "1.1.0.0/16"
+			nPrefix, err := spiderpoolip.ParseIPOrCIDR(nip)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(expect).To(Equal(nPrefix.String()))
+		})
+		It("Parse an IPv6 CIDR", func() {
+			nip := "fd00::/64"
+			expect := "fd00::/64"
+			nPrefix, err := spiderpoolip.ParseIPOrCIDR(nip)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(expect).To(Equal(nPrefix.String()))
+		})
+		It("Parse an invalid string", func() {
+			str := "invalid cir"
+			_, err := spiderpoolip.ParseIPOrCIDR(str)
+			Expect(err).To(HaveOccurred())
+		})
+	})
 })

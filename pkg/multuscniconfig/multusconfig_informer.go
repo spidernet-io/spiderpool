@@ -477,7 +477,7 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = spiderpoolcmd.IPAMConfig{
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
 	}
@@ -513,7 +513,7 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = spiderpoolcmd.IPAMConfig{
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
 	}
@@ -533,7 +533,7 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = spiderpoolcmd.IPAMConfig{
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
 	}
@@ -557,7 +557,7 @@ func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.Mult
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = spiderpoolcmd.IPAMConfig{
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
 	}

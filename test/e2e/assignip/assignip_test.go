@@ -76,6 +76,11 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			}
 
 			DeferCleanup(func() {
+				if CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+					return
+				}
+
 				GinkgoWriter.Printf("Try to delete namespace %v \n", namespace)
 				err := frame.DeleteNamespace(namespace)
 				Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)

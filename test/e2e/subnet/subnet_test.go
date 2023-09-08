@@ -47,6 +47,11 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		// Delete namespaces and delete subnets
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			GinkgoWriter.Printf("delete namespace %v. \n", namespace)
 			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
 		})

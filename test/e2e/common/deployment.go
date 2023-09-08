@@ -49,7 +49,13 @@ func GenerateExampleDeploymentYaml(dpmName, namespace string, replica int32) *ap
 							Name:            "samplepod",
 							Image:           "alpine",
 							ImagePullPolicy: "IfNotPresent",
-							Command:         []string{"/bin/ash", "-c", "sleep infinity"},
+							Command:         []string{"/bin/ash", "-c", "while true; do echo 'HTTP/1.1 200 OK Hello, World!' | nc -l -p 80; done"},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "samplepod",
+									ContainerPort: 80,
+								},
+							},
 						},
 					},
 				},

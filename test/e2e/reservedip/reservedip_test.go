@@ -77,6 +77,11 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 
 		// Clean test env
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			err = frame.DeleteNamespace(nsName)
 			Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v", nsName)
 			GinkgoWriter.Printf("Successful deletion of namespace %v \n", nsName)

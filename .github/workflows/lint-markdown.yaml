@@ -30,13 +30,13 @@ jobs:
     steps:
       - name: Checkout
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ref }}
 
       - name: Checkout
         if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: markdownlint-cli
         uses: nosborn/github-action-markdown-cli@v3.3.0

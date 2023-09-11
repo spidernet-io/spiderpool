@@ -41,7 +41,7 @@ jobs:
       begin_tag: ${{ env.begin_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -121,7 +121,7 @@ jobs:
     needs: [generate_changelog]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.DEST_BRANCH }}
 

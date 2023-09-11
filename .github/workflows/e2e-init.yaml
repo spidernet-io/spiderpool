@@ -57,7 +57,7 @@ jobs:
           echo "kind node image tag: ${{ inputs.k8s_version }}"
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}

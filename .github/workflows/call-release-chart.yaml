@@ -65,7 +65,7 @@ jobs:
     needs: get_ref
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.get_ref.outputs.ref }}
 
@@ -112,7 +112,7 @@ jobs:
           echo "::set-output name=url::${url}"
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.MERGE_BRANCH }}
           persist-credentials: "true"

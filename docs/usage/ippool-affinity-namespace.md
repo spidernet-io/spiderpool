@@ -1,5 +1,7 @@
 # Namespace affinity of IPPool
 
+**English** ｜ [**简体中文**](./ippool-affinity-namespace-zh_CN.md)
+
 *Spiderpool supports affinity between IP pools and Namespaces. It means only Pods running under these Namespaces can use the IP pools that have an affinity to these Namespaces.*
 
 > *Namespace affinity should be regarded as a **filtering mechanism** rather than a [pool selection rule](TODO).*

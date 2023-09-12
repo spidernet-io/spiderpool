@@ -17,7 +17,7 @@ spec:
   hostRPFilter: 0
   hostRuleTable: 500
   mode: underlay
-  podCIDRType: cluster
+  podCIDRType: auto
   podDefaultRouteNIC: eth0
   podMACPrefix: ""
   tunePodRoutes: true
@@ -46,7 +46,7 @@ This is the Spidercoordinators spec for users to configure.
 | Field              | Description                                                  | Schema               | Validation | Values                       | Default                      |
 |--------------------|--------------------------------------------------------------|----------------------|------------|------------------------------|------------------------------|
 | mode               | The mode in which the coordinator. auto: automatically determine if it's overlay or underlay. underlay: coordinator creates veth devices to solve the problem that CNIs such as macvlan cannot communicate with clusterIP. overlay: fix the problem that CNIs such as Macvlan cannot access ClusterIP through the Calico network card attached to the pod,coordinate policy route between interfaces to ensure consistence data path of request and reply packets                     | string               | require    | auto,underlay,overlay             | auto                     |
-| podCIDRType        | The ways to fetch the CIDR of the cluster                    | string               | require    | cluster,calico,cilium,none   | cluster                      |
+| podCIDRType        | The ways to fetch the CIDR of the cluster. auto(default), This means that it will automatically switch podCIDRType to cluster or calico or cilium. based on cluster CNI. calico: auto fetch the subnet of the pod from the ip pools of calico, This only works if the cluster CNI is calico; cilium: Auto fetch the pod's subnet from cilium's configMap or ip pools. Supported IPAM modes: ["cluster-pool","kubernetes","multi-pool"]; cluster: auto fetch the subnet of the pod from the kubeadm-config configmap, This is useful if there is only a globally unique default pod's subnet; none: don't get the subnet of the pod, which is useful for some special cases. In this case,you can manually configure the hijackCIDR field  | string               | require    | auto,cluster,calico,cilium,none   | auto                      |
 | tunePodRoutes      | tune pod's route while the pod is attached to multiple NICs  | bool                 | optional   | true,false                   | true                         |
 | podDefaultRouteNIC | The NIC where the pod's default route resides                                                                                    | string               | optional   | "",eth0,net1...              | underlay: eth0,overlay: net1 |
 | detectGateway      | enable detect gateway while launching pod, If the gateway is unreachable, pod will be failed to created; Note: We use ARP probes to detect if the gateway is reachable, and some gateway routers may warn about this                                        | boolean              | optional   | true,false                   | false                        |                                          

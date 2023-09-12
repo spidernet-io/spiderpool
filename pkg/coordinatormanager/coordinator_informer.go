@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cilium/cilium/pkg/ipam/option"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -42,17 +44,19 @@ import (
 )
 
 const (
+	auto    = "auto"
 	cluster = "cluster"
 	calico  = "calico"
 	cilium  = "cilium"
 	none    = "none"
 )
 
-var SupportedPodCIDRType = []string{cluster, calico, cilium, none}
+var SupportedPodCIDRType = []string{auto, cluster, calico, cilium, none}
 
 const (
 	calicoIPPoolCRDName = "ippools.crd.projectcalico.org"
 	ciliumConfig        = "cilium-config"
+	kubeadmConfigMap    = "kubeadm-config"
 )
 
 const (
@@ -82,6 +86,8 @@ type CoordinatorController struct {
 
 	LeaderRetryElectGap time.Duration
 	ResyncPeriod        time.Duration
+
+	DefaultCniConfDir string
 }
 
 func (cc *CoordinatorController) SetupInformer(
@@ -308,8 +314,8 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	}
 
 	coordCopy := coord.DeepCopy()
-	var cmPodList corev1.PodList
-	if err := cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"}); err != nil {
+	var kubeadmConfig *corev1.ConfigMap
+	if kubeadmConfig, err = cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(kubeadmConfigMap); err != nil {
 		event.EventRecorder.Eventf(
 			coordCopy,
 			corev1.EventTypeWarning,
@@ -328,8 +334,9 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 
 		return err
 	}
-	if len(cmPodList.Items) == 0 {
-		msg := `Failed to get kube-controller-manager Pod with label "component: kube-controller-manager"`
+
+	if kubeadmConfig == nil {
+		msg := fmt.Sprintf("failed to get configmap: %s/%s", metav1.NamespaceSystem, kubeadmConfigMap)
 		event.EventRecorder.Eventf(
 			coordCopy,
 			corev1.EventTypeWarning,
@@ -349,8 +356,13 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		return errors.New(msg)
 	}
 
-	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(&cmPodList.Items[0])
+	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(kubeadmConfig)
 	switch *coord.Spec.PodCIDRType {
+	case auto:
+		podCidrType := fetchType(cc.DefaultCniConfDir)
+		logger.Sugar().Infof("spidercoordinator change podCIDRType from auto to %v", podCidrType)
+		coord.Spec.PodCIDRType = &podCidrType
+		fallthrough
 	case cluster:
 		if cc.caliCtrlCanncel != nil {
 			cc.caliCtrlCanncel()
@@ -358,7 +370,6 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		}
 		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
-
 	case calico:
 		var crd apiextensionsv1.CustomResourceDefinition
 		err := cc.APIReader.Get(ctx, types.NamespacedName{Name: calicoIPPoolCRDName}, &crd)
@@ -430,29 +441,63 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			}
 			return err
 		}
-		ipam, ciliumPodCIDR, err := extractCiliumCIDR(ccm)
-		if err != nil {
-			logger.Sugar().Warnf("Failed to gather Pod CIDR form Cilium: %v", err)
-			if coordCopy.Status.Phase != NotReady {
-				coordCopy.Status.Phase = NotReady
-				coordCopy.Status.OverlayPodCIDR = []string{}
-				coordCopy.Status.ServiceCIDR = []string{}
-				if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
-					return err
+
+		ipam := ccm.Data["ipam"]
+		switch ipam {
+		case option.IPAMClusterPool, option.IPAMClusterPoolV2:
+			var podCIDR []string
+			v4, ok := ccm.Data["cluster-pool-ipv4-cidr"]
+			if ok {
+				parts := strings.Split(v4, " ")
+				for _, cidr := range parts {
+					_, _, err := net.ParseCIDR(cidr)
+					if err != nil {
+						continue
+					}
+					podCIDR = append(podCIDR, cidr)
 				}
 			}
-			break
-		}
-		coordCopy.Status.Phase = Synced
-		coordCopy.Status.OverlayPodCIDR = ciliumPodCIDR
-		if ipam == "kubernetes" {
-			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
-		}
+			v6, ok := ccm.Data["cluster-pool-ipv6-cidr"]
+			if ok {
+				parts := strings.Split(v6, " ")
+				for _, cidr := range parts {
+					_, _, err := net.ParseCIDR(cidr)
+					if err != nil {
+						continue
+					}
+					podCIDR = append(podCIDR, cidr)
+				}
+			}
+			coordCopy.Status.OverlayPodCIDR = podCIDR
+		case option.IPAMMultiPool:
+			// start controller
+			controller, err := NewCiliumIPPoolController(cc.Manager, coordinatorName)
+			if err != nil {
+				return err
+			}
 
+			ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
+			go func() {
+				logger.Info("Starting Cilium IPPool controller")
+				if err := controller.Start(ctx); err != nil {
+					logger.Sugar().Errorf("Failed to start Cilium IPPool controller: %v", err)
+				}
+				logger.Info("Shutdown Cilium IPPool controller")
+				if cc.caliCtrlCanncel != nil {
+					cc.caliCtrlCanncel()
+					cc.caliCtrlCanncel = nil
+				}
+			}()
+		case option.IPAMKubernetes:
+			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
+			coordCopy.Status.Phase = Synced
+		default:
+			logger.Sugar().Infof("unsupported CIlium IPAM mode: %v", ipam)
+			return fmt.Errorf("unsupported CIlium IPAM mode: %v", ipam)
+		}
 	case none:
 		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = []string{}
-		coordCopy.Status.ServiceCIDR = []string{}
 	}
 
 	coordCopy.Status.ServiceCIDR = k8sServiceCIDR
@@ -463,27 +508,20 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	return cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord))
 }
 
-func extractK8sCIDR(cmPod *corev1.Pod) ([]string, []string) {
+func extractK8sCIDR(kubeadmConfig *corev1.ConfigMap) ([]string, []string) {
 	var podCIDR, serviceCIDR []string
 
-	podReg := regexp.MustCompile(`--cluster-cidr=(.*)`)
-	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
+	podReg := regexp.MustCompile(`podSubnet: (.*)`)
+	serviceReg := regexp.MustCompile(`serviceSubnet: (.*)`)
 
-	var podSubnet, serviceSubnet []string
-	for _, l := range cmPod.Spec.Containers[0].Command {
-		if len(podSubnet) == 0 {
-			podSubnet = podReg.FindStringSubmatch(l)
-		}
-		if len(serviceSubnet) == 0 {
-			serviceSubnet = serviceReg.FindStringSubmatch(l)
-		}
-		if len(podSubnet) != 0 && len(serviceSubnet) != 0 {
-			break
-		}
+	var podSubnets, serviceSubnets []string
+	for _, data := range kubeadmConfig.Data {
+		podSubnets = podReg.FindStringSubmatch(data)
+		serviceSubnets = serviceReg.FindStringSubmatch(data)
 	}
 
-	if len(podSubnet) != 0 {
-		for _, cidr := range strings.Split(podSubnet[1], ",") {
+	if len(podSubnets) != 0 {
+		for _, cidr := range strings.Split(podSubnets[1], ",") {
 			_, _, err := net.ParseCIDR(cidr)
 			if err != nil {
 				continue
@@ -492,8 +530,8 @@ func extractK8sCIDR(cmPod *corev1.Pod) ([]string, []string) {
 		}
 	}
 
-	if len(serviceSubnet) != 0 {
-		for _, cidr := range strings.Split(serviceSubnet[1], ",") {
+	if len(serviceSubnets) != 0 {
+		for _, cidr := range strings.Split(serviceSubnets[1], ",") {
 			_, _, err := net.ParseCIDR(cidr)
 			if err != nil {
 				continue
@@ -505,42 +543,18 @@ func extractK8sCIDR(cmPod *corev1.Pod) ([]string, []string) {
 	return podCIDR, serviceCIDR
 }
 
-func extractCiliumCIDR(ciliumConfig *corev1.ConfigMap) (string, []string, error) {
-	var (
-		ipam    string
-		podCIDR []string
-		err     error
-	)
-
-	ipam = ciliumConfig.Data["ipam"]
-	switch ipam {
-	case "cluster-pool", "cluster-pool-v2beta":
-		v4, ok := ciliumConfig.Data["cluster-pool-ipv4-cidr"]
-		if ok {
-			parts := strings.Split(v4, " ")
-			for _, cidr := range parts {
-				_, _, err := net.ParseCIDR(cidr)
-				if err != nil {
-					continue
-				}
-				podCIDR = append(podCIDR, cidr)
-			}
-		}
-		v6, ok := ciliumConfig.Data["cluster-pool-ipv6-cidr"]
-		if ok {
-			parts := strings.Split(v6, " ")
-			for _, cidr := range parts {
-				_, _, err := net.ParseCIDR(cidr)
-				if err != nil {
-					continue
-				}
-				podCIDR = append(podCIDR, cidr)
-			}
-		}
-	case "kubernetes":
-	default:
-		err = fmt.Errorf("unsupported IPAM mode: %v", ipam)
+func fetchType(cniDir string) string {
+	defaultCniName, err := utils.GetDefaultCniName(cniDir)
+	if err != nil {
+		return cluster
 	}
 
-	return ipam, podCIDR, err
+	switch defaultCniName {
+	case "calico", "k8s-pod-network":
+		return calico
+	case cilium:
+		return cilium
+	default:
+		return cluster
+	}
 }

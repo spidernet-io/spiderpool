@@ -326,6 +326,11 @@ func (in *MultusCNIConfigSpec) DeepCopyInto(out *MultusCNIConfigSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DisableIPAM != nil {
+		in, out := &in.DisableIPAM, &out.DisableIPAM
+		*out = new(bool)
+		**out = **in
+	}
 	if in.CoordinatorConfig != nil {
 		in, out := &in.CoordinatorConfig, &out.CoordinatorConfig
 		*out = new(CoordinatorSpec)

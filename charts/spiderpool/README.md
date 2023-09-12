@@ -135,7 +135,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `coordinator.enabled`          | enable SpiderCoordinator                                                                                                                 | `true`               |
 | `coordinator.name`             | the name of the default SpiderCoordinator CR                                                                                             | `default`            |
 | `coordinator.mode`             | optional network mode, ["auto","underlay", "overlay", "disabled"]                                                                        | `auto`               |
-| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]                                                                | `cluster`            |
+| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "auto", "cluster", "calico", "cilium", "none" ]                                                | `auto`               |
 | `coordinator.detectGateway`    | detect the reachability of the gateway                                                                                                   | `false`              |
 | `coordinator.detectIPConflict` | detect IP address conflicts                                                                                                              | `false`              |
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                                                                                          | `true`               |

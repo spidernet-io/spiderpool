@@ -88,6 +88,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
 
 	{"SPIDERPOOL_COORDINATOR_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.CoordinatorInformerResyncPeriod},
+	{"SPIDERPOOL_CNI_CONFIG_DIR", "/etc/cni/net.d", false, &controllerContext.Cfg.DefaultCniConfDir, nil, nil},
 
 	{"SPIDERPOOL_MULTUS_CONFIG_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableMultusConfig, nil},
 	{"SPIDERPOOL_MULTUS_CONFIG_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.MultusConfigInformerResyncPeriod},
@@ -116,11 +117,12 @@ type Config struct {
 	EnableDebugLevelMetric bool
 	MetricRenewPeriod      int
 
-	HttpPort         string
-	MetricHttpPort   string
-	WebhookPort      string
-	GopsListenPort   string
-	PyroscopeAddress string
+	HttpPort          string
+	MetricHttpPort    string
+	WebhookPort       string
+	GopsListenPort    string
+	PyroscopeAddress  string
+	DefaultCniConfDir string
 
 	ControllerPodNamespace string
 	ControllerPodName      string

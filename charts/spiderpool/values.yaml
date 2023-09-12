@@ -93,8 +93,8 @@ coordinator:
   ## @param coordinator.mode optional network mode, ["auto","underlay", "overlay", "disabled"]
   mode: "auto"
 
-  ## @param coordinator.podCIDRType Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]
-  podCIDRType: "cluster"
+  ## @param coordinator.podCIDRType Pod CIDR type that should be collected, [ "auto", "cluster", "calico", "cilium", "none" ]
+  podCIDRType: "auto"
 
   ## @param coordinator.detectGateway detect the reachability of the gateway
   detectGateway: false

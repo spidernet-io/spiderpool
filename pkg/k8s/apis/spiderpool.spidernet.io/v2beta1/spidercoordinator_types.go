@@ -17,7 +17,7 @@ type CoordinatorSpec struct {
 	// in spidermultusconfig CRD , podCIDRType should not be required, which could be merged from SpiderCoordinator CR
 	// but in SpiderCoordinator CRD, podCIDRType should be required
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=cluster;calico;cilium;none
+	// +kubebuilder:validation:Enum=auto;cluster;calico;cilium;none
 	PodCIDRType *string `json:"podCIDRType,omitempty"`
 
 	// +kubebuilder:validation:Optional

@@ -451,6 +451,7 @@ func setupInformers() {
 		APIReader:           controllerContext.CRDManager.GetAPIReader(),
 		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 		ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
+		DefaultCniConfDir:   controllerContext.Cfg.DefaultCniConfDir,
 	}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
 		logger.Fatal(err.Error())
 	}

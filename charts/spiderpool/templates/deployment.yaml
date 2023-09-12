@@ -169,6 +169,8 @@ spec:
           value: {{ .Values.ipam.gc.gcAll.intervalInSecond | quote }}
         - name: SPIDERPOOL_MULTUS_CONFIG_ENABLED
           value: {{ .Values.multus.enableMultusConfig | quote }}
+        - name: SPIDERPOOL_CNI_CONFIG_DIR
+          value: {{ .Values.global.cniConfHostPath | quote }}
         - name: SPIDERPOOL_POD_NAME
           valueFrom:
             fieldRef:
@@ -188,6 +190,9 @@ spec:
         - name: config-path
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
+        - name: cni-conf-dir
+          mountPath: {{ .Values.global.cniConfHostPath }}
+          readOnly: true
         - name: tls
           mountPath: /etc/tls
           readOnly: true
@@ -199,6 +204,10 @@ spec:
       - name: config-path
         configMap:
           name: {{ .Values.global.configName }}
+      - name: cni-conf-dir
+        hostPath:
+          path:  {{ .Values.global.cniConfHostPath }}
+          type: DirectoryOrCreate
       - name: tls
         projected:
           defaultMode: 0400

@@ -7,3 +7,4 @@
 | V00003  | status.phase is not-ready, expect the cidr of status to be empty         | p3       |       |        |       |
 | V00004  | spidercoordinator has the lowest priority                                | p3       |       |        |       |
 | V00005  | status.phase is not-ready, pods will fail to run                         | p3       |       |        |       |
+| V00006  | check that podClusterType is auto if works                               | p3       |       |        |       |

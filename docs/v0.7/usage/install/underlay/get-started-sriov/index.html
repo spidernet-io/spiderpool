@@ -1482,89 +1482,81 @@ helm<span class="w"> </span>install<span class="w"> </span>-n<span class="w"> </
 <p>After installation, the node may reboot automatically. If necessary, install sriov-network-operator to the designated worker nodes.</p>
 </blockquote>
 <ol>
-<li>Configure sriov-network-operator</li>
-</ol>
+<li>
+<p>Configure sriov-network-operator</p>
 <p>Firstly, check the status of SriovNetworkNodeState CRs to confirm that sriov-network-operator has found a network card on the node that supports the SR-IOV feature.</p>
-<pre><code>```shell
-$ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
-apiVersion: sriovnetwork.openshift.io/v1
-kind: SriovNetworkNodeState
-spec: ...
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sriovnetworknodestates.sriovnetwork.openshift.io<span class="w"> </span>-n<span class="w"> </span>sriov-network-operator<span class="w"> </span>node-1<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>sriovnetwork.openshift.io/v1
+kind:<span class="w"> </span>SriovNetworkNodeState
+spec:<span class="w"> </span>...
 status:
-  interfaces:
-  - deviceID: "1017"
-    driver: mlx5_core
-    linkSpeed: 10000 Mb/s
-    linkType: ETH
-    mac: 04:3f:72:d0:d2:86
-    mtu: 1500
-    name: enp4s0f0np0
-    pciAddress: "0000:04:00.0"
-    totalvfs: 8
-    vendor: 15b3
-  - deviceID: "1017"
-    driver: mlx5_core
-    linkSpeed: 10000 Mb/s
-    linkType: ETH
-    mac: 04:3f:72:d0:d2:87
-    mtu: 1500
-    name: enp4s0f1np1
-    pciAddress: "0000:04:00.1"
-    totalvfs: 8
-    vendor: 15b3
-  syncStatus: Succeeded
-```
-</code></pre>
+<span class="w">  </span>interfaces:
+<span class="w">  </span>-<span class="w"> </span>deviceID:<span class="w"> </span><span class="s2">&quot;1017&quot;</span>
+<span class="w">    </span>driver:<span class="w"> </span>mlx5_core
+<span class="w">    </span>linkSpeed:<span class="w"> </span><span class="m">10000</span><span class="w"> </span>Mb/s
+<span class="w">    </span>linkType:<span class="w"> </span>ETH
+<span class="w">    </span>mac:<span class="w"> </span><span class="m">04</span>:3f:72:d0:d2:86
+<span class="w">    </span>mtu:<span class="w"> </span><span class="m">1500</span>
+<span class="w">    </span>name:<span class="w"> </span>enp4s0f0np0
+<span class="w">    </span>pciAddress:<span class="w"> </span><span class="s2">&quot;0000:04:00.0&quot;</span>
+<span class="w">    </span>totalvfs:<span class="w"> </span><span class="m">8</span>
+<span class="w">    </span>vendor:<span class="w"> </span>15b3
+<span class="w">  </span>-<span class="w"> </span>deviceID:<span class="w"> </span><span class="s2">&quot;1017&quot;</span>
+<span class="w">    </span>driver:<span class="w"> </span>mlx5_core
+<span class="w">    </span>linkSpeed:<span class="w"> </span><span class="m">10000</span><span class="w"> </span>Mb/s
+<span class="w">    </span>linkType:<span class="w"> </span>ETH
+<span class="w">    </span>mac:<span class="w"> </span><span class="m">04</span>:3f:72:d0:d2:87
+<span class="w">    </span>mtu:<span class="w"> </span><span class="m">1500</span>
+<span class="w">    </span>name:<span class="w"> </span>enp4s0f1np1
+<span class="w">    </span>pciAddress:<span class="w"> </span><span class="s2">&quot;0000:04:00.1&quot;</span>
+<span class="w">    </span>totalvfs:<span class="w"> </span><span class="m">8</span>
+<span class="w">    </span>vendor:<span class="w"> </span>15b3
+<span class="w">  </span>syncStatus:<span class="w"> </span>Succeeded
+</code></pre></div>
 <p>As can be seen from the above, interfaces 'enp4s0f0np0' and 'enp4s0f1np1' on node 'node-1' both have SR-IOV capability and support a maximum number of VFs of 8. Below we will configure the VFs by creating SriovNetworkNodePolicy CRs and install sriov-device-plugin:</p>
-<pre><code>```shell
-$ cat &lt;&lt; EOF | kubectl apply -f -
-apiVersion: sriovnetwork.openshift.io/v1
-kind: SriovNetworkNodePolicy
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span>&lt;&lt;<span class="w"> </span>EOF<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
+apiVersion:<span class="w"> </span>sriovnetwork.openshift.io/v1
+kind:<span class="w"> </span>SriovNetworkNodePolicy
 metadata:
-  name: policy1
-  namespace: sriov-network-operator
+<span class="w">  </span>name:<span class="w"> </span>policy1
+<span class="w">  </span>namespace:<span class="w"> </span>sriov-network-operator
 spec:
-  deviceType: netdevice
-  nicSelector:
-  pfNames:
-  - enp4s0f0np0
-  nodeSelector:
-    kubernetes.io/hostname: node-1 
-  numVfs: 8 # The number of VFs desired
-  resourceName: sriov_netdevice
-```
-
-After creating the SriovNetworkNodePolicy CRs, check the status of the SriovNetworkNodeState CRs again to see that the VFs in status have been configured:
-
-```shell
-$ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+<span class="w">  </span>deviceType:<span class="w"> </span>netdevice
+<span class="w">  </span>nicSelector:
+<span class="w">  </span>pfNames:
+<span class="w">  </span>-<span class="w"> </span>enp4s0f0np0
+<span class="w">  </span>nodeSelector:
+<span class="w">    </span>kubernetes.io/hostname:<span class="w"> </span>node-1<span class="w"> </span>
+<span class="w">  </span>numVfs:<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="c1"># The number of VFs desired</span>
+<span class="w">  </span>resourceName:<span class="w"> </span>sriov_netdevice
+</code></pre></div>
+<p>After creating the SriovNetworkNodePolicy CRs, check the status of the SriovNetworkNodeState CRs again to see that the VFs in status have been configured:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sriovnetworknodestates.sriovnetwork.openshift.io<span class="w"> </span>-n<span class="w"> </span>sriov-network-operator<span class="w"> </span>node-1<span class="w"> </span>-o<span class="w"> </span>yaml
 ...
-- Vfs:
-    - deviceID: 1018
-      driver: mlx5_core
-      pciAddress: 0000:04:00.4
-      vendor: "15b3"
-    - deviceID: 1018
-      driver: mlx5_core
-      pciAddress: 0000:04:00.5
-      vendor: "15b3"
-    - deviceID: 1018
-      driver: mlx5_core
-      pciAddress: 0000:04:00.6
-      vendor: "15b3"
-    deviceID: "1017"
-    driver: mlx5_core
-    mtu: 1500
-    numVfs: 8
-    pciAddress: 0000:04:00.0
-    totalvfs: 8
-    vendor: "8086"
+-<span class="w"> </span>Vfs:
+<span class="w">    </span>-<span class="w"> </span>deviceID:<span class="w"> </span><span class="m">1018</span>
+<span class="w">      </span>driver:<span class="w"> </span>mlx5_core
+<span class="w">      </span>pciAddress:<span class="w"> </span><span class="m">0000</span>:04:00.4
+<span class="w">      </span>vendor:<span class="w"> </span><span class="s2">&quot;15b3&quot;</span>
+<span class="w">    </span>-<span class="w"> </span>deviceID:<span class="w"> </span><span class="m">1018</span>
+<span class="w">      </span>driver:<span class="w"> </span>mlx5_core
+<span class="w">      </span>pciAddress:<span class="w"> </span><span class="m">0000</span>:04:00.5
+<span class="w">      </span>vendor:<span class="w"> </span><span class="s2">&quot;15b3&quot;</span>
+<span class="w">    </span>-<span class="w"> </span>deviceID:<span class="w"> </span><span class="m">1018</span>
+<span class="w">      </span>driver:<span class="w"> </span>mlx5_core
+<span class="w">      </span>pciAddress:<span class="w"> </span><span class="m">0000</span>:04:00.6
+<span class="w">      </span>vendor:<span class="w"> </span><span class="s2">&quot;15b3&quot;</span>
+<span class="w">    </span>deviceID:<span class="w"> </span><span class="s2">&quot;1017&quot;</span>
+<span class="w">    </span>driver:<span class="w"> </span>mlx5_core
+<span class="w">    </span>mtu:<span class="w"> </span><span class="m">1500</span>
+<span class="w">    </span>numVfs:<span class="w"> </span><span class="m">8</span>
+<span class="w">    </span>pciAddress:<span class="w"> </span><span class="m">0000</span>:04:00.0
+<span class="w">    </span>totalvfs:<span class="w"> </span><span class="m">8</span>
+<span class="w">    </span>vendor:<span class="w"> </span><span class="s2">&quot;8086&quot;</span>
 ...
-```
-
-You can see the sriov resource named 'spidernet/sriov_netdevice' has been configured in Node object, where the number of VFs is 8:
-
-```shell
+</code></pre></div>
+<p>You can see the sriov resource named 'spidernet/sriov_netdevice' has been configured in Node object, where the number of VFs is 8:</p>
+<p>```shell
 ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
 {
   "cpu": "24",
@@ -1574,8 +1566,9 @@ You can see the sriov resource named 'spidernet/sriov_netdevice' has been config
   "spidernet/sriov_netdevice": "8",
   "memory": "16247944Ki",
   "pods": "110"
-}
-</code></pre>
+}</p>
+</li>
+</ol>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>

@@ -322,11 +322,6 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./docs/develop/CODE-OF-CONDUCT.md).
 
-## Slack
-
-If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
-and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
-
 ## Adopters
 
 A list of adopters who are deploying Spiderpool in production, and of their use cases, can be found in [file](./docs/USERS.md).
@@ -335,6 +330,19 @@ A list of adopters who are deploying Spiderpool in production, and of their use 
 
 We welcome contributions of any kind.
 If you have any questions about contributing, please consult the [contributing documentation](./docs/develop/contributing.md).
+
+## Contact
+
+If you have any questions about Spiderpool, please feel free to contact us through the following ways 👏:
+
+* Slack: If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
+and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
+
+* Emails: Any issues can be reported via e-mail addresses listed in the [MAINTAINERS.md](MAINTAINERS.md) file.
+
+* Wechat group: You can scan the QR code below to join our spiderpool tech-group:
+
+![Wechat QR-Code](docs/images/wechat.png)
 
 ## License
 

@@ -317,3 +317,14 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 ## Roadmap
 
 [roadmap](./develop/roadmap.md)
+
+## Contact
+
+If you have any questions about Spiderpool, please feel free to contact us through the following ways 👏:
+
+* Slack: If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
+  and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
+
+* Wechat group: You can scan the QR code below to join our spiderpool tech-group:
+
+![Wechat QR-Code](images/wechat.png)

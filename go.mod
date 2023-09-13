@@ -35,7 +35,7 @@ require (
 	github.com/spidernet-io/e2eframework v0.0.0-20230724150324-2eee77078275
 	github.com/spidernet-io/spiderdoctor v0.3.0
 	github.com/tigera/operator v1.30.5
-	github.com/vishvananda/netlink v1.2.1-beta.2
+	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.39.0
 	go.opentelemetry.io/otel/metric v1.16.0

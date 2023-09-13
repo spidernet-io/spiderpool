@@ -459,7 +459,7 @@ github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1
 # github.com/toqueteos/webbrowser v1.2.0
 ## explicit; go 1.12
 github.com/toqueteos/webbrowser
-# github.com/vishvananda/netlink v1.2.1-beta.2
+# github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
 ## explicit; go 1.12
 github.com/vishvananda/netlink
 github.com/vishvananda/netlink/nl

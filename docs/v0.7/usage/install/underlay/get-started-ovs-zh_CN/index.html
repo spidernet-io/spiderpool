@@ -1408,7 +1408,7 @@
 ~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;默认网关IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
 </code></pre></div>
 </li>
-</ol>
+<li>
 <p>创建后，可以在每个节点上查看到如下的网桥信息：</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
 ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
@@ -1422,6 +1422,8 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
 <span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
 <span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
 </code></pre></div>
+</li>
+</ol>
 <h2 id="spiderpool">安装 Spiderpool</h2>
 <ol>
 <li>
@@ -1472,22 +1474,22 @@ ippool-test<span class="w">   </span><span class="m">4</span><span class="w">   
 </li>
 <li>
 <p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Ovs SpiderMultusConfig 配置的示例：</p>
-</li>
-<li>
-<p>确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:</p>
-<p><code>shell
-BRIDGE_NAME="br1"
-cat &lt;&lt;EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: ovs-conf
-  namespace: kube-system
-spec:
-  cniType: ovs
-  ovs:
-    bridge: "${BRIDGE_NAME}"
-  EOF</code></p>
+<ul>
+<li>确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nv">BRIDGE_NAME</span><span class="o">=</span><span class="s2">&quot;br1&quot;</span>
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ovs-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ovs</span>
+<span class="s">  ovs:</span>
+<span class="s">    bridge: &quot;${BRIDGE_NAME}&quot;</span>
+<span class="s">EOF</span>
+</code></pre></div>
 </li>
 </ol>
 <h2 id="_2">创建应用</h2>

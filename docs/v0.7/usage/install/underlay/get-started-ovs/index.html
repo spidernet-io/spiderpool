@@ -1474,7 +1474,7 @@
 ~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;默认网关IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
 </code></pre></div>
 </li>
-</ol>
+<li>
 <p>Once created, the following bridge information can be viewed on each node:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
 ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
@@ -1488,6 +1488,8 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
 <span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
 <span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
 </code></pre></div>
+</li>
+</ol>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
@@ -1539,22 +1541,22 @@ ippool-test<span class="w">   </span><span class="m">4</span><span class="w">   
 </li>
 <li>
 <p>To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating an ovs-cni SpiderMultusConfig configuration:</p>
-</li>
-<li>
-<p>Confirm the required host bridge for ovs-cni, for example based on the command <code>ovs-vsctl show</code>, this example takes the host bridge: <code>br1</code> as an example.</p>
-<p><code>shell
-BRIDGE_NAME="br1"
-cat &lt;&lt;EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: ovs-conf
-  namespace: kube-system
-spec:
-  cniType: ovs
-  ovs:
-    bridge: "${BRIDGE_NAME}"
-  EOF</code></p>
+<ul>
+<li>Confirm the required host bridge for ovs-cni, for example based on the command <code>ovs-vsctl show</code>, this example takes the host bridge: <code>br1</code> as an example.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nv">BRIDGE_NAME</span><span class="o">=</span><span class="s2">&quot;br1&quot;</span>
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ovs-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ovs</span>
+<span class="s">  ovs:</span>
+<span class="s">    bridge: &quot;${BRIDGE_NAME}&quot;</span>
+<span class="s">EOF</span>
+</code></pre></div>
 </li>
 </ol>
 <h2 id="create-applications">Create applications</h2>

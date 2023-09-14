@@ -62,7 +62,7 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 	}
 
 	// Select IPPool candidates through the Namespace annotations
-	// "ipam.spidernet.io/defaultv4ippool" and "ipam.spidernet.io/defaultv6ippool".
+	// "ipam.spidernet.io/default-ipv4-ippool" and "ipam.spidernet.io/default-ipv6-ippool".
 	t, err := i.getPoolFromNS(ctx, pod.Namespace, *addArgs.IfName, addArgs.CleanGateway)
 	if err != nil {
 		return nil, err

@@ -66,6 +66,7 @@ nav:
   - Usage:
       - SpiderSubnet: usage/spider-subnet.md
       - SpiderMultusConfig: usage/spider-multus-config.md
+      - IPPool Selection Rules: usage/spider-allocation.md
       - Default IPPool at namespace: usage/ippool-namespace.md
       - Multiple interfaces: usage/multi-interfaces-annotation.md
       - Backup IPPool: usage/ippool-multi.md

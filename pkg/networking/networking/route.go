@@ -45,7 +45,7 @@ func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
 	gws := make([]string, 0)
 	for _, route := range routes {
 		if route.LinkIndex == link.Attrs().Index {
-			if route.Dst == nil {
+			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) {
 				gws = append(gws, route.Gw.String())
 			}
 		} else {
@@ -261,14 +261,16 @@ func GetDefaultRouteInterface(ipfamily int, filterInterface string, netns ns.Net
 		}
 
 		for idx := range routes {
-			if routes[idx].Dst == nil {
-				// found default route
-				defaultInterface, err = getDefaultRouteIface(routes[idx].LinkIndex, filterInterface)
-				if err != nil {
-					return err
-				}
-				if defaultInterface != "" {
-					return nil
+			if routes[idx].Family == netlink.FAMILY_V4 {
+				if routes[idx].Dst == nil || routes[idx].Dst.IP.Equal(net.IPv4zero) {
+					// found default route
+					defaultInterface, err = getDefaultRouteIface(routes[idx].LinkIndex, filterInterface)
+					if err != nil {
+						return err
+					}
+					if defaultInterface != "" {
+						return nil
+					}
 				}
 			}
 		}

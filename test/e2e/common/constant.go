@@ -53,6 +53,8 @@ var (
 	MacvlanUnderlayVlan0        string = "macvlan-vlan0"
 	MacvlanVlan100              string = "macvlan-vlan100"
 	MacvlanVlan200              string = "macvlan-vlan200"
+	SpiderPoolIPv4SubnetDefault string = "default-v4-subnet"
+	SpiderPoolIPv6SubnetDefault string = "default-v6-subnet"
 	SpiderPoolIPv4SubnetVlan100 string = "vlan100-v4"
 	SpiderPoolIPv6SubnetVlan100 string = "vlan100-v6"
 	SpiderPoolIPv4SubnetVlan200 string = "vlan200-v4"

@@ -185,6 +185,31 @@ elif [ "$TYPE"x == "detail"x ] ; then
         docker exec $NODE ip link show
     done
 
+    echo "=============== Check the network information of the pod ============== "
+    CHECK_POD=$(kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "kube-system" | awk '{printf "%s,%s\n",$1,$2}')
+    if [ -n "$CHECK_POD" ]; then
+          echo "check pod:"
+          echo "${CHECK_POD}"
+          for LINE in ${CHECK_POD}; do
+              NS_NAME=${LINE//,/ }
+              echo "--------------- execute ip a in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip a
+              echo "--------------- execute ip link show in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip link show
+              echo "--------------- execute ip n in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip n
+              echo "--------------- execute ip -6 n in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 n
+              echo "--------------- execute ip rule in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip rule
+              echo "--------------- execute ip -6 rule in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 rule
+              echo "--------------- execute ip route in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip route
+              echo "--------------- execute ip -6 route in pod: ${NS_NAME} ------------"
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 route
+          done
+    fi
 
 elif [ "$TYPE"x == "error"x ] ; then
     CHECK_ERROR(){

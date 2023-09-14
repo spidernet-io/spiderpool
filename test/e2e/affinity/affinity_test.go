@@ -44,6 +44,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err = frame.DeleteNamespace(namespace)
 			Expect(err).NotTo(HaveOccurred())

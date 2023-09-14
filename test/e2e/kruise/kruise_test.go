@@ -53,6 +53,11 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 		}
 
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			GinkgoWriter.Printf("delete namespace %v. \n", namespace)
 			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
 

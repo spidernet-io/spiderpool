@@ -72,6 +72,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		// Clean test env
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			GinkgoWriter.Printf("delete namespace %v \n", nsName)
 			Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("delete v4subnet %v v4 pool %v, v6subnet %v v6 pool %v\n", v4SubnetName, globalV4PoolName, v6SubnetName, globalV6PoolName)

@@ -10,10 +10,10 @@ Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI被
 
 下面我们将详细的介绍 coordinator 如何解决或实现这些功能。
 
-> 注意: 
-> 
+> 注意:
+>
 > 如果您通过 `SpinderMultusConfig CR`  帮助创建 NetworkAttachmentDefinition CR，您可以在 `SpinderMultusConfig` 中配置 `coordinator` (所有字段)。参考: [SpinderMultusConfig](../reference/crd-spidermultusconfig.md)。
-> 
+>
 > `Spidercoordinators CR` 作为 `coordinator` 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 `Spidercoordinators CR` 作为缺省值。更多详情参考: [Spidercoordinator](../reference/crd-spidercoordinator.md)。
 
 ## 解决 Underlay Pod 无法访问 ClusterIP 的问题
@@ -34,7 +34,7 @@ ClusterIP 的路由，导致无法访问。
 - 能够利用底层网络设备对 Pod 做访问控制
 - 不依赖隧道技术，Pod 网络通信的性能得到显著提高
 
-使用注意: 
+使用注意:
 
 - Pod 访问集群东西向流量(ClusterIP)时，流量会先跳给本地宿主机，本地宿主机使用自己的IP去访问目的pod，因此，流量的转发可能借助外部路由器进行三层跳转，因此，请确保相关三层网络的通达。
 

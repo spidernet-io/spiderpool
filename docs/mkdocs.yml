@@ -69,9 +69,7 @@ nav:
       - Default IPPool at namespace: usage/ippool-namespace.md
       - Multiple interfaces: usage/multi-interfaces-annotation.md
       - Backup IPPool: usage/ippool-multi.md
-      - Namespace affinity of IPPool: usage/ippool-affinity-namespace.md
-      - Node affinity of IPPool: usage/ippool-affinity-node.md
-      - Pod affinity of IPPool: usage/ippool-affinity-pod.md
+      - Affinity of IPPool: usage/spider-affinity.md
       - IPv6 support: usage/ipv6.md
       - StatefulSet: usage/statefulset.md
       - Reserved IP: usage/reserved-ip.md

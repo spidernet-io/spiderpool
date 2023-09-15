@@ -36,6 +36,8 @@ helm repo update spiderpool
 helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
 ```
 
+> Subnet 功能默认是关闭的，使用 Helm 安装时，通过 `--set ipam.enableSpiderSubnet=true` 启用该功能。
+>
 > 如果您所在地区是中国大陆，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
 >
 > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。

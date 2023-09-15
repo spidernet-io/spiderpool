@@ -185,6 +185,17 @@ elif [ "$TYPE"x == "detail"x ] ; then
         docker exec $NODE ip link show
     done
 
+    echo ""
+    echo "=============== api-server logs ============== "
+    CHECK_POD=$(kubectl get pod -o wide -n kube-system --kubeconfig ${E2E_KUBECONFIG} | grep kube-apiserver | awk '{print $1}')
+    for POD in $CHECK_POD ; do
+      echo ""
+      echo "--------- kubectl logs ${POD} -n kube-system "
+      kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n kube-system --previous"
+      kubectl logs ${POD} -n kube-system --kubeconfig ${E2E_KUBECONFIG} --previous
+    done
+
     echo "=============== Check the network information of the pod ============== "
     CHECK_POD=$(kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "kube-system" | awk '{printf "%s,%s\n",$1,$2}')
     if [ -n "$CHECK_POD" ]; then

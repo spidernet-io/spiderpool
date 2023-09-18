@@ -31,12 +31,12 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	BeforeEach(func() {
 		if frame.Info.SpiderSubnetEnabled {
 			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(20)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 20)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(20)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 20)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 			}

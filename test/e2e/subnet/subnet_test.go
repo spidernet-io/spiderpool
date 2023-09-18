@@ -86,12 +86,12 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		BeforeEach(func() {
 			frame.EnableLog = false
 			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 			}
@@ -255,12 +255,12 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(nodeList).NotTo(BeNil())
 			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetAvailableIpNum)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetAvailableIpNum)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetAvailableIpNum)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetAvailableIpNum)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 			}
@@ -490,9 +490,9 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		BeforeEach(func() {
 			deployName = "deploy" + tools.RandomName()
-			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(10)
+			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 10)
 			Expect(v4SubnetObject).NotTo(BeNil())
-			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(10)
+			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 10)
 			Expect(v6SubnetObject).NotTo(BeNil())
 			// Delete namespaces and delete subnets
 			DeferCleanup(func() {
@@ -878,13 +878,13 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			// Generate example v4 or v6 subnetObject/poolObject
 			if frame.Info.IpV4Enabled {
-				_, v4SubnetObject = common.GenerateExampleV4SubnetObject(200)
+				_, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 200)
 				_, v4PoolObject = common.GenerateExampleIpv4poolObject(200)
 				v4PoolObject.Spec.Subnet = v4SubnetObject.Spec.Subnet
 				v4PoolObject.Spec.IPs = v4SubnetObject.Spec.IPs
 			}
 			if frame.Info.IpV6Enabled {
-				_, v6SubnetObject = common.GenerateExampleV6SubnetObject(200)
+				_, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 200)
 				_, v6PoolObject = common.GenerateExampleIpv6poolObject(200)
 				v6PoolObject.Spec.Subnet = v6SubnetObject.Spec.Subnet
 				v6PoolObject.Spec.IPs = v6SubnetObject.Spec.IPs
@@ -1155,20 +1155,20 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		BeforeEach(func() {
 			// Create multiple subnets
 			if frame.Info.IpV4Enabled {
-				v4SubnetName1, v4SubnetObject1 = common.GenerateExampleV4SubnetObject(10)
+				v4SubnetName1, v4SubnetObject1 = common.GenerateExampleV4SubnetObject(frame, 10)
 				Expect(v4SubnetObject1).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject1)).NotTo(HaveOccurred())
 
-				v4SubnetName2, v4SubnetObject2 = common.GenerateExampleV4SubnetObject(10)
+				v4SubnetName2, v4SubnetObject2 = common.GenerateExampleV4SubnetObject(frame, 10)
 				Expect(v4SubnetObject2).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject2)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6SubnetName1, v6SubnetObject1 = common.GenerateExampleV6SubnetObject(10)
+				v6SubnetName1, v6SubnetObject1 = common.GenerateExampleV6SubnetObject(frame, 10)
 				Expect(v6SubnetObject1).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject1)).NotTo(HaveOccurred())
 
-				v6SubnetName2, v6SubnetObject2 = common.GenerateExampleV6SubnetObject(10)
+				v6SubnetName2, v6SubnetObject2 = common.GenerateExampleV6SubnetObject(frame, 10)
 				Expect(v6SubnetObject2).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject2)).NotTo(HaveOccurred())
 			}
@@ -1505,13 +1505,13 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			v4SubnetNameList, v6SubnetNameList = []string{}, []string{}
 
 			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 				v4SubnetNameList = append(v4SubnetNameList, v4SubnetName)
 			}
 			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 				v6SubnetNameList = append(v6SubnetNameList, v6SubnetName)
@@ -1670,7 +1670,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			var newV4SubnetName, newV6SubnetName string
 			var newV4SubnetObject, newV6SubnetObject *spiderpool.SpiderSubnet
 			if frame.Info.IpV4Enabled {
-				newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+				newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
 				Expect(newV4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, newV4SubnetObject)).NotTo(HaveOccurred())
 				v4SubnetNameList = append(v4SubnetNameList, newV4SubnetName)
@@ -1678,7 +1678,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				subnetsAnno[1].IPv4 = []string{newV4SubnetName}
 			}
 			if frame.Info.IpV6Enabled {
-				newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+				newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
 				Expect(newV6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, newV6SubnetObject)).NotTo(HaveOccurred())
 				v6SubnetNameList = append(v6SubnetNameList, newV6SubnetName)
@@ -1820,7 +1820,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		GinkgoWriter.Printf("generate dirty Pool name: %v \n", dirtyPoolName)
 
 		if frame.Info.IpV4Enabled {
-			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(subnetIpNum)
+			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
 			Expect(v4SubnetObject).NotTo(BeNil())
 			Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 
@@ -1862,7 +1862,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		}
 		if frame.Info.IpV6Enabled {
-			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(subnetIpNum)
+			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
 			Expect(v6SubnetObject).NotTo(BeNil())
 			Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 			preAllocations := spiderpool.PoolIPPreAllocations{

@@ -31,12 +31,12 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 		if frame.Info.SpiderSubnetEnabled {
 			// Subnet Adaptation
 			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(5)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 5)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(5)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 5)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 			}

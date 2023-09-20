@@ -126,9 +126,8 @@ func (c *coordinator) mustGetRuleNumber(spiderNics []string) int {
 		return unix.RT_TABLE_MAIN
 	} else if spiderNics[0] == c.currentInterface {
 		return defaultPodRuleTable
-	} else {
-		return defaultPodRuleTable + len(spiderNics) - 1
 	}
+	return defaultPodRuleTable + len(spiderNics) - 1
 }
 
 // setupVeth sets up a pair of virtual ethernet devices. move one to the host and other
@@ -393,10 +392,10 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 	}
 
 	if podDefaultRouteNIC == "" {
+		// TODO(cyclinder): should we be return?
 		logger.Warn("podDefaultRouteNIC no found in pod, ignore tuneRoutes")
 		return nil
 	}
-
 	logger.Sugar().Infof("podDefaultRouteNIC: %v", podDefaultRouteNIC)
 
 	// make sure that traffic sent from current interface to lookup table <ruleTable>

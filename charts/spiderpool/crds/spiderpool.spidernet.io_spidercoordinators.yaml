@@ -4,7 +4,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
-  creationTimestamp: null
   name: spidercoordinators.spiderpool.spidernet.io
 spec:
   group: spiderpool.spidernet.io
@@ -64,6 +63,7 @@ spec:
                   which could be merged from SpiderCoordinator CR but in SpiderCoordinator
                   CRD, podCIDRType should be required
                 enum:
+                - auto
                 - cluster
                 - calico
                 - cilium

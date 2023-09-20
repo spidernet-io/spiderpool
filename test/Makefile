@@ -182,15 +182,6 @@ setup_spiderpool:
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
-		  if [ "$(INSTALL_CILIUM)" == "true" ] ; then \
-			HELM_OPTION+=" --set coordinator.podCIDRType=cilium " ; \
-		  elif [ "$(INSTALL_CALICO)" == "true" ]; then \
-			HELM_OPTION+=" --set coordinator.podCIDRType=calico " ; \
-          else \
-            HELM_OPTION+=" --set coordinator.podCIDRType=cluster " ; \
-          fi ; \
-		fi ; \
 		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
 		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
@@ -221,30 +212,37 @@ setup_spiderpool:
 		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=120 " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
+			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
 			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4Gateway=$${ipv4_gateway}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=false" ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
+			ipv6_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=false --set clusterDefaultPool.installIPv6IPPool=true" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv6Gateway=$${ipv6_gateway}" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=false --set ipam.enableIPv6=true" ; \
 		else \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
+			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
+			ipv6_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}') ; \
 			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=true" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPPoolName=default-v4-ippool --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4Subnet=$${ipv4_subnet} --set clusterDefaultPool.ipv6Subnet=$${ipv6_subnet}" ; \
+			HELM_OPTION+=" --set clusterDefaultPool.ipv4Gateway=$${ipv4_gateway} --set clusterDefaultPool.ipv6Gateway=$${ipv6_gateway} " ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=true" ; \
 		fi ; \

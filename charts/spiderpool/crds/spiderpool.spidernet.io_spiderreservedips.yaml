@@ -4,7 +4,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
-  creationTimestamp: null
   name: spiderreservedips.spiderpool.spidernet.io
 spec:
   group: spiderpool.spidernet.io

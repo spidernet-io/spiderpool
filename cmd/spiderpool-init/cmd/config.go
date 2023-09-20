@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"k8s.io/utils/pointer"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -277,31 +276,6 @@ func parseENVAsDefault() InitDefaultConfig {
 	logger.Sugar().Infof("Init default config: %+v", config)
 
 	return config
-}
-
-func findDefaultCNIConf(cniDir string) (string, error) {
-	cnifiles, err := libcni.ConfFiles(cniDir, []string{".conf", ".conflist"})
-	if err != nil {
-		return "", fmt.Errorf("failed to load cni files in %s: %v", cniDir, err)
-	}
-
-	logger.Sugar().Infof("found cni config in %s: %v", cniDir, cnifiles)
-
-	var cniPluginConfigs []string
-	for _, file := range cnifiles {
-		if strings.Contains(file, "00-multus") {
-			continue
-		}
-		cniPluginConfigs = append(cniPluginConfigs, file)
-	}
-
-	if len(cniPluginConfigs) == 0 {
-		return "", nil
-	}
-	sort.Strings(cniPluginConfigs)
-
-	logger.Sugar().Infof("the cni config file \"%s\" is the alphabetically first name in the %s directory on each node", cniPluginConfigs[0], cniDir)
-	return cniPluginConfigs[0], nil
 }
 
 // parseCNIFromConfig parse cni's name and type from given cni config path

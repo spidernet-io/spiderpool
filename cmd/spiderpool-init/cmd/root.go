@@ -15,6 +15,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
 )
 
 var logger *zap.Logger
@@ -163,7 +164,7 @@ func Execute() {
 }
 
 func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir string, ns string) error {
-	defaultCNIConfPath, err := findDefaultCNIConf(cniDir)
+	defaultCNIConfPath, err := utils.GetDefaultCNIConfPath(cniDir)
 	if err != nil {
 		logger.Sugar().Errorf("failed to findDefaultCNIConf: %v", err)
 		return fmt.Errorf("failed to findDefaultCNIConf: %v", err)
@@ -174,6 +175,7 @@ func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir 
 		logger.Sugar().Warnf("No network found in %s, Skip create multuscniconfig", cniDir)
 		return nil
 	}
+	logger.Sugar().Infof("the cni config file \"%s\" is the alphabetically first name in the %s directory on each node", defaultCNIConfPath, cniDir)
 
 	// parse default cni config
 	cniName, cniType, err := parseCNIFromConfig(defaultCNIConfPath)

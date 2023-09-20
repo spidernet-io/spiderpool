@@ -120,9 +120,15 @@ default via 10.6.0.1 dev eth0
 
 上述问题我们可以通过设置 coordinator 运行在 overlay 模式解决。 在此模式下，`coordinator` 不会创建 veth 设备，而是设置一些策略路由，确保 Pod 访问 ClusterIP 时从 eth0(通常由 Calico、Cilium等CNI创建) 转发，Pod 访问集群外部目标时从 net1 (通常由 Macvlan、IPvlan 等CNI创建) 转发。
 
+> 在 Overlay 模式下，Spiderpool 会自动同步集群缺省 CNI 的 Pod 子网，这些子网用于在多网卡 Pod 中设置路由，以实现它访问由缺省 CNI 创建的 Pod 之间的正常通信时，从 `eth0` 转发。这个配置对应 `spidercoordinator.spec.podCIDRType`，默认为 `auto`, 可选值: ["auto","calico","cilium","cluster","none"]
+>
+> 这些路由是在 Pod 启动时注入的，如果相关的 cidr 发生了变动，无法自动生效到已经 Running 的 Pod 中，这需要重启 Pod 才能生效
+>
+> 更多详情参考 [CRD-Spidercoordinator](../reference/crd-spidercoordinator.md)
+
 ![overlay](../images/spiderpool-overlay.jpg)
 
-我们通过一些例子来介绍这个模式:
+我们通过一个例子来介绍这个模式:
 
 ```yaml
 apiVersion: k8s.cni.cncf.io/v1

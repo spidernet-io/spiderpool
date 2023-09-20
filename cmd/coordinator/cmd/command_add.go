@@ -268,6 +268,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error("coordinator must be working with spiderpool: no spiderendpoint records found", zap.Strings("spiderNics", c.podNics))
 		return fmt.Errorf("coordinator must be working with spiderpool: no spiderendpoint records found")
 	}
+	logger.Debug("Get currentRuleTable", zap.Int("ruleTable", c.currentRuleTable))
 
 	if err = c.setupHostRoutes(logger); err != nil {
 		logger.Error(err.Error())

@@ -152,7 +152,7 @@ jobs:
 
       # some event, the tag is not sha, so checkout it and get sha
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           ref: ${{ env.RUN_TAG }}

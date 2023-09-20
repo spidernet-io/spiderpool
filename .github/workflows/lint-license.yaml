@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Checkout Source Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           ref: ${{ steps.version.outputs.ref }}

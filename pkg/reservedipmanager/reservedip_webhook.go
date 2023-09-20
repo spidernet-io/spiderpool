@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -60,7 +61,7 @@ func (rw *ReservedIPWebhook) Default(ctx context.Context, obj runtime.Object) er
 var _ webhook.CustomValidator = (*ReservedIPWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	rIP := obj.(*spiderpoolv2beta1.SpiderReservedIP)
 
 	logger := WebhookLogger.Named("Validating").With(
@@ -72,18 +73,18 @@ func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Obj
 
 	if errs := rw.validateCreateReservedIP(logutils.IntoContext(ctx, logger), rIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to create ReservedIP: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
+		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderReservedIP},
 			rIP.Name,
 			errs,
 		)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	oldRIP := oldObj.(*spiderpoolv2beta1.SpiderReservedIP)
 	newRIP := newObj.(*spiderpoolv2beta1.SpiderReservedIP)
 
@@ -97,10 +98,10 @@ func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj 
 
 	if newRIP.DeletionTimestamp != nil {
 		if oldRIP.DeletionTimestamp == nil {
-			return nil
+			return nil, nil
 		}
 
-		return apierrors.NewForbidden(
+		return nil, apierrors.NewForbidden(
 			schema.GroupResource{},
 			"",
 			errors.New("cannot update a terminating ReservedIP"),
@@ -109,17 +110,17 @@ func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj 
 
 	if errs := rw.validateUpdateReservedIP(logutils.IntoContext(ctx, logger), oldRIP, newRIP); len(errs) != 0 {
 		logger.Sugar().Errorf("Failed to update ReservedIP: %v", errs.ToAggregate().Error())
-		return apierrors.NewInvalid(
+		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderReservedIP},
 			newRIP.Name,
 			errs,
 		)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (rw *ReservedIPWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	return nil
+func (rw *ReservedIPWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
 }

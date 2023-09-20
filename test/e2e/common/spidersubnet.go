@@ -31,10 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var usedSubnets map[string]bool
 var usedSubnetsLock = new(lock.Mutex)
 
-func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet) {
+func GenerateExampleV4SubnetObject(f *frame.Framework, ipNum int) (string, *spiderpool.SpiderSubnet) {
 	usedSubnetsLock.Lock()
 	defer usedSubnetsLock.Unlock()
 
@@ -43,7 +42,7 @@ func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 		Fail("the IP range should be between 1 and 65533")
 	}
 	subnetName := "v4-ss-" + GenerateString(15, true)
-	subnetObj := &spiderpool.SpiderSubnet{
+	newSubnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: subnetName,
 		},
@@ -56,28 +55,27 @@ func GenerateExampleV4SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 		randNum1 := GenerateRandomNumber(255)
 		randNum2 := GenerateRandomNumber(255)
 		if ipNum <= 253 {
-			subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
 		} else {
-			subnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
 		}
-		if usedSubnets == nil {
-			usedSubnets = make(map[string]bool)
-		}
-		_, ok := usedSubnets[subnetObj.Spec.Subnet]
-		if !ok {
-			usedSubnets[subnetObj.Spec.Subnet] = true
+		oldSubnets, _ := GetAllSubnet(f)
+		for _, oldSubnet := range oldSubnets.Items {
+			if newSubnetObj.Spec.Subnet == oldSubnet.Spec.Subnet {
+				continue
+			}
 			break
 		}
 	}
-	ips, err := GenerateIPs(subnetObj.Spec.Subnet, ipNum+1)
+	ips, err := GenerateIPs(newSubnetObj.Spec.Subnet, ipNum+1)
 	Expect(err).NotTo(HaveOccurred())
 	gateway := ips[0]
-	subnetObj.Spec.Gateway = &gateway
-	subnetObj.Spec.IPs = ips[1:]
-	return subnetName, subnetObj
+	newSubnetObj.Spec.Gateway = &gateway
+	newSubnetObj.Spec.IPs = ips[1:]
+	return subnetName, newSubnetObj
 }
 
-func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet) {
+func GenerateExampleV6SubnetObject(f *frame.Framework, ipNum int) (string, *spiderpool.SpiderSubnet) {
 	usedSubnetsLock.Lock()
 	defer usedSubnetsLock.Unlock()
 
@@ -87,7 +85,7 @@ func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 	}
 
 	subnetName := "v6-ss-" + GenerateString(15, true)
-	subnetObj := &spiderpool.SpiderSubnet{
+	newSubnetObj := &spiderpool.SpiderSubnet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: subnetName,
 		},
@@ -98,25 +96,24 @@ func GenerateExampleV6SubnetObject(ipNum int) (string, *spiderpool.SpiderSubnet)
 	for i := 0; i < 5; i++ {
 		randNum := GenerateString(4, true)
 		if ipNum <= 253 {
-			subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
 		} else {
-			subnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
 		}
-		if usedSubnets == nil {
-			usedSubnets = make(map[string]bool)
-		}
-		_, ok := usedSubnets[subnetObj.Spec.Subnet]
-		if !ok {
-			usedSubnets[subnetObj.Spec.Subnet] = true
+		oldSubnets, _ := GetAllSubnet(f)
+		for _, oldSubnet := range oldSubnets.Items {
+			if newSubnetObj.Spec.Subnet == oldSubnet.Spec.Subnet {
+				continue
+			}
 			break
 		}
 	}
-	ips, err := GenerateIPs(subnetObj.Spec.Subnet, ipNum+1)
+	ips, err := GenerateIPs(newSubnetObj.Spec.Subnet, ipNum+1)
 	Expect(err).NotTo(HaveOccurred())
 	gateway := ips[0]
-	subnetObj.Spec.Gateway = &gateway
-	subnetObj.Spec.IPs = ips[1:]
-	return subnetName, subnetObj
+	newSubnetObj.Spec.Gateway = &gateway
+	newSubnetObj.Spec.IPs = ips[1:]
+	return subnetName, newSubnetObj
 }
 
 func CreateSubnet(f *frame.Framework, subnet *spiderpool.SpiderSubnet, opts ...client.CreateOption) error {
@@ -414,9 +411,9 @@ func BatchCreateSubnet(f *frame.Framework, version types.IPVersion, subnetNums, 
 OUTER_FOR:
 	for i := 1; i <= subnetNums; i++ {
 		if version == constant.IPv4 {
-			subnetName, subnetObject = GenerateExampleV4SubnetObject(subnetIpNums)
+			subnetName, subnetObject = GenerateExampleV4SubnetObject(f, subnetIpNums)
 		} else {
-			subnetName, subnetObject = GenerateExampleV6SubnetObject(subnetIpNums)
+			subnetName, subnetObject = GenerateExampleV6SubnetObject(f, subnetIpNums)
 		}
 
 		if d, ok := CirdMap[subnetObject.Spec.Subnet]; ok {
@@ -479,4 +476,17 @@ func GetClusterDefaultSubnet(f *frame.Framework) (v4SubnetList, v6SubnetList []s
 	}
 
 	return v4SubnetList, v6SubnetList, nil
+}
+
+func GetAllSubnet(f *frame.Framework, opts ...client.ListOption) (*spiderpool.SpiderSubnetList, error) {
+	if f == nil {
+		return nil, errors.New("wrong input")
+	}
+
+	v := &spiderpool.SpiderSubnetList{}
+	e := f.ListResource(v, opts...)
+	if e != nil {
+		return nil, e
+	}
+	return v, nil
 }

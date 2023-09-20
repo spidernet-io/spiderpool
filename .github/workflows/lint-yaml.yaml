@@ -32,13 +32,13 @@ jobs:
     steps:
       - name: Checkout
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag }}
 
       - name: Checkout
         if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: yaml-lint
         id: yaml-lint
@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload artifact digests
         if: ${{ steps.yaml-lint.outcome == 'failure' }}
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: log
           path: ${{ steps.yaml-lint.outputs.logfile }}

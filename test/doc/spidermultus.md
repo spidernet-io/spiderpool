@@ -18,3 +18,4 @@
 | M00020  | Already have multus cr, spidermultus should take care of it                     | p3     |       |  done  |       |
 | M00022  | The value of webhook verification cniType is inconsistent with cniConf          | p3     |       | done |       |
 | M00023  | vlan is not in the range of 0-4094 and will not be created                    | p3     |       |  done  |       |
+| M00024  | set disableIPAM to true and see if multus's nad has ipam config                    | p3     |       |  done  |       |

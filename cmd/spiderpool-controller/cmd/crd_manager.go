@@ -18,6 +18,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	runtimeWebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
@@ -43,11 +45,15 @@ func newCRDManager() (ctrl.Manager, error) {
 	config.QPS = 100
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Scheme:                 scheme,
-		Port:                   port,
-		CertDir:                path.Dir(controllerContext.Cfg.TlsServerCertPath),
-		MetricsBindAddress:     "0",
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 		HealthProbeBindAddress: "0",
+		WebhookServer: runtimeWebhook.NewServer(runtimeWebhook.Options{
+			Port:    port,
+			CertDir: path.Dir(controllerContext.Cfg.TlsServerCertPath),
+		}),
 	})
 	if err != nil {
 		return nil, err

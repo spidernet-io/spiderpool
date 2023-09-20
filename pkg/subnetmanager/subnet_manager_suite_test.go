@@ -66,6 +66,7 @@ var _ = BeforeSuite(func() {
 			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
+		WithStatusSubresource(&spiderpoolv2beta1.SpiderSubnet{}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
@@ -76,6 +77,7 @@ var _ = BeforeSuite(func() {
 			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
+		WithStatusSubresource(&spiderpoolv2beta1.SpiderSubnet{}).
 		Build()
 
 	fakeDynamicClient = dynamicfake.NewSimpleDynamicClient(scheme)

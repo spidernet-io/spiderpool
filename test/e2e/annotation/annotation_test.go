@@ -36,7 +36,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			globalV4PoolName, globalv4pool = common.GenerateExampleIpv4poolObject(10)
 			if frame.Info.SpiderSubnetEnabled {
 				GinkgoWriter.Printf("Create v4 subnet %v and v4 pool %v \n", v4SubnetName, globalV4PoolName)
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(100)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalv4pool, 3)
@@ -51,7 +51,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			globalV6PoolName, globalv6pool = common.GenerateExampleIpv6poolObject(10)
 			if frame.Info.SpiderSubnetEnabled {
 				GinkgoWriter.Printf("Create v6 subnet %v and v6 pool %v \n", v6SubnetName, globalV6PoolName)
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(100)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalv6pool, 3)
@@ -72,6 +72,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		// Clean test env
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			GinkgoWriter.Printf("delete namespace %v \n", nsName)
 			Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("delete v4subnet %v v4 pool %v, v6subnet %v v6 pool %v\n", v4SubnetName, globalV4PoolName, v6SubnetName, globalV6PoolName)
@@ -187,7 +192,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				}]`),
 	)
 
-	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Label("A00001"), Pending, func() {
+	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Label("xxxxx"), Pending, func() {
 		var (
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
@@ -579,7 +584,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
 			Expect(v4Pool).NotTo(BeNil())
 			if frame.Info.SpiderSubnetEnabled {
-				newv4SubnetName, newv4SubnetObject = common.GenerateExampleV4SubnetObject(100)
+				newv4SubnetName, newv4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
 				Expect(newv4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, newv4SubnetObject)).NotTo(HaveOccurred())
 				err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool, 1)
@@ -593,7 +598,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
 			Expect(v6Pool).NotTo(BeNil())
 			if frame.Info.SpiderSubnetEnabled {
-				newv6SubnetName, newv6SubnetObject = common.GenerateExampleV6SubnetObject(100)
+				newv6SubnetName, newv6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
 				Expect(newv6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, newv6SubnetObject)).NotTo(HaveOccurred())
 				err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool, 1)

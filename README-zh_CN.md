@@ -174,7 +174,7 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
     可参考[例子](./docs/usage/ippool-affinity-pod.md#shared-ippool)。
 
 * 对于 StatefulSet 应用，Spiderpool 支持自动为每一个 Pod 固定 IP 地址，也可控制应用所有 Pod 所使用的 IP 范围。
-  可参考[例子](./docs/usage/statefulset.md)。
+  可参考[例子](./docs/usage/statefulset-zh_CN.md)。
 
 * Subnet 功能，一方面，能够实现基础设施管理员和应用管理员的职责分离。
 
@@ -260,10 +260,6 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 [Maintainers and Committers](./docs/USERS.md)， 遵循 [governance document](./docs/develop/CODE-OF-CONDUCT.md).
 
-## Slack
-
-[#Spiderpool](https://cloud-native.slack.com/messages/spiderpool)
-
 ## 使用者
 
 使用了 spiderpool 项目的用户 [file](./docs/USERS.md).
@@ -272,6 +268,18 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 可参考 [开发搭建文档](./docs/develop/contributing.md).
 
+## 联系我们
+
+如果有任何关于 Spiderpool 的问题，欢迎您随时通过以下的方式联系我们👏:
+
+* Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCD Slack 的 **[邀请](https://slack.cncf.io/)**
+  然后加入 [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 的频道。
+
+* Emails: 您可以查看 [MAINTAINERS.md](MAINTAINERS.md) 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。
+
+* Wechat Group: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
+
+![Wechat QR-Code](docs/images/wechat.png))
 
 ## License
 

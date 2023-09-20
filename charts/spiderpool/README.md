@@ -117,7 +117,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`  |
 | `ipam.enableIPv6`                      | enable ipv6                                                                                      | `true`  |
 | `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`  |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `false` |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`  |
 | `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`     |
 | `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`  |
 | `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`   |
@@ -130,16 +130,16 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### coordinator parameters
 
-| Name                           | Description                                                               | Value     |
-| ------------------------------ | ------------------------------------------------------------------------- | --------- |
-| `coordinator.enabled`          | enable SpiderCoordinator                                                  | `true`    |
-| `coordinator.name`             | the name of the default SpiderCoordinator CR                              | `default` |
-| `coordinator.mode`             | optional network mode, ["auto","underlay", "overlay", "disabled"]         | `auto`    |
-| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ] | `cluster` |
-| `coordinator.detectGateway`    | detect the reachability of the gateway                                    | `false`   |
-| `coordinator.detectIPConflict` | detect IP address conflicts                                               | `false`   |
-| `coordinator.tunePodRoutes`    | tune Pod routes                                                           | `true`    |
-| `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward           | `[]`      |
+| Name                           | Description                                                                                                                              | Value                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `coordinator.enabled`          | enable SpiderCoordinator                                                                                                                 | `true`               |
+| `coordinator.name`             | the name of the default SpiderCoordinator CR                                                                                             | `default`            |
+| `coordinator.mode`             | optional network mode, ["auto","underlay", "overlay", "disabled"]                                                                        | `auto`               |
+| `coordinator.podCIDRType`      | Pod CIDR type that should be collected, [ "cluster", "calico", "cilium" ]                                                                | `cluster`            |
+| `coordinator.detectGateway`    | detect the reachability of the gateway                                                                                                   | `false`              |
+| `coordinator.detectIPConflict` | detect IP address conflicts                                                                                                              | `false`              |
+| `coordinator.tunePodRoutes`    | tune Pod routes                                                                                                                          | `true`               |
+| `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS | `["169.254.0.0/16"]` |
 
 ### multus parameters
 

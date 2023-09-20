@@ -306,4 +306,3 @@ nginx-1c8wcv2sg5-jcwla   1/1     Running   0          32s    172.200.0.163    wo
 ```
 
 经过测试，Pod 各种连通性正常。
-

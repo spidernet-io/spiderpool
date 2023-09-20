@@ -5,7 +5,6 @@ metadata:
   name: {{ default "spiderpool" .Values.global.nameOverride }}
   namespace: {{ default .Release.Namespace .Values.grafanaDashboard.namespace }}
   labels:
-    {{- include "insight.labels" . | nindent 4 }}
     {{- if .Values.global.commonLabels }}
     {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}

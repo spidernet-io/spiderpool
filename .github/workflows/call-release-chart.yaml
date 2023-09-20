@@ -65,7 +65,7 @@ jobs:
     needs: get_ref
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.get_ref.outputs.ref }}
 
@@ -90,7 +90,7 @@ jobs:
           mv charts/*.tgz tmp
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: chart_package_artifact
           path: tmp/*
@@ -112,7 +112,7 @@ jobs:
           echo "::set-output name=url::${url}"
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.MERGE_BRANCH }}
           persist-credentials: "true"

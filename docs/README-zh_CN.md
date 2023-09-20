@@ -174,7 +174,7 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
   可参考[例子](./usage/ippool-affinity-pod.md#shared-ippool)。
 
 * 对于 StatefulSet 应用，Spiderpool 支持自动为每一个 Pod 固定 IP 地址，也可控制应用所有 Pod 所使用的 IP 范围。
-  可参考[例子](./usage/statefulset.md)。
+  可参考[例子](./usage/statefulset-zh_CN.md)。
 
 * Subnet 功能，一方面，能够实现基础设施管理员和应用管理员的职责分离。
 
@@ -255,3 +255,14 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 ## Roadmap
 
 [roadmap](./develop/roadmap.md)
+
+## 联系我们
+
+如果有任何关于 Spiderpool 的问题，欢迎您随时通过以下的方式联系我们👏:
+
+* Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCD Slack 的 **[邀请](https://slack.cncf.io/)**
+  然后加入 [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 的频道。
+
+* Wechat Group: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
+
+![Wechat QR-Code](images/wechat.png)

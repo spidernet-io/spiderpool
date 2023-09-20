@@ -1,5 +1,7 @@
 # Reserved IP
 
+**English** ｜ [**简体中文**](./reserved-ip-zh_CN.md)
+
 *Spiderpool reserve some IP addresses for the whole Kubernetes cluster, which will not be used by any IPAM allocation results. Typically, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).*
 
 ## IPPool excludeIPs

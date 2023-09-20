@@ -65,6 +65,7 @@ var _ = BeforeSuite(func() {
 			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 		}).
+		WithStatusSubresource(&spiderpoolv2beta1.SpiderIPPool{}).
 		Build()
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
@@ -79,6 +80,7 @@ var _ = BeforeSuite(func() {
 			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 		}).
+		WithStatusSubresource(&spiderpoolv2beta1.SpiderIPPool{}).
 		Build()
 
 	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)

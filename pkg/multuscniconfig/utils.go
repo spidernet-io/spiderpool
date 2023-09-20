@@ -42,23 +42,23 @@ const (
 )
 
 type MacvlanNetConf struct {
-	Type   string                   `json:"type"`
-	Master string                   `json:"master"`
-	Mode   string                   `json:"mode"`
-	IPAM   spiderpoolcmd.IPAMConfig `json:"ipam"`
+	Type   string                    `json:"type"`
+	Master string                    `json:"master"`
+	Mode   string                    `json:"mode"`
+	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type IPvlanNetConf struct {
-	Type   string                   `json:"type"`
-	Master string                   `json:"master"`
-	IPAM   spiderpoolcmd.IPAMConfig `json:"ipam"`
+	Type   string                    `json:"type"`
+	Master string                    `json:"master"`
+	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type SRIOVNetConf struct {
-	Vlan     *int32                   `json:"vlan,omitempty"`
-	Type     string                   `json:"type"`
-	DeviceID string                   `json:"deviceID,omitempty"`
-	IPAM     spiderpoolcmd.IPAMConfig `json:"ipam"`
+	Vlan     *int32                    `json:"vlan,omitempty"`
+	Type     string                    `json:"type"`
+	DeviceID string                    `json:"deviceID,omitempty"`
+	IPAM     *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type OvsNetConf struct {
@@ -66,7 +66,7 @@ type OvsNetConf struct {
 	Type     string                     `json:"type"`
 	BrName   string                     `json:"bridge"`
 	DeviceID string                     `json:"deviceID,omitempty"`
-	IPAM     spiderpoolcmd.IPAMConfig   `json:"ipam"`
+	IPAM     *spiderpoolcmd.IPAMConfig  `json:"ipam,omitempty"`
 	Trunk    []*spiderpoolv2beta1.Trunk `json:"trunk,omitempty"`
 }
 

@@ -52,21 +52,21 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
     ~# ip route add default via <默认网关IP> dev br1
     ```
 
-Once created, the following bridge information can be viewed on each node:
+3. Once created, the following bridge information can be viewed on each node:
 
-```bash
-~# ovs-vsctl show
-ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
-    Bridge br1
-        Port eth0
-            Interface eth0
-        Port br1
-            Interface br1
-                type: internal
-        Port veth97fb4795
-            Interface veth97fb4795
-    ovs_version: "2.17.3"
-```
+    ```bash
+    ~# ovs-vsctl show
+    ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+        Bridge br1
+            Port eth0
+                Interface eth0
+            Port br1
+                Interface br1
+                    type: internal
+            Port veth97fb4795
+                Interface veth97fb4795
+        ovs_version: "2.17.3"
+    ```
 
 ## Install Spiderpool
 
@@ -124,7 +124,7 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
 
 4. To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating an ovs-cni SpiderMultusConfig configuration:
 
-* Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
+    * Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
 
     ```shell
     BRIDGE_NAME="br1"
@@ -138,7 +138,7 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
       cniType: ovs
       ovs:
         bridge: "${BRIDGE_NAME}"
-  EOF
+    EOF
     ```
 
 ## Create applications

@@ -206,31 +206,35 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 		Describe("ValidateCreate", func() {
 			When("Validating 'spec.ipVersion'", func() {
 				It("inputs nil 'spec.ipVersion'", func() {
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("inputs invalid 'spec.ipVersion'", func() {
 					rIPT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
 
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates IPv4 ReservedIP but IPv4 is disbale'", func() {
 					rIPWebhook.EnableIPv4 = false
 					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("creates IPv6 ReservedIP but IPv6 is disbale'", func() {
 					rIPWebhook.EnableIPv6 = false
 					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -239,8 +243,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
-					err := rIPWebhook.ValidateCreate(ctx, rIPT)
+					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -253,8 +258,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					}...,
 				)
 
-				err := rIPWebhook.ValidateCreate(ctx, rIPT)
+				warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 
 			It("creates IPv6 ReservedIP with all fields valid", func() {
@@ -266,8 +272,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					}...,
 				)
 
-				err := rIPWebhook.ValidateCreate(ctx, rIPT)
+				warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 		})
 
@@ -279,8 +286,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPVersion = nil
 
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("changes 'spec.ipVersion'", func() {
@@ -289,8 +297,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("updates IPv4 ReservedIP but IPv4 is disbale'", func() {
@@ -300,8 +309,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
 
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 
 				It("updates IPv6 ReservedIP but IPv6 is disbale'", func() {
@@ -311,8 +321,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "adbc:1234::a")
 
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -323,8 +334,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, constant.InvalidIPRange)
 
-					err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+					warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
 				})
 			})
 
@@ -334,8 +346,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				newRIPT.SetDeletionTimestamp(&now)
 				newRIPT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
 
-				err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+				warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 
 			It("updates terminating ReservedIP", func() {
@@ -344,8 +357,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				rIPT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
 				newRIPT := rIPT.DeepCopy()
 
-				err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+				warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 				Expect(apierrors.IsForbidden(err)).To(BeTrue())
+				Expect(warns).To(BeNil())
 			})
 
 			It("updates IPv4 ReservedIP with all fields valid", func() {
@@ -355,8 +369,9 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				newRIPT := rIPT.DeepCopy()
 				newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
 
-				err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+				warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 
 			It("updates IPv6 ReservedIP with all fields valid", func() {
@@ -366,15 +381,17 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				newRIPT := rIPT.DeepCopy()
 				newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "abcd:1234::a")
 
-				err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
+				warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 		})
 
 		Describe("ValidateDelete", func() {
 			It("passes", func() {
-				err := rIPWebhook.ValidateDelete(ctx, rIPT)
+				warns, err := rIPWebhook.ValidateDelete(ctx, rIPT)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
 			})
 		})
 	})

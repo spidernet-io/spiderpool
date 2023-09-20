@@ -38,7 +38,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			globalV4PoolName, globalV4pool = common.GenerateExampleIpv4poolObject(10)
 			if frame.Info.SpiderSubnetEnabled {
 				GinkgoWriter.Printf("Create v4 subnet %v and v4 pool %v \n", v4SubnetName, globalV4PoolName)
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(100)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
 				Expect(v4SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalV4pool, 3)
@@ -53,7 +53,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			globalV6PoolName, globalV6pool = common.GenerateExampleIpv6poolObject(10)
 			if frame.Info.SpiderSubnetEnabled {
 				GinkgoWriter.Printf("Create v6 subnet %v and v6 pool %v \n", v6SubnetName, globalV6PoolName)
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(100)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
 				Expect(v6SubnetObject).NotTo(BeNil())
 				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalV6pool, 3)
@@ -66,6 +66,11 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		}
 
 		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err := frame.DeleteNamespace(namespace)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)

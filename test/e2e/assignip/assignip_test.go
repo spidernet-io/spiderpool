@@ -32,12 +32,12 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		BeforeEach(func() {
 			if frame.Info.SpiderSubnetEnabled {
 				if frame.Info.IpV4Enabled {
-					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(ippoolIpNum)
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, ippoolIpNum)
 					Expect(v4SubnetObject).NotTo(BeNil())
 					Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
-					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(ippoolIpNum)
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, ippoolIpNum)
 					Expect(v6SubnetObject).NotTo(BeNil())
 					Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
 				}
@@ -76,6 +76,11 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			}
 
 			DeferCleanup(func() {
+				if CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+					return
+				}
+
 				GinkgoWriter.Printf("Try to delete namespace %v \n", namespace)
 				err := frame.DeleteNamespace(namespace)
 				Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)

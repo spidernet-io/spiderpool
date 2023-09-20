@@ -1,5 +1,7 @@
 # StatefulSet
 
+**English** ｜ [**简体中文**](./statefulset-zh_CN.md)
+
 ## Description
 
 The spiderpool supports IP assignment for StatefulSet.

@@ -45,11 +45,13 @@
 
 ## 在云基础设施上安装 Underlay CNI
 
-- [alibaba cloud](./cloud/get-started-alibaba.md)
+- [alibaba cloud](./cloud/get-started-alibaba-zh_CN.md)
 
-- [vmware vsphere](./cloud/get-started-vmware.md)
+- [vmware vsphere](./cloud/get-started-vmware-zh_CN.md)
 
-- [openstack](./cloud/get-started-openstack.md)
+- [openstack](./cloud/get-started-openstack-zh_CN.md)
+
+- [aws cloud](./cloud/get-started-aws-zh_CN.md)
 
 ## 为 Overlay CNI 的 Pod 添加 Underaly CNI 的辅助网卡
 

@@ -216,7 +216,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 * 在 VWware vSphere 平台上，无需打开 vSwitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html)，即可运行 underlay CNI 解决方案，从而确保 vSphere 平台的转发性能。参考[例子](./docs/usage/install/cloud/get-started-vmware-zh_CN.md)
 
-* Spiderpool 能在任意厂商的公有云平台、OpenStack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./docs/usage/install/cloud/get-started-alibaba-zh_CN.md)
+* Spiderpool 能在任意厂商的公有云平台、OpenStack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./docs/usage/install/cloud/get-started-alibaba-zh_CN.md)，[亚马逊云例子](./docs/usage/install/cloud/get-started-aws-zh_CN.md)
 
 * 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SRIOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./docs/usage/rdma-zh_CN.md)
 

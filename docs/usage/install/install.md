@@ -50,6 +50,8 @@ The following examples are guides to install spiderpool:
 
 * [openstack](./cloud/get-started-openstack.md)
 
+* [aws cloud](./cloud/get-started-aws.md)
+
 ## Installation for adding an auxiliary underlay CNI NIC for overlay CNI
 
 The following examples are guides to install spiderpool:

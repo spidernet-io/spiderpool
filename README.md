@@ -276,6 +276,8 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 * It could specify customized routes by IP pool and pod annotation. See [example](./docs/usage/route.md) for details.
 
+* support to fix the MAC address of pod NIC according to assiged IP, which makes the switch avoid update ARP table not in time when pod is restarting. See [doc](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀) for details.
+
 * Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition
   custom resources with best-practice CNI configuration, also ensure well formatted JSON
   to improve experience. See [example](./docs/concepts/multusconfig.md) for details.

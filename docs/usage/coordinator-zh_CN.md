@@ -1,30 +1,30 @@
 # Coordinator
 
-Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI被调用之后再工作，它主要提供以下几个主要功能:
+[**English**](./coordinator.md) | **简体中文**
 
-- 解决 Underlay Pod 无法访问 ClusterIP 的问题
+Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:
+
+- 解决 underlay Pod 无法访问 ClusterIP 的问题
 - 在 Pod 多网卡时，调谐 Pod 的路由，确保数据包来回路径一致
 - 支持检测 Pod 的 IP 是否冲突
 - 支持检测 Pod 的网关是否可达
 - 支持固定 Pod 的 Mac 地址前缀
 
-下面我们将详细的介绍 coordinator 如何解决或实现这些功能。
+下面我们将详细的介绍 `coordinator` 如何解决或实现这些功能。
 
-> 注意:
->
 > 如果您通过 `SpinderMultusConfig CR`  帮助创建 NetworkAttachmentDefinition CR，您可以在 `SpinderMultusConfig` 中配置 `coordinator` (所有字段)。参考: [SpinderMultusConfig](../reference/crd-spidermultusconfig.md)。
 >
-> `Spidercoordinators CR` 作为 `coordinator` 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 `Spidercoordinators CR` 作为缺省值。更多详情参考: [Spidercoordinator](../reference/crd-spidercoordinator.md)。
+> `Spidercoordinators CR` 作为 `coordinator` 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 `Spidercoordinator CR` 作为缺省值。更多详情参考: [Spidercoordinator](../reference/crd-spidercoordinator.md)。
 
-## 解决 Underlay Pod 无法访问 ClusterIP 的问题
+## 解决 underlay Pod 无法访问 ClusterIP 的问题
 
-我们在使用一些如 Macvlan、IPvlan、Sriov 等 Underlay CNI时，会遇到其 Pod 无法访问 ClusterIP 的问题，这常常是因为 underlay pod 访问 CLusterIP 需要经过在交换机的网关，但网关上并没有去往
+我们在使用一些如 Macvlan、IPvlan、SR-IOV 等 Underlay CNI时，会遇到其 Pod 无法访问 ClusterIP 的问题，这常常是因为 underlay Pod 访问 CLusterIP 需要经过在交换机的网关，但网关上并没有去往
 ClusterIP 的路由，导致无法访问。
 
-### 配置 coordinator 运行在 underlay 模式
+### 配置 `coordinator` 运行在 underlay 模式
 
-> 在默认情况下 mode 的值为auto(spidercoordinator CR 中 spec.mode 为 auto), coordinator 将通过对比当前 CNI 网卡是否是 `eth0`, 如果是，则自动判断为 Underlay 模式。
-> 如果当前网卡不是 `eth0`，那么 coordinator 将检测 Pod 中是否存在 `veth0` 网卡，如果是，则判断为 Underlay 模式。
+> 在默认情况下 mode 的值为auto(spidercoordinator CR 中 spec.mode 为 auto), `coordinator` 将通过对比当前 CNI 网卡是否是 `eth0`, 如果是，则自动判断为 underlay 模式。
+> 如果当前网卡不是 `eth0`，那么 `coordinator` 将检测 Pod 中是否存在 `veth0` 网卡，如果是，则判断为 underlay 模式。
 
 当您的业务部署在"传统网络"或者 IAAS 环境上时，业务 Pod 的 IP 地址可能直接从宿主机的 IP 子网分配。应用 Pod 可直接使用自己的 IP 地址进行东西向和南北向通。
 
@@ -36,10 +36,10 @@ ClusterIP 的路由，导致无法访问。
 
 使用注意:
 
-- Pod 访问集群东西向流量(ClusterIP)时，流量会先跳给本地宿主机，本地宿主机使用自己的IP去访问目的pod，因此，流量的转发可能借助外部路由器进行三层跳转，因此，请确保相关三层网络的通达。
+Pod 访问集群东西向流量（ClusterIP）时，流量会先跳给本地宿主机，本地宿主机使用自己的 IP 去访问目的 Pod，因此，流量的转发可能借助外部路由器进行三层跳转，因此，请确保相关三层网络的通达。
 
-对于这个问题，我们可以通过设置 coordinator 运行在 underlay 模式解决。在此模式下，`coordinator` 插件将创建一对 Veth 设备，将一端放置于主机，另一端放置与 Pod 的 network namespace 中，然后在 Pod 里面设置一些路由规则，
-使 Pod 访问 ClusterIP 时从 veth 设备转发。Pod 访问集群外部目标时从 eth0 或 net1 转发。
+对于这个问题，我们可以通过设置 `coordinator` 运行在 underlay 模式解决。在此模式下，`coordinator` 插件将创建一对 Veth 设备，将一端放置于主机，另一端放置与 Pod 的 network namespace 中，然后在 Pod 里面设置一些路由规则，
+使 Pod 访问 ClusterIP 时从 veth 设备转发。Pod 访问集群外部目标时从 `eth0` 或 `net1` 转发。
 
 ![underlay](../images/spiderpool-underlay.jpg)
 
@@ -72,7 +72,7 @@ spec:
     }
 ```
 
-- mode: 指定 coordinator 运行在 underlay 模式。或默认为 auto 模式，您只需要在 Pod 注入注解: `v1.multus-cni.io/default-network: kube-system/macvlan-underlay`, coordinator 将会自动判断 mode 为 underlay。 
+mode: 指定 `coordinator` 运行在 underlay 模式。或默认为 auto 模式，您只需要在 Pod 注入注解: `v1.multus-cni.io/default-network: kube-system/macvlan-underlay`, `coordinator` 将会自动判断 mode 为 underlay。 
 
 当以 macvlan-underlay 创建 Pod，我们进入到 Pod 内部，看看路由等信息:
 
@@ -92,18 +92,18 @@ default via 10.6.0.1 dev eth0
 10.233.64.0/18 via 10.6.212.101 dev veth0
 ```
 
-- **10.6.212.101 dev veth0 scope link**: 10.6.212.101 是节点的 IP,确保 Pod 访问本节点时从 veth0 转发。
-- **10.233.64.0/18 via 10.6.212.101 dev veth0**: 10.233.64.0/18 是集群 Service 的 CIDR, 确保 Pod 访问 ClusterIP 时从 veth0 转发。
+- **10.6.212.101 dev veth0 scope link**: 10.6.212.101 是节点的 IP,确保 Pod 访问本节点时从 `veth0` 转发。
+- **10.233.64.0/18 via 10.6.212.101 dev veth0**: 10.233.64.0/18 是集群 Service 的 CIDR, 确保 Pod 访问 ClusterIP 时从 `veth0` 转发。
 
 这个方案强烈依赖与 kube-proxy 的 MASQUERADE 。 在一些特殊的场景下，我们需要设置 kube-proxy 的 `masqueradeAll` 为 true。
 
 > 在默认情况下，Pod 的 underlay 子网与集群的 clusterCIDR 不同， 无需开启 `masqueradeAll`, 它们之间的访问将会被 SNAT。但如果 Pod 的 underlay 子网与集群的 clusterCIDR 相同，那我们必须要设置 `masqueradeAll` 为 true.
 
-### 配置 coordinator 运行在 overlay 模式
+### 配置 `coordinator` 运行在 overlay 模式
 
-与 Underlay 模式相对应，我们有时候并不关心集群部署环境的底层网络是什么，我们希望集群能够运行在大多数的底层网络。常常会用到如[Calico](https://github.com/projectcalico/calico) 和 [Cilium](https://github.com/cilium/cilium) 等CNI, 这些插件多数使用了 vxlan 等隧道技术，搭建起一个 Overlay 网络平面，再借用 NAT 技术实现南北向的通信。
+与 Underlay 模式相对应，我们有时候并不关心集群部署环境的底层网络是什么，我们希望集群能够运行在大多数的底层网络。常常会用到如 [Calico](https://github.com/projectcalico/calico) 和 [Cilium](https://github.com/cilium/cilium) 等 CNI, 这些插件多数使用了 vxlan 等隧道技术，搭建起一个 Overlay 网络平面，再借用 NAT 技术实现南北向的通信。
 
-> 在默认情况下 mode 的值为auto(spidercoordinator CR 中 spec.mode 为 auto), coordinator 将通过对比当前 CNI 调用网卡是否不是 `eth0`。如果不是，确认 Pod 中不存在 `veth0` 网卡，则自动判断为 overlay 模式。
+> 在默认情况下 mode 的值为auto(spidercoordinator CR 中 spec.mode 为 auto), `coordinator` 将通过对比当前 CNI 调用网卡是否不是 `eth0`。如果不是，确认 Pod 中不存在 `veth0` 网卡，则自动判断为 overlay 模式。
 
 此模式的优点有:
 
@@ -118,11 +118,11 @@ default via 10.6.0.1 dev eth0
 
 > 当 Pod 附加了多张网卡时，极大可能出现 Pod 通信数据包来回路径不一致的问题。如果数据链路上存在一些安全设备，由于数据包的来回路径不一致，流量可能被安全设备认为是 "半连接"(没有 TCP SYN 报文的记录，但收到 TCP ACK 报文 )，在这种情况下，安全设备会阻断掉该连接，造成 Pod 通信异常。
 
-上述问题我们可以通过设置 coordinator 运行在 overlay 模式解决。 在此模式下，`coordinator` 不会创建 veth 设备，而是设置一些策略路由，确保 Pod 访问 ClusterIP 时从 eth0(通常由 Calico、Cilium等CNI创建) 转发，Pod 访问集群外部目标时从 net1 (通常由 Macvlan、IPvlan 等CNI创建) 转发。
+上述问题我们可以通过设置 `coordinator` 运行在 overlay 模式解决。 在此模式下，`coordinator` 不会创建 veth 设备，而是设置一些策略路由，确保 Pod 访问 ClusterIP 时从 `eth0` (通常由 Calico、Cilium 等 CNI 创建) 转发，Pod 访问集群外部目标时从 `net1` (通常由 Macvlan、IPvlan 等 CNI 创建) 转发。
 
-> 在 Overlay 模式下，Spiderpool 会自动同步集群缺省 CNI 的 Pod 子网，这些子网用于在多网卡 Pod 中设置路由，以实现它访问由缺省 CNI 创建的 Pod 之间的正常通信时，从 `eth0` 转发。这个配置对应 `spidercoordinator.spec.podCIDRType`，默认为 `auto`, 可选值: ["auto","calico","cilium","cluster","none"]
+> 在 overlay 模式下，Spiderpool 会自动同步集群缺省 CNI 的 Pod 子网，这些子网用于在多网卡 Pod 中设置路由，以实现它访问由缺省 CNI 创建的 Pod 之间的正常通信时，从 `eth0` 转发。这个配置对应 `spidercoordinator.spec.podCIDRType`，默认为 `auto`, 可选值: ["auto","calico","cilium","cluster","none"]
 >
-> 这些路由是在 Pod 启动时注入的，如果相关的 cidr 发生了变动，无法自动生效到已经 Running 的 Pod 中，这需要重启 Pod 才能生效
+> 这些路由是在 Pod 启动时注入的，如果相关的 CIDR 发生了变动，无法自动生效到已经 Running 的 Pod 中，这需要重启 Pod 才能生效
 >
 > 更多详情参考 [CRD-Spidercoordinator](../reference/crd-spidercoordinator.md)
 
@@ -157,7 +157,7 @@ spec:
     }
 ```
 
-- mode: 指定 coordinator 运行在 overlay 模式。或默认为 auto 模式，您只需要在 Pod 注入注解: `k8s.v1.cni.cncf.io/networks: kube-system/macvlan-overlay`，coordinator 将会自动判断 mode 为 overlay。
+mode: 指定 `coordinator` 运行在 overlay 模式。或默认为 auto 模式，您只需要在 Pod 注入注解: `k8s.v1.cni.cncf.io/networks: kube-system/macvlan-overlay`，`coordinator` 将会自动判断 mode 为 overlay。
 
 当以 macvlan-overlay 创建 Pod，我们进入到 Pod 内部，看看路由等信息:
 
@@ -187,11 +187,11 @@ default via 169.254.1.1 dev eth0
 
 这些策略路由:
 
-- **32759: from 10.233.105.154 lookup 100**: 确保从 eth0(calico 网卡)发出的数据包走table 100
-- **32762: from all to 10.233.64.0/18 lookup 100**: 确保 Pod 访问 ClusterIP 时走 table 100，从 eth0 转发出去。
-- 默认情况下，net1 的所有子网路由保留在 Main 表; eth0 的子网路由保留在 Table 100。
+- **32759: from 10.233.105.154 lookup 100**: 确保从 `eth0` (calico 网卡)发出的数据包走 table 100
+- **32762: from all to 10.233.64.0/18 lookup 100**: 确保 Pod 访问 ClusterIP 时走 table 100，从 `eth0` 转发出去。
+- 默认情况下，net1 的所有子网路由保留在 Main 表; `eth0` 的子网路由保留在 Table 100。
 
-在 Overlay 模式下, Pod 访问 ClusterIP 完全借助于 Overlay CNI 的网卡(eth0)，无需其他特殊配置。
+在 overlay 模式下, Pod 访问 ClusterIP 完全借助于 overlay CNI 的网卡 (`eth0`)，无需其他特殊配置。
 
 ## 支持检测 Pod 的 IP 是否冲突
 
@@ -304,11 +304,11 @@ spec:
 
 ## 已知问题
 
-- Underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败
+- underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败
 
-此问题是因为数据包来回路径不一致导致，发出的请求报文匹配源Pod 侧的路由，会通过 veth0 转发到主机侧，再由主机侧转发至目标 Pod。 目标 Pod 看见数据包的源 IP 为 源 Pod 的 Underlay IP，直接走 Underlay 网络而不会经过源 Pod 所在主机。
-在该主机看来这是一个非法的数据包(意外的收到 TCP 的第二次握手报文，认为是 conntrack table invalid), 所以被 kube-proxy 的一条 iptables 规则显式的 drop 。 目前可以通过切换 kube-proxy 的模式为 ipvs 规避。
+    此问题是因为数据包来回路径不一致导致，发出的请求报文匹配源Pod 侧的路由，会通过 `veth0` 转发到主机侧，再由主机侧转发至目标 Pod。 目标 Pod 看见数据包的源 IP 为 源 Pod 的 Underlay IP，直接走 Underlay 网络而不会经过源 Pod 所在主机。
+    在该主机看来这是一个非法的数据包(意外的收到 TCP 的第二次握手报文，认为是 conntrack table invalid), 所以被 kube-proxy 的一条 iptables 规则显式的 drop 。 目前可以通过切换 kube-proxy 的模式为 ipvs 规避。
 
-- Overlay 模式下, 当 Pod 附加多张网卡时。如果集群的缺省CNI 为 Cilium, Pod 的 underlay 网卡 无法与节点通信。
+- overlay 模式下, 当 Pod 附加多张网卡时。如果集群的缺省CNI 为 Cilium, Pod 的 underlay 网卡 无法与节点通信。
 
-我们借助缺省CNI创建 Veth 设备，实现 Pod 的 underlay IP 与节点通信(正常情况下，macvlan 在 bridge 模式下， 其父子接口无法直接)，但 Cilium 不允许非 Cilium 子网的 IP 从 Veth 设备转发。
+    我们借助缺省CNI创建 Veth 设备，实现 Pod 的 underlay IP 与节点通信(正常情况下，macvlan 在 bridge 模式下， 其父子接口无法直接)，但 Cilium 不允许非 Cilium 子网的 IP 从 Veth 设备转发。

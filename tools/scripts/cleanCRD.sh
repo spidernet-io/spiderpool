@@ -11,6 +11,8 @@ kubectl get spidercoordinators | sed '1 d' | awk '{print $1}' | xargs -n 1 -i ku
 
 ALL_EP_INFO=`kubectl get spiderendpoints -A | sed '1 d'`
 while read namespace epName other ; do
+  [ -n "$namespace" ] || continue
+  [ -n "$epName" ] || continue
   kubectl patch -n $namespace spiderendpoints $epName --patch '{"metadata": {"finalizers": null}}' --type=merge
 done <<< "$ALL_EP_INFO"
 

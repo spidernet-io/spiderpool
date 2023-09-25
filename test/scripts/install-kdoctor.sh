@@ -30,7 +30,9 @@ E2E_KDOCTOR_IMAGE_REPO=${E2E_KDOCTOR_IMAGE_REPO:-"ghcr.io"}
 INSTALL_TIME_OUT=300s
 
 KDOCTOR_HELM_OPTIONS=" --set feature.aggregateReport.enabled=true \
-                            --set feature.aggregateReport.controller.reportHostPath=${KDOCTOR_REPORT_PATH}"
+                            --set feature.aggregateReport.controller.reportHostPath=${KDOCTOR_REPORT_PATH} \
+                            --set feature.nethttp_defaultConcurrency=5 \
+                            --set feature.netdns_defaultConcurrency=5 "
 
 case ${E2E_IP_FAMILY} in
   ipv4)

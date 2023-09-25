@@ -47,7 +47,9 @@ Please refer to [Macvlan Quick Start](./install/underlay/get-started-macvlan.md)
 
 ### Create KubeVirt VM Applications
 
-In the example YAML below, we create 1 KubeVirt VM application:
+#### underlay single NIC situation
+
+In the example YAML below, we create 1 KubeVirt VM application with KubeVirt passt network mode + macvlan:
 
 - `v1.multus-cni.io/default-network`: select the default network CNI configuration for the application.
 
@@ -164,6 +166,91 @@ Last-Modified: Tue, 17 Oct 2023 06:40:53 GMT
 Connection: keep-alive
 ETag: "652e2c75-ffa"
 Accept-Ranges: bytes
+```
+
+#### underlay multiple NICs situation
+
+In the example YAML below, we create 1 KubeVirt VM application with KubeVirt bridge network mode + [ovs-cni](./install/underlay/get-started-ovs.md):
+
+- `ipam.spidernet.io/ippools`: select IPPools for every NIC.(You can also use the multus resource CNI configuration level default IPPools)
+- The multus resource `kube-system/ovs-vlan30` and `kube-system/ovs-vlan40` must enable the coordinator plugin to solve the multiple interfaces default route problem.
+- ovs-cni doesn't support clusterIP network connectivity access.
+
+```yaml
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-centos
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippools: |-
+          [{
+             "ipv4": ["vlan30-v4-ippool"],
+             "ipv6": ["vlan30-v6-ippool"]
+           },{
+             "ipv4": ["vlan40-v4-ippool"],
+             "ipv6": ["vlan40-v6-ippool"]
+          }]
+    spec:
+      architecture: amd64
+      domain:
+        cpu:
+          cores: 1
+          model: host-model
+          sockets: 2
+          threads: 1
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: containerdisk
+          - disk:
+              bus: virtio
+            name: cloudinitdisk
+          interfaces:
+          - bridge: {}
+            name: ovs-bridge1
+          - bridge: {}
+            name: ovs-bridge2
+        features:
+          acpi:
+            enabled: true
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - multus:
+          default: true
+          networkName: kube-system/ovs-vlan30
+        name: ovs-bridge1
+      - multus:
+          networkName: kube-system/ovs-vlan40
+        name: ovs-bridge2
+      volumes:
+      - name: containerdisk
+        containerDisk:
+          image: release-ci.daocloud.io/virtnest/system-images/centos-7.9-x86_64:v1
+      - cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              eth0:
+                dhcp4: true
+              eth1:
+                dhcp4: true
+          userData: |
+            #cloud-config
+            ssh_pwauth: true
+            disable_root: false
+            chpasswd: {"list": "root:dangerous", expire: False}
+            runcmd:
+              - sed -i "/#\?PermitRootLogin/s/^.*$/PermitRootLogin yes/g" /etc/ssh/sshd_config
+        name: cloudinitdisk
 ```
 
 ## Summary

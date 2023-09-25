@@ -7,14 +7,17 @@ import (
 	"context"
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -31,9 +34,12 @@ type WorkloadEndpointManager interface {
 type workloadEndpointManager struct {
 	client    client.Client
 	apiReader client.Reader
+
+	enableStatefulSet      bool
+	enableKubevirtStaticIP bool
 }
 
-func NewWorkloadEndpointManager(client client.Client, apiReader client.Reader) (WorkloadEndpointManager, error) {
+func NewWorkloadEndpointManager(client client.Client, apiReader client.Reader, enableStatefulSet, enableKubevirtStaticIP bool) (WorkloadEndpointManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
@@ -42,8 +48,10 @@ func NewWorkloadEndpointManager(client client.Client, apiReader client.Reader) (
 	}
 
 	return &workloadEndpointManager{
-		client:    client,
-		apiReader: apiReader,
+		client:                 client,
+		apiReader:              apiReader,
+		enableStatefulSet:      enableStatefulSet,
+		enableKubevirtStaticIP: enableKubevirtStaticIP,
 	}, nil
 }
 
@@ -107,6 +115,8 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
 	}
 
+	logger := logutils.FromContext(ctx)
+
 	if endpoint == nil {
 		endpoint = &spiderpoolv2beta1.SpiderEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
@@ -125,14 +135,21 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		}
 
 		// Do not set ownerReference for Endpoint when its corresponding Pod is
-		// controlled by StatefulSet. Once the Pod of StatefulSet is recreated,
+		// controlled by StatefulSet/KubevirtVMI. Once the Pod of StatefulSet/KubevirtVMI is recreated,
 		// we can immediately retrieve the old IP allocation results from the
 		// Endpoint without worrying about the cascading deletion of the Endpoint.
-		if podController.Kind != constant.KindStatefulSet {
+		switch {
+		case em.enableStatefulSet && podController.APIVersion == appsv1.SchemeGroupVersion.String() && podController.Kind == constant.KindStatefulSet:
+			logger.Sugar().Infof("do not set OwnerReference for SpiderEndpoint '%s' since the pod top controller is %s", endpoint, podController.Kind)
+		case em.enableKubevirtStaticIP && podController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podController.Kind == constant.KindKubevirtVMI:
+			endpoint.Name = podController.Name
+			logger.Sugar().Infof("do not set OwnerReference for SpiderEndpoint '%s' since the pod top controller is %s", endpoint, podController.Kind)
+		default:
 			if err := controllerutil.SetOwnerReference(pod, endpoint, em.client.Scheme()); err != nil {
 				return err
 			}
 		}
+
 		controllerutil.AddFinalizer(endpoint, constant.SpiderFinalizer)
 		return em.client.Create(ctx, endpoint)
 	}

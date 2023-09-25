@@ -28,6 +28,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
@@ -261,10 +262,19 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.StsManager = statefulSetManager
 
+	logger.Debug("Begin to initialize Kubevirt manager")
+	kubevirtManager := kubevirtmanager.NewKubevirtManager(
+		controllerContext.CRDManager.GetClient(),
+		controllerContext.CRDManager.GetAPIReader(),
+	)
+	controllerContext.KubevirtManager = kubevirtManager
+
 	logger.Debug("Begin to initialize Endpoint manager")
 	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
+		controllerContext.Cfg.EnableStatefulSet,
+		controllerContext.Cfg.EnableKubevirtStaticIP,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -292,7 +302,8 @@ func initControllerServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
 		ippoolmanager.IPPoolManagerConfig{
-			MaxAllocatedIPs: &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+			MaxAllocatedIPs:        &controllerContext.Cfg.IPPoolMaxAllocatedIPs,
+			EnableKubevirtStaticIP: controllerContext.Cfg.EnableKubevirtStaticIP,
 		},
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
@@ -358,6 +369,8 @@ func initControllerServiceManagers(ctx context.Context) {
 func initGCManager(ctx context.Context) {
 	// EnableStatefulSet was determined by Configmap.
 	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
+	// EnableKubevirtStaticIP was determined by Configmap.
+	gcIPConfig.EnableKubevirtStaticIP = controllerContext.Cfg.EnableKubevirtStaticIP
 	gcIPConfig.LeaderRetryElectGap = time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
 	gcManager, err := gcmanager.NewGCManager(
 		controllerContext.ClientSet,
@@ -366,6 +379,7 @@ func initGCManager(ctx context.Context) {
 		controllerContext.IPPoolManager,
 		controllerContext.PodManager,
 		controllerContext.StsManager,
+		controllerContext.KubevirtManager,
 		controllerContext.Leader,
 	)
 	if nil != err {

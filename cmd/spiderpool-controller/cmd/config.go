@@ -22,6 +22,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -153,6 +154,7 @@ type Config struct {
 	EnableIPv4                        bool `yaml:"enableIPv4"`
 	EnableIPv6                        bool `yaml:"enableIPv6"`
 	EnableStatefulSet                 bool `yaml:"enableStatefulSet"`
+	EnableKubevirtStaticIP            bool `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                bool `yaml:"enableSpiderSubnet"`
 	ClusterSubnetDefaultFlexibleIPNum int  `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
@@ -180,6 +182,7 @@ type ControllerContext struct {
 	PodManager        podmanager.PodManager
 	GCManager         gcmanager.GCManager
 	StsManager        statefulsetmanager.StatefulSetManager
+	KubevirtManager   kubevirtmanager.KubevirtManager
 	Leader            election.SpiderLeaseElector
 
 	// handler

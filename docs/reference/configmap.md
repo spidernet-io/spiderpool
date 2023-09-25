@@ -18,6 +18,7 @@ data:
     enableIPv4: true
     enableIPv6: true
     enableStatefulSet: true
+    enableKubevirtStaticIP: true
     enableSpiderSubnet: true
     clusterSubnetDefaultFlexibleIPNumber: 1
 ```
@@ -30,8 +31,11 @@ data:
   - `true`: Enable IPv6 IP allocation capability of Spiderpool.
   - `false`: Disable IPv6 IP allocation capability of Spiderpool.
 - `enableStatefulSet` (bool):
-  - `true`: Enable StatefulSet capability of Spiderpool.
-  - `false`: Disable StatefulSet capability of Spiderpool.
+  - `true`: Enable StatefulSet static IP capability of Spiderpool.
+  - `false`: Disable StatefulSet static IP capability of Spiderpool.
+- `enableKubevirtStaticIP` (bool):
+  - `true`: Enable kubevirt VM static IP capability of Spiderpool.
+  - `false`: Disable kubevirt VM static IP capability of Spiderpool.
 - `enableSpiderSubnet` (bool):
   - `true`: Enable SpiderSubnet capability of Spiderpool.
   - `false`: Disable SpiderSubnet capability of Spiderpool.

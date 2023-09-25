@@ -47,6 +47,9 @@ ipam:
   ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true
 
+  ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
+  enableKubevirtStaticIP: true
+
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: true
 

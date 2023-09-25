@@ -18,6 +18,7 @@ data:
     enableIPv4: {{ .Values.ipam.enableIPv4 }}
     enableIPv6: {{ .Values.ipam.enableIPv6 }}
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
+    enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
     {{- if .Values.ipam.enableSpiderSubnet }}
     clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.subnetDefaultFlexibleIPNumber }}

@@ -31,6 +31,8 @@ const (
 	KindReplicaSet  = "ReplicaSet"
 	KindJob         = "Job"
 	KindCronJob     = "CronJob"
+	KindKubevirtVM  = "VirtualMachine"
+	KindKubevirtVMI = "VirtualMachineInstance"
 )
 
 var K8sKinds = []string{KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob}

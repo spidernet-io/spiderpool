@@ -24,6 +24,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -137,6 +138,7 @@ func DaemonMain() {
 		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
 		EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
 		EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
+		EnableKubevirtStaticIP:   agentContext.Cfg.EnableKubevirtStaticIP,
 		OperationRetries:         agentContext.Cfg.WaitSubnetPoolMaxRetries,
 		OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 	}
@@ -152,6 +154,7 @@ func DaemonMain() {
 		agentContext.PodManager,
 		agentContext.StsManager,
 		agentContext.SubnetManager,
+		agentContext.KubevirtManager,
 	)
 	if nil != err {
 		logger.Fatal(err.Error())
@@ -340,10 +343,19 @@ func initAgentServiceManagers(ctx context.Context) {
 	}
 	agentContext.StsManager = statefulSetManager
 
+	logger.Debug("Begin to initialize Kubevirt manager")
+	kubevirtManager := kubevirtmanager.NewKubevirtManager(
+		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
+	)
+	agentContext.KubevirtManager = kubevirtManager
+
 	logger.Debug("Begin to initialize Endpoint manager")
 	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),
+		agentContext.Cfg.EnableStatefulSet,
+		agentContext.Cfg.EnableKubevirtStaticIP,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -363,7 +375,8 @@ func initAgentServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
 		ippoolmanager.IPPoolManagerConfig{
-			MaxAllocatedIPs: &agentContext.Cfg.IPPoolMaxAllocatedIPs,
+			MaxAllocatedIPs:        &agentContext.Cfg.IPPoolMaxAllocatedIPs,
+			EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
 		},
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),

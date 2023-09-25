@@ -59,7 +59,8 @@ require (
 	k8s.io/client-go v0.28.1
 	k8s.io/code-generator v0.28.0
 	k8s.io/kubernetes v1.27.4
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	kubevirt.io/api v1.0.0
 	sigs.k8s.io/controller-runtime v0.16.1
 	sigs.k8s.io/controller-tools v0.11.4
 )
@@ -125,7 +126,10 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
+	github.com/openshift/api v0.0.0-20230503133300-8bbcb7ca7183 // indirect
+	github.com/openshift/custom-resource-status v1.1.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
+	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/petermattis/goid v0.0.0-20221018141743-354ef7f2fd21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -171,6 +175,8 @@ require (
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/kubectl v0.26.3 // indirect
+	kubevirt.io/containerized-data-importer-api v1.57.0-alpha1 // indirect
+	kubevirt.io/controller-lifecycle-operator-sdk/api v0.0.0-20220329064328-f3cc58c6ed90 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

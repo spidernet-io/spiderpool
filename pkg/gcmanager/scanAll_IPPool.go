@@ -139,7 +139,18 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 									continue
 								}
 								if isValidStsPod {
-									scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod ", poolIP)
+									scanAllLogger.Sugar().Warnf("no need to release IP '%s' for StatefulSet pod ", poolIP)
+									continue
+								}
+							}
+							if s.gcConfig.EnableKubevirtStaticIP && endpoint.Status.OwnerControllerType == constant.KindKubevirtVMI {
+								isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(logutils.IntoContext(ctx, scanAllLogger), podNS, constant.KindKubevirtVMI, endpoint.Status.OwnerControllerName)
+								if nil != err {
+									scanAllLogger.Sugar().Errorf("failed to check kubevirt vm pod IP '%s' should be cleaned or not, error: %v", poolIP, err)
+									continue
+								}
+								if isValidVMPod {
+									scanAllLogger.Sugar().Warnf("no need to release IP '%s' for kubevirt vm pod ", poolIP)
 									continue
 								}
 							}
@@ -290,6 +301,14 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 			return nil
 		}
 		return err
+	}
+
+	// The StatefulSet/KubevirtVM SpiderEndpoint doesn't have ownerRef which can not lead to cascade deletion.
+	if endpoint.DeletionTimestamp == nil {
+		err := s.wepMgr.DeleteEndpoint(ctx, endpoint)
+		if nil != err {
+			return err
+		}
 	}
 
 	if err := s.wepMgr.RemoveFinalizer(ctx, endpoint); err != nil {

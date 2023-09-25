@@ -11,7 +11,9 @@ import (
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -74,7 +76,17 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	}
 
 	defer i.failure.rmFailureIPs(*delArgs.PodUID)
-	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
+
+	endpointName := *delArgs.PodName
+	// if the kubevirt vm pod is not exist, the gc will release the legacy IP later
+	if pod != nil {
+		ownerReference := metav1.GetControllerOf(pod)
+		if ownerReference != nil && i.config.EnableKubevirtStaticIP &&
+			ownerReference.APIVersion == kubevirtv1.SchemeGroupVersion.String() && ownerReference.Kind == constant.KindKubevirtVMI {
+			endpointName = ownerReference.Name
+		}
+	}
+	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, endpointName, constant.IgnoreCache)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Info("Endpoint does not exist, ignore release")
@@ -97,13 +109,30 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 	// Check whether an StatefulSet needs to release its currently allocated IP addresses.
 	// It is discussed in https://github.com/spidernet-io/spiderpool/issues/1045
 	if i.config.EnableStatefulSet && endpoint.Status.OwnerControllerType == constant.KindStatefulSet {
-		valid, err := i.stsManager.IsValidStatefulSetPod(ctx, endpoint.Namespace, endpoint.Name, endpoint.Status.OwnerControllerType)
+		isValidStatefulSetPod, err := i.stsManager.IsValidStatefulSetPod(ctx, endpoint.Namespace, endpoint.Name, endpoint.Status.OwnerControllerType)
 		if nil != err {
-			return fmt.Errorf("failed to check pod %s/%s whether is a valid StatefulSet pod: %v", endpoint.Namespace, endpoint.Name, err)
+			return fmt.Errorf("failed to check pod '%s/%s' whether is a valid StatefulSet pod, error: %w", endpoint.Namespace, endpoint.Name, err)
 		}
 
-		if valid {
+		if isValidStatefulSetPod {
 			logger.Info("There is no need to release the IP allocation of StatefulSet")
+			return nil
+		}
+
+		if err := i.endpointManager.DeleteEndpoint(ctx, endpoint); err != nil {
+			return err
+		}
+	}
+
+	// Check whether the kubevirt VM  pod needs to keep its IP allocation.
+	if i.config.EnableKubevirtStaticIP && endpoint.Status.OwnerControllerType == constant.KindKubevirtVMI {
+		isValidVMPod, err := i.kubevirtManager.IsValidVMPod(ctx, endpoint.Namespace, endpoint.Status.OwnerControllerType, endpoint.Status.OwnerControllerName)
+		if nil != err {
+			return fmt.Errorf("failed to check pod '%s/%s' whether is a valid kubevirt VM pod, error: %w", endpoint.Namespace, endpoint.Name, err)
+		}
+
+		if isValidVMPod {
+			logger.Info("There is no need to release the IP allocation of kubevirt VM")
 			return nil
 		}
 

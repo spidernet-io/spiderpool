@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/strings/slices"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -51,7 +52,11 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	logger.Sugar().Debugf("%s %s/%s is the top controller of the Pod", podTopController.Kind, podTopController.Namespace, podTopController.Name)
 
-	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, pod.Name, constant.UseCache)
+	endpointName := pod.Name
+	if i.config.EnableKubevirtStaticIP && podTopController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindKubevirtVMI {
+		endpointName = podTopController.Name
+	}
+	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, endpointName, constant.UseCache)
 	if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %v", pod.Namespace, pod.Name, err)
 	}
@@ -61,11 +66,12 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		logger.Debug("No Endpoint")
 	}
 
-	if i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet {
-		logger.Info("Try to retrieve the IP allocation of StatefulSet")
-		addResp, err := i.retrieveStsIPAllocation(ctx, *addArgs.IfName, pod, endpoint)
+	if (i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet) ||
+		(i.config.EnableKubevirtStaticIP && podTopController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindKubevirtVMI) {
+		logger.Sugar().Infof("Try to retrieve the IP allocation of %s", podTopController.Kind)
+		addResp, err := i.retrieveStaticIPAllocation(ctx, *addArgs.IfName, pod, endpoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the IP allocation of StatefulSet %s/%s: %w", podTopController.Namespace, podTopController.Name, err)
+			return nil, fmt.Errorf("failed to retrieve the IP allocation of %s/%s/%s: %w", podTopController.Kind, podTopController.Namespace, podTopController.Name, err)
 		}
 		if addResp != nil {
 			return addResp, nil
@@ -90,7 +96,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	return addResp, nil
 }
 
-func (i *ipam) retrieveStsIPAllocation(ctx context.Context, nic string, pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint) (*models.IpamAddResponse, error) {
+func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
 
 	allocation := workloadendpointmanager.RetrieveIPAllocation(string(pod.UID), nic, endpoint, true)
@@ -107,7 +113,7 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, nic string, pod *cor
 
 	logger.Info("Refresh the current IP allocation of the Endpoint")
 	if err := i.endpointManager.ReallocateCurrentIPAllocation(ctx, string(pod.UID), pod.Spec.NodeName, endpoint); err != nil {
-		return nil, fmt.Errorf("failed to update the current IP allocation of StatefulSet: %w", err)
+		return nil, fmt.Errorf("failed to refresh the current IP allocation of %s: %w", endpoint.Status.OwnerControllerType, err)
 	}
 
 	ips, routes := convert.ConvertIPDetailsToIPConfigsAndAllRoutes(endpoint.Status.Current.IPs)
@@ -115,7 +121,7 @@ func (i *ipam) retrieveStsIPAllocation(ctx context.Context, nic string, pod *cor
 		Ips:    ips,
 		Routes: routes,
 	}
-	logger.Sugar().Infof("Succeed to retrieve the IP allocation of StatefulSet: %+v", *addResp)
+	logger.Sugar().Infof("Succeed to retrieve the IP allocation of %s: %+v", endpoint.Status.OwnerControllerType, *addResp)
 
 	return addResp, nil
 }
@@ -218,7 +224,7 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	}()
 
 	logger.Debug("Concurrently allocate IP addresses from all IPPool candidates")
-	results, err = i.allocateIPsFromAllCandidates(ctx, toBeAllocatedSet, pod)
+	results, err = i.allocateIPsFromAllCandidates(ctx, toBeAllocatedSet, pod, podController)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +290,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 	return preliminary, nil
 }
 
-func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocateds, pod *corev1.Pod) ([]*types.AllocationResult, error) {
+func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocateds, pod *corev1.Pod, podController types.PodTopController) ([]*types.AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
 	tickets := tt.Pools()
@@ -308,7 +314,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 
 		clogger := logger.With(zap.String("AllocateHash", fmt.Sprintf("%s-%d-%v", nic, candidate.IPVersion, candidate.Pools)))
 		clogger.Sugar().Debugf("Try to allocate IPv%d IP address to NIC %s from IPPools %v", candidate.IPVersion, nic, candidate.Pools)
-		result, err := i.allocateIPFromCandidate(logutils.IntoContext(ctx, clogger), candidate, nic, cleanGateway, pod)
+		result, err := i.allocateIPFromCandidate(logutils.IntoContext(ctx, clogger), candidate, nic, cleanGateway, pod, podController)
 		if err != nil {
 			clogger.Warn(err.Error())
 			errCh <- err
@@ -344,7 +350,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	return results, nil
 }
 
-func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod) (*types.AllocationResult, error) {
+func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) (*types.AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
 	for _, oldRes := range i.failure.getFailureIPs(string(pod.UID)) {
@@ -361,7 +367,7 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 	var errs []error
 	var result *types.AllocationResult
 	for _, pool := range c.Pools {
-		ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod)
+		ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
 		if err != nil {
 			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
 			errs = append(errs, err)

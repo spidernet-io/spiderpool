@@ -80,6 +80,20 @@ rules:
   - update
   - watch
 - apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - get
+  - list
+- apiGroups:
   - spiderpool.spidernet.io
   resources:
   - spidercoordinators

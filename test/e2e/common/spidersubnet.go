@@ -62,9 +62,9 @@ func GenerateExampleV4SubnetObject(f *frame.Framework, ipNum int) (string, *spid
 		oldSubnets, _ := GetAllSubnet(f)
 		for _, oldSubnet := range oldSubnets.Items {
 			if newSubnetObj.Spec.Subnet == oldSubnet.Spec.Subnet {
-				continue
+				GinkgoWriter.Printf("Subnet %s overlaps with subnet %s, the overlapping subnet is: %v \n", newSubnetObj.Name, oldSubnet.Name, newSubnetObj.Spec.Subnet)
+				break
 			}
-			break
 		}
 	}
 	ips, err := GenerateIPs(newSubnetObj.Spec.Subnet, ipNum+1)
@@ -103,9 +103,9 @@ func GenerateExampleV6SubnetObject(f *frame.Framework, ipNum int) (string, *spid
 		oldSubnets, _ := GetAllSubnet(f)
 		for _, oldSubnet := range oldSubnets.Items {
 			if newSubnetObj.Spec.Subnet == oldSubnet.Spec.Subnet {
-				continue
+				GinkgoWriter.Printf("Subnet %s overlaps with subnet %s, the overlapping subnet is: %v \n", newSubnetObj.Name, oldSubnet.Name, newSubnetObj.Spec.Subnet)
+				break
 			}
-			break
 		}
 	}
 	ips, err := GenerateIPs(newSubnetObj.Spec.Subnet, ipNum+1)

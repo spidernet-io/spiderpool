@@ -148,7 +148,7 @@ jobs:
               UPDATE=false
               ERROR_MESSAGE=""
               for COMMIT in $PR_COMMITS; do
-                    if ! ERROR_MESSAGE=`git cherry-pick $COMMIT 2>&1` ; then
+                    if ! ERROR_MESSAGE=`git cherry-pick -m 1 $COMMIT 2>&1` ; then
                           echo ">>>>>>>>>>>> fail when cherry pick $COMMIT to branch $BRANCH "
                           echo "$ERROR_MESSAGE"
                           echo "---- failuire detail"

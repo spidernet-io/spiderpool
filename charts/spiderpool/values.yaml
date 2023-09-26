@@ -145,8 +145,8 @@ multus:
       imagePullSecrets: []
       # - name: "image-pull-secret"
 
-    ## @param multus.multusCNI.defaultCniCRName please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool. if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/
-    defaultCniCRName: "default"
+    ## @param multus.multusCNI.defaultCniCRName if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/, if no cni files found in /etc/cni/net.d, A Spidermultusconfig CR named default will be created, please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool
+    defaultCniCRName: ""
 
     resources:
       limits:

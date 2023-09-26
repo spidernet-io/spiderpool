@@ -172,7 +172,11 @@ func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir 
 
 	if defaultCNIConfPath == "" {
 		// no networks in /etc/cni/net.d
-		logger.Sugar().Warnf("No network found in %s, Skip create multuscniconfig", cniDir)
+		logger.Sugar().Infof("No network found in %s, create default multuscniconfig", cniDir)
+		if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig("default", "custom", ns)); err != nil {
+			return fmt.Errorf("failed to create default spidermultusconfig: %v", err)
+		}
+		logger.Sugar().Info("success to create default Spidermultusconfig CR, please update default CR config")
 		return nil
 	}
 	logger.Sugar().Infof("the cni config file \"%s\" is the alphabetically first name in the %s directory on each node", defaultCNIConfPath, cniDir)

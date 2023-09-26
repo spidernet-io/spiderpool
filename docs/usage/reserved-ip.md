@@ -2,183 +2,197 @@
 
 **English** ｜ [**简体中文**](./reserved-ip-zh_CN.md)
 
-*Spiderpool reserve some IP addresses for the whole Kubernetes cluster, which will not be used by any IPAM allocation results. Typically, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).*
+## Introduction
 
-## IPPool excludeIPs
+*Spiderpool reserve some IP addresses for the whole Kubernetes cluster through the ReservedIP CR, ensuring that these addresses are not allocated by IPAM.*
 
-You may have observed that there is a field `excludeIPs` in SpiderIPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main function is not like this. Field `excludeIPs` is more of a **syntax sugar**, so that users can more flexibly define the IP address ranges of the IPPool.
+## Features of Reserved IP
 
-For example, create an IPPool without using `excludeIPs`, which contains two IP ranges: `172.18.41.40-172.18.41.44` and `172.18.41.46-172.18.41.50`, you should define the `ips` as follows:
+To avoid IP conflicts when it is known that an IP address is being used externally to the cluster, it can be a time-consuming and labor-intensive task to remove that IP address from existing IPPool instances. Furthermore, network administrators want to ensure that this IP address is not allocated from any current or future IPPool resources. To address these concerns, the ReservedIP CR allows for the specification of IP addresses that should not be utilized by the cluster. Even if an IPPool instance includes those IP addresses, the IPAM plugin will refrain from assigning them to Pods.
 
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: not-use-excludeips
-spec:
-  subnet: 172.18.41.0/24
-  ips:
-  - 172.18.41.40-172.18.41.44
-  - 172.18.41.46-172.18.41.50
-```
+The IP addresses specified in the ReservedIP CR serve two purposes:
 
-But in fact, this semantics can be more succinctly described through `excludeIPs`:
+- Clearly identify those IP addresses already in use by hosts outside the cluster.
 
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: use-excludeips
-spec:
-  subnet: 172.18.41.0/24
-  ips:
-  - 172.18.41.40-172.18.41.50
-  excludeIPs:
-  - 172.18.41.45
-```
+- Explicitly prevent the utilization of those IP addresses for network communication, such as subnet IPs or broadcast IPs.
 
-Field `excludeIPs` will make sure that any Pod that allocates IP addresses from this IPPool will not use these excluded IP addresses. However, it should be noted that this mechanism only has an effect on the **IPPool itself** with `excludeIPs` defined.
+## Prerequisites
 
-## Use SpiderReservedIP
+1. A ready Kubernetes kubernetes.
 
-Unlike configuring field `excluedIPs` in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a Kubernetes cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to [definition of SpiderReservedIP](https://github.com/spidernet-io/spiderpool/blob/main/docs/reference/crd-spiderreservedip.md).
+2. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
 
-### Set up Spiderpool
+## Steps
 
-If you have not deployed Spiderpool yet, follow the guide [installation](https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md) for instructions on how to deploy and easily configure Spiderpool.
+### Install Spiderpool
 
-### Get Started
+1. Install Spiderpool through Helm:
 
-To understand how it works, let's do such a test. First, create an ReservedIP which reserves 9 IP addresses from `172.18.42.41` to `172.18.42.49`.
+    ```bash
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system  --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
+    ```
+
+    > For users in the Chinese mainland, it is recommended to specify the spec `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to accelerate image pulling.
+    >
+    > You can specify the Multus clusterNetwork for your cluster using `multus.multusCNI.defaultCniCRName`. The clusterNetwork is a specific field of the Multus plugin that defines the default network interface for Pods.
+
+2. Check if the installation is successful.
+
+    ```bash
+    ~# kubectl get po -n kube-system | grep spiderpool
+    NAME                                     READY   STATUS      RESTARTS   AGE                                
+    spiderpool-agent-7hhkz                   1/1     Running     0          13m
+    spiderpool-agent-kxf27                   1/1     Running     0          13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
+    spiderpool-init                          0/1     Completed   0          13m
+    spiderpool-multus-7vkm2                  1/1     Running     0          13m
+    spiderpool-multus-rwzjn                  1/1     Running     0          13m
+    ```
+
+### Install CNI
+
+To simplify the creation of Multus CNI configurations, Spiderpool introduces the SpiderMultusConfig CR, which automates the management of Multus NetworkAttachmentDefinition CRs. Here is an example of creating a Macvlan SpiderMultusConfig:
+
+- master：the interface `ens192` is used as the spec for master.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
+MACVLAN_MASTER_INTERFACE="ens192"
+MACVLAN_MULTUS_NAME="macvlan-$MACVLAN_MASTER_INTERFACE"
+
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ${MACVLAN_MULTUS_NAME}
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  enableCoordinator: true
+  macvlan:
+    master:
+    - ${MACVLAN_MASTER_INTERFACE}
+EOF
 ```
 
-```yaml
+With the provided configuration, we create a Macvlan SpiderMultusConfig that will automatically generate the corresponding Multus NetworkAttachmentDefinition CR.
+
+```bash
+~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system
+NAME             AGE
+macvlan-ens192   26m
+
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system
+NAME             AGE
+macvlan-ens192   27m
+```
+
+### Create reserved IPs
+
+To create reserved IPs, use the following YAML to specify `spec.ips` as `10.6.168.131-10.6.168.132`:
+
+```bash
+cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderReservedIP
 metadata:
-  name: test-ipv4-reservedip
+  name: test-reservedip
 spec:
   ips:
-  - 172.18.42.41-172.18.42.49
+  - 10.6.168.131-10.6.168.132
+EOF
 ```
 
-At the same time, create an IPPool with 10 IP addresses from `172.18.42.41` to `172.18.42.50`. Yes, we deliberately make it hold one more IP address than the ReservedIP above.
+### Create an IP pool
+
+Create an IP pool with `spec.ips` set to `10.6.168.131-10.6.168.133`, containing a total of 3 IP addresses. However, given the previously created reserved IPs, only 1 IP address is available in this IP pool.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml
-```
-
-```yaml
+cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: test-ipv4-ippool
+  name: test-ippool
 spec:
-  subnet: 172.18.42.0/24
+  subnet: 10.6.0.0/16
   ips:
-  - 172.18.42.41-172.18.42.50
+  - 10.6.168.131-10.6.168.133
+EOF
 ```
 
-Then, create a Deployment with 3 replicas and allocate IP addresses to its Pods from the IPPool above.
+To allocate IP addresses from this IP pool, use the following YAML to create a Deployment with 2 replicas:
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml
-```
+- `ipam.spidernet.io/ippool`: specify the IP pool for assigning IP addresses to the application
 
-```yaml
+```shell
+cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: reservedip-deploy
+  name: test-app
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
-      app: reservedip-deploy
+      app: test-app
   template:
     metadata:
       annotations:
         ipam.spidernet.io/ippool: |-
-          {
-            "ipv4": ["test-ipv4-ippool"]
-          }
+            {      
+              "ipv4": ["test-ippool"]
+            }
+        v1.multus-cni.io/default-network: kube-system/macvlan-ens192
       labels:
-        app: reservedip-deploy
+        app: test-app
     spec:
       containers:
-      - name: reservedip-deploy
-        image: busybox
+      - name: test-app
+        image: nginx
         imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+EOF
 ```
 
-After a while, only one of these Pods using IP `172.18.42.50` can run successfully because "all IP used out".
+Because both IP addresses in the IP pool are reserved by the ReservedIP CR, only one IP address is available in the pool. This means that only one Pod of the application can run successfully, while the other Pod fails to create due to the "all IPs have been exhausted" error.
 
 ```bash
-kubectl get po -l app=reservedip-deploy -o wide
-NAME                                 READY   STATUS              RESTARTS   AGE   IP             NODE
-reservedip-deploy-6cf9858886-cm7bp   0/1     ContainerCreating   0          35s   <none>         spider-worker
-reservedip-deploy-6cf9858886-lb7cr   0/1     ContainerCreating   0          35s   <none>         spider-worker
-reservedip-deploy-6cf9858886-pkcfl   1/1     Running             0          35s   172.18.42.50   spider-worker
+~# kubectl get po -owide
+NAME                       READY   STATUS              RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+test-app-67dd9f645-dv8xz   1/1     Running             0          17s   10.6.168.133   node2   <none>           <none>
+test-app-67dd9f645-lpjgs   0/1     ContainerCreating   0          17s   <none>         node1   <none>           <none>
 ```
 
-But when you delete this ReservedIP, everything will return to normal.
+If a Pod of the application already has been assigned a reserved IP, adding that IP address to the ReservedIP CR will result in the replica failing to run after restarting. Use the following command to add the Pod's allocated IP address to the ReservedIP CR, and then restart the Pod. As expected, the Pod will fail to start due to the "all IPs have been exhausted" error.
 
 ```bash
-kubectl delete -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
+~# kubectl patch spiderreservedip test-reservedip --patch '{"spec":{"ips":["10.6.168.131-10.6.168.133"]}}' --type=merge
+
+～# kubectl delete po test-app-67dd9f645-dv8xz 
+pod "test-app-67dd9f645-dv8xz" deleted
+
+~# kubectl get po -owide
+NAME                       READY   STATUS              RESTARTS   AGE     IP       NODE    NOMINATED NODE   READINESS GATES
+test-app-67dd9f645-fvx4m   0/1     ContainerCreating   0          9s      <none>   node2   <none>           <none>
+test-app-67dd9f645-lpjgs   0/1     ContainerCreating   0          2m18s   <none>   node1   <none>           <none>
 ```
 
-Another interesting question is that what happens if an IP address to be reserved has been allocated before ReservedIP is created? Of course, we dare not stop this running Pod and recycle its IP addresses, but ReservedIP will still ensure that when the Pod is terminated, no other Pods can continue to use the reserved IP address.
-
-> Therefore, ReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.
-
-### Clean up
-
-Clean the relevant resources so that you can run this tutorial again.
+Once the reserved IP is removed, the Pod can obtain an IP address and run successfully.
 
 ```bash
-kubectl delete \
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml \
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml \
--f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml \
---ignore-not-found=true
+~# kubectl delete sr test-reservedip
+spiderreservedip.spiderpool.spidernet.io "test-reservedip" deleted
+
+~# kubectl get po -owide
+NAME                       READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
+test-app-67dd9f645-fvx4m   1/1     Running   0          4m23s   10.6.168.133   node2   <none>           <none>
+test-app-67dd9f645-lpjgs   1/1     Running   0          6m14s   10.6.168.131   node1   <none>           <none>
 ```
 
-## A Trap
+## Conclusion
 
-So, can you use IPPool's field `excludeIPs` to achieve the same effect as ReservedIP? The answer is **NO**! Look at such a case, now you want to reserve an IP `172.18.43.31` for an external application of the Kubernetes cluster, which may be a Redis node. To achieve this, you created such an IPPool:
-
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: already-in-use
-spec:
-  subnet: 172.18.43.0/24
-  ips:
-  - 172.18.43.1-172.18.43.31
-  excludeIPs:
-  - 172.18.43.31
-```
-
-I believe that if there is only one IPPool under the subnet `172.18.43.0/24` network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an IPPool:
-
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: created-by-someone-else
-spec:
-  subnet: 172.18.43.0/24
-  ips:
-  - 172.18.43.31-172.18.43.50
-```
-
-> Different IPPools allow to define the same field `subnet`, more details refer to [validation of IPPool](TODO).
-
-After a period of time, a Pod may be allocated with IP `172.18.43.31` from the IPPool `created-by-someone-else`, and then it holds the same IP address as your Redis node. After that, the Redis may not work as well.
-
-So, if you really want to reserve an IP address instead of excluding an IP address, SpiderReservedIP makes life better.
+SpiderReservedIP simplifies network planning for infrastructure administrators.

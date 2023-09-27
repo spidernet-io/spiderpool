@@ -178,6 +178,9 @@ elif [ "$TYPE"x == "detail"x ] ; then
         echo "--------- ip rule from ${NODE}"
         docker exec $NODE ip rule || true
         docker exec $NODE ip -6 rule || true
+        echo "--------- ip n from ${NODE}"
+        docker exec $NODE ip n || true
+        docker exec $NODE ip -6 n || true
         echo "--------- ip route show table 500 from ${NODE}"
         docker exec $NODE ip route show table 500 || true 
         docker exec $NODE ip -6 route show table 500 || true 

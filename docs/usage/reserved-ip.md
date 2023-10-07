@@ -53,7 +53,7 @@ The IP addresses specified in the ReservedIP CR serve two purposes:
 
 ### Install CNI
 
-To simplify the creation of Multus CNI configurations, Spiderpool introduces the SpiderMultusConfig CR, which automates the management of Multus NetworkAttachmentDefinition CRs. Here is an example of creating a Macvlan SpiderMultusConfig:
+To simplify the creation of JSON-formatted Multus CNI configurations, Spiderpool introduces the SpiderMultusConfig CR, which automates the management of Multus NetworkAttachmentDefinition CRs. Here is an example of creating a Macvlan SpiderMultusConfig:
 
 - master：the interface `ens192` is used as the spec for master.
 

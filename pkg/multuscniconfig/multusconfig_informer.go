@@ -406,6 +406,13 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
 
+		if multusConfSpec.SriovConfig.EnableRdma {
+			rdmaconf := RdmaNetConf{
+				Type: "rdma",
+			}
+			plugins = append([]interface{}{rdmaconf}, plugins...)
+		}
+
 		sriovCNIConf := generateSriovCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{sriovCNIConf}, plugins...)

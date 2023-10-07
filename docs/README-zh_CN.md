@@ -161,6 +161,12 @@ Spiderpool 架构如上所示，包含了以下组件：
 Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分配设置对齐，再配合 ipvlan CNI，
 从而能够为各种公有云环境提供 underlay CNI 解决方案。
 
+## 应用场景 ：使用 RDMA 进行网络传输的应用
+
+RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内核协议栈的处理，是一种网络协议栈 offload 到网卡的技术，它能有效降低网络传输延时、提高吞吐量。
+
+当前，RDMA 技术在 AI 计算、存储等应用上得到了广泛的应用。macvlan、ipvlan 和 SRIOV CNI，它们能够在 kubernetes 平台下把 RDMA 网卡透传给 POD 使用，Spiderpool 增强了这些 CNI 能力，包括 IPAM、宿主机联通、clusterIP 访问等，并且简化了社区中的依赖组件安装流程和使用步骤，极大提高了易用性。
+
 ## 快速开始
 
 快速搭建 Spiderpool，启动一个应用，可参考[快速搭建](./usage/install/install.md)。
@@ -212,10 +218,14 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 * spiderpool 能在任意厂商的公有云平台、openstack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./usage/install/cloud/get-started-alibaba-zh_CN.md)
 
+* 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SRIOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./usage/rdma-zh_CN.md)
+
 * 在 Pod 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助
   [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
   和 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
   准备 master 接口。可参考[例子](./usage/ifacer.md)。
+
+* coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](./usage/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)
 
 * 可以通过 IP 池和 Pod annotaiton 等多种方式定制自定义路由，可参考[例子](./usage/route.md)。
 
@@ -256,6 +266,18 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 [roadmap](./develop/roadmap.md)
 
+## Governance
+
+[Maintainers and Committers](./USERS.md)， 遵循 [governance document](./develop/CODE-OF-CONDUCT.md).
+
+## 使用者
+
+使用了 spiderpool 项目的用户 [file](./USERS.md).
+
+## 参与开发
+
+可参考 [开发搭建文档](./develop/contributing.md).
+
 ## 联系我们
 
 如果有任何关于 Spiderpool 的问题，欢迎您随时通过以下的方式联系我们👏:
@@ -263,6 +285,8 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 * Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCD Slack 的 **[邀请](https://slack.cncf.io/)**
   然后加入 [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 的频道。
 
+* Emails: 您可以查看 [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。
+
 * Wechat Group: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
 
-![Wechat QR-Code](images/wechat.png)
+![Wechat QR-Code](./images/wechat.png))

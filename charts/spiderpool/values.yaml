@@ -5,7 +5,7 @@
 ## @section Global parameters
 ##
 global:
-  ## @param global.imageRegistryOverride Global Docker image registry for spiderpool images, but not for multus tag
+  ## @param global.imageRegistryOverride Global image registry for all images, which is used for offline environment
   imageRegistryOverride: ""
 
   ## @param global.nameOverride instance name
@@ -23,8 +23,8 @@ global:
   #  label1: v1
   #  labele: v2
 
-  ## @param global.ipamBinHostPath the host path of the IPAM plugin directory.
-  ipamBinHostPath: /opt/cni/bin
+  ## @param global.cniBinHostPath the host path of the IPAM plugin directory.
+  cniBinHostPath: /opt/cni/bin
 
   ## @param global.cniConfHostPath the host path of the cni config directory
   cniConfHostPath: /etc/cni/net.d
@@ -68,6 +68,8 @@ ipam:
       ## @param ipam.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
 
+## @section grafanaDashboard parameters
+##
 grafanaDashboard:
   ## @param grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
   install: false
@@ -107,6 +109,108 @@ coordinator:
 
   ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS
   hijackCIDR: ["169.254.0.0/16"]
+
+## @section rdma parameters
+##
+rdma:
+  rdmaSharedDevicePlugin:
+    ## @param rdma.rdmaSharedDevicePlugin.install install rdma shared device plugin for macvlan cni
+    install: false
+
+    ## @param rdma.rdmaSharedDevicePlugin.name the name of rdma shared device plugin
+    name: "spiderpool-rdma-shared-device-plugin"
+
+    image:
+      ## @param rdma.rdmaSharedDevicePlugin.image.registry the image registry of rdma shared device plugin
+      registry: ghcr.io
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.repository the image repository of rdma shared device plugin
+      repository: mellanox/k8s-rdma-shared-dev-plugin
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.pullPolicy the image pullPolicy of rdma shared device plugin
+      pullPolicy: IfNotPresent
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.digest the image digest of rdma shared device plugin
+      digest: ""
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.tag the image tag of rdma shared device plugin
+      tag: latest
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.imagePullSecrets the image imagePullSecrets of rdma shared device plugin
+      imagePullSecrets: []
+      # - name: "image-pull-secret"
+
+    ## @skip rdma.rdmaSharedDevicePlugin.updateStrategy.rollingUpdate.maxUnavailable
+    ## @skip rdma.rdmaSharedDevicePlugin.updateStrategy.type
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: 2
+      type: RollingUpdate
+
+    ## @skip rdma.rdmaSharedDevicePlugin.tolerations
+    tolerations:
+      - operator: Exists
+
+    ## @param rdma.rdmaSharedDevicePlugin.podAnnotations the additional annotations
+    podAnnotations: {}
+
+    ## @param rdma.rdmaSharedDevicePlugin.podLabels the additional label
+    podLabels: {}
+
+    resources:
+      limits:
+        ## @param rdma.rdmaSharedDevicePlugin.resources.limits.cpu the cpu limit
+        cpu: 300m
+        ## @param rdma.rdmaSharedDevicePlugin.resources.limits.memory the memory limit
+        memory: 300Mi
+      requests:
+        ## @param rdma.rdmaSharedDevicePlugin.resources.requests.cpu the cpu requests
+        cpu: 100m
+        ## @param rdma.rdmaSharedDevicePlugin.resources.requests.memory the memory requests
+        memory: 50Mi
+
+    deviceConfig:
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval periodic Update Interval
+      periodicUpdateInterval: 300
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix resource prefix
+      resourcePrefix: "spidernet.io"
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName resource Name
+      resourceName: "hca_shared_devices"
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax rdma Hca Max
+      rdmaHcaMax: 500
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.vendors rdma device vendors, default to mellanox device
+      vendors: "15b3"
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs rdma device IDs, default to mellanox device
+      deviceIDs: "1017"
+
+  rdmaCni:
+    ## @param rdma.rdmaCni.install install rdma cni used to isolate rdma device for sriov cni
+    install: false
+
+    image:
+      ## @param rdma.rdmaCni.image.registry the rdma-cni image registry
+      registry: ghcr.io
+
+      ## @param rdma.rdmaCni.image.repository the rdma-cni image repository
+      repository: k8snetworkplumbingwg/rdma-cni
+
+      ## @param rdma.rdmaCni.image.pullPolicy the rdma-cni image pullPolicy
+      pullPolicy: IfNotPresent
+
+      ## @param rdma.rdmaCni.image.digest the rdma-cni image digest
+      digest: ""
+
+      ## @param rdma.rdmaCni.image.tag the rdma-cni image tag
+      tag: latest
+
+      ## @param rdma.rdmaCni.image.imagePullSecrets the rdma-cni image imagePullSecrets
+      imagePullSecrets: []
+      # - name: "image-pull-secret"
 
 ## @section multus parameters
 ##

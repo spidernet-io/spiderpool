@@ -1,0 +1,113 @@
+{{- if .Values.rdma.rdmaSharedDevicePlugin.install -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.rdma.rdmaSharedDevicePlugin.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+  config.json: |
+    {
+        "periodicUpdateInterval": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval }},
+        "configList": [{
+             "resourcePrefix": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix | quote }},
+             "resourceName": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName | quote }},
+             "rdmaHcaMax": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax }},
+             "selectors": {
+               "vendors": [{{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.vendors | quote }}],
+               "deviceIDs": [{{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs | quote }}]
+              }
+        }]
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.rdma.rdmaSharedDevicePlugin.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "spiderpool.rdmashareddp.selectorLabels" . | nindent 6 }}
+  {{- with .Values.rdma.rdmaSharedDevicePlugin.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.global.commonAnnotations }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.rdma.rdmaSharedDevicePlugin.podAnnotations }}
+        {{- include "tplvalues.render" ( dict "value" .Values.rdma.rdmaSharedDevicePlugin.podAnnotations "context" $ ) | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "spiderpool.rdmashareddp.selectorLabels" . | nindent 8 }}
+        {{- if .Values.global.commonLabels }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.rdma.rdmaSharedDevicePlugin.podLabels }}
+        {{- include "tplvalues.render" ( dict "value" .Values.rdma.rdmaSharedDevicePlugin.podLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+        app: {{ .Values.rdma.rdmaSharedDevicePlugin.name | trunc 63 | trimSuffix "-" }}
+    spec:
+      hostNetwork: true
+      {{- with .Values.rdma.rdmaSharedDevicePlugin.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      priorityClassName: system-node-critical
+      containers:
+        - image: {{ include "rdmashareddp.image" . | quote }}
+          name: k8s-rdma-shared-dp-ds
+          imagePullPolicy: {{ .Values.rdma.rdmaSharedDevicePlugin.image.pullPolicy}}
+          securityContext:
+            privileged: true
+          {{- with .Values.rdma.rdmaSharedDevicePlugin.resources }}
+          resources:
+          {{- toYaml . | trim | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+              readOnly: false
+            - name: plugins-registry
+              mountPath: /var/lib/kubelet/plugins_registry
+              readOnly: false
+            - name: config
+              mountPath: /k8s-rdma-shared-dev-plugin
+            - name: devs
+              mountPath: /dev/
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: plugins-registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+        - name: config
+          configMap:
+            name: {{ .Values.rdma.rdmaSharedDevicePlugin.name | trunc 63 | trimSuffix "-" }}
+            items:
+              - key: config.json
+                path: config.json
+        - name: devs
+          hostPath:
+            path: /dev/
+{{- end }}

@@ -81,6 +81,7 @@ nav:
       - Plugin coordinator: usage/coordinator.md
       - Plugin ifacer: usage/ifacer.md
       - node-based topology: usage/network-topology.md
+      - RDMA: usage/rdma.md
       - FAQ: usage/debug.md
   - Concepts:
       - Architecture: concepts/arch.md

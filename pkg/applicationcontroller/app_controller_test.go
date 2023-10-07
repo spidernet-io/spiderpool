@@ -560,8 +560,15 @@ var _ = Describe("AppController", Label("app_controller_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("the replicaSet has owner", func() {
+			It("the replicaSet has third-party controller owner", func() {
 				err := controllerutil.SetControllerReference(cloneSet, replicaSet1, scheme)
+				Expect(err).NotTo(HaveOccurred())
+				err = reconcileFunc(ctx, nil, replicaSet1)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("the replicaSet has deployment controller owner", func() {
+				err := controllerutil.SetControllerReference(deployment1, replicaSet1, scheme)
 				Expect(err).NotTo(HaveOccurred())
 				err = reconcileFunc(ctx, nil, replicaSet1)
 				Expect(err).NotTo(HaveOccurred())
@@ -680,8 +687,15 @@ var _ = Describe("AppController", Label("app_controller_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("the job has owner", func() {
+			It("the job has third-party controller owner", func() {
 				err := controllerutil.SetControllerReference(cloneSet, job1, scheme)
+				Expect(err).NotTo(HaveOccurred())
+				err = reconcileFunc(ctx, nil, job1)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("the job has cronJob controller owner", func() {
+				err := controllerutil.SetControllerReference(cronJob1, job1, scheme)
 				Expect(err).NotTo(HaveOccurred())
 				err = reconcileFunc(ctx, nil, job1)
 				Expect(err).NotTo(HaveOccurred())
@@ -728,6 +742,12 @@ var _ = Describe("AppController", Label("app_controller_test"), func() {
 			})
 		})
 
+		Context("unrecognized controller", func() {
+			It("do not support third-party controller", func() {
+				err := reconcileFunc(ctx, nil, cloneSet)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Describe("test application delete event hook handler", func() {
@@ -828,6 +848,12 @@ var _ = Describe("AppController", Label("app_controller_test"), func() {
 			})
 		})
 
+		Context("unrecognized controller", func() {
+			It("do not support third-party controller", func() {
+				err := cleanupFunc(ctx, cloneSet)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Describe("test deleteAutoPools", func() {

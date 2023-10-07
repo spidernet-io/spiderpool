@@ -228,13 +228,6 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				return nil
 			}
 
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
 			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
@@ -270,7 +263,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
+			if owner != nil && owner.APIVersion == appsv1.SchemeGroupVersion.String() && owner.Kind == constant.KindDeployment {
 				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
@@ -305,13 +298,6 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
 				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 
@@ -350,7 +336,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 
 			// check the app whether is the top controller or not
 			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
+			if owner != nil && owner.APIVersion == batchv1.SchemeGroupVersion.String() && owner.Kind == constant.KindCronJob {
 				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
@@ -388,13 +374,6 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				return nil
 			}
 
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
-				return nil
-			}
-
 			newAppReplicas = applicationinformers.CalculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations, log)
 			if nil != err {
@@ -425,13 +404,6 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			// no need reconcile for HostNetwork application
 			if newObject.Spec.Template.Spec.HostNetwork {
 				log.Debug("HostNetwork mode, we would not create or scale IPPool for it")
-				return nil
-			}
-
-			// check the app whether is the top controller or not
-			owner := metav1.GetControllerOf(newObject)
-			if owner != nil {
-				log.Sugar().Debugf("app has a owner '%s/%s', we would not create or scale IPPool for it", owner.Kind, owner.Name)
 				return nil
 			}
 

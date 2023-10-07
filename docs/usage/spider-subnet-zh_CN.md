@@ -106,7 +106,7 @@ macvlan-ens192   27m
 macvlan-ens224   27m
 ```
 
-### 创建 Subnets
+### 创建 Subnet
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -

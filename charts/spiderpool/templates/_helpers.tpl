@@ -216,6 +216,50 @@ return the spiderpoolInit image
 {{- end -}}
 
 {{/*
+return the rdma cni image
+*/}}
+{{- define "rdmacni.image" -}}
+{{- $registryName := .Values.rdma.rdmaCni.image.registry -}}
+{{- $repositoryName := .Values.rdma.rdmaCni.image.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.rdma.rdmaCni.image.digest }}
+    {{- print "@" .Values.rdma.rdmaCni.image.digest -}}
+{{- else if .Values.rdma.rdmaCni.image.tag -}}
+    {{- printf ":%s" .Values.rdma.rdmaCni.image.tag -}}
+{{- else -}}
+    {{- printf ":v%s" .Chart.AppVersion -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the rdma shared device plugin
+*/}}
+{{- define "rdmashareddp.image" -}}
+{{- $registryName := .Values.rdma.rdmaSharedDevicePlugin.image.registry -}}
+{{- $repositoryName := .Values.rdma.rdmaSharedDevicePlugin.image.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.rdma.rdmaSharedDevicePlugin.image.digest }}
+    {{- print "@" .Values.rdma.rdmaSharedDevicePlugin.image.digest -}}
+{{- else if .Values.rdma.rdmaSharedDevicePlugin.image.tag -}}
+    {{- printf ":%s" .Values.rdma.rdmaSharedDevicePlugin.image.tag -}}
+{{- else -}}
+    {{- printf ":v%s" .Chart.AppVersion -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 generate the CA cert
 */}}
 {{- define "generate-ca-certs" }}
@@ -241,5 +285,26 @@ spiderpool multus Selector labels
 app.kubernetes.io/name: {{ include "spiderpool.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+name: multus
+{{- end }}
+
+{{/*
+spiderpool rdma shared device plugin Common labels
+*/}}
+{{- define "spiderpool.rdmashareddp.labels" -}}
+helm.sh/chart: {{ include "spiderpool.chart" . }}
+{{ include "spiderpool.rdmashareddp.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+tier: node
+app: rdma-shared-device=plugin
+{{- end }}
+
+{{/*
+spiderpool rdma shared device plugin Selector labels
+*/}}
+{{- define "spiderpool.rdmashareddp.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "spiderpool.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: {{ .Values.rdma.rdmaSharedDevicePlugin.name | trunc 63 | trimSuffix "-" }}
 name: multus
 {{- end }}

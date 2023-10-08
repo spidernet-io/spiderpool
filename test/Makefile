@@ -275,7 +275,10 @@ setup_spiderpool:
 			--set spiderpoolInit.image.registry="" \
 			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 			--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
-			$${HELM_OPTION} \
+			--set rdma.rdmaCni.image.registry=$(E2E_RDMA_IMAGE_REPO) \
+			--set rdma.rdmaSharedDevicePlugin.image.registry=$(E2E_RDMA_IMAGE_REPO) \
+			$${HELM_OPTION}  \
+			$(E2E_HELM_ADDITIONAL_OPTIONS) \
 			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 		exit 0
 

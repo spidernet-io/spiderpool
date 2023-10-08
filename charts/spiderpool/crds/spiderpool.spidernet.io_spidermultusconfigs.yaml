@@ -225,6 +225,9 @@ spec:
                 type: object
               sriov:
                 properties:
+                  enableRdma:
+                    default: false
+                    type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.

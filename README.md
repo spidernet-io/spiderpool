@@ -338,11 +338,11 @@ If you have any questions about Spiderpool, please feel free to contact us throu
 * Slack: If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
 and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
 
-* Emails: Any issues can be reported via e-mail addresses listed in the [MAINTAINERS.md](MAINTAINERS.md) file.
+* Emails: Any issues can be reported via e-mail addresses listed in the [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) file.
 
 * Wechat group: You can scan the QR code below to join our spiderpool tech-group:
 
-![Wechat QR-Code](docs/images/wechat.png)
+![Wechat QR-Code](./docs/images/wechat.png)
 
 ## License
 

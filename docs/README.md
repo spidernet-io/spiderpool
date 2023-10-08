@@ -327,4 +327,4 @@ If you have any questions about Spiderpool, please feel free to contact us throu
 
 * Wechat group: You can scan the QR code below to join our spiderpool tech-group:
 
-![Wechat QR-Code](images/wechat.png)
+![Wechat QR-Code](./images/wechat.png)

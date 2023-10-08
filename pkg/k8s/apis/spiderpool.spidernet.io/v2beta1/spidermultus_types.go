@@ -100,6 +100,10 @@ type SpiderSRIOVCniConfig struct {
 	// +kubebuilder:validation:Maximum=4094
 	VlanID *int32 `json:"vlanID,omitempty"`
 
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	EnableRdma bool `json:"enableRdma"`
+
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
 }

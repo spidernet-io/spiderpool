@@ -112,35 +112,40 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### Global parameters
 
-| Name                            | Description                                                                | Value                                |
-| ------------------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
-| `global.imageRegistryOverride`  | Global Docker image registry for spiderpool images, but not for multus tag | `""`                                 |
-| `global.nameOverride`           | instance name                                                              | `""`                                 |
-| `global.clusterDnsDomain`       | cluster dns domain                                                         | `cluster.local`                      |
-| `global.commonAnnotations`      | Annotations to add to all deployed objects                                 | `{}`                                 |
-| `global.commonLabels`           | Labels to add to all deployed objects                                      | `{}`                                 |
-| `global.ipamBinHostPath`        | the host path of the IPAM plugin directory.                                | `/opt/cni/bin`                       |
-| `global.cniConfHostPath`        | the host path of the cni config directory                                  | `/etc/cni/net.d`                     |
-| `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                        | `/var/run/spidernet/spiderpool.sock` |
-| `global.configName`             | the configmap name                                                         | `spiderpool-conf`                    |
+| Name                            | Description                                                                 | Value                                |
+| ------------------------------- | --------------------------------------------------------------------------- | ------------------------------------ |
+| `global.imageRegistryOverride`  | Global image registry for all images, which is used for offline environment | `""`                                 |
+| `global.nameOverride`           | instance name                                                               | `""`                                 |
+| `global.clusterDnsDomain`       | cluster dns domain                                                          | `cluster.local`                      |
+| `global.commonAnnotations`      | Annotations to add to all deployed objects                                  | `{}`                                 |
+| `global.commonLabels`           | Labels to add to all deployed objects                                       | `{}`                                 |
+| `global.cniBinHostPath`         | the host path of the IPAM plugin directory.                                 | `/opt/cni/bin`                       |
+| `global.cniConfHostPath`        | the host path of the cni config directory                                   | `/etc/cni/net.d`                     |
+| `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                         | `/var/run/spidernet/spiderpool.sock` |
+| `global.configName`             | the configmap name                                                          | `spiderpool-conf`                    |
 
 ### ipam parameters
 
-| Name                                   | Description                                                                                      | Value   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`  |
-| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `true`  |
-| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`  |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`  |
-| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`     |
-| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`  |
-| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`   |
-| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`  |
-| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`     |
-| `grafanaDashboard.install`             | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
-| `grafanaDashboard.namespace`           | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
-| `grafanaDashboard.annotations`         | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
-| `grafanaDashboard.labels`              | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
+| Name                                   | Description                                                                 | Value  |
+| -------------------------------------- | --------------------------------------------------------------------------- | ------ |
+| `ipam.enableIPv4`                      | enable ipv4                                                                 | `true` |
+| `ipam.enableIPv6`                      | enable ipv6                                                                 | `true` |
+| `ipam.enableStatefulSet`               | the network mode                                                            | `true` |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                  | `true` |
+| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools | `1`    |
+| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                       | `true` |
+| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                | `600`  |
+| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period    | `true` |
+| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period    | `0`    |
+
+### grafanaDashboard parameters
+
+| Name                           | Description                                                                                      | Value   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | ------- |
+| `grafanaDashboard.install`     | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
+| `grafanaDashboard.namespace`   | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
+| `grafanaDashboard.annotations` | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
+| `grafanaDashboard.labels`      | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
 
 ### coordinator parameters
 
@@ -154,6 +159,38 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `coordinator.detectIPConflict` | detect IP address conflicts                                                                                                              | `false`              |
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                                                                                          | `true`               |
 | `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS | `["169.254.0.0/16"]` |
+
+### rdma parameters
+
+| Name                                                              | Description                                                | Value                                  |
+| ----------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------- |
+| `rdma.rdmaSharedDevicePlugin.install`                             | install rdma shared device plugin for macvlan cni          | `false`                                |
+| `rdma.rdmaSharedDevicePlugin.name`                                | the name of rdma shared device plugin                      | `spiderpool-rdma-shared-device-plugin` |
+| `rdma.rdmaSharedDevicePlugin.image.registry`                      | the image registry of rdma shared device plugin            | `ghcr.io`                              |
+| `rdma.rdmaSharedDevicePlugin.image.repository`                    | the image repository of rdma shared device plugin          | `mellanox/k8s-rdma-shared-dev-plugin`  |
+| `rdma.rdmaSharedDevicePlugin.image.pullPolicy`                    | the image pullPolicy of rdma shared device plugin          | `IfNotPresent`                         |
+| `rdma.rdmaSharedDevicePlugin.image.digest`                        | the image digest of rdma shared device plugin              | `""`                                   |
+| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin                 | `latest`                               |
+| `rdma.rdmaSharedDevicePlugin.image.imagePullSecrets`              | the image imagePullSecrets of rdma shared device plugin    | `[]`                                   |
+| `rdma.rdmaSharedDevicePlugin.podAnnotations`                      | the additional annotations                                 | `{}`                                   |
+| `rdma.rdmaSharedDevicePlugin.podLabels`                           | the additional label                                       | `{}`                                   |
+| `rdma.rdmaSharedDevicePlugin.resources.limits.cpu`                | the cpu limit                                              | `300m`                                 |
+| `rdma.rdmaSharedDevicePlugin.resources.limits.memory`             | the memory limit                                           | `300Mi`                                |
+| `rdma.rdmaSharedDevicePlugin.resources.requests.cpu`              | the cpu requests                                           | `100m`                                 |
+| `rdma.rdmaSharedDevicePlugin.resources.requests.memory`           | the memory requests                                        | `50Mi`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval` | periodic Update Interval                                   | `300`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix`         | resource prefix                                            | `spidernet.io`                         |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName`           | resource Name                                              | `hca_shared_devices`                   |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax`             | rdma Hca Max                                               | `500`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.vendors`                | rdma device vendors, default to mellanox device            | `15b3`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs`              | rdma device IDs, default to mellanox device                | `1017`                                 |
+| `rdma.rdmaCni.install`                                            | install rdma cni used to isolate rdma device for sriov cni | `false`                                |
+| `rdma.rdmaCni.image.registry`                                     | the rdma-cni image registry                                | `ghcr.io`                              |
+| `rdma.rdmaCni.image.repository`                                   | the rdma-cni image repository                              | `k8snetworkplumbingwg/rdma-cni`        |
+| `rdma.rdmaCni.image.pullPolicy`                                   | the rdma-cni image pullPolicy                              | `IfNotPresent`                         |
+| `rdma.rdmaCni.image.digest`                                       | the rdma-cni image digest                                  | `""`                                   |
+| `rdma.rdmaCni.image.tag`                                          | the rdma-cni image tag                                     | `latest`                               |
+| `rdma.rdmaCni.image.imagePullSecrets`                             | the rdma-cni image imagePullSecrets                        | `[]`                                   |
 
 ### multus parameters
 

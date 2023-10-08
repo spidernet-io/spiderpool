@@ -124,37 +124,25 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		}
 
 		replicasetOwner := metav1.GetControllerOf(&replicaset)
-		if replicasetOwner != nil {
-			if replicasetOwner.APIVersion == appsv1.SchemeGroupVersion.String() && replicasetOwner.Kind == constant.KindDeployment {
-				var deployment appsv1.Deployment
-				err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: replicaset.Namespace, Name: replicasetOwner.Name}, &deployment)
-				if nil != err {
-					return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
-				}
-				return types.PodTopController{
-					AppNamespacedName: types.AppNamespacedName{
-						// deployment.APIVersion is empty string
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       constant.KindDeployment,
-						Namespace:  deployment.Namespace,
-						Name:       deployment.Name,
-					},
-					UID: deployment.UID,
-					APP: &deployment,
-				}, nil
+		if replicasetOwner != nil && replicasetOwner.APIVersion == appsv1.SchemeGroupVersion.String() && replicasetOwner.Kind == constant.KindDeployment {
+			var deployment appsv1.Deployment
+			err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: replicaset.Namespace, Name: replicasetOwner.Name}, &deployment)
+			if nil != err {
+				return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 			}
-
-			logger.Sugar().Warnf("the controller type '%s' of pod '%s/%s' is unknown", replicasetOwner.Kind, pod.Namespace, pod.Name)
 			return types.PodTopController{
 				AppNamespacedName: types.AppNamespacedName{
-					APIVersion: replicasetOwner.APIVersion,
-					Kind:       replicasetOwner.Kind,
-					Namespace:  pod.Namespace,
-					Name:       replicasetOwner.Name,
+					// deployment.APIVersion is empty string
+					APIVersion: appsv1.SchemeGroupVersion.String(),
+					Kind:       constant.KindDeployment,
+					Namespace:  deployment.Namespace,
+					Name:       deployment.Name,
 				},
-				UID: replicasetOwner.UID,
+				UID: deployment.UID,
+				APP: &deployment,
 			}, nil
 		}
+
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
 				APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -173,36 +161,24 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 		}
 		jobOwner := metav1.GetControllerOf(&job)
-		if jobOwner != nil {
-			if jobOwner.APIVersion == batchv1.SchemeGroupVersion.String() && jobOwner.Kind == constant.KindCronJob {
-				var cronJob batchv1.CronJob
-				err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: job.Namespace, Name: jobOwner.Name}, &cronJob)
-				if nil != err {
-					return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
-				}
-				return types.PodTopController{
-					AppNamespacedName: types.AppNamespacedName{
-						APIVersion: batchv1.SchemeGroupVersion.String(),
-						Kind:       constant.KindCronJob,
-						Namespace:  cronJob.Namespace,
-						Name:       cronJob.Name,
-					},
-					UID: cronJob.UID,
-					APP: &cronJob,
-				}, nil
+		if jobOwner != nil && jobOwner.APIVersion == batchv1.SchemeGroupVersion.String() && jobOwner.Kind == constant.KindCronJob {
+			var cronJob batchv1.CronJob
+			err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: job.Namespace, Name: jobOwner.Name}, &cronJob)
+			if nil != err {
+				return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
 			}
-
-			logger.Sugar().Warnf("the controller type '%s' of pod '%s/%s' is unknown", jobOwner.Kind, pod.Namespace, pod.Name)
 			return types.PodTopController{
 				AppNamespacedName: types.AppNamespacedName{
-					APIVersion: jobOwner.APIVersion,
-					Kind:       jobOwner.Kind,
-					Namespace:  job.Namespace,
-					Name:       jobOwner.Name,
+					APIVersion: batchv1.SchemeGroupVersion.String(),
+					Kind:       constant.KindCronJob,
+					Namespace:  cronJob.Namespace,
+					Name:       cronJob.Name,
 				},
-				UID: jobOwner.UID,
+				UID: cronJob.UID,
+				APP: &cronJob,
 			}, nil
 		}
+
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
 				APIVersion: batchv1.SchemeGroupVersion.String(),

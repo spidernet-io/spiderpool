@@ -262,12 +262,14 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.StsManager = statefulSetManager
 
-	logger.Debug("Begin to initialize Kubevirt manager")
-	kubevirtManager := kubevirtmanager.NewKubevirtManager(
-		controllerContext.CRDManager.GetClient(),
-		controllerContext.CRDManager.GetAPIReader(),
-	)
-	controllerContext.KubevirtManager = kubevirtManager
+	if controllerContext.Cfg.EnableKubevirtStaticIP {
+		logger.Debug("Begin to initialize Kubevirt manager")
+		kubevirtManager := kubevirtmanager.NewKubevirtManager(
+			controllerContext.CRDManager.GetClient(),
+			controllerContext.CRDManager.GetAPIReader(),
+		)
+		controllerContext.KubevirtManager = kubevirtManager
+	}
 
 	logger.Debug("Begin to initialize Endpoint manager")
 	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(

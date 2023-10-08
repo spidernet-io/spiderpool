@@ -124,7 +124,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 		}
 	}
 
-	// Check whether the kubevirt VM  pod needs to keep its IP allocation.
+	// Check whether the kubevirt VM pod needs to keep its IP allocation.
 	if i.config.EnableKubevirtStaticIP && endpoint.Status.OwnerControllerType == constant.KindKubevirtVMI {
 		isValidVMPod, err := i.kubevirtManager.IsValidVMPod(ctx, endpoint.Namespace, endpoint.Status.OwnerControllerType, endpoint.Status.OwnerControllerName)
 		if nil != err {

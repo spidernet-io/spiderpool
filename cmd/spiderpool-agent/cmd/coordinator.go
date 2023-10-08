@@ -80,7 +80,6 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		if ok {
 			_, err := kubevirtMgr.GetVMIMByName(ctx, pod.Namespace, vmimName, false)
 			if nil != err {
-				// TODO (Icarus9913): should we still cancel the IP conflict detection for no VMIM pod ?
 				if apierrors.IsNotFound(err) {
 					logger.Sugar().Warnf("no kubevirt vm pod '%s/%s' corresponding VirtualMachineInstanceMigration '%s/%s' found, still execute IP conflict detection",
 						pod.Namespace, pod.Name, pod.Namespace, vmimName)
@@ -90,6 +89,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 				}
 			} else {
 				// cancel IP conflict detection because there's a moment the old vm pod still running during the vm live migration phase
+				logger.Sugar().Infof("cancel IP conflict detection for live migration new pod '%s/%s'", pod.Namespace, pod.Name)
 				detectIPConflict = false
 			}
 		}

@@ -126,22 +126,27 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### ipam parameters
 
-| Name                                   | Description                                                                                      | Value   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`  |
-| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `true`  |
-| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`  |
-| `ipam.enableKubevirtStaticIP`          | the feature to keep kubevirt vm pod static IP                                                    | `true`  |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`  |
-| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`     |
-| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`  |
-| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`   |
-| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`  |
-| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`     |
-| `grafanaDashboard.install`             | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
-| `grafanaDashboard.namespace`           | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
-| `grafanaDashboard.annotations`         | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
-| `grafanaDashboard.labels`              | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
+| Name                                   | Description                                                                 | Value  |
+| -------------------------------------- | --------------------------------------------------------------------------- | ------ |
+| `ipam.enableIPv4`                      | enable ipv4                                                                 | `true` |
+| `ipam.enableIPv6`                      | enable ipv6                                                                 | `true` |
+| `ipam.enableStatefulSet`               | the network mode                                                            | `true` |
+| `ipam.enableKubevirtStaticIP`          | the feature to keep kubevirt vm pod static IP                               | `true` |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                  | `true` |
+| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools | `1`    |
+| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                       | `true` |
+| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                | `600`  |
+| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period    | `true` |
+| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period    | `0`    |
+
+### grafanaDashboard parameters
+
+| Name                           | Description                                                                                      | Value   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | ------- |
+| `grafanaDashboard.install`     | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
+| `grafanaDashboard.namespace`   | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
+| `grafanaDashboard.annotations` | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
+| `grafanaDashboard.labels`      | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
 
 ### coordinator parameters
 

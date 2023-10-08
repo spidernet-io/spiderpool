@@ -388,3 +388,37 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolInit.podAnnotations`             | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
 | `spiderpoolInit.podLabels`                  | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
 | `spiderpoolInit.serviceAccount.annotations` | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
+
+### sriov network operator parameters
+
+| Name                                       | Description                                                                                           | Value                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `sriov.install`                            | install sriov network operator                                                                        | `false`                                                     |
+| `sriov.name`                               | the name of sriov network operator                                                                    | `spiderpool-sriov-operator`                                 |
+| `sriov.affinity`                           | the affinity                                                                                          | `{}`                                                        |
+| `sriov.hostnetwork`                        | enable hostnetwork mode. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                                      |
+| `sriov.replicas`                           | the replicas number                                                                                   | `1`                                                         |
+| `sriov.resourcePrefix`                     | the resource prefix                                                                                   | `spidernet.io`                                              |
+| `sriov.priorityClassName`                  | the priority Class Name                                                                               | `system-node-critical`                                      |
+| `sriov.enableAdmissionController`          | enable Admission Controller                                                                           | `false`                                                     |
+| `sriov.resources.limits.cpu`               | the cpu limit                                                                                         | `300m`                                                      |
+| `sriov.resources.limits.memory`            | the memory limit                                                                                      | `300Mi`                                                     |
+| `sriov.resources.requests.cpu`             | the cpu requests                                                                                      | `100m`                                                      |
+| `sriov.resources.requests.memory`          | the memory requests                                                                                   | `128Mi`                                                     |
+| `sriov.image.registry`                     | registry for all images                                                                               | `ghcr.io`                                                   |
+| `sriov.image.pullPolicy`                   | the image pullPolicy for all images                                                                   | `IfNotPresent`                                              |
+| `sriov.image.imagePullSecrets`             | the image imagePullSecrets for all images                                                             | `[]`                                                        |
+| `sriov.image.operator.repository`          | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-operator`               |
+| `sriov.image.operator.tag`                 | the image tag                                                                                         | `v1.2.0`                                                    |
+| `sriov.image.sriovConfigDaemon.repository` | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-operator-config-daemon` |
+| `sriov.image.sriovConfigDaemon.tag`        | the image tag                                                                                         | `v1.2.0`                                                    |
+| `sriov.image.sriovCni.repository`          | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-cni`                            |
+| `sriov.image.sriovCni.tag`                 | the image tag                                                                                         | `v2.7.0`                                                    |
+| `sriov.image.ibSriovCni.repository`        | the image repository                                                                                  | `k8snetworkplumbingwg/ib-sriov-cni`                         |
+| `sriov.image.ibSriovCni.tag`               | the image tag                                                                                         | `v1.0.2`                                                    |
+| `sriov.image.sriovDevicePlugin.repository` | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-device-plugin`          |
+| `sriov.image.sriovDevicePlugin.tag`        | the image tag                                                                                         | `v3.5.1`                                                    |
+| `sriov.image.resourcesInjector.repository` | the image repository                                                                                  | `k8snetworkplumbingwg/network-resources-injector`           |
+| `sriov.image.resourcesInjector.tag`        | the image tag                                                                                         | `v1.5`                                                      |
+| `sriov.image.webhook.repository`           | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-operator-webhook`       |
+| `sriov.image.webhook.tag`                  | the image tag                                                                                         | `v1.2.0`                                                    |

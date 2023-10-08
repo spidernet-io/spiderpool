@@ -43,10 +43,6 @@
 
 - [ovs CNI](./underlay/get-started-ovs-zh_CN.md), 适合裸机主机这样的场景。
 
-以下示例是在集群中使用两个 CNI 的高级示例：
-
-- [SRIOV and macvlan](./underlay/get-started-macvlan-and-sriov.md)，这个适用于裸机主机等场景，有些节点有 SRIOV 网卡而有些节点没有
-
 ## 在云基础设施上安装 Underlay CNI
 
 - [alibaba cloud](./cloud/get-started-alibaba.md)

@@ -262,6 +262,9 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
+		HELM_OPTION+=" --set sriov.install=true " ; \
+		HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=true " ; \
+		HELM_OPTION+=" --set rdma.rdmaCni.install=true " ; \
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
 		set -x ; \
 		helm upgrade --install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
@@ -277,9 +280,12 @@ setup_spiderpool:
 			--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
 			--set rdma.rdmaCni.image.registry=$(E2E_RDMA_IMAGE_REPO) \
 			--set rdma.rdmaSharedDevicePlugin.image.registry=$(E2E_RDMA_IMAGE_REPO) \
+			--set sriov.image.registry=$(E2E_SRIOV_IMAGE_REPO) \
 			$${HELM_OPTION}  \
 			$(E2E_HELM_ADDITIONAL_OPTIONS) \
 			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+		echo "label node for sriov operator " ; \
+		kubectl --kubeconfig $(E2E_KUBECONFIG) get node | sed '1d' | awk '{print $$1}' | xargs -n 1 -i kubectl --kubeconfig $(E2E_KUBECONFIG) label node {}  node-role.kubernetes.io/worker="" ; \
 		exit 0
 
 .PHONY: clean_spiderpool_crd

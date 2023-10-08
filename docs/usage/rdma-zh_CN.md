@@ -11,11 +11,11 @@ Spiderpool 赋能了 macvlan ipvlan 和 SRIOV CNI， 这些 CNI 能让宿主机�
 RDMA 设备的网络命名空间具备 shared 和 exclusive 两种模式，容器因此可以实现共享 RDMA 网卡，或者独享 RDMA 网卡。在 kubernetes 下，可基于 macvlan 或 ipvlan CNI 来使用 shared 模式的
 RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
 
-在 shared 模式下，Spiderpool 使用了 macvlan 或 ipvlan CNI 来暴露宿主机上的 RDMA 网卡给 PDO 使用，使用 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) 来完成 RDMA 网卡资源的暴露和 POD 调度。
+在 shared 模式下，Spiderpool 使用了 macvlan 或 ipvlan CNI 来暴露宿主机上的 RoCE 网卡给 PDO 使用，使用 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) 来完成 RDMA 网卡资源的暴露和 POD 调度。
 
 在 exclusive 模式下，Spiderpool 使用了 [SRIOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 来暴露宿主机上的 RDMA 网卡给 PDO 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
-### 基于 macvlan 或 ipvlan 共享使用 RDMA 网卡
+### 基于 macvlan 或 ipvlan 共享使用具备 RoCE 功能的网卡
 
 以下步骤，在具备 2 个节点的集群上，演示如何基于 macvlan CNI 使得 POD 共享使用 RDMA 设备
 

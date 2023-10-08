@@ -1,0 +1,102 @@
+{{- if .Values.sriov.install -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sriov.operator.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.sriov.replicas }}
+  selector:
+    matchLabels:
+      {{- include "sriov.operator.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 33%
+  template:
+    metadata:
+      {{- if .Values.global.commonAnnotations }}
+      annotations:
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sriov.operator.selectorLabels" . | nindent 8 }}
+        {{- if .Values.global.commonLabels }}
+        {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.sriov.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sriov.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8}}
+      {{- end }}
+      {{- with .Values.sriov.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+      priorityClassName: {{ default "system-node-critical" .Values.sriov.priorityClassName }}
+      {{- if .Values.sriov.image.imagePullSecrets }}
+      imagePullSecrets:
+      {{- with .Values.sriov.image.imagePullSecrets }}
+      {{- toYaml . | trim | nindent 6 }}
+      {{- end }}
+      {{- end }}
+      hostNetwork: {{ .Values.sriov.hostnetwork }}
+      containers:
+        - name: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+          image: {{ include "sriov.operator.image" . | quote }}
+          command:
+            - sriov-network-operator
+          {{- with .Values.sriov.resources }}
+          resources:
+            {{- toYaml . | trim | nindent 12 }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.sriov.image.pullPolicy }}
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SRIOV_CNI_IMAGE
+              value: {{ include "sriov.sriovCni.image" . | quote }}
+            - name: SRIOV_INFINIBAND_CNI_IMAGE
+              value: {{ include "sriov.ibSriovCni.image" . | quote }}
+            - name: SRIOV_DEVICE_PLUGIN_IMAGE
+              value: {{ include "sriov.sriovDevicePlugin.image" . | quote }}
+            - name: NETWORK_RESOURCES_INJECTOR_IMAGE
+              value: {{ include "sriov.resourcesInjector.image" . | quote }}
+            - name: SRIOV_NETWORK_CONFIG_DAEMON_IMAGE
+              value: {{ include "sriov.sriovConfigDaemon.image" . | quote }}
+            - name: SRIOV_NETWORK_WEBHOOK_IMAGE
+              value: {{ include "sriov.webhook.image" . | quote }}
+            - name: RESOURCE_PREFIX
+              value: {{ .Values.sriov.resourcePrefix }}
+            - name: OPERATOR_NAME
+              value: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+            - name: ENABLE_ADMISSION_CONTROLLER
+              value: {{ .Values.sriov.enableAdmissionController | quote }}
+            - name: IMAGE_PULL_SECRETS
+              value: {{ .Values.sriov.image.pullPolicy | quote }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SRIOV_CNI_BIN_PATH
+              value: {{ .Values.global.cniBinHostPath }}
+            - name: CLUSTER_TYPE
+              value: kubernetes
+{{- end }}

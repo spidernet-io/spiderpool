@@ -833,3 +833,110 @@ spiderpoolInit:
   serviceAccount:
     ## @param spiderpoolInit.serviceAccount.annotations the annotations of spiderpoolInit service account
     annotations: {}
+
+## @section sriov network operator parameters
+##
+sriov:
+  ## @param sriov.install install sriov network operator
+  install: false
+
+  ## @param sriov.name the name of sriov network operator
+  name: "spiderpool-sriov-operator"
+
+  ## @skip sriov.tolerations
+  tolerations:
+    - operator: Exists
+
+  ## @skip sriov.nodeSelector.kubernetes.io/os
+  nodeSelector:
+    kubernetes.io/os: linux
+
+  ## @param sriov.affinity the affinity
+  affinity: {}
+
+  ## @param sriov.hostnetwork enable hostnetwork mode. Notice, if no CNI available before spiderpool installation, must enable this
+  hostnetwork: true
+
+  ## @param sriov.replicas the replicas number
+  replicas: 1
+
+  ## @param sriov.resourcePrefix the resource prefix
+  resourcePrefix: "spidernet.io"
+
+  ## @param sriov.priorityClassName the priority Class Name
+  priorityClassName: "system-node-critical"
+
+  ## @param sriov.enableAdmissionController enable Admission Controller
+  enableAdmissionController: false
+
+  resources:
+    limits:
+      ## @param sriov.resources.limits.cpu the cpu limit
+      cpu: 300m
+      ## @param sriov.resources.limits.memory the memory limit
+      memory: 300Mi
+    requests:
+      ## @param sriov.resources.requests.cpu the cpu requests
+      cpu: 100m
+      ## @param sriov.resources.requests.memory the memory requests
+      memory: 128Mi
+
+  image:
+    ## @param sriov.image.registry registry for all images
+    registry: ghcr.io
+
+    ## @param sriov.image.pullPolicy the image pullPolicy for all images
+    pullPolicy: IfNotPresent
+
+    ## @param sriov.image.imagePullSecrets the image imagePullSecrets for all images
+    imagePullSecrets: []
+    # - name: "image-pull-secret"
+
+    operator:
+      ## @param sriov.image.operator.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-operator
+
+      ## @param sriov.image.operator.tag the image tag
+      tag: v1.2.0
+
+    sriovConfigDaemon:
+      ## @param sriov.image.sriovConfigDaemon.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-operator-config-daemon
+
+      ## @param sriov.image.sriovConfigDaemon.tag the image tag
+      tag: v1.2.0
+
+    sriovCni:
+      ## @param sriov.image.sriovCni.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-cni
+
+      ## @param sriov.image.sriovCni.tag the image tag
+      tag: v2.7.0
+
+    ibSriovCni:
+      ## @param sriov.image.ibSriovCni.repository the image repository
+      repository: k8snetworkplumbingwg/ib-sriov-cni
+
+      ## @param sriov.image.ibSriovCni.tag the image tag
+      tag: v1.0.2
+
+    sriovDevicePlugin:
+      ## @param sriov.image.sriovDevicePlugin.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-device-plugin
+
+      ## @param sriov.image.sriovDevicePlugin.tag the image tag
+      tag: v3.5.1
+
+    resourcesInjector:
+      ## @param sriov.image.resourcesInjector.repository the image repository
+      repository: k8snetworkplumbingwg/network-resources-injector
+
+      ## @param sriov.image.resourcesInjector.tag the image tag
+      tag: v1.5
+
+    webhook:
+      ## @param sriov.image.webhook.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-operator-webhook
+
+      ## @param sriov.image.webhook.tag the image tag
+      tag: v1.2.0

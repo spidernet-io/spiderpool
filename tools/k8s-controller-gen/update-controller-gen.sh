@@ -62,8 +62,10 @@ deepcopy_gen() {
 manifests_verify() {
   # Aggregate the artifacts currently in use
   mkdir -p ${OUTPUT_TMP_DIR}/templates
+  mkdir -p ${OUTPUT_TMP_DIR}/crds
+
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/crds)" ]; then
-    cp -a ${OUTPUT_BASE_DIR}/crds ${OUTPUT_TMP_DIR}
+    cp ${OUTPUT_BASE_DIR}/crds/spiderpool*  ${OUTPUT_TMP_DIR}/crds
   fi
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/templates)" ]; then

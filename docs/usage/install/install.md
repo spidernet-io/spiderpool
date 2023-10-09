@@ -42,10 +42,6 @@ The following examples are guides to install spiderpool:
 
 * [ovs CNI](./underlay/get-started-ovs.md), this is suitable for scenes like bare metal host.
 
-The following examples are advanced to use two CNI in a cluster:
-
-* [SRIOV and macvlan](./underlay/get-started-macvlan-and-sriov.md), this is suitable for scenes like bare metal hosts, some nodes has SRIOV NIC and some nodes do not have
-
 ## Installation for underlay CNI on Cloud infrastruct
 
 * [alibaba cloud](./cloud/get-started-alibaba.md)

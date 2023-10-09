@@ -76,8 +76,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-
-
 {{/* vim: set filetype=mustache: */}}
 {{/*
 Renders a value that contains template.
@@ -91,9 +89,6 @@ Usage:
         {{- tpl (.value | toYaml) .context }}
     {{- end }}
 {{- end -}}
-
-
-
 
 {{/*
 Return the appropriate apiVersion for poddisruptionbudget.
@@ -116,7 +111,6 @@ Return the appropriate apiVersion for deployment.
 {{- print "apps/v1" -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 Return the appropriate apiVersion for RBAC resources.
@@ -174,26 +168,6 @@ return the spiderpoolController image
 {{- end -}}
 
 {{/*
-return the multus image
-*/}}
-{{- define "spiderpool.multus.image" -}}
-{{- $registryName := .Values.multus.multusCNI.image.registry -}}
-{{- $repositoryName := .Values.multus.multusCNI.image.repository -}}
-{{- if .Values.global.imageRegistryOverride }}
-    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
-{{- else if $registryName }}
-    {{- printf "%s/%s" $registryName $repositoryName -}}
-{{- else -}}
-    {{- printf "%s" $repositoryName -}}
-{{- end -}}
-{{- if .Values.multus.multusCNI.image.digest }}
-    {{- print "@" .Values.multus.multusCNI.image.digest -}}
-{{- else if .Values.multus.multusCNI.image.tag -}}
-    {{- printf ":%s" .Values.multus.multusCNI.image.tag -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
 return the spiderpoolInit image
 */}}
 {{- define "spiderpool.spiderpoolInit.image" -}}
@@ -214,6 +188,59 @@ return the spiderpoolInit image
     {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+generate the CA cert
+*/}}
+{{- define "generate-ca-certs" }}
+    {{- $ca := genCA "spidernet.io" (.Values.spiderpoolController.tls.auto.caExpiration | int) -}}
+    {{- $_ := set . "ca" $ca -}}
+{{- end }}
+
+#=================== multus =====================
+
+{{/*
+return the multus image
+*/}}
+{{- define "spiderpool.multus.image" -}}
+{{- $registryName := .Values.multus.multusCNI.image.registry -}}
+{{- $repositoryName := .Values.multus.multusCNI.image.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{- else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.multus.multusCNI.image.digest }}
+    {{- print "@" .Values.multus.multusCNI.image.digest -}}
+{{- else if .Values.multus.multusCNI.image.tag -}}
+    {{- printf ":%s" .Values.multus.multusCNI.image.tag -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+spiderpool multus Common labels
+*/}}
+{{- define "spiderpool.multus.labels" -}}
+helm.sh/chart: {{ include "spiderpool.chart" . }}
+{{ include "spiderpool.multus.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+tier: node
+app: multus
+{{- end }}
+
+{{/*
+spiderpool multus Selector labels
+*/}}
+{{- define "spiderpool.multus.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "spiderpool.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+name: multus
+{{- end }}
+
+#=================== rdma =====================
 
 {{/*
 return the rdma cni image
@@ -260,35 +287,6 @@ return the rdma shared device plugin
 {{- end -}}
 
 {{/*
-generate the CA cert
-*/}}
-{{- define "generate-ca-certs" }}
-    {{- $ca := genCA "spidernet.io" (.Values.spiderpoolController.tls.auto.caExpiration | int) -}}
-    {{- $_ := set . "ca" $ca -}}
-{{- end }}
-
-{{/*
-spiderpool multus Common labels
-*/}}
-{{- define "spiderpool.multus.labels" -}}
-helm.sh/chart: {{ include "spiderpool.chart" . }}
-{{ include "spiderpool.multus.selectorLabels" . }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-tier: node
-app: multus
-{{- end }}
-
-{{/*
-spiderpool multus Selector labels
-*/}}
-{{- define "spiderpool.multus.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "spiderpool.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
-name: multus
-{{- end }}
-
-{{/*
 spiderpool rdma shared device plugin Common labels
 */}}
 {{- define "spiderpool.rdmashareddp.labels" -}}
@@ -308,3 +306,172 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: {{ .Values.rdma.rdmaSharedDevicePlugin.name | trunc 63 | trimSuffix "-" }}
 name: multus
 {{- end }}
+
+#=================== sriov =====================
+
+{{/*
+Common labels
+*/}}
+{{- define "sriov.operator.labels" -}}
+helm.sh/chart: {{ include "spiderpool.chart" . }}
+{{ include "sriov.operator.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+
+{{/*
+Selector labels
+*/}}
+{{- define "sriov.operator.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "spiderpool.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+return the sriov network operator image
+*/}}
+{{- define "sriov.operator.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.operator.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.operator.tag -}}
+    {{- printf ":%s" .Values.sriov.image.operator.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+return the sriov cni image
+*/}}
+{{- define "sriov.sriovCni.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.sriovCni.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.sriovCni.tag -}}
+    {{- printf ":%s" .Values.sriov.image.sriovCni.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+return the sriov ibSriovCni image
+*/}}
+{{- define "sriov.ibSriovCni.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.ibSriovCni.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.ibSriovCni.tag -}}
+    {{- printf ":%s" .Values.sriov.image.ibSriovCni.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the sriov sriovDevicePlugin image
+*/}}
+{{- define "sriov.sriovDevicePlugin.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.sriovDevicePlugin.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.sriovDevicePlugin.tag -}}
+    {{- printf ":%s" .Values.sriov.image.sriovDevicePlugin.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+return the sriov resourcesInjector image
+*/}}
+{{- define "sriov.resourcesInjector.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.resourcesInjector.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.resourcesInjector.tag -}}
+    {{- printf ":%s" .Values.sriov.image.resourcesInjector.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the sriov sriovConfigDaemon image
+*/}}
+{{- define "sriov.sriovConfigDaemon.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.sriovConfigDaemon.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.sriovConfigDaemon.tag -}}
+    {{- printf ":%s" .Values.sriov.image.sriovConfigDaemon.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the sriov webhook image
+*/}}
+{{- define "sriov.webhook.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.webhook.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.webhook.tag -}}
+    {{- printf ":%s" .Values.sriov.image.webhook.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+#========================================

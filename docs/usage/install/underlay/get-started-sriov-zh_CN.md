@@ -30,27 +30,36 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
 
-### 安装 Sriov-network-operator
+## 安装 Spiderpool
 
-Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sriov-device-plugin。
-
-1. 安装 sriov-network-operator
+1. 安装 Spiderpool。
 
     ```shell
-    git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
-    helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set sriov.install=true 
     ```
 
-   > 必须给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'，sriov-operator 相关组件才会就绪。
-   >
-   > sriov-network-operator 默认安装在 sriov-network-operator 命名空间下
+    > 带上 helm 选项 ` --set sriov.install=true `， 会安装 [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)，resourcePrefix 默认为 "spidernet.io"，可通过 helm 选项 ` --set sriov.resourcePrefix ` 修改
+    > 如果您是国内用户，可以指定参数 ` --set global.imageRegistryOverride=ghcr.m.daocloud.io ` 避免 Spiderpool 的镜像拉取失败。
 
-2. 配置 sriov-network-operator
-
-    如果 SriovNetworkNodeState CRs 的状态为 `InProgress`, 说明 sriov-operator 正在同步节点状态，等待状态为 `Suncceeded` 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
+2. 给希望运行 sriov cni 的节点，按照如下命令打上 label，这样，sriov-network-operator 才会在指定的节点上安装组件
 
     ```shell
-    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    kubectl label node $NodeName node-role.kubernetes.io/worker=""
+    ```
+   
+3. 在节点上创建 VF
+
+    使用如下命令查看节点上的可用网卡
+
+    ```shell
+    $ kubectl get sriovnetworknodestates -n kube-system
+    NAME                   SYNC STATUS   AGE
+    node-1                 Succeeded     24s
+    ...
+
+    $ kubectl get sriovnetworknodestates -n kube-system node-1 -o yaml
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodeState
     spec: ...
@@ -66,20 +75,12 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
         pciAddress: "0000:04:00.0"
         totalvfs: 8
         vendor: 15b3
-      - deviceID: "1017"
-        driver: mlx5_core
-        linkSpeed: 10000 Mb/s
-        linkType: ETH
-        mac: 04:3f:72:d0:d2:87
-        mtu: 1500
-        name: enp4s0f1np1
-        pciAddress: "0000:04:00.1"
-        totalvfs: 8
-        vendor: 15b3
       syncStatus: Succeeded
     ```
 
-    从上面可知，节点 `node-1` 上的接口 `enp4s0f0np0` 和 `enp4s0f1np1` 都具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs 来配置 VFs，并且安装 sriov-device-plugin :
+    > 如果 SriovNetworkNodeState CRs 的状态为 `InProgress`, 说明 sriov-operator 正在同步节点状态，等待状态为 `Suncceeded` 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
+
+   从上面可知，节点 `node-1` 上的网卡具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs ，使得这些节点上的这些网卡创建出 VF :
 
     ```shell
     $ cat << EOF | kubectl apply -f -
@@ -90,23 +91,25 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
       namespace: sriov-network-operator
     spec:
       deviceType: netdevice
-      nicSelector:
-      pfNames:
-      - enp4s0f0np0
       nodeSelector:
-        kubernetes.io/hostname: node-1  # 只作用于 10-20-1-240 这个节点
+        kubernetes.io/os: "linux"
+      nicSelector:
+        deviceID: "1017"
+        rootDevices:
+          - 0000:04:00.0
+        vendor: "15b3"
       numVfs: 8 # 渴望的 VFs 数量
       resourceName: sriov_netdevice
     EOF
     ```
 
-    >  下发后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
-    >  resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_"。
+   >  下发如上命令后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
+   >  resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_"。
 
-    在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VFs 已经得到配置:
+   在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VFs 已经得到配置:
 
     ```shell
-    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    $ kubectl get sriovnetworknodestates -n sriov-network-operator node-1 -o yaml
     ...
     - Vfs:
         - deviceID: 1018
@@ -131,7 +134,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     ...
     ```
 
-    查看 Node 发现名为 `spidernet.io/sriov_netdevice` 的 sriov 资源已经生效，其中 VF 的数量为 8:
+   查看 Node 发现名为 `spidernet.io/sriov_netdevice` 的 sriov 资源已经生效，其中 VF 的数量为 8:
 
     ```shell
     ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
@@ -146,19 +149,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     }
     ```
 
-## 安装 Spiderpool
-
-1. 安装 Spiderpool。
-
-    ```shell
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system
-    ```
-
-    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
-
-2. 创建 SpiderIPPool 实例。
+4. 创建 SpiderIPPool 实例。
 
     Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。
     以下是创建相关的 SpiderIPPool 示例
@@ -179,7 +170,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     EOF
     ```
 
-3. 创建 SpiderMultusConfig 实例。
+5. 创建 SpiderMultusConfig 实例。
 
     ```shell
     $ cat <<EOF | kubectl apply -f -

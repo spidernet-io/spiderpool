@@ -14,7 +14,7 @@
 
 // Code generated from semantic convention specification. DO NOT EDIT.
 
-package semconv // import "go.opentelemetry.io/otel/semconv/v1.17.0"
+package semconv // import "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 import "go.opentelemetry.io/otel/attribute"
 
@@ -71,22 +71,6 @@ const (
 	// SHOULD be left unset.
 	BrowserMobileKey = attribute.Key("browser.mobile")
 
-	// BrowserUserAgentKey is the attribute Key conforming to the
-	// "browser.user_agent" semantic conventions. It represents the full
-	// user-agent string provided by the browser
-	//
-	// Type: string
-	// RequirementLevel: Optional
-	// Stability: stable
-	// Examples: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
-	// AppleWebKit/537.36 (KHTML, '
-	//  'like Gecko) Chrome/95.0.4638.54 Safari/537.36'
-	// Note: The user-agent value SHOULD be provided only from browsers that do
-	// not have a mechanism to retrieve brands and platform individually from
-	// the User-Agent Client Hints API. To retrieve the value, the legacy
-	// `navigator.userAgent` API can be used.
-	BrowserUserAgentKey = attribute.Key("browser.user_agent")
-
 	// BrowserLanguageKey is the attribute Key conforming to the
 	// "browser.language" semantic conventions. It represents the preferred
 	// language of the user using the browser
@@ -119,13 +103,6 @@ func BrowserPlatform(val string) attribute.KeyValue {
 // if the browser is running on a mobile device
 func BrowserMobile(val bool) attribute.KeyValue {
 	return BrowserMobileKey.Bool(val)
-}
-
-// BrowserUserAgent returns an attribute KeyValue conforming to the
-// "browser.user_agent" semantic conventions. It represents the full user-agent
-// string provided by the browser
-func BrowserUserAgent(val string) attribute.KeyValue {
-	return BrowserUserAgentKey.String(val)
 }
 
 // BrowserLanguage returns an attribute KeyValue conforming to the
@@ -171,8 +148,55 @@ const (
 	// regions](https://azure.microsoft.com/en-us/global-infrastructure/geographies/),
 	// [Google Cloud regions](https://cloud.google.com/about/locations), or
 	// [Tencent Cloud
-	// regions](https://intl.cloud.tencent.com/document/product/213/6091).
+	// regions](https://www.tencentcloud.com/document/product/213/6091).
 	CloudRegionKey = attribute.Key("cloud.region")
+
+	// CloudResourceIDKey is the attribute Key conforming to the
+	// "cloud.resource_id" semantic conventions. It represents the cloud
+	// provider-specific native identifier of the monitored cloud resource
+	// (e.g. an
+	// [ARN](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
+	// on AWS, a [fully qualified resource
+	// ID](https://learn.microsoft.com/en-us/rest/api/resources/resources/get-by-id)
+	// on Azure, a [full resource
+	// name](https://cloud.google.com/apis/design/resource_names#full_resource_name)
+	// on GCP)
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'arn:aws:lambda:REGION:ACCOUNT_ID:function:my-function',
+	// '//run.googleapis.com/projects/PROJECT_ID/locations/LOCATION_ID/services/SERVICE_ID',
+	// '/subscriptions/<SUBSCIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/sites/<FUNCAPP>/functions/<FUNC>'
+	// Note: On some cloud providers, it may not be possible to determine the
+	// full ID at startup,
+	// so it may be necessary to set `cloud.resource_id` as a span attribute
+	// instead.
+	//
+	// The exact value to use for `cloud.resource_id` depends on the cloud
+	// provider.
+	// The following well-known definitions MUST be used if you set this
+	// attribute and they apply:
+	//
+	// * **AWS Lambda:** The function
+	// [ARN](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html).
+	//   Take care not to use the "invoked ARN" directly but replace any
+	//   [alias
+	// suffix](https://docs.aws.amazon.com/lambda/latest/dg/configuration-aliases.html)
+	//   with the resolved function version, as the same runtime instance may
+	// be invokable with
+	//   multiple different aliases.
+	// * **GCP:** The [URI of the
+	// resource](https://cloud.google.com/iam/docs/full-resource-names)
+	// * **Azure:** The [Fully Qualified Resource
+	// ID](https://docs.microsoft.com/en-us/rest/api/resources/resources/get-by-id)
+	// of the invoked function,
+	//   *not* the function app, having the form
+	// `/subscriptions/<SUBSCIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/sites/<FUNCAPP>/functions/<FUNC>`.
+	//   This means that a span attribute MUST be used, as an Azure function
+	// app can host multiple functions that would usually share
+	//   a TracerProvider.
+	CloudResourceIDKey = attribute.Key("cloud.resource_id")
 
 	// CloudAvailabilityZoneKey is the attribute Key conforming to the
 	// "cloud.availability_zone" semantic conventions. It represents the cloud
@@ -208,6 +232,8 @@ var (
 	CloudProviderAzure = CloudProviderKey.String("azure")
 	// Google Cloud Platform
 	CloudProviderGCP = CloudProviderKey.String("gcp")
+	// Heroku Platform as a Service
+	CloudProviderHeroku = CloudProviderKey.String("heroku")
 	// IBM Cloud
 	CloudProviderIbmCloud = CloudProviderKey.String("ibm_cloud")
 	// Tencent Cloud
@@ -247,6 +273,8 @@ var (
 	CloudPlatformAzureAppService = CloudPlatformKey.String("azure_app_service")
 	// Azure Red Hat OpenShift
 	CloudPlatformAzureOpenshift = CloudPlatformKey.String("azure_openshift")
+	// Google Bare Metal Solution (BMS)
+	CloudPlatformGCPBareMetalSolution = CloudPlatformKey.String("gcp_bare_metal_solution")
 	// Google Cloud Compute Engine (GCE)
 	CloudPlatformGCPComputeEngine = CloudPlatformKey.String("gcp_compute_engine")
 	// Google Cloud Run
@@ -258,7 +286,7 @@ var (
 	// Google Cloud App Engine (GAE)
 	CloudPlatformGCPAppEngine = CloudPlatformKey.String("gcp_app_engine")
 	// Red Hat OpenShift on Google Cloud
-	CloudPlatformGoogleCloudOpenshift = CloudPlatformKey.String("google_cloud_openshift")
+	CloudPlatformGCPOpenshift = CloudPlatformKey.String("gcp_openshift")
 	// Red Hat OpenShift on IBM Cloud
 	CloudPlatformIbmCloudOpenshift = CloudPlatformKey.String("ibm_cloud_openshift")
 	// Tencent Cloud Cloud Virtual Machine (CVM)
@@ -281,6 +309,19 @@ func CloudAccountID(val string) attribute.KeyValue {
 // the resource is running.
 func CloudRegion(val string) attribute.KeyValue {
 	return CloudRegionKey.String(val)
+}
+
+// CloudResourceID returns an attribute KeyValue conforming to the
+// "cloud.resource_id" semantic conventions. It represents the cloud
+// provider-specific native identifier of the monitored cloud resource (e.g. an
+// [ARN](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
+// on AWS, a [fully qualified resource
+// ID](https://learn.microsoft.com/en-us/rest/api/resources/resources/get-by-id)
+// on Azure, a [full resource
+// name](https://cloud.google.com/apis/design/resource_names#full_resource_name)
+// on GCP)
+func CloudResourceID(val string) attribute.KeyValue {
+	return CloudResourceIDKey.String(val)
 }
 
 // CloudAvailabilityZone returns an attribute KeyValue conforming to the
@@ -506,6 +547,157 @@ func AWSLogStreamARNs(val ...string) attribute.KeyValue {
 	return AWSLogStreamARNsKey.StringSlice(val)
 }
 
+// Resource used by Google Cloud Run.
+const (
+	// GCPCloudRunJobExecutionKey is the attribute Key conforming to the
+	// "gcp.cloud_run.job.execution" semantic conventions. It represents the
+	// name of the Cloud Run
+	// [execution](https://cloud.google.com/run/docs/managing/job-executions)
+	// being run for the Job, as set by the
+	// [`CLOUD_RUN_EXECUTION`](https://cloud.google.com/run/docs/container-contract#jobs-env-vars)
+	// environment variable.
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'job-name-xxxx', 'sample-job-mdw84'
+	GCPCloudRunJobExecutionKey = attribute.Key("gcp.cloud_run.job.execution")
+
+	// GCPCloudRunJobTaskIndexKey is the attribute Key conforming to the
+	// "gcp.cloud_run.job.task_index" semantic conventions. It represents the
+	// index for a task within an execution as provided by the
+	// [`CLOUD_RUN_TASK_INDEX`](https://cloud.google.com/run/docs/container-contract#jobs-env-vars)
+	// environment variable.
+	//
+	// Type: int
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 0, 1
+	GCPCloudRunJobTaskIndexKey = attribute.Key("gcp.cloud_run.job.task_index")
+)
+
+// GCPCloudRunJobExecution returns an attribute KeyValue conforming to the
+// "gcp.cloud_run.job.execution" semantic conventions. It represents the name
+// of the Cloud Run
+// [execution](https://cloud.google.com/run/docs/managing/job-executions) being
+// run for the Job, as set by the
+// [`CLOUD_RUN_EXECUTION`](https://cloud.google.com/run/docs/container-contract#jobs-env-vars)
+// environment variable.
+func GCPCloudRunJobExecution(val string) attribute.KeyValue {
+	return GCPCloudRunJobExecutionKey.String(val)
+}
+
+// GCPCloudRunJobTaskIndex returns an attribute KeyValue conforming to the
+// "gcp.cloud_run.job.task_index" semantic conventions. It represents the index
+// for a task within an execution as provided by the
+// [`CLOUD_RUN_TASK_INDEX`](https://cloud.google.com/run/docs/container-contract#jobs-env-vars)
+// environment variable.
+func GCPCloudRunJobTaskIndex(val int) attribute.KeyValue {
+	return GCPCloudRunJobTaskIndexKey.Int(val)
+}
+
+// Resources used by Google Compute Engine (GCE).
+const (
+	// GCPGceInstanceNameKey is the attribute Key conforming to the
+	// "gcp.gce.instance.name" semantic conventions. It represents the instance
+	// name of a GCE instance. This is the value provided by `host.name`, the
+	// visible name of the instance in the Cloud Console UI, and the prefix for
+	// the default hostname of the instance as defined by the [default internal
+	// DNS
+	// name](https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names).
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'instance-1', 'my-vm-name'
+	GCPGceInstanceNameKey = attribute.Key("gcp.gce.instance.name")
+
+	// GCPGceInstanceHostnameKey is the attribute Key conforming to the
+	// "gcp.gce.instance.hostname" semantic conventions. It represents the
+	// hostname of a GCE instance. This is the full value of the default or
+	// [custom
+	// hostname](https://cloud.google.com/compute/docs/instances/custom-hostname-vm).
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'my-host1234.example.com',
+	// 'sample-vm.us-west1-b.c.my-project.internal'
+	GCPGceInstanceHostnameKey = attribute.Key("gcp.gce.instance.hostname")
+)
+
+// GCPGceInstanceName returns an attribute KeyValue conforming to the
+// "gcp.gce.instance.name" semantic conventions. It represents the instance
+// name of a GCE instance. This is the value provided by `host.name`, the
+// visible name of the instance in the Cloud Console UI, and the prefix for the
+// default hostname of the instance as defined by the [default internal DNS
+// name](https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names).
+func GCPGceInstanceName(val string) attribute.KeyValue {
+	return GCPGceInstanceNameKey.String(val)
+}
+
+// GCPGceInstanceHostname returns an attribute KeyValue conforming to the
+// "gcp.gce.instance.hostname" semantic conventions. It represents the hostname
+// of a GCE instance. This is the full value of the default or [custom
+// hostname](https://cloud.google.com/compute/docs/instances/custom-hostname-vm).
+func GCPGceInstanceHostname(val string) attribute.KeyValue {
+	return GCPGceInstanceHostnameKey.String(val)
+}
+
+// Heroku dyno metadata
+const (
+	// HerokuReleaseCreationTimestampKey is the attribute Key conforming to the
+	// "heroku.release.creation_timestamp" semantic conventions. It represents
+	// the time and date the release was created
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: '2022-10-23T18:00:42Z'
+	HerokuReleaseCreationTimestampKey = attribute.Key("heroku.release.creation_timestamp")
+
+	// HerokuReleaseCommitKey is the attribute Key conforming to the
+	// "heroku.release.commit" semantic conventions. It represents the commit
+	// hash for the current release
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'e6134959463efd8966b20e75b913cafe3f5ec'
+	HerokuReleaseCommitKey = attribute.Key("heroku.release.commit")
+
+	// HerokuAppIDKey is the attribute Key conforming to the "heroku.app.id"
+	// semantic conventions. It represents the unique identifier for the
+	// application
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: '2daa2797-e42b-4624-9322-ec3f968df4da'
+	HerokuAppIDKey = attribute.Key("heroku.app.id")
+)
+
+// HerokuReleaseCreationTimestamp returns an attribute KeyValue conforming
+// to the "heroku.release.creation_timestamp" semantic conventions. It
+// represents the time and date the release was created
+func HerokuReleaseCreationTimestamp(val string) attribute.KeyValue {
+	return HerokuReleaseCreationTimestampKey.String(val)
+}
+
+// HerokuReleaseCommit returns an attribute KeyValue conforming to the
+// "heroku.release.commit" semantic conventions. It represents the commit hash
+// for the current release
+func HerokuReleaseCommit(val string) attribute.KeyValue {
+	return HerokuReleaseCommitKey.String(val)
+}
+
+// HerokuAppID returns an attribute KeyValue conforming to the
+// "heroku.app.id" semantic conventions. It represents the unique identifier
+// for the application
+func HerokuAppID(val string) attribute.KeyValue {
+	return HerokuAppIDKey.String(val)
+}
+
 // A container instance.
 const (
 	// ContainerNameKey is the attribute Key conforming to the "container.name"
@@ -559,6 +751,59 @@ const (
 	// Stability: stable
 	// Examples: '0.1'
 	ContainerImageTagKey = attribute.Key("container.image.tag")
+
+	// ContainerImageIDKey is the attribute Key conforming to the
+	// "container.image.id" semantic conventions. It represents the runtime
+	// specific image identifier. Usually a hash algorithm followed by a UUID.
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples:
+	// 'sha256:19c92d0a00d1b66d897bceaa7319bee0dd38a10a851c60bcec9474aa3f01e50f'
+	// Note: Docker defines a sha256 of the image id; `container.image.id`
+	// corresponds to the `Image` field from the Docker container inspect
+	// [API](https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect)
+	// endpoint.
+	// K8S defines a link to the container registry repository with digest
+	// `"imageID": "registry.azurecr.io
+	// /namespace/service/dockerfile@sha256:bdeabd40c3a8a492eaf9e8e44d0ebbb84bac7ee25ac0cf8a7159d25f62555625"`.
+	// OCI defines a digest of manifest.
+	ContainerImageIDKey = attribute.Key("container.image.id")
+
+	// ContainerCommandKey is the attribute Key conforming to the
+	// "container.command" semantic conventions. It represents the command used
+	// to run the container (i.e. the command name).
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'otelcontribcol'
+	// Note: If using embedded credentials or sensitive data, it is recommended
+	// to remove them to prevent potential leakage.
+	ContainerCommandKey = attribute.Key("container.command")
+
+	// ContainerCommandLineKey is the attribute Key conforming to the
+	// "container.command_line" semantic conventions. It represents the full
+	// command run by the container as a single string representing the full
+	// command. [2]
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'otelcontribcol --config config.yaml'
+	ContainerCommandLineKey = attribute.Key("container.command_line")
+
+	// ContainerCommandArgsKey is the attribute Key conforming to the
+	// "container.command_args" semantic conventions. It represents the all the
+	// command arguments (including the command/executable itself) run by the
+	// container. [2]
+	//
+	// Type: string[]
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: 'otelcontribcol, --config, config.yaml'
+	ContainerCommandArgsKey = attribute.Key("container.command_args")
 )
 
 // ContainerName returns an attribute KeyValue conforming to the
@@ -596,6 +841,36 @@ func ContainerImageName(val string) attribute.KeyValue {
 // image tag.
 func ContainerImageTag(val string) attribute.KeyValue {
 	return ContainerImageTagKey.String(val)
+}
+
+// ContainerImageID returns an attribute KeyValue conforming to the
+// "container.image.id" semantic conventions. It represents the runtime
+// specific image identifier. Usually a hash algorithm followed by a UUID.
+func ContainerImageID(val string) attribute.KeyValue {
+	return ContainerImageIDKey.String(val)
+}
+
+// ContainerCommand returns an attribute KeyValue conforming to the
+// "container.command" semantic conventions. It represents the command used to
+// run the container (i.e. the command name).
+func ContainerCommand(val string) attribute.KeyValue {
+	return ContainerCommandKey.String(val)
+}
+
+// ContainerCommandLine returns an attribute KeyValue conforming to the
+// "container.command_line" semantic conventions. It represents the full
+// command run by the container as a single string representing the full
+// command. [2]
+func ContainerCommandLine(val string) attribute.KeyValue {
+	return ContainerCommandLineKey.String(val)
+}
+
+// ContainerCommandArgs returns an attribute KeyValue conforming to the
+// "container.command_args" semantic conventions. It represents the all the
+// command arguments (including the command/executable itself) run by the
+// container. [2]
+func ContainerCommandArgs(val ...string) attribute.KeyValue {
+	return ContainerCommandArgsKey.StringSlice(val)
 }
 
 // The software deployment.
@@ -727,7 +1002,7 @@ const (
 	// FaaS
 	// platform and is usually different from the name of the callback
 	// function (which may be stored in the
-	// [`code.namespace`/`code.function`](../../trace/semantic_conventions/span-general.md#source-code-attributes)
+	// [`code.namespace`/`code.function`](/docs/general/general-attributes.md#source-code-attributes)
 	// span attributes).
 	//
 	// For some cloud providers, the above definition is ambiguous. The
@@ -741,42 +1016,8 @@ const (
 	//   can also be seen in the resource JSON for the function).
 	//   This means that a span attribute MUST be used, as an Azure function
 	//   app can host multiple functions that would usually share
-	//   a TracerProvider (see also the `faas.id` attribute).
+	//   a TracerProvider (see also the `cloud.resource_id` attribute).
 	FaaSNameKey = attribute.Key("faas.name")
-
-	// FaaSIDKey is the attribute Key conforming to the "faas.id" semantic
-	// conventions. It represents the unique ID of the single function that
-	// this runtime instance executes.
-	//
-	// Type: string
-	// RequirementLevel: Optional
-	// Stability: stable
-	// Examples: 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
-	// Note: On some cloud providers, it may not be possible to determine the
-	// full ID at startup,
-	// so consider setting `faas.id` as a span attribute instead.
-	//
-	// The exact value to use for `faas.id` depends on the cloud provider:
-	//
-	// * **AWS Lambda:** The function
-	// [ARN](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html).
-	//   Take care not to use the "invoked ARN" directly but replace any
-	//   [alias
-	// suffix](https://docs.aws.amazon.com/lambda/latest/dg/configuration-aliases.html)
-	//   with the resolved function version, as the same runtime instance may
-	// be invokable with
-	//   multiple different aliases.
-	// * **GCP:** The [URI of the
-	// resource](https://cloud.google.com/iam/docs/full-resource-names)
-	// * **Azure:** The [Fully Qualified Resource
-	// ID](https://docs.microsoft.com/en-us/rest/api/resources/resources/get-by-id)
-	// of the invoked function,
-	//   *not* the function app, having the form
-	// `/subscriptions/<SUBSCIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/sites/<FUNCAPP>/functions/<FUNC>`.
-	//   This means that a span attribute MUST be used, as an Azure function
-	// app can host multiple functions that would usually share
-	//   a TracerProvider.
-	FaaSIDKey = attribute.Key("faas.id")
 
 	// FaaSVersionKey is the attribute Key conforming to the "faas.version"
 	// semantic conventions. It represents the immutable version of the
@@ -791,7 +1032,7 @@ const (
 	// * **AWS Lambda:** The [function
 	// version](https://docs.aws.amazon.com/lambda/latest/dg/configuration-versions.html)
 	//   (an integer represented as a decimal string).
-	// * **Google Cloud Run:** The
+	// * **Google Cloud Run (Services):** The
 	// [revision](https://cloud.google.com/run/docs/managing/revisions)
 	//   (i.e., the function name plus the revision suffix).
 	// * **Google Cloud Functions:** The value of the
@@ -814,16 +1055,17 @@ const (
 
 	// FaaSMaxMemoryKey is the attribute Key conforming to the
 	// "faas.max_memory" semantic conventions. It represents the amount of
-	// memory available to the serverless function in MiB.
+	// memory available to the serverless function converted to Bytes.
 	//
 	// Type: int
 	// RequirementLevel: Optional
 	// Stability: stable
-	// Examples: 128
+	// Examples: 134217728
 	// Note: It's recommended to set this attribute since e.g. too little
 	// memory can easily stop a Java AWS Lambda function from working
 	// correctly. On AWS Lambda, the environment variable
-	// `AWS_LAMBDA_FUNCTION_MEMORY_SIZE` provides this information.
+	// `AWS_LAMBDA_FUNCTION_MEMORY_SIZE` provides this information (which must
+	// be multiplied by 1,048,576).
 	FaaSMaxMemoryKey = attribute.Key("faas.max_memory")
 )
 
@@ -832,13 +1074,6 @@ const (
 // this runtime instance executes.
 func FaaSName(val string) attribute.KeyValue {
 	return FaaSNameKey.String(val)
-}
-
-// FaaSID returns an attribute KeyValue conforming to the "faas.id" semantic
-// conventions. It represents the unique ID of the single function that this
-// runtime instance executes.
-func FaaSID(val string) attribute.KeyValue {
-	return FaaSIDKey.String(val)
 }
 
 // FaaSVersion returns an attribute KeyValue conforming to the
@@ -858,18 +1093,19 @@ func FaaSInstance(val string) attribute.KeyValue {
 
 // FaaSMaxMemory returns an attribute KeyValue conforming to the
 // "faas.max_memory" semantic conventions. It represents the amount of memory
-// available to the serverless function in MiB.
+// available to the serverless function converted to Bytes.
 func FaaSMaxMemory(val int) attribute.KeyValue {
 	return FaaSMaxMemoryKey.Int(val)
 }
 
-// A host is defined as a general computing instance.
+// A host is defined as a computing instance. For example, physical servers,
+// virtual machines, switches or disk array.
 const (
 	// HostIDKey is the attribute Key conforming to the "host.id" semantic
 	// conventions. It represents the unique host ID. For Cloud, this must be
 	// the instance_id assigned by the cloud provider. For non-containerized
-	// Linux systems, the `machine-id` located in `/etc/machine-id` or
-	// `/var/lib/dbus/machine-id` may be used.
+	// systems, this should be the `machine-id`. See the table below for the
+	// sources to use to determine the `machine-id` based on operating system.
 	//
 	// Type: string
 	// RequirementLevel: Optional
@@ -918,8 +1154,8 @@ const (
 	HostImageNameKey = attribute.Key("host.image.name")
 
 	// HostImageIDKey is the attribute Key conforming to the "host.image.id"
-	// semantic conventions. It represents the vM image ID. For Cloud, this
-	// value is from the provider.
+	// semantic conventions. It represents the vM image ID or host OS image ID.
+	// For Cloud, this value is from the provider.
 	//
 	// Type: string
 	// RequirementLevel: Optional
@@ -929,7 +1165,7 @@ const (
 
 	// HostImageVersionKey is the attribute Key conforming to the
 	// "host.image.version" semantic conventions. It represents the version
-	// string of the VM image as defined in [Version
+	// string of the VM image or host OS as defined in [Version
 	// Attributes](README.md#version-attributes).
 	//
 	// Type: string
@@ -960,9 +1196,9 @@ var (
 
 // HostID returns an attribute KeyValue conforming to the "host.id" semantic
 // conventions. It represents the unique host ID. For Cloud, this must be the
-// instance_id assigned by the cloud provider. For non-containerized Linux
-// systems, the `machine-id` located in `/etc/machine-id` or
-// `/var/lib/dbus/machine-id` may be used.
+// instance_id assigned by the cloud provider. For non-containerized systems,
+// this should be the `machine-id`. See the table below for the sources to use
+// to determine the `machine-id` based on operating system.
 func HostID(val string) attribute.KeyValue {
 	return HostIDKey.String(val)
 }
@@ -990,15 +1226,15 @@ func HostImageName(val string) attribute.KeyValue {
 }
 
 // HostImageID returns an attribute KeyValue conforming to the
-// "host.image.id" semantic conventions. It represents the vM image ID. For
-// Cloud, this value is from the provider.
+// "host.image.id" semantic conventions. It represents the vM image ID or host
+// OS image ID. For Cloud, this value is from the provider.
 func HostImageID(val string) attribute.KeyValue {
 	return HostImageIDKey.String(val)
 }
 
 // HostImageVersion returns an attribute KeyValue conforming to the
 // "host.image.version" semantic conventions. It represents the version string
-// of the VM image as defined in [Version
+// of the VM image or host OS as defined in [Version
 // Attributes](README.md#version-attributes).
 func HostImageVersion(val string) attribute.KeyValue {
 	return HostImageVersionKey.String(val)
@@ -1015,6 +1251,40 @@ const (
 	// Stability: stable
 	// Examples: 'opentelemetry-cluster'
 	K8SClusterNameKey = attribute.Key("k8s.cluster.name")
+
+	// K8SClusterUIDKey is the attribute Key conforming to the
+	// "k8s.cluster.uid" semantic conventions. It represents a pseudo-ID for
+	// the cluster, set to the UID of the `kube-system` namespace.
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: '218fc5a9-a5f1-4b54-aa05-46717d0ab26d'
+	// Note: K8S does not have support for obtaining a cluster ID. If this is
+	// ever
+	// added, we will recommend collecting the `k8s.cluster.uid` through the
+	// official APIs. In the meantime, we are able to use the `uid` of the
+	// `kube-system` namespace as a proxy for cluster ID. Read on for the
+	// rationale.
+	//
+	// Every object created in a K8S cluster is assigned a distinct UID. The
+	// `kube-system` namespace is used by Kubernetes itself and will exist
+	// for the lifetime of the cluster. Using the `uid` of the `kube-system`
+	// namespace is a reasonable proxy for the K8S ClusterID as it will only
+	// change if the cluster is rebuilt. Furthermore, Kubernetes UIDs are
+	// UUIDs as standardized by
+	// [ISO/IEC 9834-8 and ITU-T
+	// X.667](https://www.itu.int/ITU-T/studygroups/com17/oid.html).
+	// Which states:
+	//
+	// > If generated according to one of the mechanisms defined in Rec.
+	//   ITU-T X.667 | ISO/IEC 9834-8, a UUID is either guaranteed to be
+	//   different from all other UUIDs generated before 3603 A.D., or is
+	//   extremely likely to be different (depending on the mechanism chosen).
+	//
+	// Therefore, UIDs between clusters should be extremely unlikely to
+	// conflict.
+	K8SClusterUIDKey = attribute.Key("k8s.cluster.uid")
 )
 
 // K8SClusterName returns an attribute KeyValue conforming to the
@@ -1022,6 +1292,13 @@ const (
 // cluster.
 func K8SClusterName(val string) attribute.KeyValue {
 	return K8SClusterNameKey.String(val)
+}
+
+// K8SClusterUID returns an attribute KeyValue conforming to the
+// "k8s.cluster.uid" semantic conventions. It represents a pseudo-ID for the
+// cluster, set to the UID of the `kube-system` namespace.
+func K8SClusterUID(val string) attribute.KeyValue {
+	return K8SClusterUIDKey.String(val)
 }
 
 // A Kubernetes Node object.
@@ -1406,7 +1683,7 @@ const (
 	// OSVersionKey is the attribute Key conforming to the "os.version"
 	// semantic conventions. It represents the version string of the operating
 	// system as defined in [Version
-	// Attributes](../../resource/semantic_conventions/README.md#version-attributes).
+	// Attributes](/docs/resource/README.md#version-attributes).
 	//
 	// Type: string
 	// RequirementLevel: Optional
@@ -1457,7 +1734,7 @@ func OSName(val string) attribute.KeyValue {
 // OSVersion returns an attribute KeyValue conforming to the "os.version"
 // semantic conventions. It represents the version string of the operating
 // system as defined in [Version
-// Attributes](../../resource/semantic_conventions/README.md#version-attributes).
+// Attributes](/docs/resource/README.md#version-attributes).
 func OSVersion(val string) attribute.KeyValue {
 	return OSVersionKey.String(val)
 }
@@ -1707,6 +1984,35 @@ const (
 	// the value MUST be set to `unknown_service`.
 	ServiceNameKey = attribute.Key("service.name")
 
+	// ServiceVersionKey is the attribute Key conforming to the
+	// "service.version" semantic conventions. It represents the version string
+	// of the service API or implementation. The format is not defined by these
+	// conventions.
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: '2.0.0', 'a01dbef8a'
+	ServiceVersionKey = attribute.Key("service.version")
+)
+
+// ServiceName returns an attribute KeyValue conforming to the
+// "service.name" semantic conventions. It represents the logical name of the
+// service.
+func ServiceName(val string) attribute.KeyValue {
+	return ServiceNameKey.String(val)
+}
+
+// ServiceVersion returns an attribute KeyValue conforming to the
+// "service.version" semantic conventions. It represents the version string of
+// the service API or implementation. The format is not defined by these
+// conventions.
+func ServiceVersion(val string) attribute.KeyValue {
+	return ServiceVersionKey.String(val)
+}
+
+// A service instance.
+const (
 	// ServiceNamespaceKey is the attribute Key conforming to the
 	// "service.namespace" semantic conventions. It represents a namespace for
 	// `service.name`.
@@ -1732,7 +2038,8 @@ const (
 	// Type: string
 	// RequirementLevel: Optional
 	// Stability: stable
-	// Examples: '627cc493-f310-47de-96bd-71410b7dec09'
+	// Examples: 'my-k8s-pod-deployment-1',
+	// '627cc493-f310-47de-96bd-71410b7dec09'
 	// Note: MUST be unique for each instance of the same
 	// `service.namespace,service.name` pair (in other words
 	// `service.namespace,service.name,service.instance.id` triplet MUST be
@@ -1747,24 +2054,7 @@ const (
 	// RFC 4122 UUID (services aiming for reproducible UUIDs may also use
 	// Version 5, see RFC 4122 for more recommendations).
 	ServiceInstanceIDKey = attribute.Key("service.instance.id")
-
-	// ServiceVersionKey is the attribute Key conforming to the
-	// "service.version" semantic conventions. It represents the version string
-	// of the service API or implementation.
-	//
-	// Type: string
-	// RequirementLevel: Optional
-	// Stability: stable
-	// Examples: '2.0.0'
-	ServiceVersionKey = attribute.Key("service.version")
 )
-
-// ServiceName returns an attribute KeyValue conforming to the
-// "service.name" semantic conventions. It represents the logical name of the
-// service.
-func ServiceName(val string) attribute.KeyValue {
-	return ServiceNameKey.String(val)
-}
 
 // ServiceNamespace returns an attribute KeyValue conforming to the
 // "service.namespace" semantic conventions. It represents a namespace for
@@ -1780,13 +2070,6 @@ func ServiceInstanceID(val string) attribute.KeyValue {
 	return ServiceInstanceIDKey.String(val)
 }
 
-// ServiceVersion returns an attribute KeyValue conforming to the
-// "service.version" semantic conventions. It represents the version string of
-// the service API or implementation.
-func ServiceVersion(val string) attribute.KeyValue {
-	return ServiceVersionKey.String(val)
-}
-
 // The telemetry SDK used to capture data recorded by the instrumentation
 // libraries.
 const (
@@ -1795,9 +2078,20 @@ const (
 	// telemetry SDK as defined above.
 	//
 	// Type: string
-	// RequirementLevel: Optional
+	// RequirementLevel: Required
 	// Stability: stable
 	// Examples: 'opentelemetry'
+	// Note: The OpenTelemetry SDK MUST set the `telemetry.sdk.name` attribute
+	// to `opentelemetry`.
+	// If another SDK, like a fork or a vendor-provided implementation, is
+	// used, this SDK MUST set the
+	// `telemetry.sdk.name` attribute to the fully-qualified class or module
+	// name of this SDK's main entry point
+	// or another suitable identifier depending on the language.
+	// The identifier `opentelemetry` is reserved and MUST NOT be used in this
+	// case.
+	// All custom identifiers SHOULD be stable across different versions of an
+	// implementation.
 	TelemetrySDKNameKey = attribute.Key("telemetry.sdk.name")
 
 	// TelemetrySDKLanguageKey is the attribute Key conforming to the
@@ -1805,7 +2099,7 @@ const (
 	// language of the telemetry SDK.
 	//
 	// Type: Enum
-	// RequirementLevel: Optional
+	// RequirementLevel: Required
 	// Stability: stable
 	TelemetrySDKLanguageKey = attribute.Key("telemetry.sdk.language")
 
@@ -1814,20 +2108,10 @@ const (
 	// string of the telemetry SDK.
 	//
 	// Type: string
-	// RequirementLevel: Optional
+	// RequirementLevel: Required
 	// Stability: stable
 	// Examples: '1.2.3'
 	TelemetrySDKVersionKey = attribute.Key("telemetry.sdk.version")
-
-	// TelemetryAutoVersionKey is the attribute Key conforming to the
-	// "telemetry.auto.version" semantic conventions. It represents the version
-	// string of the auto instrumentation agent, if used.
-	//
-	// Type: string
-	// RequirementLevel: Optional
-	// Stability: stable
-	// Examples: '1.2.3'
-	TelemetryAutoVersionKey = attribute.Key("telemetry.auto.version")
 )
 
 var (
@@ -1849,10 +2133,12 @@ var (
 	TelemetrySDKLanguagePython = TelemetrySDKLanguageKey.String("python")
 	// ruby
 	TelemetrySDKLanguageRuby = TelemetrySDKLanguageKey.String("ruby")
-	// webjs
-	TelemetrySDKLanguageWebjs = TelemetrySDKLanguageKey.String("webjs")
+	// rust
+	TelemetrySDKLanguageRust = TelemetrySDKLanguageKey.String("rust")
 	// swift
 	TelemetrySDKLanguageSwift = TelemetrySDKLanguageKey.String("swift")
+	// webjs
+	TelemetrySDKLanguageWebjs = TelemetrySDKLanguageKey.String("webjs")
 )
 
 // TelemetrySDKName returns an attribute KeyValue conforming to the
@@ -1868,6 +2154,20 @@ func TelemetrySDKName(val string) attribute.KeyValue {
 func TelemetrySDKVersion(val string) attribute.KeyValue {
 	return TelemetrySDKVersionKey.String(val)
 }
+
+// The telemetry SDK used to capture data recorded by the instrumentation
+// libraries.
+const (
+	// TelemetryAutoVersionKey is the attribute Key conforming to the
+	// "telemetry.auto.version" semantic conventions. It represents the version
+	// string of the auto instrumentation agent, if used.
+	//
+	// Type: string
+	// RequirementLevel: Optional
+	// Stability: stable
+	// Examples: '1.2.3'
+	TelemetryAutoVersionKey = attribute.Key("telemetry.auto.version")
+)
 
 // TelemetryAutoVersion returns an attribute KeyValue conforming to the
 // "telemetry.auto.version" semantic conventions. It represents the version
@@ -1936,7 +2236,7 @@ func WebEngineDescription(val string) attribute.KeyValue {
 // Attributes used by non-OTLP exporters to represent OpenTelemetry Scope's
 // concepts.
 const (
-	// OtelScopeNameKey is the attribute Key conforming to the
+	// OTelScopeNameKey is the attribute Key conforming to the
 	// "otel.scope.name" semantic conventions. It represents the name of the
 	// instrumentation scope - (`InstrumentationScope.Name` in OTLP).
 	//
@@ -1944,9 +2244,9 @@ const (
 	// RequirementLevel: Optional
 	// Stability: stable
 	// Examples: 'io.opentelemetry.contrib.mongodb'
-	OtelScopeNameKey = attribute.Key("otel.scope.name")
+	OTelScopeNameKey = attribute.Key("otel.scope.name")
 
-	// OtelScopeVersionKey is the attribute Key conforming to the
+	// OTelScopeVersionKey is the attribute Key conforming to the
 	// "otel.scope.version" semantic conventions. It represents the version of
 	// the instrumentation scope - (`InstrumentationScope.Version` in OTLP).
 	//
@@ -1954,27 +2254,27 @@ const (
 	// RequirementLevel: Optional
 	// Stability: stable
 	// Examples: '1.0.0'
-	OtelScopeVersionKey = attribute.Key("otel.scope.version")
+	OTelScopeVersionKey = attribute.Key("otel.scope.version")
 )
 
-// OtelScopeName returns an attribute KeyValue conforming to the
+// OTelScopeName returns an attribute KeyValue conforming to the
 // "otel.scope.name" semantic conventions. It represents the name of the
 // instrumentation scope - (`InstrumentationScope.Name` in OTLP).
-func OtelScopeName(val string) attribute.KeyValue {
-	return OtelScopeNameKey.String(val)
+func OTelScopeName(val string) attribute.KeyValue {
+	return OTelScopeNameKey.String(val)
 }
 
-// OtelScopeVersion returns an attribute KeyValue conforming to the
+// OTelScopeVersion returns an attribute KeyValue conforming to the
 // "otel.scope.version" semantic conventions. It represents the version of the
 // instrumentation scope - (`InstrumentationScope.Version` in OTLP).
-func OtelScopeVersion(val string) attribute.KeyValue {
-	return OtelScopeVersionKey.String(val)
+func OTelScopeVersion(val string) attribute.KeyValue {
+	return OTelScopeVersionKey.String(val)
 }
 
 // Span attributes used by non-OTLP exporters to represent OpenTelemetry
 // Scope's concepts.
 const (
-	// OtelLibraryNameKey is the attribute Key conforming to the
+	// OTelLibraryNameKey is the attribute Key conforming to the
 	// "otel.library.name" semantic conventions. It represents the deprecated,
 	// use the `otel.scope.name` attribute.
 	//
@@ -1982,9 +2282,9 @@ const (
 	// RequirementLevel: Optional
 	// Stability: deprecated
 	// Examples: 'io.opentelemetry.contrib.mongodb'
-	OtelLibraryNameKey = attribute.Key("otel.library.name")
+	OTelLibraryNameKey = attribute.Key("otel.library.name")
 
-	// OtelLibraryVersionKey is the attribute Key conforming to the
+	// OTelLibraryVersionKey is the attribute Key conforming to the
 	// "otel.library.version" semantic conventions. It represents the
 	// deprecated, use the `otel.scope.version` attribute.
 	//
@@ -1992,19 +2292,19 @@ const (
 	// RequirementLevel: Optional
 	// Stability: deprecated
 	// Examples: '1.0.0'
-	OtelLibraryVersionKey = attribute.Key("otel.library.version")
+	OTelLibraryVersionKey = attribute.Key("otel.library.version")
 )
 
-// OtelLibraryName returns an attribute KeyValue conforming to the
+// OTelLibraryName returns an attribute KeyValue conforming to the
 // "otel.library.name" semantic conventions. It represents the deprecated, use
 // the `otel.scope.name` attribute.
-func OtelLibraryName(val string) attribute.KeyValue {
-	return OtelLibraryNameKey.String(val)
+func OTelLibraryName(val string) attribute.KeyValue {
+	return OTelLibraryNameKey.String(val)
 }
 
-// OtelLibraryVersion returns an attribute KeyValue conforming to the
+// OTelLibraryVersion returns an attribute KeyValue conforming to the
 // "otel.library.version" semantic conventions. It represents the deprecated,
 // use the `otel.scope.version` attribute.
-func OtelLibraryVersion(val string) attribute.KeyValue {
-	return OtelLibraryVersionKey.String(val)
+func OTelLibraryVersion(val string) attribute.KeyValue {
+	return OTelLibraryVersionKey.String(val)
 }

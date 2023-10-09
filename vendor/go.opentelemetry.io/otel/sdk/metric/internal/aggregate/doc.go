@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package semconv // import "go.opentelemetry.io/otel/semconv/v1.17.0"
-
-// HTTP scheme attributes.
-var (
-	HTTPSchemeHTTP  = HTTPSchemeKey.String("http")
-	HTTPSchemeHTTPS = HTTPSchemeKey.String("https")
-)
+// Package aggregate provides aggregate types used compute aggregations and
+// cycle the state of metric measurements made by the SDK. These types and
+// functionality are meant only for internal SDK use.
+package aggregate // import "go.opentelemetry.io/otel/sdk/metric/internal/aggregate"

@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
@@ -59,7 +58,7 @@ func InitMetric(ctx context.Context, meterName string, enableMetric, enableDebug
 				Name: fmt.Sprintf(metricPrefix + "*"),
 				Kind: sdkmetric.InstrumentKindHistogram,
 			},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
 				Boundaries: []float64{0.1, 0.3, 0.5, 1, 3, 5, 7, 10, 15},
 			}},
 		)),

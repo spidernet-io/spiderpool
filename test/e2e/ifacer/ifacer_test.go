@@ -98,7 +98,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		})
 	})
 
-	It("About ifacer's e2e use cases", Label("N00001", "N00002", "N00003", "N00006"), func() {
+	It("About ifacer's e2e use cases", Label("N00001", "N00002", "N00003", "N00006"), Serial, func() {
 		Expect(frame.CreateSpiderMultusInstance(spiderMultusConfig)).NotTo(HaveOccurred())
 		GinkgoWriter.Printf("Create spidermultus config %v/%v \n", namespace, spiderMultusNadName)
 
@@ -157,36 +157,38 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 			return true
 		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
-		GinkgoWriter.Println("After the host is restarted, the sub-interface is lost. Restarting the Pod will refresh the sub-interface.")
-		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-		defer cancel()
-		deleteIPLinkString := fmt.Sprintf("ip link delete dev %s.%d", common.NIC1, vlanInterface)
-		Eventually(func() bool {
-			for _, node := range frame.Info.KindNodeList {
-				showResult, err := frame.DockerExecCommand(ctx, node, deleteIPLinkString)
-				Expect(err).NotTo(HaveOccurred(), "Failed to execute the delete sub-interface command on the node, error is %v", string(showResult))
+		GinkgoWriter.Println("When the node restarts, its corresponding sub-interface will be automatically rebuilt and the status will be UP.")
+		nodeList, err := frame.GetNodeList()
+		Expect(err).ShouldNot(HaveOccurred(), "failed to get node, error is %v", err)
+		var rebootNodeName string
+		for _, node := range nodeList.Items {
+			if _, ok := node.GetLabels()["node-role.kubernetes.io/control-plane"]; !ok {
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+				defer cancel()
+				err := common.RestartNodeUntilClusterReady(ctx, frame, node.Name)
+				Expect(err).NotTo(HaveOccurred(), "Execution of cmd fails or node/Pod is not ready, error is: %v \n", err)
+				rebootNodeName = node.Name
+				break
 			}
-			return true
-		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		}
 
-		GinkgoWriter.Println("After deleting the sub-interface, restart all Pods")
-		podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
-		Expect(err).NotTo(HaveOccurred(), "failed to get Pod list, Pod list is %v", len(podList.Items))
-		Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
-
-		GinkgoWriter.Println("The sub-interfaces of all nodes are automatically rebuilt, and the status is UP")
-		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-		defer cancel()
-		checkIPLinkString = fmt.Sprintf("ip link show %s.%d | grep 'state UP mode'", common.NIC1, vlanInterface)
 		Eventually(func() bool {
-			for _, node := range frame.Info.KindNodeList {
-				showResult, err := frame.DockerExecCommand(ctx, node, checkIPLinkUpString)
-				if err != nil {
-					GinkgoWriter.Printf("Checking subinterfaces failed on node, error is %v \n", string(showResult))
-					return false
-				}
+			ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			checkIPLinkString = fmt.Sprintf("ip link show %s.%d | grep 'state UP mode'", common.NIC1, vlanInterface)
+			showResult, err := frame.DockerExecCommand(ctx, rebootNodeName, checkIPLinkUpString)
+			if err != nil {
+				GinkgoWriter.Printf("Checking subinterfaces failed on node, error is %v \n", string(showResult))
+				return false
 			}
-			return true
+
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodReStartTimeout)
+			defer cancel()
+			podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
+			if err != nil {
+				return false
+			}
+			return frame.CheckPodListRunning(podList)
 		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 	})
 })

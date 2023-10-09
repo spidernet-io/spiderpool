@@ -50,6 +50,8 @@
 | multi-cluster            | a broker cluster could synchronize ippool resource within a same subnet from all member clusters, which could help avoid IP conflict | In plan       |        |            |
 |                          | support submariner                                                                                                                   | In plan       |        |            |
 | cilium                   | cooperate with cilium                                                                                                                | In plan       |        |            |
-| RDMA                     | support macvlan and ipvlan CNI for shared rdma device                                                                                | v0.8.0        |        |            |
-|                          | support sriov CNI for exclusive rdma device                                                                                          | v0.8.0        |        |            |
+| RDMA                     | support macvlan and ipvlan CNI for roce device                                                                                       | v0.8.0        |        |            |
+|                          | support sriov CNI for roce device                                                                                                    | v0.8.0        |        |            |
+|                          | support ipoib CNI for infiniband device                                                                                              | In plan       |        |            |
+|                          | support ib-sriov CNI for infiniband device                                                                                           | In plan       |        |            |
 | egressGateway            | egressGateway                                                                                                                        | In plan       |        |            |

@@ -42,7 +42,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-3. 可参考 [安装](./install/underlay/get-started-macvlan-zh_CN.md) 安装 Spiderpool，其中，务必加上如下 helm 选项来安装 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
+3. 可参考 [安装](./install/underlay/get-started-macvlan-zh_CN.md) 安装 Spiderpool 并配置 sriov-network-operator。其中，按照命令务必加上如下 helm 选项来安装 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
 
         --set rdma.rdmaCni.install=false \
         --set rdma.rdmaSharedDevicePlugin.install=true \

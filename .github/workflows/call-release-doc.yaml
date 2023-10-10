@@ -6,9 +6,6 @@ on:
       ref:
         required: true
         type: string
-      submit:
-        required: true
-        type: string
     outputs:
       artifact:
         description: "name of artifact"
@@ -43,11 +40,9 @@ jobs:
           if ${{ github.event_name == 'workflow_dispatch' }}; then
               echo "call by workflow_dispatch"
               echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
-              echo "SUBMIT=true" >> $GITHUB_ENV
           elif ${{ inputs.ref != '' }}; then
               echo "call by workflow_call"
               echo "REF=${{ inputs.ref }}" >> $GITHUB_ENV
-              echo "SUBMIT=${{ inputs.submit }}" >> $GITHUB_ENV
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
@@ -109,20 +104,18 @@ jobs:
           fi
           rm -rf ./site
           rm -rf ./mkdocs.yml
-          git checkout -f  ${{ env.MERGE_BRANCH }}
-          if ${{ env.SUBMIT != 'true' }}; then
-            cd docs
-            rm -rf ./charts
-            rm -rf ./index.yaml
-            tar -czvf ./site.tar.gz *
-            ls
-            echo "Automatic release, offline package ready"
-          fi
+          git checkout -f ${{ env.MERGE_BRANCH }}
+          cd docs
+          rm -rf ./charts
+          rm -rf ./index.yaml
+          tar -czvf ./site.tar.gz *
+          ls
+          echo "Automatic release, offline package ready"
           echo "Push a doc version: ${{ env.DOCS_TAG }} from branch: ${{ env.REF }}, update it to latest: ${{ env.SET_LATEST }} "
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.3
-        if: ${{ env.SUBMIT != 'true' && env.SKIP_ALL_JOB != 'true' }}
+        if: ${{ env.SKIP_ALL_JOB != 'true' }}
         with:
           name: website_package_artifact
           path: docs/site.tar.gz
@@ -132,7 +125,7 @@ jobs:
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
-        if: ${{ env.SUBMIT == 'true' && env.SKIP_ALL_JOB != 'true' }}
+        if: ${{ env.SKIP_ALL_JOB != 'true' }}
         uses: peter-evans/create-pull-request@v5.0.2
         with:
           title: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "

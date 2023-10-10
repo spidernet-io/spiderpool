@@ -42,6 +42,16 @@ jobs:
           - e2e_init_mode: e2e_init_cilium
             e2e_test_mode: e2e_test_cilium
     steps:
+      - name: Free disk space
+        # https://github.com/actions/virtual-environments/issues/709
+        run: |
+          echo "=========original CI disk space"
+          df -h
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          echo "=========after clean up, the left CI disk space"
+          df -h
+
       - name: Prepare
         id: prepare
         run: |

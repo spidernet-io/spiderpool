@@ -86,6 +86,14 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
             ...
           ]     
 
+    > 如果上报的资源数为 0，可能的原因：
+    > 
+    > (1) 请确认 configmap spiderpool-rdma-shared-device-plugin 中的 vendors 和 deviceID 与实际相符
+    > 
+    > (2) 查看 rdma-shared-device-plugin 的日志，对于支持 RDMA 网卡报错如下日志，可尝试在主机上安装 apt-get install rdma-core 或 dnf install rdma-core
+    > 
+    >   `error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"`
+
 5. 基于 RDMA 网卡作为 master 节点，创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -

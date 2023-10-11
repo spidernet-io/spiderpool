@@ -44,14 +44,17 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
 
 3. 可参考 [安装](./install/underlay/get-started-macvlan-zh_CN.md) 安装 Spiderpool 并配置 sriov-network-operator。其中，按照命令务必加上如下 helm 选项来安装 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
 
-        --set rdma.rdmaCni.install=false \
-        --set rdma.rdmaSharedDevicePlugin.install=true \
-        --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-        --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
-        --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-        --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-        --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
+        helm install spiderpool spiderpool/spiderpool -n kube-system \
+           --set multus.multusCNI.defaultCniCRName="macvlan-conf" \
+           --set rdma.rdmaSharedDevicePlugin.install=true \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
        
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    >
     > 注：完成 spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
 
     完成后，安装的组件如下
@@ -226,6 +229,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
         netns exclusive copy-on-fork on
 
     确认网卡具备 SRIOV 功能，查看支持的最大 VF 数量
+   
         ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
         127
 
@@ -241,12 +245,15 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
 
 3. 可参考 [安装](./install/underlay/get-started-sriov-zh_CN.md) 安装 Spiderpool，其中，务必加上如下 helm 选项来安装 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
 
-        --set rdma.rdmaCni.install=true \
-        --set rdma.rdmaSharedDevicePlugin.install=false
+        helm install spiderpool spiderpool/spiderpool -n kube-system \
+           --set sriov.install=true  \
+           --set rdma.rdmaCni.install=true
 
-   > 注：完成 spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    >
+    > 注：完成 spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
 
-   完成后，安装的组件如下
+    完成后，安装的组件如下
 
         ~# kubectl get pod -n kube-system
         spiderpool-agent-9sllh                         1/1     Running     0          1m

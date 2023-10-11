@@ -217,7 +217,9 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
     本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动，。
 
     > 注意：要隔离使用 RDMA 网卡，务必满足如下其中一个条件
+    > 
     > (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
+    > 
     > (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
     
     使用如下命令，可查询到 rdma 设备

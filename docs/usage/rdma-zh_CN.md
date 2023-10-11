@@ -235,7 +235,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
 
     （可选）SRIOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 [官方文档](https://network.nvidia.com/products/GPUDirect-RDMA/) 安装内核模块。
 
-3. 确认 RDMA 网卡的信息，用于后续 device plugin 发现设备资源。
+2. 确认 RDMA 网卡的信息，用于后续 device plugin 发现设备资源。
 
     本演示环境，输入如下，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017
 
@@ -243,7 +243,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-4. 可参考 [安装](./install/underlay/get-started-sriov-zh_CN.md) 安装 Spiderpool，其中，务必加上如下 helm 选项来安装 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
+3. 可参考 [安装](./install/underlay/get-started-sriov-zh_CN.md) 安装 Spiderpool，其中，务必加上如下 helm 选项来安装 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
 
         helm install spiderpool spiderpool/spiderpool -n kube-system \
            --set sriov.install=true  \
@@ -263,7 +263,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-multus-ckjrl                        1/1     Running     0          1m
         spiderpool-multus-mjl7z                        1/1     Running     0          1m
 
-5. 配置 SRIOV operator
+4. 配置 SRIOV operator
 
     如下配置，使得 SRIOV operator 能够在宿主机上创建出 VF，并上报资源
         cat <<EOF | kubectl apply -f -
@@ -303,7 +303,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
           ...
         ]
 
-6. 创建 SRIOV 相关的 multus 配置，并创建配套的 ippool 资源
+5. 创建 SRIOV 相关的 multus 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -330,7 +330,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
               ipv4: ["v4-81"]
         EOF
 
-7. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
+6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/sriov-rdma"
         RESOURCE="spidernet.io/mellanoxrdma"
@@ -372,7 +372,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
                   sleep 1000000
         EOF
 
-8. 在跨加点的 POD 之间，确认 RDMA 收发数据正常
+7. 在跨加点的 POD 之间，确认 RDMA 收发数据正常
 
    开启一个终端，进入一个 POD 启动服务
 

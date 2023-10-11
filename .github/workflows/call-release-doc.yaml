@@ -6,13 +6,6 @@ on:
       ref:
         required: true
         type: string
-      submit:
-        required: true
-        type: string
-    outputs:
-      artifact:
-        description: "name of artifact"
-        value: website_package_artifact
   # --- call by manual
   workflow_dispatch:
     inputs:
@@ -26,14 +19,15 @@ permissions: write-all
 
 env:
   MERGE_BRANCH: github_pages
-  SRC_DIRECTORY: 'docs'
-  DEST_DIRECTORY: 'docs'
   PR_LABEL: pr/release/robot_update_githubpage
   PR_REVIWER: ty-dc
 
 jobs:
   release_doc:
     runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ env.REF }}
+      skip_all_job: ${{ env.SKIP_ALL_JOB }}
     steps:
       - name: Get Ref
         id: get_ref
@@ -43,11 +37,9 @@ jobs:
           if ${{ github.event_name == 'workflow_dispatch' }}; then
               echo "call by workflow_dispatch"
               echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
-              echo "SUBMIT=true" >> $GITHUB_ENV
           elif ${{ inputs.ref != '' }}; then
               echo "call by workflow_call"
               echo "REF=${{ inputs.ref }}" >> $GITHUB_ENV
-              echo "SUBMIT=${{ inputs.submit }}" >> $GITHUB_ENV
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
@@ -101,42 +93,59 @@ jobs:
           cp ./docs/mkdocs.yml ./
           if ${{ env.SET_LATEST == 'true' }} ;then
               echo "generate doc version:${{ env.DOCS_TAG }} and set to latest."
-              mike deploy --rebase --prefix ${{ env.DEST_DIRECTORY }} -b ${{ env.MERGE_BRANCH }} --update-aliases ${{env.DOCS_TAG }} latest
-              mike set-default --prefix ${{ env.DEST_DIRECTORY }} -b ${{ env.MERGE_BRANCH }} latest
+              mike deploy --rebase -b ${{ env.MERGE_BRANCH }} --update-aliases ${{env.DOCS_TAG }} latest
+              mike set-default -b ${{ env.MERGE_BRANCH }} latest
           else
               echo "the version:${{ env.DOCS_TAG }} of the doc does not need to be set to the latest."
-              mike deploy --rebase --prefix ${{ env.DEST_DIRECTORY }} -b ${{ env.MERGE_BRANCH }} ${{ env.DOCS_TAG }}
+              mike deploy --rebase -b ${{ env.MERGE_BRANCH }} ${{ env.DOCS_TAG }}
           fi
           rm -rf ./site
           rm -rf ./mkdocs.yml
-          git checkout -f  ${{ env.MERGE_BRANCH }}
-          if ${{ env.SUBMIT != 'true' }}; then
-            cd docs
-            rm -rf ./charts
-            rm -rf ./index.yaml
-            tar -czvf ./site.tar.gz *
-            ls
-            echo "Automatic release, offline package ready"
-          fi
+          git checkout -f ${{ env.MERGE_BRANCH }}
+          rm -rf ./charts && rm -rf ./index.yaml && rm -rf ./changelogs
+          tar -czvf ./site.tar.gz *
+          ls
+          echo "Automatic release, offline package ready"
           echo "Push a doc version: ${{ env.DOCS_TAG }} from branch: ${{ env.REF }}, update it to latest: ${{ env.SET_LATEST }} "
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.3
-        if: ${{ env.SUBMIT != 'true' && env.SKIP_ALL_JOB != 'true' }}
+        if: ${{ env.SKIP_ALL_JOB != 'true' }}
         with:
           name: website_package_artifact
-          path: docs/site.tar.gz
+          path: site.tar.gz
           retention-days: 0
           if-no-files-found: error
+
+  create_pr:
+    name: Create PR
+    needs: [release_doc]
+    if: ${{ needs.release_doc.outputs.skip_all_job != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MERGE_BRANCH }}
+          fetch-depth: 0
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: website_package_artifact
+
+      - name: Untar Doc
+        run: |
+          tar -xzvf site.tar.gz
+          rm -f site.tar.gz
 
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
-        if: ${{ env.SUBMIT == 'true' && env.SKIP_ALL_JOB != 'true' }}
         uses: peter-evans/create-pull-request@v5.0.2
         with:
-          title: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "
-          commit-message: "robot update website from ${{ env.REF }} to branch ${{ env.MERGE_BRANCH }} "
+          title: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          commit-message: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
           delete-branch: true

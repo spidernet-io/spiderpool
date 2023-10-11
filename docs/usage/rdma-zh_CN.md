@@ -70,7 +70,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
 
-5. 查看 node 的可用资源，其中包含了上报的 rdma 设备资源
+4. 查看 node 的可用资源，其中包含了上报的 rdma 设备资源
 
         ~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
           [
@@ -87,7 +87,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
             ...
           ]     
 
-6. 基于 RDMA 网卡作为 master 节点，创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源
+5. 基于 RDMA 网卡作为 master 节点，创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -114,7 +114,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
               ipv4: ["v4-81"]
         EOF
 
-7. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
+6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
         RESOURCE="spidernet.io/hca_shared_devices"
@@ -156,7 +156,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
                   sleep 1000000
         EOF
 
-8. 在跨加点的 POD 之间，确认 RDMA 收发数据正常
+7. 在跨加点的 POD 之间，确认 RDMA 收发数据正常
 
    开启一个终端，进入一个 POD 启动服务
 

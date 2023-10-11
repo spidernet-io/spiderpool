@@ -10,14 +10,12 @@
 
 Deployment 和 StatefulSet 控制器，对于 IP 地址固定的需求是不一样的：
 
-1. 对于 StatefulSet ，Pod 副本重启前后，其 Pod 名保持不变，但是 Pod UUID 发生了变化，其是有状态的，应用管理员希望该 Pod 重启前后，仍能分配到相同的 IP 地址。
+- 对于 StatefulSet，Pod 副本重启前后，其 Pod 名保持不变，但是 Pod UUID 发生了变化，其是有状态的，应用管理员希望该 Pod 重启前后，仍能分配到相同的 IP 地址。
 
-2. 对于 Deployment ，Pod 副本重启前后，其 Pod 名字和 Pod UUID 都发生了变化，所以是无状态的，因此并不要新老交替的 Pod 使用相同的 IP 地址，我们可能只希望 Deployment 中所有副本所使用的 IP 是固定在某个 IP 范围内即可。
+- 对于 Deployment，Pod 副本重启前后，其 Pod 名字和 Pod UUID 都发生了变化，所以是无状态的，因此并不要新老交替的 Pod 使用相同的 IP 地址，我们可能只希望 Deployment 中所有副本所使用的 IP 是固定在某个 IP 范围内即可。
 
 开源社区的众多 CNI 方案并不能很好的支持 StatefulSet 的固定 IP 的需求。而 Spiderpool 提供的 StatefulSet 方案，能够保证 StatefulSet Pod 在重启、重建场景下，持续获取到相同的 IP 地址。
 
-> NOTE：
->
 > - 该功能默认开启。若开启，无任何限制，StatefulSet 可通过有限 IP 地址集合的 IP 池来固化 IP 的范围，但是，无论 StatefulSet 是否使用固定的 IP 池，它的 Pod 都可以持续分配到相同 IP。若关闭，StatefulSet 应用将被当做无状态对待，使用 Helm 安装 Spiderpool 时，可以通过 `--set ipam.enableStatefulSet=false` 关闭。
 >
 > - 在 StatefulSet 副本经由`缩容`到`扩容`的变化过程中，Spiderpool 并不保证新扩容 Pod 能够获取到之前缩容 Pod 的 IP 地址。
@@ -34,30 +32,30 @@ Deployment 和 StatefulSet 控制器，对于 IP 地址固定的需求是不一�
 
 ### 安装 Spiderpool
 
-- 通过 helm 安装 Spiderpool。
+1. 通过 Helm 安装 Spiderpool。
 
-```bash
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
-```
+    ```bash
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
+    ```
 
-> 如果您所在地区是中国大陆，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
->
-> 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
+    > 如果您所在地区是中国大陆，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
+    >
+    > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
 
-- 检查安装完成
+2. 检查安装完成
 
-```bash
-~# kubectl get po -n kube-system | grep spiderpool
-NAME                                     READY   STATUS      RESTARTS   AGE                                
-spiderpool-agent-7hhkz                   1/1     Running     0          13m
-spiderpool-agent-kxf27                   1/1     Running     0          13m
-spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-spiderpool-init                          0/1     Completed   0          13m
-spiderpool-multus-7vkm2                  1/1     Running     0          13m
-spiderpool-multus-rwzjn                  1/1     Running     0          13m
-```
+    ```bash
+    ~# kubectl get po -n kube-system | grep spiderpool
+    NAME                                     READY   STATUS      RESTARTS   AGE                                
+    spiderpool-agent-7hhkz                   1/1     Running     0          13m
+    spiderpool-agent-kxf27                   1/1     Running     0          13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
+    spiderpool-init                          0/1     Completed   0          13m
+    spiderpool-multus-7vkm2                  1/1     Running     0          13m
+    spiderpool-multus-rwzjn                  1/1     Running     0          13m
+    ```
 
 ### 安装 CNI 配置
 
@@ -113,7 +111,7 @@ EOF
 
 ### 创建 StatefulSet 应用
 
-以下的示例 Yaml 中， 会创建 2 个副本的 StatefulSet 应用 ，其中：
+以下的示例 Yaml 中，会创建 2 个副本的 StatefulSet 应用，其中：
 
 - `ipam.spidernet.io/ippool`：用于指定 Spiderpool 的 IP 池，Spiderpool 会自动在该池中选择一些 IP 与应用形成绑定，实现 StatefulSet 应用的 IP 固定效果。
 

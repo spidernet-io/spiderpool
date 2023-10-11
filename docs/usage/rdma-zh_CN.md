@@ -274,6 +274,7 @@ RDMA 网卡，也可以基于 SRIOV CNI 来使用 exclusive 模式的网卡。
 4. 配置 SRIOV operator
 
     如下配置，使得 SRIOV operator 能够在宿主机上创建出 VF，并上报资源
+
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy

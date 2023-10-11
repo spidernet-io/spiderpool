@@ -10,9 +10,9 @@
 
 Deployment 和 StatefulSet 控制器，对于 IP 地址固定的需求是不一样的：
 
-- 对于 StatefulSet ，Pod 副本重启前后，其 Pod 名保持不变，但是 Pod UUID 发生了变化，其是有状态的，应用管理员希望该 Pod 重启前后，仍能分配到相同的 IP 地址。
+- 对于 StatefulSet，Pod 副本重启前后，其 Pod 名保持不变，但是 Pod UUID 发生了变化，其是有状态的，应用管理员希望该 Pod 重启前后，仍能分配到相同的 IP 地址。
 
-- 对于 Deployment ，Pod 副本重启前后，其 Pod 名字和 Pod UUID 都发生了变化，所以是无状态的，因此并不要新老交替的 Pod 使用相同的 IP 地址，我们可能只希望 Deployment 中所有副本所使用的 IP 是固定在某个 IP 范围内即可。
+- 对于 Deployment，Pod 副本重启前后，其 Pod 名字和 Pod UUID 都发生了变化，所以是无状态的，因此并不要新老交替的 Pod 使用相同的 IP 地址，我们可能只希望 Deployment 中所有副本所使用的 IP 是固定在某个 IP 范围内即可。
 
 开源社区的众多 CNI 方案并不能很好的支持 StatefulSet 的固定 IP 的需求。而 Spiderpool 提供的 StatefulSet 方案，能够保证 StatefulSet Pod 在重启、重建场景下，持续获取到相同的 IP 地址。
 

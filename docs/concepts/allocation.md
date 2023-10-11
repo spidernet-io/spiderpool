@@ -1,5 +1,7 @@
 # IP Allocation
 
+**English** | [**简体中文**](./allocation-zh_CN.md)
+
 When a pod is creating, it will follow steps below to get IP allocations.
 
 1. Get all IPPool candidates.
@@ -32,7 +34,7 @@ When a pod is creating, it will follow steps below to get IP allocations.
    * The IPPool resource with `IPPool.Spec.NodeName` or `IPPool.Spec.NodeAffinity` property has the second-highest priority.
    * The IPPool resource with `IPPool.Spec.NamespaceName` or `IPPool.Spec.NamespaceAffinity` property has the second-highest priority.
    * The IPPool resource with `IPPool.Spec.MultusName` property has the lowest priority.
-   
+
    > Notice: here are some simple instance to describe this rule.
    >
    > 1. *IPPoolA* with properties `IPPool.Spec.PodAffinity` and `IPPool.Spec.NodeName` has higher priority than *IPPoolB* with single affinity property `IPPool.Spec.PodAffinity`.

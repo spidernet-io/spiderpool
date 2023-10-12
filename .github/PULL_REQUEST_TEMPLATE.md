@@ -7,7 +7,7 @@ labels: ["pr/release/none-required"]
 ---
 ## Thanks for contributing !
 
-Before submitting a pull request, make sure you read about our Contribution notice here: <https://spidernet-io.github.io/spiderpool/contributing/development/pullrequest/#need-review>
+Before submitting a pull request, make sure you read about our Contribution notice here: <https://spidernet-io.github.io/spiderpool/latest/develop/contributing/>
 
 **What this PR does / why we need it**:
 

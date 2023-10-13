@@ -122,16 +122,17 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 以下罗列了 Spiderpool 主要增强的 CNI 的功能
 
-| 功能             | macvlan | ipvlan  | SR-IOV |
-|----------------|---------|---------|--------|
-| clusterIP      | 有       |  有       | 有      |
-| nodePort       | 有       |  有       | 有      |
-| network policy | 有       |   有      | 无      |
-| bandwidth      | 无       | 有       | 无      |
-| rdma           | 有       | 有       | 有      |
-| IPAM           | 有       | 有       | 有      |
-| 多网卡            | 有       | 有       | 有      |
-| 适用场景           | 裸金属     | 裸金属和虚拟机 | 裸金属    |
+| 功能                    | macvlan | ipvlan  | SR-IOV |
+|-----------------------|---------|---------|--------|
+| 访问 clusterIP          | 有       |  有       | 有      |
+| 访问 nodePort           | 有       |  有       | 有      |
+| kubeproxy replacement | 无       |   有      | 无      |
+| network policy        | 有       |   有      | 无      |
+| bandwidth             | 无       | 有       | 无      |
+| rdma                  | 有       | 有       | 有      |
+| IPAM                  | 有       | 有       | 有      |
+| 多网卡                   | 有       | 有       | 有      |
+| 适用场景                  | 裸金属     | 裸金属和虚拟机 | 裸金属    |
 
 ## 应用场景：overlay CNI 的 Pod 加入 underlay CNI 辅助网卡
 

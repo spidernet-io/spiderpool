@@ -13,7 +13,7 @@
 
 [**English**](./README.md) | **简体中文**
 
-Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)。
+Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category) 。
 
 ![CNCF](./docs/images/cncf-cloud-gophers-transparent.png)
 
@@ -120,6 +120,19 @@ Spiderpool 架构如上所示，包含了以下组件：
 例如上图所示，在同一个集群下具备不同网络能力的节点， 有的节点具备 SR-IOV 网卡，可运行 SR-IOV CNI，
 有的节点具备普通的网卡，可运行 Macvlan CNI ，有的节点网络访问受限（例如二层网络转发受限的 vmware 虚拟机），可运行 ipvlan CNI。
 
+以下罗列了 Spiderpool 主要增强的 CNI 的功能
+
+| 功能             | macvlan | ipvlan  | SR-IOV |
+|----------------|---------|---------|--------|
+| clusterIP      | 有       |  有       | 有      |
+| nodePort       | 有       |  有       | 有      |
+| network policy | 有       |   有      | 无      |
+| bandwidth      | 无       | 有       | 无      |
+| rdma           | 有       | 有       | 有      |
+| IPAM           | 有       | 有       | 有      |
+| 多网卡            | 有       | 有       | 有      |
+| 适用场景           | 裸金属     | 裸金属和虚拟机 | 裸金属    |
+
 ## 应用场景：overlay CNI 的 Pod 加入 underlay CNI 辅助网卡
 
 ![arch_underlay](./docs/images/spiderpool-overlay.jpg)
@@ -214,7 +227,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 * 基于节点拓扑的 IP 池功能，满足每个节点精细化的子网规划需求，可参考[例子](./docs/usage/network-topology-zh_CN.md)
 
-* 在 vmware vsphere 平台上，无需打开 vswitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html)，即可运行 underlay CNI 解决方案，从而确保 vsphere 平台的转发性能。参考[例子](./docs/usage/install/cloud/get-started-vmware-zh_CN.md)
+* 在 vmware vsphere 平台上，无需打开 vswitch 的 ["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html) ，即可运行 underlay CNI 解决方案，从而确保 vsphere 平台的转发性能。参考[例子](./docs/usage/install/cloud/get-started-vmware-zh_CN.md)
 
 * spiderpool 能在任意厂商的公有云平台、openstack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./docs/usage/install/cloud/get-started-alibaba-zh_CN.md)
 

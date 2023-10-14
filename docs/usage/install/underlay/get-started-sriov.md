@@ -142,6 +142,20 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
       "memory": "16247944Ki",
       "pods": "110"
     }
+    ```
+   
+    > The sriov-network-config-daemon pod is responsible for configuring VF on nodes, and it will sequentially complete the work on each node. When configuring VF on each node, the sriov network configuration daemon will evict all PODs on the node, configure VF, and possibly restart the node. When sriov network configuration daemon fails to evict a POD, it will cause all processes to stop, resulting in the vf number of nodes remaining at 0. In this case, the sriov network configuration daemon POD will see logs similar to the following:
+    > 
+    > `error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...`
+    >
+    > This issue can be referred to similar topics in the sriov-network-operator community [issue](https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463)
+    >
+    > The reason why the designated POD cannot be expelled can be investigated, which may include the following:
+    >
+    > (1) The POD that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
+    > shortage of available replicas. Please adjust the PodDisruptionBudget
+    >
+    > (2) Insufficient available nodes in the cluster, resulting in no nodes available for scheduling
 
 ## Install Spiderpool
 

@@ -149,6 +149,18 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     }
     ```
 
+    > sriov-network-config-daemon pod 负责在节点上配置 VF ，其会顺序在每个节点上完成该工作。在每个节点上配置 VF 时，sriov-network-config-daemon 会对节点上的所有 POD 进行驱逐，配置 VF ，并可能重启节点。当 sriov-network-config-daemon 驱逐某个 POD 失败时，会导致所有流程都停滞，从而导致 node 的 vf 数量一直为 0。 这种情况时，sriov-network-config-daemon POD 会看到如下类似日志：
+    > 
+    > `error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...`
+    >
+    > 该问题可参考 sriov-network-operator 社区的类似 [issue](https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463)
+    > 
+    > 此时，可排查指定 POD 为啥无法驱逐的原因，有如下可能：
+    > 
+    > （1）该驱逐失败的 POD 可能配置了 PodDisruptionBudget，导致可用副本数不足。请调整 PodDisruptionBudget
+    >
+    > （2）集群中的可用节点不足，导致没有节点可以调度 
+
 4. 创建 SpiderIPPool 实例。
 
     Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。

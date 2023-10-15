@@ -47,7 +47,7 @@ aims to provide many innovative features:
   access clusterIP and check pod health, and to detect IP conflict and gateway accessibility.
 
 * Not only limited to bare metal environments in data centers, but also providing
-  a unified underlay CNI solution for openstack, vmware, and various public cloud scenarios.
+  a unified underlay CNI solution for OpenStack, VMware, and various public cloud scenarios.
 
 ## underlay CNI
 
@@ -64,7 +64,7 @@ Why underlay network solutions? The following requirements necessitate underlay 
 
 * Network performance. Network performance advantages, like low latency, high throughput, low forwarding overhead of node’s CPU.  It fits to applications like financial and AI application.
 
-* Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of netowrk, application can directly use Pod IP for cluster east-west and north-south communication.
+* Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of network, application can directly use Pod IP for cluster east-west and north-south communication.
 
 * Network security. In the data center, it may be used to enforce network security to Pod, like firewall and isolating communication with VLAN.  The underlay network solution could expose the Pod packet without tunnel encapsulation, and meet requirements.
 
@@ -187,7 +187,7 @@ This approach provides several benefits:
 
 ## Use case: underlay CNI on public cloud and VM
 
-It is hard to implement underlay CNI in public cloud, openstack, vmvare.
+It is hard to implement underlay CNI in public cloud, OpenStack, VMware.
 It requires the vendor underlay CNI on specific environments, as these
 environments typically have the following limitations:
 
@@ -210,6 +210,12 @@ environments typically have the following limitations:
 Spiderpool provides IP pool based on node topology, aligning with
 IP allocation settings of VMs. In conjunction with ipvlan CNI,
 it provides underlay CNI solutions for various public cloud environments.
+
+## Use case: utilize RDMA for network transmission
+
+RDMA (Remote Direct Memory Access) allows network cards to directly interact with memory, reducing CPU overhead and alleviating the burden on the kernel protocol stack. This technology offloads the network protocol stack to the network card, resulting in effective reduction of network transmission latency and increased throughput.
+
+Currently, RDMA finds extensive applications in fields such as AI computing and storage. Macvlan, IPvlan, and SR-IOV CNIs enable transparent RDMA network card passthrough to Pods within the Kubernetes platform. Spiderpool enhances these CNIs by providing additional capabilities including IPAM, host connectivity, clusterIP access, as well as simplifying the installation process and usage steps of dependent components in the community.
 
 ## Quick start
 
@@ -265,14 +271,18 @@ Refer to [Quick start](./docs/usage/install/install.md), set up a cluster quickl
 
 * Node-based IP pool feature meets the complex subnet design of each node. refer to [example](./docs/usage/network-topology.md)
 
-* On vmware vsphere platform, Spiderpool underlay network solution does not require ["hybrid forwarding" mode of the Vswitch](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html), which ensures the network performance of vsphere platform. refer to [example](./docs/usage/install/cloud/get-started-vmware-zh_CN.md)
+* On VMware vSphere platform, Spiderpool underlay network solution does not require ["hybrid forwarding" mode of the Vswitch](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html), which ensures the network performance of vSphere platform. Refer to [example](./docs/usage/install/cloud/get-started-vmware-zh_CN.md)
 
-* Spiderpool underlay network solution could run on public cloud of any vendors, and openstack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to [alibabaCloud](./docs/usage/install/cloud/get-started-alibaba-zh_CN.md)
+* Spiderpool underlay network solution could run on public cloud of any vendors, and OpenStack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to [alibabaCloud](./docs/usage/install/cloud/get-started-alibaba-zh_CN.md)
+
+* Support shared and exclusive modes in RDMA network cards, and provide RDMA communication devices for applications via Macvlan, IPvlan, and SR-IOV CNI. For more details, please refer to the [example](./docs/usage/rdma.md).
 
 * When starting the Pod, it could help dynamically build the bond interface and vlan interface
   for the master interface of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan).
   See [example](./docs/usage/ifacer.md) for details.
+
+* coordinator can reconfigure MAC addresses according to the IP address of the NIC. This prevents updating ARP forwarding rules in network switches and routers to reduce packet loss. Refer to the [article](./docs/usage/coordinator.md#fix-mac-address-prefix-for-pods) for more details.
 
 * It could specify customized routes by IP pool and pod annotation. See [example](./docs/usage/route.md) for details.
 

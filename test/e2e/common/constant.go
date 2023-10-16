@@ -42,6 +42,12 @@ const (
 	SpiderPoolConfigmapNameSpace = "kube-system"
 )
 
+// Kubeadm configurations
+const (
+	KubeadmConfigmapName      = "kubeadm-config"
+	KubeadmConfigmapNameSpace = "kube-system"
+)
+
 // Network configurations
 var (
 	// multus CNI

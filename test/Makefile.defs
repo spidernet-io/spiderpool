@@ -1,7 +1,11 @@
 #============ e2e-kind-config ====================
 
-# iptables or ipvs, default iptables
-E2E_KUBE_PROXY_MODE ?= iptables
+# iptables,ipvs or none, default iptables
+ifeq ($(DISABLE_KUBE_PROXY),true)
+    E2E_KUBE_PROXY_MODE ?= none
+else
+    E2E_KUBE_PROXY_MODE ?= iptables
+endif
 
 E2E_CHINA_IMAGE_REGISTRY ?= false
 HTTP_PROXY ?=
@@ -42,6 +46,8 @@ INSTALL_OVERLAY_CNI ?= false
 INSTALL_CALICO ?= true
 
 INSTALL_CILIUM ?= true
+
+DISABLE_KUBE_PROXY ?= false
 
 INSTALL_NETTOOLS ?= false
 

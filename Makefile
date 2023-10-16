@@ -310,6 +310,10 @@ e2e_init:
 e2e_init_underlay:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
 
+.PHONY: e2e_init_cilium_with_ebpf
+e2e_init_cilium_with_ebpf:
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true DISABLE_KUBE_PROXY=true -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+
 .PHONY: e2e_init_calico
 e2e_init_calico:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
@@ -335,6 +339,9 @@ e2e_test_calico:
 e2e_test_cilium:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e E2E_GINKGO_LABELS=overlay
 
+.PHONY: e2e_test_cilium_with_ebpf
+e2e_test_cilium_with_ebpf:
+	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true DISABLE_KUBE_PROXY=true -e E2E_GINKGO_LABELS=ebpf
 
 .PHONY: preview_doc
 preview_doc: PROJECT_DOC_DIR := ${ROOT_DIR}/docs

@@ -50,6 +50,7 @@ metadata:
   namespace: <<NAMESPACE>>
 spec:
   cniType: macvlan
+  enableCoordinator: <<ENABLE_COORDINATOR>>
   macvlan:
     master: ["<<MASTER>>"]
     vlanID: <<VLAN>>
@@ -93,9 +94,16 @@ spec:
       exit 1
   esac
 
+  ENABLE_COORDINATOR=true
+  if [ "${DISABLE_KUBE_PROXY}" == "true" ] ; then
+      ENABLE_COORDINATOR=false
+      echo "DISABLE_KUBE_PROXY is true , disable coordinator config"
+  fi
+
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
     | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?0?g' \
@@ -106,6 +114,7 @@ spec:
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
     | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?100?g' \
@@ -116,6 +125,7 @@ spec:
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
     | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?200?g' \

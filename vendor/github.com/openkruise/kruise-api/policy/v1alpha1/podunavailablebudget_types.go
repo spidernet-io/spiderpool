@@ -27,14 +27,19 @@ import (
 type PubOperation string
 
 const (
-	// PubProtectOperationAnnotation indicates the pub protected Operation[DELETE,UPDATE]
-	// the following indicates the pub only protect DELETE,UPDATE Operation
-	// annotations[kruise.io/pub-protect-operations]=DELETE,UPDATE
-	// if the annotations do not exist, the default DELETE and UPDATE are protected
+	// PubProtectOperationAnnotation indicates the pub protected Operation[DELETE,UPDATE,EVICT]
+	// if annotations[kruise.io/pub-protect-operations]=EVICT indicates the pub only protect evict pod
+	// if the annotations do not exist, the default DELETE,EVICT,UPDATE are protected
 	PubProtectOperationAnnotation = "kruise.io/pub-protect-operations"
 	// pod webhook operation
 	PubUpdateOperation PubOperation = "UPDATE"
 	PubDeleteOperation PubOperation = "DELETE"
+	PubEvictOperation  PubOperation = "EVICT"
+	// PubProtectTotalReplicas indicates the pub protected total replicas, rather than workload.spec.replicas.
+	// and must be used with pub.spec.selector.
+	PubProtectTotalReplicas = "pub.kruise.io/protect-total-replicas"
+	// Marked the pod will not be pub-protected, solving the scenario of force pod deletion
+	PodPubNoProtectionAnnotation = "pub.kruise.io/no-protect"
 )
 
 // PodUnavailableBudgetSpec defines the desired state of PodUnavailableBudget

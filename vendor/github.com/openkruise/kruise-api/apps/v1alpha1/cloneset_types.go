@@ -79,7 +79,7 @@ type CloneSetSpec struct {
 	// Defaults to 0 (pod will be considered available as soon as it is ready)
 	MinReadySeconds int32 `json:"minReadySeconds,omitempty"`
 
-	// Lifecycle defines the lifecycle hooks for Pods pre-delete, in-place update.
+	// Lifecycle defines the lifecycle hooks for Pods pre-available(pre-normal), pre-delete, in-place update.
 	Lifecycle *appspub.Lifecycle `json:"lifecycle,omitempty"`
 }
 
@@ -93,6 +93,10 @@ type CloneSetScaleStrategy struct {
 	// The scale will fail if the number of unavailable pods were greater than this MaxUnavailable at scaling up.
 	// MaxUnavailable works only when scaling up.
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
+
+	// Indicate if cloneSet will reuse already existed pvc to
+	// rebuild a new pod
+	DisablePVCReuse bool `json:"disablePVCReuse,omitempty"`
 }
 
 // CloneSetUpdateStrategy defines strategies for pods update.
@@ -171,6 +175,10 @@ type CloneSetStatus struct {
 	// UpdatedReadyReplicas is the number of Pods created by the CloneSet controller from the CloneSet version
 	// indicated by updateRevision and have a Ready Condition.
 	UpdatedReadyReplicas int32 `json:"updatedReadyReplicas"`
+
+	// UpdatedAvailableReplicas is the number of Pods created by the CloneSet controller from the CloneSet version
+	// indicated by updateRevision and have a Ready Condition for at least minReadySeconds.
+	UpdatedAvailableReplicas int32 `json:"updatedAvailableReplicas,omitempty"`
 
 	// ExpectedUpdatedReplicas is the number of Pods that should be updated by CloneSet controller.
 	// This field is calculated via Replicas - Partition.

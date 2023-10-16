@@ -21,9 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// ReleaseStrategyType defines strategies for pods rollout
-type ReleaseStrategyType string
-
 // ReleasePlan fines the details of the release plan
 type ReleasePlan struct {
 	// Batches is the details on each batch of the ReleasePlan.
@@ -37,12 +34,34 @@ type ReleasePlan struct {
 	Batches []ReleaseBatch `json:"batches"`
 	// All pods in the batches up to the batchPartition (included) will have
 	// the target resource specification while the rest still is the stable revision.
-	// This is designed for the operators to manually rollout
+	// This is designed for the operators to manually rollout.
 	// Default is nil, which means no partition and will release all batches.
 	// BatchPartition start from 0.
 	// +optional
 	BatchPartition *int32 `json:"batchPartition,omitempty"`
+	// RolloutID indicates an id for each rollout progress
+	RolloutID string `json:"rolloutID,omitempty"`
+	// FailureThreshold indicates how many failed pods can be tolerated in all upgraded pods.
+	// Only when FailureThreshold are satisfied, Rollout can enter ready state.
+	// If FailureThreshold is nil, Rollout will use the MaxUnavailable of workload as its
+	// FailureThreshold.
+	// Defaults to nil.
+	FailureThreshold *intstr.IntOrString `json:"failureThreshold,omitempty"`
+	// FinalizingPolicy define the behavior of controller when phase enter Finalizing
+	// Defaults to "Immediate"
+	FinalizingPolicy FinalizingPolicyType `json:"finalizingPolicy,omitempty"`
 }
+
+type FinalizingPolicyType string
+
+const (
+	// WaitResumeFinalizingPolicyType will wait workload to be resumed, which means
+	// controller will be hold at Finalizing phase util all pods of workload is upgraded.
+	// WaitResumeFinalizingPolicyType only works in canary-style BatchRelease controller.
+	WaitResumeFinalizingPolicyType FinalizingPolicyType = "WaitResume"
+	// ImmediateFinalizingPolicyType will not to wait workload to be resumed.
+	ImmediateFinalizingPolicyType FinalizingPolicyType = "Immediate"
+)
 
 // ReleaseBatch is used to describe how each batch release should be
 type ReleaseBatch struct {
@@ -50,9 +69,6 @@ type ReleaseBatch struct {
 	// it can be an absolute number (ex: 5) or a percentage of workload replicas.
 	// batches[i].canaryReplicas should less than or equal to batches[j].canaryReplicas if i < j.
 	CanaryReplicas intstr.IntOrString `json:"canaryReplicas"`
-	// The wait time, in seconds, between instances batches, default = 0
-	// +optional
-	PauseSeconds int64 `json:"pauseSeconds,omitempty"`
 }
 
 // BatchReleaseStatus defines the observed state of a release plan
@@ -69,6 +85,10 @@ type BatchReleaseStatus struct {
 	// It corresponds to this BatchRelease's generation, which is updated on mutation
 	// by the API Server, and only if BatchRelease Spec was changed, its generation will increase 1.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// ObservedRolloutID is the most recent rollout-id observed for this BatchRelease.
+	// If RolloutID was changed, we will restart to roll out from batch 0,
+	// to ensure the batch-id and rollout-id labels of Pods are correct.
+	ObservedRolloutID string `json:"observedRolloutID,omitempty"`
 	// ObservedWorkloadReplicas is observed replicas of target referenced workload.
 	// This field is designed to deal with scaling event during rollout, if this field changed,
 	// it means that the workload is scaling during rollout.
@@ -98,6 +118,8 @@ type BatchReleaseCanaryStatus struct {
 	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
 	// UpdatedReadyReplicas is the number upgraded Pods that have a Ready Condition.
 	UpdatedReadyReplicas int32 `json:"updatedReadyReplicas,omitempty"`
+	// the number of pods that no need to rollback in rollback scene.
+	NoNeedUpdateReplicas *int32 `json:"noNeedUpdateReplicas,omitempty"`
 }
 
 type BatchReleaseBatchStateType string
@@ -112,27 +134,10 @@ const (
 )
 
 const (
-	// VerifyingBatchReleaseCondition indicates the controller is verifying whether workload
-	// is ready to do rollout.
-	VerifyingBatchReleaseCondition RolloutConditionType = "Verifying"
-	// PreparingBatchReleaseCondition indicates the controller is preparing something before executing
-	// release plan, such as create canary deployment and record stable & canary revisions.
-	PreparingBatchReleaseCondition RolloutConditionType = "Preparing"
-	// ProgressingBatchReleaseCondition indicates the controller is executing release plan.
-	ProgressingBatchReleaseCondition RolloutConditionType = "Progressing"
-	// FinalizingBatchReleaseCondition indicates the canary state is completed,
-	// and the controller is doing something, such as cleaning up canary deployment.
-	FinalizingBatchReleaseCondition RolloutConditionType = "Finalizing"
-	// TerminatingBatchReleaseCondition indicates the rollout is terminating when the
-	// BatchRelease cr is being deleted or cancelled.
-	TerminatingBatchReleaseCondition RolloutConditionType = "Terminating"
-	// TerminatedBatchReleaseCondition indicates the BatchRelease cr can be deleted.
-	TerminatedBatchReleaseCondition RolloutConditionType = "Terminated"
-	// CancelledBatchReleaseCondition indicates the release plan is cancelled during rollout.
-	CancelledBatchReleaseCondition RolloutConditionType = "Cancelled"
-	// CompletedBatchReleaseCondition indicates the release plan is completed successfully.
-	CompletedBatchReleaseCondition RolloutConditionType = "Completed"
-
-	SucceededBatchReleaseConditionReason = "Succeeded"
-	FailedBatchReleaseConditionReason    = "Failed"
+	// RolloutPhasePreparing indicates a rollout is preparing for next progress.
+	RolloutPhasePreparing RolloutPhase = "Preparing"
+	// RolloutPhaseFinalizing indicates a rollout is finalizing
+	RolloutPhaseFinalizing RolloutPhase = "Finalizing"
+	// RolloutPhaseCompleted indicates a rollout is completed/cancelled/terminated
+	RolloutPhaseCompleted RolloutPhase = "Completed"
 )

@@ -44,7 +44,9 @@ type ContainerRecreateRequestSpec struct {
 	// PodName is name of the Pod that owns the recreated containers.
 	PodName string `json:"podName"`
 	// Containers contains the containers that need to recreate in the Pod.
-	Containers []ContainerRecreateRequestContainer `json:"containers"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Containers []ContainerRecreateRequestContainer `json:"containers" patchStrategy:"merge" patchMergeKey:"name"`
 	// Strategy defines strategies for containers recreation.
 	Strategy *ContainerRecreateRequestStrategy `json:"strategy,omitempty"`
 	// ActiveDeadlineSeconds is the deadline duration of this ContainerRecreateRequest.
@@ -106,6 +108,8 @@ type ContainerRecreateRequestStrategy struct {
 	FailurePolicy ContainerRecreateRequestFailurePolicyType `json:"failurePolicy,omitempty"`
 	// OrderedRecreate indicates whether to recreate the next container only if the previous one has recreated completely.
 	OrderedRecreate bool `json:"orderedRecreate,omitempty"`
+	// ForceRecreate indicates whether to force kill the container even if the previous container is starting.
+	ForceRecreate bool `json:"forceRecreate,omitempty"`
 	// TerminationGracePeriodSeconds is the optional duration in seconds to wait the container terminating gracefully.
 	// Value must be non-negative integer. The value zero indicates delete immediately.
 	// If this value is nil, we will use pod.Spec.TerminationGracePeriodSeconds as default value.
@@ -158,6 +162,8 @@ type ContainerRecreateRequestContainerRecreateState struct {
 	Phase ContainerRecreateRequestPhase `json:"phase"`
 	// A human readable message indicating details about this state.
 	Message string `json:"message,omitempty"`
+	// Containers are killed by kruise daemon
+	IsKilled bool `json:"isKilled,omitempty"`
 }
 
 // ContainerRecreateRequestSyncContainerStatus only uses in the annotation `crr.apps.kruise.io/sync-container-statuses`.

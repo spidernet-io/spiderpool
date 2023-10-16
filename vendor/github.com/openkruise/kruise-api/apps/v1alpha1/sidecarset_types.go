@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	appspub "github.com/openkruise/kruise-api/apps/pub"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -41,18 +42,28 @@ type SidecarSetSpec struct {
 	// otherwise, match pods in all namespaces(in cluster)
 	Namespace string `json:"namespace,omitempty"`
 
+	// NamespaceSelector select which namespaces to inject sidecar containers.
+	// Default to the empty LabelSelector, which matches everything.
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+
 	// InitContainers is the list of init containers to be injected into the selected pod
 	// We will inject those containers by their name in ascending order
 	// We only inject init containers when a new pod is created, it does not apply to any existing pod
-	InitContainers []SidecarContainer `json:"initContainers,omitempty"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	InitContainers []SidecarContainer `json:"initContainers,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Containers is the list of sidecar containers to be injected into the selected pod
-	Containers []SidecarContainer `json:"containers,omitempty"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Containers []SidecarContainer `json:"containers,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// List of volumes that can be mounted by sidecar containers
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
-	Volumes []corev1.Volume `json:"volumes,omitempty"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// The sidecarset updateStrategy to use to replace existing pods with new ones.
 	UpdateStrategy SidecarSetUpdateStrategy `json:"updateStrategy,omitempty"`
@@ -61,7 +72,9 @@ type SidecarSetSpec struct {
 	InjectionStrategy SidecarSetInjectionStrategy `json:"injectionStrategy,omitempty"`
 
 	// List of the names of secrets required by pulling sidecar container images
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// RevisionHistoryLimit indicates the maximum quantity of stored revisions about the SidecarSet.
 	// default value is 10
@@ -248,7 +261,9 @@ type SidecarSetUpdateStrategy struct {
 	// This cannot be 0.
 	// Default value is 1.
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
-
+	// Priorities are the rules for calculating the priority of updating pods.
+	// Each pod to be updated, will pass through these terms and get a sum of weights.
+	PriorityStrategy *appspub.UpdatePriorityStrategy `json:"priorityStrategy,omitempty"`
 	// ScatterStrategy defines the scatter rules to make pods been scattered when update.
 	// This will avoid pods with the same key-value to be updated in one batch.
 	// - Note that pods will be scattered after priority sort. So, although priority strategy and scatter strategy can be applied together, we suggest to use either one of them.

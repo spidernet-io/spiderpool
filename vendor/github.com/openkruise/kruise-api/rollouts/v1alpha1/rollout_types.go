@@ -20,10 +20,38 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	gatewayv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+const (
+	// RolloutIDLabel is set to workload labels.
+	// RolloutIDLabel is designed to distinguish each workload revision publications.
+	// The value of RolloutIDLabel corresponds Rollout.Spec.RolloutID.
+	RolloutIDLabel = "rollouts.kruise.io/rollout-id"
+
+	// RolloutBatchIDLabel is patched in pod labels.
+	// RolloutBatchIDLabel is the label key of batch id that will be patched to pods during rollout.
+	// Only when RolloutIDLabel is set, RolloutBatchIDLabel will be patched.
+	// Users can use RolloutIDLabel and RolloutBatchIDLabel to select the pods that are upgraded in some certain batch and release.
+	RolloutBatchIDLabel = "rollouts.kruise.io/rollout-batch-id"
+
+	// RollbackInBatchAnnotation is set to rollout annotations.
+	// RollbackInBatchAnnotation allow use disable quick rollback, and will roll back in batch style.
+	RollbackInBatchAnnotation = "rollouts.kruise.io/rollback-in-batch"
+
+	// RolloutStyleAnnotation define the rolling behavior for Deployment.
+	// must be "partition" or "canary":
+	// * "partition" means rolling in batches just like CloneSet, and will NOT create any extra Workload;
+	// * "canary" means rolling in canary way, and will create a canary Workload.
+	// Currently, only Deployment support both "partition" and "canary" rolling styles.
+	// For other workload types, they only support "partition" styles.
+	// Defaults to "canary" to Deployment.
+	// Defaults to "partition" to the others.
+	RolloutStyleAnnotation = "rollouts.kruise.io/rolling-style"
+)
 
 // RolloutSpec defines the desired state of Rollout
 type RolloutSpec struct {
@@ -33,9 +61,11 @@ type RolloutSpec struct {
 	ObjectRef ObjectRef `json:"objectRef"`
 	// rollout strategy
 	Strategy RolloutStrategy `json:"strategy"`
+	// DeprecatedRolloutID is the deprecated field.
+	// It is recommended that configure RolloutId in workload.annotations[rollouts.kruise.io/rollout-id].
 	// RolloutID should be changed before each workload revision publication.
 	// It is to distinguish consecutive multiple workload publications and rollout progress.
-	RolloutID string `json:"rolloutID,omitempty"`
+	DeprecatedRolloutID string `json:"rolloutID,omitempty"`
 }
 
 type ObjectRef struct {
@@ -65,11 +95,6 @@ type WorkloadRef struct {
 	Name string `json:"name"`
 }
 
-/*type ControllerRevisionRef struct {
-	TargetRevisionName string `json:"targetRevisionName"`
-	SourceRevisionName string `json:"sourceRevisionName"`
-}*/
-
 // RolloutStrategy defines strategy to apply during next rollout
 type RolloutStrategy struct {
 	// Paused indicates that the Rollout is paused.
@@ -96,16 +121,19 @@ type CanaryStrategy struct {
 	// TrafficRoutings hosts all the supported service meshes supported to enable more fine-grained traffic routing
 	// todo current only support one TrafficRouting
 	TrafficRoutings []*TrafficRouting `json:"trafficRoutings,omitempty"`
+	// FailureThreshold indicates how many failed pods can be tolerated in all upgraded pods.
+	// Only when FailureThreshold are satisfied, Rollout can enter ready state.
+	// If FailureThreshold is nil, Rollout will use the MaxUnavailable of workload as its
+	// FailureThreshold.
+	// Defaults to nil.
+	FailureThreshold *intstr.IntOrString `json:"failureThreshold,omitempty"`
 	// MetricsAnalysis *MetricsAnalysisBackground `json:"metricsAnalysis,omitempty"`
 }
 
 // CanaryStep defines a step of a canary workload.
 type CanaryStep struct {
-	// SetWeight sets what percentage of the canary pods should receive
-
+	// Weight indicate how many percentage of traffic the canary pods should receive
 	// +optional
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=100
 	Weight *int32 `json:"weight,omitempty"`
 	// Replicas is the number of expected canary pods in this batch
 	// it can be an absolute number (ex: 5) or a percentage of total pods.
@@ -113,14 +141,25 @@ type CanaryStep struct {
 	// Pause defines a pause stage for a rollout, manual or auto
 	// +optional
 	Pause RolloutPause `json:"pause,omitempty"`
-	// MetricsAnalysis *RolloutAnalysis `json:"metricsAnalysis,omitempty"`
+	// Matches define conditions used for matching the incoming HTTP requests to canary service.
+	// Each match is independent, i.e. this rule will be matched if **any** one of the matches is satisfied.
+	// If Gateway API, current only support one match.
+	// And cannot support both weight and matches, if both are configured, then matches takes precedence.
+	Matches []HttpRouteMatch `json:"matches,omitempty"`
+}
+
+type HttpRouteMatch struct {
+	// Headers specifies HTTP request header matchers. Multiple match values are
+	// ANDed together, meaning, a request must match all the specified headers
+	// to select the route.
+	// +kubebuilder:validation:MaxItems=16
+	Headers []gatewayv1alpha2.HTTPHeaderMatch `json:"headers,omitempty"`
 }
 
 // RolloutPause defines a pause stage for a rollout
 type RolloutPause struct {
 	// Duration the amount of time to wait before moving to the next step.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
 	Duration *int32 `json:"duration,omitempty"`
 }
 
@@ -129,7 +168,6 @@ type TrafficRouting struct {
 	// Service holds the name of a service which selects pods with stable version and don't select any pods with canary version.
 	Service string `json:"service"`
 	// Optional duration in seconds the traffic provider(e.g. nginx ingress controller) consumes the service, ingress configuration changes gracefully.
-	// +kubebuilder:validation:Minimum=0
 	GracePeriodSeconds int32 `json:"gracePeriodSeconds,omitempty"`
 	// Ingress holds Ingress specific configuration to route traffic, e.g. Nginx, Alb.
 	Ingress *IngressTrafficRouting `json:"ingress,omitempty"`
@@ -140,7 +178,8 @@ type TrafficRouting struct {
 
 // IngressTrafficRouting configuration for ingress controller to control traffic routing
 type IngressTrafficRouting struct {
-	// ClassType refers to the class type of an `Ingress`, e.g. Nginx. Default is Nginx
+	// ClassType refers to the type of `Ingress`.
+	// current support nginx, aliyun-alb. default is nginx.
 	// +optional
 	ClassType string `json:"classType,omitempty"`
 	// Name refers to the name of an `Ingress` resource in the same namespace as the `Rollout`
@@ -162,17 +201,12 @@ type RolloutStatus struct {
 
 	// observedGeneration is the most recent generation observed for this Rollout.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// CanaryRevision the hash of the canary pod template
-	// +optional
-	//CanaryRevision string `json:"canaryRevision,omitempty"`
-	// StableRevision indicates the revision pods that has successfully rolled out
-	StableRevision string `json:"stableRevision,omitempty"`
-	// Conditions a list of conditions a rollout can have.
-	// +optional
-	Conditions []RolloutCondition `json:"conditions,omitempty"`
 	// Canary describes the state of the canary rollout
 	// +optional
 	CanaryStatus *CanaryStatus `json:"canaryStatus,omitempty"`
+	// Conditions a list of conditions a rollout can have.
+	// +optional
+	Conditions []RolloutCondition `json:"conditions,omitempty"`
 	// +optional
 	//BlueGreenStatus *BlueGreenStatus `json:"blueGreenStatus,omitempty"`
 	// Phase is the rollout phase.
@@ -211,10 +245,12 @@ const (
 	ProgressingReasonInitializing = "Initializing"
 	ProgressingReasonInRolling    = "InRolling"
 	ProgressingReasonFinalising   = "Finalising"
-	ProgressingReasonSucceeded    = "Succeeded"
+	ProgressingReasonCompleted    = "Completed"
 	ProgressingReasonCancelling   = "Cancelling"
-	ProgressingReasonCanceled     = "Canceled"
 	ProgressingReasonPaused       = "Paused"
+
+	// RolloutConditionSucceeded indicates whether rollout is succeeded or failed.
+	RolloutConditionSucceeded RolloutConditionType = "Succeeded"
 
 	// Terminating condition
 	RolloutConditionTerminating RolloutConditionType = "Terminating"
@@ -231,11 +267,10 @@ type CanaryStatus struct {
 	ObservedRolloutID string `json:"observedRolloutID,omitempty"`
 	// RolloutHash from rollout.spec object
 	RolloutHash string `json:"rolloutHash,omitempty"`
-	// CanaryService holds the name of a service which selects pods with canary version and don't select any pods with stable version.
-	CanaryService string `json:"canaryService"`
+	// StableRevision indicates the revision of stable pods
+	StableRevision string `json:"stableRevision,omitempty"`
 	// CanaryRevision is calculated by rollout based on podTemplateHash, and the internal logic flow uses
 	// It may be different from rs podTemplateHash in different k8s versions, so it cannot be used as service selector label
-	// +optional
 	CanaryRevision string `json:"canaryRevision"`
 	// pod template hash is used as service selector label
 	PodTemplateHash string `json:"podTemplateHash"`
@@ -271,18 +306,10 @@ const (
 	RolloutPhaseInitial RolloutPhase = "Initial"
 	// RolloutPhaseHealthy indicates a rollout is healthy
 	RolloutPhaseHealthy RolloutPhase = "Healthy"
-	// RolloutPhasePreparing indicates a rollout is preparing for next progress.
-	RolloutPhasePreparing RolloutPhase = "Preparing"
 	// RolloutPhaseProgressing indicates a rollout is not yet healthy but still making progress towards a healthy state
 	RolloutPhaseProgressing RolloutPhase = "Progressing"
-	// RolloutPhaseFinalizing indicates a rollout is finalizing
-	RolloutPhaseFinalizing RolloutPhase = "Finalizing"
 	// RolloutPhaseTerminating indicates a rollout is terminated
 	RolloutPhaseTerminating RolloutPhase = "Terminating"
-	// RolloutPhaseCompleted indicates a rollout is completed
-	RolloutPhaseCompleted RolloutPhase = "Completed"
-	// RolloutPhaseCancelled indicates a rollout is cancelled
-	RolloutPhaseCancelled RolloutPhase = "Cancelled"
 )
 
 // +genclient

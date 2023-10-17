@@ -30,10 +30,8 @@ Spiderpool 能基于 IPVlan Underlay CNI 在阿里云环境上运行，并保证
 
     ![alicloud-web-network](../../../images/alicloud-network-web.png)
   
-  NOTE：
-
-  > - 实例（虚拟机）是能够为您的业务提供计算服务的最小单位，不同的实例规格可创建网卡数和每张网卡可分配的辅助 IP 数存在差异，根据业务场景和使用场景，参考阿里云[实例规格族](https://help.aliyun.com/zh/ecs/user-guide/overview-of-instance-families#concept-sx4-lxv-tdb)选择对应规格进行创建实例。
-  > - 如果有 IPv6 的需求，可以参考阿里云[配置 IPv6 地址](https://help.aliyun.com/zh/ecs/user-guide/configure-ipv6-addresses/?spm=a2c4g.11186623.0.0.21ee48beYHt7ZW)
+    > - 实例（虚拟机）是能够为您的业务提供计算服务的最小单位，不同的实例规格可创建网卡数和每张网卡可分配的辅助 IP 数存在差异，根据业务场景和使用场景，参考阿里云[实例规格族](https://help.aliyun.com/zh/ecs/user-guide/overview-of-instance-families#concept-sx4-lxv-tdb)选择对应规格进行创建实例。
+    > - 如果有 IPv6 的需求，可以参考阿里云[配置 IPv6 地址](https://help.aliyun.com/zh/ecs/user-guide/configure-ipv6-addresses/?spm=a2c4g.11186623.0.0.21ee48beYHt7ZW)。
 
 - 使用上述配置的虚拟机，搭建一套 Kubernetes 集群，节点的可用 IP 及集群网络拓扑图如下：
 
@@ -276,11 +274,11 @@ EOF
 
 ```bash
 ~# kubectl get po -owide
-NAME                          READY   STATUS    RESTARTS   AGE   IP               NODE      NOMINATED NODE   READINESS GATES
-test-app-1-b7765b8d8-422sb    1/1     Running   0          16s   172.31.199.187   master    <none>           <none>
-test-app-1-b7765b8d8-qjgpj    1/1     Running   0          16s   172.31.199.193   worker    <none>           <none>
-test-app-2-7c56876fc6-7brhf   1/1     Running   0          12s   192.168.0.160    master    <none>           <none>
-test-app-2-7c56876fc6-zlxxt   1/1     Running   0          12s   192.168.0.161    worker    <none>           <none>
+NAME                READY   STATUS    RESTARTS   AGE   IP               NODE      NOMINATED NODE   READINESS GATES
+test-app-1-ddlx7    1/1     Running   0          16s   172.31.199.187   master    <none>           <none>
+test-app-1-jpfkj    1/1     Running   0          16s   172.31.199.193   worker    <none>           <none>
+test-app-2-qbhwx    1/1     Running   0          12s   192.168.0.160    master    <none>           <none>
+test-app-2-r6gwx    1/1     Running   0          12s   192.168.0.161    worker    <none>           <none>
 ```
 
 Spiderpool 自动为应用分配 IP 地址，应用的 IP 均在期望的 IP 池内：
@@ -304,7 +302,7 @@ worker-192   4         192.168.0.0/24    1                    5                t
     master   Ready    control-plane   2d12h   v1.27.3   172.31.199.183   <none>        CentOS Linux 7 (Core)   6.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
     worker   Ready    <none>          2d12h   v1.27.3   172.31.199.184   <none>        CentOS Linux 7 (Core)   6.4.0-1.el7.elrepo.x86_64   containerd://1.7.1
 
-    ~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 172.31.199.183 -c 2
+    ~# kubectl exec -ti test-app-1-ddlx7 -- ping 172.31.199.183 -c 2
     PING 172.31.199.183 (172.31.199.183): 56 data bytes
     64 bytes from 172.31.199.183: seq=0 ttl=64 time=0.088 ms
     64 bytes from 172.31.199.183: seq=1 ttl=64 time=0.054 ms
@@ -317,7 +315,7 @@ worker-192   4         192.168.0.0/24    1                    5                t
 - 测试 Pod 与跨节点、跨子网 Pod 的通讯情况
 
     ```shell
-    ~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 172.31.199.193 -c 2
+    ~# kubectl exec -ti test-app-1-ddlx7 -- ping 172.31.199.193 -c 2
     PING 172.31.199.193 (172.31.199.193): 56 data bytes
     64 bytes from 172.31.199.193: seq=0 ttl=64 time=0.460 ms
     64 bytes from 172.31.199.193: seq=1 ttl=64 time=0.210 ms
@@ -326,7 +324,7 @@ worker-192   4         192.168.0.0/24    1                    5                t
     2 packets transmitted, 2 packets received, 0% packet loss
     round-trip min/avg/max = 0.210/0.335/0.460 ms
 
-    ~# kubectl exec -ti test-app-1-b7765b8d8-422sb -- ping 192.168.0.161 -c 2
+    ~# kubectl exec -ti test-app-1-ddlx7 -- ping 192.168.0.161 -c 2
     PING 192.168.0.161 (192.168.0.161): 56 data bytes
     64 bytes from 192.168.0.161: seq=0 ttl=64 time=0.408 ms
     64 bytes from 192.168.0.161: seq=1 ttl=64 time=0.194 ms
@@ -343,7 +341,7 @@ worker-192   4         192.168.0.0/24    1                    5                t
     NAME       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
     test-svc   ClusterIP   10.233.23.194   <none>        80/TCP    26s
 
-    ~# kubectl exec -ti test-app-2-7c56876fc6-7brhf -- curl 10.233.23.194 -I
+    ~# kubectl exec -ti test-app-2-qbhwx -- curl 10.233.23.194 -I
     HTTP/1.1 200 OK
     Server: nginx/1.10.1
     Date: Fri, 21 Jul 2023 06:45:56 GMT
@@ -361,12 +359,12 @@ worker-192   4         192.168.0.0/24    1                    5                t
 
 - 阿里云的 NAT 网关能实现为 VPC 环境下构建一个公网或私网流量的出入口。通过 NAT 网关，实现集群的流量出口访问。参考 [NAT 网关文档](https://help.aliyun.com/product/44413.html?spm=a2c4g.86456.0.0.5ccf56b5vsa5M4) 创建 NAT 网关，如图：
 
-![alicloud-natgateway](../../../images/alicloud-natgateway.png)
+    ![alicloud-natgateway](../../../images/alicloud-natgateway.png)
 
 - 测试集群内 Pod 的流量出口访问
 
     ```bash
-    ~# kubectl exec -ti test-app-2-7c56876fc6-7brhf -- curl www.baidu.com -I
+    ~# kubectl exec -ti test-app-2-qbhwx -- curl www.baidu.com -I
     HTTP/1.1 200 OK
     Accept-Ranges: bytes
     Cache-Control: private, no-cache, no-store, proxy-revalidate, no-transform
@@ -378,6 +376,23 @@ worker-192   4         192.168.0.0/24    1                    5                t
     Last-Modified: Mon, 13 Jun 2016 02:50:08 GMT
     Pragma: no-cache
     Server: bfe/1.0.8.18
+    ```
+
+- 如果希望通过 IPv6 地址实现集群内 Pod 的流量出口访问，你需要通过 IPv6 网关，为 Pod 所分配到的 IPv6 地址 `开通公网带宽`，将私网 IPv6 转换为公网 IPv6 地址。配置如下。
+
+    ![alicloud-ipv6-natgateway](../../../images/alicloud-ipv6-gateway.png)
+
+    测试 IPv6 访问如下：
+
+    ```bash
+    ~# kubectl exec -ti test-app-2-qbhwx -- ping -6 aliyun.com -c 2
+    PING aliyun.com (2401:b180:1:60::6): 56 data bytes
+    64 bytes from 2401:b180:1:60::6: seq=0 ttl=96 time=6.058 ms
+    64 bytes from 2401:b180:1:60::6: seq=1 ttl=96 time=6.079 ms
+
+    --- aliyun.com ping statistics ---
+    2 packets transmitted, 2 packets received, 0% packet loss
+    round-trip min/avg/max = 6.058/6.068/6.079 ms
     ```
 
 #### 负载均衡流量入口访问
@@ -401,7 +416,7 @@ CCM（Cloud Controller Manager）是阿里云提供的一个用于 Kubernetes �
 
     ```bash
     ~# kubectl get nodes
-    ~# kubectl patch node <NODE_NAME> -p '{"spec":{"providerID": "<provider_id>"}}' # NODE_NAME 与 provider_id 替换为对应值。
+    ~# kubectl patch node <NODE_NAME> -p '{"spec":{"providerID": "<provider_id>"}}' # 将 <NODE_NAME> 与 <provider_id> 替换为对应值。
     ```
 
 2. 创建阿里云的 RAM 用户，并授权。
@@ -448,7 +463,7 @@ CCM（Cloud Controller Manager）是阿里云提供的一个用于 Kubernetes �
 
 5. 获取 Yaml ，并通过 `kubectl apply -f cloud-controller-manager.yaml` 方式安装 CCM，本文中安装的版本为 v2.5.0
 
-    - 使用如下命令，获取 cloud-controller-manager.yaml，并替换其中 `<<cluster_cidr>>` 为您真实集群的 cluster cidr ；您可以通过`kubectl cluster-info dump | grep -m1 cluster-cidr` 命令查看集群的 cluster cidr 。
+    - 使用如下命令，获取 cloud-controller-manager.yaml，并替换其中 `<<cluster_cidr>>` 为您真实集群的 cluster CIDR ；您可以通过`kubectl cluster-info dump | grep -m1 cluster-cidr` 命令查看集群的 cluster CIDR 。
 
     ```bash
     ~# wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/alicloud-ccm/cloud-controller-manager.yaml
@@ -549,6 +564,17 @@ Connection: keep-alive
 Last-Modified: Tue, 13 Jun 2023 15:08:10 GMT
 ETag: "6488865a-267"
 Accept-Ranges: bytes
+```
+
+> 阿里云的 CCM 实现负载均衡流量的入口访问时，其不支持后端 `service` 的 `spec.ipFamilies` 设置为 IPv6 。
+
+```bash
+~# kubectl describe svc lb-ipv6
+...
+Events:
+  Type     Reason                  Age                   From            Message
+  ----     ------                  ----                  ----            -------
+  Warning  SyncLoadBalancerFailed  3m5s (x37 over 159m)  nlb-controller  Error syncing load balancer [nlb-rddqbe6gnp9jil4i15]: Message: code: 400, The operation is not allowed because of ServerGroupNotSupportIpv6.
 ```
 
 ## 总结

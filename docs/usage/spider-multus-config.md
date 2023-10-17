@@ -26,7 +26,7 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 - A robust webhook mechanism is involved to proactively detect and prevent human errors, reducing troubleshooting efforts.
 
-- Spiderpool's CNI plugins, including [ifacer](./ifacer.md) and [coordinator](./coordinator.md) are integrated, enhancing the overall configuration experience.
+- Spiderpool's CNI plugins, including [ifacer](./ifacer.md) and [coordinator](../concepts/coordinator.md) are integrated, enhancing the overall configuration experience.
 
 > It is important to note that when creating a SpiderMultusConfig CR with the same name as an existing Multus CR, the Multus CR instance will be managed by SpiderMultusConfig, and its configuration will be overwritten. To avoid overwriting existing Multus CR instances, it is recommended to either refrain from creating SpiderMultusConfig CR instances with the same name or specify a different name for the generated Multus CR using the `multus.spidernet.io/cr-name` annotation in the SpiderMultusConfig CR.
 

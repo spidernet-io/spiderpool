@@ -115,7 +115,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [example](./rdma.md).
 
-- coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](./coordinator.md#fix-mac-address-prefix-for-pods) for further information.
+- coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](../concepts/coordinator.md#fix-mac-address-prefix-for-pods) for further information.
 
 - Spiderpool enables access to ClusterIP through kube-proxy and eBPF kube-proxy replacement for plugins such as [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
@@ -123,7 +123,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
 [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./service-zh_CN.md) for details.
 
-- Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](./coordinator.md) for details.
+- Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 
 ### Operations and Management
 

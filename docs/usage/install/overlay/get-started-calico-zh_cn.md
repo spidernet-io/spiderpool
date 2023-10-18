@@ -54,6 +54,50 @@ spiderpool-multus-m2kbt                                     1/1     Running     
 spiderpool-multus-sl65s                                     1/1     Running     0                 1m
 ```
 
+请检查 `Spidercoordinator.status` 中的 Phase 是否为 Synced, 并且 overlayPodCIDR 是否与集群中 Calico 的子网保持一致: 
+
+```shell
+~# calicoctl get ippools
+NAME                   CIDR             SELECTOR
+default-ipv4-ippool    10.222.64.0/18   all()
+default-ipv4-ippool1   10.223.64.0/18   all()
+
+~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  creationTimestamp: "2023-10-18T08:31:09Z"
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 7
+  name: default
+  resourceVersion: "195405"
+  uid: 8bdceced-15db-497b-be07-81cbcba7caac
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 169.254.0.0/16
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: calico
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+status:
+  overlayPodCIDR:
+  - 10.222.64.0/18
+  - 10.223.64.0/18
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+```
+
+> 1.如果 phase 不为 Synced, 那么将会阻止 Pod 被创建
+> 
+> 2.如果 overlayPodCIDR 不正常, 可能会导致通信问题
+
 ### 创建 SpiderIPPool
 
 本文集群节点网卡: `ens192` 所在子网为 `10.6.0.0/16`, 以该子网创建 SpiderIPPool:

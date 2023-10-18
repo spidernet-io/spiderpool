@@ -35,6 +35,9 @@ global:
   ## @param global.configName the configmap name
   configName: "spiderpool-conf"
 
+  ## @param global.ciliumConfigMap the cilium's configMap, default is kube-system/cilium-config
+  ciliumConfigMap: kube-system/cilium-config
+
 ## @section ipam parameters
 ##
 ipam:

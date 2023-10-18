@@ -55,6 +55,45 @@ spiderpool-multus-hkxb6                                     1/1     Running     
 spiderpool-multus-l9dcs                                     1/1     Running     0                 1m
 ```
 
+请检查 `Spidercoordinator.status` 中的 Phase 是否为 Synced, 并且 overlayPodCIDR 是否与集群中 Cilium 配置的 Pod 子网保持一致:
+
+```shell
+~# kubectl get configmaps -n kube-system cilium-config -o yaml | grep cluster-pool
+  cluster-pool-ipv4-cidr: 10.244.64.0/18
+  cluster-pool-ipv4-mask-size: "24"
+  ipam: cluster-pool
+
+~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  finalizers:
+  - spiderpool.spidernet.io
+  name: default
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 169.254.0.0/16
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: calico
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+status:
+  overlayPodCIDR:
+  - 10.244.64.0/18
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+```
+
+> 1.如果 phase 不为 Synced, 那么将会阻止 Pod 被创建
+> 
+> 2.如果 overlayPodCIDR 不正常, 可能会导致通信问题
+
 ### 创建 SpiderIPPool
 
 本文集群节点网卡: `ens192` 所在子网为 `10.6.0.0/16`, 以该子网创建 SpiderIPPool:

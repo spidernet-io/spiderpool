@@ -452,6 +452,7 @@ func setupInformers() {
 		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 		ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
 		DefaultCniConfDir:   controllerContext.Cfg.DefaultCniConfDir,
+		CiliumConfigMap:     controllerContext.Cfg.CiliumConfigName,
 	}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
 		logger.Fatal(err.Error())
 	}

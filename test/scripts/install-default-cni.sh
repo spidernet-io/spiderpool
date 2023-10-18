@@ -34,6 +34,8 @@ export CALICO_VERSION=${CALICO_VERSION:-"v3.25.0"}
 export INSTALL_TIME_OUT=${INSTALL_TIME_OUT:-"600s"}
 export CALICO_IMAGE_REPO=${CALICO_IMAGE_REPO:-"docker.io"}
 export CALICO_AUTODETECTION_METHOD=${CALICO_AUTODETECTION_METHOD:-"kubernetes-internal-ip"}
+export CALICO_IPV4POOL_CIDR=${CALICO_CLUSTER_POD_SUBNET_V4:-"10.243.64.0/18"}
+export CALICO_IPV6POOL_CIDR=${CALICO_CLUSTER_POD_SUBNET_V6:-"fd00:10:243::/112"}
 
 E2E_CILIUM_IMAGE_REPO=${E2E_CILIUM_IMAGE_REPO:-"quay.io"}
 CILIUM_VERSION=${CILIUM_VERSION:-""}
@@ -83,9 +85,8 @@ function install_calico() {
         KEY="${env%%=*}"
         VALUE="${env#*=}"
         echo $KEY $VALUE
-        ${SED_COMMAND} -i "s/<<${KEY}>>/${VALUE}/g" ${CLUSTER_PATH}/calico.yaml
+        ${SED_COMMAND} -i "s?<<${KEY}>>?${VALUE}?g" ${CLUSTER_PATH}/calico.yaml
     done
-
 
     CALICO_IMAGE_LIST=`cat ${CLUSTER_PATH}/calico.yaml | grep 'image: ' | tr -d '"' | awk '{print $2}'`
     [ -z "${CALICO_IMAGE_LIST}" ] && echo "can't found image of calico" && exit 1

@@ -171,6 +171,8 @@ spec:
           value: {{ .Values.multus.enableMultusConfig | quote }}
         - name: SPIDERPOOL_CNI_CONFIG_DIR
           value: {{ .Values.global.cniConfHostPath | quote }}
+        - name: SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME
+          value: {{ .Values.global.ciliumConfigMap | quote }}
         - name: SPIDERPOOL_POD_NAME
           valueFrom:
             fieldRef:

@@ -429,7 +429,11 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 
 		if configDefaultRouteNIC == c.currentInterface {
 			for idx, route := range defaultInterfaceRoutes {
-				if route.Dst != nil {
+				zeroIPAddress := net.IPv4zero
+				if defaultInterfaceRoutes[idx].Family == netlink.FAMILY_V6 {
+					zeroIPAddress = net.IPv6zero
+				}
+				if !route.Dst.IP.Equal(zeroIPAddress) {
 					if err := networking.AddToRuleTable(defaultInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
 						logger.Error("failed to AddToRuleTable", zap.Error(err))
 						return fmt.Errorf("failed to AddToRuleTable: %v", err)
@@ -453,7 +457,11 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 
 		} else if configDefaultRouteNIC == podDefaultRouteNIC {
 			for idx, route := range currentInterfaceRoutes {
-				if route.Dst != nil {
+				zeroIPAddress := net.IPv4zero
+				if defaultInterfaceRoutes[idx].Family == netlink.FAMILY_V6 {
+					zeroIPAddress = net.IPv6zero
+				}
+				if !route.Dst.IP.Equal(zeroIPAddress) {
 					if err := networking.AddToRuleTable(currentInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
 						logger.Error("failed to AddToRuleTable", zap.Error(err))
 						return fmt.Errorf("failed to AddToRuleTable: %v", err)

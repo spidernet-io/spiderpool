@@ -17,6 +17,7 @@ import (
 
 	spiderdoctorV1 "github.com/spidernet-io/spiderdoctor/pkg/k8s/apis/spiderdoctor.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
@@ -222,7 +223,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						PodMACPrefix:       &macPrefix,
-						PodDefaultRouteNIC: &common.NIC2,
+						PodDefaultRouteNIC: &common.NIC1,
 						Mode:               &mode,
 						PodCIDRType:        &podCidrType,
 					},
@@ -287,25 +288,96 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(strings.TrimRight(string(data), "\n")).To(Equal(macPrefix), "macperfix is not covered, %s != %s", string(data), macPrefix)
 
 			// Check the network card where the default route of the pod is located
-			if frame.Info.IpV4Enabled {
-				routeCommandString := "ip r show main | grep 'default via' | awk '{print $5}'"
-				ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-				defer cancel()
-				interfaceData, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, routeCommandString, ctx)
-				Expect(err).NotTo(HaveOccurred(), "failed to execute command %v , error is: %v ", routeCommandString, err)
+			ipv4ServiceSubnet, ipv6ServiceSubnet := getClusterServiceSubnet()
+			for _, pod := range podList.Items {
+				if frame.Info.IpV4Enabled {
+					ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+					defer cancel()
 
-				// The default route should be on the specified interface common.NIC2
-				Expect(strings.TrimRight(string(interfaceData), "\n")).To(Equal(common.NIC2), "the default route is not in the specified interface %s ", common.NIC2)
-			}
-			if frame.Info.IpV6Enabled {
-				routeCommandString := fmt.Sprintf("ip -6 r show main | grep 'default via' | grep %s | awk '{print $5}'", common.NIC2)
-				ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-				defer cancel()
-				interfaceData, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, routeCommandString, ctx)
-				Expect(err).NotTo(HaveOccurred(), "failed to execute command %v , error is: %v ", routeCommandString, err)
+					// In this use case, the default routing NIC is specified as eth0 (originally the default is net1) through `CoordinatorSpec.PodDefaultRouteNIC`
+					// ip r get <address outside the cluster>, should flow out from the correct NIC(eth0).
+					GinkgoWriter.Println("ip -4 r get <address outside the cluster>")
+					runGetIPString := "ip -4 r get '8.8.8.8' "
+					executeCommandResult, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
 
-				// The default route should be on the specified interface common.NIC2
-				Expect(strings.TrimRight(string(interfaceData), "\n")).To(Equal(common.NIC2), "the default route is not in the specified interface %s ", common.NIC2)
+					// ip r get <IP in eth0 subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -4 r get <IP in eth0 subnet>")
+					runGetIPString = fmt.Sprintf("ip -4 r get %v ", ip.NextIP(net.ParseIP(pod.Status.PodIP)).String())
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+
+					// ip r get <IP in net1 subnet>, should flow out from net1
+					GinkgoWriter.Println("ip -4 r get <IP in net1 subnet>")
+					net1IP, err := common.GetPodIPAddressFromIppool(frame, v4PoolName, pod.Namespace, pod.Name)
+					Expect(err).NotTo(HaveOccurred(), "Failed to obtain Pod %v/%v IP address from ippool %v ", pod.Namespace, pod.Name, v4PoolName)
+					runGetIPString = fmt.Sprintf("ip -4 r get %v ", ip.NextIP(net.ParseIP(net1IP)).String())
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+
+					// ip r get <IP in service subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -4 r get <IP in service subnet>")
+					ips, err := common.GenerateIPs(ipv4ServiceSubnet, 1)
+					Expect(err).NotTo(HaveOccurred(), "Failed to generate IPs from subnet %v ", ipv4ServiceSubnet)
+					runGetIPString = fmt.Sprintf("ip -4 r get %v ", ips[0])
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+				}
+				if frame.Info.IpV6Enabled {
+					ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+					defer cancel()
+
+					// In this use case, the default routing NIC is specified as eth0 (originally the default is net1) through `CoordinatorSpec.PodDefaultRouteNIC`
+					// ip r get <address outside the cluster>, should flow out from the correct NIC(eth0).
+					GinkgoWriter.Println("ip -6 r get <IP in service subnet>")
+					runGetIPString := "ip -6 r get '2401:2401::1' "
+					executeCommandResult, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+
+					// ip r get <IP in eth0 subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -6 r get <IP in eth0 subnet>")
+					if frame.Info.IpV4Enabled {
+						// Dual stack
+						runGetIPString = fmt.Sprintf("ip -6 r get %v ", ip.NextIP(net.ParseIP(pod.Status.PodIPs[1].IP)).String())
+					} else {
+						// IPv6
+						runGetIPString = fmt.Sprintf("ip -6 r get %v ", ip.NextIP(net.ParseIP(pod.Status.PodIP)).String())
+					}
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+
+					// ip r get <IP in net1 subnet>, should flow out from net1
+					GinkgoWriter.Println("ip -6 r get <IP in net1 subnet>")
+					net1IP, err := common.GetPodIPAddressFromIppool(frame, v6PoolName, pod.Namespace, pod.Name)
+					Expect(err).NotTo(HaveOccurred(), "Failed to obtain Pod %v/%v IP address from v6 ippool %v ", pod.Namespace, pod.Name, v6PoolName)
+					runGetIPString = fmt.Sprintf("ip -6 r get %v ", ip.NextIP(net.ParseIP(net1IP)).String())
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+
+					// ip r get <IP in service subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -6 r get <IP in service subnet>")
+					ips, err := common.GenerateIPs(ipv6ServiceSubnet, 1)
+					Expect(err).NotTo(HaveOccurred(), "Failed to generate IPs from subnet %v ", ipv6ServiceSubnet)
+					runGetIPString = fmt.Sprintf("ip -6 r get %v ", ips[0])
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+				}
 			}
 		})
 
@@ -592,4 +664,218 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 	})
+
+	Context("Test ip rule and default route are as expected.", func() {
+		var v4PoolName, v6PoolName, namespace, depName, mode, multusNadName string
+		var podCidrType string
+
+		BeforeEach(func() {
+			// generate some test data
+			mode = "overlay"
+			namespace = "ns-" + common.GenerateString(10, true)
+			depName = "dep-name-" + common.GenerateString(10, true)
+			multusNadName = "test-multus-" + common.GenerateString(10, true)
+			podCidrType = "cluster"
+
+			// create namespace and ippool
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+			if frame.Info.IpV4Enabled {
+				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
+				gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
+				v4PoolObj.Spec.Gateway = &gateway
+				err = common.CreateIppool(frame, v4PoolObj)
+				Expect(err).NotTo(HaveOccurred(), "failed to create v4 ippool, error is: %v", err)
+			}
+			if frame.Info.IpV6Enabled {
+				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
+				gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
+				v6PoolObj.Spec.Gateway = &gateway
+				err = common.CreateIppool(frame, v6PoolObj)
+				Expect(err).NotTo(HaveOccurred(), "failed to create v6 ippool, error is: %v", err)
+			}
+
+			// Define multus cni NetworkAttachmentDefinition and create
+			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      multusNadName,
+					Namespace: namespace,
+				},
+				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+					CniType: "macvlan",
+					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+						Master: []string{common.NIC1},
+					},
+					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+						Mode:        &mode,
+						PodCIDRType: &podCidrType,
+					},
+				},
+			}
+			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete spiderMultusConfig %v/%v. \n", namespace, multusNadName)
+				Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Println("delete namespace: ", namespace)
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+
+				if frame.Info.IpV4Enabled {
+					GinkgoWriter.Println("delete v4 ippool: ", v4PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					GinkgoWriter.Println("delete v6 ippool: ", v6PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				}
+			})
+		})
+
+		It("In the default scenario, the `ip rules` should be as expected and the default route should be on net1", Label("C00011"), func() {
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				types.AnnoIPPoolItem{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{v6PoolName}
+			}
+			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			var annotations = make(map[string]string)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
+			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
+
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed, error is: %v ", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList, error is: %v ", err)
+
+			// Check the ip rule in the pod and it should be as expected.
+			ipv4ServiceSubnet, ipv6ServiceSubnet := getClusterServiceSubnet()
+			for _, pod := range podList.Items {
+				if frame.Info.IpV4Enabled {
+					ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+					defer cancel()
+
+					// In the conventional multi-card situation, the NIC where the default route is located is not specified through comments or other methods.
+					// Then when accessing the external address of the cluster, it should flow out from the net1 NIC.
+					// ip r get <address outside the cluster>, should flow out from the correct NIC(net1).
+					GinkgoWriter.Println("ip -4 r get <address outside the cluster>")
+					runGetIPString := "ip -4 r get '8.8.8.8' "
+					executeCommandResult, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+
+					// ip r get <IP in eth0 subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -4 r get <IP in eth0 subnet>")
+					runGetIPString = fmt.Sprintf("ip -4 r get %v ", ip.NextIP(net.ParseIP(pod.Status.PodIP)).String())
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+
+					// ip r get <IP in net1 subnet>, should flow out from net1
+					GinkgoWriter.Println("ip -4 r get <IP in net1 subnet>")
+					net1IP, err := common.GetPodIPAddressFromIppool(frame, v4PoolName, pod.Namespace, pod.Name)
+					Expect(err).NotTo(HaveOccurred(), "Failed to obtain Pod %v/%v IP address from ippool %v ", pod.Namespace, pod.Name, v4PoolName)
+					runGetIPString = fmt.Sprintf("ip -4 r get %v ", ip.NextIP(net.ParseIP(net1IP)).String())
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+
+					// ip r get <IP in service subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -4 r get <IP in service subnet>")
+					ips, err := common.GenerateIPs(ipv4ServiceSubnet, 1)
+					Expect(err).NotTo(HaveOccurred(), "Failed to generate IPs from subnet %v ", ipv4ServiceSubnet)
+					runGetIPString = fmt.Sprintf("ip -4 r get %v ", ips[0])
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+				}
+				if frame.Info.IpV6Enabled {
+					ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+					defer cancel()
+
+					// In the conventional multi-card situation, the NIC where the default route is located is not specified through comments or other methods.
+					// Then when accessing the external address of the cluster, it should flow out from the net1 NIC.
+					// ip r get <address outside the cluster>, should flow out from the correct NIC(net1).
+					GinkgoWriter.Println("ip -6 r get <address outside the cluster>")
+					runGetIPString := "ip -6 r get '2401:2401::1' "
+					executeCommandResult, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+
+					// ip r get <IP in eth0 subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -6 r get <IP in eth0 subnet>")
+					if frame.Info.IpV4Enabled {
+						// Dual stack
+						runGetIPString = fmt.Sprintf("ip r get %v ", ip.NextIP(net.ParseIP(pod.Status.PodIPs[1].IP)).String())
+					} else {
+						// IPv6
+						runGetIPString = fmt.Sprintf("ip r get %v ", ip.NextIP(net.ParseIP(pod.Status.PodIP)).String())
+					}
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+
+					// ip r get <IP in net1 subnet>, should flow out from net1
+					GinkgoWriter.Println("ip -6 r get <IP in net1 subnet>")
+					net1IP, err := common.GetPodIPAddressFromIppool(frame, v6PoolName, pod.Namespace, pod.Name)
+					Expect(err).NotTo(HaveOccurred(), "Failed to obtain Pod %v/%v IP address from v6 ippool %v ", pod.Namespace, pod.Name, v6PoolName)
+					runGetIPString = fmt.Sprintf("ip -6 r get %v ", ip.NextIP(net.ParseIP(net1IP)).String())
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+
+					// ip r get <IP in service subnet>, should flow out from eth0
+					GinkgoWriter.Println("ip -6 r get <IP in service subnet>")
+					ips, err := common.GenerateIPs(ipv6ServiceSubnet, 1)
+					Expect(err).NotTo(HaveOccurred(), "Failed to generate IPs from subnet %v ", ipv6ServiceSubnet)
+					runGetIPString = fmt.Sprintf("ip -6 r get %v ", ips[0])
+					executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
+					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
+					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+				}
+			}
+		})
+	})
 })
+
+func getClusterServiceSubnet() (ipv4ServiceSubnet, ipv6ServiceSubnet string) {
+	ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+	defer cancel()
+	getConfigMapString := fmt.Sprintf("get configmap -n %v %v -oyaml | grep serviceSubnet | awk -F ': ' '{print $2}'", common.KubeadmConfigmapNameSpace, common.KubeadmConfigmapName)
+	serviceSubnetString, err := frame.ExecKubectl(getConfigMapString, ctx)
+	GinkgoWriter.Printf("The serviceSubnet of the cluster is: %v \n", string(serviceSubnetString))
+	Expect(err).NotTo(HaveOccurred(), "Failed to obtain configuration mapping using command %v", getConfigMapString)
+
+	if frame.Info.IpV4Enabled && !frame.Info.IpV6Enabled {
+		return strings.TrimRight(string(serviceSubnetString), "\n"), ""
+	}
+	if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
+		return "", strings.TrimRight(string(serviceSubnetString), "\n")
+	}
+
+	serviceSubnetList := strings.Split(strings.TrimRight(string(serviceSubnetString), "\n"), ",")
+	return serviceSubnetList[0], serviceSubnetList[1]
+}

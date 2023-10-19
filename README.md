@@ -49,7 +49,7 @@ aims to provide many innovative features:
 * Not only limited to bare metal environments in data centers, but also providing
   a unified underlay CNI solution for OpenStack, VMware, and various public cloud scenarios.
 
-## underlay CNI
+## Underlay CNI
 
 There are two technologies in cloud-native networking: "overlay network" and "underlay network".
 Despite no strict definition for underlay and overlay networks in cloud-native networking, we

@@ -47,9 +47,9 @@ aims to provide many innovative features:
   access clusterIP and check pod health, and to detect IP conflict and gateway accessibility.
 
 * Not only limited to bare metal environments in data centers, but also providing
-  a unified underlay CNI solution for openstack, vmware, and various public cloud scenarios.
+  a unified underlay CNI solution for OpenStack, VMware, and various public cloud scenarios.
 
-## underlay CNI
+## Underlay CNI
 
 There are two technologies in cloud-native networking: "overlay network" and "underlay network".
 Despite no strict definition for underlay and overlay networks in cloud-native networking, we
@@ -64,7 +64,7 @@ Why underlay network solutions? The following requirements necessitate underlay 
 
 * Network performance. Network performance advantages, like low latency, high throughput, low forwarding overhead of node’s CPU.  It fits to applications like financial and AI application.
 
-* Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of netowrk, application can directly use Pod IP for cluster east-west and north-south communication.
+* Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of network, application can directly use Pod IP for cluster east-west and north-south communication.
 
 * Network security. In the data center, it may be used to enforce network security to Pod, like firewall and isolating communication with VLAN.  The underlay network solution could expose the Pod packet without tunnel encapsulation, and meet requirements.
 
@@ -159,7 +159,7 @@ and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod.
 This offers several benefits:
 
 * Rich IPAM features for underlay CNIs, including shared/fixed IPs,
-  multi-NIC IP allocation, and dual-stack support.
+ multi-NIC IP allocation, and dual-stack support.
 
 * Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods,
   ensuring the consistent request and reply data paths for smooth communication.
@@ -187,7 +187,7 @@ This approach provides several benefits:
 
 ## Use case: underlay CNI on public cloud and VM
 
-It is hard to implement underlay CNI in public cloud, openstack, vmvare.
+It is hard to implement underlay CNI in public cloud, OpenStack, VMware.
 It requires the vendor underlay CNI on specific environments, as these
 environments typically have the following limitations:
 
@@ -211,6 +211,12 @@ Spiderpool provides IP pool based on node topology, aligning with
 IP allocation settings of VMs. In conjunction with ipvlan CNI,
 it provides underlay CNI solutions for various public cloud environments.
 
+## Use case: utilize RDMA for network transmission
+
+RDMA (Remote Direct Memory Access) allows network cards to directly interact with memory, reducing CPU overhead and alleviating the burden on the kernel protocol stack. This technology offloads the network protocol stack to the network card, resulting in effective reduction of network transmission latency and increased throughput.
+
+Currently, RDMA finds extensive applications in fields such as AI computing and storage. Macvlan, IPvlan, and SR-IOV CNIs enable transparent RDMA network card passthrough to Pods within the Kubernetes platform. Spiderpool enhances these CNIs by providing additional capabilities including IPAM, host connectivity, clusterIP access, as well as simplifying the installation process and usage steps of dependent components in the community.
+
 ## Quick start
 
 Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
@@ -221,8 +227,8 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
   IP pools owning limited IP adddress set and pod affinity.
   See [example](./usage/ippool-affinity-pod.md) for more details.
 
-  For applications not requiring static IP addresses, they can share an IP pool.
-  See [example](./usage/ippool-affinity-pod.md#shared-ippool) for more details.
+    For applications not requiring static IP addresses, they can share an IP pool.
+    See [example](./usage/ippool-affinity-pod.md#shared-ippool) for more details.
 
 * For stateful applications, IP addresses can be automatically fixed for each Pod,
   and the overall IP scaling range can be fixed as well.
@@ -231,12 +237,12 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 * Subnet feature, on the one hand, could help to separate the responsibility
   from the infrastructure administrator and the application administrator.
 
-  On the other hand, it supports to automatically create and dynamically scale
-  the fixed IP ippools to each applcation requiring static IPs. which could help
-  reduce operation burden of IP pools burden. See [example](./usage/spider-subnet.md)
-  for more details. In additional to kubernetes-native controller, subnet feature
-  also supports third-party pod controllers based on operator.
-  See [example](./usage/third-party-controller.md) for details.
+    On the other hand, it supports to automatically create and dynamically scale
+    the fixed IP ippools to each applcation requiring static IPs. which could help
+    reduce operation burden of IP pools burden. See [example](./usage/spider-subnet.md)
+    for more details. In additional to kubernetes-native controller, subnet feature
+    also supports third-party pod controllers based on operator.
+    See [example](./usage/third-party-controller.md) for details.
 
 * For Pods of an application run across different network zones,
   it could assign IP addresses of different subnets.
@@ -246,11 +252,11 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
   and help coordinate policy route between interfaces to ensure consistent
   data path of request and reply packets.
 
-  For scenarios involving multiple Underlay NICs,
-  please refer to the [example](./usage/multi-interfaces-annotation.md).
+    For scenarios involving multiple Underlay NICs,
+    please refer to the [example](./usage/multi-interfaces-annotation.md).
 
-  For scenarios involving one Overlay NIC and multiple Underlay NICs,
-  please refer to the [example](./usage/install/overlay/get-started-calico.md).
+    For scenarios involving one Overlay NIC and multiple Underlay NICs,
+    please refer to the [example](./usage/install/overlay/get-started-calico.md).
 
 * It supports to set default IP pools for the cluster or for the namespace.
   Besides, A IP pool could be shared by the whole cluster or bound to a
@@ -265,14 +271,18 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 
 * Node-based IP pool feature meets the complex subnet design of each node. refer to [example](./usage/network-topology.md)
 
-* On vmware vsphere platform, Spiderpool underlay network solution does not require ["hybrid forwarding" mode of the Vswitch](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html), which ensures the network performance of vsphere platform. refer to [example](./usage/install/cloud/get-started-vmware-zh_CN.md)
+* On VMware vSphere platform, Spiderpool underlay network solution does not require ["hybrid forwarding" mode of the Vswitch](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html), which ensures the network performance of vSphere platform. Refer to [example](./usage/install/cloud/get-started-vmware-zh_CN.md)
 
-* Spiderpool underlay network solution could run on public cloud of any vendors, and openstack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to [alibabaCloud](./usage/install/cloud/get-started-alibaba-zh_CN.md)
+* Spiderpool underlay network solution could run on public cloud of any vendors, and OpenStack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to [alibabaCloud](./usage/install/cloud/get-started-alibaba-zh_CN.md), [awsCloud](./usage/install/cloud/get-started-aws.md)
+
+* Support shared and exclusive modes in RDMA network cards, and provide RDMA communication devices for applications via Macvlan, IPvlan, and SR-IOV CNI. For more details, please refer to the [example](./usage/rdma.md).
 
 * When starting the Pod, it could help dynamically build the bond interface and vlan interface
   for the master interface of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan).
   See [example](./usage/ifacer.md) for details.
+
+* coordinator can reconfigure MAC addresses according to the IP address of the NIC. This prevents updating ARP forwarding rules in network switches and routers to reduce packet loss. Refer to the [article](./usage/coordinator.md#fix-mac-address-prefix-for-pods) for more details.
 
 * It could specify customized routes by IP pool and pod annotation. See [example](./usage/route.md) for details.
 
@@ -287,7 +297,7 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
   already taken by hosts out of the cluster. See [example](./usage/reserved-ip.md) for details.
 
 * Outstanding performance for assigning and releasing Pod IPs, showcased in the
-  [test report](./concepts/performance.md).
+ [test report](./concepts/performance.md).
 
 * Well-designed IP reclaim mechanism could help assign IP address in time and
   quickly recover from the breakdown for the cluster or application.
@@ -318,13 +328,39 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 
 [roadmap](./develop/roadmap.md)
 
+## Governance
+
+The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./develop/CODE-OF-CONDUCT.md).
+
+## Adopters
+
+A list of adopters who are deploying Spiderpool in production, and of their use cases, can be found in [file](./USERS.md).
+
+## Community
+
+We welcome contributions of any kind.
+If you have any questions about contributing, please consult the [contributing documentation](./develop/contributing.md).
+
 ## Contact
 
 If you have any questions about Spiderpool, please feel free to contact us through the following ways 👏:
 
 * Slack: If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
-  and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
+and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
+
+* Emails: Any issues can be reported via e-mail addresses listed in the [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) file.
 
 * Wechat group: You can scan the QR code below to join our spiderpool tech-group:
 
 ![Wechat QR-Code](./images/wechat.png)
+
+## License
+
+Spiderpool is licensed under the Apache License, Version 2.0.
+See [LICENSE](./LICENSE) for the full license text.
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+Spiderpool enriches the <a href="https://landscape.cncf.io/?selected=spiderpool">CNCF CLOUD NATIVE Landscape</a>.
+</p>

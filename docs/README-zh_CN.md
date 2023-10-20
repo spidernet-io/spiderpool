@@ -37,7 +37,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni) 等等，
   打通 Pod 和宿主机的连通性，使得 clusterIP 访问、应用本地健康检测等通信成功，并且支持 Pod 的 IP 冲突检测、网关可达性检测等。
 
-* 不仅限于应用在数据中心的裸金属环境，同时也为 openstack、vmware 和各种公有云场景，提供了统一的 underlay CNI 解决方案。
+* 不仅限于应用在数据中心的裸金属环境，同时也为 OpenStack、VMware 和各种公有云场景，提供了统一的 underlay CNI 解决方案。
 
 ## underlay CNI
 
@@ -104,7 +104,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 当一个集群中存在多种基础设置时，如何使用单一的 underlay CNI 来部署容器呢？
 
-* 在一个集群中，部分节点是虚拟机，例如未打开混杂转发模式的 vmware 虚拟机，而部分节点是裸金属，
+* 在一个集群中，部分节点是虚拟机，例如未打开混杂转发模式的 VMware 虚拟机，而部分节点是裸金属，
   接入了传统交换机网络。因此在两类节点上部署什么 CNI 方案呢？
 
 * 在一个集群中，部分裸金属节点只具备一张 SR-IOV 高速网卡，但只能提供 64 个 VF，如何在一个节点上运行更多的 Pod？
@@ -118,7 +118,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 ![underlay](./images/underlay.jpg)
 
 例如上图所示，在同一个集群下具备不同网络能力的节点， 有的节点具备 SR-IOV 网卡，可运行 SR-IOV CNI，
-有的节点具备普通的网卡，可运行 Macvlan CNI ，有的节点网络访问受限（例如二层网络转发受限的 vmware 虚拟机），可运行 ipvlan CNI。
+有的节点具备普通的网卡，可运行 Macvlan CNI ，有的节点网络访问受限（例如二层网络转发受限的 VMware 虚拟机），可运行 IPvlan CNI。
 
 ## 应用场景：overlay CNI 的 Pod 加入 underlay CNI 辅助网卡
 
@@ -149,7 +149,7 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 ## 应用场景 ：underlay CNI 运行在公有云环境和虚拟机
 
-在公有云、openstack、vmvare 等环境下实施 underlay CNI，通常只能使用特定环境的厂商 CNI 插件，因为这些环境通常有如下限制：
+在公有云、OpenStack、vmvare 等环境下实施 underlay CNI，通常只能使用特定环境的厂商 CNI 插件，因为这些环境通常有如下限制：
 
 * IAAS 网络基础设施对虚拟机网卡发出的数据包，实施了二层报头中的 MAC 限制，一方面，对源 MAC 进行安全检查，
   以确保源 MAC 地址与虚拟机网卡 MAC 相同，不支持未知目的 MAC。另一方面，对目的 MAC 做了限制，只支持转发
@@ -165,7 +165,7 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内核协议栈的处理，是一种网络协议栈 offload 到网卡的技术，它能有效降低网络传输延时、提高吞吐量。
 
-当前，RDMA 技术在 AI 计算、存储等应用上得到了广泛的应用。macvlan、ipvlan 和 SRIOV CNI，它们能够在 kubernetes 平台下把 RDMA 网卡透传给 POD 使用，Spiderpool 增强了这些 CNI 能力，包括 IPAM、宿主机联通、clusterIP 访问等，并且简化了社区中的依赖组件安装流程和使用步骤，极大提高了易用性。
+当前，RDMA 技术在 AI 计算、存储等应用上得到了广泛的应用。Macvlan、IPvlan 和 SR-IOV CNI，它们能够在 kubernetes 平台下把 RDMA 网卡透传给 Pod 使用，Spiderpool 增强了这些 CNI 能力，包括 IPAM、宿主机联通、ClusterIP 访问等，并且简化了社区中的依赖组件安装流程和使用步骤，极大提高了易用性。
 
 ## 快速开始
 
@@ -176,28 +176,28 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 * 对于有固定 IP 需求的应用，可以通过设置 IP 池有限的的 IP 地址集合和应用亲和性来支持。
   可参考[例子](./usage/spider-subnet.md)。
 
-  对于没有固定 IP 需求的应用，它们可以通过共享一个 IP 池，
-  可参考[例子](./usage/ippool-affinity-pod.md#shared-ippool)。
+    对于没有固定 IP 需求的应用，它们可以通过共享一个 IP 池，
+    可参考[例子](./usage/ippool-affinity-pod.md#shared-ippool)。
 
 * 对于 StatefulSet 应用，Spiderpool 支持自动为每一个 Pod 固定 IP 地址，也可控制应用所有 Pod 所使用的 IP 范围。
   可参考[例子](./usage/statefulset-zh_CN.md)。
 
 * Subnet 功能，一方面，能够实现基础设施管理员和应用管理员的职责分离。
 
-  另一方面，能够为有固定 IP 需求的应用自动管理 IP 池，包括自动创建、扩缩容 IP、删除 固定 IP 池，
-  这能够减少大量的运维负担，可参考[例子](./usage/spider-subnet.md)。
-  该功能除了支持 K8S 原生的应用控制器，同时支持基于 operator 实现的第三方应用控制器。
-  可参考[例子](./usage/third-party-controller.md)。
+    另一方面，能够为有固定 IP 需求的应用自动管理 IP 池，包括自动创建、扩缩容 IP、删除 固定 IP 池，
+    这能够减少大量的运维负担，可参考[例子](./usage/spider-subnet.md)。
+    该功能除了支持 K8S 原生的应用控制器，同时支持基于 operator 实现的第三方应用控制器。
+    可参考[例子](./usage/third-party-controller.md)。
 
 * 对于一个跨子网部署的应用，支持为其不同副本分配不同子网的 IP 地址。
   可参考[例子](./usage/ippool-affinity-node.md)。
 
 * 支持为 Pod 多网卡分配不同子网的 IP 地址，并帮助所有网卡之间协调策略路由，以确保请求向和回复向数据路径一致，避免丢包。
 
-  对于 Pod 具备多个 underlay CNI 网卡场景，可参考[例子](./usage/multi-interfaces-annotation.md)。
+    对于 Pod 具备多个 underlay CNI 网卡场景，可参考[例子](./usage/multi-interfaces-annotation.md)。
 
-  对于 Pod 具备一个 overlay 网卡和多个 underlay CNI 网卡场景，
-  可参考[例子](./usage/install/overlay/get-started-calico.md)。
+    对于 Pod 具备一个 overlay 网卡和多个 underlay CNI 网卡场景，
+    可参考[例子](./usage/install/overlay/get-started-calico.md)。
 
 * 可以设置集群级别的默认 IP 池，也可租户级别的默认 IP 池。同时，IP 池既可以被整个集群共享，
   也可被限定为被一个租户使用。可参考[例子](./usage/ippool-affinity-namespace.md)。
@@ -214,9 +214,9 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 * 基于节点拓扑的 IP 池功能，满足每个节点精细化的子网规划需求，可参考[例子](./usage/network-topology-zh_CN.md)
 
-* 在 vmware vsphere 平台上，无需打开 vswitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html)，即可运行 underlay CNI 解决方案，从而确保 vsphere 平台的转发性能。参考[例子](./usage/install/cloud/get-started-vmware-zh_CN.md)
+* 在 VMware vSphere 平台上，无需打开 vSwitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html)，即可运行 underlay CNI 解决方案，从而确保 vSphere 平台的转发性能。参考[例子](./usage/install/cloud/get-started-vmware-zh_CN.md)
 
-* spiderpool 能在任意厂商的公有云平台、openstack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./usage/install/cloud/get-started-alibaba-zh_CN.md)
+* Spiderpool 能在任意厂商的公有云平台、OpenStack 上运行容器 underlay 网络，从而用统一的技术栈满足多云、混合云场景下的需求。具体可参考[阿里云例子](./usage/install/cloud/get-started-alibaba-zh_CN.md)，[亚马逊云例子](./usage/install/cloud/get-started-aws-zh_CN.md)
 
 * 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SRIOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./usage/rdma-zh_CN.md)
 
@@ -225,7 +225,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
   和 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
   准备 master 接口。可参考[例子](./usage/ifacer.md)。
 
-* coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](./usage/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)
+* coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](./usage/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
 
 * 可以通过 IP 池和 Pod annotaiton 等多种方式定制自定义路由，可参考[例子](./usage/route.md)。
 
@@ -272,7 +272,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 ## 使用者
 
-使用了 spiderpool 项目的用户 [file](./USERS.md).
+使用了 Spiderpool 项目的用户 [file](./USERS.md).
 
 ## 参与开发
 
@@ -289,4 +289,14 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 * Wechat Group: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
 
-![Wechat QR-Code](./images/wechat.png))
+![Wechat QR-Code](./images/wechat.png)
+
+## License
+
+Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+Spiderpool 丰富了 <a href="https://landscape.cncf.io/?selected=spiderpool">CNCF 云原生全景图</a>。
+</p>

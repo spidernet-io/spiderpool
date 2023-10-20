@@ -122,6 +122,7 @@ spec:
     | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?vlan200-v4?g' \
     | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?vlan200-v6?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+
 }
 
 
@@ -233,6 +234,7 @@ Install::SpiderpoolCR
 
 kubectl get spidercoordinator default -o yaml --kubeconfig ${E2E_KUBECONFIG}
 kubectl get sp -o wide --kubeconfig ${E2E_KUBECONFIG}
+kubectl get spidermultusconfig -n kube-system --kubeconfig ${E2E_KUBECONFIG}
 kubectl get network-attachment-definitions.k8s.cni.cncf.io --kubeconfig ${E2E_KUBECONFIG} -n kube-system -o yaml
 
 echo "$CURRENT_FILENAME : done"

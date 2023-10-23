@@ -12,9 +12,13 @@ rules:
   - namespaces
   - nodes
   - pods
+  - pods/status
   verbs:
+  - delete
+  - deletecollection
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:

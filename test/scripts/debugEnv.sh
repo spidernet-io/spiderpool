@@ -99,7 +99,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "=============== spiderpool-init describe ============== "
-    POD="spdierpool-init"
+    POD="spiderpool-init"
     echo "---------kubectl describe pod ${POD} -n ${NAMESPACE} "
     kubectl describe pod ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
@@ -125,7 +125,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "=============== spiderpool-init logs ============== "
-    POD="spdierpool-init"
+    POD="spiderpool-init"
     echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
     kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 

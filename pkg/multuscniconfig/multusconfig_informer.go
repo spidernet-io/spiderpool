@@ -278,12 +278,12 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 	}
 
 	newNetAttachDef, err := generateNetAttachDef(netAttachName, multusConfig)
-	if nil != err {
+	if err != nil {
 		return fmt.Errorf("failed to generate net-attach-def, error: %w", err)
 	}
 
 	err = controllerutil.SetControllerReference(multusConfig, newNetAttachDef, mcc.client.Scheme())
-	if nil != err {
+	if err != nil {
 		return fmt.Errorf("failed to set net-attach-def %s owner reference with MultusConfig %s/%s, error: %w",
 			newNetAttachDef.Name, multusConfig.Namespace, multusConfig.Name, err)
 	}
@@ -339,12 +339,24 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 }
 
 func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
-	multusConfSpec := multusConf.Spec.DeepCopy()
+	netAttachDef := &netv1.NetworkAttachmentDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      netAttachName,
+			Namespace: multusConf.Namespace,
+		},
+	}
+
 	anno := multusConf.Annotations
 	if anno == nil {
 		anno = make(map[string]string)
 	}
 
+	emptySpec := spiderpoolv2beta1.MultusCNIConfigSpec{}
+	if multusConf.Spec == emptySpec {
+		return netAttachDef, nil
+	}
+
+	multusConfSpec := multusConf.Spec.DeepCopy()
 	var plugins []interface{}
 
 	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
@@ -444,13 +456,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, multusConfSpec.CniType)
 	}
 
-	netAttachDef := &netv1.NetworkAttachmentDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        netAttachName,
-			Namespace:   multusConf.Namespace,
-			Annotations: anno,
-		},
-	}
+	netAttachDef.ObjectMeta.Annotations = anno
 	if len(confStr) > 0 {
 		netAttachDef.Spec = netv1.NetworkAttachmentDefinitionSpec{
 			Config: confStr,

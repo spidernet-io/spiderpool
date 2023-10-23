@@ -96,7 +96,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("spiderdoctor connectivity should be succeed", Serial, Label("C00002"), func() {
+		It("spiderdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
 
 			// create task spiderdoctor crd
 			task.Name = name

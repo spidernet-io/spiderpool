@@ -37,6 +37,8 @@ jobs:
         include:
           - e2e_init_mode: e2e_init_underlay
             e2e_test_mode: e2e_test_underlay
+          - e2e_init_mode: e2e_init_cilium_with_ebpf
+            e2e_test_mode: e2e_test_cilium_with_ebpf
           - e2e_init_mode: e2e_init_calico
             e2e_test_mode: e2e_test_calico
           - e2e_init_mode: e2e_init_cilium

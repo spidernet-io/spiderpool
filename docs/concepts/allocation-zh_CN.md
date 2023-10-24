@@ -62,9 +62,9 @@ Spiderpool 提供多种池选择规则，在为 Pod 分配 IP 地址时，会严
 
 - 具有 `IPPool.Spec.PodAffinity` 属性的 IP 池资源具有最高优先级。
 
-- 具有 `IPPool.Spec.NodeName` 或 `IPPool.Spec.NodeAffinity` 属性的 IP 池资源具有第二高优先级。（`NodeName` 的优先级高于 `NodeAffinity`）。
+- 具有 `IPPool.Spec.NodeName` 或 `IPPool.Spec.NodeAffinity` 属性的 IP 池资源具有第二高优先级（`NodeName` 的优先级高于 `NodeAffinity`）。
 
-- 具有 `IPPool.Spec.NamespaceName` 或 `IPPool.Spec.NamespaceAffinity` 属性的 IP 池资源具有第三高优先级。（`NamespaceName` 的优先级高于 `NamespaceAffinity`）。
+- 具有 `IPPool.Spec.NamespaceName` 或 `IPPool.Spec.NamespaceAffinity` 属性的 IP 池资源具有第三高优先级（`NamespaceName` 的优先级高于 `NamespaceAffinity`）。
 
 - 具有 `IPPool.Spec.MultusName` 属性的 IP 池资源具有最低优先级。
 
@@ -73,5 +73,5 @@ Spiderpool 提供多种池选择规则，在为 Pod 分配 IP 地址时，会严
 > 1. 具有属性 `IPPool.Spec.PodAffinity` 和 `IPPool.Spec.NodeName` 的 _IPPoolA_ 的优先级高于具有单一关联属性 `IPPool.Spec.PodAffinity` 的 _IPPoolB_。
 > 2. 具有单个属性 `IPPool.Spec.PodAffinity` 的 _IPPoolA_ 的优先级高于具有属性 `IPPool.Spec.NodeName` 和 `IPPool.Spec.NamespaceName` 的 _IPPoolB_。
 > 3. 具有属性 `IPPool.Spec.PodAffinity` 和 `IPPool.Spec.NodeName` 的 _IPPoolA_ 的优先级高于具有属性 `IPPool.Spec.PodAffinity`、`IPPool.Spec.NamespaceName` 和 `IPPool.Spec.MultusName` 的 _IPPoolB_ 。
-
+>
 > 如果 Pod 属于 StatefulSet，则会优先分配符合上面规则的 IP 地址。 一旦 Pod 重新启动，它将尝试重用最后分配的 IP 地址。

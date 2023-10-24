@@ -73,5 +73,5 @@ After filtering the candidate pools, Spiderpool may have multiple pools remainin
 > 1. *IPPoolA* with properties `IPPool.Spec.PodAffinity` and `IPPool.Spec.NodeName` has higher priority than *IPPoolB* with single affinity property `IPPool.Spec.PodAffinity`.
 > 2. *IPPoolA* with single property `IPPool.Spec.PodAffinity` has higher priority than *IPPoolB* with properties `IPPool.Spec.NodeName` and `IPPool.Spec.NamespaceName`.
 > 3. *IPPoolA* with properties `IPPool.Spec.PodAffinity` and `IPPool.Spec.NodeName` has higher priority than *IPPoolB* with properties `IPPool.Spec.PodAffinity`,`IPPool.Spec.NamespaceName` and `IPPool.Spec.MultusName`.
-
+>
 > If a Pod belongs to StatefulSet, IP addresses that meet the aforementioned rules will be allocated with priority. When a Pod is restarted, it will attempt to reuse the previously assigned IP address.

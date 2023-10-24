@@ -14,8 +14,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cilium/cilium/pkg/ipam/option"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/event"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
+	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
+	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
+	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
+
+	"github.com/cilium/cilium/pkg/ipam/option"
+	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -31,16 +42,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
-	"github.com/spidernet-io/spiderpool/pkg/event"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
-	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 const (
@@ -88,6 +90,7 @@ type CoordinatorController struct {
 	ResyncPeriod        time.Duration
 
 	DefaultCniConfDir string
+	CiliumConfigMap   string
 }
 
 func (cc *CoordinatorController) SetupInformer(
@@ -312,9 +315,27 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	if err != nil {
 		return client.IgnoreNotFound(err)
 	}
-
 	coordCopy := coord.DeepCopy()
+
+	coordCopy, err = cc.fetchPodAndServerCIDR(ctx, logger, coordCopy)
+	if err != nil {
+		logger.Sugar().Errorf("failed to handle spidercoordinator: %v", err)
+		return err
+	}
+
+	if !reflect.DeepEqual(coordCopy.Status, coord.Status) {
+		if err = cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
+			logger.Sugar().Errorf("failed to patch spidercoordinator phase: %v", err.Error())
+			return err
+		}
+	}
+
+	return
+}
+
+func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) (*spiderpoolv2beta1.SpiderCoordinator, error) {
 	var kubeadmConfig *corev1.ConfigMap
+	var err error
 	if kubeadmConfig, err = cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(kubeadmConfigMap); err != nil {
 		event.EventRecorder.Eventf(
 			coordCopy,
@@ -322,17 +343,8 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			"ClusterNotReady",
 			err.Error(),
 		)
-
-		if coordCopy.Status.Phase != NotReady {
-			coordCopy.Status.Phase = NotReady
-			coordCopy.Status.OverlayPodCIDR = []string{}
-			coordCopy.Status.ServiceCIDR = []string{}
-			if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
-				return err
-			}
-		}
-
-		return err
+		setStatus2NoReady(logger, coordCopy)
+		return coordCopy, err
 	}
 
 	if kubeadmConfig == nil {
@@ -344,25 +356,32 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			msg,
 		)
 
-		if coordCopy.Status.Phase != NotReady {
-			coordCopy.Status.Phase = NotReady
-			coordCopy.Status.OverlayPodCIDR = []string{}
-			coordCopy.Status.ServiceCIDR = []string{}
-			if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
-				return err
-			}
-		}
-
-		return errors.New(msg)
+		setStatus2NoReady(logger, coordCopy)
+		return coordCopy, errors.New(msg)
 	}
 
 	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(kubeadmConfig)
-	switch *coord.Spec.PodCIDRType {
-	case auto:
-		podCidrType := fetchType(cc.DefaultCniConfDir)
+	if *coordCopy.Spec.PodCIDRType == auto {
+		var podCidrType string
+		podCidrType, err = fetchType(cc.DefaultCniConfDir)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				event.EventRecorder.Eventf(
+					coordCopy,
+					corev1.EventTypeWarning,
+					"FoundCNIErr",
+					"failed to found default CNI",
+				)
+			}
+
+			setStatus2NoReady(logger, coordCopy)
+			return coordCopy, fmt.Errorf("failed to fetch the podCIDRType: %v", err)
+		}
 		logger.Sugar().Infof("spidercoordinator change podCIDRType from auto to %v", podCidrType)
-		coord.Spec.PodCIDRType = &podCidrType
-		fallthrough
+		coordCopy.Spec.PodCIDRType = &podCidrType
+	}
+
+	switch *coordCopy.Spec.PodCIDRType {
 	case cluster:
 		if cc.caliCtrlCanncel != nil {
 			cc.caliCtrlCanncel()
@@ -371,129 +390,12 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		coordCopy.Status.Phase = Synced
 		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 	case calico:
-		var crd apiextensionsv1.CustomResourceDefinition
-		err := cc.APIReader.Get(ctx, types.NamespacedName{Name: calicoIPPoolCRDName}, &crd)
-		if nil != err {
-			if apierrors.IsNotFound(err) {
-				event.EventRecorder.Eventf(
-					coordCopy,
-					corev1.EventTypeWarning,
-					"CalicoNotReady",
-					"Calico needs to be installed first",
-				)
-			}
-			if coordCopy.Status.Phase != NotReady {
-				coordCopy.Status.Phase = NotReady
-				coordCopy.Status.OverlayPodCIDR = []string{}
-				coordCopy.Status.ServiceCIDR = []string{}
-				if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
-					return err
-				}
-			}
-			return err
+		if err = cc.fetchCalicoIPPools(ctx, logger, coordCopy); err != nil {
+			return coordCopy, err
 		}
-
-		if cc.caliCtrlCanncel != nil {
-			break
-		}
-
-		controller, err := NewCalicoIPPoolController(cc.Manager, coordinatorName)
-		if err != nil {
-			return err
-		}
-
-		ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
-		go func() {
-			logger.Info("Starting Calico IPPool controller")
-			if err := controller.Start(ctx); err != nil {
-				logger.Sugar().Errorf("Failed to start Calico IPPool controller: %v", err)
-			}
-			logger.Info("Shutdown Calico IPPool controller")
-			if cc.caliCtrlCanncel != nil {
-				cc.caliCtrlCanncel()
-				cc.caliCtrlCanncel = nil
-			}
-		}()
-
 	case cilium:
-		if cc.caliCtrlCanncel != nil {
-			cc.caliCtrlCanncel()
-			cc.caliCtrlCanncel = nil
-		}
-
-		ccm, err := cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(ciliumConfig)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				event.EventRecorder.Eventf(
-					coordCopy,
-					corev1.EventTypeWarning,
-					"CiliumNotReady",
-					"Cilium needs to be installed first",
-				)
-			}
-			if coordCopy.Status.Phase != NotReady {
-				coordCopy.Status.Phase = NotReady
-				coordCopy.Status.OverlayPodCIDR = []string{}
-				coordCopy.Status.ServiceCIDR = []string{}
-				if err := cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
-					return err
-				}
-			}
-			return err
-		}
-
-		ipam := ccm.Data["ipam"]
-		switch ipam {
-		case option.IPAMClusterPool, option.IPAMClusterPoolV2:
-			var podCIDR []string
-			v4, ok := ccm.Data["cluster-pool-ipv4-cidr"]
-			if ok {
-				parts := strings.Split(v4, " ")
-				for _, cidr := range parts {
-					_, _, err := net.ParseCIDR(cidr)
-					if err != nil {
-						continue
-					}
-					podCIDR = append(podCIDR, cidr)
-				}
-			}
-			v6, ok := ccm.Data["cluster-pool-ipv6-cidr"]
-			if ok {
-				parts := strings.Split(v6, " ")
-				for _, cidr := range parts {
-					_, _, err := net.ParseCIDR(cidr)
-					if err != nil {
-						continue
-					}
-					podCIDR = append(podCIDR, cidr)
-				}
-			}
-			coordCopy.Status.OverlayPodCIDR = podCIDR
-		case option.IPAMMultiPool:
-			// start controller
-			controller, err := NewCiliumIPPoolController(cc.Manager, coordinatorName)
-			if err != nil {
-				return err
-			}
-
-			ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
-			go func() {
-				logger.Info("Starting Cilium IPPool controller")
-				if err := controller.Start(ctx); err != nil {
-					logger.Sugar().Errorf("Failed to start Cilium IPPool controller: %v", err)
-				}
-				logger.Info("Shutdown Cilium IPPool controller")
-				if cc.caliCtrlCanncel != nil {
-					cc.caliCtrlCanncel()
-					cc.caliCtrlCanncel = nil
-				}
-			}()
-		case option.IPAMKubernetes:
-			coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
-			coordCopy.Status.Phase = Synced
-		default:
-			logger.Sugar().Infof("unsupported CIlium IPAM mode: %v", ipam)
-			return fmt.Errorf("unsupported CIlium IPAM mode: %v", ipam)
+		if err = cc.fetchCiliumCIDR(ctx, logger, k8sPodCIDR, coordCopy); err != nil {
+			return coordCopy, err
 		}
 	case none:
 		coordCopy.Status.Phase = Synced
@@ -501,11 +403,139 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	}
 
 	coordCopy.Status.ServiceCIDR = k8sServiceCIDR
-	if reflect.DeepEqual(coordCopy.Status, coord.Status) {
-		return nil
+	return coordCopy, nil
+}
+
+func (cc *CoordinatorController) fetchCalicoIPPools(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
+	var crd apiextensionsv1.CustomResourceDefinition
+	err := cc.APIReader.Get(ctx, types.NamespacedName{Name: calicoIPPoolCRDName}, &crd)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			event.EventRecorder.Eventf(
+				coordCopy,
+				corev1.EventTypeWarning,
+				"CalicoNotReady",
+				"Calico needs to be installed first",
+			)
+		}
+
+		setStatus2NoReady(logger, coordCopy)
+		return err
 	}
 
-	return cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord))
+	if cc.caliCtrlCanncel != nil {
+		cc.caliCtrlCanncel()
+		cc.caliCtrlCanncel = nil
+	}
+
+	var calicoController controller.Controller
+	calicoController, err = NewCalicoIPPoolController(cc.Manager, coordCopy.Name)
+	if err != nil {
+		setStatus2NoReady(logger, coordCopy)
+		return err
+	}
+
+	ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
+	go func() {
+		logger.Info("Starting Calico IPPool controller")
+		if err := calicoController.Start(ctx); err != nil {
+			logger.Sugar().Errorf("Failed to start Calico IPPool controller: %v", err)
+		}
+		logger.Info("Shutdown Calico IPPool controller")
+		if cc.caliCtrlCanncel != nil {
+			cc.caliCtrlCanncel()
+			cc.caliCtrlCanncel = nil
+		}
+	}()
+
+	return nil
+}
+
+func (cc *CoordinatorController) fetchCiliumCIDR(ctx context.Context, logger *zap.Logger, k8sPodCIDR []string, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
+	if cc.caliCtrlCanncel != nil {
+		cc.caliCtrlCanncel()
+		cc.caliCtrlCanncel = nil
+	}
+
+	ns, name := stringutil.ParseNsAndName(cc.CiliumConfigMap)
+	if ns == "" && name == "" {
+		logger.Sugar().Errorf("invalid ENV %s: %s, unable parse cilium-config configMap", "SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", cc.CiliumConfigMap)
+		setStatus2NoReady(logger, coordCopy)
+		return fmt.Errorf("invalid ENV %s: %s, unable parse cilium-config configMap", "SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", cc.CiliumConfigMap)
+	}
+
+	ccm, err := cc.ConfigmapLister.ConfigMaps(ns).Get(name)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			event.EventRecorder.Eventf(
+				coordCopy,
+				corev1.EventTypeWarning,
+				"CiliumNotReady",
+				"Cilium needs to be installed first",
+			)
+		}
+
+		setStatus2NoReady(logger, coordCopy)
+		return err
+	}
+
+	ipam := ccm.Data["ipam"]
+	switch ipam {
+	case option.IPAMClusterPool, option.IPAMClusterPoolV2:
+		var podCIDR []string
+		v4, ok := ccm.Data["cluster-pool-ipv4-cidr"]
+		if ok {
+			v4 = strings.TrimSpace(v4)
+			_, _, err = net.ParseCIDR(v4)
+			if err != nil {
+				logger.Sugar().Errorf("unable to initialize cluster-pool-ipv4-cidr, invalid CIDR address: %v", v4)
+				setStatus2NoReady(logger, coordCopy)
+				return err
+			}
+			podCIDR = append(podCIDR, v4)
+		}
+		v6, ok := ccm.Data["cluster-pool-ipv6-cidr"]
+		if ok {
+			v4 = strings.TrimSpace(v6)
+			_, _, err = net.ParseCIDR(v6)
+			if err != nil {
+				logger.Sugar().Errorf("unable to initialize cluster-pool-ipv6-cidr, invalid CIDR address: %v", v4)
+				setStatus2NoReady(logger, coordCopy)
+				return err
+			}
+			podCIDR = append(podCIDR, v6)
+		}
+		coordCopy.Status.OverlayPodCIDR = podCIDR
+		coordCopy.Status.Phase = Synced
+	case option.IPAMMultiPool:
+		// start controller
+		ciliumController, err := NewCiliumIPPoolController(cc.Manager, coordCopy.Name)
+		if err != nil {
+			setStatus2NoReady(logger, coordCopy)
+			return err
+		}
+
+		ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
+		go func() {
+			logger.Info("Starting Cilium IPPool controller")
+			if err := ciliumController.Start(ctx); err != nil {
+				logger.Sugar().Errorf("Failed to start Cilium IPPool controller: %v", err)
+			}
+			logger.Info("Shutdown Cilium IPPool controller")
+			if cc.caliCtrlCanncel != nil {
+				cc.caliCtrlCanncel()
+				cc.caliCtrlCanncel = nil
+			}
+		}()
+	case option.IPAMKubernetes:
+		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
+		coordCopy.Status.Phase = Synced
+	default:
+		logger.Sugar().Infof("unsupported CIlium IPAM mode: %v", ipam)
+		setStatus2NoReady(logger, coordCopy)
+		return fmt.Errorf("unsupported CIlium IPAM mode: %v", ipam)
+	}
+	return nil
 }
 
 func extractK8sCIDR(kubeadmConfig *corev1.ConfigMap) ([]string, []string) {
@@ -543,18 +573,27 @@ func extractK8sCIDR(kubeadmConfig *corev1.ConfigMap) ([]string, []string) {
 	return podCIDR, serviceCIDR
 }
 
-func fetchType(cniDir string) string {
+func fetchType(cniDir string) (string, error) {
 	defaultCniName, err := utils.GetDefaultCniName(cniDir)
 	if err != nil {
-		return cluster
+		return "", err
 	}
 
 	switch defaultCniName {
 	case "calico", "k8s-pod-network":
-		return calico
+		return calico, nil
 	case cilium:
-		return cilium
+		return cilium, nil
 	default:
-		return cluster
+		return none, nil
 	}
+}
+
+func setStatus2NoReady(logger *zap.Logger, copy *spiderpoolv2beta1.SpiderCoordinator) {
+	if copy.Status.Phase != NotReady {
+		logger.Sugar().Infof("set spidercoordinator phase from %s to NotReady", copy.Status.Phase)
+		copy.Status.Phase = NotReady
+	}
+	copy.Status.OverlayPodCIDR = []string{}
+	copy.Status.ServiceCIDR = []string{}
 }

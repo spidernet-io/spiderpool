@@ -22,6 +22,7 @@ package string
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 func ValueToStringGenerated(v interface{}) string {
@@ -31,4 +32,13 @@ func ValueToStringGenerated(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
+}
+
+func ParseNsAndName(s string) (ns, name string) {
+	s = strings.TrimSpace(s)
+	r := strings.Split(s, "/")
+	if len(r) != 2 {
+		return "", ""
+	}
+	return r[0], r[1]
 }

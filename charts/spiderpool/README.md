@@ -123,6 +123,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `global.cniConfHostPath`        | the host path of the cni config directory                                   | `/etc/cni/net.d`                     |
 | `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                         | `/var/run/spidernet/spiderpool.sock` |
 | `global.configName`             | the configmap name                                                          | `spiderpool-conf`                    |
+| `global.ciliumConfigMap`        | the cilium's configMap, default is kube-system/cilium-config                | `kube-system/cilium-config`          |
 
 ### ipam parameters
 

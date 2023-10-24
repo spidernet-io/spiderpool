@@ -92,6 +92,7 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_MULTUS_CONFIG_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableMultusConfig, nil},
 	{"SPIDERPOOL_MULTUS_CONFIG_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.MultusConfigInformerResyncPeriod},
+	{"SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", "kube-system/cilium-config", false, &controllerContext.Cfg.CiliumConfigName, nil, nil},
 
 	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
@@ -123,6 +124,8 @@ type Config struct {
 	GopsListenPort    string
 	PyroscopeAddress  string
 	DefaultCniConfDir string
+	// CiliumConfigName is formatted by namespace and name,default is kube-system/cilium-config
+	CiliumConfigName string
 
 	ControllerPodNamespace string
 	ControllerPodName      string

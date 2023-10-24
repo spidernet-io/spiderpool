@@ -54,6 +54,45 @@ spiderpool-multus-m2kbt                                     1/1     Running     
 spiderpool-multus-sl65s                                     1/1     Running     0                 1m
 ```
 
+Please check if `Spidercoordinator.status.phase` is `Synced`, and if the overlayPodCIDR is consistent with the pod subnet configured by Cilium in the cluster:
+
+```shell
+~# kubectl get configmaps -n kube-system cilium-config -o yaml | grep cluster-pool
+  cluster-pool-ipv4-cidr: 10.244.64.0/18
+  cluster-pool-ipv4-mask-size: "24"
+  ipam: cluster-pool
+
+~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  finalizers:
+  - spiderpool.spidernet.io
+  name: default
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 169.254.0.0/16
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: calico
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+status:
+  overlayPodCIDR:
+  - 10.244.64.0/18
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+```
+
+> 1.If the phase is not synced, the pod will be prevented from being created.
+> 
+> 2.If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
+
 ### Create SpiderIPPool
 
 The subnet for the interface `ens192` on the cluster nodes here is `10.6.0.0/16`. Create a SpiderIPPool using this subnet:

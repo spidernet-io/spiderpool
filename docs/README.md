@@ -297,7 +297,7 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
   already taken by hosts out of the cluster. See [example](./usage/reserved-ip.md) for details.
 
 * Outstanding performance for assigning and releasing Pod IPs, showcased in the
- [test report](./concepts/performance.md).
+ [test report](./concepts/ipam-performance.md).
 
 * Well-designed IP reclaim mechanism could help assign IP address in time and
   quickly recover from the breakdown for the cluster or application.

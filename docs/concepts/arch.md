@@ -1,19 +1,6 @@
 # Spiderpool architecture
 
-## Comparison of underlay and overlay network scenarios
-
-There are two technologies in cloud-native networking: "overlay network" and "underlay network".
-Despite no strict definition for underlay and overlay networks in cloud-native networking, we can simply abstract their characteristics from many CNI projects. The two technologies meet the needs of different scenarios.
-
-The [article](./solution.md)  provides a brief comparison of IPAM and network performance between the two technologies, which offers better insights into the unique features and use cases of Spiderpool.
-
-Why underlay network solutions? In data center scenarios, the following requirements necessitate underlay network solutions:
-
-* Low-latency applications need optimized network latency and throughput provided by underlay networks
-
-* Initial migration of traditional host applications to the cloud use traditional network methods such as service exposure and discovery and multi subnets
-
-* Network management in the data center desires security controls such as firewalls and traditional network observation techniques to implement cluster network monitoring.
+**English** | [**简体中文**](./arch-zh_CN.md)
 
 ## Architecture
 
@@ -30,17 +17,6 @@ Spiderpool consists of the following components:
 * coordinator plugin: a binary plugin on each host that CNI can use for multi-NIC route coordination, IP conflict detection, and host connectivity.
 
 On top of its own components, Spiderpool relies on open-source underlay CNIs to allocate network interfaces to Pods. You can use [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) to manage multiple NICs and CNI configurations.
-
-Any CNI project compatible with third-party IPAM plugins can work well with Spiderpool, such as:
-
-[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), 
-[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan), 
-[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), 
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni), 
-[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), 
-[Calico CNI](https://github.com/projectcalico/calico), 
-[Weave CNI](https://github.com/weaveworks/weave)
 
 ## Use case: collaborate with one or more underlay CNIs
 
@@ -88,3 +64,35 @@ This approach provides several benefits:
 * Fully integrate resources from virtual machines and bare-metal nodes.
 
 ![overlay](../images/overlay.jpg)
+
+## Use case: underlay CNI on public cloud and VM
+
+It is hard to implement underlay CNI in public cloud, OpenStack, VMware.
+It requires the vendor underlay CNI on specific environments, as these
+environments typically have the following limitations:
+
+* The IAAS network infrastructure implements MAC restrictions for packets.
+  On the one hand, security checks are conducted on the source MAC to ensure
+  that the source MAC address is the same as the MAC address of VM network interface.
+  On the other hand, restrictions have been placed on the destination MAC,
+  which only supports packet forwarding by the MAC address of VM network interfaces.
+
+  The MAC address of the Pod in the common CNI plugin is newly generated,
+  which leads to Pod communication failure.
+
+* The IAAS network infrastructure implements IP restrictions on packets.
+  Only when the destination and source IP of the packet are assigned to VM,
+  packet could be forwarded rightly.
+
+  The common CNI plugin assigns IP addresses to Pods that do not comply with
+  IAAS settings, which leads to Pod communication failure.
+
+Spiderpool provides IP pool based on node topology, aligning with
+IP allocation settings of VMs. In conjunction with ipvlan CNI,
+it provides underlay CNI solutions for various public cloud environments.
+
+## Use case: utilize RDMA for network transmission
+
+RDMA (Remote Direct Memory Access) allows network cards to directly interact with memory, reducing CPU overhead and alleviating the burden on the kernel protocol stack. This technology offloads the network protocol stack to the network card, resulting in effective reduction of network transmission latency and increased throughput.
+
+Currently, RDMA finds extensive applications in fields such as AI computing and storage. Macvlan, IPvlan, and SR-IOV CNIs enable transparent RDMA network card passthrough to Pods within the Kubernetes platform. Spiderpool enhances these CNIs by providing additional capabilities including IPAM, host connectivity, clusterIP access, as well as simplifying the installation process and usage steps of dependent components in the community.

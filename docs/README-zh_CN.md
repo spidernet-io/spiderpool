@@ -231,7 +231,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 * 以最佳实践的 CNI 配置来便捷地生成 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)
   NetworkAttachmentDefinition 实例，并且保证其正确的 JSON 格式来提高使用体验。
-  可参考[例子](./concepts/mulltusconfig-zh_CN.md)。
+  可参考[例子](./concepts/spider-multus-config-zh_CN.md)。
 
 * 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考[例子](./usage/ippool-multi.md)。
 

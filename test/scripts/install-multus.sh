@@ -155,6 +155,7 @@ spec:
     echo "${MACVLAN_CR_TEMPLATE}" \
       | sed 's?<<CNI_NAME>>?'""${MULTUS_KUBEVIRT_CNI_VLAN30}""'?g' \
       | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+      | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
       | sed 's?<<MODE>>?auto?g' \
       | sed 's?<<MASTER>>?eth0?g' \
       | sed 's?<<VLAN>>?30?g' \
@@ -165,6 +166,7 @@ spec:
     echo "${MACVLAN_CR_TEMPLATE}" \
       | sed 's?<<CNI_NAME>>?'""${MULTUS_KUBEVIRT_CNI_VLAN40}""'?g' \
       | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+      | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
       | sed 's?<<MODE>>?auto?g' \
       | sed 's?<<MASTER>>?eth0?g' \
       | sed 's?<<VLAN>>?40?g' \

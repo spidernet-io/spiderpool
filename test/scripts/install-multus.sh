@@ -35,6 +35,12 @@ echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN100 $MULTUS_DEFAULT_CNI_VLAN100
 [ -z "$MULTUS_DEFAULT_CNI_VLAN200" ] && echo "error, miss MULTUS_DEFAULT_CNI_VLAN200" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_DEFAULT_CNI_VLAN200 $MULTUS_DEFAULT_CNI_VLAN200 "
 
+[ -z "$MULTUS_KUBEVIRT_CNI_VLAN30" ] && echo "error, miss MULTUS_KUBEVIRT_CNI_VLAN30" && exit 1
+echo "$CURRENT_FILENAME : MULTUS_KUBEVIRT_CNI_VLAN30 $MULTUS_KUBEVIRT_CNI_VLAN30 "
+
+[ -z "$MULTUS_KUBEVIRT_CNI_VLAN40" ] && echo "error, miss MULTUS_KUBEVIRT_CNI_VLAN40" && exit 1
+echo "$CURRENT_FILENAME : MULTUS_KUBEVIRT_CNI_VLAN40 $MULTUS_KUBEVIRT_CNI_VLAN40 "
+
 #==============
 OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
@@ -69,6 +75,10 @@ spec:
       VLAN100_IPV6_IPPOOLS=""
       VLAN200_IPV4_IPPOOLS=vlan200-v4
       VLAN200_IPV6_IPPOOLS=""
+      KUBEVIRT_VLAN30_IPV4_IPPOOLS=kubevirt-vlan30-v4
+      KUBEVIRT_VLAN30_IPV6_IPPOOLS=""
+      KUBEVIRT_VLAN40_IPV4_IPPOOLS=kubevirt-vlan40-v4
+      KUBEVIRT_VLAN40_IPV6_IPPOOLS=""
       ;;
 
     ipv6)
@@ -78,6 +88,10 @@ spec:
       VLAN100_IPV6_IPPOOLS=vlan100-v6
       VLAN200_IPV4_IPPOOLS=''
       VLAN200_IPV6_IPPOOLS=vlan200-v6
+      KUBEVIRT_VLAN30_IPV4_IPPOOLS=''
+      KUBEVIRT_VLAN30_IPV6_IPPOOLS=kubevirt-vlan30-v6
+      KUBEVIRT_VLAN40_IPV4_IPPOOLS=''
+      KUBEVIRT_VLAN40_IPV6_IPPOOLS=kubevirt-vlan30-v6
       ;;
 
     dual)
@@ -87,6 +101,10 @@ spec:
       VLAN100_IPV6_IPPOOLS=vlan100-v6
       VLAN200_IPV4_IPPOOLS=vlan200-v4
       VLAN200_IPV6_IPPOOLS=vlan200-v6
+      KUBEVIRT_VLAN30_IPV4_IPPOOLS=kubevirt-vlan30-v4
+      KUBEVIRT_VLAN30_IPV6_IPPOOLS=kubevirt-vlan30-v6
+      KUBEVIRT_VLAN40_IPV4_IPPOOLS=kubevirt-vlan40-v4
+      KUBEVIRT_VLAN40_IPV6_IPPOOLS=kubevirt-vlan40-v6
       ;;
 
     *)
@@ -118,8 +136,8 @@ spec:
     | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?100?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?vlan100-v4?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?vlan100-v6?g' \
+    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN100_IPV4_IPPOOLS}""'?g' \
+    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN100_IPV6_IPPOOLS}""'?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
@@ -129,9 +147,31 @@ spec:
     | sed 's?<<MODE>>?auto?g' \
     | sed 's?<<MASTER>>?eth0?g' \
     | sed 's?<<VLAN>>?200?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?vlan200-v4?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?vlan200-v6?g' \
+    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN200_IPV4_IPPOOLS}""'?g' \
+    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN200_IPV6_IPPOOLS}""'?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+
+  if [ ${INSTALL_KUBEVIRT} == "true" ]; then
+    echo "${MACVLAN_CR_TEMPLATE}" \
+      | sed 's?<<CNI_NAME>>?'""${MULTUS_KUBEVIRT_CNI_VLAN30}""'?g' \
+      | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+      | sed 's?<<MODE>>?auto?g' \
+      | sed 's?<<MASTER>>?eth0?g' \
+      | sed 's?<<VLAN>>?30?g' \
+      | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${KUBEVIRT_VLAN30_IPV4_IPPOOLS}""'?g' \
+      | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${KUBEVIRT_VLAN30_IPV6_IPPOOLS}""'?g' \
+      | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+
+    echo "${MACVLAN_CR_TEMPLATE}" \
+      | sed 's?<<CNI_NAME>>?'""${MULTUS_KUBEVIRT_CNI_VLAN40}""'?g' \
+      | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
+      | sed 's?<<MODE>>?auto?g' \
+      | sed 's?<<MASTER>>?eth0?g' \
+      | sed 's?<<VLAN>>?40?g' \
+      | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${KUBEVIRT_VLAN40_IPV4_IPPOOLS}""'?g' \
+      | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${KUBEVIRT_VLAN40_IPV6_IPPOOLS}""'?g' \
+      | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+    fi
 
 }
 
@@ -149,6 +189,15 @@ Install::SpiderpoolCR(){
     SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
     SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
     SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
+
+    SPIDERPOOL_VLAN30_POOL_V4=172.30.0.0/16
+    SPIDERPOOL_VLAN30_POOL_V6=fd00:172:30::/64
+    SPIDERPOOL_VLAN30_RANGES_V4=172.30.0.201-172.30.10.199
+    SPIDERPOOL_VLAN30_RANGES_V6=fd00:172:30::201-fd00:172:30::fff1
+    SPIDERPOOL_VLAN40_POOL_V4=172.40.0.0/16
+    SPIDERPOOL_VLAN40_POOL_V6=fd00:172:40::/64
+    SPIDERPOOL_VLAN40_RANGES_V4=172.40.0.201-172.40.10.199
+    SPIDERPOOL_VLAN40_RANGES_V6=fd00:172:40::201-fd00:172:40::fff1
 
     if [ "${E2E_SPIDERPOOL_ENABLE_SUBNET}" == "true" ] ; then
         CR_KIND="SpiderSubnet"
@@ -188,6 +237,34 @@ EOF
 EOF
     }
 
+    INSTALL_KUBEVIRT_V4_CR(){
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderIPPool
+        metadata:
+          name: kubevirt-vlan30-v4
+        spec:
+          vlan: 30
+          ipVersion: 4
+          ips:
+          - ${SPIDERPOOL_VLAN30_RANGES_V4}
+          subnet: ${SPIDERPOOL_VLAN30_POOL_V4}
+EOF
+
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderIPPool
+        metadata:
+          name: kubevirt-vlan40-v4
+        spec:
+          vlan: 40
+          ipVersion: 4
+          ips:
+          - ${SPIDERPOOL_VLAN40_RANGES_V4}
+          subnet: ${SPIDERPOOL_VLAN40_POOL_V4}
+EOF
+    }
+
     INSTALL_V6_CR(){
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -218,19 +295,57 @@ EOF
 EOF
     }
 
+    INSTALL_KUBEVIRT_V6_CR(){
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderIPPool
+        metadata:
+          name: kubevirt-vlan30-v6
+        spec:
+          ipVersion: 6
+          ips:
+          - ${SPIDERPOOL_VLAN30_RANGES_V6}
+          subnet: ${SPIDERPOOL_VLAN30_POOL_V6}
+          vlan: 30
+EOF
+
+        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderIPPool
+        metadata:
+          name: kubevirt-vlan40-v6
+        spec:
+          ipVersion: 6
+          ips:
+          - ${SPIDERPOOL_VLAN40_RANGES_V6}
+          subnet: ${SPIDERPOOL_VLAN40_POOL_V6}
+          vlan: 40
+EOF
+    }
+
 
   case ${E2E_IP_FAMILY} in
     ipv4)
       INSTALL_V4_CR
+      if [ ${INSTALL_KUBEVIRT} == "true" ]; then
+        INSTALL_KUBEVIRT_V4_CR
+      fi
       ;;
 
     ipv6)
       INSTALL_V6_CR
+      if [ ${INSTALL_KUBEVIRT} == "true" ]; then
+        INSTALL_KUBEVIRT_V6_CR
+      fi
       ;;
 
     dual)
       INSTALL_V4_CR
       INSTALL_V6_CR
+      if [ ${INSTALL_KUBEVIRT} == "true" ]; then
+        INSTALL_KUBEVIRT_V4_CR;
+        INSTALL_KUBEVIRT_V6_CR;
+      fi
       ;;
 
     *)

@@ -17,5 +17,7 @@
 // +kubebuilder:rbac:groups="",resources=nodes;namespaces;endpoints;pods;configmaps,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups="*",resources="*",verbs=get;list;watch
 // +kubebuilder:rbac:groups=k8s.cni.cncf.io,resources=network-attachment-definitions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachines,verbs=get;list
+// +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachineinstances,verbs=get;list
 
 package v2beta1

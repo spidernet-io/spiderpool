@@ -53,9 +53,10 @@
 | CLI                      | debug and operate. check which pod an IP is taken by, check IP usage , trigger GC                                                    | In plan       |              |            |
 | multi-cluster            | a broker cluster could synchronize ippool resource within a same subnet from all member clusters, which could help avoid IP conflict | In plan       |              |            |
 |                          | support submariner                                                                                                                   | In plan       |              |            |
-| cilium                   | cooperate with cilium                                                                                                                | In plan       |              |            |
-| RDMA                     | support macvlan and ipvlan CNI for roce device                                                                                       | v0.8.0        |              |            |
-|                          | support sriov CNI for roce device                                                                                                    | v0.8.0        |              |            |
+| dual CNI                 | underlay cooperate with cilium                                                                                                       | v0.7.0        |              |            |
+|                          | underlay cooperate with calico                                                                                                       | v0.7.0        |              |            |
+| RDMA                     | support macvlan and ipvlan CNI for RoCE device                                                                                       | v0.8.0        |              |            |
+|                          | support sriov CNI for RoCE device                                                                                                    | v0.8.0        |              |            |
 |                          | support ipoib CNI for infiniband device                                                                                              | In plan       |              |            |
 |                          | support ib-sriov CNI for infiniband device                                                                                           | In plan       |              |            |
-| egressGateway            | egressGateway                                                                                                                        | In plan       |              |            |
+| egressGateway            | egressGateway                                                                                                                        | v0.8.0        |              |            |

@@ -16,30 +16,30 @@ Spiderpool consists of the following components:
 
 * CNI plugins include:
 
-    * Spiderpool IPAM plugin: a main CNI used to handle IP allocation.
+  * Spiderpool IPAM plugin: a main CNI used to handle IP allocation.
 
-    * coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses.
+  * coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses.
 
-    * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan.
+  * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan.
 
-    * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): a scheduler for other CNI plugins.
+  * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): a scheduler for other CNI plugins.
 
-    * CNI plugins: include [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-      [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
-      [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-      [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-      [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
-      [Calico CNI](https://github.com/projectcalico/calico),
-      [Weave CNI](https://github.com/weaveworks/weave),
-      [Cilium CNI](https://github.com/cilium/cilium), etc.
+  * CNI plugins: include [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+    [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
+    [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
+    [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
+    [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
+    [Calico CNI](https://github.com/projectcalico/calico),
+    [Weave CNI](https://github.com/weaveworks/weave),
+    [Cilium CNI](https://github.com/cilium/cilium), etc.
 
 * SR-IOV related components:
 
-    * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
+  * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
 
-    * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
+  * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
 
-    * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)
+  * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)
 
 ## Use case: Pod with multiple underlay CNI interfaces
 

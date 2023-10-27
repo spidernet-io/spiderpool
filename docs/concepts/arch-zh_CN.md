@@ -14,11 +14,11 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 * CNI plugins，它们包括如下：
 
-    * Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。
+  * Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。
 
-    * coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等
+  * coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等
 
-    * ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。
+  * ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。
 
     * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): CNI plugin 的调度器
 
@@ -33,11 +33,11 @@ Spiderpool 架构如上所示，包含了以下组件：
 
 * SR-IOV 相关组件：
 
-    * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
+  * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
 
-    * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
+  * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
 
-    * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)
+  * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)
 
 ## 应用场景：Pod 接入若干个 underlay CNI 网卡
 

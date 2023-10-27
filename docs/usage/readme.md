@@ -6,7 +6,7 @@
 
 ### Install Spiderpool with Underlay CNI
 
-With Spiderpool on your cluster, Pods can have one or multiple underlay CNI networks, allowing them to connect to the underlay network. Refer to [Spiderpool Architecture](../concepts/arch.md) for detalis.
+With Spiderpool on your cluster, Pods can have one or multiple underlay CNI networks, allowing them to connect to the underlay network. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
 
 Please refer to the following examples for installation:
 

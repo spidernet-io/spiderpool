@@ -4,7 +4,7 @@
 
 ## 介绍
 
-SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地址，可分别存储到不同的 IPPool 实例中（Spiderpool 会校验 IPPool 之间的地址集合不重叠）。因此，依据需求，SpiderIPPool 中的 IP 集合可大可小。能很好的应对 Underlay 网络的 IP 地址资源有限情况，且这种设计特点，能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，既能够让所有应用共享使用同一个 Subnet，又能够实现 "微隔离"。
+SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地址，可分别存储到不同的 IPPool 实例中（Spiderpool 会校验 IPPool 之间的地址集合不重叠）。因此，依据需求，SpiderIPPool 中的 IP 集合可大可小。能很好的应对 underlay 网络的 IP 地址资源有限情况，且这种设计特点，能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，既能够让所有应用共享使用同一个子网，又能够实现 "微隔离"。
 
 ## SpiderIPPool Affinity 功能
 
@@ -46,13 +46,13 @@ SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地
 
 - 不同应用间极其容易分配了冲突的 IP 地址，从而导致应用创建失败。
 
-对此，Spiderpool 借助于 IPPool 的 IP 集合可大可小的特点，并结合设置 IPPool 的 `podAffinity`，可实现同一组或者多组应用的亲和绑定，既保证了 IP 管理方式的统一，又解耦 "应用扩容" 和 "IP地址扩容"，也固定了应用的 IP 使用范围。
+对此，Spiderpool 借助于 IPPool 的 IP 集合可大可小的特点，并结合设置 IPPool 的 `podAffinity`，可实现同一组或者多组应用的亲和绑定，既保证了 IP 管理方式的统一，又解耦 "应用扩容" 和 "IP 地址扩容"，也固定了应用的 IP 使用范围。
 
 ## 节点亲和性
 
 ### 创建节点亲和的 IPPool
 
-- SpiderIPPool 提供了 `nodeAffinity` 字段，当 Pod 在某个节点上启动，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在节点符合该 nodeAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
+SpiderIPPool 提供了 `nodeAffinity` 字段，当 Pod 在某个节点上启动，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在节点符合该 nodeAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
 
 依据如上所述，使用如下的 Yaml，创建如下具备节点亲和的 SpiderIPPool，它将为在运行该节点上的 Pod 提供 IP 地址。
 
@@ -72,7 +72,7 @@ spec:
 EOF
 ```
 
-SpiderIPPool 提供了另一种节点亲和性方式供选择：`nodeName`，当 nodeName 不为空时，Pod 在某个节点上启动，并尝试从 SpiderIPPool 分配 IP 地址, 若 Pod 所在节点符合该 nodeName，则能从该 SpiderIPPool 中成功分配出 IP，若 Pod 所在节点不符合 nodeName，则无法从该 SpiderIPPool 中分配出 IP。当 nodeName 为空时，Spiderpool 对 Pod 不实施任何分配限制，参考如下：
+SpiderIPPool 提供了另一种节点亲和性方式供选择：`nodeName`，当 `nodeName` 不为空时，Pod 在某个节点上启动，并尝试从 SpiderIPPool 分配 IP 地址, 若 Pod 所在节点符合该 `nodeName`，则能从该 SpiderIPPool 中成功分配出 IP，若 Pod 所在节点不符合 `nodeName`，则无法从该 SpiderIPPool 中分配出 IP。当 nodeName 为空时，Spiderpool 对 Pod 不实施任何分配限制，参考如下：
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
@@ -154,7 +154,7 @@ namespace/test-ns2 created
 
 使用如下的 Yaml，创建租户亲和的 IPPool。
 
-- SpiderIPPool 提供了 `namespaceAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在租户符合该 namespaceAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
+SpiderIPPool 提供了 `namespaceAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在租户符合该 namespaceAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
@@ -283,9 +283,9 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 ### 创建应用亲和性的 IPPool
 
-- SpiderIPPool 提供了 `podAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 的 `selector.matchLabels` 符合该 podAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
+SpiderIPPool 提供了 `podAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 的 `selector.matchLabels` 符合该 podAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
 
-依据如上所述，使用如下的 Yaml，创建如下具备应用亲和的 SpiderIPPool，它将为 `selector.matchLabel` 为 `app: test-app-3` 的 Pod 提供 IP 地址。
+依据如上所述，使用如下的 Yaml，创建如下具备应用亲和的 SpiderIPPool，它将为 `app: test-app-3` Pod 符合条件的 `selector.matchLabel` 提供 IP 地址。
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
@@ -342,7 +342,7 @@ spec:
 EOF
 ```
 
-最终, 创建应用后，Pod 的 matchLabels 符合该 IPPool 的应用亲和设置，成功从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。
+最终, 创建应用后，Pod 的  `matchLabels` 符合该 IPPool 的应用亲和设置，成功从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。
 
 ```bash
 ～# kubectl get spiderippool
@@ -354,7 +354,7 @@ NAME                          READY   STATUS    RESTARTS   AGE   IP             
 test-app-3-6994b9d5bb-qpf5p   1/1     Running   0          52s   10.6.168.154   node2   <none>           <none>
 ```
 
-创建另一个应用，并指定一个不符合 IPPool 应用亲和的 matchLabels ，Spiderpool 将会拒绝为其分配 IP 地址。
+创建另一个应用，并指定一个不符合 IPPool 应用亲和的 `matchLabels`，Spiderpool 将会拒绝为其分配 IP 地址。
 
 - `matchLabels`: 设置应用的 Label 为 `test-unmatch-labels`，不匹配 IPPool 亲和性。
 

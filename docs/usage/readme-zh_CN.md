@@ -69,7 +69,7 @@
 
 ### IPAM 功能
 
-- 应用可以共享一个 IP 池，可参考[例子](./ippool-affinity-pod.md#shared-ippool)。
+- 应用可以共享一个 IP 池，可参考[例子](./spider-affinity.md)。
 
 - 对于无状态应用，可以独享一个 IP 地址池，并固定所有 Pod 的 IP 使用范围。 可参考[例子](./spider-subnet.md)。
 
@@ -77,7 +77,7 @@
 
 - 支持为 kubevirt 提供 underlay 网络，固定虚拟机的 IP 地址，可参考 [例子](./kubevirt-zh_CN.md)
 
-- 对于一个跨子网部署的应用，支持为其不同副本分配不同子网的 IP 地址，可参考[例子](./ippool-affinity-node.md)。
+- 对于一个跨子网部署的应用，支持为其不同副本分配不同子网的 IP 地址，可参考[例子](./spider-affinity.md)。
 
 - Subnet 功能，一方面，能够实现基础设施管理员和应用管理员的职责分离，
   另一方面，能够为有固定 IP 需求的应用自动管理 IP 池，包括自动创建、扩缩容 IP、删除 固定 IP 池，
@@ -87,7 +87,7 @@
   可参考[例子](./third-party-controller.md)。
 
 - 可以设置集群级别的默认 IP 池，也可租户级别的默认 IP 池。同时，IP 池既可以被整个集群共享，
-  也可被限定为被一个租户使用。可参考[例子](./ippool-affinity-namespace.md)。
+  也可被限定为被一个租户使用。可参考[例子](./spider-affinity.md)。
 
 - 基于节点拓扑的 IP 池功能，满足每个节点精细化的子网规划需求，可参考[例子](./network-topology-zh_CN.md)
 

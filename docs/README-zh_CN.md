@@ -44,7 +44,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它提供了�
 云原生网络中出现了两种技术类别，"overlay 网络方案" 和 "underlay 网络方案"，
 云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。
 
-[文章](./concepts/solution-zh_CN.md) 对两种方案的 IPAM 和网络性能做了简单比较，能够更好说明 Spiderpool 的特点和使用场景。
+[文章](./concepts/arch-zh_CN.md) 对两种方案的 IPAM 和网络性能做了简单比较，能够更好说明 Spiderpool 的特点和使用场景。
 
 为什么需要 underlay 网络解决方案？存在很多应用场景：
 
@@ -169,7 +169,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 ## 快速开始
 
-快速搭建 Spiderpool，启动一个应用，可参考[快速搭建](./usage/install/install.md)。
+快速搭建 Spiderpool，启动一个应用，可参考[快速搭建](./usage/install)。
 
 ## 功能
 
@@ -231,22 +231,22 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 * 以最佳实践的 CNI 配置来便捷地生成 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)
   NetworkAttachmentDefinition 实例，并且保证其正确的 JSON 格式来提高使用体验。
-  可参考[例子](./concepts/spider-multus-config-zh_CN.md)。
+  可参考[例子](./usage/spider-multus-config-zh_CN.md)。
 
 * 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考[例子](./usage/ippool-multi.md)。
 
 * 设置全局的预留 IP，让 IPAM 不分配出这些 IP 地址，这样能避免与集群外部的已用 IP 冲突。
   可参考[例子](./usage/reserved-ip.md)。
 
-* 分配和释放 IP 地址的高效性能，可参考[报告](./concepts/performance-zh_CN.md)。
+* 分配和释放 IP 地址的高效性能，可参考[报告](./concepts/ipam-performance-zh_CN.md)。
 
-* 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](./usage/gc.md)。
+* 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](./concepts/ipam-zh_CN.md)。
 
 * 所有的功能都能够在 ipv4-only、ipv6-only、dual-stack 场景下工作。可参考[例子](./usage/ipv6.md)。
 
 * 支持 AMD64 和 ARM64
 
-* [指标](./concepts/metrics.md)
+* [指标](./reference/metrics.md)
 
 ## Blogs
 
@@ -293,7 +293,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 ## License
 
-Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.
+Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](../LICENSE) for the full license text.
 
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>

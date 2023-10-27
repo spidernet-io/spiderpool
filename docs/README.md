@@ -56,7 +56,7 @@ Despite no strict definition for underlay and overlay networks in cloud-native n
 can simply abstract their characteristics from many CNI projects. The two technologies meet
 the needs of different scenarios.
 
-The [article](./concepts/solution.md) provides a brief comparison of IPAM and
+The [article](./usage/spider-multus-config.md) provides a brief comparison of IPAM and
 network performance between the two technologies, which offers better insights into
 the unique features and use cases of Spiderpool.
 
@@ -219,7 +219,7 @@ Currently, RDMA finds extensive applications in fields such as AI computing and 
 
 ## Quick start
 
-Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
+Refer to [Quick start](./usage/install), set up a cluster quickly.
 
 ## Major features
 
@@ -288,7 +288,7 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 
 * Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition
   custom resources with best-practice CNI configuration, also ensure well formatted JSON
-  to improve experience. See [example](./concepts/multusconfig.md) for details.
+  to improve experience. See [example](./usage/spider-multus-config.md) for details.
 
 * Multiple IP pools can be set for the application for prevent IP address from running out.
   See [example](./usage/ippool-multi.md) for details.
@@ -301,14 +301,14 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 
 * Well-designed IP reclaim mechanism could help assign IP address in time and
   quickly recover from the breakdown for the cluster or application.
-  See [example](./usage/gc.md) for details.
+  See [example](./reference/metrics.md) for details.
 
 * All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios.
   See [example](./usage/ipv6.md) for details.
 
 * Support AMD64 and ARM64.
 
-* [Metrics](./concepts/metrics.md)
+* [Metrics](./reference/metrics.md)
 
 ## Blogs
 
@@ -330,7 +330,7 @@ Refer to [Quick start](./usage/install/install.md), set up a cluster quickly.
 
 ## Governance
 
-The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./develop/CODE-OF-CONDUCT.md).
+The project is governed by a group of [Maintainers and Committers](../AUTHORS). How they are selected and govern is outlined in our [governance document](./develop/CODE-OF-CONDUCT.md).
 
 ## Adopters
 
@@ -357,7 +357,7 @@ and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpo
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0.
-See [LICENSE](./LICENSE) for the full license text.
+See [LICENSE](../LICENSE) for the full license text.
 
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>

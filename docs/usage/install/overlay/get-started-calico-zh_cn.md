@@ -50,8 +50,6 @@ spiderpool-agent-htcnc                                      1/1     Running     
 spiderpool-agent-pjqr9                                      1/1     Running     0                 1m
 spiderpool-controller-7b7f8dd9cc-xdj95                      1/1     Running     0                 1m
 spiderpool-init                                             0/1     Completed   0                 1m
-spiderpool-multus-m2kbt                                     1/1     Running     0                 1m
-spiderpool-multus-sl65s                                     1/1     Running     0                 1m
 ```
 
 请检查 `Spidercoordinator.status` 中的 Phase 是否为 Synced, 并且 overlayPodCIDR 是否与集群中 Calico 的子网保持一致: 

@@ -50,6 +50,9 @@ ipam:
   ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true
 
+  ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
+  enableKubevirtStaticIP: true
+
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: true
 
@@ -254,35 +257,6 @@ multus:
 
     ## @param multus.multusCNI.defaultCniCRName if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/, if no cni files found in /etc/cni/net.d, A Spidermultusconfig CR named default will be created, please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool
     defaultCniCRName: ""
-
-    resources:
-      limits:
-        ## @param multus.multusCNI.resources.limits.cpu the cpu limit of multus-CNI daemonset pod
-        cpu: 100m
-        ## @param multus.multusCNI.resources.limits.memory the memory limit of multus-CNI daemonset pod
-        memory: 50Mi
-      requests:
-        ## @param multus.multusCNI.resources.requests.cpu the cpu requests of multus-CNI daemonset pod
-        cpu: 100m
-        ## @param multus.multusCNI.resources.requests.memory the memory requests of multus-CNI daemonset pod
-        memory: 50Mi
-
-    ## @skip multus.multusCNI.tolerations
-    tolerations:
-      - operator: Exists
-
-    ## @param multus.multusCNI.podAnnotations the additional annotations of multus-CNI daemonset pod
-    podAnnotations: {}
-
-    ## @param multus.multusCNI.podLabels the additional label of multus-CNI daemonset pod
-    podLabels: {}
-
-    ## @skip multus.multusCNI.updateStrategy.rollingUpdate.maxUnavailable
-    ## @skip multus.multusCNI.updateStrategy.type
-    updateStrategy:
-      rollingUpdate:
-        maxUnavailable: 2
-      type: RollingUpdate
 
     securityContext:
       ## @param multus.multusCNI.securityContext.privileged the securityContext privileged of multus-CNI daemonset pod

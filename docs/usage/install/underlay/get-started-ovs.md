@@ -113,8 +113,6 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
     spiderpool-agent-kxf27                   1/1     Running     0              13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
     spiderpool-init                          0/1     Completed   0              13m
-    spiderpool-multus-7vkm2                  1/1     Running     0              13m
-    spiderpool-multus-rwzjn                  1/1     Running     0              13m
 
     ~# kubectl get sp ippool-test       
     NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT

@@ -34,6 +34,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 				nil,
 				fakeAPIReader,
+				true,
+				true,
 			)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
@@ -43,6 +45,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			manager, err := workloadendpointmanager.NewWorkloadEndpointManager(
 				fakeClient,
 				nil,
+				true,
+				true,
 			)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())

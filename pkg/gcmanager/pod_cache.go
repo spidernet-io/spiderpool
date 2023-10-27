@@ -12,9 +12,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -135,11 +137,12 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 	// TODO(Icarus9913): Replace with method GetPodTopController.
 	ownerRef := metav1.GetControllerOf(currentPod)
+	ctx := context.TODO()
 
 	// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
 	if s.gcConfig.EnableStatefulSet && ownerRef != nil &&
 		ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
-		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(context.TODO(), currentPod.Namespace, currentPod.Name, ownerRef.Kind)
+		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, currentPod.Namespace, currentPod.Name, ownerRef.Kind)
 		if nil != err {
 			return nil, err
 		}
@@ -147,6 +150,20 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		// StatefulSet pod restarted, no need to trace it.
 		if isValidStsPod {
 			logger.Sugar().Debugf("the StatefulSet pod '%s/%s' just restarts, keep its IPs", currentPod.Namespace, currentPod.Name)
+			return nil, nil
+		}
+	}
+
+	// check kubevirt vm pod, we will trace it if its controller is no longer exist
+	if s.gcConfig.EnableKubevirtStaticIP && ownerRef != nil &&
+		ownerRef.APIVersion == kubevirtv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindKubevirtVMI {
+		isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(logutils.IntoContext(ctx, logger), currentPod.Namespace, ownerRef.Kind, ownerRef.Name)
+		if nil != err {
+			return nil, err
+		}
+
+		if isValidVMPod {
+			logger.Sugar().Debugf("the kubevirt vm pod '%s/%s' just restarts, keep its IPs", currentPod.Namespace, currentPod.Name)
 			return nil, nil
 		}
 	}

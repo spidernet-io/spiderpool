@@ -6,13 +6,13 @@
 
 ### 基于 Underlay CNI 安装 Spiderpool
 
-集群网络可以为 POD 接入一个或多个 Underlay CNI 的网络，从而让 POD 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md) 
+集群网络可以为 Pod 接入一个或多个 Underlay CNI 的网络，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md) 
 
 以下是安装示例：
 
 - [创建集群：基于 kind 集群](./install/underlay/get-started-kind-zh_CN.md)
 
-- [创建集群：基于 SRIOV CNI 网络的集群](./install/underlay/get-started-sriov-zh_CN.md)
+- [创建集群：基于 SR-IOV CNI 网络的集群](./install/underlay/get-started-sriov-zh_CN.md)
 
 - [创建集群：基于 ovs 网络的集群](./install/underlay/get-started-ovs-zh_CN.md)
 
@@ -24,19 +24,19 @@
 
 ### 基于 Overlay CNI 和 Underlay CNI 安装 Spiderpool
 
-集群网络可以为 POD 同时接入一张  Overlay CNI 和多个 Underlay CNI 的网卡，从而让 POD 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [overlay CNI 和 underlay CNI 协同](../concepts/arch-zh_CN.md) 。以下是安装示例：
+集群网络可以为 Pod 同时接入一张 Overlay CNI 网卡和多个 Underlay CNI 的网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [overlay CNI 和 underlay CNI 协同](../concepts/arch-zh_CN.md) 。以下是安装示例：
 
 - [创建集群：基于 kind 集群的双网络](./install/underlay/get-started-kind-zh_CN.md)
 
 - [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico.md)
 
-- [创建集群：基于 cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium.md)
+- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium.md)
 
 ### 在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool
 
 - [创建集群：在阿里云上基于 ipvlan 的网络](./install/cloud/get-started-alibaba-zh_CN.md)
 
-- [创建集群：vmware vsphere](./install/cloud/get-started-vmware-zh_CN.md)
+- [创建集群：VMware vsphere](./install/cloud/get-started-vmware-zh_CN.md)
 
 - [创建集群：在 AWS 基于 ipvlan 的网络](./install/cloud/get-started-aws-zh_CN.md)
 
@@ -50,16 +50,16 @@
 
 1. 您可以通过以下方式卸载 Spiderpool ：
 
-```bash
-helm uninstall spiderpool -n kube-system
-```
+    ```bash
+    helm uninstall spiderpool -n kube-system
+    ```
 
 2. Spiderpool 的某些 CR 资源中存在 [finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) ，导致 `helm uninstall` 命令无法清理干净。 可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。
 
-```bash
-wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-chmod +x cleanCRD.sh && ./cleanCRD.sh
-```
+    ```bash
+    wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+    chmod +x cleanCRD.sh && ./cleanCRD.sh
+    ```
 
 ## 升级 Spiderpool
 
@@ -71,7 +71,7 @@ chmod +x cleanCRD.sh && ./cleanCRD.sh
 
 * 应用可以共享一个 IP 池，可参考[例子](./ippool-affinity-pod.md#shared-ippool)。
 
-* 对于无状态应用，可以独享一个 IP 地址池，并固定所有 POD 的 IP 使用范围。 可参考[例子](./spider-subnet.md)。
+* 对于无状态应用，可以独享一个 IP 地址池，并固定所有 Pod 的 IP 使用范围。 可参考[例子](./spider-subnet.md)。
 
 * 对于有状态应用，支持为每一个 Pod 持久化分配固定 IP 地址，同时在扩缩时可控制所有 Pod 所使用的 IP 范围，可参考[例子](./statefulset-zh_CN.md)。
 
@@ -112,7 +112,7 @@ chmod +x cleanCRD.sh && ./cleanCRD.sh
 
 ### 连通性功能
 
-* 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SRIOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./rdma-zh_CN.md)
+* 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./rdma-zh_CN.md)
 
 * coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](./coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
 
@@ -121,7 +121,7 @@ chmod +x cleanCRD.sh && ./cleanCRD.sh
   [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
   [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni) 等，
-  提供了基于 kube-proxy 和 eBPF kube-proxy replacement 访问 ClusterIP 访问，并联通 Pod 和宿主机通信，解决 POD 健康检查问题。
+  提供了基于 kube-proxy 和 eBPF kube-proxy replacement 访问 ClusterIP 访问，并联通 Pod 和宿主机通信，解决 Pod 健康检查问题。
   可参考[例子](./service-zh_CN.md)。
 
 * 能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](./coordinator.md)。

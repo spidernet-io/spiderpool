@@ -1,4 +1,4 @@
-# Spiderpool architecture
+# Spiderpool Architecture
 
 **English** | [**简体中文**](./arch-zh_CN.md)
 
@@ -14,11 +14,34 @@ Spiderpool consists of the following components:
 
 * Spiderpool plugin: a binary plugin on each host that CNI can utilize to implement IP allocation.
 
-* coordinator plugin: a binary plugin on each host that CNI can use for multi-NIC route coordination, IP conflict detection, and host connectivity.
+* CNI plugins include:
 
-On top of its own components, Spiderpool relies on open-source underlay CNIs to allocate network interfaces to Pods. You can use [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) to manage multiple NICs and CNI configurations.
+    * Spiderpool IPAM plugin: a main CNI used to handle IP allocation.
 
-## Use case: collaborate with one or more underlay CNIs
+    * coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses.
+
+    * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan.
+
+    * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): a scheduler for other CNI plugins.
+
+    * CNI plugins: include [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+      [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
+      [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
+      [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
+      [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
+      [Calico CNI](https://github.com/projectcalico/calico),
+      [Weave CNI](https://github.com/weaveworks/weave),
+      [Cilium CNI](https://github.com/cilium/cilium), etc.
+
+* SR-IOV related components:
+
+    * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
+
+    * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
+
+    * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)
+
+## Use case: Pod with multiple underlay CNI interfaces
 
 ![arch_underlay](../images/spiderpool-underlay.jpg)
 
@@ -44,7 +67,7 @@ By simultaneously deploying multiple underlay CNIs through Multus CNI configurat
 
 For example, as shown in the above diagram, different nodes with varying networking capabilities in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards, Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted network access (e.g., VMware virtual machines with limited layer 2 network forwarding).
 
-## Use case: collaborate with overlay and underlay CNIs
+## Use case: Pod with one overlay interface and multiple underlay interfaces
 
 ![arch_underlay](../images/spiderpool-overlay.jpg)
 

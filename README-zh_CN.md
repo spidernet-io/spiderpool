@@ -19,9 +19,9 @@ Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?categ
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它主要强大了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 IO 密集性、低延时应用带来优秀的网络性能，包括存储、中间件、AI 等应用。
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括存储、中间件、AI 等应用。
 
 **为什么 Spiderpool 选择 macvlan、ipvlan、SR-IOV 为 datapath ？**
 
@@ -29,17 +29,17 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它主要强�
 
 * 可直接对接 underlay 二层 VLAN 网络，应用可进行二层、三层网络通信，可进行组播、多播通信，数据包可受防火墙管控。
 
-* 数据包携带 POD 的真正 IP 地址，应用可直接基于 POD IP 进行南北向通信，多云网络天然联通。
+* 数据包携带 Pod 的真正 IP 地址，应用可直接基于 Pod IP 进行南北向通信，多云网络天然联通。
 
-* underlay CNI 可基于宿主机不同的父网卡来创建虚拟机接口，因此可为存储、观察性等网络开销大的应用提供隔离的子网。
+* underlay CNI 可基于宿主机不同的父网卡来创建虚拟机接口，因此可为存储、观测性等网络开销大的应用提供隔离的子网。
 
-* macvlan、ipvlan、SR-IOV 是承载 RDMA 网络加速的重要技术，RDMA 能为延时敏感型应用、网络 IO 密集型应用带来极大的性能提升，其网络性能大幅超过 overlay 网络解决方案。
+* macvlan、ipvlan、SR-IOV 是承载 RDMA 网络加速的重要技术，RDMA 能为延时敏感型应用、网络 I/O 密集型应用带来极大的性能提升，其网络性能大幅超过 overlay 网络解决方案。
 
 <div style="text-align:center">
   <img src="./docs/images/arch.png" alt="Your Image Description">
 </div>
 
-**Spiderpool 为 macvlan、ipvlan、SR-IOV CNI 增强了什么 ？**
+**Spiderpool 为 macvlan、ipvlan、SR-IOV CNI 增强了什么？**
 
 * 简化安装和使用
 
@@ -49,18 +49,18 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它主要强�
 
     提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。
 
-* POD 接入多网卡
+* Pod 接入多网卡
 
-    它包括了 " POD 插入多个 underlay CNI 网卡"、" POD 插入一个 overlay CNI 和 多个 underlay CNI 网卡" 两种场景，Pod 具备多种 CNI 网卡，Spiderpool 能够为多个
-  underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。
+    它包括了 “Pod 插入多个 underlay CNI 网卡”、“Pod 插入一个 overlay CNI 和 多个 underlay CNI 网卡”两种场景，Pod 具备多种 CNI 网卡，Spiderpool 能够为多个
+    underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。
 
 * 增强网络连通性
 
-    打通 Pod 和宿主机的连通性，确保 POD 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 POD 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。
+    打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。
 
 * eBPF 增强
 
-    kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 POD 的通信效率。
+    kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。
 
 * RDMA 
 
@@ -72,7 +72,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它主要强�
 
 * 指标
 
-**Spiderpool 可应用在哪些场景 ？**
+**Spiderpool 可应用在哪些场景？**
 
 Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考 [性能报告](./docs/concepts/io-performance-zh_CN.md)。具体可应用在如下：
 
@@ -80,7 +80,7 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 * 传统的主机应用
 
-* 中间件、数据存储、日志观测、AI 训练等网络 IO 密集性应用
+* 中间件、数据存储、日志观测、AI 训练等网络 I/O 密集性应用
 
 * 网络延时敏感型应用
 
@@ -88,9 +88,9 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
-* POD 接入若干个 underlay CNI 网卡，接入 underlay 网络
+* Pod 接入若干个 underlay CNI 网卡，接入 underlay 网络
 
-* POD 接入一个 underlay CNI 和若干个 underlay CNI 网卡，同时接入双网络
+* Pod 接入一个 underlay CNI 和若干个 underlay CNI 网卡，同时接入双网络
 
 * underlay CNI 运行在公有云环境和虚拟机
 
@@ -138,12 +138,12 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
 如果有任何关于 Spiderpool 的问题，欢迎您随时通过以下的方式联系我们👏:
 
-* Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCD Slack 的 **[邀请](https://slack.cncf.io/)**
+* Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCF Slack 的 **[邀请](https://slack.cncf.io/)**
   然后加入 [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 的频道。
 
-* Emails: 您可以查看 [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。
+* 邮件: 您可以查看 [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。
 
-* Wechat Group: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
+* 微信群: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
 
 ![Wechat QR-Code](./docs/images/wechat.png)
 

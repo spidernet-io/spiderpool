@@ -6,17 +6,7 @@
 
 SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地址，可分别存储到不同的 IPPool 实例中（Spiderpool 会校验 IPPool 之间的地址集合不重叠）。因此，依据需求，SpiderIPPool 中的 IP 集合可大可小。能很好的应对 underlay 网络的 IP 地址资源有限情况，且这种设计特点，能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，既能够让所有应用共享使用同一个子网，又能够实现 "微隔离"。
 
-## SpiderIPPool Affinity 功能
-
-关于 SpiderIPPool Affinity 功能的一些优先级、匹配规则等信息，可以参考[概念文档](../concepts/ipam-zh_CN.md)。
-
-## 步骤
-
-### 安装 Spiderpool
-
-按照[安装指南](./install/underlay/get-started-kind.md)安装 Spiderpool。
-
-### SpiderIPPool 节点亲和性
+## 节点亲和性
 
 不同的 node 上，可用的 IP 范围也许并不相同，例如：
 
@@ -27,28 +17,6 @@ SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地
 在以上场景中，当同一个应用的不同副本被调度到了不同的 node 上，需要分配不同 subnet 下的 underlay IP 地址。在当前社区现有方案，它们并不能满足这样的需求。
 
 对此，Spiderpool 提供一种节点亲和的方式，能很好的解决上述问题。Spiderpool 的 SpiderIPPool CR 中，提供了 `nodeAffinity` 与 `nodeName` 字段，用于设置 node label selector，从而实现 IPPool 和 node 之间亲和性，当 Pod 被调度到某个 node 上后，IPAM 插件能够从亲和的 IPPool 中进行 IP 地址分配。
-
-### SpiderIPPool 租户亲和性
-
-管理员往往会在集群划分多租户，能更好地隔离、管理和协作，同时也能提供更高的安全性、资源利用率和灵活性等。需要不同功能的应用部署在不同租户下，对此，期望实现一个 IPPool 能同一个或者多个 namespace 下的应用实现亲和，而拒绝不相干租户的应用创建，能帮助管理员减少运维负担。
-
-当前社区中并没有解决上述场景的有效方案，Spiderpool 通过设置 SpiderIPPool CR 中的 `namespaceAffinity` 或 `namespaceName` 字段，实现同一个或者多个租户的亲和性，从而使得满足条件的应用才能够从 IPPool 中分配到 IP 地址。
-
-### SpiderIPPool 应用亲和性
-
-在集群中，防火墙通常用于管理南北向通信，即集群内部和外部网络之间的通信。为了实现安全管控，防火墙需要对通信流量进行检查和过滤，并对出口通信进行限制。由于防火墙安全管控，一组 Deployment 它的所有 Pod 期望能够在一个固定的 IP 地址范围内轮滚分配 IP 地址，以配合防火墙的放行策略，从而实现 Underlay 网络下的南北通信。
-
-在社区现有方案中，是通过在 Deployment 上写关于 IP 地址的注解来实现。但这种方式存在一些缺点，如：
-
-- 随着应用的扩容，需要人为手动的修改应用的 annotaiton ，重新规划 IP 地址。
-
-- annotaiton 方式的 IP 管理，脱钩于它们自身的 IPPool CR 机制，形成管理上的空白，无法获知哪些 IP 可用。
-
-- 不同应用间极其容易分配了冲突的 IP 地址，从而导致应用创建失败。
-
-对此，Spiderpool 借助于 IPPool 的 IP 集合可大可小的特点，并结合设置 IPPool 的 `podAffinity`，可实现同一组或者多组应用的亲和绑定，既保证了 IP 管理方式的统一，又解耦 "应用扩容" 和 "IP 地址扩容"，也固定了应用的 IP 使用范围。
-
-## 节点亲和性
 
 ### 创建节点亲和的 IPPool
 
@@ -87,7 +55,7 @@ spec:
   - node1
 ```
 
-#### 创建应用
+### 创建应用
 
 以下的示例 Yaml 中，会创建 1 组 DaemonSet 应用，其中：
 
@@ -141,6 +109,10 @@ test-app-1-dvhrx   1/1     Running             0          115s   10.6.168.108   
 
 ## 租户亲和性
 
+管理员往往会在集群划分多租户，能更好地隔离、管理和协作，同时也能提供更高的安全性、资源利用率和灵活性等。需要不同功能的应用部署在不同租户下，对此，期望实现一个 IPPool 能同一个或者多个 namespace 下的应用实现亲和，而拒绝不相干租户的应用创建，能帮助管理员减少运维负担。
+
+当前社区中并没有解决上述场景的有效方案，Spiderpool 通过设置 SpiderIPPool CR 中的 `namespaceAffinity` 或 `namespaceName` 字段，实现同一个或者多个租户的亲和性，从而使得满足条件的应用才能够从 IPPool 中分配到 IP 地址。
+
 ### 创建租户
 
 ```bash
@@ -150,7 +122,7 @@ namespace/test-ns1 created
 namespace/test-ns2 created
 ```
 
-#### 创建租户亲和的 IPPool
+### 创建租户亲和的 IPPool
 
 使用如下的 Yaml，创建租户亲和的 IPPool。
 
@@ -187,7 +159,7 @@ spec:
     - test-ns1
 ```
 
-#### 创建指定租户的应用
+### 创建指定租户的应用
 
 以下的示例 Yaml 中， 会创建一组在租户 `test-ns1` 下的 Deployment 应用 ，其中：
 
@@ -281,6 +253,18 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 ## 应用亲和性
 
+在集群中，防火墙通常用于管理南北向通信，即集群内部和外部网络之间的通信。为了实现安全管控，防火墙需要对通信流量进行检查和过滤，并对出口通信进行限制。由于防火墙安全管控，一组 Deployment 它的所有 Pod 期望能够在一个固定的 IP 地址范围内轮滚分配 IP 地址，以配合防火墙的放行策略，从而实现 Underlay 网络下的南北通信。
+
+在社区现有方案中，是通过在 Deployment 上写关于 IP 地址的注解来实现。但这种方式存在一些缺点，如：
+
+- 随着应用的扩容，需要人为手动的修改应用的 annotaiton ，重新规划 IP 地址。
+
+- annotaiton 方式的 IP 管理，脱钩于它们自身的 IPPool CR 机制，形成管理上的空白，无法获知哪些 IP 可用。
+
+- 不同应用间极其容易分配了冲突的 IP 地址，从而导致应用创建失败。
+
+对此，Spiderpool 借助于 IPPool 的 IP 集合可大可小的特点，并结合设置 IPPool 的 `podAffinity`，可实现同一组或者多组应用的亲和绑定，既保证了 IP 管理方式的统一，又解耦 "应用扩容" 和 "IP 地址扩容"，也固定了应用的 IP 使用范围。
+
 ### 创建应用亲和性的 IPPool
 
 SpiderIPPool 提供了 `podAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 的 `selector.matchLabels` 符合该 podAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
@@ -303,7 +287,7 @@ spec:
 EOF
 ```
 
-#### 创建指定 matchLabels 的应用
+### 创建指定 matchLabels 的应用
 
 以下的示例 Yaml 中， 会创建一组 Deployment 应用 ，其中：
 

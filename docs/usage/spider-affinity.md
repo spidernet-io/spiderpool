@@ -6,17 +6,7 @@
 
 SpiderIPPool is a representation of a collection of IP addresses. It allows storing different IP addresses from the same subnet in separate IPPool instances, ensuring that there is no overlap between address sets. This design provides flexibility in managing IP resources within the underlay network, especially when faced with limited availability. SpiderIPPool offers the ability to assign different SpiderIPPool instances to various applications and tenants through affinity rules, allowing for both shared subnet usage and micro-isolation.
 
-## SpiderIPPool Affinity Feature
-
-For more details on the priority, matching rules, and other information about the SpiderIPPool Affinity feature, please refer to the [concept doc](../concepts/allocation.md).
-
-## Steps
-
-### Install Spiderpool
-
-Follow the [installation guide](./install/underlay//get-started-kind.md) to install Spiderpool.
-
-### SpiderIPPool Node Affinity
+## Node Affinity
 
 Nodes in a cluster might have access to different IP ranges. Some scenarios include:
 
@@ -26,28 +16,6 @@ Nodes in a cluster might have access to different IP ranges. Some scenarios incl
 
 In such cases, replicas of an application are scheduled on different nodes require IP addresses from different subnets. Current community solutions are limited to satisfy this needs.
 To address this problem, Spiderpool support node affinity solution. By setting the `nodeAffinity` and `nodeName` fields in the SpiderIPPool CR, administrators can define a node label selector. This enables the IPAM plugin to allocate IP addresses from the specified IPPool when Pods are scheduled on nodes that match the affinity rules.
-
-### SpiderIPPool Namespace Affinity
-
-Cluster administrators often partition their clusters into multiple namespaces to improve isolation, management, collaboration, security, and resource utilization. When deploying applications under different namespaces, it becomes necessary to assign specific IPPools to each namespace, preventing applications from unrelated namespaces from using them.
-
-Spiderpool addresses this requirement by introducing the `namespaceAffinity` or `namespaceName` fields in the SpiderIPPool CR. This allows administrators to define affinity rules between IPPools and one or more namespaces, ensuring that only applications meeting the specified conditions can be allocated IP addresses from the respective IPPools.
-
-### SpiderIPPool Application Affinity
-
-Firewalls are commonly used in clusters to manage communication between internal and external networks (north-south communication). To enforce secure access control, firewalls inspect and filter communication traffic while restricting outbound communication. In order to align with firewall policies and enable north-south communication within the underlay network, certain Deployments require all Pods to be assigned IP addresses within a specific range.
-
-Existing community solutions rely on annotations to handle IP address allocation for such cases. However, this approach has limitations:
-
-- Manual modification of annotations becomes necessary as the application scales, leading to potential errors.
-
-- IP management through annotations is far apart from the IPPool CR mechanism, resulting in a lack of visibility into available IP addresses.
-
-- Conflicting IP addresses can easily be assigned to different applications, causing deployment failures.
-
-Spiderpool addresses these challenges by leveraging the flexibility of IPPools, where IP address collections can be adjusted. By combining this with the `podAffinity` setting in the SpiderIPPool CR, Spiderpool enables the binding of specific applications or groups of applications to particular IPPools. This ensures a unified approach to IP management, decouples application scaling from IP address scaling, and provides a fixed IP usage range for each application.
-
-## Node Affinity
 
 ### Create an IPPool with Node Affinity
 
@@ -86,7 +54,7 @@ spec:
   - node1
 ```
 
-#### Create an Application
+### Create an Application
 
 - `ipam.spidernet.io/ippool`: specify the IP pool with node affinity.
 
@@ -138,6 +106,10 @@ test-app-1-dvhrx   1/1     Running             0          115s   10.6.168.108   
 
 ## Namesapce Affinity
 
+Cluster administrators often partition their clusters into multiple namespaces to improve isolation, management, collaboration, security, and resource utilization. When deploying applications under different namespaces, it becomes necessary to assign specific IPPools to each namespace, preventing applications from unrelated namespaces from using them.
+
+Spiderpool addresses this requirement by introducing the `namespaceAffinity` or `namespaceName` fields in the SpiderIPPool CR. This allows administrators to define affinity rules between IPPools and one or more namespaces, ensuring that only applications meeting the specified conditions can be allocated IP addresses from the respective IPPools.
+
 ### Create an Namespace
 
 ```bash
@@ -147,7 +119,7 @@ namespace/test-ns1 created
 namespace/test-ns2 created
 ```
 
-#### Create an IPPool with Specific Tenant Affinity
+### Create an IPPool with Specific Tenant Affinity
 
 To create an IPPool with namaspace affinity, use the following YAML:
 
@@ -184,7 +156,7 @@ spec:
     - test-ns1
 ```
 
-#### Create Applications in a Specified Namespace
+### Create Applications in a Specified Namespace
 
 In the provided YAML example, a group of Deployment applications is created under the `test-ns1` namespace. The configuration includes:
 
@@ -278,6 +250,18 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 ## Application Affinity
 
+Firewalls are commonly used in clusters to manage communication between internal and external networks (north-south communication). To enforce secure access control, firewalls inspect and filter communication traffic while restricting outbound communication. In order to align with firewall policies and enable north-south communication within the underlay network, certain Deployments require all Pods to be assigned IP addresses within a specific range.
+
+Existing community solutions rely on annotations to handle IP address allocation for such cases. However, this approach has limitations:
+
+- Manual modification of annotations becomes necessary as the application scales, leading to potential errors.
+
+- IP management through annotations is far apart from the IPPool CR mechanism, resulting in a lack of visibility into available IP addresses.
+
+- Conflicting IP addresses can easily be assigned to different applications, causing deployment failures.
+
+Spiderpool addresses these challenges by leveraging the flexibility of IPPools, where IP address collections can be adjusted. By combining this with the `podAffinity` setting in the SpiderIPPool CR, Spiderpool enables the binding of specific applications or groups of applications to particular IPPools. This ensures a unified approach to IP management, decouples application scaling from IP address scaling, and provides a fixed IP usage range for each application.
+
 ### Create IPPool with Application Affinity
 
 SpiderIPPool provides the `podAffinity` field. When an application is created and attempts to allocate an IP address from the SpiderIPPool, it can successfully obtain an IP if the Pods' `selector.matchLabels` match the specified podAffinity. Otherwise, IP allocation from that SpiderIPPool will be denied.
@@ -300,7 +284,7 @@ spec:
 EOF
 ```
 
-#### Creating Applications with Specific matchLabels
+### Creating Applications with Specific matchLabels
 
 In the example YAML provided, a group of Deployment applications is created. The configuration includes:
 

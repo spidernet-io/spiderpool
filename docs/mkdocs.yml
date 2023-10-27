@@ -65,17 +65,14 @@ nav:
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
       - Default IPPool at namespace: usage/ippool-namespace.md
-      - Spider Affinity of IPPool: usage/spider-affinity.md
+      - Affinity of IPPool: usage/spider-affinity.md
       - Multiple interfaces: usage/multi-interfaces-annotation.md
       - Backup IPPool: usage/ippool-multi.md
-      - Namespace affinity of IPPool: usage/ippool-affinity-namespace.md
-      - Node affinity of IPPool: usage/ippool-affinity-node.md
-      - Pod affinity of IPPool: usage/ippool-affinity-pod.md
       - SpiderSubnet: usage/spider-subnet.md
+      - IPAM for custom controllers: usage/third-party-controller.md
       - IPv6 support: usage/ipv6.md
       - StatefulSet: usage/statefulset.md
       - Reserved IP: usage/reserved-ip.md
-      - Third-party controllers: usage/third-party-controller.md
       - Route support: usage/route.md
       - Plugin coordinator: usage/coordinator.md
       - Plugin ifacer: usage/ifacer.md

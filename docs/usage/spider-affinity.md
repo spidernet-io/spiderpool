@@ -280,9 +280,6 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 ### Create IPPool with Application Affinity
 
-
-
-依据如上所述，使用如下的 Yaml，创建如下具备应用亲和的 SpiderIPPool，它将为 `selector.matchLabel` 为 `app: test-app-3` 的 Pod 提供 IP 地址。
 SpiderIPPool provides the `podAffinity` field. When an application is created and attempts to allocate an IP address from the SpiderIPPool, it can successfully obtain an IP if the Pods' `selector.matchLabels` match the specified podAffinity. Otherwise, IP allocation from that SpiderIPPool will be denied.
 
 Based on the above, using the following Yaml, create the following SpiderIPPool with application affinity, which will provide the IP address for the `app: test-app-3` Pod's eligible `selector.matchLabel`.

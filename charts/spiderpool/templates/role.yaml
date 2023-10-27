@@ -12,9 +12,13 @@ rules:
   - namespaces
   - nodes
   - pods
+  - pods/status
   verbs:
+  - delete
+  - deletecollection
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:
@@ -79,6 +83,20 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - get
+  - list
 - apiGroups:
   - spiderpool.spidernet.io
   resources:

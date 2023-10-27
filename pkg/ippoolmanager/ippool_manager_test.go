@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/utils/pointer"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -262,7 +263,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("allocate IP address from non-existent IPPool", func() {
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT)
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(res).To(BeNil())
 			})
@@ -281,7 +282,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT)
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(res).To(BeNil())
 			})
@@ -303,7 +304,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT)
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(res).To(BeNil())
 			})
@@ -325,12 +326,12 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT)
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrRetriesExhausted))
 				Expect(res).To(BeNil())
 			})
 
-			It("allocate IP address", func() {
+			It("allocate IP address with normal pod", func() {
 				mockRIPManager.EXPECT().
 					AssembleReservedIPs(gomock.Eq(ctx), gomock.Eq(constant.IPv4)).
 					Return(nil, nil).
@@ -355,7 +356,52 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT)
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*res.Nic).To(Equal(nic))
+				Expect(*res.Version).To(Equal(ipVersion))
+				Expect(*res.Address).To(Equal(allocatedIP))
+				Expect(res.IPPool).To(Equal(ipPoolT.Name))
+				Expect(res.Gateway).To(Equal(gateway))
+				Expect(res.Vlan).To(Equal(vlan))
+			})
+
+			It("allocate IP address with kubevirt vm pod", func() {
+				mockRIPManager.EXPECT().
+					AssembleReservedIPs(gomock.Eq(ctx), gomock.Eq(constant.IPv4)).
+					Return(nil, nil).
+					Times(1)
+
+				ipVersion := constant.IPv4
+				allocatedIP := "172.18.40.41/24"
+				gateway := "172.18.40.1"
+				vlan := int64(0)
+
+				ip, ipNet, err := net.ParseCIDR(allocatedIP)
+				Expect(err).NotTo(HaveOccurred())
+
+				ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+				ipPoolT.Spec.Subnet = ipNet.String()
+				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
+				ipPoolT.Spec.Gateway = pointer.String(gateway)
+				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
+
+				err = fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				podTopController := spiderpooltypes.PodTopController{
+					AppNamespacedName: spiderpooltypes.AppNamespacedName{
+						APIVersion: kubevirtv1.SchemeGroupVersion.String(),
+						Kind:       constant.KindKubevirtVMI,
+						Namespace:  "default",
+						Name:       "vmi-demo",
+					},
+					UID: uuid.NewUUID(),
+					APP: nil,
+				}
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, podTopController)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*res.Nic).To(Equal(nic))
 				Expect(*res.Version).To(Equal(ipVersion))

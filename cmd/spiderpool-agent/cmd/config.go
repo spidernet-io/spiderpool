@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -94,6 +95,7 @@ type Config struct {
 	EnableIPv4                        bool     `yaml:"enableIPv4"`
 	EnableIPv6                        bool     `yaml:"enableIPv6"`
 	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
+	EnableKubevirtStaticIP            bool     `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                bool     `yaml:"enableSpiderSubnet"`
 	ClusterDefaultIPv4IPPool          []string `yaml:"clusterDefaultIPv4IPPool"`
 	ClusterDefaultIPv6IPPool          []string `yaml:"clusterDefaultIPv6IPPool"`
@@ -121,6 +123,7 @@ type AgentContext struct {
 	PodManager        podmanager.PodManager
 	StsManager        statefulsetmanager.StatefulSetManager
 	SubnetManager     subnetmanager.SubnetManager
+	KubevirtManager   kubevirtmanager.KubevirtManager
 
 	// handler
 	HttpServer        *server.Server

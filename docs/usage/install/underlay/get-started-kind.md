@@ -67,8 +67,6 @@ spiderpool-agent-4fkm4                         1/1     Running     0          3m
 spiderpool-controller-7864477fc7-c5dk4         1/1     Running     0          3m
 spiderpool-controller-7864477fc7-wpgjn         1/1     Running     0          3m
 spiderpool-init                                0/1     Completed   0          3m
-spiderpool-multus-66xnx                        1/1     Running     0          3m
-spiderpool-multus-xwxv4                        1/1     Running     0          3m
 
 ~# kubectl get spiderippool
 NAME                VERSION   SUBNET                    ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT

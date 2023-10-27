@@ -20,8 +20,9 @@ type IPAMConfig struct {
 	ClusterDefaultIPv4IPPool []string
 	ClusterDefaultIPv6IPPool []string
 
-	EnableSpiderSubnet bool
-	EnableStatefulSet  bool
+	EnableSpiderSubnet     bool
+	EnableStatefulSet      bool
+	EnableKubevirtStaticIP bool
 
 	OperationRetries     int
 	OperationGapDuration time.Duration

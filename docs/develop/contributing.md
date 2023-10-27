@@ -1,4 +1,4 @@
-# contributing
+# Contribution
 
 ***
 

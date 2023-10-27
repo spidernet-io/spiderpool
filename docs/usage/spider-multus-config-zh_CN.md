@@ -18,7 +18,7 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 - 误操作删除 Multus CR，Spidermultusconfig 将会自动重建；提升运维容错能力。
 
-- 支持众多 CNI，如 Macvlan、IPvlan、Ovs、SRIOV。
+- 支持众多 CNI，如 Macvlan、IPvlan、Ovs、SR-IOV。
 
 - 支持通过注解 `multus.spidernet.io/cr-name` 自定义 Multus CR 的名字。
 
@@ -27,8 +27,6 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 - 完善的 Webhook 机制，提前规避一些人为错误，降低后续排障成本。
 
 - 支持 Spiderpool 的 CNI plugin：[ifacer](./ifacer-zh_CN.md) 、[coordinator](coordinator-zh_CN.md) ，提高了 Spiderpool 的 CNI plugin 的配置体验。
-
-NOTE:
 
 > 在已存在 Multus CR 实例时，创建与其同名 Spidermultusconfig CR ，Multus CR 实例将会被纳管，其配置内容将会被覆盖。如果不想发生被覆盖的情况，请避免创建与存量 Multus CR 实例同名的 Spidermultusconfig CR 实例或者在 Spidermultusconfig CR 中指定 `multus.spidernet.io/cr-name` 以更改自动生成的 Multus CR 的名字。
 
@@ -42,7 +40,7 @@ NOTE:
 
 ### 安装 Spiderpool
 
-- 通过 helm 安装 Spiderpool。
+- 通过 helm 安装 Spiderpool.
 
 ```bash
 helm repo add spiderpool https://spidernet-io.github.io/spiderpool
@@ -54,14 +52,14 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system
 
 - 检查安装完成
 
-```bash
-~# kubectl get po -n kube-system | grep spiderpool
-NAME                                     READY   STATUS      RESTARTS   AGE                                
-spiderpool-agent-7hhkz                   1/1     Running     0          13m
-spiderpool-agent-kxf27                   1/1     Running     0          13m
-spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-spiderpool-init                          0/1     Completed   0          13m
-```
+    ```bash
+    ~# kubectl get po -n kube-system | grep spiderpool
+    NAME                                     READY   STATUS      RESTARTS   AGE                                
+    spiderpool-agent-7hhkz                   1/1     Running     0          13m
+    spiderpool-agent-kxf27                   1/1     Running     0          13m
+    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
+    spiderpool-init                          0/1     Completed   0          13m
+    ```
 
 ### 创建 CNI 配置
 
@@ -185,7 +183,7 @@ spec:
 
 #### 其他 CNI 配置
 
-创建其他 CNI 配置，如：SRIOV 与 Ovs，参考 [创建 SRIOV](./install/underlay/get-started-sriov-zh_CN.md)、[创建 Ovs](./install/underlay/get-started-ovs-zh_CN.md)
+创建其他 CNI 配置，如：SRIOV 与 Ovs，参考 [创建 SR-IOV](./install/underlay/get-started-sriov-zh_CN.md)、[创建 Ovs](./install/underlay/get-started-ovs-zh_CN.md)
 
 ## 总结
 

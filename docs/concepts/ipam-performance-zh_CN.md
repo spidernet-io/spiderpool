@@ -1,6 +1,6 @@
-# Spiderpool 性能测试
+# IPAM 性能测试
 
-**简体中文** | [**English**](./performance.md)
+**简体中文** | [**English**](./ipam-performance.md)
 
 *[Spiderpool](https://github.com/spidernet-io/spiderpool) 是一个适用于 underlay 网络的高性能 IPAM CNI 插件，此文将对比其与市面上主流的 underlay IPAM CNI 插件（如 [Whereabouts](https://github.com/k8snetworkplumbingwg/whereabouts)，[Kube-OVN](https://github.com/kubeovn/kube-ovn)）以及被广泛使用的 overlay IPAM CNI 插件 [calico-ipam](https://github.com/projectcalico/calico) 在 ”1000 Pod“ 场景下的性能表现。*
 

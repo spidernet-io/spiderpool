@@ -8,7 +8,7 @@ SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地
 
 ## SpiderIPPool Affinity 功能
 
-关于 SpiderIPPool Affinity 功能的一些优先级、匹配规则等信息，可以参考[概念文档](../concepts/allocation-zh_CN.md)。
+关于 SpiderIPPool Affinity 功能的一些优先级、匹配规则等信息，可以参考[概念文档](../concepts/ipam-zh_CN.md)。
 
 ## 步骤
 

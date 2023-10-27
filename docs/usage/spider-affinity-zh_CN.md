@@ -132,6 +132,95 @@ NAME                                  READY   STATUS              RESTARTS   AGE
 test-unmatch-labels-699755574-9ncp7   0/1     ContainerCreating   0          16s   <none>   node1   <none>           <none>
 ```
 
+### 应用共享的 IPPool
+
+1. 创建应用共享的 IPPool
+
+    ```bash
+    kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/shared-static-ipv4-ippool.yaml
+    ```
+
+    ```yaml
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: shared-static-ipv4-ippool
+    spec:
+      ipVersion: 4
+      subnet: 172.18.41.0/24
+      ips:
+        - 172.18.41.44-172.18.41.47
+    ```
+
+2. 创建两个 deployment，其 Pod 设置注释 “ipam.spidernet.io/ippool” 以显式指定池选择规则。它将成功获得IP地址
+
+    ```bash
+    kubectl apply -f https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/ippool-affinity-pod/shared-static-ippool-deploy.yaml
+    ```
+
+    ```yaml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: shared-static-ippool-deploy-1
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          app: static
+      template:
+        metadata:
+          annotations:
+            ipam.spidernet.io/ippool: |-
+              {
+                "ipv4": ["shared-static-ipv4-ippool"]
+              }
+          labels:
+            app: static
+        spec:
+          containers:
+            - name: shared-static-ippool-deploy-1
+              image: busybox
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: shared-static-ippool-deploy-2
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          app: static
+      template:
+        metadata:
+          annotations:
+            ipam.spidernet.io/ippool: |-
+              {
+                "ipv4": ["shared-static-ipv4-ippool"]
+              }
+          labels:
+            app: static
+        spec:
+          containers:
+            - name: shared-static-ippool-deploy-2
+              image: busybox
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+    ```
+
+    确认最终状态
+
+    ```bash
+    kubectl get po -l app=static -o wide
+    NAME                                             READY   STATUS    RESTARTS   AGE   IP             NODE              
+    shared-static-ippool-deploy-1-8588c887cb-gcbjb   1/1     Running   0          62s   172.18.41.45   spider-control-plane 
+    shared-static-ippool-deploy-1-8588c887cb-wfdvt   1/1     Running   0          62s   172.18.41.46   spider-control-plane 
+    shared-static-ippool-deploy-2-797c8df6cf-6vllv   1/1     Running   0          62s   172.18.41.44   spider-worker 
+    shared-static-ippool-deploy-2-797c8df6cf-ftk2d   1/1     Running   0          62s   172.18.41.47   spider-worker
+    ```
+
 ## 节点亲和性
 
 不同的 node 上，可用的 IP 范围也许并不相同，例如：

@@ -22,345 +22,139 @@ Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mo
 
 ## Introduction
 
-Spiderpool is a Kubernetes underlay network solution. It provides rich IPAM features
-and CNI integration capabilities, powering CNI projects in the open source community,
-allowing multiple CNIs to collaborate effectively. It enables underlay CNI to run
-perfectly in environments such as **bare metal, virtual machines, and any public cloud**.
-
-Why developing Spiderpool? Currently, the open source community does not provide
-comprehensive, friendly, and intelligent underlay network solutions, so Spiderpool
-aims to provide many innovative features:
-
-* Rich IPAM feature. Shared and dedicated IP pools, assigning fixed IP address,
-  automatic operation of dedicated IP pools for creating, scaling, and reclaiming.
-  It could match kinds of underlay network requirements.
-
-* Underlay CNI and overlay CNI cooperation, multiple CNI interfaces for pod.
-  Spiderpool helps assign IP address to multiple underlay interfaces, coordinate
-  policy route between interfaces to ensure consistence data path of request and
-  reply packets. Multiple CNIs cooperate to reduce hardware requirements for deploying the cluster.
-
-* Enhance underlay CNI like [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-  [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-  [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni) to connect Pod and host to
-  access clusterIP and check pod health, and to detect IP conflict and gateway accessibility.
-
-* Not only limited to bare metal environments in data centers, but also providing
-  a unified underlay CNI solution for OpenStack, VMware, and various public cloud scenarios.
-
-## Underlay CNI
-
-There are two technologies in cloud-native networking: "overlay network" and "underlay network".
-Despite no strict definition for underlay and overlay networks in cloud-native networking, we
-can simply abstract their characteristics from many CNI projects. The two technologies meet
-the needs of different scenarios.
-
-The [article](./usage/spider-multus-config.md) provides a brief comparison of IPAM and
-network performance between the two technologies, which offers better insights into
-the unique features and use cases of Spiderpool.
-
-Why underlay network solutions? The following requirements necessitate underlay network solutions:
-
-* Network performance. Network performance advantages, like low latency, high throughput, low forwarding overhead of node’s CPU.  It fits to applications like financial and AI application.
-
-* Transformation cost. The traditional host application has characteristic, like exposing service with host fixed IP, separating communication with different subnets. At the beginning of migrating to the kubernetes,  the underlay network solution spend low transformation cost of network, application can directly use Pod IP for cluster east-west and north-south communication.
-
-* Network security. In the data center, it may be used to enforce network security to Pod, like firewall and isolating communication with VLAN.  The underlay network solution could expose the Pod packet without tunnel encapsulation, and meet requirements.
-
-* Bandwitdth. It can help Pod to customize the exit network interface of the node, thereby ensuring bandwidth isolation of the underlying subnet. It can help components such as [kubevirt](https://github.com/kubevirt/kubevirt), storage, and logging, to transmit massive amounts of data.
-
-* Multi clusters. For multi clusters, all Pods of multi clusters are connected to the underlay network, so they could communicate smoothly without the need to deploy additional components for cluster connectivity.
-
-## Architecture
-
-![arch](./images/spiderpool-arch.jpg)
-
-Spiderpool consists of the following components:
-
-* Spiderpool controller: deployment that manage CRD validation, status updates,
-  IP recovery, and automated IP pools
-
-* Spiderpool agent: daemonset that help Spiderpool plugins by performing
-  IP allocation and coordinator plugin for information synchronization.
-
-* IPAM plugin: a binary plugin on each host that CNI can utilize to implement IP allocation.
-
-* coordinator plugin: a binary plugin on each host that CNI can use for multi-NIC route coordination,
-  IP conflict detection, and host connectivity.
-
-* ifacer plugin: A binary plugin on each host that helps CNIs such as macvlan and
-  ipvlan dynamically create bond and vlan interfaces
-
-On top of its own components, Spiderpool relies on open-source underlay CNIs to allocate
-network interfaces to Pods. You can use [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni)
-to manage multiple NICs and CNI configurations.
-
-Any CNI project compatible with third-party IPAM plugins can work well with Spiderpool, such as:
-
-[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-[vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
+Spiderpool is a Kubernetes underlay network solution that enhances the capabilities of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
-[Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni),
-[Calico CNI](https://github.com/projectcalico/calico),
-[Weave CNI](https://github.com/weaveworks/weave)
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni).It fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like storage, middleware, and AI.
 
-## Use case: underlay CNIs access layer2
+**Why does Spiderpool select macvlan, ipvlan, and SR-IOV as datapaths?**
 
-![arch_underlay](./images/spiderpool-underlay.jpg)
+* Unlike CNI solutions based on veth virtual interfaces, underlay networks eliminate layer 3 network forwarding on the host, avoiding tunnel encapsulation overhead. This translates to excellent network performance with high throughput, low latency, and reduced CPU utilization for network forwarding.
 
-In underlay networks, Spiderpool can work with underlay CNIs such as
-[Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
-, [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) to provide the following benefits:
+* Connecting seamlessly with underlay layer 2 VLAN networks enables both layer 2 and layer 3 communication for applications. It supports multicast and broadcast communication, while allowing packets to be controlled by firewalls.
 
-* Rich IPAM capabilities for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation,
-  and dual-stack support
+* Data packages carry the actual IP addresses of Pods, enabling direct north-south communication based on Pod IPs. This connectivity across multi-cloud networks enhances flexibility and ease of use.
 
-* One or more underlay NICs for Pods with coordinating routes between multiple NICs to
-  ensure smooth communication with consistent request and reply data paths
+* Underlay CNI can create virtual interfaces using different parent network interfaces on the host, providing isolated subnets for applications with high network overhead, such as storage and observability.
 
-* Enhanced connectivity between open-source underlay CNIs and hosts using additional
-  veth network interfaces and route control. This enables clusterIP access, local health checks
-  of applications, and much more
+* macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.
 
-How can you deploy containers using a single underlay CNI, when a cluster has multiple underlying setups?
+<div style="text-align:center">
+  <img src="./images/arch.png" alt="Your Image Description">
+</div>
 
-* Some nodes in the cluster are virtual machines like VMware that don't enable promiscuous mode,
-  while others are bare metal and connected to traditional switch networks.
-  What CNI solution should be deployed on each type of node?
+**What enhancements does Spiderpool provide for macvlan, ipvlan, and SR-IOV CNI?**
 
-* Some bare metal nodes only have one SR-IOV high-speed NIC that provides 64 VFs.
-  How can more pods run on such a node?
+* Simplified installation and usage
 
-* Some bare metal nodes have an SR-IOV high-speed NIC capable of running low-latency applications,
-  while others have only ordinary network cards for running regular applications.
-  What CNI solution should be deployed on each type of node?
+  Spiderpool simplifies the installation process by eliminating the need for manually installing multiple components like [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni). It provides streamlined installation procedures, encapsulates relevant CRDs, and offers comprehensive documentation for easy setup and management.
 
-By simultaneously deploying multiple underlay CNIs through Multus CNI configuration and
-Spiderpool's IPAM abilities, resources from various infrastructure nodes across the
-cluster can be integrated to solve these problems.
+* CRD-based dual-stack IPAM capability
 
-![underlay](./images/underlay.jpg)
+  Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage.
 
-For example, as shown in the above diagram, different nodes with varying networking capabilities
-in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards,
-Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted
-network access (e.g., VMware virtual machines with limited layer 2 network forwarding).
+* Multiple network interface access for Pods
 
-## Use case: adding an auxiliary underlay CNI NIC for overlay CNI
+  Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns.
 
-![arch_underlay](./images/spiderpool-overlay.jpg)
+* Enhanced network connectivity
 
-In overlay networks, Spiderpool uses Multus to add an overlay NIC
-(such as [Calico](https://github.com/projectcalico/calico) or [Cilium](https://github.com/cilium/cilium))
-and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod.
-This offers several benefits:
+  Spiderpool establishes seamless connectivity between Pods and host machines, ensuring smooth functioning of Pod health checks. It enables Pods to access services through kube-proxy or eBPF-based kube-proxy replacement. Additionally, it supports advanced features like IP conflict detection and gateway reachability checks.
 
-* Rich IPAM features for underlay CNIs, including shared/fixed IPs,
- multi-NIC IP allocation, and dual-stack support.
+* eBPF enhancements
 
-* Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods,
-  ensuring the consistent request and reply data paths for smooth communication.
+  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node.
 
-* Use the overlay NIC as the default one with route coordination and enable local host
-  connectivity to enable clusterIP access, local health checks of applications, and
-  forwarding overlay network traffic through overlay networks while forwarding
-  underlay network traffic through underlay networks.
+* RDMA support
 
-The integration of Multus CNI and Spiderpool IPAM enables the collaboration of
-an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes
-of varying network capabilities, Pods on bare-metal nodes can access both
-overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only
-serving east-west services are connected to the Overlay NIC.
-This approach provides several benefits:
+  Spiderpool provides RDMA solutions based on RoCE and InfiniBand technologies.
 
-* Applications providing east-west services can be restricted to being allocated
-  only the overlay NIC while those providing north-south services can simultaneously
-  access overlay and underlay NICs. This results in reduced Underlay IP resource usage,
-  lower manual maintenance costs, and preserved pod connectivity within the cluster.
+* Dual-stack network support
 
-* Fully integrate resources from virtual machines and bare-metal nodes.
+  Spiderpool supports IPv4-only, IPv6-only, and dual-stack environments.
 
-![overlay](./images/overlay.jpg)
+* Metrics
 
-## Use case: underlay CNI on public cloud and VM
+**Which scenarios can Spiderpool be applied in?**
 
-It is hard to implement underlay CNI in public cloud, OpenStack, VMware.
-It requires the vendor underlay CNI on specific environments, as these
-environments typically have the following limitations:
+Spiderpool, powered by underlay CNI, offers unparalleled network performance compared to overlay CNI solutions, as evidenced in [I/O Performance](./concepts/io-performance.md). It can be effectively applied in various scenarios, including:
 
-* The IAAS network infrastructure implements MAC restrictions for packets.
-  On the one hand, security checks are conducted on the source MAC to ensure
-  that the source MAC address is the same as the MAC address of VM network interface.
-  On the other hand, restrictions have been placed on the destination MAC,
-  which only supports packet forwarding by the MAC address of VM network interfaces.
+* Provide a unified underlay CNI solution for bare metal, virtual machine, and public cloud environments.
 
-  The MAC address of the Pod in the common CNI plugin is newly generated,
-  which leads to Pod communication failure.
+* Traditional host applications.
 
-* The IAAS network infrastructure implements IP restrictions on packets.
-  Only when the destination and source IP of the packet are assigned to VM,
-  packet could be forwarded rightly.
+* Network I/O-intensive applications such as middleware, data storage, log observability, and AI training.
 
-  The common CNI plugin assigns IP addresses to Pods that do not comply with
-  IAAS settings, which leads to Pod communication failure.
+* Latency-sensitive application.
 
-Spiderpool provides IP pool based on node topology, aligning with
-IP allocation settings of VMs. In conjunction with ipvlan CNI,
-it provides underlay CNI solutions for various public cloud environments.
+## Spiderpool Architecture
 
-## Use case: utilize RDMA for network transmission
+Spiderpool features a well-designed and comprehensive architecture that caters to various application scenarios, including:
 
-RDMA (Remote Direct Memory Access) allows network cards to directly interact with memory, reducing CPU overhead and alleviating the burden on the kernel protocol stack. This technology offloads the network protocol stack to the network card, resulting in effective reduction of network transmission latency and increased throughput.
+* Pods have multiple underlay CNI network interfaces to establish connections with underlay networks.
 
-Currently, RDMA finds extensive applications in fields such as AI computing and storage. Macvlan, IPvlan, and SR-IOV CNIs enable transparent RDMA network card passthrough to Pods within the Kubernetes platform. Spiderpool enhances these CNIs by providing additional capabilities including IPAM, host connectivity, clusterIP access, as well as simplifying the installation process and usage steps of dependent components in the community.
+* Pods have an underlay CNI and multiple underlay CNI network interfaces, enabling dual-network connectivity.
+
+* Underlay CNIs run in public cloud environments or virtual machines.
+
+* Leverage RDMA for efficient network transmission.
+
+For more detailed information, please refer to [Spiderpool Architecture](./concepts/arch.md).
+
+## Major Features
+
+| Features                               | macvlan    | ipvlan | SR-IOV      |
+|----------------------------------|------------|----|-------------|
+| Service by kubeproxy             | Beta       |  Beta | Beta        |
+| Service by kubeproxy replacement | Alpha      |  Alpha | Alpha       |
+| Network policy                   | In-plan    |   In-plan | In-plan     |
+| Bandwidth                        | In-plan    | In-plan | In-plan     |
+| RDMA                             | Alpha      | Alpha | Alpha       |
+| IPAM                             | Beta       | Beta | Beta        |
+| Egress policy                    | Alpha      | Alpha | Alpha       |
+| Multiple NIC and routing coordination                         | Beta       | Beta | Beta        |
+| Applied scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
+
+For detailed information about all the planned features, please refer to the [roadmap](./develop/roadmap.md).
 
 ## Quick start
 
-Refer to [Quick start](./usage/readme.md), set up a cluster quickly.
-
-## Major features
-
-* For applications requiring static IP addresses, it could be supported by
-  IP pools owning limited IP adddress set and pod affinity.
-  See [example](./usage/ippool-affinity-pod.md) for more details.
-
-    For applications not requiring static IP addresses, they can share an IP pool.
-    See [example](./usage/ippool-affinity-pod.md#shared-ippool) for more details.
-
-* For stateful applications, IP addresses can be automatically fixed for each Pod,
-  and the overall IP scaling range can be fixed as well.
-  See [example](./usage/statefulset.md) for more details.
-
-* Subnet feature, on the one hand, could help to separate the responsibility
-  from the infrastructure administrator and the application administrator.
-
-    On the other hand, it supports to automatically create and dynamically scale
-    the fixed IP ippools to each applcation requiring static IPs. which could help
-    reduce operation burden of IP pools burden. See [example](./usage/spider-subnet.md)
-    for more details. In additional to kubernetes-native controller, subnet feature
-    also supports third-party pod controllers based on operator.
-    See [example](./usage/third-party-controller.md) for details.
-
-* For Pods of an application run across different network zones,
-  it could assign IP addresses of different subnets.
-  See [example](./usage/ippool-affinity-node.md) for details.
-
-* Support to assign IP address from different subnets to multiple NICs of a Pod,
-  and help coordinate policy route between interfaces to ensure consistent
-  data path of request and reply packets.
-
-    For scenarios involving multiple Underlay NICs,
-    please refer to the [example](./usage/multi-interfaces-annotation.md).
-
-    For scenarios involving one Overlay NIC and multiple Underlay NICs,
-    please refer to the [example](./usage/install/overlay/get-started-calico.md).
-
-* It supports to set default IP pools for the cluster or for the namespace.
-  Besides, A IP pool could be shared by the whole cluster or bound to a
-  specified namespace. See [example](./usage/ippool-affinity-namespace.md) for details.
-
-* Strengthen CNI like [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-  [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-  [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
-  to access clusterIP and pod healthy check ([example](./usage/install/underlay/get-started-macvlan.md)),
-  to detect IP conflict and gateway reachability ([example](./usage/coordinator.md)).
-
-* Node-based IP pool feature meets the complex subnet design of each node. refer to [example](./usage/network-topology.md)
-
-* On VMware vSphere platform, Spiderpool underlay network solution does not require ["hybrid forwarding" mode of the Vswitch](https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html), which ensures the network performance of vSphere platform. Refer to [example](./usage/install/cloud/get-started-vmware-zh_CN.md)
-
-* Spiderpool underlay network solution could run on public cloud of any vendors, and OpenStack platform, which could meet needs of multi cloud and hybrid cloud with unified CNI stack。refer to [alibabaCloud](./usage/install/cloud/get-started-alibaba-zh_CN.md), [awsCloud](./usage/install/cloud/get-started-aws.md)
-
-* Support shared and exclusive modes in RDMA network cards, and provide RDMA communication devices for applications via Macvlan, IPvlan, and SR-IOV CNI. For more details, please refer to the [example](./usage/rdma.md).
-
-* When starting the Pod, it could help dynamically build the bond interface and vlan interface
-  for the master interface of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-  [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan).
-  See [example](./usage/ifacer.md) for details.
-
-* coordinator can reconfigure MAC addresses according to the IP address of the NIC. This prevents updating ARP forwarding rules in network switches and routers to reduce packet loss. Refer to the [article](./usage/coordinator.md#fix-mac-address-prefix-for-pods) for more details.
-
-* It could specify customized routes by IP pool and pod annotation. See [example](./usage/route.md) for details.
-
-* Easy generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition
-  custom resources with best-practice CNI configuration, also ensure well formatted JSON
-  to improve experience. See [example](./usage/spider-multus-config.md) for details.
-
-* Multiple IP pools can be set for the application for prevent IP address from running out.
-  See [example](./usage/ippool-multi.md) for details.
-
-* Set reserved IPs that will not be assigned to Pods, it can avoid misusing IP addresses
-  already taken by hosts out of the cluster. See [example](./usage/reserved-ip.md) for details.
-
-* Outstanding performance for assigning and releasing Pod IPs, showcased in the
- [test report](./concepts/ipam-performance.md).
-
-* Well-designed IP reclaim mechanism could help assign IP address in time and
-  quickly recover from the breakdown for the cluster or application.
-  See [example](./reference/metrics.md) for details.
-
-* All above features can work in ipv4-only, ipv6-only, and dual-stack scenarios.
-  See [example](./usage/ipv6.md) for details.
-
-* Support AMD64 and ARM64.
-
-* [Metrics](./reference/metrics.md)
+Refer to [Quick start](./usage/readme.md) to explore Spiderpool quickly.
 
 ## Blogs
 
-* [Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案](https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag)
-
-* [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)
-
-* [Cloud-Native Spiderpool: IP Allocation Across Network Zones](https://blog.daocloud.io/8962.html)
-
-* [Spiderpool: a new solution to fixed application IPs for Calico](https://blog.daocloud.io/8949.html)
-
-* [云原生网络新玩法：一种支持固定多网卡IP的 Underlay 网络解决方案](https://mp.weixin.qq.com/s/ScXR70qCCiAb6Tee9eQewA)
-
-* [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
-
-## Roadmap
-
-[roadmap](./develop/roadmap.md)
+Refer to [Blogs](./concepts/blog.md)
 
 ## Governance
 
-The project is governed by a group of [Maintainers and Committers](../AUTHORS). How they are selected and govern is outlined in our [governance document](./develop/CODE-OF-CONDUCT.md).
+The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./develop/CODE-OF-CONDUCT.md).
 
 ## Adopters
 
 A list of adopters who are deploying Spiderpool in production, and of their use cases, can be found in [file](./USERS.md).
 
-## Community
+## Contribution
 
-We welcome contributions of any kind.
-If you have any questions about contributing, please consult the [contributing documentation](./develop/contributing.md).
+Refer to [Contribution](./develop/contributing.md) to join us for developing Spiderppol.
 
-## Contact
+## Contact Us
 
-If you have any questions about Spiderpool, please feel free to contact us through the following ways 👏:
+If you have any questions, please feel free to reach out to us through the following channels:
 
-* Slack: If you want to join the Spiderpool channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
-and then join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel.
+* Slack: join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel on CNCF Slack by requesting an **[invitation](https://slack.cncf.io/)** from CNCF Slack. Once you have access to CNCF Slack, you can join the Spiderpool channel.
 
-* Emails: Any issues can be reported via e-mail addresses listed in the [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) file.
+* Email: refer to the [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md)  to find the email addresses of all maintainers. Feel free to contact them via email to report any issues or ask questions.
 
-* Wechat group: You can scan the QR code below to join our spiderpool tech-group:
+* WeChat group: scan the QR code below to join the Spiderpool technical discussion group and engage in further conversations with us.
 
 ![Wechat QR-Code](./images/wechat.png)
 
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0.
-See [LICENSE](../LICENSE) for the full license text.
+See [LICENSE](./LICENSE) for the full license text.
 
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
 <br/><br/>
-Spiderpool enriches the <a href="https://landscape.cncf.io/?selected=spiderpool">CNCF CLOUD NATIVE Landscape</a>.
+Spiderpool enriches the <a href="https://landscape.cncf.io/?selected=spiderpool">CNCF Cloud Native Landscape</a>.
 </p>

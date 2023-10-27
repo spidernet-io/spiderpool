@@ -102,17 +102,17 @@ For more detailed information, please refer to [Spiderpool Architecture](./docs/
 
 ## Major Features
 
-| Features                               | macvlan | ipvlan | SR-IOV |
-|----------------------------------|--------|----|-----|
-| Service by kubeproxy             | beta   |  beta  | beta    |
-| Service by kubeproxy replacement | alpha  |  alpha  | alpha    |
-| Network policy                   | in plan |   in plan | in plan |
-| Bandwidth                        | in plan | in plan  | in plan |
-| RDMA                             | alpha  | alpha   | alpha    |
-| IPAM                             | beta     | beta   | beta    |
-| Egress policy                    | alpha     | alpha   | alpha    |
-| Multiple NIC and routing coordination                         | beta       | beta   | beta    |
-| Applied scenarios                             |  Bare metal   | Bare metal and VM | Bare metal  |
+| Features                               | macvlan    | ipvlan | SR-IOV      |
+|----------------------------------|------------|----|-------------|
+| Service by kubeproxy             | Beta       |  Beta | Beta        |
+| Service by kubeproxy replacement | Alpha      |  Alpha | Alpha       |
+| Network policy                   | In-plan    |   In-plan | In-plan     |
+| Bandwidth                        | In-plan    | In-plan | In-plan     |
+| RDMA                             | Alpha      | Alpha | Alpha       |
+| IPAM                             | Beta       | Beta | Beta        |
+| Egress policy                    | Alpha      | Alpha | Alpha       |
+| Multiple NIC and routing coordination                         | Beta       | Beta | Beta        |
+| Applied scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
 
 For detailed information about all the planned features, please refer to the [roadmap](./docs/develop/roadmap.md).
 

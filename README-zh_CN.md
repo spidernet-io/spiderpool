@@ -100,17 +100,17 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
 ## 核心功能
 
-| 功能                               | macvlan | ipvlan | SR-IOV |
-|----------------------------------|--------|----|-----|
-| service by kubeproxy             | beta   |  beta  | beta    |
-| service by kubeproxy replacement | alpha  |  alpha  | alpha    |
-| network policy                   | in plan |   in plan | in plan |
-| bandwidth                        | in plan | in plan  | in plan |
-| RDMA                             | alpha  | alpha   | alpha    |
-| IPAM                             | beta     | beta   | beta    |
-| egress policy                    | alpha     | alpha   | alpha    |
-| 多网卡和路由调谐                         | beta       | beta   | beta    |
-| 适用场景                             | 裸金属    | 裸金属和虚拟机 | 裸金属 |
+| 功能                               | macvlan  | ipvlan | SR-IOV    |
+|----------------------------------|----------|----|-----------|
+| service by kubeproxy             | Beta     |  Beta | Beta      |
+| service by kubeproxy replacement | Alpha    |  Alpha | Alpha     |
+| network policy                   | In-plan  |   In-plan | In-plan   |
+| bandwidth                        | In-plan  | In-plan  | In-plan    |
+| RDMA                             | Alpha    | Alpha | Alpha     |
+| IPAM                             | Beta     | Beta | Beta      |
+| egress policy                    | Alpha    | Alpha | Alpha     |
+| 多网卡和路由调谐                         | beta     | beta | beta      |
+| 适用场景                             | 裸金属      | 裸金属和虚拟机 | 裸金属       |
 
 关于所有的功能规划，具体可参考 [roadmap](./docs/develop/roadmap.md)
 

@@ -78,8 +78,8 @@ if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
-   RDMA_VERSION=$(cat VERSION.info | grep RDMA_VERSION | awk '{print $2}')
-   echo "Installing RDMA-Plugin: ${RDMA_VERSION} ..."
+   RDMA_COMMIT_HASH=$(cat VERSION.info | grep RDMA_COMMIT_HASH | awk '{print $2}')
+   echo "Installing RDMA-Plugin: ${RDMA_COMMIT_HASH} ..."
    rm -f ${COPY_DST_DIR}/rdma.old || true
    ( [ -f "${COPY_DST_DIR}/rdma" ] && mv ${COPY_DST_DIR}/rdma ${COPY_DST_DIR}/rdma.old ) || true
    cp ${RDMA_SRC_DIR} ${COPY_DST_DIR}

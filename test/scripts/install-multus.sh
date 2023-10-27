@@ -117,6 +117,7 @@ spec:
       ENABLE_COORDINATOR=false
       echo "DISABLE_KUBE_PROXY is true , disable coordinator config"
   fi
+  kubectl delete spidermultusconfig ${MULTUS_DEFAULT_CNI_NAME} -n ${RELEASE_NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} || true
 
   echo "${MACVLAN_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' \

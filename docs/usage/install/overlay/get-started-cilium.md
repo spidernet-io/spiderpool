@@ -51,8 +51,6 @@ spiderpool-agent-bcwqk                                      1/1     Running     
 spiderpool-agent-udgi4                                      1/1     Running     0                 1m
 spiderpool-controller-bgnh3rkcb-k7sc9                       1/1     Running     0                 1m
 spiderpool-init                                             0/1     Completed   0                 1m
-spiderpool-multus-hkxb6                                     1/1     Running     0                 1m
-spiderpool-multus-l9dcs                                     1/1     Running     0                 1m
 ```
 
 Please check if `Spidercoordinator.status.phase` is `Synced`, and if the overlayPodCIDR is consistent with the pod subnet configured by Cilium in the cluster:

@@ -65,8 +65,6 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-multus-ckjrl                        1/1     Running     0          1m
-        spiderpool-multus-mjl7z                        1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
 
@@ -271,8 +269,6 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-multus-ckjrl                        1/1     Running     0          1m
-        spiderpool-multus-mjl7z                        1/1     Running     0          1m
 
 4. 配置 SR-IOV operator
 

@@ -75,6 +75,8 @@ spec:
       value: {{ .Release.Namespace | quote }}
     - name: SPIDERPOOL_CONTROLLER_NAME
       value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+    - name: SPIDERPOOL_AGENT_NAME
+      value: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" | quote }}
     {{- if .Values.coordinator.enabled }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME
       value: {{ .Values.coordinator.name | quote }}
@@ -125,6 +127,8 @@ spec:
       value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE
       value: {{ .Release.Namespace | quote }}
+    - name: SPIDERPOOL_INIT_MULTUS_CONFIGMAP
+      value: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" | quote }}
     {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_DIR
       value: {{ .Values.global.cniConfHostPath | quote }}

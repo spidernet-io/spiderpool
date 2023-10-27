@@ -5,10 +5,11 @@ package cmd
 
 import (
 	"fmt"
-	"k8s.io/utils/pointer"
 	"os"
 	"strconv"
 	"strings"
+
+	"k8s.io/utils/pointer"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -23,6 +24,7 @@ import (
 const (
 	ENVNamespace                = "SPIDERPOOL_NAMESPACE"
 	ENVSpiderpoolControllerName = "SPIDERPOOL_CONTROLLER_NAME"
+	ENVSpiderpoolAgentName      = "SPIDERPOOL_AGENT_NAME"
 
 	ENVDefaultCoordinatorName             = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME"
 	ENVDefaultCoordinatorTuneMode         = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_MODE"
@@ -44,10 +46,11 @@ const (
 	ENVDefaultIPv6IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
 	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
 
-	ENVEnableMultusConfig  = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
-	ENVDefaultCNIDir       = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
-	ENVDefaultCNIName      = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
-	ENVDefaultCNINamespace = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
+	ENVEnableMultusConfig     = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
+	ENVDefaultCNIDir          = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
+	ENVDefaultCNIName         = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
+	ENVDefaultCNINamespace    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
+	ENVDefaultMultusConfigMap = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
 )
 
 var (
@@ -58,6 +61,7 @@ var (
 type InitDefaultConfig struct {
 	Namespace      string
 	ControllerName string
+	AgentName      string
 
 	CoordinatorName               string
 	CoordinatorMode               string
@@ -86,6 +90,7 @@ type InitDefaultConfig struct {
 	DefaultCNIDir       string
 	DefaultCNIName      string
 	DefaultCNINamespace string
+	MultusConfigMap     string
 }
 
 func NewInitDefaultConfig() InitDefaultConfig {
@@ -100,7 +105,11 @@ func parseENVAsDefault() InitDefaultConfig {
 	}
 	config.ControllerName = strings.ReplaceAll(os.Getenv(ENVSpiderpoolControllerName), "\"", "")
 	if len(config.ControllerName) == 0 {
-		logger.Sugar().Fatalf("ENV %s %w", ENVSpiderpoolControllerName, constant.ErrMissingRequiredParam)
+		logger.Sugar().Fatalf("ENV %s %v", ENVSpiderpoolControllerName, constant.ErrMissingRequiredParam)
+	}
+	config.AgentName = strings.ReplaceAll(os.Getenv(ENVSpiderpoolAgentName), "\"", "")
+	if len(config.AgentName) == 0 {
+		logger.Sugar().Fatalf("ENV %s %v", ENVSpiderpoolAgentName, constant.ErrMissingRequiredParam)
 	}
 
 	// Coordinator
@@ -272,6 +281,7 @@ func parseENVAsDefault() InitDefaultConfig {
 
 	config.DefaultCNIName = strings.ReplaceAll(os.Getenv(ENVDefaultCNIName), "\"", "")
 	config.DefaultCNINamespace = strings.ReplaceAll(os.Getenv(ENVDefaultCNINamespace), "\"", "")
+	config.MultusConfigMap = strings.ReplaceAll(os.Getenv(ENVDefaultMultusConfigMap), "\"", "")
 
 	logger.Sugar().Infof("Init default config: %+v", config)
 
@@ -281,7 +291,12 @@ func parseENVAsDefault() InitDefaultConfig {
 // parseCNIFromConfig parse cni's name and type from given cni config path
 func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	var cniName, cniType string
+	if cniConfigPath == "" {
+		logger.Sugar().Infof("No network found in %s, create default multuscniconfig", cniConfigPath)
+		return "default", multuscniconfig.CustomType, nil
+	}
 
+	logger.Sugar().Infof("the first cni config file is %s in /etc/cni/net.d", cniConfigPath)
 	if strings.HasSuffix(cniConfigPath, ".conflist") {
 		confList, err := libcni.ConfListFromFile(cniConfigPath)
 		if err != nil {

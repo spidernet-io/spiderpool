@@ -74,8 +74,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     spiderpool-agent-kxf27                   1/1     Running     0              13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
     spiderpool-init                          0/1     Completed   0              13m
-    spiderpool-multus-7vkm2                  1/1     Running     0              13m
-    spiderpool-multus-rwzjn                  1/1     Running     0              13m
     ~# kubectl get sp
     NAME            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
     ippool-test     4         172.18.0.0/16   0                    10               false

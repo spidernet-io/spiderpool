@@ -64,8 +64,6 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-multus-ckjrl                        1/1     Running     0          1m
-        spiderpool-multus-mjl7z                        1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
 
@@ -269,8 +267,6 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-multus-ckjrl                        1/1     Running     0          1m
-        spiderpool-multus-mjl7z                        1/1     Running     0          1m
 
 4. Configure SR-IOV operator
 

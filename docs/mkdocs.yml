@@ -64,15 +64,15 @@ nav:
       - Upgrading: usage/install/upgrade.md
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
-      - Default IPPool at namespace: usage/ippool-namespace.md
-      - Affinity of IPPool: usage/spider-affinity.md
-      - Multiple interfaces: usage/multi-interfaces-annotation.md
-      - Backup IPPool: usage/ippool-multi.md
-      - SpiderSubnet: usage/spider-subnet.md
+      - IPAM of IPPool Namespace: usage/ippool-namespace.md
+      - IPAM of IPPool Affinity: usage/spider-affinity.md
+      - IPAM of Backup IPPool: usage/ippool-multi.md
+      - IPAM of SpiderSubnet: usage/spider-subnet.md
       - IPAM for custom controllers: usage/third-party-controller.md
+      - IPAM for StatefulSet: usage/statefulset.md
+      - IPAM of Reserved IP: usage/reserved-ip.md
+      - Multiple interfaces: usage/multi-interfaces-annotation.md
       - IPv6 support: usage/ipv6.md
-      - StatefulSet: usage/statefulset.md
-      - Reserved IP: usage/reserved-ip.md
       - Route support: usage/route.md
       - Plugin coordinator: usage/coordinator.md
       - Plugin ifacer: usage/ifacer.md

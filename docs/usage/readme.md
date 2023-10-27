@@ -73,7 +73,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 ### IPAM
 
-- Applications can share an IP pool. See the [example](./ippool-affinity-pod.md#shared-ippool) for reference.
+- Applications can share an IP pool. See the [example](./spider-affinity.md) for reference.
 
 - Stateless applications can have a dedicated IP address pool with fixed IP usage range for all Pods. Refer to the [example](./spider-subnet.md) for more details.
 
@@ -81,7 +81,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the [example](./kubevirt-zh_CN.md) for details.
 
-- Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the [example](./ippool-affinity-node.md) for details.
+- Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the [example](./spider-affinity.md) for details.
 
 - The Subnet feature separates responsibilities between infrastructure administrators and application ones.
   It automates IP pool management for applications with fixed IP requirements, enabling automatic creation, scaling, and deletion of fixed IP pools.
@@ -89,7 +89,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
   In addition to supporting native Kubernetes application controllers, Spiderpool's Subnet feature complements third-party application controllers implemented using operators. Refer to the [example](./third-party-controller.md) for more details.
 
-- Default IP pools can be set at either the cluster-level or tenant-level. IP pools can be shared throughout the entire cluster or restricted to specific tenants. Check out the [example](./ippool-affinity-namespace.md) for details.
+- Default IP pools can be set at either the cluster-level or tenant-level. IP pools can be shared throughout the entire cluster or restricted to specific tenants. Check out the [example](./spider-affinity.md) for details.
 
 - IP pool based on node topology caters to fine-grained subnet planning requirements for each node. Refer to the [example](./network-topology.md) for details.
 

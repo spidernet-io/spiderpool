@@ -116,7 +116,7 @@ jobs:
             echo "event_cni_version=${cni_version}" >> $GITHUB_ENV
             echo "event_ovs_version=${ovs_version}" >> $GITHUB_ENV
             echo "event_rdma_version=${rdma_version}" >> $GITHUB_ENV
-          else ${{ github.event_name == 'push' }} ; then
+          elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"
             echo "event_ref=${{ github.ref }}" >> $GITHUB_ENV
             echo "event_tag=${{ github.sha }}" >> $GITHUB_ENV

@@ -27,7 +27,7 @@ RUN git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
 RUN git clone -b ${OVS_VERSION} --depth 1 https://github.com/k8snetworkplumbingwg/ovs-cni.git
 
 WORKDIR /src/rdma-cni
-RUN if [[ "${RDMA_VERSION}" != "latest" ]]; then git checkout ${RDMA_VERSION} ;fi && make TARGET_ARCH=${TARGETARCH}   \
+RUN if [ "${RDMA_VERSION}" != "latest" ]; then git checkout ${RDMA_VERSION} ;fi && make TARGET_ARCH=${TARGETARCH}   \
           TARGET_OS=${TARGETOS} build
 
 WORKDIR /src/ovs-cni

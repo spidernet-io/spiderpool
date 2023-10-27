@@ -23,15 +23,15 @@ on:
         required: true
         default: v0.8.0
       cni_version:
-        description: 'the version of cni-plugins'
+        description: 'the version of cni-plugins, default to latest tag'
         required: false
         default: ""
       ovs_version:
-        description: 'the version of ovs-cni plugin'
+        description: 'the version of ovs-cni plugin, default to latest tag'
         required: false
         default: ""
       rdma_version:
-        description: 'the version of rdma-cni plugin'
+        description: 'the version of rdma-cni plugin, default to main branch'
         required: false
         default: "latest"
   push:
@@ -105,21 +105,22 @@ jobs:
               echo "unable to get rdma version" && exit 1
             fi
 
+            ref=${{ github.event.inputs.ref }}
+            tag=${{ github.event.inputs.tag }}
             echo "cni version: ${cni_version}"
             echo "ovs version: ${ovs_version}"
             echo "rdma version: ${rdma_version}"
+            echo "plugins tag: ${tag}"
 
-            ref=${{ github.event.inputs.ref }}
-            tag=${{ github.event.inputs.tag }}
-            echo "event_ref=${ref}" >> $GITHUB_ENV
-            echo "event_tag=${tag}" >> $GITHUB_ENV
-            echo "event_cni_version=${cni_version}" >> $GITHUB_ENV
-            echo "event_ovs_version=${ovs_version}" >> $GITHUB_ENV
-            echo "event_rdma_version=${rdma_version}" >> $GITHUB_ENV
+            echo "event_ref=${ref}" >> $GITHUB_OUTPUT
+            echo "event_tag=${tag}" >> $GITHUB_OUTPUT
+            echo "event_cni_version=${cni_version}" >> $GITHUB_OUTPUT
+            echo "event_ovs_version=${ovs_version}" >> $GITHUB_OUTPUT
+            echo "event_rdma_version=${rdma_version}" >> $GITHUB_OUTPUT
           elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"
-            echo "event_ref=${{ github.ref }}" >> $GITHUB_ENV
-            echo "event_tag=${{ github.sha }}" >> $GITHUB_ENV
+            echo "event_ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+            echo "event_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             echo "unexpected event"
             exit 1
@@ -135,17 +136,17 @@ jobs:
       - name: Getting Build Arg
         id: arg
         run: |
-          GIT_COMMIT_VERSION=$( git show -s --format='format:%H')
+          GIT_COMMIT_HASH=$( git show -s --format='format:%H')
           GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
-          echo "commit_hash=${GIT_COMMIT_HASH}" >> $GITHUB_ENV
-          echo "commit_time=${GIT_COMMIT_TIME}" >> $GITHUB_ENV
+          echo "commit_hash=${GIT_COMMIT_HASH}" >> $GITHUB_OUTPUT
+          echo "commit_time=${GIT_COMMIT_TIME}" >> $GITHUB_OUTPUT
 
       # check whether we have upload the same base image to online register , if so, we could not build it
       - name: Checking if tag already exists
         id: tag-in-repositories
         shell: bash
         run: |
-          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.get_event_version.outputs.tag }} &>/dev/null; then
+          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }} &>/dev/null; then
             echo ::set-output name=exists::"true"
             echo "the target base image exist , no need to build it "
           else
@@ -174,13 +175,13 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.tag }}
-          build-args:
-            GIT_COMMIT_HASH=${{ steps.arg.outputs.commit_version }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }}
+          build-args: |
+            GIT_COMMIT_HASH=${{ steps.arg.outputs.commit_hash }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.commit_time }}
-            CNI_VERSION=${{ steps.get_event_version.outputs.cni_version }}
-            OVS_VERSION=${{ steps.get_event_version.outputs.ovs_version }}
-            RDMA_VERSION=${{ steps.get_event_version.outputs.rdma_version }}
+            CNI_VERSION=${{ steps.get_event_version.outputs.event_cni_version }}
+            OVS_VERSION=${{ steps.get_event_version.outputs.event_ovs_version }}
+            RDMA_VERSION=${{ steps.get_event_version.outputs.event_rdma_version }}
 
       - name: Image Release Digest
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
@@ -189,7 +190,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ env.IMAGE_NAME }}" > image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests

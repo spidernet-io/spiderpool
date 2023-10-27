@@ -8,8 +8,8 @@ FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG RDMA_VERSION
-ARG OVS_VERSION=v0.31.1
-ARG CNI_VERSION=v1.3.0
+ARG OVS_VERSION
+ARG CNI_VERSION
 
 WORKDIR /src
 
@@ -27,7 +27,7 @@ RUN git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
 RUN git clone -b ${OVS_VERSION} --depth 1 https://github.com/k8snetworkplumbingwg/ovs-cni.git
 
 WORKDIR /src/rdma-cni
-RUN if [ "${RDMA_VERSION}" != "latest" ]; then git checkout ${RDMA_VERSION} ;fi && make TARGET_ARCH=${TARGETARCH}   \
+RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
           TARGET_OS=${TARGETOS} build
 
 WORKDIR /src/ovs-cni

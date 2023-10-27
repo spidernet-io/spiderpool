@@ -3,7 +3,7 @@ name: Auto Build Image Plugins
 # final packed image : ${ONLINE_REGISTER}/${IMAGE_REPO}/${IMAGE_NAME}:${inputs.tag}
 # image dockerfile path on the repo: ${IMAGE_ROOT_PATH}/${IMAGE_NAME}/Dockerfile
 env:
-  IMAGE_NAME: plugins
+  IMAGE_NAME: spiderpool-plugins
   IMAGE_REPO: ${{ github.repository }}
   ONLINE_REGISTER: ghcr.io
   IMAGE_ROOT_PATH: images
@@ -39,7 +39,7 @@ on:
       - main
     paths:
       # can not use env here
-      - images/plugins/**
+      - images/spiderpool-plugins/**
 
 permissions: write-all
 
@@ -72,37 +72,39 @@ jobs:
         id: get_event_version
         continue-on-error: false
         run: |
-          echo "trigger by workflow_dispatch"
+          cni_latest_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
+          if [ -z "${cni_latest_version}" ] ; then
+            echo "unable to get cni version" && exit 1
+          fi
+          ovs_latest_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
+          if [ -z "${ovs_latest_version}" ] ; then
+            echo "unable to get ovs version" && exit 1
+          fi
+
+          rdma_latest_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/rdma-cni/releases/latest | jq '.tag_name' | tr -d '"')
+          if [ -z "${rdma_latest_version}" ] ; then
+            echo "unable to get rdma version" && exit 1
+          fi
+
           if ${{ github.event_name == 'workflow_dispatch' }}; then
+            echo "trigger by workflow_dispatch"
             cni_version=${{ github.event.inputs.cni_version }}
             if [ -z "${cni_version}" ]; then
-               cni_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
-            fi
-
-            if [ -z "${cni_version}" ] ; then
-              echo "unable to get cni version" && exit 1
+               cni_version=${cni_latest_version}
             fi
 
             ovs_version=${{ github.event.inputs.ovs_version }}
             if [ -z "${ovs_version}" ]; then
-               ovs_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
-            fi
-
-            if [ -z "${ovs_version}" ] ; then
-              echo "unable to get ovs version" && exit 1
+               ovs_version=${ovs_latest_version}
             fi
 
             rdma_version=${{ github.event.inputs.rdma_version }}
             if [ -z "${rdma_version}" ]; then
-               rdma_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/rdma-cni/releases/latest | jq '.tag_name' | tr -d '"')
+               rdma_version=${rdma_latest_version}
             elif [ "${rdma_version}" = "latest" ] ; then
                # rdma don't release any more, we use main branch to build.
                git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
                cd rdma-cni && rdma_version=$(git show -s --format='format:%H') && cd ..
-            fi
-
-            if [ -z "${rdma_version}" ] ; then
-              echo "unable to get rdma version" && exit 1
             fi
 
             ref=${{ github.event.inputs.ref }}
@@ -119,8 +121,17 @@ jobs:
             echo "event_rdma_version=${rdma_version}" >> $GITHUB_OUTPUT
           elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"
+            git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
+            cd rdma-cni && rdma_latest_version=$(git show -s --format='format:%H') && cd ..
+
+            echo "cni version: ${cni_latest_version}"
+            echo "ovs version: ${ovs_latest_version}"
+            echo "rdma version: ${rdma_latest_version}"
             echo "event_ref=${{ github.ref }}" >> $GITHUB_OUTPUT
             echo "event_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "event_cni_version=${cni_latest_version}" >> $GITHUB_OUTPUT
+            echo "event_ovs_version=${ovs_latest_version}" >> $GITHUB_OUTPUT
+            echo "event_rdma_version=${rdma_latest_version}" >> $GITHUB_OUTPUT
           else
             echo "unexpected event"
             exit 1

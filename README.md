@@ -118,7 +118,7 @@ For detailed information about all the planned features, please refer to the [ro
 
 ## Quick start
 
-Refer to [Quick start](./docs/usage/install) to explore Spiderpool quickly.
+Refer to [Quick start](./docs/usage/readme.md) to explore Spiderpool quickly.
 
 ## Blogs
 

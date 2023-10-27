@@ -94,7 +94,7 @@ Underlay 网络方案的实施，有两种典型的场景：一种是集群部�
 [calico CNI](https://github.com/projectcalico/calico),
 [weave CNI](https://github.com/weaveworks/weave)
 
-## Spiderpool IP 分配算法
+### Spiderpool IP 分配算法
 
 当 Pod 创建时，它将按照以下步骤获取 IP 分配；IP 分配生命周期将经历 `获取候选池`、`过滤候选池`、`候选池排序` 三个大阶段。
 

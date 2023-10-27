@@ -169,7 +169,7 @@ RDMA 功能使得网卡能够直接读写内存，降低了 CPU 的负担和内�
 
 ## 快速开始
 
-快速搭建 Spiderpool，启动一个应用，可参考[快速搭建](./usage/install)。
+快速搭建 Spiderpool，启动一个应用，可参考[快速搭建](./usage/readme-zh_CN.md)。
 
 ## 功能
 

@@ -86,7 +86,7 @@ Any CNI project compatible with third-party IPAM plugins can work well with Spid
 [Calico CNI](https://github.com/projectcalico/calico),
 [Weave CNI](https://github.com/weaveworks/weave)
 
-## IP Allocation Algorithm
+### IP Allocation Algorithm
 
 When a pod is creating, it will follow steps below to get IP allocations.
 

@@ -116,7 +116,7 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
 ## 快速开始
 
-可参考 [快速搭建](./docs/usage/install) 来使用 Spiderpool
+可参考 [快速搭建](./docs/usage/readme-zh_CN.md) 来使用 Spiderpool
 
 ## Blogs
 

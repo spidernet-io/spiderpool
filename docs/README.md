@@ -219,7 +219,7 @@ Currently, RDMA finds extensive applications in fields such as AI computing and 
 
 ## Quick start
 
-Refer to [Quick start](./usage/install), set up a cluster quickly.
+Refer to [Quick start](./usage/readme.md), set up a cluster quickly.
 
 ## Major features
 

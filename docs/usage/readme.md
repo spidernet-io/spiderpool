@@ -103,7 +103,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Well-designed IP reclamation mechanisms promptly allocate IP addresses during cluster or application recovery processes. Refer to the [example](../concepts/ipam.md) for details.
 
-### Multiple Network Interfaces
+### Multiple Network Interfaces Features
 
 - Spiderpool offers the ability to assign IP addresses from different subnets to multiple network interfaces of a Pod. This feature ensures coordinated policy routing among all interfaces, guaranteeing consistent data paths for outgoing and incoming requests and mitigating packet loss. Moreover, it allows for customization of the default route using a specific network interface's gateway.
 

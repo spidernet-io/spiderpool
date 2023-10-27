@@ -23,8 +23,6 @@ kind-init: check_env prepare
 		E2E_VLAN_GATEWAY_IMAGE=$(E2E_VLAN_GATEWAY_IMAGE) \
 		VLAN_GATEWAY_CONTAINER=$(VLAN_GATEWAY_CONTAINER) \
 		$(QUIET) bash scripts/config-network.sh
-	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
-	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_OVERLAY_CNI),true)
 	@echo -e "\033[35m [Step 6] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
@@ -279,7 +277,9 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set sriov.install=true " ; \
 		HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=true " ; \
-		HELM_OPTION+=" --set rdma.rdmaCni.install=true " ; \
+		HELM_OPTION+=" --set plugins.installCNI=true " ; \
+		HELM_OPTION+=" --set plugins.installRdmaCNI=true " ; \
+		HELM_OPTION+=" --set plugins.installOvsCNI=true " ; \
 		HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \
 		--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
 		--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \

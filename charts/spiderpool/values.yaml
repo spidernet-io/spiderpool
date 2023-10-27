@@ -194,30 +194,6 @@ rdma:
       ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs rdma device IDs, default to mellanox device
       deviceIDs: "1017"
 
-  rdmaCni:
-    ## @param rdma.rdmaCni.install install rdma cni used to isolate rdma device for sriov cni
-    install: false
-
-    image:
-      ## @param rdma.rdmaCni.image.registry the rdma-cni image registry
-      registry: ghcr.io
-
-      ## @param rdma.rdmaCni.image.repository the rdma-cni image repository
-      repository: k8snetworkplumbingwg/rdma-cni
-
-      ## @param rdma.rdmaCni.image.pullPolicy the rdma-cni image pullPolicy
-      pullPolicy: IfNotPresent
-
-      ## @param rdma.rdmaCni.image.digest the rdma-cni image digest
-      digest: ""
-
-      ## @param rdma.rdmaCni.image.tag the rdma-cni image tag
-      tag: latest
-
-      ## @param rdma.rdmaCni.image.imagePullSecrets the rdma-cni image imagePullSecrets
-      imagePullSecrets: []
-      # - name: "image-pull-secret"
-
 ## @section multus parameters
 ##
 multus:
@@ -281,6 +257,37 @@ multus:
 
       ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
       logFile: "/var/log/multus.log"
+
+## @section plugins parameters
+##
+plugins:
+  ## @param plugins.installCNI install all cni plugins to each node
+  installCNI: false
+
+  ## @param plugins.installRdmaCNI install rdma cni used to isolate rdma device for sriov cni
+  installRdmaCNI: false
+
+  ## @param plugins.installOvsCNI install ovs cni to each node
+  installOvsCNI: false
+
+  image:
+    ## @param plugins.image.registry the image registry of plugins
+    registry: ghcr.io
+
+    ## @param plugins.image.repository the image repository of plugins
+    repository: spidernet-io/spiderpool/spiderpool-plugins
+
+    ## @param plugins.image.pullPolicy the image pullPolicy of plugins
+    pullPolicy: IfNotPresent
+
+    ## @param plugins.image.digest the image digest of plugins
+    digest: ""
+
+    ## @param plugins.image.tag the image tag of plugins
+    tag: v0.8.0
+
+    ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
+    imagePullSecrets: []
 
 ## @section clusterDefaultPool parameters
 ##

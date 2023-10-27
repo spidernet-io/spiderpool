@@ -54,6 +54,10 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
        
+    > 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
+    > 
+    > 如果您的集群未安装 Rdma CNI, 可指定 Helm 参数 `--set plugins.installRdmaCNI=true` 安装 rdma 到每个节点。
+    > 
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     >
     > 完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。

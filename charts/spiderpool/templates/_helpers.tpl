@@ -240,14 +240,14 @@ app.kubernetes.io/component: {{ .Values.multus.multusCNI.name | trunc 63 | trimS
 name: multus
 {{- end }}
 
-#=================== rdma =====================
+#=================== plugins =====================
 
 {{/*
-return the rdma cni image
+return the plugins image
 */}}
-{{- define "rdmacni.image" -}}
-{{- $registryName := .Values.rdma.rdmaCni.image.registry -}}
-{{- $repositoryName := .Values.rdma.rdmaCni.image.repository -}}
+{{- define "plugins.image" -}}
+{{- $registryName := .Values.plugins.image.registry -}}
+{{- $repositoryName := .Values.plugins.image.repository -}}
 {{- if .Values.global.imageRegistryOverride }}
     {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
 {{ else if $registryName }}
@@ -255,10 +255,10 @@ return the rdma cni image
 {{- else -}}
     {{- printf "%s" $repositoryName -}}
 {{- end -}}
-{{- if .Values.rdma.rdmaCni.image.digest }}
-    {{- print "@" .Values.rdma.rdmaCni.image.digest -}}
-{{- else if .Values.rdma.rdmaCni.image.tag -}}
-    {{- printf ":%s" .Values.rdma.rdmaCni.image.tag -}}
+{{- if .Values.plugins.image.digest }}
+    {{- print "@" .Values.plugins.image.digest -}}
+{{- else if .Values.plugins.image.tag -}}
+    {{- printf ":%s" .Values.plugins.image.tag -}}
 {{- else -}}
     {{- printf ":v%s" .Chart.AppVersion -}}
 {{- end -}}

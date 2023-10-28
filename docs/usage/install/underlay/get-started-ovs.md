@@ -23,14 +23,10 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
 
 [`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) is a Kubernetes CNI plugin based on Open vSwitch (OVS) that provides a way to use OVS for network virtualization in a Kubernetes cluster in a Kubernetes cluster.
 
-Verify that the binary /opt/cni/bin/ovs exists on the node. if the binary is missing, you can download it and install it on all nodes using the following command:
+Verify that the binary /opt/cni/bin/ovs exists on the node. if the binary is missing, you can install it on all nodes by using the following command when you installing spiderpool:
 
 ```bash
-~# wget https://github.com/k8snetworkplumbingwg/ovs-cni/releases/download/v0.31.1/plugin
-
-~# mv ./plugin /opt/cni/bin/ovs
-
-~# chmod +x /opt/cni/bin/ovs
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set plugins.installOvsCNI=true
 ```
 
 Note: Ovs-cni does not configure bridges, it is up to the user to create them and connect them to L2, L3, The following is an example of creating a bridge, to be executed on each node:
@@ -75,9 +71,11 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf"
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf" --set plugins.installOvsCNI=true
     ```
-
+    
+    > If Ovs-cni is not installed in your cluster, you can specify the Helm parameter `--set plugins.installOvsCNI=true` to install Macvlan in your cluster.
+    >
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
     >
     > Specify the Multus clusterNetwork of the cluster through `multus.multusCNI.defaultCniCRName`, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.

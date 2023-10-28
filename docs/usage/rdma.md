@@ -53,6 +53,10 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
        
+    > If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
+    >
+    > If Rdma CNI is not installed in your cluster, you can specify the Helm parameter `--set plugins.installRdmaCNI=true` to install Rdma-cni in your cluster.
+    >
     > If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
     >
     > After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.

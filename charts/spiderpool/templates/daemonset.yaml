@@ -80,21 +80,20 @@ spec:
                       - linux
       {{- end }}
       initContainers:
-        {{- if .Values.rdma.rdmaCni.install }}
-        - name: rdma-cni
-          image: {{ include "rdmacni.image" . | quote }}
-          imagePullPolicy: {{ .Values.rdma.rdmaCni.image.pullPolicy }}
+        {{- if or .Values.plugins.installCNI .Values.plugins.installRdmaCNI .Values.plugins.installOvsCNI }}
+        - name: install-plugins
+          image: {{ include "plugins.image" . | quote }}
+          imagePullPolicy: {{ .Values.plugins.image.pullPolicy }}
+          env:
+          - name: INSTALL_CNI_PLUGINS
+            value: {{ .Values.plugins.installCNI | quote }}
+          - name: INSTALL_OVS_PLUGIN
+            value: {{ .Values.plugins.installOvsCNI | quote }}
+          - name: INSTALL_RDMA_PLUGIN
+            value: {{ .Values.plugins.installRdmaCNI | quote }}
           command:
             - "/bin/sh"
-            - "-c"
-            - |
-              BIN_LIST="rdma"
-              for ITEM in ${BIN_LIST} ; do
-                	rm -f /host/opt/cni/bin/${ITEM}.old || true
-                	( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
-                	cp /usr/bin/${ITEM} /host/opt/cni/bin/${ITEM}
-                	rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
-              done
+            - "entrypoint.sh"
           securityContext:
             privileged: true
           volumeMounts:

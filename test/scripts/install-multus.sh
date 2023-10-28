@@ -357,6 +357,8 @@ EOF
   esac
 }
 
+kubectl wait --for=condition=ready -l app.kubernetes.io/name=spiderpool --timeout=100s pod -n kube-system --kubeconfig ${E2E_KUBECONFIG}
+
 Install::MultusCR
 Install::SpiderpoolCR
 

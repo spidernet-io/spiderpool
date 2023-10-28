@@ -57,8 +57,6 @@ INSTALL_SPIDERDOCTOR ?= true
 
 INSTALL_KUBEVIRT ?= false
 
-CALICO_VERSION ?= v3.25.0
-
 CNI_PACKAGE_VERSION ?= v1.3.0
 
 #============ ginkgo-custom-flag ====================
@@ -202,4 +200,15 @@ ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
     E2E_SRIOV_IMAGE_REPO ?= ghcr.m.daocloud.io
 else
     E2E_SRIOV_IMAGE_REPO ?= ghcr.io
+endif
+
+#=========== kubevrit ============
+
+# empty for latest
+KUBEVIRT_VERSION :=
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_KUBEVIRT_IMAGE_REPO ?= quay.m.daocloud.io
+else
+    E2E_KUBEVIRT_IMAGE_REPO ?= quay.io
 endif

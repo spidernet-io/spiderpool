@@ -88,6 +88,8 @@ ifeq ($(INSTALL_KUBEVIRT),true)
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
 		HTTP_PROXY=$(HTTP_PROXY) \
+		KUBEVIRT_VERSION=$(KUBEVIRT_VERSION) \
+		E2E_KUBEVIRT_IMAGE_REPO=$(E2E_KUBEVIRT_IMAGE_REPO) \
 		$(QUIET) bash scripts/install-kubevirt.sh
 endif
 	@ echo "wait for the cluster ready" ; \

@@ -72,6 +72,7 @@ nav:
       - IPAM for StatefulSet: usage/statefulset.md
       - IPAM of Reserved IP: usage/reserved-ip.md
       - Multiple interfaces: usage/multi-interfaces-annotation.md
+      - Egress Policy: usage/egress.md
       - IPv6 support: usage/ipv6.md
       - Route support: usage/route.md
       - Plugin coordinator: usage/coordinator.md

@@ -9,10 +9,11 @@ CURRENT_FILENAME=$( basename $0 )
 
 [ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
 
-export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases | grep tag_name | grep -v -- '-rc' | sort -r | head -1 | awk -F': ' '{print $2}' | sed 's/,//' | xargs)
-
-# Should we set a fixed version just like "v1.1.0" ?
+if [ -z "${KUBEVIRT_VERSION}" ] ; then
+  KUBEVIRT_VERSION=$( curl --retry 10 -s https://api.github.com/repos/kubevirt/kubevirt/releases/latest | jq '.tag_name' | tr -d '"' )
+fi
 [ -z "$KUBEVIRT_VERSION" ] && echo "error, miss KUBEVIRT_VERSION" && exit 1
+
 echo "$CURRENT_FILENAME : KUBEVIRT_VERSION $KUBEVIRT_VERSION "
 
 [ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
@@ -22,12 +23,14 @@ echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
 
-KUBEVIRT_OPERATOR_IMAGE=quay.io/kubevirt/virt-operator:${KUBEVIRT_VERSION}
-KUBEVIRT_API_IMAGE=quay.io/kubevirt/virt-api:${KUBEVIRT_VERSION}
-KUBEVIRT_CONTROLLER_IMAGE=quay.io/kubevirt/virt-controller:${KUBEVIRT_VERSION}
-KUBEVIRT_HANDLER_IMAGE=quay.io/kubevirt/virt-handler:${KUBEVIRT_VERSION}
-KUBEVIRT_LAUNCHER_IMAGE=quay.io/kubevirt/virt-launcher:${KUBEVIRT_VERSION}
-KUBEVIRT_TEST_IMAGE=quay.io/kubevirt/cirros-container-disk-demo
+echo "E2E_KUBEVIRT_IMAGE_REPO=${E2E_KUBEVIRT_IMAGE_REPO}"
+
+KUBEVIRT_OPERATOR_IMAGE=${E2E_KUBEVIRT_IMAGE_REPO}/kubevirt/virt-operator:${KUBEVIRT_VERSION}
+KUBEVIRT_API_IMAGE=${E2E_KUBEVIRT_IMAGE_REPO}/kubevirt/virt-api:${KUBEVIRT_VERSION}
+KUBEVIRT_CONTROLLER_IMAGE=${E2E_KUBEVIRT_IMAGE_REPO}/kubevirt/virt-controller:${KUBEVIRT_VERSION}
+KUBEVIRT_HANDLER_IMAGE=${E2E_KUBEVIRT_IMAGE_REPO}/kubevirt/virt-handler:${KUBEVIRT_VERSION}
+KUBEVIRT_LAUNCHER_IMAGE=${E2E_KUBEVIRT_IMAGE_REPO}/kubevirt/virt-launcher:${KUBEVIRT_VERSION}
+KUBEVIRT_TEST_IMAGE=${E2E_KUBEVIRT_IMAGE_REPO}/kubevirt/cirros-container-disk-demo
 KUBEVIRT_IMAGE_LIST="${KUBEVIRT_OPERATOR_IMAGE} ${KUBEVIRT_API_IMAGE} ${KUBEVIRT_CONTROLLER_IMAGE} ${KUBEVIRT_HANDLER_IMAGE} ${KUBEVIRT_LAUNCHER_IMAGE}"
 
 LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`

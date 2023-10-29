@@ -72,16 +72,16 @@ jobs:
         id: get_event_version
         continue-on-error: false
         run: |
-          cni_latest_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
+          cni_latest_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
           if [ -z "${cni_latest_version}" ] ; then
             echo "unable to get cni version" && exit 1
           fi
-          ovs_latest_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
+          ovs_latest_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
           if [ -z "${ovs_latest_version}" ] ; then
             echo "unable to get ovs version" && exit 1
           fi
 
-          rdma_latest_version=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/rdma-cni/releases/latest | jq '.tag_name' | tr -d '"')
+          rdma_latest_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/rdma-cni/releases/latest | jq '.tag_name' | tr -d '"')
           if [ -z "${rdma_latest_version}" ] ; then
             echo "unable to get rdma version" && exit 1
           fi

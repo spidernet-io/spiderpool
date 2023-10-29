@@ -45,7 +45,7 @@ jobs:
                 echo "try to get PR from commit"
                 COMMIT=` echo "${JSON}" | jq '.event.commits[0].id' | tr -d '"' ` || true
                 if [ -n "${COMMIT}" ]; then
-                    PR_NUMBER=`curl -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT}/pulls | jq -r '.[].number' `
+                    PR_NUMBER=`curl  --retry 10  -s -H "Accept: application/vnd.github.groot-preview+json"  https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT}/pulls | jq -r '.[].number' `
                 else
                     echo "error, failed to get any commit ID"
                 fi
@@ -63,7 +63,7 @@ jobs:
                 #    [ -n "${PR_AUTHOR}" ] || { echo "no PR_AUTHOR, ignore" ; }
           #
           fi
-          RP_API_BODY=` curl https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER} -s -H "Accept: application/vnd.github.groot-preview+json" `
+          RP_API_BODY=` curl  --retry 10  https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER} -s -H "Accept: application/vnd.github.groot-preview+json" `
           PR_COMMITS=` echo "${RP_API_BODY}" |  jq ' .merge_commit_sha ' | tr -d '"' `
           PR_AUTHOR=` echo "${RP_API_BODY}" |  jq ' .user.login ' | tr -d '"' `
           PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"

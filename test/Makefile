@@ -291,8 +291,7 @@ setup_spiderpool:
 		--set spiderpoolInit.image.registry="" \
 		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
-		--set rdma.rdmaCni.image.registry=$(E2E_RDMA_IMAGE_REPO) \
-		--set rdma.rdmaSharedDevicePlugin.image.registry=$(E2E_RDMA_IMAGE_REPO) \
+		--set rdma.rdmaSharedDevicePlugin.image.registry=$(E2E_RDMA_DP_IMAGE_REPO) \
 		--set sriov.image.registry=$(E2E_SRIOV_IMAGE_REPO)   " \
 		ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 		echo "ALL_IMAGES: $${ALL_IMAGES} " ; \

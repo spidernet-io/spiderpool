@@ -4,6 +4,8 @@
 
 Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Ovs-cni](https://github.com/k8snetworkplumbingwg/ovs-cni) 、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 Underlay 网络解决方案，该方案能将可用的网桥公开为节点资源，供集群使用。
 
+[`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) 是一个基于 Open vSwitch（OVS）的 Kubernetes CNI 插件，它提供了一种在 Kubernetes 集群中使用 OVS 进行网络虚拟化的方式。
+
 ## 先决条件
 
 1. 一个多节点的 Kubernetes 集群
@@ -19,36 +21,37 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     ~# sudo systemctl start openvswitch-switch
     ```
 
-## 安装 Ovs-cni
+## 安装 Spiderpool
 
-[`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) 是一个基于 Open vSwitch（OVS）的 Kubernetes CNI 插件，它提供了一种在 Kubernetes 集群中使用 OVS 进行网络虚拟化的方式。
+1. 安装 Spiderpool。
 
-确认节点上是否存在二进制文件 /opt/cni/bin/ovs 。如果节点上不存在该二进制文件，可在安装 Spiderpool 时通过指定 Helm 参数安装: 
+    ```bash
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf" --set plugins.installOvsCNI=true
+    ```
 
-```bash
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set plugins.installOvsCNI=true
-```
+    > 如果未安装 ovs-cni, 可以通过 Helm 参数 '-set plugins.installOvsCNI=true' 安装它。
+    > 
+    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 以帮助您快速的拉取镜像。
+    >
+   > 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
-Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、L3 网络。以下是创建网桥的示例，请在每个节点上执行：
+2. 在每个节点上配置 Open vSwitch 网桥。
 
-1. 创建 Open vSwitch 网桥。
+    创建网桥并配置网桥，以 `eth0` 为例。
 
     ```bash
     ~# ovs-vsctl add-br br1
-    ```
-
-2. 网络接口连接到网桥
-
-    此过程取决于您的平台，以下命令只是示例说明，它可能会破坏您的系统。首先使用 `ip link show` 查询主机的可用接口，示例中使用主机上的接口：`eth0` 为例。
-
-    ```bash
     ~# ovs-vsctl add-port br1 eth0
     ~# ip addr add <IP地址>/<子网掩码> dev br1
     ~# ip link set br1 up
     ~# ip route add default via <默认网关IP> dev br1
     ```
 
-3. 创建后，可以在每个节点上查看到如下的网桥信息：
+    请把以上命令配置在系统行动脚本中，以在主机重启时能够生效
+
+    创建后，可以在每个节点上查看到如下的网桥信息：
 
     ```bash
     ~# ovs-vsctl show
@@ -64,22 +67,7 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
         ovs_version: "2.17.3"
     ```
 
-## 安装 Spiderpool
-
-1. 安装 Spiderpool。
-
-    ```bash
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf" --set plugins.installOvsCNI=true
-    ```
-
-    > 如果未安装 ovs-cni, 可以通过 Helm 参数 '-set plugins.installOvsCNI=true' 安装它。
-    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 以帮助您快速的拉取镜像。
-    >
-    > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
-
-2. 创建 SpiderIPPool 实例。
+4. 创建 SpiderIPPool 实例。
 
     Pod 会从该 IP 池中获取 IP，进行 Underlay 的网络通讯，所以该 IP 池的子网需要与接入的 Underlay 子网对应。以下是创建相关的 SpiderIPPool 示例：
 
@@ -100,7 +88,7 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
     EOF
     ```
 
-3. 验证安装：
+5. 验证安装：
 
     ```bash
     ~# kubectl get po -n kube-system |grep spiderpool
@@ -115,7 +103,7 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
     ~# 
     ```
 
-4. Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Ovs SpiderMultusConfig 配置的示例：
+6. Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Ovs SpiderMultusConfig 配置的示例：
 
     * 确认 ovs-cni 所需的网桥名称，本例子以 br1 为例:
 

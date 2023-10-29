@@ -20,13 +20,6 @@
    ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
    ```
 
-- 如果你的集群中每个节点 `/opt/cni/bin`下未安装 [cni plugins](https://www.cni.dev/plugins/current/) 。可参考以下的命令安装:
-
-   ```shell
-   ~# wget https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
-   ~# tar xvfzp ./cni-plugins-linux-amd64-v1.3.0.tgz -C /opt/cni/bin
-   ```
-  
 - Helm 二进制
 
 ## 安装 Spiderpool
@@ -39,8 +32,9 @@
 ~# helm install spiderpool spiderpool/spiderpool --namespace kube-system  --set coordinator.mode=overlay --wait 
 ```
 
-> 默认情况下，Spiderpool 会自动安装 Multus 组件, 如果您已经在本地安装了 Multus, 你可以使用以下命令跳过安装 Multus: `helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.install=false` 
-> 需要指定 coordinator 运行在 overlay 模式
+    > 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
+    >
+    > 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
 等待安装完成，查看 Spiderpool 组件状态:
 

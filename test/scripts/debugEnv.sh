@@ -231,6 +231,10 @@ elif [ "$TYPE"x == "error"x ] ; then
         POD="$2"
         NAMESPACE="$3"
 
+        if [[ "${POD}" == *spiderpool-agent* ]] ; then
+            POD="${POD} -c spiderpool-agent "
+        fi
+
         echo ""
         echo "---------${POD}--------"
         MESSAGE=` kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} |& grep -E -i "${LOG_MARK}" `
@@ -246,6 +250,7 @@ elif [ "$TYPE"x == "error"x ] ; then
     DATA_RACE_LOG_MARK="WARNING: DATA RACE"
     LOCK_LOG_MARK="Goroutine took lock"
     PANIC_LOG_MARK="panic .* runtime error"
+    NEVER_CALL="Detected at:"
 
     echo ""
     echo "=============== check kinds of error  ============== "
@@ -261,6 +266,10 @@ elif [ "$TYPE"x == "error"x ] ; then
         echo ""
         echo "----- check panic in ${NAMESPACE}/${POD} "
         CHECK_ERROR "${PANIC_LOG_MARK}" "${POD}" "${NAMESPACE}"
+
+        echo ""
+        echo "----- check never call in ${NAMESPACE}/${POD} "
+        CHECK_ERROR "${NEVER_CALL}" "${POD}" "${NAMESPACE}"
 
         echo ""
         echo "----- check gorouting leak in ${NAMESPACE}/${POD} "

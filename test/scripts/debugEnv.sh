@@ -118,9 +118,9 @@ elif [ "$TYPE"x == "detail"x ] ; then
     for POD in $AGENT_POD_LIST ; do
       echo ""
       echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
-      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+      kubectl logs ${POD} -c spiderpool-agent -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
       echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
-      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
+      kubectl logs ${POD} -c spiderpool-agent -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
     done
 
     echo ""

@@ -13,3 +13,4 @@
 | C00009  | gateway connection detection                  | p2     |    |  done  |       |
 | C00010  | auto clean up the dirty rules(routing\neighborhood) while pod starting | p2 | | |
 | C00011  | In the default scenario (Do not specify the NIC where the default route is located in any way) , use 'ip r get 8.8.8.8' to see if default route NIC is `net1` | p2 | | |
+| C00012  | In multi-nic case , use 'ip r get <service_subnet> and <hostIP>' to see if src is from pod's eth0, note: only for ipv4. | p2 | | |

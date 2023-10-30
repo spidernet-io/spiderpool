@@ -67,6 +67,11 @@ require (
 )
 
 require (
+	github.com/go-logr/logr v1.2.4
+	k8s.io/klog/v2 v2.100.1 // indirect
+)
+
+require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
@@ -84,7 +89,6 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
@@ -173,7 +177,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	k8s.io/component-base v0.28.1 // indirect
 	k8s.io/gengo v0.0.0-20230306165830-ab3349d207d4 // indirect
-	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/kubectl v0.26.3 // indirect
 	kubevirt.io/containerized-data-importer-api v1.57.0-alpha1 // indirect

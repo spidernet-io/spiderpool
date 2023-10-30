@@ -173,19 +173,19 @@ But on cases, it may go wrong and IP of IPAM database is still marked as used by
 
 when some errors happened, the CNI plugin is not called correctly when pod deletion. This could happen like cases:
 
-* When a CNI plugin is called, its network communication goes wrong and fails to release IP.
+- When a CNI plugin is called, its network communication goes wrong and fails to release IP.
 
-* The container runtime goes wrong and fails to call CNI plugin.
+- The container runtime goes wrong and fails to call CNI plugin.
 
-* A node breaks down and then always can not recover, the api-server makes pods of the breakdown node to be `deleting` status, but the CNI plugin fails to be called.
+- A node breaks down and then always can not recover, the api-server makes pods of the breakdown node to be `deleting` status, but the CNI plugin fails to be called.
 
 BTW, this fault could be simply simulated by removing the CNI binary on a host when pod deletion.
 
 This issue will make a bad result:
 
-* the new pod may fail to run because the expected IP is still occupied.
+- the new pod may fail to run because the expected IP is still occupied.
 
-* the IP resource is exhausted gradually although the actual number of pods does not grow.
+- the IP resource is exhausted gradually although the actual number of pods does not grow.
 
 Some CNI or IPAM plugins could not handle this issue. For some CNIs, the administrator self needs to find the IP with this issue and use a CLI tool to reclaim them.
 For some CNIs, it runs an interval job to find the IP with this issue and not reclaim them in time. For some CNIs, there is not any mechanism at all to fix the IP issue.
@@ -201,11 +201,11 @@ The spiderpool controller takes charge of this responsibility. For more details,
 
 To prevent IP from leaking when the ippool resource is deleted, Spiderpool has some rules:
 
-* For an ippool, if IP still taken by pods, Spiderpool uses webhook to reject deleting request of the ippool resource.
+- For an ippool, if IP still taken by pods, Spiderpool uses webhook to reject deleting request of the ippool resource.
 
-* For a deleting ippool, the IPAM plugin will stop assigning IP from it, but could release IP from it.
+- For a deleting ippool, the IPAM plugin will stop assigning IP from it, but could release IP from it.
 
-* The ippool sets a finalizer by the spiderpool controller once it is created. After the ippool goes to be `deleting` status,
+- The ippool sets a finalizer by the spiderpool controller once it is created. After the ippool goes to be `deleting` status,
   the spiderpool controller will remove the finalizer when all IPs in the ippool are free, then the ippool object will be deleted.
 
 ### SpiderEndpoint garbage collection
@@ -225,8 +225,8 @@ The IP addresses assigned to Pods are recorded in IPAM, but these Pods no longer
 
 When `deleting Pod` in the cluster, but due to problems such as `network exception` or `cni binary crash`, the call to `cni delete` fails, resulting in the IP address not being reclaimed by cni.
 
-* In failure scenarios such as `cni delete failure`, if a Pod that has been assigned an IP is destroyed, but the IP address is still recorded in the IPAM, a phenomenon of zombie IP is formed. For this kind of problem, Spiderpool will automatically recycle these zombie IP addresses based on the cycle and event scanning mechanism.
+- In failure scenarios such as `cni delete failure`, if a Pod that has been assigned an IP is destroyed, but the IP address is still recorded in the IPAM, a phenomenon of zombie IP is formed. For this kind of problem, Spiderpool will automatically recycle these zombie IP addresses based on the cycle and event scanning mechanism.
 
 After a node goes down unexpectedly, the Pod in the cluster is permanently in the `deleting` state, and the IP address occupied by the Pod cannot be released.
 
-* For a Pod in `Terminating` state, Spiderpool will automatically release its IP address after the Pod's `spec.terminationGracePeriodSecond`. This feature can be controlled by the environment variable `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. This capability can be used to solve the failure scenario of `unexpected node downtime`.
+- For a Pod in `Terminating` state, Spiderpool will automatically release its IP address after the Pod's `spec.terminationGracePeriodSecond`. This feature can be controlled by the environment variable `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. This capability can be used to solve the failure scenario of `unexpected node downtime`.

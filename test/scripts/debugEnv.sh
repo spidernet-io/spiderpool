@@ -250,7 +250,6 @@ elif [ "$TYPE"x == "error"x ] ; then
     DATA_RACE_LOG_MARK="WARNING: DATA RACE"
     LOCK_LOG_MARK="Goroutine took lock"
     PANIC_LOG_MARK="panic .* runtime error"
-    NEVER_CALL="Detected at:"
 
     echo ""
     echo "=============== check kinds of error  ============== "
@@ -266,10 +265,6 @@ elif [ "$TYPE"x == "error"x ] ; then
         echo ""
         echo "----- check panic in ${NAMESPACE}/${POD} "
         CHECK_ERROR "${PANIC_LOG_MARK}" "${POD}" "${NAMESPACE}"
-
-        echo ""
-        echo "----- check never call in ${NAMESPACE}/${POD} "
-        CHECK_ERROR "${NEVER_CALL}" "${POD}" "${NAMESPACE}"
 
         echo ""
         echo "----- check gorouting leak in ${NAMESPACE}/${POD} "

@@ -4,6 +4,8 @@
 
 Spiderpool can be used as a solution to provide fixed IPs in an Underlay network scenario, and this article will use [Multus](https://github.com/k8snetworkplumbingwg/multus-cni), [Ovs-cni](https://github.com/k8snetworkplumbingwg/ovs-cni), and [Spiderpool](https://github.com/spidernet-io/spiderpool) as examples to build a complete Underlay network solution that exposes the available bridges as node resources for use by the cluster.
 
+[`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) is a Kubernetes CNI plugin that utilizes Open vSwitch (OVS) to enable network virtualization within a Kubernetes cluster.
+
 ## Prerequisites
 
 1. Make sure a multi-node Kubernetes cluster is ready.
@@ -19,36 +21,37 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
     ~# sudo systemctl start openvswitch-switch
     ```
 
-## Install Ovs-cni
+## Install Spiderpool
 
-[`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) is a Kubernetes CNI plugin based on Open vSwitch (OVS) that provides a way to use OVS for network virtualization in a Kubernetes cluster in a Kubernetes cluster.
+1. Install Spiderpool.
 
-Verify that the binary /opt/cni/bin/ovs exists on the node. if the binary is missing, you can install it on all nodes by using the following command when you installing spiderpool:
+    ```bash
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf" --set plugins.installOvsCNI=true
+    ```
 
-```bash
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set plugins.installOvsCNI=true
-```
+    > If ovs-cni is not installed, you can install it by specifying the Helm parameter `--set plugins.installOvsCNI=true`.
+    >
+    > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
+    >
+    > Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
-Note: Ovs-cni does not configure bridges, it is up to the user to create them and connect them to L2, L3, The following is an example of creating a bridge, to be executed on each node:
+2. To configure Open vSwitch bridges on each node:
 
-1. Create an Open vSwitch bridge.
+    Create a bridge and configure it using `eth0`` as an example.
 
     ```bash
     ~# ovs-vsctl add-br br1
-    ```
-
-2. Network interface connected to the bridge：
-
-    This procedure depends on your platform, the following commands are only example instructions and it may break your system. First use `ip link show` to query the host for available interfaces, the example uses the interface on the host: `eth0` as an example.
-
-    ```bash
     ~# ovs-vsctl add-port br1 eth0
-    ~# ip addr add <IP地址>/<子网掩码> dev br1
+    ~# ip addr add <IP address>/<subnet mask> dev br1
     ~# ip link set br1 up
-    ~# ip route add default via <默认网关IP> dev br1
+    ~# ip route add default via <default gateway IP> dev br1
     ```
 
-3. Once created, the following bridge information can be viewed on each node:
+    Pleade include these commands in your system startup script to ensure they take effect after host restarts.
+
+    After creating the bridge, you will be able to view its information on each node:
 
     ```bash
     ~# ovs-vsctl show
@@ -64,25 +67,9 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
         ovs_version: "2.17.3"
     ```
 
-## Install Spiderpool
+3. Create a SpiderIPPool instance.
 
-1. Install Spiderpool
-
-    ```bash
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf" --set plugins.installOvsCNI=true
-    ```
-    
-    > If Ovs-cni is not installed in your cluster, you can specify the Helm parameter `--set plugins.installOvsCNI=true` to install Macvlan in your cluster.
-    >
-    > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
-    >
-    > Specify the Multus clusterNetwork of the cluster through `multus.multusCNI.defaultCniCRName`, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.
-
-2. Create a SpiderIPPool instance.
-
-    The Pod will obtain an IP address from the IPPool for underlying network communication, so the subnet of the IPPool needs to correspond to the underlying subnet being accessed.
+    The Pod will obtain an IP address from the IP pool for underlying network communication, so the subnet of the IP pool needs to correspond to the underlying subnet being accessed.
 
     Here is an example of creating a SpiderSubnet instance:
 
@@ -103,7 +90,7 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
     EOF
     ```
 
-3. Verify the installation：
+4. Verify the installation：
 
     ```bash
     ~# kubectl get po -n kube-system |grep spiderpool
@@ -118,9 +105,9 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
     ~# 
     ```
 
-4. To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating an ovs-cni SpiderMultusConfig configuration:
+5. To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating an ovs-cni SpiderMultusConfig configuration:
 
-    * Confirm the required host bridge for ovs-cni, for example based on the command `ovs-vsctl show`, this example takes the host bridge: `br1` as an example.
+    * Confirm the bridge name for ovs-cni. Take the host bridge: `br1` as an example:
 
     ```shell
     BRIDGE_NAME="br1"
@@ -137,7 +124,7 @@ Note: Ovs-cni does not configure bridges, it is up to the user to create them an
     EOF
     ```
 
-## Create applications
+## Create Applications
 
 In the following example Yaml, 2 copies of the Deployment are created, of which:
 

@@ -53,9 +53,9 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-       
+
     > - 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
-    > 
+    >
     > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     >
     > - 完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。
@@ -90,11 +90,11 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
           ]     
 
     > 如果上报的资源数为 0，可能的原因：
-    > 
+    >
     > (1) 请确认 configmap spiderpool-rdma-shared-device-plugin 中的 vendors 和 deviceID 与实际相符
-    > 
+    >
     > (2) 查看 rdma-shared-device-plugin 的日志，对于支持 RDMA 网卡报错如下日志，可尝试在主机上安装 apt-get install rdma-core 或 dnf install rdma-core
-    > 
+    >
     >   `error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"`
 
 5. 基于 RDMA 网卡作为 master 节点，创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源
@@ -220,11 +220,11 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
     本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
 
     > 要隔离使用 RDMA 网卡，务必满足如下其中一个条件：
-    > 
+    >
     > (1) 内核版本要求 5.3.0 或更高版本，并在系统中加载 RDMA 模块。rdma-core 软件包提供了在系统启动时自动加载相关模块的功能。
-    > 
+    >
     > (2) Mellanox OFED 要求 4.7 或更高版本。此时不需要使用 5.3.0 或更新版本的内核。
-    
+
     使用如下命令，可查询到 RDMA 设备：
 
         ~# rdma link show
@@ -242,7 +242,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         netns exclusive copy-on-fork on
 
     确认网卡具备 SR-IOV 功能，查看支持的最大 VF 数量：
-   
+
         ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
         127
 
@@ -266,9 +266,8 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
     > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     >
     > - 完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
-    > 
+    >
     > - 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
-
 
     完成后，安装的组件如下
 

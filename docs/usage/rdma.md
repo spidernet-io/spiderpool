@@ -42,22 +42,24 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-3. Refer to [the installation guide](./install/underlay/get-started-macvlan.md) to install Spiderpool and configure sriov-network-operator. Make sure to include the following Helm options in the commands for installing the RDMA shared device plugin:
+3. Install Spiderpool and configure sriov-network-operator:
 
         helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set multus.multusCNI.defaultCniCRName="macvlan-conf" \
+           --set multus.multusCNI.defaultCniCRName="macvlan-ens6f0np0" \
            --set rdma.rdmaSharedDevicePlugin.install=true \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-       
-    > If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
+
+    > - If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
     >
-    > If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
+    > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
     >
-    > After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
+    > - After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
+    >
+    > - Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
     Once the installation is complete, the following components will be installed:
 
@@ -87,11 +89,11 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
           ]     
 
     > If the reported resource count is 0, it may be due to the following reasons:
-    > 
+    >
     > (1) Verify that the vendors and deviceID in the spiderpool-rdma-shared-device-plugin configmap match the actual values.
-    > 
+    >
     > (2) Check the logs of the rdma-shared-device-plugin. If you encounter errors related to RDMA NIC support, try installing apt-get install rdma-core or dnf install rdma-core on the host machine.
-    > 
+    >
     >   `error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"`
 
 5. Create macvlan-related multus configurations using an RDMA card as the master node and set up the corresponding ippool resources:
@@ -217,11 +219,11 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
     In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver.
 
     > To isolate the usage of an RDMA network card, ensure that at least one of the following conditions is met:
-    > 
+    >
     > (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
-    > 
+    >
     > (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
-    
+
     To confirm the presence of RDMA devices, use the following command:
 
         ~# rdma link show
@@ -239,7 +241,7 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         netns exclusive copy-on-fork on
 
     To verify if the network card has SR-IOV functionality, check the maximum number of supported VFs:
-   
+
         ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
         127
 
@@ -253,15 +255,17 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-3. Refer to [the installation guide](./install/underlay/get-started-sriov.md) to install Spiderpool. Make sure to include the following Helm options in the commands for installing [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni):
+3. Install Spiderpool
 
         helm install spiderpool spiderpool/spiderpool -n kube-system \
            --set sriov.install=true  \
            --set plugins.installRdmaCNI=true
 
-    > If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
+    > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
     >
-    > After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
+    > - After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
+    >
+    > - Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
     Once the installation is complete, the following components will be installed:
         ~# kubectl get pod -n kube-system

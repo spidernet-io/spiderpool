@@ -20,12 +20,6 @@ This page showcases the utilization of `Spiderpool`, a comprehensive Underlay ne
    ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
    ```
 
-- If the [cni plugins](https://www.cni.dev/plugins/current/) are not installed under `/opt/cni/bin` on each node of your cluster, follow the commands below for installation:
-
-   ```shell
-   ~# wget https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
-   ~# tar xvfzp ./cni-plugins-linux-amd64-v1.3.0.tgz -C /opt/cni/bin
-   ```
   
 - Helm binary
 
@@ -39,8 +33,9 @@ Follow the command below to install Spiderpool:
 ~# helm install spiderpool spiderpool/spiderpool --namespace kube-system  --set coordinator.mode=overlay --wait 
 ```
 
-> By default, Spiderpool automatically installs Multus. However, if Multus has been already installed, you can skip the installation via the following command: `helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.install=false` 
-> It is necessary to specify that the coordinator operates in overlay mode
+> If Macvlan CNI is not installed in your cluster, you can install it on each node by using the Helm parameter `--set plugins.installCNI=true`.
+>
+> Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
 Check the status of Spiderpool after the installation is complete:
 

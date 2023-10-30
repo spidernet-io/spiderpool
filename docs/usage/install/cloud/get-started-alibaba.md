@@ -50,12 +50,12 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam
 ```
 
 > If IPVlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install IPVlan in your cluster.
-> 
+>
 > If you are using a cloud server from a Chinese mainland cloud provider, you can enhance image pulling speed by specifying the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io`.
 >
 > Spiderpool allows for fixed IP addresses for application replicas with a controller type of `StatefulSet`. However, in the underlay network scenario of public clouds, cloud instances are limited to using specific IP addresses. When StatefulSet replicas migrate to different nodes, the original fixed IP becomes invalid and unavailable on the new node, causing network unavailability for the new Pods. To address this issue, set `ipam.enableStatefulSet` to `false` to disable this feature.
 >
-> Specify the Multus clusterNetwork for the cluster using `multus.multusCNI.defaultCniCRName`. `clusterNetwork` is a specific field within the Multus plugin used to define the default network interface for Pods.
+> Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
 ### Install CNI
 
@@ -116,7 +116,7 @@ ipvlan-eth0   10m
 ipvlan-eth1   10m
 ```
 
-### Create IPPools
+### Create IP Pools
 
 The Spiderpool's CRD, `SpiderIPPool`, introduces the following fields: `nodeName`, `multusName`, and `ips`:
 

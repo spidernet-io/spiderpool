@@ -46,21 +46,21 @@ markdown_extensions:
 
 nav:
   - README.md
-  - GetStarted: usage/readme.md
+  - Get Started: usage/readme.md
   - Installation:
-      - Underlay installation:
+      - Underlay Installation:
           - Calico: usage/install/underlay/get-started-calico.md
           - Weave: usage/install/underlay/get-started-weave.md
           - Macvlan: usage/install/underlay/get-started-kind.md
           - Ovs: usage/install/underlay/get-started-ovs.md
-          - SRIOV: usage/install/underlay/get-started-sriov.md
-      - Overlay installation:
+          - SR-IOV: usage/install/underlay/get-started-sriov.md
+      - Overlay Installation:
           - Calico: usage/install/overlay/get-started-calico.md
           - Cilium: usage/install/overlay/get-started-cilium.md
-      - Public cloud installation:
-          - alibaba cloud: usage/install/cloud/get-started-alibaba.md
-          - vmware vsphere: usage/install/cloud/get-started-vmware.md
-          - openstack: usage/install/cloud/get-started-openstack.md
+      - Public Cloud Installation:
+          - Alibaba Cloud: usage/install/cloud/get-started-alibaba.md
+          - VWware vSphere: usage/install/cloud/get-started-vmware.md
+          - OpenStack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
@@ -71,13 +71,14 @@ nav:
       - IPAM for custom controllers: usage/third-party-controller.md
       - IPAM for StatefulSet: usage/statefulset.md
       - IPAM of Reserved IP: usage/reserved-ip.md
-      - Multiple interfaces: usage/multi-interfaces-annotation.md
+      - MultipleInterfaces: usage/multi-interfaces-annotation.md
       - Egress Policy: usage/egress.md
-      - IPv6 support: usage/ipv6.md
-      - Route support: usage/route.md
+      - IPv6 Support: usage/ipv6.md
+      - Route Support: usage/route.md
+      - Service Support: usage/service.md
       - Plugin coordinator: usage/coordinator.md
       - Plugin ifacer: usage/ifacer.md
-      - node-based topology: usage/network-topology.md
+      - Node-based Topology: usage/network-topology.md
       - RDMA: usage/rdma.md
       - Kubevirt: usage/kubevirt.md
       - FAQ: usage/debug.md
@@ -85,7 +86,7 @@ nav:
       - Architecture: concepts/arch.md
       - IPAM: concepts/ipam.md
       - IPAM Performance: concepts/ipam-performance.md
-      - IO Performance: concepts/io-performance.md
+      - I/O Performance: concepts/io-performance.md
       - Blogs: concepts/blog.md
   - Reference:
       - Annotations: reference/annotation.md
@@ -100,7 +101,7 @@ nav:
       - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
       - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
       - Coordinatorr plugin: reference/plugin-coordinator.md
-      - Ifacer plugin: reference/plugin-ifacer.md
+      - ifacer plugin: reference/plugin-ifacer.md
       - IPAM plugin: reference/plugin-ipam.md
   - Development:
       - Contribution Guide: develop/contributing.md

@@ -58,9 +58,11 @@ helm repo update spiderpool
 helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-conf"
 ```
 
-> If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
+> If you are using a cloud server from a Chinese mainland cloud provider, you can enhance image pulling speed by specifying the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io`.
 >
-> Specify the Multus clusterNetwork of the cluster through `multus.multusCNI.defaultCniCRName`, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.
+> If Macvlan CNI is not installed in your cluster, you can install it on each node by using the Helm parameter `--set plugins.installCNI=true`.
+>
+> Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
 Verify the installation：
 

@@ -37,11 +37,14 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set sriov.install=true 
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set sriov.install=true --set multus.multusCNI.defaultCniCRName="sriov-test"
     ```
 
     > When using the helm option `--set sriov.install=true`, it will install the [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator). The default value for resourcePrefix is "spidernet.io" which can be modified via the helm option `--set sriov.resourcePrefix`.
+    >
     > For users in the Chinese mainland, it is recommended to specify the spec `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
+    >
+    > Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
 2. To enable the SR-IOV CNI on specific nodes, you need to apply the following command to label those nodes. This will allow the sriov-network-operator to install the components on the designated nodes.
 

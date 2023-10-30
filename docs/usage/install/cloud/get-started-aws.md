@@ -297,8 +297,9 @@ The AWS Load Balancer product offers two modes: NLB (Network Load Balancer) and 
 
 3. Create a public subnet for the availability zone where your AWS EC2 instances are located and apply an auto-discoverable tag.
 
-    - For ALB, you need at least two subnets across different availability zones. For NLB, at least one subnet is required. Refer to the [Subnet Discovery]((https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/deploy/subnet_discovery/)) for more details.
+    - For ALB, you need at least two subnets across different availability zones. For NLB, at least one subnet is required. Refer to the [Subnet Discovery](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/deploy/subnet_discovery/) for more details.
     - To enable LB with public access, add the `kubernetes.io/role/elb:1` tag to the public subnet in the availability zone where the instances reside. Regarding cross-VPC access for LB, create a private subnet and apply the `kubernetes.io/role/internal-elb:1` tag. Use the [AWS environment](./get-started-aws.md#aws-environment) to create the necessary subnets:
+
       > - To create a public subnet for an internet-exposed load balancer, go to the AWS VPC Dashboard, select "Create subnet" in the Subnets section, and choose the same availability zone as the EC2 instance, and associate the subnet with the Main route table (make sure the default 0.0.0.0/0 route in the Main route table has the Internet Gateway as the next hop; if not, create this route rule).
       > - Create a new route table in the AWS VPC Dashboard and configure the 0.0.0.0/0 route with the NAT Gateway as the next hop, and the ::/0 route with the Internet Gateway as the next hop.
       > - To create a private subnet for LB with cross-VPC access, go to the AWS VPC Dashboard Subnets section, select "Create subnet," choose the same availability zone as the EC2 instance, and associate it with the route table created in the previous step.

@@ -298,6 +298,7 @@ AWS 基础产品 `负载均衡` 拥有 NLB (Network Load Balancer) 和 ALB(Appli
 
     - ALB 的使用需要至少 2 个跨可用区的子网，对于 NLB 的使用需要至少 1 个子网。详情请看 [子网自动发现](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/deploy/subnet_discovery/)。
     - 对于公网访问的 LB，您需要为实例所在可用区的 public subnet 打上 tag: `kubernetes.io/role/elb:1`，对于 VPC 间访问的 LB，请创建 private subnet 并打上 tag:`kubernetes.io/role/internal-elb:1`，请结合 [AWS 环境](./get-started-aws-zh_CN.md#AWS环境) 来创建所需的子网：
+
       > - 针对因特网暴露的负载均衡器，创建 public subnet: 在 AWS VPC Dashboard Subnets 栏选择创建子网，并选择与 EC2 相同的可用区。随后在 Route tables 栏选中我们的 Main 路由表并选择子网关联。(注意 Main 路由表的 0.0.0.0/0 路由的下一跳默认为 Internet 网关，若丢失请自行创建该路由规则)。
       > - 在 AWS VPC Dashboard Route tables 栏创建一个新的路由表并配置 0.0.0.0/0 的路由下一跳为 NAT 网关，::/0 路由下一跳为 Internet 网关。
       > - 针对 VPC 间访问的负载均衡器，创建 private subnet: 在 AWS VPC Dashboard Subnets 栏选择创建子网，并选择与 EC2 相同的可用区。随后在 Route tables 栏选中上一步创建的路由表并选择子网关联。

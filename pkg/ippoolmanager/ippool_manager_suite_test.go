@@ -86,7 +86,9 @@ var _ = BeforeSuite(func() {
 	mockLeaderElector = electionmock.NewMockSpiderLeaseElector(mockCtrl)
 	mockRIPManager = reservedipmanagermock.NewMockReservedIPManager(mockCtrl)
 	ipPoolManager, err = ippoolmanager.NewIPPoolManager(
-		ippoolmanager.IPPoolManagerConfig{},
+		ippoolmanager.IPPoolManagerConfig{
+			EnableKubevirtStaticIP: true,
+		},
 		fakeClient,
 		fakeAPIReader,
 		mockRIPManager,

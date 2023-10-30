@@ -23,8 +23,6 @@ kind-init: check_env prepare
 		E2E_VLAN_GATEWAY_IMAGE=$(E2E_VLAN_GATEWAY_IMAGE) \
 		VLAN_GATEWAY_CONTAINER=$(VLAN_GATEWAY_CONTAINER) \
 		$(QUIET) bash scripts/config-network.sh
-	@echo -e "\033[35m [Step 5] Install The CNI-Plugins: $(CNI_PACKAGE_VERSION)  \033[0m"
-	$(QUIET) bash scripts/cni-install.sh $(E2E_CLUSTER_NAME) $(DOWNLOAD_DIR)
 ifeq ($(INSTALL_OVERLAY_CNI),true)
 	@echo -e "\033[35m [Step 6] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
@@ -40,6 +38,9 @@ ifeq ($(INSTALL_OVERLAY_CNI),true)
 		CILIUM_VERSION=$(CILIUM_VERSION) \
 		CILIUM_CLUSTER_POD_SUBNET_V4=$(CILIUM_CLUSTER_POD_SUBNET_V4) \
 		CILIUM_CLUSTER_POD_SUBNET_V6=$(CILIUM_CLUSTER_POD_SUBNET_V6) \
+		DISABLE_KUBE_PROXY=$(DISABLE_KUBE_PROXY) \
+		CALICO_CLUSTER_POD_SUBNET_V4=$(CALICO_CLUSTER_POD_SUBNET_V4) \
+		CALICO_CLUSTER_POD_SUBNET_V4=$(CALICO_CLUSTER_POD_SUBNET_V4) \
 		HTTP_PROXY=$(HTTP_PROXY) \
 		$(QUIET) bash scripts/install-default-cni.sh
 endif
@@ -56,7 +57,11 @@ ifeq ($(INSTALL_MULTUS),true)
 		MULTUS_DEFAULT_CNI_VLAN200=$(MULTUS_DEFAULT_CNI_VLAN200) \
 		MULTUS_ADDITIONAL_CNI_VLAN100=$(MULTUS_ADDITIONAL_CNI_VLAN100) \
 		MULTUS_ADDITIONAL_CNI_VLAN200=$(MULTUS_ADDITIONAL_CNI_VLAN200) \
+		MULTUS_KUBEVIRT_CNI_VLAN30=$(MULTUS_KUBEVIRT_CNI_VLAN30) \
+		MULTUS_KUBEVIRT_CNI_VLAN40=$(MULTUS_KUBEVIRT_CNI_VLAN40) \
+		INSTALL_KUBEVIRT=$(INSTALL_KUBEVIRT) \
 		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
+		DISABLE_KUBE_PROXY=$(DISABLE_KUBE_PROXY) \
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
@@ -75,6 +80,15 @@ ifeq ($(INSTALL_SPIDERDOCTOR),true)
 		E2E_SPIDERDOCTOR_IMAGE_REPO=$(E2E_SPIDERDOCTOR_IMAGE_REPO) \
 		HTTP_PROXY=$(HTTP_PROXY) \
 		$(QUIET) bash scripts/install-spiderdoctor.sh
+endif
+ifeq ($(INSTALL_KUBEVIRT),true)
+	@echo -e "\033[35m [Step 10] Install kubevirt \033[0m"
+	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
+		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+		HTTP_PROXY=$(HTTP_PROXY) \
+		KUBEVIRT_VERSION=$(KUBEVIRT_VERSION) \
+		E2E_KUBEVIRT_IMAGE_REPO=$(E2E_KUBEVIRT_IMAGE_REPO) \
+		$(QUIET) bash scripts/install-kubevirt.sh
 endif
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE_NAME=$(TEST_IMAGE_NAME) \
@@ -155,10 +169,6 @@ setup_kurise:
 
 .PHONY: setup_spiderpool
 setup_spiderpool:
-	@echo "Load Image $(E2E_SPIDERPOOL_TAG) to kind..." ; \
-		for i in $(SPIDERPOOL_IMAGES); do \
-			kind load docker-image $${i}:$(E2E_SPIDERPOOL_TAG) --name $(E2E_CLUSTER_NAME);	\
-		done; \
 		if [ "$(USE_TLS_METHOD)" == "certmanager" ] ; then \
 			echo "USE_TLS_METHOD $(USE_TLS_METHOD) " ; \
 			$(QUIET) IMAGE_CERT_MANAGER="$(IMAGE_CERT_MANAGER_NAME)" scripts/install-cert-manager.sh "$(E2E_CLUSTER_NAME)" "$(CERT_MANAGER_ISSUER_NAME)" ; \
@@ -200,10 +210,6 @@ setup_spiderpool:
 		    else \
 			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
 		    fi ; \
-			IMAGE_MULTUS=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | grep multus | tr -d '"' | awk '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
-			echo "MULTUS IMAGE: $${IMAGE_MULTUS} " ; \
-			docker pull $${IMAGE_MULTUS} ; \
-		 	kind load docker-image $${IMAGE_MULTUS}  --name $(E2E_CLUSTER_NAME); \
 			if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
 				HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
 			else \
@@ -273,23 +279,34 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set sriov.install=true " ; \
 		HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=true " ; \
-		HELM_OPTION+=" --set rdma.rdmaCni.install=true " ; \
+		HELM_OPTION+=" --set plugins.installCNI=true " ; \
+		HELM_OPTION+=" --set plugins.installRdmaCNI=true " ; \
+		HELM_OPTION+=" --set plugins.installOvsCNI=true " ; \
+		HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \
+		--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
+		--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
+		--set spiderpoolController.image.registry="" \
+		--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+		--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+		--set spiderpoolInit.image.registry="" \
+		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
+		--set rdma.rdmaCni.image.registry=$(E2E_RDMA_IMAGE_REPO) \
+		--set rdma.rdmaSharedDevicePlugin.image.registry=$(E2E_RDMA_IMAGE_REPO) \
+		--set sriov.image.registry=$(E2E_SRIOV_IMAGE_REPO)   " \
+		ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
+		echo "ALL_IMAGES: $${ALL_IMAGES} " ; \
+		for IMAGE in $${ALL_IMAGES}; do \
+				if ! grep "$${IMAGE}" <<< `docker images | awk '{printf("%s:%s\n",$$1,$$2)}'`; then \
+						echo "==> $${IMAGE} no found, pulling...." ; \
+						docker pull $${IMAGE} ; \
+				fi ; \
+				kind load docker-image $${IMAGE}  --name $(E2E_CLUSTER_NAME); \
+		done ; \
 		echo "setup spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
 		set -x ; \
 		helm upgrade --install $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool --wait --debug \
 			-n $(RELEASE_NAMESPACE)  \
-			--set spiderpoolAgent.image.registry="" \
-			--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
-			--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
-			--set spiderpoolController.image.registry="" \
-			--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-			--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
-			--set spiderpoolInit.image.registry="" \
-			--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-			--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
-			--set rdma.rdmaCni.image.registry=$(E2E_RDMA_IMAGE_REPO) \
-			--set rdma.rdmaSharedDevicePlugin.image.registry=$(E2E_RDMA_IMAGE_REPO) \
-			--set sriov.image.registry=$(E2E_SRIOV_IMAGE_REPO) \
 			$${HELM_OPTION}  \
 			$(E2E_HELM_ADDITIONAL_OPTIONS) \
 			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \

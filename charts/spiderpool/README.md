@@ -123,6 +123,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `global.cniConfHostPath`        | the host path of the cni config directory                                   | `/etc/cni/net.d`                     |
 | `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                         | `/var/run/spidernet/spiderpool.sock` |
 | `global.configName`             | the configmap name                                                          | `spiderpool-conf`                    |
+| `global.ciliumConfigMap`        | the cilium's configMap, default is kube-system/cilium-config                | `kube-system/cilium-config`          |
 
 ### ipam parameters
 
@@ -131,6 +132,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.enableIPv4`                      | enable ipv4                                                                 | `true` |
 | `ipam.enableIPv6`                      | enable ipv6                                                                 | `true` |
 | `ipam.enableStatefulSet`               | the network mode                                                            | `true` |
+| `ipam.enableKubevirtStaticIP`          | the feature to keep kubevirt vm pod static IP                               | `true` |
 | `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                  | `true` |
 | `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools | `1`    |
 | `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                       | `true` |
@@ -162,35 +164,28 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### rdma parameters
 
-| Name                                                              | Description                                                | Value                                  |
-| ----------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------- |
-| `rdma.rdmaSharedDevicePlugin.install`                             | install rdma shared device plugin for macvlan cni          | `false`                                |
-| `rdma.rdmaSharedDevicePlugin.name`                                | the name of rdma shared device plugin                      | `spiderpool-rdma-shared-device-plugin` |
-| `rdma.rdmaSharedDevicePlugin.image.registry`                      | the image registry of rdma shared device plugin            | `ghcr.io`                              |
-| `rdma.rdmaSharedDevicePlugin.image.repository`                    | the image repository of rdma shared device plugin          | `mellanox/k8s-rdma-shared-dev-plugin`  |
-| `rdma.rdmaSharedDevicePlugin.image.pullPolicy`                    | the image pullPolicy of rdma shared device plugin          | `IfNotPresent`                         |
-| `rdma.rdmaSharedDevicePlugin.image.digest`                        | the image digest of rdma shared device plugin              | `""`                                   |
-| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin                 | `latest`                               |
-| `rdma.rdmaSharedDevicePlugin.image.imagePullSecrets`              | the image imagePullSecrets of rdma shared device plugin    | `[]`                                   |
-| `rdma.rdmaSharedDevicePlugin.podAnnotations`                      | the additional annotations                                 | `{}`                                   |
-| `rdma.rdmaSharedDevicePlugin.podLabels`                           | the additional label                                       | `{}`                                   |
-| `rdma.rdmaSharedDevicePlugin.resources.limits.cpu`                | the cpu limit                                              | `300m`                                 |
-| `rdma.rdmaSharedDevicePlugin.resources.limits.memory`             | the memory limit                                           | `300Mi`                                |
-| `rdma.rdmaSharedDevicePlugin.resources.requests.cpu`              | the cpu requests                                           | `100m`                                 |
-| `rdma.rdmaSharedDevicePlugin.resources.requests.memory`           | the memory requests                                        | `50Mi`                                 |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval` | periodic Update Interval                                   | `300`                                  |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix`         | resource prefix                                            | `spidernet.io`                         |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName`           | resource Name                                              | `hca_shared_devices`                   |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax`             | rdma Hca Max                                               | `500`                                  |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.vendors`                | rdma device vendors, default to mellanox device            | `15b3`                                 |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs`              | rdma device IDs, default to mellanox device                | `1017`                                 |
-| `rdma.rdmaCni.install`                                            | install rdma cni used to isolate rdma device for sriov cni | `false`                                |
-| `rdma.rdmaCni.image.registry`                                     | the rdma-cni image registry                                | `ghcr.io`                              |
-| `rdma.rdmaCni.image.repository`                                   | the rdma-cni image repository                              | `k8snetworkplumbingwg/rdma-cni`        |
-| `rdma.rdmaCni.image.pullPolicy`                                   | the rdma-cni image pullPolicy                              | `IfNotPresent`                         |
-| `rdma.rdmaCni.image.digest`                                       | the rdma-cni image digest                                  | `""`                                   |
-| `rdma.rdmaCni.image.tag`                                          | the rdma-cni image tag                                     | `latest`                               |
-| `rdma.rdmaCni.image.imagePullSecrets`                             | the rdma-cni image imagePullSecrets                        | `[]`                                   |
+| Name                                                              | Description                                             | Value                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------- |
+| `rdma.rdmaSharedDevicePlugin.install`                             | install rdma shared device plugin for macvlan cni       | `false`                                |
+| `rdma.rdmaSharedDevicePlugin.name`                                | the name of rdma shared device plugin                   | `spiderpool-rdma-shared-device-plugin` |
+| `rdma.rdmaSharedDevicePlugin.image.registry`                      | the image registry of rdma shared device plugin         | `ghcr.io`                              |
+| `rdma.rdmaSharedDevicePlugin.image.repository`                    | the image repository of rdma shared device plugin       | `mellanox/k8s-rdma-shared-dev-plugin`  |
+| `rdma.rdmaSharedDevicePlugin.image.pullPolicy`                    | the image pullPolicy of rdma shared device plugin       | `IfNotPresent`                         |
+| `rdma.rdmaSharedDevicePlugin.image.digest`                        | the image digest of rdma shared device plugin           | `""`                                   |
+| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin              | `latest`                               |
+| `rdma.rdmaSharedDevicePlugin.image.imagePullSecrets`              | the image imagePullSecrets of rdma shared device plugin | `[]`                                   |
+| `rdma.rdmaSharedDevicePlugin.podAnnotations`                      | the additional annotations                              | `{}`                                   |
+| `rdma.rdmaSharedDevicePlugin.podLabels`                           | the additional label                                    | `{}`                                   |
+| `rdma.rdmaSharedDevicePlugin.resources.limits.cpu`                | the cpu limit                                           | `300m`                                 |
+| `rdma.rdmaSharedDevicePlugin.resources.limits.memory`             | the memory limit                                        | `300Mi`                                |
+| `rdma.rdmaSharedDevicePlugin.resources.requests.cpu`              | the cpu requests                                        | `100m`                                 |
+| `rdma.rdmaSharedDevicePlugin.resources.requests.memory`           | the memory requests                                     | `50Mi`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval` | periodic Update Interval                                | `300`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix`         | resource prefix                                         | `spidernet.io`                         |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName`           | resource Name                                           | `hca_shared_devices`                   |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax`             | rdma Hca Max                                            | `500`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.vendors`                | rdma device vendors, default to mellanox device         | `15b3`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs`              | rdma device IDs, default to mellanox device             | `1017`                                 |
 
 ### multus parameters
 
@@ -207,18 +202,26 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `multus.multusCNI.image.tag`                  | the multus-CNI image tag                                                                                                                                                                                                                                                                                                                                                                         | `v3.9.3`                          |
 | `multus.multusCNI.image.imagePullSecrets`     | the multus-CNI image imagePullSecrets                                                                                                                                                                                                                                                                                                                                                            | `[]`                              |
 | `multus.multusCNI.defaultCniCRName`           | if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/, if no cni files found in /etc/cni/net.d, A Spidermultusconfig CR named default will be created, please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool | `""`                              |
-| `multus.multusCNI.resources.limits.cpu`       | the cpu limit of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                        | `100m`                            |
-| `multus.multusCNI.resources.limits.memory`    | the memory limit of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                     | `50Mi`                            |
-| `multus.multusCNI.resources.requests.cpu`     | the cpu requests of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                     | `100m`                            |
-| `multus.multusCNI.resources.requests.memory`  | the memory requests of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                  | `50Mi`                            |
-| `multus.multusCNI.podAnnotations`             | the additional annotations of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                           | `{}`                              |
-| `multus.multusCNI.podLabels`                  | the additional label of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                 | `{}`                              |
 | `multus.multusCNI.securityContext.privileged` | the securityContext privileged of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                       | `true`                            |
 | `multus.multusCNI.extraEnv`                   | the additional environment variables of multus-CNI daemonset pod container                                                                                                                                                                                                                                                                                                                       | `[]`                              |
 | `multus.multusCNI.extraVolumes`               | the additional volumes of multus-CNI daemonset pod container                                                                                                                                                                                                                                                                                                                                     | `[]`                              |
 | `multus.multusCNI.extraVolumeMounts`          | the additional hostPath mounts of multus-CNI daemonset pod container                                                                                                                                                                                                                                                                                                                             | `[]`                              |
 | `multus.multusCNI.log.logLevel`               | the multus-CNI daemonset pod log level                                                                                                                                                                                                                                                                                                                                                           | `debug`                           |
 | `multus.multusCNI.log.logFile`                | the multus-CNI daemonset pod log file                                                                                                                                                                                                                                                                                                                                                            | `/var/log/multus.log`             |
+
+### plugins parameters
+
+| Name                             | Description                                                | Value                                        |
+| -------------------------------- | ---------------------------------------------------------- | -------------------------------------------- |
+| `plugins.installCNI`             | install all cni plugins to each node                       | `false`                                      |
+| `plugins.installRdmaCNI`         | install rdma cni used to isolate rdma device for sriov cni | `false`                                      |
+| `plugins.installOvsCNI`          | install ovs cni to each node                               | `false`                                      |
+| `plugins.image.registry`         | the image registry of plugins                              | `ghcr.io`                                    |
+| `plugins.image.repository`       | the image repository of plugins                            | `spidernet-io/spiderpool/spiderpool-plugins` |
+| `plugins.image.pullPolicy`       | the image pullPolicy of plugins                            | `IfNotPresent`                               |
+| `plugins.image.digest`           | the image digest of plugins                                | `""`                                         |
+| `plugins.image.tag`              | the image tag of plugins                                   | `v0.8.0`                                     |
+| `plugins.image.imagePullSecrets` | the image imagePullSecrets of plugins                      | `[]`                                         |
 
 ### clusterDefaultPool parameters
 

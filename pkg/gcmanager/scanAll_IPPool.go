@@ -18,6 +18,7 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -139,7 +140,18 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 									continue
 								}
 								if isValidStsPod {
-									scanAllLogger.Sugar().Warnf("no deed to release IP '%s' for StatefulSet pod ", poolIP)
+									scanAllLogger.Sugar().Warnf("no need to release IP '%s' for StatefulSet pod ", poolIP)
+									continue
+								}
+							}
+							if s.gcConfig.EnableKubevirtStaticIP && endpoint.Status.OwnerControllerType == constant.KindKubevirtVMI {
+								isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(logutils.IntoContext(ctx, scanAllLogger), podNS, constant.KindKubevirtVMI, endpoint.Status.OwnerControllerName)
+								if nil != err {
+									scanAllLogger.Sugar().Errorf("failed to check kubevirt vm pod IP '%s' should be cleaned or not, error: %v", poolIP, err)
+									continue
+								}
+								if isValidVMPod {
+									scanAllLogger.Sugar().Warnf("no need to release IP '%s' for kubevirt vm pod ", poolIP)
 									continue
 								}
 							}
@@ -190,15 +202,21 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				} else {
 					// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with pod UID
 					if string(podYaml.UID) != poolIPAllocation.PodUID {
-						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
-						// we are afraid that no one removes the old same name Endpoint finalizer
-						err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
-						if nil != err {
-							wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
-							continue
-						}
+						// Once the static IP Pod restarts, it will retrieve the Pod IP from it SpiderEndpoint.
+						// So at this moment the Pod UID is different from the IPPool's ip-allocationDetail, we should not release it.
+						if podmanager.IsStaticIPPod(s.gcConfig.EnableStatefulSet, s.gcConfig.EnableKubevirtStaticIP, podYaml) {
+							scanAllLogger.Sugar().Debugf("Static IP Pod just restarts, keep the static IP '%s' from the IPPool", poolIP)
+						} else {
+							wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
+							// we are afraid that no one removes the old same name Endpoint finalizer
+							err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
+							if nil != err {
+								wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
+								continue
+							}
 
-						wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
+							wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
+						}
 					} else {
 						endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)
 						if err != nil {
@@ -290,6 +308,14 @@ func (s *SpiderGC) releaseSingleIPAndRemoveWEPFinalizer(ctx context.Context, poo
 			return nil
 		}
 		return err
+	}
+
+	// The StatefulSet/KubevirtVM SpiderEndpoint doesn't have ownerRef which can not lead to cascade deletion.
+	if endpoint.DeletionTimestamp == nil {
+		err := s.wepMgr.DeleteEndpoint(ctx, endpoint)
+		if nil != err {
+			return err
+		}
 	}
 
 	if err := s.wepMgr.RemoveFinalizer(ctx, endpoint); err != nil {

@@ -20,3 +20,4 @@
 | M00023  | vlan is not in the range of 0-4094 and will not be created                                                                                              | p3     |       |  done  |       |
 | M00024  | set disableIPAM to true and see if multus's nad has ipam config                                                                                         | p3     |       |  done  |       |
 | M00025  | set sriov.enableRdma to true and see if multus's nad has rdma config                                                                                    | p3     |       |    |       |
+| M00026  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3     |       |    |       |

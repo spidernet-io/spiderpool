@@ -54,6 +54,10 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
        
+    > 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
+    > 
+    > 如果您的集群未安装 Rdma CNI, 可指定 Helm 参数 `--set plugins.installRdmaCNI=true` 安装 rdma 到每个节点。
+    > 
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     >
     > 完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。
@@ -65,8 +69,6 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-multus-ckjrl                        1/1     Running     0          1m
-        spiderpool-multus-mjl7z                        1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
         spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
 
@@ -271,8 +273,6 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-multus-ckjrl                        1/1     Running     0          1m
-        spiderpool-multus-mjl7z                        1/1     Running     0          1m
 
 4. 配置 SR-IOV operator
 

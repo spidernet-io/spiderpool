@@ -35,6 +35,9 @@ global:
   ## @param global.configName the configmap name
   configName: "spiderpool-conf"
 
+  ## @param global.ciliumConfigMap the cilium's configMap, default is kube-system/cilium-config
+  ciliumConfigMap: kube-system/cilium-config
+
 ## @section ipam parameters
 ##
 ipam:
@@ -46,6 +49,9 @@ ipam:
 
   ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true
+
+  ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
+  enableKubevirtStaticIP: true
 
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: true
@@ -188,30 +194,6 @@ rdma:
       ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs rdma device IDs, default to mellanox device
       deviceIDs: "1017"
 
-  rdmaCni:
-    ## @param rdma.rdmaCni.install install rdma cni used to isolate rdma device for sriov cni
-    install: false
-
-    image:
-      ## @param rdma.rdmaCni.image.registry the rdma-cni image registry
-      registry: ghcr.io
-
-      ## @param rdma.rdmaCni.image.repository the rdma-cni image repository
-      repository: k8snetworkplumbingwg/rdma-cni
-
-      ## @param rdma.rdmaCni.image.pullPolicy the rdma-cni image pullPolicy
-      pullPolicy: IfNotPresent
-
-      ## @param rdma.rdmaCni.image.digest the rdma-cni image digest
-      digest: ""
-
-      ## @param rdma.rdmaCni.image.tag the rdma-cni image tag
-      tag: latest
-
-      ## @param rdma.rdmaCni.image.imagePullSecrets the rdma-cni image imagePullSecrets
-      imagePullSecrets: []
-      # - name: "image-pull-secret"
-
 ## @section multus parameters
 ##
 multus:
@@ -252,35 +234,6 @@ multus:
     ## @param multus.multusCNI.defaultCniCRName if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/, if no cni files found in /etc/cni/net.d, A Spidermultusconfig CR named default will be created, please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool
     defaultCniCRName: ""
 
-    resources:
-      limits:
-        ## @param multus.multusCNI.resources.limits.cpu the cpu limit of multus-CNI daemonset pod
-        cpu: 100m
-        ## @param multus.multusCNI.resources.limits.memory the memory limit of multus-CNI daemonset pod
-        memory: 50Mi
-      requests:
-        ## @param multus.multusCNI.resources.requests.cpu the cpu requests of multus-CNI daemonset pod
-        cpu: 100m
-        ## @param multus.multusCNI.resources.requests.memory the memory requests of multus-CNI daemonset pod
-        memory: 50Mi
-
-    ## @skip multus.multusCNI.tolerations
-    tolerations:
-      - operator: Exists
-
-    ## @param multus.multusCNI.podAnnotations the additional annotations of multus-CNI daemonset pod
-    podAnnotations: {}
-
-    ## @param multus.multusCNI.podLabels the additional label of multus-CNI daemonset pod
-    podLabels: {}
-
-    ## @skip multus.multusCNI.updateStrategy.rollingUpdate.maxUnavailable
-    ## @skip multus.multusCNI.updateStrategy.type
-    updateStrategy:
-      rollingUpdate:
-        maxUnavailable: 2
-      type: RollingUpdate
-
     securityContext:
       ## @param multus.multusCNI.securityContext.privileged the securityContext privileged of multus-CNI daemonset pod
       privileged: true
@@ -304,6 +257,37 @@ multus:
 
       ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
       logFile: "/var/log/multus.log"
+
+## @section plugins parameters
+##
+plugins:
+  ## @param plugins.installCNI install all cni plugins to each node
+  installCNI: false
+
+  ## @param plugins.installRdmaCNI install rdma cni used to isolate rdma device for sriov cni
+  installRdmaCNI: false
+
+  ## @param plugins.installOvsCNI install ovs cni to each node
+  installOvsCNI: false
+
+  image:
+    ## @param plugins.image.registry the image registry of plugins
+    registry: ghcr.io
+
+    ## @param plugins.image.repository the image repository of plugins
+    repository: spidernet-io/spiderpool/spiderpool-plugins
+
+    ## @param plugins.image.pullPolicy the image pullPolicy of plugins
+    pullPolicy: IfNotPresent
+
+    ## @param plugins.image.digest the image digest of plugins
+    digest: ""
+
+    ## @param plugins.image.tag the image tag of plugins
+    tag: v0.8.0
+
+    ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
+    imagePullSecrets: []
 
 ## @section clusterDefaultPool parameters
 ##

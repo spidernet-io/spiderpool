@@ -37,6 +37,8 @@ jobs:
         include:
           - e2e_init_mode: e2e_init_underlay
             e2e_test_mode: e2e_test_underlay
+          - e2e_init_mode: e2e_init_cilium_with_ebpf
+            e2e_test_mode: e2e_test_cilium_with_ebpf
           - e2e_init_mode: e2e_init_calico
             e2e_test_mode: e2e_test_calico
           - e2e_init_mode: e2e_init_cilium
@@ -124,7 +126,8 @@ jobs:
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
                 -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT="" \
-                -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }}
+                -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }} \
+                -e INSTALL_KUBEVIRT=true
 
       - name: Run e2e Test
         id: run_e2e
@@ -137,6 +140,7 @@ jobs:
           make ${{ matrix.e2e_test_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
               -e E2E_GINKGO_LABELS=${E2E_LABELS} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
+              -e INSTALL_MULTUS=true \
               -e E2E_IP_FAMILY=${{ inputs.ip_family }} || RESULT=1
           if ((RESULT==0)) ; then
               echo "RUN_E2E_PASS=true" >> $GITHUB_ENV

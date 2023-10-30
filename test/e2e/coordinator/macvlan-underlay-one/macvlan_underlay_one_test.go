@@ -69,7 +69,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 		time.Sleep(20 * time.Second)
 	})
 
-	It("spiderdoctor connectivity should be succeed", Label("C00001"), func() {
+	It("spiderdoctor connectivity should be succeed", Label("C00001"), Label("ebpf"), func() {
 		// create task spiderdoctor crd
 		task.Name = name
 		// schedule

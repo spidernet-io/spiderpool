@@ -72,14 +72,14 @@ The IPPool status is a subresource that processed automatically by the system to
 
 ### Pod Affinity
 
-For details on configuring SpiderIPPool podAffinity, please read the [Pod Affinity of IPPool](./../usage/ippool-affinity-pod.md).
+For details on configuring SpiderIPPool podAffinity, please read the [Pod Affinity of IPPool](../usage/spider-affinity.md).
 
 ### Namespace Affinity
 
-For details on configuring SpiderIPPool namespaceAffinity or namespaceName, please read the [Namespace Affinity of IPPool](./../usage/ippool-affinity-namespace.md).
+For details on configuring SpiderIPPool namespaceAffinity or namespaceName, please read the [Namespace Affinity of IPPool](../usage/spider-affinity.md).
 > Notice: `namespaceName` has higher priority than `namespaceAffinity`.
 
 ### Node Affinity
 
-For details on configuring SpiderIPPool nodeAffinity or nodeName, please read the [Node Affinity of IPPool](./../usage/ippool-affinity-node.md) and [Network topology allocation](./../usage/network-topology.md).
+For details on configuring SpiderIPPool nodeAffinity or nodeName, please read the [Node Affinity of IPPool](../usage/spider-affinity.md) and [Network topology allocation](./../usage/network-topology.md).
 > Notice: `nodeName` has higher priority than `nodeAffinity`.

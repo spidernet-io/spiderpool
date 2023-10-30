@@ -16,18 +16,6 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
 2. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
 
-## Install Macvlan
-
-[`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) is a CNI plugin that allows pods to be assigned Macvlan virtual NICs for connecting to Underlay networks.
-
-Some Kubernetes installers include the Macvlan binary file by default that can be found at "/opt/cni/bin/macvlan" on your nodes. If the binary file is missing, you can download and install it on all nodes using the following command:
-
-```bash
-wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz 
-tar xvfzp ./cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
-chmod +x /opt/cni/bin/macvlan
-```
-
 ## Install Spiderpool
 
 1. Install Spiderpool.
@@ -35,9 +23,11 @@ chmod +x /opt/cni/bin/macvlan
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-conf"
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-conf" 
     ```
-
+    
+    > If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
+    >
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
     >
     > Specify the Multus clusterNetwork of the cluster through `multus.multusCNI.defaultCniCRName`, clusterNetwork is a specific field of the Multus plugin, which is used to specify the default network interface of the Pod.
@@ -70,8 +60,6 @@ chmod +x /opt/cni/bin/macvlan
     spiderpool-agent-kxf27                   1/1     Running     0              13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
     spiderpool-init                          0/1     Completed   0              13m
-    spiderpool-multus-7vkm2                  1/1     Running     0              13m
-    spiderpool-multus-rwzjn                  1/1     Running     0              13m
     ~# kubectl get sp
     NAME            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
     ippool-test     4         172.18.0.0/16   0                    10               false

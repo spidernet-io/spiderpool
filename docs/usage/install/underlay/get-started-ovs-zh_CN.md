@@ -23,14 +23,10 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 [`ovs-cni`](https://github.com/k8snetworkplumbingwg/ovs-cni) 是一个基于 Open vSwitch（OVS）的 Kubernetes CNI 插件，它提供了一种在 Kubernetes 集群中使用 OVS 进行网络虚拟化的方式。
 
-确认节点上是否存在二进制文件 /opt/cni/bin/ovs 。如果节点上不存在该二进制文件，可参考如下命令，在所有节点上下载安装：
+确认节点上是否存在二进制文件 /opt/cni/bin/ovs 。如果节点上不存在该二进制文件，可在安装 Spiderpool 时通过指定 Helm 参数安装: 
 
 ```bash
-~# wget https://github.com/k8snetworkplumbingwg/ovs-cni/releases/download/v0.31.1/plugin
-
-~# mv ./plugin /opt/cni/bin/ovs
-
-~# chmod +x /opt/cni/bin/ovs
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set plugins.installOvsCNI=true
 ```
 
 Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、L3 网络。以下是创建网桥的示例，请在每个节点上执行：
@@ -75,9 +71,10 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
     ```bash
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf"
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="ovs-conf" --set plugins.installOvsCNI=true
     ```
 
+    > 如果未安装 ovs-cni, 可以通过 Helm 参数 '-set plugins.installOvsCNI=true' 安装它。
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 以帮助您快速的拉取镜像。
     >
     > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
@@ -111,8 +108,6 @@ Ovs-cni 不会配置网桥，由用户创建它们，并将它们连接到 L2、
     spiderpool-agent-kxf27                   1/1     Running     0              13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
     spiderpool-init                          0/1     Completed   0              13m
-    spiderpool-multus-7vkm2                  1/1     Running     0              13m
-    spiderpool-multus-rwzjn                  1/1     Running     0              13m
 
     ~# kubectl get sp ippool-test       
     NAME          VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT

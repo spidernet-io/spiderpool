@@ -47,8 +47,6 @@ The IP addresses specified in the ReservedIP CR serve two purposes:
     spiderpool-agent-kxf27                   1/1     Running     0          13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
     spiderpool-init                          0/1     Completed   0          13m
-    spiderpool-multus-7vkm2                  1/1     Running     0          13m
-    spiderpool-multus-rwzjn                  1/1     Running     0          13m
     ```
 
 ### Install CNI

@@ -18,9 +18,43 @@ data:
     enableIPv4: {{ .Values.ipam.enableIPv4 }}
     enableIPv6: {{ .Values.ipam.enableIPv6 }}
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
+    enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
     {{- if .Values.ipam.enableSpiderSubnet }}
     clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.subnetDefaultFlexibleIPNumber }}
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
+{{- if .Values.multus.multusCNI.install }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "spiderpool.multus.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+data:
+  cni-conf.json: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "multus-cni-network",
+      "type": "multus",
+      "confDir": "/etc/cni/net.d/" ,
+      "logLevel": "{{ .Values.multus.multusCNI.log.logLevel }}",
+      "logFile": "{{ .Values.multus.multusCNI.log.logFile }}",
+      "capabilities": {
+        "portMappings": true,
+        "bandwidth": true
+      },
+      "namespaceIsolation": false,
+      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}",
+      "defaultNetworks": [],
+      "multusNamespace": "{{ .Release.Namespace }}",
+      "systemNamespaces": [],
+      "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
+    }
+{{- end }}

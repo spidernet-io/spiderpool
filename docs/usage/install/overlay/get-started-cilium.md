@@ -51,9 +51,46 @@ spiderpool-agent-bcwqk                                      1/1     Running     
 spiderpool-agent-udgi4                                      1/1     Running     0                 1m
 spiderpool-controller-bgnh3rkcb-k7sc9                       1/1     Running     0                 1m
 spiderpool-init                                             0/1     Completed   0                 1m
-spiderpool-multus-hkxb6                                     1/1     Running     0                 1m
-spiderpool-multus-l9dcs                                     1/1     Running     0                 1m
 ```
+
+Please check if `Spidercoordinator.status.phase` is `Synced`, and if the overlayPodCIDR is consistent with the pod subnet configured by Cilium in the cluster:
+
+```shell
+~# kubectl get configmaps -n kube-system cilium-config -o yaml | grep cluster-pool
+  cluster-pool-ipv4-cidr: 10.244.64.0/18
+  cluster-pool-ipv4-mask-size: "24"
+  ipam: cluster-pool
+
+~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  finalizers:
+  - spiderpool.spidernet.io
+  name: default
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 169.254.0.0/16
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: calico
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+status:
+  overlayPodCIDR:
+  - 10.244.64.0/18
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+```
+
+> 1.If the phase is not synced, the pod will be prevented from being created.
+>
+> 2.If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
 
 ### Create SpiderIPPool
 

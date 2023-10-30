@@ -53,8 +53,6 @@ Deployment 和 StatefulSet 控制器，对于 IP 地址固定的需求是不一�
     spiderpool-agent-kxf27                   1/1     Running     0          13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
     spiderpool-init                          0/1     Completed   0          13m
-    spiderpool-multus-7vkm2                  1/1     Running     0          13m
-    spiderpool-multus-rwzjn                  1/1     Running     0          13m
     ```
 
 ### 安装 CNI 配置

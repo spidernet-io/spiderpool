@@ -46,8 +46,8 @@ markdown_extensions:
 
 nav:
   - README.md
+  - GetStarted: usage/readme.md
   - Installation:
-      - Installation: usage/install/install.md
       - Underlay installation:
           - Calico: usage/install/underlay/get-started-calico.md
           - Weave: usage/install/underlay/get-started-weave.md
@@ -62,39 +62,34 @@ nav:
           - vmware vsphere: usage/install/cloud/get-started-vmware.md
           - openstack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md
-      - Certificates: usage/install/certificate.md
   - Usage:
-      - SpiderSubnet: usage/spider-subnet.md
       - SpiderMultusConfig: usage/spider-multus-config.md
-      - Default IPPool at namespace: usage/ippool-namespace.md
-      - Spider Affinity of IPPool: usage/spider-affinity.md
+      - IPAM of IPPool Namespace: usage/ippool-namespace.md
+      - IPAM of IPPool Affinity: usage/spider-affinity.md
+      - IPAM of Backup IPPool: usage/ippool-multi.md
+      - IPAM of SpiderSubnet: usage/spider-subnet.md
+      - IPAM for custom controllers: usage/third-party-controller.md
+      - IPAM for StatefulSet: usage/statefulset.md
+      - IPAM of Reserved IP: usage/reserved-ip.md
       - Multiple interfaces: usage/multi-interfaces-annotation.md
-      - Backup IPPool: usage/ippool-multi.md
-      - Namespace affinity of IPPool: usage/ippool-affinity-namespace.md
-      - Node affinity of IPPool: usage/ippool-affinity-node.md
-      - Pod affinity of IPPool: usage/ippool-affinity-pod.md
       - IPv6 support: usage/ipv6.md
-      - StatefulSet: usage/statefulset.md
-      - Reserved IP: usage/reserved-ip.md
-      - Third-party controllers: usage/third-party-controller.md
-      - Reclaim IP: usage/gc.md
       - Route support: usage/route.md
       - Plugin coordinator: usage/coordinator.md
       - Plugin ifacer: usage/ifacer.md
       - node-based topology: usage/network-topology.md
       - RDMA: usage/rdma.md
+      - Kubevirt: usage/kubevirt.md
       - FAQ: usage/debug.md
   - Concepts:
       - Architecture: concepts/arch.md
-      - IP Allocation: concepts/allocation.md
-      - Metrics: concepts/metrics.md
-      - Multus: concepts/multusconfig.md
-      - Recycle IP: concepts/gc.md
-      - Underlay and overlay solutions: concepts/solution.md
-      - IPAM Performance: concepts/performance.md
+      - IPAM: concepts/ipam.md
+      - IPAM Performance: concepts/ipam-performance.md
+      - IO Performance: concepts/io-performance.md
+      - Blogs: concepts/blog.md
   - Reference:
       - Annotations: reference/annotation.md
       - Configmap: reference/configmap.md
+      - Metrics: reference/metrics.md
       - spiderpool-controller: reference/spiderpool-controller.md
       - spiderpool-agent: reference/spiderpool-agent.md
       - CRD SpiderSubnet: reference/crd-spidersubnet.md

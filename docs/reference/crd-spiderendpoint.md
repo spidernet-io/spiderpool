@@ -2,6 +2,8 @@
 
 A SpiderEndpoint resource represents IP address allocation details for the corresponding pod. This resource one to one pod, and it will inherit the pod name and pod namespace.
 
+> Notice: For kubevirt VM static IP feature, the SpiderEndpoint object would inherit the kubevirt VM/VMI resource name and namespace.
+
 ## Sample YAML
 
 ```yaml

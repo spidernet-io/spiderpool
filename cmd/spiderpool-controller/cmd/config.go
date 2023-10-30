@@ -22,6 +22,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
+	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -92,6 +93,7 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_MULTUS_CONFIG_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableMultusConfig, nil},
 	{"SPIDERPOOL_MULTUS_CONFIG_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.MultusConfigInformerResyncPeriod},
+	{"SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", "kube-system/cilium-config", false, &controllerContext.Cfg.CiliumConfigName, nil, nil},
 
 	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
@@ -123,6 +125,8 @@ type Config struct {
 	GopsListenPort    string
 	PyroscopeAddress  string
 	DefaultCniConfDir string
+	// CiliumConfigName is formatted by namespace and name,default is kube-system/cilium-config
+	CiliumConfigName string
 
 	ControllerPodNamespace string
 	ControllerPodName      string
@@ -153,6 +157,7 @@ type Config struct {
 	EnableIPv4                        bool `yaml:"enableIPv4"`
 	EnableIPv6                        bool `yaml:"enableIPv6"`
 	EnableStatefulSet                 bool `yaml:"enableStatefulSet"`
+	EnableKubevirtStaticIP            bool `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                bool `yaml:"enableSpiderSubnet"`
 	ClusterSubnetDefaultFlexibleIPNum int  `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
@@ -180,6 +185,7 @@ type ControllerContext struct {
 	PodManager        podmanager.PodManager
 	GCManager         gcmanager.GCManager
 	StsManager        statefulsetmanager.StatefulSetManager
+	KubevirtManager   kubevirtmanager.KubevirtManager
 	Leader            election.SpiderLeaseElector
 
 	// handler

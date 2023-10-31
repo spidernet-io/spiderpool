@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/go-logr/logr"
 	multusv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	calicov1 "github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -19,6 +20,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	runtimeWebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -37,6 +39,10 @@ func init() {
 }
 
 func newCRDManager() (ctrl.Manager, error) {
+	// set logger for controller-runtime framework
+	// The controller-runtime would print debug stack if we do not init the log previously: https://github.com/kubernetes-sigs/controller-runtime/pull/2357
+	ctrl.SetLogger(logr.New(controllerruntimelog.NullLogSink{}))
+
 	port, err := strconv.Atoi(controllerContext.Cfg.WebhookPort)
 	if err != nil {
 		return nil, err
@@ -45,7 +51,6 @@ func newCRDManager() (ctrl.Manager, error) {
 	config := ctrl.GetConfigOrDie()
 	config.Burst = 200
 	config.QPS = 100
-
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{

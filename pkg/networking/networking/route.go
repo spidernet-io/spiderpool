@@ -103,7 +103,7 @@ func DelFromRuleTable(src *net.IPNet, ruleTable int) error {
 }
 
 // AddRoute add static route to specify rule table
-func AddRoute(logger *zap.Logger, ruleTable, ipFamily int, scope netlink.Scope, iface string, dst *net.IPNet, v4Gw, v6Gw net.IP) error {
+func AddRoute(logger *zap.Logger, ruleTable, ipFamily int, scope netlink.Scope, iface string, src, dst *net.IPNet, v4Gw, v6Gw net.IP) error {
 	link, err := netlink.LinkByName(iface)
 	if err != nil {
 		logger.Error(err.Error())
@@ -115,6 +115,10 @@ func AddRoute(logger *zap.Logger, ruleTable, ipFamily int, scope netlink.Scope, 
 		Scope:     scope,
 		Dst:       dst,
 		Table:     ruleTable,
+	}
+
+	if src != nil {
+		route.Src = src.IP
 	}
 
 	switch ipFamily {

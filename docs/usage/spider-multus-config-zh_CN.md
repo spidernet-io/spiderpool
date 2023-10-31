@@ -40,26 +40,7 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 ### 安装 Spiderpool
 
-- 通过 helm 安装 Spiderpool.
-
-```bash
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system
-```
-
-> 如果您所在地区是中国大陆，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
-
-- 检查安装完成
-
-    ```bash
-    ~# kubectl get po -n kube-system | grep spiderpool
-    NAME                                     READY   STATUS      RESTARTS   AGE                                
-    spiderpool-agent-7hhkz                   1/1     Running     0          13m
-    spiderpool-agent-kxf27                   1/1     Running     0          13m
-    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-    spiderpool-init                          0/1     Completed   0          13m
-    ```
+可参考 [安装](./readme-zh_CN.md) 安装 Spiderpool.
 
 ### 创建 CNI 配置
 

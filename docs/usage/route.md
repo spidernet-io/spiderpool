@@ -1,5 +1,7 @@
 # Route support
 
+**English** ｜ [**简体中文**](./route-zh_CN.md)
+
 ## Description
 
 Spiderpool supports the configuration of routing information.

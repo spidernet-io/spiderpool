@@ -46,7 +46,8 @@ Kubevirt VM 会在以下一些场景中会出现固定地址的使用：
 
 ### 安装 Spiderpool
 
-请参考 [Macvlan Quick Start](./install/underlay/get-started-macvlan-zh_CN.md)
+请参考 [Macvlan Quick Start](./install/underlay/get-started-macvlan-zh_CN.md) 安装 Spiderpool. 其中，可确保 helm 安装选项 `ipam.enableKubevirtStaticIP=true`
+
 
 ### 创建 Kubevirt VM 应用
 

@@ -29,28 +29,7 @@ SpiderSubnet also supports several controllers, including ReplicaSet, Deployment
 
 ### Install Spiderpool
 
-1. Install Spiderpool through Helm:
-
-    ```bash
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
-    ```
-
-    > For users in the Chinese mainland, it is recommended to specify the spec `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to accelerate image pulling.
-    >
-    > You can specify the Multus clusterNetwork for your cluster using `multus.multusCNI.defaultCniCRName`. The clusterNetwork is a specific field of the Multus plugin that defines the default network interface for Pods.
-
-2. Check if the installation is successful.
-
-    ```bash
-    ~# kubectl get po -n kube-system | grep spiderpool
-    NAME                                     READY   STATUS      RESTARTS   AGE                                
-    spiderpool-agent-7hhkz                   1/1     Running     0          13m
-    spiderpool-agent-kxf27                   1/1     Running     0          13m
-    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-    spiderpool-init                          0/1     Completed   0          13m
-    ```
+Refer to [Installation](./readme.md) to install Spiderpool. And make sure that the helm installs the option `ipam.enableSpiderSubnet=true`.
 
 ### Install CNI
 

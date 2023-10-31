@@ -40,26 +40,7 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 ### Install Spiderpool
 
-- Install Spiderpool via Helm.
-
-```bash
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system
-```
-
-> For users in the Chinese mainland, it is recommended to specify the spec `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to accelerate image pulling.
-
-- Check if the installation is completed
-
-    ```bash
-    ~# kubectl get po -n kube-system | grep spiderpool
-    NAME                                     READY   STATUS      RESTARTS   AGE                                
-    spiderpool-agent-7hhkz                   1/1     Running     0          13m
-    spiderpool-agent-kxf27                   1/1     Running     0          13m
-    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-    spiderpool-init                          0/1     Completed   0          13m
-    ```
+Refer to [Installation](./readme.md) to install Spiderpool.
 
 ### Create CNI Configurations
 

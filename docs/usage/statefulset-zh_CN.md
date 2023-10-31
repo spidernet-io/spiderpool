@@ -32,28 +32,7 @@ Deployment 和 StatefulSet 控制器，对于 IP 地址固定的需求是不一�
 
 ### 安装 Spiderpool
 
-1. 通过 Helm 安装 Spiderpool。
-
-    ```bash
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
-    ```
-
-    > 如果您所在地区是中国大陆，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
-    >
-    > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
-
-2. 检查安装完成
-
-    ```bash
-    ~# kubectl get po -n kube-system | grep spiderpool
-    NAME                                     READY   STATUS      RESTARTS   AGE                                
-    spiderpool-agent-7hhkz                   1/1     Running     0          13m
-    spiderpool-agent-kxf27                   1/1     Running     0          13m
-    spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-    spiderpool-init                          0/1     Completed   0          13m
-    ```
+可参考 [安装](./readme-zh_CN.md) 安装 Spiderpool. 其中，务必确保 helm 安装选项 `ipam.enableStatefulSet=true`
 
 ### 安装 CNI 配置
 

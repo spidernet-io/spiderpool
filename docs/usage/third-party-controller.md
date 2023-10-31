@@ -1,5 +1,7 @@
 # IPAM for third-party controllers
 
+**简体中文** | [**English**](./third-party-controller-zh_CN.md)
+
 ## Description
 
 Operator is popularly used to implement customized controller. Spiderpool supports to assign IP to Pods created not by kubernetes-native controller. There are two ways to do this:

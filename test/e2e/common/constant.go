@@ -24,7 +24,7 @@ const (
 	PodStartTimeout            = time.Minute * 5
 	PodReStartTimeout          = time.Minute * 5
 	IPReclaimTimeout           = time.Minute * 5
-	ExecCommandTimeout         = time.Minute
+	ExecCommandTimeout         = time.Minute * 5
 	EventOccurTimeout          = time.Second * 30
 	ServiceAccountReadyTimeout = time.Second * 20
 	NodeReadyTimeout           = time.Minute

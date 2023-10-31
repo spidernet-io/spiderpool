@@ -554,7 +554,9 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 
 			multusNS = netNsName
 			if multusNS == "" {
-				multusNS = pod.Namespace
+				// Reference from Multus source codes: The CRD object of default network should only be defined in multusNamespace
+				// In multus, multusNamespace serves for (clusterNetwork/defaultNetworks)
+				multusNS = i.config.AgentNamespace
 			}
 			multusName = networkName
 		} else {
@@ -578,6 +580,12 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 				}
 			}
 
+			// Refer from the multus-cni source codes, for annotation "k8s.v1.cni.cncf.io/networks" value without Namespace,
+			// we will regard the pod Namespace as the value's namespace
+			if multusNS == "" {
+				multusNS = pod.ObjectMeta.Namespace
+			}
+
 			// impossible
 			if !isFound {
 				return fmt.Errorf("%w: no matched multus object for NIC '%s'. The multus network-attachments: %v", constant.ErrUnknown, nic, podAnno[constant.MultusNetworkAttachmentAnnot])
@@ -587,7 +595,9 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		for index := range ipPool.Spec.MultusName {
 			expectedMultusName := ipPool.Spec.MultusName[index]
 			if !strings.Contains(expectedMultusName, "/") {
-				expectedMultusName = fmt.Sprintf("%s/%s", pod.Namespace, expectedMultusName)
+				// for the ippool.spec.multusName property, if the user doesn't specify the net-attach-def resource namespace,
+				// we'll regard it in the Spiderpool installation namespace
+				expectedMultusName = fmt.Sprintf("%s/%s", i.config.AgentNamespace, expectedMultusName)
 			}
 
 			if strings.Compare(expectedMultusName, fmt.Sprintf("%s/%s", multusNS, multusName)) == 0 {

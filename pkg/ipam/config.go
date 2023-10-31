@@ -26,6 +26,7 @@ type IPAMConfig struct {
 	OperationGapDuration time.Duration
 
 	MultusClusterNetwork *string
+	AgentNamespace       string
 }
 
 func setDefaultsForIPAMConfig(config IPAMConfig) IPAMConfig {

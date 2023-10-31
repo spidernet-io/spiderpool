@@ -95,7 +95,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Custom routing can be achieved through IP pools, Pod annotations, and other methods. Refer to the [example](./route.md) for details.
 
-- Multiple IP pools can be configured by applications to provide redundancy for IP resources. Refer to the [example](./ippool-multi.md) for details..
+- Multiple IP pools can be configured by applications to provide redundancy for IP resources. Refer to the [example](./spider-ippool.md) for details..
 
 - Global reserved IP addresses can be specified to prevent IPAM from allocating those addresses, thereby avoiding conflicts with externally used IPs. Refer to the [example](./reserved-ip.md) for details.
 
@@ -137,4 +137,4 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Support for AMD64 and ARM64 architectures
 
-- All features are compatible with ipv4-only, ipv6-only, and dual-stack scenarios. Refer to the [example](./ipv6.md) for use cases.
+- All features are compatible with ipv4-only, ipv6-only, and dual-stack scenarios. Refer to the [example](./spider-ippool.md) for use cases.

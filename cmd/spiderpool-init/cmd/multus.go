@@ -6,7 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
+	"os"
+	"path"
 
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
@@ -84,6 +85,23 @@ func InitMultusDefaultCR(ctx context.Context, config *InitDefaultConfig, client 
 	if err = restartSpiderAgent(ctx, client, config.AgentName, config.DefaultCNINamespace); err != nil {
 		return err
 	}
+
+	logger.Sugar().Infof("successfully restart spiderpool-agent")
+	return nil
+}
+
+func makeReadinessReady(config *InitDefaultConfig) error {
+	// tell readness by writing to the file that the spiderpool is ready
+	readinessDir := path.Dir(config.ReadinessFile)
+	err := os.MkdirAll(readinessDir, 0644)
+	if err != nil {
+		return err
+	}
+
+	if err = os.WriteFile(config.ReadinessFile, []byte("ready"), 0777); err != nil {
+		return err
+	}
+	logger.Sugar().Infof("success to make spiderpool-init pod's readiness to ready")
 	return nil
 }
 
@@ -122,7 +140,6 @@ func restartSpiderAgent(ctx context.Context, client *CoreClient, name, ns string
 		return err
 	}
 
-	time.Sleep(3 * time.Second)
 	if err = client.WaitPodListReady(ctx, ns, spiderAgent.Spec.Template.Labels); err != nil {
 		return err
 	}

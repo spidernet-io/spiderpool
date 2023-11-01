@@ -188,9 +188,9 @@ func (c *CoreClient) WaitPodListReady(ctx context.Context, namespace string, lab
 	var err error
 	noReady := true
 	for noReady {
-		if err = c.List(ctx, &podList, client.MatchingLabels(labels), client.InNamespace(namespace)); err != nil && !apierrors.IsNotFound(err) {
-			logger.Sugar().Errorf("failed to get multus pod lists: %v", err)
-			return err
+		if err = c.List(ctx, &podList, client.MatchingLabels(labels), client.InNamespace(namespace)); err != nil {
+			logger.Sugar().Errorf("failed to get spiderAgent pods: %v, retrying...", err)
+			continue
 		}
 
 		if podList.Items == nil {
@@ -214,5 +214,6 @@ func (c *CoreClient) WaitPodListReady(ctx context.Context, namespace string, lab
 			time.Sleep(interval)
 		}
 	}
+
 	return nil
 }

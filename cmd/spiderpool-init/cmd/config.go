@@ -51,11 +51,13 @@ const (
 	ENVDefaultCNIName         = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
 	ENVDefaultCNINamespace    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
 	ENVDefaultMultusConfigMap = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
+	ENVDefaultReadinessFile   = "SPIDERPOOL_INIT_READINESS_FILE"
 )
 
 var (
 	legacyCalicoCniName = "k8s-pod-network"
 	calicoCniName       = "calico"
+	readinessFileName   = "/etc/spiderpool/ready"
 )
 
 type InitDefaultConfig struct {
@@ -91,6 +93,9 @@ type InitDefaultConfig struct {
 	DefaultCNIName      string
 	DefaultCNINamespace string
 	MultusConfigMap     string
+
+	// readiness
+	ReadinessFile string
 }
 
 func NewInitDefaultConfig() InitDefaultConfig {
@@ -282,6 +287,10 @@ func parseENVAsDefault() InitDefaultConfig {
 	config.DefaultCNIName = strings.ReplaceAll(os.Getenv(ENVDefaultCNIName), "\"", "")
 	config.DefaultCNINamespace = strings.ReplaceAll(os.Getenv(ENVDefaultCNINamespace), "\"", "")
 	config.MultusConfigMap = strings.ReplaceAll(os.Getenv(ENVDefaultMultusConfigMap), "\"", "")
+	config.ReadinessFile = strings.ReplaceAll(os.Getenv(ENVDefaultReadinessFile), "\"", "")
+	if config.ReadinessFile == "" {
+		config.ReadinessFile = readinessFileName
+	}
 
 	logger.Sugar().Infof("Init default config: %+v", config)
 

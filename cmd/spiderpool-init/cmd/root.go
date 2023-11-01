@@ -150,7 +150,11 @@ func Execute() {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Finish init")
-	// Wait for helm --wait.
+	if err = makeReadinessReady(&config); err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	// helm wait
 	time.Sleep(300 * time.Second)
+	logger.Info("Finish init")
 }

@@ -801,6 +801,13 @@ spiderpoolInit:
       ## @param spiderpoolInit.resources.requests.memory the memory requests of spiderpoolInit pod
       memory: 128Mi
 
+  readinessProbe:
+    ## @param spiderpoolInit.readinessProbe.failureThreshold the failure threshold of startup probe for spiderpool-init health checking
+    failureThreshold: 30
+
+    ## @param spiderpoolInit.readinessProbe.periodSeconds the period seconds of startup probe for spiderpool-init health checking
+    periodSeconds: 10
+
   ## @param spiderpoolInit.extraEnv the additional environment variables of spiderpoolInit container
   extraEnv: []
 

@@ -140,6 +140,20 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 }
 
 func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, error) {
+	logger := logutils.FromContext(ctx)
+
+	var tmpPod *corev1.Pod
+	if im.config.EnableKubevirtStaticIP && podController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podController.Kind == constant.KindKubevirtVMI {
+		tmpPod = pod.DeepCopy()
+		tmpPod.SetName(podController.Name)
+	} else {
+		tmpPod = pod
+	}
+	key, err := cache.MetaNamespaceKeyFunc(tmpPod)
+	if err != nil {
+		return nil, err
+	}
+
 	reservedIPs, err := im.rIPManager.AssembleReservedIPs(ctx, *ipPool.Spec.IPVersion)
 	if err != nil {
 		return nil, err
@@ -166,22 +180,20 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 
 	availableIPs := spiderpoolip.IPsDiffSet(totalIPs, append(reservedIPs, usedIPs...), false)
 	if len(availableIPs) == 0 {
-		return nil, constant.ErrIPUsedOut
+		// traverse the usedIPs to find the previous allocated IPs if there be
+		// reference issue: https://github.com/spidernet-io/spiderpool/issues/2517
+		allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, nic, key, string(pod.UID))
+		if !hasFound {
+			return nil, constant.ErrIPUsedOut
+		}
+
+		availableIPs, err = spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
+		if nil != err {
+			return nil, err
+		}
+		logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
 	}
 	resIP := availableIPs[0]
-
-	var tmpPod *corev1.Pod
-	if im.config.EnableKubevirtStaticIP && podController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podController.Kind == constant.KindKubevirtVMI {
-		tmpPod = pod.DeepCopy()
-		tmpPod.SetName(podController.Name)
-	} else {
-		tmpPod = pod
-	}
-
-	key, err := cache.MetaNamespaceKeyFunc(tmpPod)
-	if err != nil {
-		return nil, err
-	}
 
 	if allocatedRecords == nil {
 		allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{}

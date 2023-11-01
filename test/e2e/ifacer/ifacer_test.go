@@ -5,7 +5,6 @@ package ifacer_test
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,8 +29,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		namespace = "ns" + tools.RandomName()
 		spiderMultusNadName = "test-multus-" + common.GenerateString(10, true)
 
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		vlanInterface = r.Intn(100)
+		vlanInterface = 50
 		GinkgoWriter.Println("Generate vlan ID of sub-interface:", vlanInterface)
 
 		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
@@ -121,7 +119,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 			for _, node := range frame.Info.KindNodeList {
 				showMasterResult, err := frame.DockerExecCommand(ctx, node, checkMasterUPString)
 				if err != nil {
-					GinkgoWriter.Printf("Failed to execute command on the node %s : %v \n", node, err)
+					GinkgoWriter.Printf("Failed to execute command %s on the node %s : %v \n", checkMasterUPString, node, showMasterResult)
 					return false
 				}
 
@@ -132,7 +130,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 
 				showResult, err := frame.DockerExecCommand(ctx, node, checkIPLinkString)
 				if err != nil {
-					GinkgoWriter.Printf("Failed to execute command on the node %s: %v \n", node, err)
+					GinkgoWriter.Printf("Failed to execute %s on the node %s: %v \n", checkIPLinkString, node, showResult)
 					return false
 				}
 
@@ -152,7 +150,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		setDownString := fmt.Sprintf("ip link set %s.%d down", common.NIC1, vlanInterface)
 		for _, node := range frame.Info.KindNodeList {
 			_, err := frame.DockerExecCommand(ctx, node, setDownString)
-			Expect(err).NotTo(HaveOccurred(), "Failed to execute down %s on the node %s:  %v", vlanInterface, err)
+			Expect(err).NotTo(HaveOccurred(), "Failed to execute  %s on the node %s:  %v", setDownString, node, err)
 		}
 		GinkgoWriter.Println("Restart all pods")
 		podList, err := frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
@@ -184,45 +182,51 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 			return true
 		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
-		GinkgoWriter.Println("After the host is restarted, the sub-interface is lost. Restarting the Pod will refresh the sub-interface.")
-		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-		defer cancel()
-		deleteIPLinkString := fmt.Sprintf("ip link delete dev %s.%d", common.NIC1, vlanInterface)
-		Eventually(func() bool {
-			for _, node := range frame.Info.KindNodeList {
-				_, err := frame.DockerExecCommand(ctx, node, deleteIPLinkString)
-				Expect(err).NotTo(HaveOccurred(), "Failed to execute the delete sub-interface command on the node %s %v", node, err)
-			}
-			return true
-		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
-
-		GinkgoWriter.Println("After deleting the sub-interface, restart all Pods")
-		podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
-		Expect(err).NotTo(HaveOccurred(), "failed to get Pod list, Pod list is %v", len(podList.Items))
-		Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
-
-		GinkgoWriter.Println("The sub-interfaces of all nodes are automatically rebuilt, and the status is UP")
-		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
-		defer cancel()
-
-		err = frame.WaitPodListRunning(dsObject.Spec.Template.Labels, 2, ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		checkIPLinkString = fmt.Sprintf("ip link show up %s.%d", common.NIC1, vlanInterface)
-		Eventually(func() bool {
-			for _, node := range frame.Info.KindNodeList {
-				showResult, err := frame.DockerExecCommand(ctx, node, checkIPLinkUpString)
-				if err != nil {
-					GinkgoWriter.Printf("failed to check if subinterfaces is up on node %s: %v \n", node, err)
-					return false
-				}
-
-				if len(showResult) == 0 {
-					GinkgoWriter.Printf("sub-vlan interfaces is down, waiting...")
-					return false
-				}
-			}
-			return true
-		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		// macvlan issue: https://github.com/containernetworking/plugins/pull/954
+		// When the master interface on the node has been deleted, and loadConf tries
+		// to get the MTU, This causes cmdDel to return a linkNotFound error to the
+		// runtime.
+		// TODO(cyclinder): undo the following comment if cni-plugins has new release
+		//	GinkgoWriter.Println("After the host is restarted, the sub-interface is lost. Restarting the Pod will refresh the sub-interface.")
+		//	ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		//	defer cancel()
+		//
+		//	deleteIPLinkString := fmt.Sprintf("ip link delete dev %s.%d", common.NIC1, vlanInterface)
+		//	Eventually(func() bool {
+		//		for _, node := range frame.Info.KindNodeList {
+		//			_, err := frame.DockerExecCommand(ctx, node, deleteIPLinkString)
+		//			Expect(err).NotTo(HaveOccurred(), "Failed to execute the delete sub-interface command on the node %s %v", node, err)
+		//		}
+		//		return true
+		//	}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		//
+		//	GinkgoWriter.Println("After deleting the sub-interface, restart all Pods")
+		//	podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
+		//	Expect(err).NotTo(HaveOccurred(), "failed to get Pod list, Pod list is %v", len(podList.Items))
+		//	Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
+		//
+		//	GinkgoWriter.Println("The sub-interfaces of all nodes are automatically rebuilt, and the status is UP")
+		//	ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		//	defer cancel()
+		//
+		//	err = frame.WaitPodListRunning(dsObject.Spec.Template.Labels, 2, ctx)
+		//	Expect(err).NotTo(HaveOccurred())
+		//
+		//	checkIPLinkString = fmt.Sprintf("ip link show up %s.%d", common.NIC1, vlanInterface)
+		//	Eventually(func() bool {
+		//		for _, node := range frame.Info.KindNodeList {
+		//			showResult, err := frame.DockerExecCommand(ctx, node, checkIPLinkUpString)
+		//			if err != nil {
+		//				GinkgoWriter.Printf("failed to check if subinterfaces is up on node %s: %v \n", node, err)
+		//				return false
+		//			}
+		//
+		//			if len(showResult) == 0 {
+		//				GinkgoWriter.Printf("sub-vlan interfaces is down, waiting...")
+		//				return false
+		//			}
+		//		}
+		//		return true
+		//	}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 	})
 })

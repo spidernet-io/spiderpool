@@ -272,10 +272,11 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
+
 			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
-			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed, error is: %v ", err)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
 			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
-			Expect(err).NotTo(HaveOccurred(), "failed to get podList, error is: %v ", err)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
 
 			// Check pod's mac address prefix
 			commandString := fmt.Sprintf("ip link show dev %s | awk '/ether/ {print substr($2,0,5)}'", common.NIC2)

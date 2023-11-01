@@ -5,6 +5,7 @@ package ippoolmanager_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"sync/atomic"
@@ -19,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -402,6 +404,60 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					APP: nil,
 				}
 				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, podTopController)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*res.Nic).To(Equal(nic))
+				Expect(*res.Version).To(Equal(ipVersion))
+				Expect(*res.Address).To(Equal(allocatedIP))
+				Expect(res.IPPool).To(Equal(ipPoolT.Name))
+				Expect(res.Gateway).To(Equal(gateway))
+				Expect(res.Vlan).To(Equal(vlan))
+			})
+
+			It("allocate IP address from the previous records", func() {
+				mockRIPManager.EXPECT().
+					AssembleReservedIPs(gomock.Eq(ctx), gomock.Eq(constant.IPv4)).
+					Return(nil, nil).
+					Times(1)
+
+				ipVersion := constant.IPv4
+				allocatedIP := "172.18.40.40/24"
+				gateway := "172.18.40.1"
+				vlan := int64(0)
+
+				ip, ipNet, err := net.ParseCIDR(allocatedIP)
+				Expect(err).NotTo(HaveOccurred())
+
+				ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+				ipPoolT.Spec.Subnet = ipNet.String()
+				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
+				ipPoolT.Spec.Gateway = pointer.String(gateway)
+				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
+
+				key, err := cache.MetaNamespaceKeyFunc(podT)
+				Expect(err).NotTo(HaveOccurred())
+
+				records := spiderpoolv2beta1.PoolIPAllocations{
+					ip.String(): spiderpoolv2beta1.PoolIPAllocation{
+						NIC:            nic,
+						NamespacedName: key,
+						PodUID:         string(podT.UID),
+					},
+				}
+				allocatedIPs, err := json.Marshal(records)
+				Expect(err).NotTo(HaveOccurred())
+
+				ipPoolT.Status = spiderpoolv2beta1.IPPoolStatus{
+					AllocatedIPs:     pointer.String(string(allocatedIPs)),
+					TotalIPCount:     pointer.Int64(1),
+					AllocatedIPCount: pointer.Int64(1),
+				}
+
+				err = fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*res.Nic).To(Equal(nic))
 				Expect(*res.Version).To(Equal(ipVersion))

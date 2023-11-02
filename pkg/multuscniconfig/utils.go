@@ -61,6 +61,10 @@ type SRIOVNetConf struct {
 	IPAM     *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
+type RdmaNetConf struct {
+	Type string `json:"type"`
+}
+
 type OvsNetConf struct {
 	Vlan     *int32                     `json:"vlan,omitempty"`
 	Type     string                     `json:"type"`

@@ -100,8 +100,7 @@ jobs:
     uses: ./.github/workflows/call-release-chart.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
-      # will submit on step update-github-pages
-      submit: false
+      submit: true
     secrets: inherit
 
   release-doc:
@@ -109,16 +108,6 @@ jobs:
     uses: ./.github/workflows/call-release-doc.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
-      # will submit on step update-github-pages
-      submit: false
-    secrets: inherit
-
-  update-github-pages:
-    needs: [release-doc, release-chart]
-    uses: ./.github/workflows/call-update-githubpages.yaml
-    with:
-      site_artifact_name: ${{ needs.release-doc.outputs.artifact }}
-      chart_artifact_name: ${{ needs.release-chart.outputs.artifact }}
     secrets: inherit
 
   release-changelog:

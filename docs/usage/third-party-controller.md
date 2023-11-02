@@ -1,4 +1,6 @@
-# Spiderpool supports third-party controllers
+# IPAM for third-party controllers
+
+**简体中文** | [**English**](./third-party-controller-zh_CN.md)
 
 ## Description
 

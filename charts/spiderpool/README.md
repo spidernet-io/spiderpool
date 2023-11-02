@@ -112,35 +112,42 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### Global parameters
 
-| Name                            | Description                                                                | Value                                |
-| ------------------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
-| `global.imageRegistryOverride`  | Global Docker image registry for spiderpool images, but not for multus tag | `""`                                 |
-| `global.nameOverride`           | instance name                                                              | `""`                                 |
-| `global.clusterDnsDomain`       | cluster dns domain                                                         | `cluster.local`                      |
-| `global.commonAnnotations`      | Annotations to add to all deployed objects                                 | `{}`                                 |
-| `global.commonLabels`           | Labels to add to all deployed objects                                      | `{}`                                 |
-| `global.ipamBinHostPath`        | the host path of the IPAM plugin directory.                                | `/opt/cni/bin`                       |
-| `global.cniConfHostPath`        | the host path of the cni config directory                                  | `/etc/cni/net.d`                     |
-| `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                        | `/var/run/spidernet/spiderpool.sock` |
-| `global.configName`             | the configmap name                                                         | `spiderpool-conf`                    |
+| Name                            | Description                                                                 | Value                                |
+| ------------------------------- | --------------------------------------------------------------------------- | ------------------------------------ |
+| `global.imageRegistryOverride`  | Global image registry for all images, which is used for offline environment | `""`                                 |
+| `global.nameOverride`           | instance name                                                               | `""`                                 |
+| `global.clusterDnsDomain`       | cluster dns domain                                                          | `cluster.local`                      |
+| `global.commonAnnotations`      | Annotations to add to all deployed objects                                  | `{}`                                 |
+| `global.commonLabels`           | Labels to add to all deployed objects                                       | `{}`                                 |
+| `global.cniBinHostPath`         | the host path of the IPAM plugin directory.                                 | `/opt/cni/bin`                       |
+| `global.cniConfHostPath`        | the host path of the cni config directory                                   | `/etc/cni/net.d`                     |
+| `global.ipamUNIXSocketHostPath` | the host path of unix domain socket for ipam plugin                         | `/var/run/spidernet/spiderpool.sock` |
+| `global.configName`             | the configmap name                                                          | `spiderpool-conf`                    |
+| `global.ciliumConfigMap`        | the cilium's configMap, default is kube-system/cilium-config                | `kube-system/cilium-config`          |
 
 ### ipam parameters
 
-| Name                                   | Description                                                                                      | Value   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| `ipam.enableIPv4`                      | enable ipv4                                                                                      | `true`  |
-| `ipam.enableIPv6`                      | enable ipv6                                                                                      | `true`  |
-| `ipam.enableStatefulSet`               | the network mode                                                                                 | `true`  |
-| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                                       | `true`  |
-| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`     |
-| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                                            | `true`  |
-| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                                     | `600`   |
-| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period                         | `true`  |
-| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`     |
-| `grafanaDashboard.install`             | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
-| `grafanaDashboard.namespace`           | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
-| `grafanaDashboard.annotations`         | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
-| `grafanaDashboard.labels`              | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
+| Name                                   | Description                                                                 | Value  |
+| -------------------------------------- | --------------------------------------------------------------------------- | ------ |
+| `ipam.enableIPv4`                      | enable ipv4                                                                 | `true` |
+| `ipam.enableIPv6`                      | enable ipv6                                                                 | `true` |
+| `ipam.enableStatefulSet`               | the network mode                                                            | `true` |
+| `ipam.enableKubevirtStaticIP`          | the feature to keep kubevirt vm pod static IP                               | `true` |
+| `ipam.enableSpiderSubnet`              | SpiderSubnet feature gate.                                                  | `true` |
+| `ipam.subnetDefaultFlexibleIPNumber`   | the default flexible IP number of SpiderSubnet feature auto-created IPPools | `1`    |
+| `ipam.gc.enabled`                      | enable retrieve IP in spiderippool CR                                       | `true` |
+| `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                | `600`  |
+| `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period    | `true` |
+| `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period    | `0`    |
+
+### grafanaDashboard parameters
+
+| Name                           | Description                                                                                      | Value   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | ------- |
+| `grafanaDashboard.install`     | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
+| `grafanaDashboard.namespace`   | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
+| `grafanaDashboard.annotations` | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
+| `grafanaDashboard.labels`      | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
 
 ### coordinator parameters
 
@@ -154,6 +161,31 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `coordinator.detectIPConflict` | detect IP address conflicts                                                                                                              | `false`              |
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                                                                                          | `true`               |
 | `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS | `["169.254.0.0/16"]` |
+
+### rdma parameters
+
+| Name                                                              | Description                                             | Value                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------- |
+| `rdma.rdmaSharedDevicePlugin.install`                             | install rdma shared device plugin for macvlan cni       | `false`                                |
+| `rdma.rdmaSharedDevicePlugin.name`                                | the name of rdma shared device plugin                   | `spiderpool-rdma-shared-device-plugin` |
+| `rdma.rdmaSharedDevicePlugin.image.registry`                      | the image registry of rdma shared device plugin         | `ghcr.io`                              |
+| `rdma.rdmaSharedDevicePlugin.image.repository`                    | the image repository of rdma shared device plugin       | `mellanox/k8s-rdma-shared-dev-plugin`  |
+| `rdma.rdmaSharedDevicePlugin.image.pullPolicy`                    | the image pullPolicy of rdma shared device plugin       | `IfNotPresent`                         |
+| `rdma.rdmaSharedDevicePlugin.image.digest`                        | the image digest of rdma shared device plugin           | `""`                                   |
+| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin              | `latest`                               |
+| `rdma.rdmaSharedDevicePlugin.image.imagePullSecrets`              | the image imagePullSecrets of rdma shared device plugin | `[]`                                   |
+| `rdma.rdmaSharedDevicePlugin.podAnnotations`                      | the additional annotations                              | `{}`                                   |
+| `rdma.rdmaSharedDevicePlugin.podLabels`                           | the additional label                                    | `{}`                                   |
+| `rdma.rdmaSharedDevicePlugin.resources.limits.cpu`                | the cpu limit                                           | `300m`                                 |
+| `rdma.rdmaSharedDevicePlugin.resources.limits.memory`             | the memory limit                                        | `300Mi`                                |
+| `rdma.rdmaSharedDevicePlugin.resources.requests.cpu`              | the cpu requests                                        | `100m`                                 |
+| `rdma.rdmaSharedDevicePlugin.resources.requests.memory`           | the memory requests                                     | `50Mi`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval` | periodic Update Interval                                | `300`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix`         | resource prefix                                         | `spidernet.io`                         |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName`           | resource Name                                           | `hca_shared_devices`                   |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax`             | rdma Hca Max                                            | `500`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.vendors`                | rdma device vendors, default to mellanox device         | `15b3`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs`              | rdma device IDs, default to mellanox device             | `1017`                                 |
 
 ### multus parameters
 
@@ -170,18 +202,26 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `multus.multusCNI.image.tag`                  | the multus-CNI image tag                                                                                                                                                                                                                                                                                                                                                                         | `v3.9.3`                          |
 | `multus.multusCNI.image.imagePullSecrets`     | the multus-CNI image imagePullSecrets                                                                                                                                                                                                                                                                                                                                                            | `[]`                              |
 | `multus.multusCNI.defaultCniCRName`           | if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/, if no cni files found in /etc/cni/net.d, A Spidermultusconfig CR named default will be created, please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool | `""`                              |
-| `multus.multusCNI.resources.limits.cpu`       | the cpu limit of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                        | `100m`                            |
-| `multus.multusCNI.resources.limits.memory`    | the memory limit of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                     | `50Mi`                            |
-| `multus.multusCNI.resources.requests.cpu`     | the cpu requests of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                     | `100m`                            |
-| `multus.multusCNI.resources.requests.memory`  | the memory requests of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                  | `50Mi`                            |
-| `multus.multusCNI.podAnnotations`             | the additional annotations of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                           | `{}`                              |
-| `multus.multusCNI.podLabels`                  | the additional label of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                                 | `{}`                              |
 | `multus.multusCNI.securityContext.privileged` | the securityContext privileged of multus-CNI daemonset pod                                                                                                                                                                                                                                                                                                                                       | `true`                            |
 | `multus.multusCNI.extraEnv`                   | the additional environment variables of multus-CNI daemonset pod container                                                                                                                                                                                                                                                                                                                       | `[]`                              |
 | `multus.multusCNI.extraVolumes`               | the additional volumes of multus-CNI daemonset pod container                                                                                                                                                                                                                                                                                                                                     | `[]`                              |
 | `multus.multusCNI.extraVolumeMounts`          | the additional hostPath mounts of multus-CNI daemonset pod container                                                                                                                                                                                                                                                                                                                             | `[]`                              |
 | `multus.multusCNI.log.logLevel`               | the multus-CNI daemonset pod log level                                                                                                                                                                                                                                                                                                                                                           | `debug`                           |
 | `multus.multusCNI.log.logFile`                | the multus-CNI daemonset pod log file                                                                                                                                                                                                                                                                                                                                                            | `/var/log/multus.log`             |
+
+### plugins parameters
+
+| Name                             | Description                                                | Value                                        |
+| -------------------------------- | ---------------------------------------------------------- | -------------------------------------------- |
+| `plugins.installCNI`             | install all cni plugins to each node                       | `false`                                      |
+| `plugins.installRdmaCNI`         | install rdma cni used to isolate rdma device for sriov cni | `false`                                      |
+| `plugins.installOvsCNI`          | install ovs cni to each node                               | `false`                                      |
+| `plugins.image.registry`         | the image registry of plugins                              | `ghcr.io`                                    |
+| `plugins.image.repository`       | the image repository of plugins                            | `spidernet-io/spiderpool/spiderpool-plugins` |
+| `plugins.image.pullPolicy`       | the image pullPolicy of plugins                            | `IfNotPresent`                               |
+| `plugins.image.digest`           | the image digest of plugins                                | `""`                                         |
+| `plugins.image.tag`              | the image tag of plugins                                   | `v0.8.0`                                     |
+| `plugins.image.imagePullSecrets` | the image imagePullSecrets of plugins                      | `[]`                                         |
 
 ### clusterDefaultPool parameters
 
@@ -328,26 +368,62 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### spiderpoolInit parameters
 
-| Name                                        | Description                                                                                                                 | Value                                           |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `spiderpoolInit.name`                       | the init job for installing default spiderippool                                                                            | `spiderpool-init`                               |
-| `spiderpoolInit.binName`                    | the binName name of spiderpoolInit                                                                                          | `/usr/bin/spiderpool-init`                      |
-| `spiderpoolInit.hostnetwork`                | enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                          |
-| `spiderpoolInit.image.registry`             | the image registry of spiderpoolInit                                                                                        | `ghcr.io`                                       |
-| `spiderpoolInit.image.repository`           | the image repository of spiderpoolInit                                                                                      | `spidernet-io/spiderpool/spiderpool-controller` |
-| `spiderpoolInit.image.pullPolicy`           | the image pullPolicy of spiderpoolInit                                                                                      | `IfNotPresent`                                  |
-| `spiderpoolInit.image.digest`               | the image digest of spiderpoolInit, which takes preference over tag                                                         | `""`                                            |
-| `spiderpoolInit.image.tag`                  | the image tag of spiderpoolInit, overrides the image tag whose default is the chart appVersion.                             | `""`                                            |
-| `spiderpoolInit.image.imagePullSecrets`     | the image imagePullSecrets of spiderpoolInit                                                                                | `[]`                                            |
-| `spiderpoolInit.priorityClassName`          | the priority Class Name for spiderpoolInit                                                                                  | `system-node-critical`                          |
-| `spiderpoolInit.affinity`                   | the affinity of spiderpoolInit                                                                                              | `{}`                                            |
-| `spiderpoolInit.extraArgs`                  | the additional arguments of spiderpoolInit container                                                                        | `[]`                                            |
-| `spiderpoolInit.resources.limits.cpu`       | the cpu limit of spiderpoolInit pod                                                                                         | `200m`                                          |
-| `spiderpoolInit.resources.limits.memory`    | the memory limit of spiderpoolInit pod                                                                                      | `256Mi`                                         |
-| `spiderpoolInit.resources.requests.cpu`     | the cpu requests of spiderpoolInit pod                                                                                      | `100m`                                          |
-| `spiderpoolInit.resources.requests.memory`  | the memory requests of spiderpoolInit pod                                                                                   | `128Mi`                                         |
-| `spiderpoolInit.extraEnv`                   | the additional environment variables of spiderpoolInit container                                                            | `[]`                                            |
-| `spiderpoolInit.securityContext`            | the security Context of spiderpoolInit pod                                                                                  | `{}`                                            |
-| `spiderpoolInit.podAnnotations`             | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
-| `spiderpoolInit.podLabels`                  | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
-| `spiderpoolInit.serviceAccount.annotations` | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
+| Name                                             | Description                                                                                                                 | Value                                           |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `spiderpoolInit.name`                            | the init job for installing default spiderippool                                                                            | `spiderpool-init`                               |
+| `spiderpoolInit.binName`                         | the binName name of spiderpoolInit                                                                                          | `/usr/bin/spiderpool-init`                      |
+| `spiderpoolInit.hostnetwork`                     | enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                          |
+| `spiderpoolInit.image.registry`                  | the image registry of spiderpoolInit                                                                                        | `ghcr.io`                                       |
+| `spiderpoolInit.image.repository`                | the image repository of spiderpoolInit                                                                                      | `spidernet-io/spiderpool/spiderpool-controller` |
+| `spiderpoolInit.image.pullPolicy`                | the image pullPolicy of spiderpoolInit                                                                                      | `IfNotPresent`                                  |
+| `spiderpoolInit.image.digest`                    | the image digest of spiderpoolInit, which takes preference over tag                                                         | `""`                                            |
+| `spiderpoolInit.image.tag`                       | the image tag of spiderpoolInit, overrides the image tag whose default is the chart appVersion.                             | `""`                                            |
+| `spiderpoolInit.image.imagePullSecrets`          | the image imagePullSecrets of spiderpoolInit                                                                                | `[]`                                            |
+| `spiderpoolInit.priorityClassName`               | the priority Class Name for spiderpoolInit                                                                                  | `system-node-critical`                          |
+| `spiderpoolInit.affinity`                        | the affinity of spiderpoolInit                                                                                              | `{}`                                            |
+| `spiderpoolInit.extraArgs`                       | the additional arguments of spiderpoolInit container                                                                        | `[]`                                            |
+| `spiderpoolInit.resources.limits.cpu`            | the cpu limit of spiderpoolInit pod                                                                                         | `200m`                                          |
+| `spiderpoolInit.resources.limits.memory`         | the memory limit of spiderpoolInit pod                                                                                      | `256Mi`                                         |
+| `spiderpoolInit.resources.requests.cpu`          | the cpu requests of spiderpoolInit pod                                                                                      | `100m`                                          |
+| `spiderpoolInit.resources.requests.memory`       | the memory requests of spiderpoolInit pod                                                                                   | `128Mi`                                         |
+| `spiderpoolInit.readinessProbe.failureThreshold` | the failure threshold of startup probe for spiderpool-init health checking                                                  | `30`                                            |
+| `spiderpoolInit.readinessProbe.periodSeconds`    | the period seconds of startup probe for spiderpool-init health checking                                                     | `10`                                            |
+| `spiderpoolInit.extraEnv`                        | the additional environment variables of spiderpoolInit container                                                            | `[]`                                            |
+| `spiderpoolInit.securityContext`                 | the security Context of spiderpoolInit pod                                                                                  | `{}`                                            |
+| `spiderpoolInit.podAnnotations`                  | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
+| `spiderpoolInit.podLabels`                       | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
+| `spiderpoolInit.serviceAccount.annotations`      | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
+
+### sriov network operator parameters
+
+| Name                                       | Description                                                                                           | Value                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `sriov.install`                            | install sriov network operator                                                                        | `false`                                                     |
+| `sriov.name`                               | the name of sriov network operator                                                                    | `spiderpool-sriov-operator`                                 |
+| `sriov.affinity`                           | the affinity                                                                                          | `{}`                                                        |
+| `sriov.hostnetwork`                        | enable hostnetwork mode. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                                      |
+| `sriov.replicas`                           | the replicas number                                                                                   | `1`                                                         |
+| `sriov.resourcePrefix`                     | the resource prefix                                                                                   | `spidernet.io`                                              |
+| `sriov.priorityClassName`                  | the priority Class Name                                                                               | `system-node-critical`                                      |
+| `sriov.enableAdmissionController`          | enable Admission Controller                                                                           | `false`                                                     |
+| `sriov.resources.limits.cpu`               | the cpu limit                                                                                         | `300m`                                                      |
+| `sriov.resources.limits.memory`            | the memory limit                                                                                      | `300Mi`                                                     |
+| `sriov.resources.requests.cpu`             | the cpu requests                                                                                      | `100m`                                                      |
+| `sriov.resources.requests.memory`          | the memory requests                                                                                   | `128Mi`                                                     |
+| `sriov.image.registry`                     | registry for all images                                                                               | `ghcr.io`                                                   |
+| `sriov.image.pullPolicy`                   | the image pullPolicy for all images                                                                   | `IfNotPresent`                                              |
+| `sriov.image.imagePullSecrets`             | the image imagePullSecrets for all images                                                             | `[]`                                                        |
+| `sriov.image.operator.repository`          | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-operator`               |
+| `sriov.image.operator.tag`                 | the image tag                                                                                         | `v1.2.0`                                                    |
+| `sriov.image.sriovConfigDaemon.repository` | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-operator-config-daemon` |
+| `sriov.image.sriovConfigDaemon.tag`        | the image tag                                                                                         | `v1.2.0`                                                    |
+| `sriov.image.sriovCni.repository`          | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-cni`                            |
+| `sriov.image.sriovCni.tag`                 | the image tag                                                                                         | `v2.7.0`                                                    |
+| `sriov.image.ibSriovCni.repository`        | the image repository                                                                                  | `k8snetworkplumbingwg/ib-sriov-cni`                         |
+| `sriov.image.ibSriovCni.tag`               | the image tag                                                                                         | `v1.0.2`                                                    |
+| `sriov.image.sriovDevicePlugin.repository` | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-device-plugin`          |
+| `sriov.image.sriovDevicePlugin.tag`        | the image tag                                                                                         | `v3.5.1`                                                    |
+| `sriov.image.resourcesInjector.repository` | the image repository                                                                                  | `k8snetworkplumbingwg/network-resources-injector`           |
+| `sriov.image.resourcesInjector.tag`        | the image tag                                                                                         | `v1.5`                                                      |
+| `sriov.image.webhook.repository`           | the image repository                                                                                  | `k8snetworkplumbingwg/sriov-network-operator-webhook`       |
+| `sriov.image.webhook.tag`                  | the image tag                                                                                         | `v1.2.0`                                                    |

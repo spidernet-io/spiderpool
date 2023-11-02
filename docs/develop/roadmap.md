@@ -3,11 +3,11 @@
 | feature                  | description                                                                                                                          | Alpha release | Beta release | GA release |
 |--------------------------|--------------------------------------------------------------------------------------------------------------------------------------|---------------|--------------|------------|
 | ippool                   | ip settings                                                                                                                          | v0.2.0        | v0.4.0       | v0.6.0     |
-|                          | namesapce affinity                                                                                                                   | v0.4.0        | v0.6.0       |            |
+|                          | namespace affinity                                                                                                                   | v0.4.0        | v0.6.0       |            |
 |                          | application affinity                                                                                                                 | v0.4.0        | v0.6.0       |            |
 |                          | multiple default ippool                                                                                                              | v0.6.0        |              |            |
-|                          | multusname                                                                                                                           | v0.6.0        |              |            |
-|                          | nodename                                                                                                                             | v0.6.0        | v0.6.0       |
+|                          | multusname affinity                                                                                                                  | v0.6.0        |              |            |
+|                          | nodename affinity                                                                                                                    | v0.6.0        | v0.6.0       |
 |                          | default cluster ippool                                                                                                               | v0.2.0        | v0.4.0       | v0.6.0     |
 |                          | default namespace ippool                                                                                                             | v0.4.0        | v0.5.0       |            |
 |                          | default CNI ippool                                                                                                                   | v0.4.0        | v0.4.0       |            |
@@ -25,7 +25,7 @@
 | reservedIP               | reservedIP                                                                                                                           | v0.4.0        | v0.6.0       |            |
 | fixed ip                 | fixed ip for each pod of statefulset                                                                                                 | v0.5.0        |              |            |
 |                          | fixed ip ranges for statefulset, deployment, replicaset                                                                              | v0.4.0        | v0.6.0       |            |
-|                          | fixed ip for kubevirt                                                                                                                | In plan       |              |            |
+|                          | fixed ip for kubevirt                                                                                                                | v0.8.0        |              |            |
 |                          | support calico                                                                                                                       | v0.5.0        | v0.6.0       |            |
 |                          | support weave                                                                                                                        | v0.5.0        | v0.6.0       |            |
 | spidermultusconfig       | support macvlan ipvlan sriov custom                                                                                                  | v0.6.0        | v0.7.0       |            |        
@@ -39,16 +39,24 @@
 |                          | detect ip conflict and gateway                                                                                                       | v0.6.0        | v0.6.0       |            |
 |                          | specify the MAC of pod                                                                                                               | v0.6.0        |              |            |
 |                          | tune the default route of pod multiple interfaces                                                                                    | v0.6.0        |              |            |
-| ovs/macvlan/sriov/ipvlan | visit clusterIP                                                                                                                      | v0.6.0        | v0.7.0       |            |
+| ovs/macvlan/sriov/ipvlan | visit service based on kube-proxy                                                                                                    | v0.6.0        | v0.7.0       |            |
 |                          | visit local node to guarantee the pod health check                                                                                   | v0.6.0        | v0.7.0       |            |
 |                          | visit nodePort with spec.externalTrafficPolicy=local or spec.externalTrafficPolicy=cluster                                           | v0.6.0        |              |            |
-|                          | network policy                                                                                                                       | In plan       |              |            |
+|                          | bandwidth                                                                                                                            | In plan       |              |            |
+| observability            | eBPF: pod stats                                                                                                                      | In plan       |              |            |
+| network policy           | eBPF                                                                                                                                 | In plan       |              |            |
+| accelerate               | eBPF: visit service based on the kube-proxy replacement                                                                              | In plan       |              |            |
+|                          | eBPF: accelerate communication of pods on a same node                                                                                | In plan       |              |            |
 | recycle IP               | recycle IP taken by deleted pod                                                                                                      | v0.4.0        | v0.6.0       |            |
 |                          | recycle IP taken by deleting pod                                                                                                     | v0.4.0        | v0.6.0       |            |
 | dual-stack               | dual-stack                                                                                                                           | v0.2.0        | v0.4.0       |            |
 | CLI                      | debug and operate. check which pod an IP is taken by, check IP usage , trigger GC                                                    | In plan       |              |            |
 | multi-cluster            | a broker cluster could synchronize ippool resource within a same subnet from all member clusters, which could help avoid IP conflict | In plan       |              |            |
 |                          | support submariner                                                                                                                   | In plan       |              |            |
-| cilium                   | cooperate with cilium                                                                                                                | In plan       |              |            |
-| RDMA                     | RDMA                                                                                                                                 | In plan       |              |            |
-| egressGateway            | egressGateway                                                                                                                        | In plan       |              |            |
+| dual CNI                 | underlay cooperate with cilium                                                                                                       | v0.7.0        |              |            |
+|                          | underlay cooperate with calico                                                                                                       | v0.7.0        |              |            |
+| RDMA                     | support macvlan and ipvlan CNI for RoCE device                                                                                       | v0.8.0        |              |            |
+|                          | support sriov CNI for RoCE device                                                                                                    | v0.8.0        |              |            |
+|                          | support ipoib CNI for infiniband device                                                                                              | In plan       |              |            |
+|                          | support ib-sriov CNI for infiniband device                                                                                           | In plan       |              |            |
+| egressGateway            | egressGateway                                                                                                                        | v0.8.0        |              |            |

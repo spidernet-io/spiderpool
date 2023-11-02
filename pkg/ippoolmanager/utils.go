@@ -123,3 +123,17 @@ func (b ByPoolPriority) Less(i, j int) bool {
 
 	return false
 }
+
+// findAllocatedIPFromRecords try to find pod NIC previous allocated IP from the IPPool.Status.AllocatedIPs
+// this function serves for the issue: https://github.com/spidernet-io/spiderpool/issues/2517
+func findAllocatedIPFromRecords(allocatedRecords spiderpoolv2beta1.PoolIPAllocations, nic, namespacedName, podUID string) (previousIP string, hasFound bool) {
+	for tmpIP, poolIPAllocation := range allocatedRecords {
+		if poolIPAllocation.NIC == nic &&
+			poolIPAllocation.NamespacedName == namespacedName &&
+			poolIPAllocation.PodUID == podUID {
+			return tmpIP, true
+		}
+	}
+
+	return "", false
+}

@@ -34,9 +34,12 @@ export CALICO_VERSION=${CALICO_VERSION:-"v3.25.0"}
 export INSTALL_TIME_OUT=${INSTALL_TIME_OUT:-"600s"}
 export CALICO_IMAGE_REPO=${CALICO_IMAGE_REPO:-"docker.io"}
 export CALICO_AUTODETECTION_METHOD=${CALICO_AUTODETECTION_METHOD:-"kubernetes-internal-ip"}
+export CALICO_IPV4POOL_CIDR=${CALICO_CLUSTER_POD_SUBNET_V4:-"10.243.64.0/18"}
+export CALICO_IPV6POOL_CIDR=${CALICO_CLUSTER_POD_SUBNET_V6:-"fd00:10:243::/112"}
 
 E2E_CILIUM_IMAGE_REPO=${E2E_CILIUM_IMAGE_REPO:-"quay.io"}
 CILIUM_VERSION=${CILIUM_VERSION:-""}
+DISABLE_KUBE_PROXY=${DISABLE_KUBE_PROXY:-"false"}
 CILIUM_CLUSTER_POD_SUBNET_V4=${CILIUM_CLUSTER_POD_SUBNET_V4:-"10.244.64.0/18"}
 CILIUM_CLUSTER_POD_SUBNET_V6=${CILIUM_CLUSTER_POD_SUBNET_V6:-"fd00:10:244::/112"}
 
@@ -82,9 +85,8 @@ function install_calico() {
         KEY="${env%%=*}"
         VALUE="${env#*=}"
         echo $KEY $VALUE
-        ${SED_COMMAND} -i "s/<<${KEY}>>/${VALUE}/g" ${CLUSTER_PATH}/calico.yaml
+        ${SED_COMMAND} -i "s?<<${KEY}>>?${VALUE}?g" ${CLUSTER_PATH}/calico.yaml
     done
-
 
     CALICO_IMAGE_LIST=`cat ${CLUSTER_PATH}/calico.yaml | grep 'image: ' | tr -d '"' | awk '{print $2}'`
     [ -z "${CALICO_IMAGE_LIST}" ] && echo "can't found image of calico" && exit 1
@@ -115,8 +117,12 @@ function install_cilium() {
       # k8sServiceHost api-server address
       # k8sServicePort api-service port
       # bpf.vlanBypass allow vlan traffic to pass
+      KUBE_PROXY_REPLACEMENT=disabled
+      if [ "$DISABLE_KUBE_PROXY" = "true" ]; then
+        KUBE_PROXY_REPLACEMENT=strict
+      fi
       CILIUM_HELM_OPTIONS=" --set cni.exclusive=false \
-                            --set kubeProxyReplacement=disabled \
+                            --set kubeProxyReplacement=${KUBE_PROXY_REPLACEMENT} \
                             --set k8sServiceHost=${E2E_CLUSTER_NAME}-control-plane \
                             --set k8sServicePort=6443 \
                             --set bpf.vlanBypass=0 "

@@ -86,6 +86,7 @@ This is the SpiderReservedIP spec for users to configure.
 | resourceName | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                         | required   |
 | vlanID       | vlan ID                                                                                   | int                                                            | optional   |
 | ippools      | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
+| enableRdma   | enable rdma chain cni to isolate the rdma device                                          | bool                                                           | optional   |
 
 #### SpiderOvsCniConfig
 

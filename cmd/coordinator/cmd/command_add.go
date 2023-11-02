@@ -270,6 +270,29 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 	logger.Debug("Get currentRuleTable", zap.Int("ruleTable", c.currentRuleTable))
 
+	allPodVethAddrs, err := networking.IPAddressByName(c.netns, defaultOverlayVethName, c.ipFamily)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	for idx := range allPodVethAddrs {
+		copyAddr := allPodVethAddrs[idx]
+		if c.v4PodOverlayNicAddr == nil && copyAddr.IP.To4() != nil {
+			c.v4PodOverlayNicAddr = copyAddr.IPNet
+			continue
+		}
+
+		if c.v6PodOverlayNicAddr == nil && copyAddr.IP.To16() != nil {
+			// for ipv6, maybe kernel require the src must be from the device in
+			// some kernel version.
+			// refer to https://bugzilla.kernel.org/show_bug.cgi?id=107071
+			c.v6PodOverlayNicAddr = nil
+		}
+	}
+
+	logger.Debug("Show the addrs of pod's eth0", zap.Any("v4PodOverlayNicAddr", c.v4PodOverlayNicAddr), zap.Any("v6PodOverlayNicAddr", c.v6PodOverlayNicAddr))
+
 	if err = c.setupHostRoutes(logger); err != nil {
 		logger.Error(err.Error())
 		return err
@@ -280,7 +303,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	if c.tuneMode == ModeUnderlay {
+	if c.tuneMode == ModeUnderlay && c.firstInvoke {
 		if err = c.makeReplyPacketViaVeth(logger); err != nil {
 			logger.Error("failed to makeReplyPacketViaVeth", zap.Error(err))
 			return fmt.Errorf("failed to makeReplyPacketViaVeth: %v", err)

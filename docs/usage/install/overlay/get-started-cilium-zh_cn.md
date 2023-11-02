@@ -21,13 +21,6 @@
    ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
    ```
 
-- 如果你的集群中每个节点 `/opt/cni/bin`下未安装 [cni plugins](https://www.cni.dev/plugins/current/) 。可参考以下的命令安装:
-
-   ```shell
-   ~# wget https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
-   ~# tar xvfzp ./cni-plugins-linux-amd64-v1.3.0.tgz -C /opt/cni/bin
-   ```
-
 - Helm 二进制
 
 ## 安装 Spiderpool
@@ -40,8 +33,9 @@
 ~# helm install spiderpool spiderpool/spiderpool --namespace kube-system --set coordinator.mode=overlay --wait 
 ```
 
-> 默认情况下，Spiderpool 会自动安装 Multus 组件, 如果您已经在本地安装了 Multus, 你可以使用以下命令跳过安装 Multus: `helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.install=false`
-> 需要指定 coordinator 运行在 overlay 模式
+> 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
+>
+> 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
 等待安装完成，查看 Spiderpool 组件状态:
 
@@ -51,9 +45,46 @@ spiderpool-agent-bcwqk                                      1/1     Running     
 spiderpool-agent-udgi4                                      1/1     Running     0                 1m
 spiderpool-controller-bgnh3rkcb-k7sc9                       1/1     Running     0                 1m
 spiderpool-init                                             0/1     Completed   0                 1m
-spiderpool-multus-hkxb6                                     1/1     Running     0                 1m
-spiderpool-multus-l9dcs                                     1/1     Running     0                 1m
 ```
+
+请检查 `Spidercoordinator.status` 中的 Phase 是否为 Synced, 并且 overlayPodCIDR 是否与集群中 Cilium 配置的 Pod 子网保持一致:
+
+```shell
+~# kubectl get configmaps -n kube-system cilium-config -o yaml | grep cluster-pool
+  cluster-pool-ipv4-cidr: 10.244.64.0/18
+  cluster-pool-ipv4-mask-size: "24"
+  ipam: cluster-pool
+
+~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  finalizers:
+  - spiderpool.spidernet.io
+  name: default
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 169.254.0.0/16
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: calico
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+status:
+  overlayPodCIDR:
+  - 10.244.64.0/18
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+```
+
+> 1.如果 phase 不为 Synced, 那么将会阻止 Pod 被创建
+> 
+> 2.如果 overlayPodCIDR 不正常, 可能会导致通信问题
 
 ### 创建 SpiderIPPool
 

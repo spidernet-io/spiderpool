@@ -14,6 +14,7 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -31,7 +32,7 @@ import (
 type IPPoolManager interface {
 	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error)
 	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error)
-	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error)
+	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
 }
@@ -90,7 +91,7 @@ func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...c
 	return &ipPoolList, nil
 }
 
-func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod) (*models.IPConfig, error) {
+func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error) {
 	logger := logutils.FromContext(ctx)
 
 	backoff := retry.DefaultRetry
@@ -108,7 +109,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 		}
 
 		logger.Debug("Generate a random IP address")
-		allocatedIP, err := im.genRandomIP(ctx, nic, ipPool, pod)
+		allocatedIP, err := im.genRandomIP(ctx, nic, ipPool, pod, podController)
 		if err != nil {
 			return err
 		}
@@ -138,7 +139,21 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 	return ipConfig, nil
 }
 
-func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod) (net.IP, error) {
+func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, error) {
+	logger := logutils.FromContext(ctx)
+
+	var tmpPod *corev1.Pod
+	if im.config.EnableKubevirtStaticIP && podController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podController.Kind == constant.KindKubevirtVMI {
+		tmpPod = pod.DeepCopy()
+		tmpPod.SetName(podController.Name)
+	} else {
+		tmpPod = pod
+	}
+	key, err := cache.MetaNamespaceKeyFunc(tmpPod)
+	if err != nil {
+		return nil, err
+	}
+
 	reservedIPs, err := im.rIPManager.AssembleReservedIPs(ctx, *ipPool.Spec.IPVersion)
 	if err != nil {
 		return nil, err
@@ -165,14 +180,20 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 
 	availableIPs := spiderpoolip.IPsDiffSet(totalIPs, append(reservedIPs, usedIPs...), false)
 	if len(availableIPs) == 0 {
-		return nil, constant.ErrIPUsedOut
+		// traverse the usedIPs to find the previous allocated IPs if there be
+		// reference issue: https://github.com/spidernet-io/spiderpool/issues/2517
+		allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, nic, key, string(pod.UID))
+		if !hasFound {
+			return nil, constant.ErrIPUsedOut
+		}
+
+		availableIPs, err = spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
+		if nil != err {
+			return nil, err
+		}
+		logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
 	}
 	resIP := availableIPs[0]
-
-	key, err := cache.MetaNamespaceKeyFunc(pod)
-	if err != nil {
-		return nil, err
-	}
 
 	if allocatedRecords == nil {
 		allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{}

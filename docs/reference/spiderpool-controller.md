@@ -14,17 +14,22 @@ Run the spiderpool controller daemon.
 
 ### ENV
 
-| env                                      | default | description                                                                        |
-|------------------------------------------|---------|------------------------------------------------------------------------------------|
-| SPIDERPOOL_LOG_LEVEL                     | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
-| SPIDERPOOL_ENABLED_METRIC                | false   | Enable/disable metrics.                                                            |
-| SPIDERPOOL_HEALTH_PORT                   | 5720    | Spiderpool-controller backend HTTP server port.                                    |
-| SPIDERPOOL_METRIC_HTTP_PORT              | 5721    | Metric HTTP server port.                                                           |
-| SPIDERPOOL_WEBHOOK_PORT                  | 5722    | Webhook HTTP server port.                                                          |
-| SPIDERPOOL_CLI_PORT                      | 5723    | Spiderpool-CLI HTTP server port.                                                   |
-| SPIDERPOOL_GOPS_LISTEN_PORT              | 5724    | Port that gops is listening on. Disabled if empty.                                 |
-| SPIDERPOOL_GC_IP_ENABLED                 | true    | Enable/disable IP GC.                                                              |
-| SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED | true    | Enable/disable IP GC for Terminating pod.                                          |
+| env                                         | default | description                                                                        |
+|---------------------------------------------|---------|------------------------------------------------------------------------------------|
+| SPIDERPOOL_LOG_LEVEL                        | info    | Log level, optional values are "debug", "info", "warn", "error", "fatal", "panic". |
+| SPIDERPOOL_ENABLED_METRIC                   | false   | Enable/disable metrics.                                                            |
+| SPIDERPOOL_ENABLED_DEBUG_METRIC             | false   | Enable spiderpool agent to collect debug level metrics.                            |
+| SPIDERPOOL_METRIC_HTTP_PORT                 | false   | The metrics port of spiderpool agent.                                              |
+| SPIDERPOOL_GOPS_LISTEN_PORT                 | 5724    | The gops port of spiderpool Controller.                                            |
+| SPIDERPOOL_WEBHOOK_PORT                     | 5722    | Webhook HTTP server port.                                                          |
+| SPIDERPOOL_HEALTH_PORT                      | 5720    | The http Port for spiderpoolController, for health checking and http service.      |
+| SPIDERPOOL_GC_IP_ENABLED                    | true    | Enable/disable IP GC.                                                              |
+| SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED    | true    | Enable/disable IP GC for Terminating pod.                                          |
+| SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY        | true    | The gc delay seconds after the pod times out of deleting graceful period.          |
+| SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION     | true    | The gc all interval duration.                                                      |
+| SPIDERPOOL_MULTUS_CONFIG_ENABLED            | true    | Enable/disable SpiderMultusConfig.                                                 |
+| SPIDERPOOL_CNI_CONFIG_DIR                   | true    | The host path of the cni config directory.                                         |
+| SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME  | true    | The cilium's configMap, default is kube-system/cilium-config.                      |
 
 
 ## spiderpool-controller shutdown

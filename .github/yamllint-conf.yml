@@ -12,6 +12,7 @@ ignore: |
   vendor/
   charts/
   test/yamls
+  .github/ISSUE_TEMPLATE
   .licenserc.yaml
 
 rules:

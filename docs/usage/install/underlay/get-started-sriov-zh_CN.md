@@ -1,12 +1,12 @@
-# SRIOV Quick Start
+# SR-IOV Quick Start
 
 [**English**](./get-started-sriov.md) | **简体中文**
 
-Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 Underlay 网络解决方案，该方案能够满足以下各种功能需求：
+Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方案，本文将以 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)、[SR-IOV](https://github.com/k8snetworkplumbingwg/sriov-cni) 、[Spiderpool](https://github.com/spidernet-io/spiderpool) 为例，搭建一套完整的 Underlay 网络解决方案，该方案能够满足以下各种功能需求：
 
 * 通过简易运维，应用可分配到固定的 Underlay IP 地址
 
-* Pod 的网卡具有 Sriov 的网络加速功能
+* Pod 的网卡具有 SR-IOV 的网络加速功能
 
 * Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信
 
@@ -30,27 +30,39 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
 
-### 安装 Sriov-network-operator
+## 安装 Spiderpool
 
-Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sriov-device-plugin。
-
-1. 安装 sriov-network-operator
+1. 安装 Spiderpool。
 
     ```shell
-    git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
-    helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set sriov.install=true --set multus.multusCNI.defaultCniCRName="sriov-test"
     ```
 
-   > 必须给 sriov 工作节点打上 label: 'node-role.kubernetes.io/worker=""'，sriov-operator 相关组件才会就绪。
-   >
-   > sriov-network-operator 默认安装在 sriov-network-operator 命名空间下
+    > 带上 helm 选项 ` --set sriov.install=true `， 会安装 [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)，resourcePrefix 默认为 "spidernet.io"，可通过 helm 选项 ` --set sriov.resourcePrefix ` 修改
+    >
+    > 如果您是国内用户，可以指定参数 ` --set global.imageRegistryOverride=ghcr.m.daocloud.io ` 避免 Spiderpool 的镜像拉取失败。
+    >
+    > 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
-2. 配置 sriov-network-operator
-
-    如果 SriovNetworkNodeState CRs 的状态为 `InProgress`, 说明 sriov-operator 正在同步节点状态，等待状态为 `Suncceeded` 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
+2. 给希望运行 SR-IOV CNI 的节点，按照如下命令打上 label，这样，sriov-network-operator 才会在指定的节点上安装组件
 
     ```shell
-    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    kubectl label node $NodeName node-role.kubernetes.io/worker=""
+    ```
+   
+3. 在节点上创建 VF
+
+    使用如下命令查看节点上的可用网卡
+
+    ```shell
+    $ kubectl get sriovnetworknodestates -n kube-system
+    NAME                   SYNC STATUS   AGE
+    node-1                 Succeeded     24s
+    ...
+
+    $ kubectl get sriovnetworknodestates -n kube-system node-1 -o yaml
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodeState
     spec: ...
@@ -66,20 +78,12 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
         pciAddress: "0000:04:00.0"
         totalvfs: 8
         vendor: 15b3
-      - deviceID: "1017"
-        driver: mlx5_core
-        linkSpeed: 10000 Mb/s
-        linkType: ETH
-        mac: 04:3f:72:d0:d2:87
-        mtu: 1500
-        name: enp4s0f1np1
-        pciAddress: "0000:04:00.1"
-        totalvfs: 8
-        vendor: 15b3
       syncStatus: Succeeded
     ```
 
-    从上面可知，节点 `node-1` 上的接口 `enp4s0f0np0` 和 `enp4s0f1np1` 都具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs 来配置 VFs，并且安装 sriov-device-plugin :
+    > 如果 SriovNetworkNodeState CRs 的状态为 `InProgress`, 说明 sriov-operator 正在同步节点状态，等待状态为 `Succeeded` 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
+
+    从上面可知，节点 `node-1` 上的网卡具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs，使得这些节点上的这些网卡创建出 VF:
 
     ```shell
     $ cat << EOF | kubectl apply -f -
@@ -90,23 +94,25 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
       namespace: sriov-network-operator
     spec:
       deviceType: netdevice
-      nicSelector:
-      pfNames:
-      - enp4s0f0np0
       nodeSelector:
-        kubernetes.io/hostname: node-1  # 只作用于 10-20-1-240 这个节点
+        kubernetes.io/os: "linux"
+      nicSelector:
+        deviceID: "1017"
+        rootDevices:
+          - 0000:04:00.0
+        vendor: "15b3"
       numVfs: 8 # 渴望的 VFs 数量
       resourceName: sriov_netdevice
     EOF
     ```
 
-    >  下发后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
+    >  下发如上命令后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
     >  resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_"。
 
-    在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VFs 已经得到配置:
+    在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VF 已经得到配置:
 
     ```shell
-    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    $ kubectl get sriovnetworknodestates -n sriov-network-operator node-1 -o yaml
     ...
     - Vfs:
         - deviceID: 1018
@@ -131,7 +137,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     ...
     ```
 
-    查看 Node 发现名为 `spidernet.io/sriov_netdevice` 的 sriov 资源已经生效，其中 VF 的数量为 8:
+    查看 Node 发现名为 `spidernet.io/sriov_netdevice` 的 SR-IOV 资源已经生效，其中 VF 的数量为 8:
 
     ```shell
     ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
@@ -146,19 +152,19 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     }
     ```
 
-## 安装 Spiderpool
+    > sriov-network-config-daemon Pod 负责在节点上配置 VF ，其会顺序在每个节点上完成该工作。在每个节点上配置 VF 时，sriov-network-config-daemon 会对节点上的所有 Pod 进行驱逐，配置 VF ，并可能重启节点。当 sriov-network-config-daemon 驱逐某个 Pod 失败时，会导致所有流程都停滞，从而导致 node 的 VF 数量一直为 0。 这种情况时，sriov-network-config-daemon Pod 会看到如下类似日志：
+    > 
+    > `error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...`
+    >
+    > 该问题可参考 sriov-network-operator 社区的类似 [issue](https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463)
+    > 
+    > 此时，可排查指定 Pod 为啥无法驱逐的原因，有如下可能：
+    > 
+    > （1）该驱逐失败的 Pod 可能配置了 PodDisruptionBudget，导致可用副本数不足。请调整 PodDisruptionBudget
+    >
+    > （2）集群中的可用节点不足，导致没有节点可以调度 
 
-1. 安装 Spiderpool。
-
-    ```shell
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system
-    ```
-
-    > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
-
-2. 创建 SpiderIPPool 实例。
+4. 创建 SpiderIPPool 实例。
 
     Pod 会从该子网中获取 IP，进行 Underlay 的网络通讯，所以该子网需要与接入的 Underlay 子网对应。
     以下是创建相关的 SpiderIPPool 示例
@@ -179,7 +185,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     EOF
     ```
 
-3. 创建 SpiderMultusConfig 实例。
+5. 创建 SpiderMultusConfig 实例。
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
@@ -195,7 +201,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
     EOF
     ```
 
-    > 注意: SpiderIPPool.Spec.multusName: `kube-system/sriov-test` 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
+    > SpiderIPPool.Spec.multusName: `kube-system/sriov-test` 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
     > resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成 
 
 ## 创建应用
@@ -253,7 +259,7 @@ Sriov-network-operator 可以帮助我们自动安装、配置 sriov-cni 和 sri
 
     必要参数说明：
 
-    > `spidernet/sriov_netdevice`: 该参数表示使用 Sriov 资源。
+    > `spidernet/sriov_netdevice`: 该参数表示使用 SR-IOV 资源。
     >
     > `v1.multus-cni.io/default-network`：该 annotation 指定了使用的 Multus 的 CNI 配置。
     >

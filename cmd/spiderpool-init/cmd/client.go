@@ -180,3 +180,40 @@ func (c *CoreClient) WaitMultusCNIConfigCreated(ctx context.Context, multuscnico
 		}
 	}
 }
+
+func (c *CoreClient) WaitPodListReady(ctx context.Context, namespace string, labels map[string]string) error {
+	logger := logutils.FromContext(ctx)
+
+	var podList corev1.PodList
+	var err error
+	noReady := true
+	for noReady {
+		if err = c.List(ctx, &podList, client.MatchingLabels(labels), client.InNamespace(namespace)); err != nil {
+			logger.Sugar().Errorf("failed to get spiderAgent pods: %v, retrying...", err)
+			continue
+		}
+
+		if podList.Items == nil {
+			continue
+		}
+
+		noReady = false
+		for _, pod := range podList.Items {
+			if pod.Status.Phase != corev1.PodRunning {
+				noReady = true
+				break
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			interval := retryIntervalSec * time.Second
+			logger.Sugar().Info("spiderpool-agent not ready, waiting...")
+			time.Sleep(interval)
+		}
+	}
+
+	return nil
+}

@@ -24,7 +24,7 @@ const (
 	PodStartTimeout            = time.Minute * 5
 	PodReStartTimeout          = time.Minute * 5
 	IPReclaimTimeout           = time.Minute * 5
-	ExecCommandTimeout         = time.Minute
+	ExecCommandTimeout         = time.Minute * 5
 	EventOccurTimeout          = time.Second * 30
 	ServiceAccountReadyTimeout = time.Second * 20
 	NodeReadyTimeout           = time.Minute
@@ -42,6 +42,12 @@ const (
 	SpiderPoolConfigmapNameSpace = "kube-system"
 )
 
+// Kubeadm configurations
+const (
+	KubeadmConfigmapName      = "kubeadm-config"
+	KubeadmConfigmapNameSpace = "kube-system"
+)
+
 // Network configurations
 var (
 	// multus CNI
@@ -53,6 +59,12 @@ var (
 	MacvlanUnderlayVlan0        string = "macvlan-vlan0"
 	MacvlanVlan100              string = "macvlan-vlan100"
 	MacvlanVlan200              string = "macvlan-vlan200"
+	KubevirtMacvlan30           string = "kubevirt-macvlan-vlan30"
+	KubevirtMacvlan40           string = "kubevirt-macvlan-vlan40"
+	KubevirtPoolIPv4Vlan30      string = "kubevirt-vlan30-v4"
+	KubevirtPoolIPv6Vlan30      string = "kubevirt-vlan30-v6"
+	KubevirtPoolIPv4Vlan40      string = "kubevirt-vlan40-v4"
+	KubevirtPoolIPv6Vlan40      string = "kubevirt-vlan40-v6"
 	SpiderPoolIPv4SubnetDefault string = "default-v4-subnet"
 	SpiderPoolIPv6SubnetDefault string = "default-v6-subnet"
 	SpiderPoolIPv4SubnetVlan100 string = "vlan100-v4"

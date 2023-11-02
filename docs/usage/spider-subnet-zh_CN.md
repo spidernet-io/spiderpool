@@ -28,30 +28,7 @@ SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment�
 
 ### 安装 Spiderpool
 
-- 通过 helm 安装 Spiderpool。
-
-```bash
-helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-helm repo update spiderpool
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableSpiderSubnet=true --set multus.multusCNI.defaultCniCRName="macvlan-ens192" 
-```
-
-> 如果您所在地区是中国大陆，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
->
-> 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
-
-- 检查安装完成
-
-```bash
-~# kubectl get po -n kube-system | grep spiderpool
-NAME                                     READY   STATUS      RESTARTS   AGE                                
-spiderpool-agent-7hhkz                   1/1     Running     0          13m
-spiderpool-agent-kxf27                   1/1     Running     0          13m
-spiderpool-controller-76798dbb68-xnktr   1/1     Running     0          13m
-spiderpool-init                          0/1     Completed   0          13m
-spiderpool-multus-7vkm2                  1/1     Running     0          13m
-spiderpool-multus-rwzjn                  1/1     Running     0          13m
-```
+可参考 [安装](./readme-zh_CN.md) 安装 Spiderpool. 其中，务必确保 helm 安装选项 `ipam.enableSpiderSubnet=true`
 
 ### 安装 CNI 配置
 
@@ -106,7 +83,7 @@ macvlan-ens192   27m
 macvlan-ens224   27m
 ```
 
-### 创建 Subnets
+### 创建 Subnet
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -

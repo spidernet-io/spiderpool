@@ -391,7 +391,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
+				Expect(podTopController.Kind).Should(Equal(constant.KindReplicaSet))
 			})
 
 			It("Pod with Job controller", func() {
@@ -464,7 +464,7 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 
 				podTopController, err := podManager.GetPodTopController(ctx, podT)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(slices.Contains(constant.K8sKinds, podTopController.Kind)).To(BeFalse())
+				Expect(podTopController.Kind).Should(Equal(constant.KindJob))
 			})
 
 			It("Pod with CronJob controller", func() {

@@ -5,17 +5,14 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"time"
-
-	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/utils"
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 var logger *zap.Logger
@@ -149,48 +146,15 @@ func Execute() {
 		}
 	}
 
-	// create multuscniconfig for default network
-	if config.DefaultCNIName == "" {
-		logger.Sugar().Infof("Try to create MultusCniConfig default network in %s", config.DefaultCNIDir)
-		if err = InitDefaultMultusCNIConfig(ctx, client, config.DefaultCNIDir, config.DefaultCNINamespace); err != nil {
-			logger.Fatal(err.Error())
-		}
+	if err = InitMultusDefaultCR(ctx, &config, client); err != nil {
+		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Finish init")
+	if err = makeReadinessReady(&config); err != nil {
+		logger.Fatal(err.Error())
+	}
 
-	// Wait for helm --wait.
+	// helm wait
 	time.Sleep(300 * time.Second)
-}
-
-func InitDefaultMultusCNIConfig(ctx context.Context, client *CoreClient, cniDir string, ns string) error {
-	defaultCNIConfPath, err := utils.GetDefaultCNIConfPath(cniDir)
-	if err != nil {
-		logger.Sugar().Errorf("failed to findDefaultCNIConf: %v", err)
-		return fmt.Errorf("failed to findDefaultCNIConf: %v", err)
-	}
-
-	if defaultCNIConfPath == "" {
-		// no networks in /etc/cni/net.d
-		logger.Sugar().Infof("No network found in %s, create default multuscniconfig", cniDir)
-		if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig("default", "custom", ns)); err != nil {
-			return fmt.Errorf("failed to create default spidermultusconfig: %v", err)
-		}
-		logger.Sugar().Info("success to create default Spidermultusconfig CR, please update default CR config")
-		return nil
-	}
-	logger.Sugar().Infof("the cni config file \"%s\" is the alphabetically first name in the %s directory on each node", defaultCNIConfPath, cniDir)
-
-	// parse default cni config
-	cniName, cniType, err := parseCNIFromConfig(defaultCNIConfPath)
-	if err != nil {
-		logger.Sugar().Errorf("failed to parseCNIFromConfig: %v", err)
-		return fmt.Errorf("failed to parseCNIFromConfig: %v", err)
-	}
-
-	if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig(cniName, cniType, ns)); err != nil {
-		return fmt.Errorf("failed to WaitMultusCNIConfigCreated: %v", err)
-	}
-
-	return nil
+	logger.Info("Finish init")
 }

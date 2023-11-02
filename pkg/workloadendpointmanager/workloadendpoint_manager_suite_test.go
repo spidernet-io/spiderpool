@@ -60,6 +60,8 @@ var _ = BeforeSuite(func() {
 	endpointManager, err = workloadendpointmanager.NewWorkloadEndpointManager(
 		fakeClient,
 		fakeAPIReader,
+		true,
+		true,
 	)
 	Expect(err).NotTo(HaveOccurred())
 })

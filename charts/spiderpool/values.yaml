@@ -5,7 +5,7 @@
 ## @section Global parameters
 ##
 global:
-  ## @param global.imageRegistryOverride Global Docker image registry for spiderpool images, but not for multus tag
+  ## @param global.imageRegistryOverride Global image registry for all images, which is used for offline environment
   imageRegistryOverride: ""
 
   ## @param global.nameOverride instance name
@@ -23,8 +23,8 @@ global:
   #  label1: v1
   #  labele: v2
 
-  ## @param global.ipamBinHostPath the host path of the IPAM plugin directory.
-  ipamBinHostPath: /opt/cni/bin
+  ## @param global.cniBinHostPath the host path of the IPAM plugin directory.
+  cniBinHostPath: /opt/cni/bin
 
   ## @param global.cniConfHostPath the host path of the cni config directory
   cniConfHostPath: /etc/cni/net.d
@@ -34,6 +34,9 @@ global:
 
   ## @param global.configName the configmap name
   configName: "spiderpool-conf"
+
+  ## @param global.ciliumConfigMap the cilium's configMap, default is kube-system/cilium-config
+  ciliumConfigMap: kube-system/cilium-config
 
 ## @section ipam parameters
 ##
@@ -46,6 +49,9 @@ ipam:
 
   ## @param ipam.enableStatefulSet the network mode
   enableStatefulSet: true
+
+  ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
+  enableKubevirtStaticIP: true
 
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: true
@@ -68,6 +74,8 @@ ipam:
       ## @param ipam.gc.GcDeletingTimeOutPod.delay the gc delay seconds after the pod times out of deleting graceful period
       delay: 0
 
+## @section grafanaDashboard parameters
+##
 grafanaDashboard:
   ## @param grafanaDashboard.install install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available
   install: false
@@ -107,6 +115,84 @@ coordinator:
 
   ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS
   hijackCIDR: ["169.254.0.0/16"]
+
+## @section rdma parameters
+##
+rdma:
+  rdmaSharedDevicePlugin:
+    ## @param rdma.rdmaSharedDevicePlugin.install install rdma shared device plugin for macvlan cni
+    install: false
+
+    ## @param rdma.rdmaSharedDevicePlugin.name the name of rdma shared device plugin
+    name: "spiderpool-rdma-shared-device-plugin"
+
+    image:
+      ## @param rdma.rdmaSharedDevicePlugin.image.registry the image registry of rdma shared device plugin
+      registry: ghcr.io
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.repository the image repository of rdma shared device plugin
+      repository: mellanox/k8s-rdma-shared-dev-plugin
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.pullPolicy the image pullPolicy of rdma shared device plugin
+      pullPolicy: IfNotPresent
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.digest the image digest of rdma shared device plugin
+      digest: ""
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.tag the image tag of rdma shared device plugin
+      tag: latest
+
+      ## @param rdma.rdmaSharedDevicePlugin.image.imagePullSecrets the image imagePullSecrets of rdma shared device plugin
+      imagePullSecrets: []
+      # - name: "image-pull-secret"
+
+    ## @skip rdma.rdmaSharedDevicePlugin.updateStrategy.rollingUpdate.maxUnavailable
+    ## @skip rdma.rdmaSharedDevicePlugin.updateStrategy.type
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: 2
+      type: RollingUpdate
+
+    ## @skip rdma.rdmaSharedDevicePlugin.tolerations
+    tolerations:
+      - operator: Exists
+
+    ## @param rdma.rdmaSharedDevicePlugin.podAnnotations the additional annotations
+    podAnnotations: {}
+
+    ## @param rdma.rdmaSharedDevicePlugin.podLabels the additional label
+    podLabels: {}
+
+    resources:
+      limits:
+        ## @param rdma.rdmaSharedDevicePlugin.resources.limits.cpu the cpu limit
+        cpu: 300m
+        ## @param rdma.rdmaSharedDevicePlugin.resources.limits.memory the memory limit
+        memory: 300Mi
+      requests:
+        ## @param rdma.rdmaSharedDevicePlugin.resources.requests.cpu the cpu requests
+        cpu: 100m
+        ## @param rdma.rdmaSharedDevicePlugin.resources.requests.memory the memory requests
+        memory: 50Mi
+
+    deviceConfig:
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval periodic Update Interval
+      periodicUpdateInterval: 300
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix resource prefix
+      resourcePrefix: "spidernet.io"
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName resource Name
+      resourceName: "hca_shared_devices"
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax rdma Hca Max
+      rdmaHcaMax: 500
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.vendors rdma device vendors, default to mellanox device
+      vendors: "15b3"
+
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs rdma device IDs, default to mellanox device
+      deviceIDs: "1017"
 
 ## @section multus parameters
 ##
@@ -148,35 +234,6 @@ multus:
     ## @param multus.multusCNI.defaultCniCRName if this value is empty, multus will automatically get default CNI according to the existed CNI conf file in /etc/cni/net.d/, if no cni files found in /etc/cni/net.d, A Spidermultusconfig CR named default will be created, please update the related SpiderMultusConfig for default CNI after installation. The namespace of defaultCniCRName follows with the release namespace of spdierpool
     defaultCniCRName: ""
 
-    resources:
-      limits:
-        ## @param multus.multusCNI.resources.limits.cpu the cpu limit of multus-CNI daemonset pod
-        cpu: 100m
-        ## @param multus.multusCNI.resources.limits.memory the memory limit of multus-CNI daemonset pod
-        memory: 50Mi
-      requests:
-        ## @param multus.multusCNI.resources.requests.cpu the cpu requests of multus-CNI daemonset pod
-        cpu: 100m
-        ## @param multus.multusCNI.resources.requests.memory the memory requests of multus-CNI daemonset pod
-        memory: 50Mi
-
-    ## @skip multus.multusCNI.tolerations
-    tolerations:
-      - operator: Exists
-
-    ## @param multus.multusCNI.podAnnotations the additional annotations of multus-CNI daemonset pod
-    podAnnotations: {}
-
-    ## @param multus.multusCNI.podLabels the additional label of multus-CNI daemonset pod
-    podLabels: {}
-
-    ## @skip multus.multusCNI.updateStrategy.rollingUpdate.maxUnavailable
-    ## @skip multus.multusCNI.updateStrategy.type
-    updateStrategy:
-      rollingUpdate:
-        maxUnavailable: 2
-      type: RollingUpdate
-
     securityContext:
       ## @param multus.multusCNI.securityContext.privileged the securityContext privileged of multus-CNI daemonset pod
       privileged: true
@@ -200,6 +257,37 @@ multus:
 
       ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
       logFile: "/var/log/multus.log"
+
+## @section plugins parameters
+##
+plugins:
+  ## @param plugins.installCNI install all cni plugins to each node
+  installCNI: false
+
+  ## @param plugins.installRdmaCNI install rdma cni used to isolate rdma device for sriov cni
+  installRdmaCNI: false
+
+  ## @param plugins.installOvsCNI install ovs cni to each node
+  installOvsCNI: false
+
+  image:
+    ## @param plugins.image.registry the image registry of plugins
+    registry: ghcr.io
+
+    ## @param plugins.image.repository the image repository of plugins
+    repository: spidernet-io/spiderpool/spiderpool-plugins
+
+    ## @param plugins.image.pullPolicy the image pullPolicy of plugins
+    pullPolicy: IfNotPresent
+
+    ## @param plugins.image.digest the image digest of plugins
+    digest: ""
+
+    ## @param plugins.image.tag the image tag of plugins
+    tag: v0.8.0
+
+    ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
+    imagePullSecrets: []
 
 ## @section clusterDefaultPool parameters
 ##
@@ -713,6 +801,13 @@ spiderpoolInit:
       ## @param spiderpoolInit.resources.requests.memory the memory requests of spiderpoolInit pod
       memory: 128Mi
 
+  readinessProbe:
+    ## @param spiderpoolInit.readinessProbe.failureThreshold the failure threshold of startup probe for spiderpool-init health checking
+    failureThreshold: 30
+
+    ## @param spiderpoolInit.readinessProbe.periodSeconds the period seconds of startup probe for spiderpool-init health checking
+    periodSeconds: 10
+
   ## @param spiderpoolInit.extraEnv the additional environment variables of spiderpoolInit container
   extraEnv: []
 
@@ -729,3 +824,110 @@ spiderpoolInit:
   serviceAccount:
     ## @param spiderpoolInit.serviceAccount.annotations the annotations of spiderpoolInit service account
     annotations: {}
+
+## @section sriov network operator parameters
+##
+sriov:
+  ## @param sriov.install install sriov network operator
+  install: false
+
+  ## @param sriov.name the name of sriov network operator
+  name: "spiderpool-sriov-operator"
+
+  ## @skip sriov.tolerations
+  tolerations:
+    - operator: Exists
+
+  ## @skip sriov.nodeSelector.kubernetes.io/os
+  nodeSelector:
+    kubernetes.io/os: linux
+
+  ## @param sriov.affinity the affinity
+  affinity: {}
+
+  ## @param sriov.hostnetwork enable hostnetwork mode. Notice, if no CNI available before spiderpool installation, must enable this
+  hostnetwork: true
+
+  ## @param sriov.replicas the replicas number
+  replicas: 1
+
+  ## @param sriov.resourcePrefix the resource prefix
+  resourcePrefix: "spidernet.io"
+
+  ## @param sriov.priorityClassName the priority Class Name
+  priorityClassName: "system-node-critical"
+
+  ## @param sriov.enableAdmissionController enable Admission Controller
+  enableAdmissionController: false
+
+  resources:
+    limits:
+      ## @param sriov.resources.limits.cpu the cpu limit
+      cpu: 300m
+      ## @param sriov.resources.limits.memory the memory limit
+      memory: 300Mi
+    requests:
+      ## @param sriov.resources.requests.cpu the cpu requests
+      cpu: 100m
+      ## @param sriov.resources.requests.memory the memory requests
+      memory: 128Mi
+
+  image:
+    ## @param sriov.image.registry registry for all images
+    registry: ghcr.io
+
+    ## @param sriov.image.pullPolicy the image pullPolicy for all images
+    pullPolicy: IfNotPresent
+
+    ## @param sriov.image.imagePullSecrets the image imagePullSecrets for all images
+    imagePullSecrets: []
+    # - name: "image-pull-secret"
+
+    operator:
+      ## @param sriov.image.operator.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-operator
+
+      ## @param sriov.image.operator.tag the image tag
+      tag: v1.2.0
+
+    sriovConfigDaemon:
+      ## @param sriov.image.sriovConfigDaemon.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-operator-config-daemon
+
+      ## @param sriov.image.sriovConfigDaemon.tag the image tag
+      tag: v1.2.0
+
+    sriovCni:
+      ## @param sriov.image.sriovCni.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-cni
+
+      ## @param sriov.image.sriovCni.tag the image tag
+      tag: v2.7.0
+
+    ibSriovCni:
+      ## @param sriov.image.ibSriovCni.repository the image repository
+      repository: k8snetworkplumbingwg/ib-sriov-cni
+
+      ## @param sriov.image.ibSriovCni.tag the image tag
+      tag: v1.0.2
+
+    sriovDevicePlugin:
+      ## @param sriov.image.sriovDevicePlugin.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-device-plugin
+
+      ## @param sriov.image.sriovDevicePlugin.tag the image tag
+      tag: v3.5.1
+
+    resourcesInjector:
+      ## @param sriov.image.resourcesInjector.repository the image repository
+      repository: k8snetworkplumbingwg/network-resources-injector
+
+      ## @param sriov.image.resourcesInjector.tag the image tag
+      tag: v1.5
+
+    webhook:
+      ## @param sriov.image.webhook.repository the image repository
+      repository: k8snetworkplumbingwg/sriov-network-operator-webhook
+
+      ## @param sriov.image.webhook.tag the image tag
+      tag: v1.2.0

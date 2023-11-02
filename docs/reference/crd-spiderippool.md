@@ -42,7 +42,7 @@ This is the IPPool spec for users to configure.
 | ips               | IP ranges for this pool to use                                                                             | list of strings                                                                                                                        | optional   | array of IP ranges and single IP address |         |
 | excludeIPs        | isolated IP ranges for this pool to filter                                                                 | list of strings                                                                                                                        | optional   | array of IP ranges and single IP address |         |
 | gateway           | gateway for this pool                                                                                      | string                                                                                                                                 | optional   | an IP address                            |         |
-| vlan              | vlan ID                                                                                                    | int                                                                                                                                    | optional   | [0,4094]                                 | 0       |
+| vlan              | vlan ID(deprecated)                                                                                        | int                                                                                                                                    | optional   | [0,4094]                                 | 0       |
 | routes            | custom routes in this pool (please don't set default route `0.0.0.0/0` if property `gateway` exists)       | list of [route](./crd-spiderippool.md#Route)                                                                                           | optional   |                                          |         |
 | podAffinity       | specify which pods can use this pool                                                                       | [labelSelector](https://github.com/kubernetes/kubernetes/blob/v1.27.0/staging/src/k8s.io/apimachinery/pkg/apis/meta/v1/types.go#L1195) | optional   | kubernetes LabelSelector                 |         |
 | namespaceAffinity | specify which namespaces pods can use this pool                                                            | [labelSelector](https://github.com/kubernetes/kubernetes/blob/v1.27.0/staging/src/k8s.io/apimachinery/pkg/apis/meta/v1/types.go#L1195) | optional   | kubernetes LabelSelector                 |         |
@@ -72,14 +72,14 @@ The IPPool status is a subresource that processed automatically by the system to
 
 ### Pod Affinity
 
-For details on configuring SpiderIPPool podAffinity, please read the [Pod Affinity of IPPool](./../usage/ippool-affinity-pod.md).
+For details on configuring SpiderIPPool podAffinity, please read the [Pod Affinity of IPPool](../usage/spider-affinity.md).
 
 ### Namespace Affinity
 
-For details on configuring SpiderIPPool namespaceAffinity or namespaceName, please read the [Namespace Affinity of IPPool](./../usage/ippool-affinity-namespace.md).
+For details on configuring SpiderIPPool namespaceAffinity or namespaceName, please read the [Namespace Affinity of IPPool](../usage/spider-affinity.md).
 > Notice: `namespaceName` has higher priority than `namespaceAffinity`.
 
 ### Node Affinity
 
-For details on configuring SpiderIPPool nodeAffinity or nodeName, please read the [Node Affinity of IPPool](./../usage/ippool-affinity-node.md) and [Network topology allocation](./../usage/network-topology.md).
+For details on configuring SpiderIPPool nodeAffinity or nodeName, please read the [Node Affinity of IPPool](../usage/spider-affinity.md) and [Network topology allocation](./../usage/network-topology.md).
 > Notice: `nodeName` has higher priority than `nodeAffinity`.

@@ -1,7 +1,11 @@
 #============ e2e-kind-config ====================
 
-# iptables or ipvs, default iptables
-E2E_KUBE_PROXY_MODE ?= iptables
+# iptables,ipvs or none, default iptables
+ifeq ($(DISABLE_KUBE_PROXY),true)
+    E2E_KUBE_PROXY_MODE ?= none
+else
+    E2E_KUBE_PROXY_MODE ?= iptables
+endif
 
 E2E_CHINA_IMAGE_REGISTRY ?= false
 HTTP_PROXY ?=
@@ -11,6 +15,8 @@ K8S_IPV6_SERVICE_CIDR = fd00:10:233::/116
 
 CLUSTER_POD_SUBNET_V4 = 10.233.64.0/18
 CLUSTER_POD_SUBNET_V6 = fd00:10:233:64::/64
+CALICO_CLUSTER_POD_SUBNET_V4 = 10.243.64.0/18
+CALICO_CLUSTER_POD_SUBNET_V6 = fd00:10:243::/112
 CILIUM_CLUSTER_POD_SUBNET_V4 = 10.244.64.0/18
 CILIUM_CLUSTER_POD_SUBNET_V6 = fd00:10:244::/112
 
@@ -43,11 +49,13 @@ INSTALL_CALICO ?= true
 
 INSTALL_CILIUM ?= true
 
+DISABLE_KUBE_PROXY ?= false
+
 INSTALL_NETTOOLS ?= false
 
 INSTALL_SPIDERDOCTOR ?= true
 
-CALICO_VERSION ?= v3.25.0
+INSTALL_KUBEVIRT ?= false
 
 CNI_PACKAGE_VERSION ?= v1.3.0
 
@@ -69,6 +77,8 @@ E2E_GINKGO_PROCS ?= 4
 E2E_SPIDERPOOL_ENABLE_SUBNET ?= true # consistent with open source, closed by default
 E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
 E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG ?= true
+
+E2E_HELM_ADDITIONAL_OPTIONS ?=
 
 #============Image version===========
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
@@ -111,6 +121,8 @@ MULTUS_DEFAULT_CNI_CILIUM := cilium
 MULTUS_DEFAULT_CNI_VLAN0 := macvlan-vlan0
 MULTUS_DEFAULT_CNI_VLAN100 := macvlan-vlan100
 MULTUS_DEFAULT_CNI_VLAN200 := macvlan-vlan200
+MULTUS_KUBEVIRT_CNI_VLAN30 := kubevirt-macvlan-vlan30
+MULTUS_KUBEVIRT_CNI_VLAN40 := kubevirt-macvlan-vlan40
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
     E2E_MULTUS_IMAGE_REGISTER ?= ghcr.m.daocloud.io
@@ -172,4 +184,31 @@ ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
     E2E_OPENKRUISE_IMAGE ?= docker.m.daocloud.io/openkruise/kruise-manager
 else
     E2E_OPENKRUISE_IMAGE ?= docker.io/openkruise/kruise-manager
+endif
+
+#========= rdma shared dp =========
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_RDMA_DP_IMAGE_REPO ?= ghcr.m.daocloud.io
+else
+    E2E_RDMA_DP_IMAGE_REPO ?= ghcr.io
+endif
+
+#========= sriov =========
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_SRIOV_IMAGE_REPO ?= ghcr.m.daocloud.io
+else
+    E2E_SRIOV_IMAGE_REPO ?= ghcr.io
+endif
+
+#=========== kubevrit ============
+
+# empty for latest
+KUBEVIRT_VERSION :=
+
+ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
+    E2E_KUBEVIRT_IMAGE_REPO ?= quay.m.daocloud.io
+else
+    E2E_KUBEVIRT_IMAGE_REPO ?= quay.io
 endif

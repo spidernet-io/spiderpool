@@ -1,0 +1,42 @@
+name: Feature Request
+description: Provide supporting details for a feature in development Spiderpool
+labels: ["kind/feature"]
+assignees: ["Icarus9913", "cyclinder"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+
+        Thanks for making this suggestion!
+
+        ___
+  - type: textarea
+    attributes:
+      label: What would you like to be added?
+      description: A clear and concise description of what the problem is.
+      placeholder: I hope Spiderpool could be support...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Why is this needed?
+      placeholder: I think this feature can help us...
+  - type: textarea
+    attributes:
+      label: How to implement it (if possible)?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add any other context about the feature request here.
+    validations:
+      required: false
+  - type: checkboxes
+    attributes:
+      label: I've read and agree with the following
+      options:
+        - label: I've checked all open and closed issues and my request is not there.
+          required: true
+        - label: I've checked all open and closed pull requests and my request is not there.
+          required: true

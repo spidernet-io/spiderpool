@@ -99,7 +99,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "=============== spiderpool-init describe ============== "
-    POD="spdierpool-init"
+    POD="spiderpool-init"
     echo "---------kubectl describe pod ${POD} -n ${NAMESPACE} "
     kubectl describe pod ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
@@ -118,14 +118,14 @@ elif [ "$TYPE"x == "detail"x ] ; then
     for POD in $AGENT_POD_LIST ; do
       echo ""
       echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
-      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+      kubectl logs ${POD} -c spiderpool-agent -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
       echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
-      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
+      kubectl logs ${POD} -c spiderpool-agent -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
     done
 
     echo ""
     echo "=============== spiderpool-init logs ============== "
-    POD="spdierpool-init"
+    POD="spiderpool-init"
     echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
     kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
@@ -227,15 +227,19 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
 elif [ "$TYPE"x == "error"x ] ; then
     CHECK_ERROR(){
-        LOG_MARK="$1"
-        POD="$2"
-        NAMESPACE="$3"
+        LLOG_MARK="$1"
+        LPOD="$2"
+        LNAMESPACE="$3"
+
+        if [[ "${LPOD}" == *spiderpool-agent* ]] ; then
+            LPOD="${LPOD} -c spiderpool-agent "
+        fi
 
         echo ""
-        echo "---------${POD}--------"
-        MESSAGE=` kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} |& grep -E -i "${LOG_MARK}" `
+        echo "---------${LPOD}--------"
+        MESSAGE=` kubectl logs ${LPOD} -n ${LNAMESPACE} --kubeconfig ${E2E_KUBECONFIG} |& grep -E -i "${LLOG_MARK}" `
         if  [ -n "$MESSAGE" ] ; then
-            echo "error, in ${POD}, found error, ${LOG_MARK} !!!!!!!"
+            echo "error, in ${LPOD}, found error, ${LLOG_MARK} !!!!!!!"
             echo "${MESSAGE}"
             RESUTL_CODE=1
         else

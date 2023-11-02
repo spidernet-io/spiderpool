@@ -25,7 +25,10 @@ func GetDefaultCniName(cniDir string) (string, error) {
 		return "", err
 	}
 
-	return fetchCniNameFromPath(cniPath)
+	if cniPath != "" {
+		return fetchCniNameFromPath(cniPath)
+	}
+	return "", nil
 }
 
 func findDefaultCNIConf(cniDir string) (string, error) {

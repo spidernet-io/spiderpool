@@ -12,6 +12,7 @@ import (
 
 	kruiseapi "github.com/openkruise/kruise-api"
 	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -40,7 +41,9 @@ type subnetApplicationController struct {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv2beta1.AddToScheme(scheme)
+	err := clientgoscheme.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = kruiseapi.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())

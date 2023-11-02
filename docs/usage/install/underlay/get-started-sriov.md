@@ -1,8 +1,8 @@
-# SRIOV Quick Start
+# SR-IOV Quick Start
 
 **English** | [**简体中文**](./get-started-sriov-zh_CN.md)
 
-Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using [Multus](https://github.com/k8snetworkplumbingwg/multus-cni), [Sriov](https://github.com/k8snetworkplumbingwg/sriov-cni), [Veth](https://github.com/spidernet-io/plugins), and [Spiderpool](https://github.com/spidernet-io/spiderpool), which meets the following kinds of requirements:
+Spiderpool provides a solution for assigning static IP addresses in underlay networks. In this page, we'll demonstrate how to build a complete underlay network solution using [Multus](https://github.com/k8snetworkplumbingwg/multus-cni), [SR-IOV](https://github.com/k8snetworkplumbingwg/sriov-cni), [Veth](https://github.com/spidernet-io/plugins), and [Spiderpool](https://github.com/spidernet-io/spiderpool), which meets the following kinds of requirements:
 
 * Applications can be assigned static Underlay IP addresses through simple operations.
 
@@ -30,29 +30,39 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
 
-## Install Sriov-network-operator
+## Install Spiderpool
 
-SriovNetwork helps us install sriov-cni and sriov-device-plugin components, making it easier to use sriov-cni:
-
-1. Install sriov-network-operator
+1. Install Spiderpool.
 
     ```shell
-    git clone https://github.com/k8snetworkplumbingwg/sriov-network-operator.git && cd sriov-network-operator/deployment
-    helm install -n sriov-network-operator --create-namespace --set operator.resourcePrefix=spidernet.io  --wait sriov-network-operator ./
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set sriov.install=true --set multus.multusCNI.defaultCniCRName="sriov-test"
     ```
 
-   > You may need to label SR-IOV worker nodes using node-role.kubernetes.io/worker="" label, if not already.
-   >
-   > By default, SR-IOV Operator will be deployed in namespace 'openshift-sriov-network-operator'.
-   >
-   > After installation, the node may reboot automatically. If necessary, install sriov-network-operator to the designated worker nodes.
+    > When using the helm option `--set sriov.install=true`, it will install the [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator). The default value for resourcePrefix is "spidernet.io" which can be modified via the helm option `--set sriov.resourcePrefix`.
+    >
+    > For users in the Chinese mainland, it is recommended to specify the spec `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
+    >
+    > Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
-2. Configure sriov-network-operator
-
-    Firstly, check the status of SriovNetworkNodeState CRs to confirm that sriov-network-operator has found a network card on the node that supports the SR-IOV feature.
+2. To enable the SR-IOV CNI on specific nodes, you need to apply the following command to label those nodes. This will allow the sriov-network-operator to install the components on the designated nodes.
 
     ```shell
-    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    kubectl label node $NodeName node-role.kubernetes.io/worker=""
+    ```
+
+3. Create VFs on the node
+
+    Use the following command to view the available network interfaces on the node:
+
+    ```shell
+    $ kubectl get sriovnetworknodestates -n kube-system
+    NAME                   SYNC STATUS   AGE
+    node-1                 Succeeded     24s
+    ...
+
+    $ kubectl get sriovnetworknodestates -n kube-system node-1 -o yaml
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodeState
     spec: ...
@@ -68,20 +78,12 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
         pciAddress: "0000:04:00.0"
         totalvfs: 8
         vendor: 15b3
-      - deviceID: "1017"
-        driver: mlx5_core
-        linkSpeed: 10000 Mb/s
-        linkType: ETH
-        mac: 04:3f:72:d0:d2:87
-        mtu: 1500
-        name: enp4s0f1np1
-        pciAddress: "0000:04:00.1"
-        totalvfs: 8
-        vendor: 15b3
       syncStatus: Succeeded
     ```
 
-    As can be seen from the above, interfaces 'enp4s0f0np0' and 'enp4s0f1np1' on node 'node-1' both have SR-IOV capability and support a maximum number of VFs of 8. Below we will configure the VFs by creating SriovNetworkNodePolicy CRs and install sriov-device-plugin:
+    > If the status of SriovNetworkNodeState CRs is `InProgress`,  it indicates that the sriov-operator is currently synchronizing the node state. Wait for the status to become `Succeeded` to confirm that the synchronization is complete. Check the CR to ensure that the sriov-network-operator has discovered the network interfaces on the node that support SR-IOV.
+
+    Based on the given information, it is known that the network interface on the node `node-1` supports SR-IOV capability with a maximum of 8 VFs. Now, let's create SriovNetworkNodePolicy CRs to generate VFs on these network interfaces of the respective nodes:
 
     ```shell
     $ cat << EOF | kubectl apply -f -
@@ -92,19 +94,25 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
       namespace: sriov-network-operator
     spec:
       deviceType: netdevice
-      nicSelector:
-      pfNames:
-      - enp4s0f0np0
       nodeSelector:
-        kubernetes.io/hostname: node-1 
-      numVfs: 8 # The number of VFs desired
+        kubernetes.io/os: "linux"
+      nicSelector:
+        deviceID: "1017"
+        rootDevices:
+          - 0000:04:00.0
+        vendor: "15b3"
+      numVfs: 8 # desired number of VFs
       resourceName: sriov_netdevice
+    EOF
     ```
 
-    After creating the SriovNetworkNodePolicy CRs, check the status of the SriovNetworkNodeState CRs again to see that the VFs in status have been configured:
+    >  After executing the above command, please note that configuring nodes to enable SR-IOV functionality may require a node restart. If needed, specify worker nodes instead of master nodes for this configuration.
+    >  The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".
+
+    After applying the SriovNetworkNodePolicy CRs, you can check the status of the SriovNetworkNodeState CRs again to verify that the VFs have been successfully configured:
 
     ```shell
-    $ kubectl get sriovnetworknodestates.sriovnetwork.openshift.io -n sriov-network-operator node-1 -o yaml
+    $ kubectl get sriovnetworknodestates -n sriov-network-operator node-1 -o yaml
     ...
     - Vfs:
         - deviceID: 1018
@@ -129,7 +137,7 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
     ...
     ```
 
-    You can see the sriov resource named 'spidernet/sriov_netdevice' has been configured in Node object, where the number of VFs is 8:
+    To confirm that the SR-IOV resources named `spidernet.io/sriov_netdevice` have been successfully enabled on a specific node and that the number of VFs is set to 8, you can use the following command:
 
     ```shell
     ~# kubectl get  node  node-1 -o json |jq '.status.allocatable'
@@ -138,24 +146,26 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
       "ephemeral-storage": "94580335255",
       "hugepages-1Gi": "0",
       "hugepages-2Mi": "0",
-      "spidernet/sriov_netdevice": "8",
+      "spidernet.io/sriov_netdevice": "8",
       "memory": "16247944Ki",
       "pods": "110"
     }
-
-## Install Spiderpool
-
-1. Install Spiderpool.
-
-    ```shell
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system
     ```
 
-    > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.
+    > The sriov-network-config-daemon Pod is responsible for configuring VF on nodes, and it will sequentially complete the work on each node. When configuring VF on each node, the SR-IOV network configuration daemon will evict all Pods on the node, configure VF, and possibly restart the node. When SR-IOV network configuration daemon fails to evict a Pod, it will cause all processes to stop, resulting in the vf number of nodes remaining at 0. In this case, the SR-IOV network configuration daemon Pod will see logs similar to the following:
+    > 
+    > `error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...`
+    >
+    > This issue can be referred to similar topics in the sriov-network-operator community [issue](https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463)
+    >
+    > The reason why the designated Pod cannot be expelled can be investigated, which may include the following:
+    >
+    > (1) The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
+    > shortage of available replicas. Please adjust the PodDisruptionBudget
+    >
+    > (2) Insufficient available nodes in the cluster, resulting in no nodes available for scheduling
 
-2. Create a SpiderIPPool instance.
+4. Create a SpiderIPPool instance.
 
     The Pod will obtain an IP address from this subnet for underlying network communication, so the subnet needs to correspond to the underlying subnet that is being accessed.
     Here is an example of creating a SpiderSubnet instance:：
@@ -176,7 +186,7 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
     EOF
     ```
 
-3. Create a SpiderMultusConfig instance.
+5. Create a SpiderMultusConfig instance.
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
@@ -191,7 +201,7 @@ SriovNetwork helps us install sriov-cni and sriov-device-plugin components, maki
         resourceName: spidernet.io/sriov_netdevice
       ```
 
-    > Note: SpiderIPPool.Spec.multusName: 'kube-system/sriov-test' must be to match the Name and Namespace of the SpiderMultusConfig instance created.
+    > SpiderIPPool.Spec.multusName: 'kube-system/sriov-test' must be to match the Name and Namespace of the SpiderMultusConfig instance created.
 
 ## Create applications
 

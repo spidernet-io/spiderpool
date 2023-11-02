@@ -1,0 +1,47 @@
+{{- if .Values.sriov.install -}}
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sriov.operator.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: sriov-network-config-daemon
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sriov.operator.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+subjects:
+  - kind: ServiceAccount
+    name: sriov-network-config-daemon
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: sriov-network-config-daemon
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

@@ -28,6 +28,7 @@ type coordinator struct {
 	netns                                       ns.NetNS
 	hostVethHwAddress, podVethHwAddress         net.HardwareAddr
 	currentAddress                              []netlink.Addr
+	v4PodOverlayNicAddr, v6PodOverlayNicAddr    *net.IPNet
 	hostIPRouteForPod                           []net.IP
 }
 
@@ -251,23 +252,30 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 				return err
 			}
 
-			if nip.To4() != nil && v4Gw == nil {
-				logger.Warn("ignore adding hijack routing table(ipv4), due to ipv4 gateway is nil", zap.String("IPv4 Hijack cidr", hijack))
-				continue
+			var src *net.IPNet
+			if nip.To4() != nil {
+				if v4Gw == nil {
+					logger.Warn("ignore adding hijack routing table(ipv4), due to ipv4 gateway is nil", zap.String("IPv4 Hijack cidr", hijack))
+					continue
+				}
+				src = c.v4PodOverlayNicAddr
 			}
 
-			if nip.To4() == nil && v6Gw == nil {
-				logger.Warn("ignore adding hijack routing table(ipv6), due to ipv6 gateway is nil", zap.String("IPv6 Hijack cidr", hijack))
-				continue
+			if nip.To4() == nil {
+				if v6Gw == nil {
+					logger.Warn("ignore adding hijack routing table(ipv6), due to ipv6 gateway is nil", zap.String("IPv6 Hijack cidr", hijack))
+					continue
+				}
+				src = c.v6PodOverlayNicAddr
 			}
 
-			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
+			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, src, ipNet, v4Gw, v6Gw); err != nil {
 				logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 				return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 			}
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
+				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, src, ipNet, v4Gw, v6Gw); err != nil {
 					logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 					return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 				}
@@ -291,15 +299,21 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		// eq: "ip r add <ipAddressOnNode> dev veth0/eth0 table <ruleTable>"
 		for _, hostAddress := range c.hostIPRouteForPod {
 			ipNet := networking.ConvertMaxMaskIPNet(hostAddress)
-			if err = networking.AddRoute(logger, c.currentRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
+			var src *net.IPNet
+			if hostAddress.To4() != nil {
+				src = c.v4PodOverlayNicAddr
+			} else {
+				src = c.v6PodOverlayNicAddr
+			}
+			if err = networking.AddRoute(logger, c.currentRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, src, ipNet, nil, nil); err != nil {
 				logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
-				return fmt.Errorf("failed to AddRouteTable for ipAddressOnNode: %v", err)
+				return err
 			}
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				if err = networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, ipNet, nil, nil); err != nil {
+				if err = networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, src, ipNet, nil, nil); err != nil {
 					logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
-					return fmt.Errorf("failed to AddRouteTable for ipAddressOnNode: %v", err)
+					return err
 				}
 				logger.Debug("Add Route for hostAddress in pod successfully", zap.String("Dst", ipNet.String()))
 			}
@@ -357,7 +371,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 
 		// set routes for host
 		// equivalent: ip add  <chainedIPs> dev <hostVethName> table  on host
-		if err = networking.AddRoute(logger, c.hostRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.hostVethName, ipNet, nil, nil); err != nil {
+		if err = networking.AddRoute(logger, c.hostRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.hostVethName, nil, ipNet, nil, nil); err != nil {
 			logger.Error("failed to AddRouteTable for preInterfaceIPAddress", zap.Error(err))
 			return fmt.Errorf("failed to AddRouteTable for preInterfaceIPAddress: %v", err)
 		}
@@ -429,7 +443,11 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 
 		if configDefaultRouteNIC == c.currentInterface {
 			for idx, route := range defaultInterfaceRoutes {
-				if route.Dst != nil {
+				zeroIPAddress := net.IPv4zero
+				if defaultInterfaceRoutes[idx].Family == netlink.FAMILY_V6 {
+					zeroIPAddress = net.IPv6zero
+				}
+				if !route.Dst.IP.Equal(zeroIPAddress) {
 					if err := networking.AddToRuleTable(defaultInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
 						logger.Error("failed to AddToRuleTable", zap.Error(err))
 						return fmt.Errorf("failed to AddToRuleTable: %v", err)
@@ -453,7 +471,11 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 
 		} else if configDefaultRouteNIC == podDefaultRouteNIC {
 			for idx, route := range currentInterfaceRoutes {
-				if route.Dst != nil {
+				zeroIPAddress := net.IPv4zero
+				if defaultInterfaceRoutes[idx].Family == netlink.FAMILY_V6 {
+					zeroIPAddress = net.IPv6zero
+				}
+				if !route.Dst.IP.Equal(zeroIPAddress) {
 					if err := networking.AddToRuleTable(currentInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
 						logger.Error("failed to AddToRuleTable", zap.Error(err))
 						return fmt.Errorf("failed to AddToRuleTable: %v", err)
@@ -599,7 +621,14 @@ func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 				return fmt.Errorf("failed to add rule table with mark: %v", err)
 			}
 
-			if err = networking.AddRoute(logger, c.hostRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, nil, v4Gw, v6Gw); err != nil {
+			var src *net.IPNet
+			if family == netlink.FAMILY_V4 {
+				src = c.v4PodOverlayNicAddr
+			} else {
+				src = c.v6PodOverlayNicAddr
+			}
+
+			if err = networking.AddRoute(logger, c.hostRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, src, nil, v4Gw, v6Gw); err != nil {
 				return err
 			}
 		}

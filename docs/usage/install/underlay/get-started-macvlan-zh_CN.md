@@ -16,20 +16,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 2. 已安装 [Helm](https://helm.sh/docs/intro/install/)
 
-## 安装 Macvlan
-
-[`Macvlan`](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) 是一个 CNI 插件项目，能够为 Pod 分配 Macvlan 虚拟网卡，可用于对接 Underlay 网络。
-
-一些 Kubernetes 安装器项目，默认安装了 Macvlan 二进制文件，可确认节点上存在二进制文件 /opt/cni/bin/macvlan 。如果节点上不存在该二进制文件，可参考如下命令，在所有节点上下载安装：
-
-```shell
-~# wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz 
-
-~# tar xvfzp ./cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
-
-~# chmod +x /opt/cni/bin/macvlan
-```
-
 ## 安装 Spiderpool
 
 1. 安装 Spiderpool。
@@ -42,9 +28,11 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-conf"
     ```
 
+    > 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
+    > 
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     >
-    > 通过 `multus.multusCNI.defaultCniCRName` 指定集群的 Multus clusterNetwork，clusterNetwork 是 Multus 插件的一个特定字段，用于指定 Pod 的默认网络接口。
+   > 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
 2. 创建 SpiderIPPool 实例。
 
@@ -74,8 +62,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     spiderpool-agent-kxf27                   1/1     Running     0              13m
     spiderpool-controller-76798dbb68-xnktr   1/1     Running     0              13m
     spiderpool-init                          0/1     Completed   0              13m
-    spiderpool-multus-7vkm2                  1/1     Running     0              13m
-    spiderpool-multus-rwzjn                  1/1     Running     0              13m
     ~# kubectl get sp
     NAME            VERSION   SUBNET          ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DISABLE
     ippool-test     4         172.18.0.0/16   0                    10               false

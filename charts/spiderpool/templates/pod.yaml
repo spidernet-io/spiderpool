@@ -59,6 +59,16 @@ spec:
     args:
     {{- toYaml . | trim | nindent 4 }}
     {{- end }}
+    readinessProbe:
+      exec:
+        command:
+        - cat
+        - "/etc/spiderpool/ready"
+      initialDelaySeconds: 15
+      periodSeconds: {{ .Values.spiderpoolInit.readinessProbe.periodSeconds }}
+      successThreshold: 1
+      failureThreshold: {{ .Values.spiderpoolInit.readinessProbe.failureThreshold }}
+      timeoutSeconds: 1
     {{- with .Values.spiderpoolInit.resources }}
     resources:
     {{- toYaml . | trim | nindent 6 }}
@@ -75,6 +85,8 @@ spec:
       value: {{ .Release.Namespace | quote }}
     - name: SPIDERPOOL_CONTROLLER_NAME
       value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+    - name: SPIDERPOOL_AGENT_NAME
+      value: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" | quote }}
     {{- if .Values.coordinator.enabled }}
     - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME
       value: {{ .Values.coordinator.name | quote }}
@@ -125,9 +137,13 @@ spec:
       value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE
       value: {{ .Release.Namespace | quote }}
+    - name: SPIDERPOOL_INIT_MULTUS_CONFIGMAP
+      value: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" | quote }}
     {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_DIR
       value: {{ .Values.global.cniConfHostPath | quote }}
+    - name: SPIDERPOOL_INIT_READINESS_FILE
+      value: "/etc/spiderpool/ready"
     volumeMounts:
       - name: cni
         mountPath: {{ .Values.global.cniConfHostPath }}

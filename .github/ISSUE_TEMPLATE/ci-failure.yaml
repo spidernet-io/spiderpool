@@ -1,5 +1,5 @@
 name: CI failure
-about: Report continuously failing tests or jobs in CI
+description: Report continuously failing tests or jobs in CI
 labels: ["kind/ci-bug"]
 assignees: ["ty-dc"]
 body:
@@ -27,4 +27,3 @@ body:
     id: additional
     attributes:
       label: Anything else we need to know?
-  

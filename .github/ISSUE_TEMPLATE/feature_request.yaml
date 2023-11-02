@@ -8,7 +8,7 @@ body:
       value: |
 
         Thanks for making this suggestion!
-    
+
         ___
   - type: textarea
     attributes:
@@ -40,4 +40,3 @@ body:
           required: true
         - label: I've checked all open and closed pull requests and my request is not there.
           required: true
-    

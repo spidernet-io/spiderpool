@@ -8,10 +8,10 @@ body:
       label: The Type of Document Issue
       multiple: true
       options:
-      - "Lacking"
-      - "Wrong"
-      - "Outdated"
-      - "Other"
+        - "Lacking"
+        - "Wrong"
+        - "Outdated"
+        - "Other"
     validations:
       required: true
   - type: textarea

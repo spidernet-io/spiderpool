@@ -6,11 +6,11 @@ body:
     id: opt-doc
     attributes:
       label: The Type of Document Issue
-    multiple: true
-    options:
+      multiple: true
+      options:
       - "Lacking"
       - "Wrong"
-      - "outdated"
+      - "Outdated"
       - "Other"
     validations:
       required: true
@@ -18,15 +18,15 @@ body:
     id: doc
     attributes:
       label: What's wrong with this document?
-    placeholder: |
-      the document is outdated
+      placeholder: |
+        the document is outdated
     validations:
       required: true
   - type: input
     id: doc-path
     attributes:
       label: Document Path Or Link
-      description: |
-        [e.g. 0.13.9, 0.12.0]
+      placeholder: |
+        https://github.com/spidernet-io/spiderpool/blob/main/README.md
     validations:
       required: true

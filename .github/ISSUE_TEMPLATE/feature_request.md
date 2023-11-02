@@ -1,14 +1,15 @@
 name: Feature Request
 description: Provide supporting details for a feature in development Spiderpool
-labels: kind/feature
-assignees: 'Icarus9913, cyclinder'
+labels: ["kind/feature"]
+assignees: ["Icarus9913", "cyclinder"]
 body:
   - type: markdown
     attributes:
-    value: |
-      Thanks for making this suggestion!
+      value: |
+
+        Thanks for making this suggestion!
     
-      ___
+        ___
   - type: textarea
     attributes:
       label: What would you like to be added?

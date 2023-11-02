@@ -1,11 +1,12 @@
 name: Support
 description: Support request or question relating to Spiderpool
 labels: ["kind/support"]
-assignees: 'ty-dc'
+assignees: ['ty-dc']
 body:
   - type: markdown
     attributes:
       value: |
+
         You are welcome to ask us for help, You can join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 
         channel on CNCF Slack by requesting an **[invitation](https://slack.cncf.io/)** from CNCF Slack. Or refer to the 
         [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md)  to find the email addresses 
@@ -16,7 +17,7 @@ body:
     id: help
     attributes:
       label: What help do you need？
-    placeholder: |
-      I don't know how to start use Spiderpool...
+      placeholder: |
+        I don't know how to start use Spiderpool...
     validations:
       required: true

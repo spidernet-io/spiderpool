@@ -1,7 +1,7 @@
 name: CI failure
 about: Report continuously failing tests or jobs in CI
-labels: kind/ci-bug
-assignees: 'ty-dc'
+labels: ["kind/ci-bug"]
+assignees: ["ty-dc"]
 body:
   - type: textarea
     id: jobs

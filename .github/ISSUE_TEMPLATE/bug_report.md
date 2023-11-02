@@ -1,11 +1,12 @@
 name: Bug Report
 description: Report a bug that you encountered
 labels: ["kind/bug"]
-assignees: 'Icarus9913, cyclinder'
+assignees: ["Icarus9913", "cyclinder"]
 body:
   - type: markdown
     attributes:
       value: |
+
         Thanks for making this bug report.
        
       ---
@@ -59,10 +60,10 @@ body:
     attributes:
       label: How to reproduce it (as minimally and precisely as possible)
       description: Make sure that if you follow these steps again yourself the bug happens again.
-    placeholder: |
-      1. Apply the following IPPool and Spidermultusconfig
-      2. Annotate the annotations to Pod
-      3. Show your Spidercoordinator in your cluster
+      placeholder: |
+        1. Apply the following IPPool and Spidermultusconfig
+        2. Annotate the annotations to Pod
+        3. Show your Spidercoordinator config in your cluster
     validations:
       required: true
   - type: textarea

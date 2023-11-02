@@ -1,30 +1,75 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: 'software bug'
-labels: issue/bug, issue/not-assign
-assignees: 'Icarus9913, iiiceoo'
-
----
-
-**Describe the version**
-version about:
-1. spiderpool
-2. kubernetes
-3. what CNI and itsversion
-
-
-**Describe the bug**
-A clear and concise description of what the bug is.
-
-**How To Reproduce**
-Steps to reproduce the issue:
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Screenshots and log**
-If applicable, add screenshots and log to help explain your problem.
-
-**Additional context**
-Add any other context about the problem here.
+name: Bug Report
+description: Report a bug that you encountered
+labels: ["kind/bug"]
+assignees: 'Icarus9913, cyclinder'
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for making this bug report.
+       
+      ---
+  - type: input
+    id: spiderpool-version
+    attributes:
+      label: Spiderpool Version
+      description: |
+        [e.g. v0.8.0]
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Bug Type
+      multiple: false
+      options:
+        - "IPAM"
+        - "Communication Issue"
+        - "Installation Issue"
+        - "Spiderpool-Controller"
+        - "Spiderpoo-Agent"
+        - "Coordinator"
+        - "Other"
+    validations:
+      required: true
+  - type: input
+    id: main-cni
+    attributes:
+      label: Main CNI
+      description: |
+        The primary CNI used in the deployment (e.g. macvlan,ipvlan,sriov)
+    validations:
+      required: true
+  - type: textarea
+    id: bug-report
+    attributes:
+      label: What happened?
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: exp-behaviour
+    attributes:
+      label: What did you expect to happen?
+      description: a clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it (as minimally and precisely as possible)
+      description: Make sure that if you follow these steps again yourself the bug happens again.
+    placeholder: |
+      1. Apply the following IPPool and Spidermultusconfig
+      2. Annotate the annotations to Pod
+      3. Show your Spidercoordinator in your cluster
+    validations:
+      required: true
+  - type: textarea
+    id: add-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here.
+    validations:
+      required: false
+    

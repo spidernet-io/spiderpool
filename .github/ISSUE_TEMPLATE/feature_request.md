@@ -1,41 +1,42 @@
----
-name: Feature request
-about: Suggest an idea for this project
-title: 'feature'
-labels: issue/feature, issue/not-assign
-assignees: 'Icarus9913, iiiceoo'
-
----
-
-**1 Code requirement**
-
-necessary comment for your additional code , and comment for goDoc
-
-function and variable name must not be at will
-
-do not make huge function
-
-**2 observe opensource license**
-
-announce license at the beginning of file
-
-**3 sign-off your commit**
-
-your commit must be signed off
-
-**4 Is your feature request related to a problem? Please describe.**
-
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
-
-**5 Describe the solution you'd like**
-
-A clear and concise description of what you want to happen.
-
-**6 Describe alternatives you've considered**
-
-A clear and concise description of any alternative solutions or features you've considered.
-
-**7 Additional context**
-
-Add any other context or screenshots about the feature request here.
-
+name: Feature Request
+description: Provide supporting details for a feature in development Spiderpool
+labels: kind/feature
+assignees: 'Icarus9913, cyclinder'
+body:
+  - type: markdown
+    attributes:
+    value: |
+      Thanks for making this suggestion!
+    
+      ___
+  - type: textarea
+    attributes:
+      label: What would you like to be added?
+      description: A clear and concise description of what the problem is.
+      placeholder: I hope Spiderpool could be support...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Why is this needed?
+      placeholder: I think this feature can help us...
+  - type: textarea
+    attributes:
+      label: How to implement it (if possible)?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add any other context about the feature request here.
+    validations:
+      required: false
+  - type: checkboxes
+    attributes:
+      label: I've read and agree with the following
+      options:
+        - label: I've checked all open and closed issues and my request is not there.
+          required: true
+        - label: I've checked all open and closed pull requests and my request is not there.
+          required: true
+    

@@ -1,18 +1,30 @@
----
 name: CI failure
-about: Create a report to help us improve
-title: 'CI failure'
-labels: issue/ci-fail, issue/not-assign
-assignees: 'Icarus9913, iiiceoo'
-
----
-
-Set title to be in the format CI: <test-name>.
-
-Copy-paste the output the test failure.
-
-Upload the zip file generated from that test failure.
-
-Copy-paste the link of the CI build where that test failure has happen.
-
-Include any output from logs that you think may be relevant (to ease GitHub searches).
+about: Report continuously failing tests or jobs in CI
+labels: kind/ci-bug
+assignees: 'ty-dc'
+body:
+  - type: textarea
+    id: jobs
+    attributes:
+      label: Which tests are failing?
+    validations:
+      required: true
+  - type: textarea
+    id: since
+    attributes:
+      label: Since when has it been failing?
+    validations:
+      required: true
+  - type: input
+    id: testgrid
+    attributes:
+      label: Job's Link
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason for failure (if possible)
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else we need to know?
+  

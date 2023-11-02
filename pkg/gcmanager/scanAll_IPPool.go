@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -190,15 +192,23 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				} else {
 					// case: The pod in IPPool's ip-allocationDetail is also exist in k8s, but the IPPool IP corresponding allocation pod UID is different with pod UID
 					if string(podYaml.UID) != poolIPAllocation.PodUID {
-						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
+						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with pod UID"),
+							zap.String("podYamlUID", string(podYaml.UID)), zap.String("podYamlNode", podYaml.Spec.NodeName))
+
+						ownerReference := metav1.GetControllerOf(podYaml)
+						if ownerReference != nil {
+							if s.gcConfig.EnableStatefulSet && ownerReference.APIVersion == appsv1.SchemeGroupVersion.String() && ownerReference.Kind == constant.KindStatefulSet {
+								wrappedLog.Sugar().Warnf("StatefulSet Pod %s/%s is restarting", podYaml.Namespace, podYaml.Name)
+								continue
+							}
+						}
+
 						// we are afraid that no one removes the old same name Endpoint finalizer
-						err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
+						err := s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
 						if nil != err {
 							wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
 							continue
 						}
-
-						wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 					} else {
 						endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)
 						if err != nil {

@@ -205,7 +205,7 @@ jobs:
           TOOL_PATH=${{ env.PERFORMANCESCRIPT }}
           TODO_STATUS=$( ${TOOL_PATH}  "e2ereport.json"  )
           echo "PERFORMANCE_RESULT=${TODO_STATUS}" >> $GITHUB_ENV
-          [ -f "spiderpoolperformance.json" ] || { echo "error, miss spiderpoolperformance.json " ; exit 1 ; }
+          [ -z ${{ env.PERFORMANCE_RESULT }} ] || { echo "error, miss spiderpool performance result " ; exit 1 ; }
 
       - name: Update Badge For Dual-stack
         if: ${{ inputs.run_e2e == 'true' && env.PERFORMANCE_RESULT != '' && inputs.ip_family == 'dual' }}

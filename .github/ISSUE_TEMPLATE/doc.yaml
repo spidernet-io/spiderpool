@@ -1,6 +1,6 @@
 name: Documentation issue
 description: help us improve doc
-labels: kind/doc
+labels: ["kind/doc"]
 body:
   - type: dropdown
     id: opt-doc

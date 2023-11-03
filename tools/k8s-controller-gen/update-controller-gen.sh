@@ -44,7 +44,7 @@ manifests_gen() {
   output_dir=$1
 
   controller-gen \
-  crd rbac:roleName="spiderpool-admin" \
+  crd object rbac:roleName="spiderpool-admin" \
   paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1" \
   output:crd:artifacts:config="${output_dir}/crds" \
   output:rbac:artifacts:config="${output_dir}/templates"

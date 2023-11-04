@@ -34,7 +34,7 @@ type IPPoolManager interface {
 	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error)
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
-	UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndCIDs []types.IPAndUID) error
+	UpdateAllocatedIPs(ctx context.Context, poolName, namespacedName string, ipAndCIDs []types.IPAndUID) error
 }
 
 type ipPoolManager struct {
@@ -291,7 +291,7 @@ func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUI
 	return nil
 }
 
-func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {
+func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName, namespacedName string, ipAndUIDs []types.IPAndUID) error {
 	logger := logutils.FromContext(ctx)
 
 	backoff := retry.DefaultRetry
@@ -315,6 +315,10 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName string
 		recreate := false
 		for _, iu := range ipAndUIDs {
 			if record, ok := allocatedRecords[iu.IP]; ok {
+				if record.NamespacedName != namespacedName {
+					return fmt.Errorf("failed to update allocated IP because of data broken: IPPool %s IP %s allocation detail %v mistach namespacedName %s",
+						poolName, iu.IP, record, namespacedName)
+				}
 				if record.PodUID != iu.UID {
 					record.PodUID = iu.UID
 					allocatedRecords[iu.IP] = record

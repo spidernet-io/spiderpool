@@ -207,15 +207,13 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						if podmanager.IsStaticIPPod(s.gcConfig.EnableStatefulSet, s.gcConfig.EnableKubevirtStaticIP, podYaml) {
 							scanAllLogger.Sugar().Debugf("Static IP Pod just restarts, keep the static IP '%s' from the IPPool", poolIP)
 						} else {
-							wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with Endpoint pod UID"))
+							wrappedLog := scanAllLogger.With(zap.String("gc-reason", "IPPoolAllocation pod UID is different with pod UID"))
 							// we are afraid that no one removes the old same name Endpoint finalizer
-							err := s.releaseSingleIPAndRemoveWEPFinalizer(ctx, pool.Name, poolIP, poolIPAllocation)
+							err := s.releaseSingleIPAndRemoveWEPFinalizer(logutils.IntoContext(ctx, wrappedLog), pool.Name, poolIP, poolIPAllocation)
 							if nil != err {
 								wrappedLog.Sugar().Errorf("failed to release ip '%s', error: '%v'", poolIP, err)
 								continue
 							}
-
-							wrappedLog.Sugar().Infof("release ip '%s' successfully!", poolIP)
 						}
 					} else {
 						endpoint, err := s.wepMgr.GetEndpointByName(ctx, podYaml.Namespace, podYaml.Name, constant.UseCache)

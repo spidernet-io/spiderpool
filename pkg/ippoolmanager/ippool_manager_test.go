@@ -475,7 +475,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("updates the allocated IP record from non-existent IPPool", func() {
-				err := ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{})
+				err := ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{})
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			})
 
@@ -487,7 +487,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: uid}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: uid}})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -504,7 +504,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -521,7 +521,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
 				Expect(err).To(MatchError(constant.ErrRetriesExhausted))
 			})
 
@@ -536,7 +536,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				newUID := string(uuid.NewUUID())
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: newUID}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: newUID}})
 				Expect(err).NotTo(HaveOccurred())
 
 				var ipPool spiderpoolv2beta1.SpiderIPPool

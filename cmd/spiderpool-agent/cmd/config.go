@@ -91,17 +91,13 @@ type Config struct {
 	MultusClusterNetwork string
 
 	// configmap
-	IpamUnixSocketPath                string   `yaml:"ipamUnixSocketPath"`
-	EnableIPv4                        bool     `yaml:"enableIPv4"`
-	EnableIPv6                        bool     `yaml:"enableIPv6"`
-	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
-	EnableKubevirtStaticIP            bool     `yaml:"enableKubevirtStaticIP"`
-	EnableSpiderSubnet                bool     `yaml:"enableSpiderSubnet"`
-	ClusterDefaultIPv4IPPool          []string `yaml:"clusterDefaultIPv4IPPool"`
-	ClusterDefaultIPv6IPPool          []string `yaml:"clusterDefaultIPv6IPPool"`
-	ClusterDefaultIPv4Subnet          []string `yaml:"clusterDefaultIPv4Subnet"`
-	ClusterDefaultIPv6Subnet          []string `yaml:"clusterDefaultIPv6Subnet"`
-	ClusterSubnetDefaultFlexibleIPNum int      `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+	IpamUnixSocketPath                string `yaml:"ipamUnixSocketPath"`
+	EnableIPv4                        bool   `yaml:"enableIPv4"`
+	EnableIPv6                        bool   `yaml:"enableIPv6"`
+	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
+	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
+	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
+	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 
 type AgentContext struct {

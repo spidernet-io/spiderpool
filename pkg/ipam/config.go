@@ -15,10 +15,8 @@ import (
 )
 
 type IPAMConfig struct {
-	EnableIPv4               bool
-	EnableIPv6               bool
-	ClusterDefaultIPv4IPPool []string
-	ClusterDefaultIPv6IPPool []string
+	EnableIPv4 bool
+	EnableIPv6 bool
 
 	EnableSpiderSubnet     bool
 	EnableStatefulSet      bool

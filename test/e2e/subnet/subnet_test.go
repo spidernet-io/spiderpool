@@ -1324,7 +1324,8 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Get the default subnet
 			// and verify that the default subnet functions properly
 			By("get cluster default subnet")
-			ClusterDefaultV4SubnetList, ClusterDefaultV6SubnetList, err = common.GetClusterDefaultSubnet(frame)
+			// TODO(ty-dc), Default subnet to be determined for now
+			// ClusterDefaultV4SubnetList, ClusterDefaultV6SubnetList, err = common.GetClusterDefaultSubnet(frame)
 			Expect(err).NotTo(HaveOccurred())
 			if frame.Info.IpV4Enabled && len(ClusterDefaultV4SubnetList) == 0 {
 				Skip("v4 Default Subnet function is not enabled")

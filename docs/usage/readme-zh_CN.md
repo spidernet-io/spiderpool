@@ -93,7 +93,7 @@
 
 - 可以通过 IP 池和 Pod annotaiton 等多种方式定制自定义路由，可参考[例子](./route.md)。
 
-- 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考[例子](./ippool-multi.md)。
+- 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考[例子](./spider-ippool-zh_CN.md)。
 
 - 设置全局的预留 IP，让 IPAM 不分配出这些 IP 地址，这样能避免与集群外部的已用 IP 冲突。
   可参考[例子](./reserved-ip.md)。
@@ -143,4 +143,4 @@
 
 - 支持 AMD64 和 ARM64
 
-- 所有的功能都能够在 ipv4-only、ipv6-only、dual-stack 场景下工作。可参考[例子](./ipv6.md)。
+- 所有的功能都能够在 ipv4-only、ipv6-only、dual-stack 场景下工作。可参考[例子](./spider-ippool.md)。

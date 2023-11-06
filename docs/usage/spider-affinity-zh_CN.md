@@ -6,6 +6,39 @@
 
 SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地址，可分别存储到不同的 IPPool 实例中（Spiderpool 会校验 IPPool 之间的地址集合不重叠）。因此，依据需求，SpiderIPPool 中的 IP 集合可大可小。能很好的应对 underlay 网络的 IP 地址资源有限情况，且这种设计特点，能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，既能够让所有应用共享使用同一个子网，又能够实现 "微隔离"。
 
+## 快速入门
+
+在 [SpiderIPPool CRD](./../reference/crd-spiderippool.md) 里，我们有定义很多的字段来搭配亲和性使用，如:
+
+- `spec.podAffinity` 字段可控制该池是否可被 Pod 使用
+- `spec.namespaceName` 和 `spec.namespaceAffinity` 字段会校验是否与 Pod 的Namespace相匹配，若不匹配则不可使用。(`namespaceName` 优先级高于 `namespaceAffinity`)
+- `spec.nodeName` 和 `spec.nodeAffinity` 字段会校验是否与 Pod 所在的节点相匹配，若不匹配则不可使用。(`nodeName` 优先级高于 `nodeAffinity`)
+- `multusName` 字段会判断当前网卡是否与 multus 的 net-attach-def 资源使用的 CNI 配置相匹配，若不匹配则不可使用。
+
+这些字段不仅起到**过滤**的作用，同时也会起到一个**排序**的效果，若匹配的字段越多，越优先使用该 IP 池。
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: test-pod-ippool
+spec:
+  subnet: 10.6.0.0/16
+  ips:
+    - 10.6.168.151-10.6.168.160
+  podAffinity:
+    matchLabels:
+      app: test-app-3
+  nodeName:
+    - master
+    - worker1
+  namespaceName:
+    - kube-system
+    - default
+  multusName:
+    - kube-system/macvlan-vlan0
+```
+
 ## 应用亲和性
 
 在集群中，防火墙通常用于管理南北向通信，即集群内部和外部网络之间的通信。为了实现安全管控，防火墙需要对通信流量进行检查和过滤，并对出口通信进行限制。由于防火墙安全管控，一组 Deployment 它的所有 Pod 期望能够在一个固定的 IP 地址范围内轮滚分配 IP 地址，以配合防火墙的放行策略，从而实现 Underlay 网络下的南北通信。

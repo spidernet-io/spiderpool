@@ -10,7 +10,7 @@ SpiderIPPool 资源代表 IP 地址的集合，一个 Subnet 中的不同 IP 地
 
 在 [SpiderIPPool CRD](./../reference/crd-spiderippool.md) 里，我们有定义很多的字段来搭配亲和性使用，如:
 
-- `spec.podAffinity` 字段可控制该池是否可被 Pod 使用
+- `spec.podAffinity` 字段可控制该池是否可被 Pod 使用。
 - `spec.namespaceName` 和 `spec.namespaceAffinity` 字段会校验是否与 Pod 的Namespace相匹配，若不匹配则不可使用。(`namespaceName` 优先级高于 `namespaceAffinity`)
 - `spec.nodeName` 和 `spec.nodeAffinity` 字段会校验是否与 Pod 所在的节点相匹配，若不匹配则不可使用。(`nodeName` 优先级高于 `nodeAffinity`)
 - `multusName` 字段会判断当前网卡是否与 multus 的 net-attach-def 资源使用的 CNI 配置相匹配，若不匹配则不可使用。
@@ -493,6 +493,75 @@ EOF
 ~# kubectl get po -l app=test-other-ns -A -o wide
 NAMESPACE     NAME                              READY   STATUS              RESTARTS   AGE   IP       NODE    NOMINATED NODE   READINESS GATES
 test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0          6m3s   <none>   node2   <none>           <none>
+```
+
+## 网卡配置亲和性
+
+当为应用创建多网卡时候，我们可以为**集群级别缺省池**指定 multus 的 net-attach-def 实例亲和性。该方法相比于通过注解 `ipam.spidernet.io/ippools` 显式指定网卡与 IPPool 资源的绑定关系更为简单。
+
+首先为 IPPool 资源配置好各类属性，其中:
+
+- `spec.default` 字段设置为 `true`, 以此减少为应用打上 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 注解，让体验更为简单。
+
+- `spec.multusName` 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认视属于 spiderpool 安装时的命名空间)
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: test-ippool-eth0
+spec:
+  default: true
+  subnet: 10.6.0.0/16
+  ips:
+    - 10.6.168.151-10.6.168.160
+  multusName:
+    - default/macvlan-vlan0-eth0
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+   name: test-ippool-eth1
+spec:
+   default: true
+   subnet: 10.7.0.0/16
+   ips:
+      - 10.7.168.151-10.7.168.160
+   multusName:
+      - kube-system/macvlan-vlan0-eth1
+```
+
+创建多网卡的应用。我们只需以下的示例 Yaml 中， 会创建有两张网卡的 Deployment 应用 ，其中：
+
+- `v1.multus-cni.io/default-network`：为创建的应用选择默认网卡配置信息。(若不指定该注解而直接使用 multus 集群默认网卡配置信息，请在 helm 安装 spiderpool 时通过参数指定默认网卡配置信息 `--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0`)
+
+- `k8s.v1.cni.cncf.io/networks`：为创建的应用选择额外网卡的配置信息。
+
+```bash
+cat <<EOF | kubectl create -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      annotations:
+        v1.multus-cni.io/default-network: default/macvlan-vlan0-eth0
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-vlan0-eth1
+      labels:
+        app: test-app
+    spec:
+      containers:
+      - name: test-app
+        image: nginx
+        imagePullPolicy: IfNotPresent
+EOF
 ```
 
 ## 总结

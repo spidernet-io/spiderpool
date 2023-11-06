@@ -139,6 +139,7 @@ func DaemonMain() {
 		EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
 		OperationRetries:       agentContext.Cfg.WaitSubnetPoolMaxRetries,
 		OperationGapDuration:   time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+		AgentNamespace:         agentContext.Cfg.AgentPodNamespace,
 	}
 	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
 		ipamConfig.MultusClusterNetwork = pointer.String(agentContext.Cfg.MultusClusterNetwork)

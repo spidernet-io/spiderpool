@@ -132,15 +132,13 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize IPAM")
 	ipamConfig := ipam.IPAMConfig{
-		EnableIPv4:               agentContext.Cfg.EnableIPv4,
-		EnableIPv6:               agentContext.Cfg.EnableIPv6,
-		ClusterDefaultIPv4IPPool: agentContext.Cfg.ClusterDefaultIPv4IPPool,
-		ClusterDefaultIPv6IPPool: agentContext.Cfg.ClusterDefaultIPv6IPPool,
-		EnableSpiderSubnet:       agentContext.Cfg.EnableSpiderSubnet,
-		EnableStatefulSet:        agentContext.Cfg.EnableStatefulSet,
-		EnableKubevirtStaticIP:   agentContext.Cfg.EnableKubevirtStaticIP,
-		OperationRetries:         agentContext.Cfg.WaitSubnetPoolMaxRetries,
-		OperationGapDuration:     time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+		EnableIPv4:             agentContext.Cfg.EnableIPv4,
+		EnableIPv6:             agentContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet:     agentContext.Cfg.EnableSpiderSubnet,
+		EnableStatefulSet:      agentContext.Cfg.EnableStatefulSet,
+		EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
+		OperationRetries:       agentContext.Cfg.WaitSubnetPoolMaxRetries,
+		OperationGapDuration:   time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 	}
 	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
 		ipamConfig.MultusClusterNetwork = pointer.String(agentContext.Cfg.MultusClusterNetwork)

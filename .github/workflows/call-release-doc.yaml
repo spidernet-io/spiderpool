@@ -51,8 +51,25 @@ jobs:
           fetch-depth: 0
           ref: ${{ env.REF }}
 
+      - name: Set main branch docs to dev (latest)
+        id: main_docs
+        if: ${{ env.REF == 'main' }}
+        run: |
+          pip install mkdocs==1.5.2 mike==1.1.2 mkdocs-material==8.5.11
+          git config user.email "robot@example.com"
+          git config user.name "robot"
+          cp ./docs/mkdocs.yml ./
+          mike deploy --rebase -b ${{ env.MERGE_BRANCH }} dev -t "dev (${{ env.REF }})"
+          rm -rf ./site && rm -rf ./mkdocs.yml
+          git checkout -f ${{ env.MERGE_BRANCH }}
+          rm -rf ./charts && rm -rf ./index.yaml && rm -rf ./changelogs
+          tar -czvf ./site.tar.gz *
+          ls
+          echo "push document version `dev` from branch ${{ env.REF }}."
+
       - name: Extract Version
         id: extract
+        if: ${{ env.REF != 'main' }}
         run: |
           if ! grep -E "^[[:space:]]*v[0-9]+.[0-9]+.[0-9]+[[:space:]]*$" VERSION &>/dev/null ; then
             echo "not a release version, skip generating doc."
@@ -82,7 +99,7 @@ jobs:
 
       - name: build doc
         id: build_doc
-        if: ${{ env.SKIP_ALL_JOB != 'true' }}
+        if: ${{ env.SKIP_ALL_JOB != 'true' && env.REF != 'main' }}
         run: |
           git checkout ${{ env.REF }}
           ls

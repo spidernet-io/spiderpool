@@ -1,0 +1,1964 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Running On AWS - spiderpool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#running-on-aws" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../../../..">
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),outdated=__md_get("__outdated",sessionStorage);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="spiderpool" class="md-header__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spiderpool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Running On AWS
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="spiderpool" class="md-nav__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    spiderpool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        Spiderpool
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../readme/" class="md-nav__link">
+        Get Started
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" type="checkbox" id="__nav_3_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1">
+          Underlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Underlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Underlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-weave/" class="md-nav__link">
+        Weave
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-kind/" class="md-nav__link">
+        Macvlan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-ovs/" class="md-nav__link">
+        Ovs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-sriov/" class="md-nav__link">
+        SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_2">
+          Overlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Overlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          Overlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overlay/get-started-cilium/" class="md-nav__link">
+        Cilium
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Public Cloud Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Public Cloud Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Public Cloud Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-alibaba/" class="md-nav__link">
+        Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-vmware/" class="md-nav__link">
+        VWware vSphere
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-openstack/" class="md-nav__link">
+        OpenStack
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../upgrade/" class="md-nav__link">
+        Upgrading
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Usage" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-ippool/" class="md-nav__link">
+        IPAM of SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-affinity/" class="md-nav__link">
+        IPAM of IPPool Affinity
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-subnet/" class="md-nav__link">
+        IPAM of SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../third-party-controller/" class="md-nav__link">
+        IPAM for custom controllers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../statefulset/" class="md-nav__link">
+        IPAM for StatefulSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reserved-ip/" class="md-nav__link">
+        IPAM of Reserved IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../multi-interfaces-annotation/" class="md-nav__link">
+        MultipleInterfaces
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../egress/" class="md-nav__link">
+        Egress Policy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../route/" class="md-nav__link">
+        Route Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../service/" class="md-nav__link">
+        Service Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ifacer/" class="md-nav__link">
+        Plugin ifacer
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../network-topology/" class="md-nav__link">
+        Node-based Topology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma/" class="md-nav__link">
+        RDMA
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../underlay_cni_service/" class="md-nav__link">
+        Access Service for Underlay CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../kubevirt/" class="md-nav__link">
+        Kubevirt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../debug/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Concepts" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/arch/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/ipam/" class="md-nav__link">
+        IPAM
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/ipam-performance/" class="md-nav__link">
+        IPAM Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/coordinator/" class="md-nav__link">
+        Plugin coordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/io-performance/" class="md-nav__link">
+        I/O Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/blog/" class="md-nav__link">
+        Blogs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/annotation/" class="md-nav__link">
+        Annotations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/configmap/" class="md-nav__link">
+        Configmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/metrics/" class="md-nav__link">
+        Metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/spiderpool-controller/" class="md-nav__link">
+        spiderpool-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/spiderpool-agent/" class="md-nav__link">
+        spiderpool-agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidersubnet/" class="md-nav__link">
+        CRD SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderippool/" class="md-nav__link">
+        CRD SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidermultusconfig/" class="md-nav__link">
+        CRD Spidermultusconfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
+        CRD SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
+        CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
+        Coordinatorr plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
+        ifacer plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-ipam/" class="md-nav__link">
+        IPAM plugin
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Development
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Development" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Development
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/contributing/" class="md-nav__link">
+        Contribution Guide
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/CODE-OF-CONDUCT/" class="md-nav__link">
+        Code of Conduct
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/release/" class="md-nav__link">
+        Release workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/roadmap/" class="md-nav__link">
+        Roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/swagger_openapi/" class="md-nav__link">
+        Swagger OpenAPI
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    Features
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-environment" class="md-nav__link">
+    AWS Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-cni" class="md-nav__link">
+    Install CNI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-ip-pools" class="md-nav__link">
+    Create IP Pools
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-applications" class="md-nav__link">
+    Create Applications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-east-west-connectivity" class="md-nav__link">
+    Test East-West Connectivity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-north-south-connectivity" class="md-nav__link">
+    Test North-South Connectivity
+  </a>
+  
+    <nav class="md-nav" aria-label="Test North-South Connectivity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-egress-traffic-from-pods-to-external-destinations" class="md-nav__link">
+    Test egress traffic from Pods to external destinations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-balancer-ingress-access-optional" class="md-nav__link">
+    Load Balancer Ingress Access (Optional)
+  </a>
+  
+    <nav class="md-nav" aria-label="Load Balancer Ingress Access (Optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-aws-load-balancer-controller" class="md-nav__link">
+    Deploy AWS Load Balancer Controller
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-loadbalancer-for-application-access" class="md-nav__link">
+    Create a LoadBalancer for Application Access
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-an-ingress-for-application-access" class="md-nav__link">
+    Create an Ingress for Application Access
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/cloud/get-started-aws.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="running-on-aws">Running On AWS</h1>
+<p><strong>English</strong> | <a href="../get-started-aws-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="introduction">Introduction</h2>
+<p>With a multitude of public cloud providers available, such as Alibaba Cloud, Huawei Cloud, Tencent Cloud, AWS, and more, it can be challenging to use mainstream open-source CNI plugins to operate on these platforms using underlay networks. Instead, one has to rely on proprietary CNI plugins provided by each cloud vendor, leading to a lack of standardized underlay solutions for public clouds. This page introduces <a href="../../../../">Spiderpool</a>, an underlay networking solution designed to work seamlessly in any public cloud environment. A unified CNI solution offers easier management across multiple clouds, particularly in hybrid cloud scenarios.</p>
+<h2 id="features">Features</h2>
+<p>Spiderpool can operate in public cloud environments using the ipvlan underlay CNI and provide features such as node topology and MAC address validity resolution. Here is how it works:</p>
+<ol>
+<li>
+<p>When using underlay networks in a public cloud environment, each network interface of a cloud server can only be assigned a limited number of IP addresses. To enable communication when an application runs on a specific cloud server, it needs to obtain the valid IP addresses allocated to different network interfaces within the VPC network. To address this IP allocation requirement, Spiderpool introduces a CRD named <code>SpiderIPPool</code>. By configuring the nodeName and multusName fields in <code>SpiderIPPool</code>, it enables node topology functionality. Spiderpool leverages the affinity between the IP pool and nodes, as well as the affinity between the IP pool and ipvlan Multus, facilitating the utilization and management of available IP addresses on the nodes. This ensures that applications are assigned valid IP addresses, enabling seamless communication within the VPC network, including communication between Pods and also between Pods and cloud servers.</p>
+</li>
+<li>
+<p>In a public cloud VPC network, network security controls and packet forwarding principles dictate that when network data packets contain MAC and IP addresses unknown to the VPC network, correct forwarding becomes unattainable. This issue arises in scenarios where Macvlan or OVS based underlay CNI plugins generate new MAC addresses for Pod NICs, resulting in communication failures among Pods. To address this challenge, Spiderpool offers a solution in conjunction with <a href="https://www.cni.dev/plugins/current/main/ipvlan/">ipvlan CNI</a>. The ipvlan CNI operates at the L3 of the network, eliminating the reliance on L2 broadcasts and avoiding the generation of new MAC addresses. Instead, it maintains consistency with the parent interface. By incorporating ipvlan, the legitimacy of MAC addresses in a public cloud environment can be effectively resolved.</p>
+</li>
+</ol>
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+<li>
+<p>The system kernel version must be greater than 4.2 when using ipvlan as the cluster's CNI.</p>
+</li>
+<li>
+<p><a href="https://helm.sh/docs/intro/install/">Helm</a> is installed.</p>
+</li>
+<li>
+<p>Understand the basics of <a href="https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html">AWS VPC Public and Private Subnets</a>.</p>
+<p>In an AWS VPC, a subnet is categorized as a <em>public subnet</em> if it has an outbound route configured with the Internet Gateway as the next hop for destinations 0.0.0.0/0 or ::/0. Otherwise, a subnet is considered a <em>private subnet</em> if it lacks this specific outbound routing configuration.</p>
+<p><img alt="aws-subnet-concept" src="../../../../images/aws/aws-subnet-concept.png" /></p>
+</li>
+</ol>
+<h2 id="steps">Steps</h2>
+<h3 id="aws-environment">AWS Environment</h3>
+<ol>
+<li>
+<p>Create a public subnet and multiple private subnets within a VPC, and deploy virtual machines in the private subnets as shown in the following picture:</p>
+<blockquote>
+<p>We will create one public subnet and two private subnets within the same VPC. Each private subnet should be deployed in a different availability zone. A EC2 instance as a jump server will be created in the public subnet for secure access. Additionally, two AWS EC2 instances will be created in the respective different private subnets to set up the Kubernetes cluster.</p>
+</blockquote>
+<p><img alt="aws-subnet-1" src="../../../../images/aws/aws-subnet-1.png" /></p>
+</li>
+<li>
+<p>Create two additional private subnets in the same availability zones as the instances to provide secondary network interfaces for the instances, as the picture below:</p>
+<p><img alt="aws-subnet-2" src="../../../../images/aws/aws-subnet-2.png" /></p>
+<p><img alt="aws-interfaces" src="../../../../images/aws/aws-interfaces.png" /></p>
+</li>
+<li>
+<p>Allocate some secondary private IP addresses to each network interface of the instances:</p>
+<blockquote>
+<p>To make the most efficient use of instance resources for application deployment, it is recommended to attach two network interfaces with their corresponding secondary IP addresses to each instance. This approach helps overcome limitations on the number of network interfaces and secondary IP addresses per instance, as specified in the <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html">AWS EC2 instance specifications</a>.</p>
+</blockquote>
+<p><img alt="aws-web-network" src="../../../../images/aws/aws-secondary-nic.png" /></p>
+<div class="highlight"><pre><span></span><code><span class="p">|</span><span class="w"> </span>Node<span class="w">    </span><span class="p">|</span><span class="w"> </span>ens5<span class="w"> </span>primary<span class="w"> </span>IP<span class="w"> </span><span class="p">|</span><span class="w"> </span>ens5<span class="w"> </span>secondary<span class="w"> </span>IPs<span class="w">        </span><span class="p">|</span><span class="w"> </span>ens6<span class="w"> </span>primary<span class="w"> </span>IP<span class="w"> </span><span class="p">|</span><span class="w"> </span>ens6<span class="w"> </span>secondary<span class="w"> </span>IPs<span class="w">        </span><span class="p">|</span><span class="w">  </span>
+<span class="p">|</span>---------<span class="p">|</span>-----------------<span class="p">|</span>---------------------------<span class="p">|</span>-----------------<span class="p">|</span>---------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>master<span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="m">172</span>.31.22.228<span class="w">   </span><span class="p">|</span><span class="w"> </span><span class="m">172</span>.31.16.4-172.31.16.8<span class="w">   </span><span class="p">|</span><span class="w"> </span><span class="m">210</span>.22.16.10<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">210</span>.22.16.11-210.22.16.15<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>worker1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">180</span>.17.16.17<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">180</span>.17.16.11-180.17.16.15<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">210</span>.22.32.10<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">210</span>.22.32.11-210.22.32.15<span class="w"> </span><span class="p">|</span>
+</code></pre></div>
+</li>
+<li>
+<p>Create an AWS NAT gateway to allow instances in the VPC's private subnets to connect to external services. The NAT gateway serves as an outbound traffic gateway for the cluster. Follow the <a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html">NAT gateway documentation</a> to create a NAT gateway:</p>
+<blockquote>
+<p>Create a NAT gateway in the public subnet, <code>public-172-31-0-0</code>, and configure the route table of the private subnets to set the next-hop of the outbound route 0.0.0.0/0 to NAT gateway. (IPv6 addresses provided by AWS are globally unique and can access the internet directly via the Internet Gateway).</p>
+</blockquote>
+<p><img alt="aws-nat-gateway" src="../../../../images/aws/aws-nat-gateway.png" /></p>
+<p><img alt="aws-nat-route" src="../../../../images/aws/aws-nat-route.png" /></p>
+</li>
+<li>
+<p>Use the configured virtual machines to establish a Kubernetes cluster. The available IP addresses for the nodes and the network topology diagram of the cluster are shown below:</p>
+<p><img alt="topology" src="../../../../images/aws/aws-k8s-network.png" /></p>
+</li>
+</ol>
+<h3 id="install-spiderpool">Install Spiderpool</h3>
+<p>Install Spiderpool via helm:</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>ipam.enableStatefulSet<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;default/ipvlan-ens5&quot;</span>
+</code></pre></div>
+<blockquote>
+<ul>
+<li>
+<p>If you are using a cloud server from a Chinese mainland cloud provider, you can enhance image pulling speed by specifying the parameter <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code>.</p>
+</li>
+<li>
+<p>Spiderpool allows for fixed IP addresses for application replicas with a controller type of <code>StatefulSet</code>. However, in the underlay network scenario of public clouds, cloud instances are limited to using specific IP addresses. When StatefulSet replicas migrate to different nodes, the original fixed IP becomes invalid and unavailable on the new node, causing network unavailability for the new Pods. To address this issue, set <code>ipam.enableStatefulSet</code> to <code>false</code> to disable this feature.</p>
+</li>
+<li>
+<p>Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via <code>multus.multusCNI.defaultCniCRName</code>. If the <code>multus.multusCNI.defaultCniCRName</code> option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named <code>default</code> will be created to complete the installation of Multus.</p>
+</li>
+</ul>
+</blockquote>
+<h3 id="install-cni">Install CNI</h3>
+<p>To simplify the creation of JSON-formatted Multus CNI configurations, Spiderpool offers the SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CRs. Based on the network interface configuration created during the process of setting up the AWS EC2 instances, here is an example configuration of SpiderMultusConfig for each network interface used to run ipvlan CNI:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">IPVLAN_MASTER_INTERFACE0</span><span class="o">=</span><span class="s2">&quot;ens5&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME0</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE0</span><span class="s2">&quot;</span>
+<span class="nv">IPVLAN_MASTER_INTERFACE1</span><span class="o">=</span><span class="s2">&quot;ens6&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME1</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE1</span><span class="s2">&quot;</span>
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME0}</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE0}</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME1}</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE1}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>This case uses the given configuration to create two ipvlan SpiderMultusConfig instances. These instances will automatically generate corresponding Multus NetworkAttachmentDefinition CRs for the host's <code>eth5</code> and <code>eth6</code> network interfaces.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
+NAMESPACE<span class="w">     </span>NAME<span class="w">                </span>AGE
+default<span class="w">       </span>ipvlan-ens5<span class="w">   </span>8d
+default<span class="w">       </span>ipvlan-ens6<span class="w">   </span>8d
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-A
+NAMESPACE<span class="w">     </span>NAME<span class="w">                </span>AGE
+default<span class="w">       </span>ipvlan-ens5<span class="w">   </span>8d
+default<span class="w">       </span>ipvlan-ens6<span class="w">   </span>8d
+</code></pre></div>
+<h3 id="create-ip-pools">Create IP Pools</h3>
+<p>The Spiderpool's CRD, <code>SpiderIPPool</code>, introduces the following fields: <code>nodeName</code>, <code>multusName</code>, and <code>ips</code>:</p>
+<ul>
+<li>
+<p><code>nodeName</code>: when <code>nodeName</code> is not empty, Pods are scheduled on a specific node and attempt to acquire an IP address from the corresponding SpiderIPPool. If the Pod's node matches the specified <code>nodeName</code>, it successfully obtains an IP. Otherwise, it cannot obtain an IP from that SpiderIPPool. When <code>nodeName</code> is empty, Spiderpool does not impose any allocation restrictions on the Pod.</p>
+</li>
+<li>
+<p><code>multusName</code>：Spiderpool integrates with Multus CNI to cope with cases involving multiple network interface cards. When <code>multusName</code> is not empty, SpiderIPPool utilizes the corresponding Multus CR instance to configure the network for the Pod. If the Multus CR specified by <code>multusName</code> does not exist, Spiderpool cannot assign a Multus CR to the Pod. When <code>multusName</code> is empty, Spiderpool does not impose any restrictions on the Multus CR used by the Pod.</p>
+</li>
+<li>
+<p><code>spec.ips</code>: based on the information provided about the network interfaces and secondary IP addresses of the AWS EC2 instances, the specified range of values must fall within the auxiliary private IP range of the host associated with the specified <code>nodeName</code>. Each value should correspond to a unique instance network interface.</p>
+</li>
+</ul>
+<p>Taking into account the network interfaces and associated secondary IP information for each instance in the <a href="./#aws-environment">AWS environment</a>, the following YAML is used to create a separate SpiderIPPool for each network interface (ens5, ens6) on each node. These pools will provide IP addresses for Pods on different nodes:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-v4-ens5</span>
+<span class="s">spec:</span>
+<span class="s">  ipVersion: 4</span>
+<span class="s">  subnet: 172.31.16.0/20</span>
+<span class="s">  ips:</span>
+<span class="s">    - 172.31.16.4-172.31.16.8</span>
+<span class="s">  gateway: 172.31.16.1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;master&quot;]</span>
+<span class="s">  multusName: [&quot;default/ipvlan-ens5&quot;]</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-v4-ens6</span>
+<span class="s">spec:</span>
+<span class="s">  ipVersion: 4</span>
+<span class="s">  subnet: 210.22.16.0/24</span>
+<span class="s">  ips:</span>
+<span class="s">    - 210.22.16.11-210.22.16.15</span>
+<span class="s">  gateway: 210.22.16.1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;master&quot;]</span>
+<span class="s">  multusName: [&quot;default/ipvlan-ens6&quot;]</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker1-v4-ens5</span>
+<span class="s">spec:</span>
+<span class="s">  ipVersion: 4</span>
+<span class="s">  subnet: 180.17.16.0/24</span>
+<span class="s">  ips:</span>
+<span class="s">    - 180.17.16.11-180.17.16.15</span>
+<span class="s">  gateway: 180.17.16.1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;worker1&quot;]</span>
+<span class="s">  multusName: [&quot;default/ipvlan-ens5&quot;]</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker1-v4-ens6</span>
+<span class="s">spec:</span>
+<span class="s">  ipVersion: 4</span>
+<span class="s">  subnet: 210.22.32.0/24</span>
+<span class="s">  ips:</span>
+<span class="s">    - 210.22.32.11-210.22.32.15</span>
+<span class="s">  gateway: 210.22.32.1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;worker1&quot;]</span>
+<span class="s">  multusName: [&quot;default/ipvlan-ens6&quot;]</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<h3 id="create-applications">Create Applications</h3>
+<p>The following YAML example creates a Deployment application with the following configuration:</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network</code>: specify the CNI configuration for the application. In this example, the application is configured to use the ipvlan configuration associated with the ens5 interface of the host machine. The subnet is selected automatically according to the default SpiderIPPool resource.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: nginx-lb-1</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      run: nginx-lb-1</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        v1.multus-cni.io/default-network: &quot;default/ipvlan-ens5&quot;</span>
+<span class="s">      labels:</span>
+<span class="s">        run: nginx-lb-1</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: nginx-lb-1</span>
+<span class="s">        image: nginx</span>
+<span class="s">        ports:</span>
+<span class="s">        - containerPort: 80</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>By checking the running status of the Pods, you can observe that one Pod is running on each node, and the Pods are assigned the secondary IP address of the first network interface of their respective host machines:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+NAME<span class="w">                          </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+nginx-lb-1-55d4c48fc8-skrxh<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>5s<span class="w">    </span><span class="m">172</span>.31.16.5<span class="w">    </span>master<span class="w">    </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-lb-1-55d4c48fc8-jl8b9<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>5s<span class="w">    </span><span class="m">180</span>.17.16.14<span class="w">   </span>worker1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<h3 id="test-east-west-connectivity">Test East-West Connectivity</h3>
+<ul>
+<li>Test communication between Pods and their hosts:</li>
+</ul>
+<blockquote>
+<p>export NODE_MASTER_IP=172.31.22.228<br />
+export NODE_WORKER1_IP= 180.17.16.17<br />
+~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping ${NODE_MASTER_IP} -c 1<br />
+~# kubectl exec -it nginx-lb-1-55d4c48fc8-jl8b9 -- ping ${NODE_WORKER1_IP} -c 1  </p>
+</blockquote>
+<ul>
+<li>Test communication between Pods across different nodes and subnets:</li>
+</ul>
+<blockquote>
+<p>~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping 180.17.16.14 -c 1</p>
+</blockquote>
+<ul>
+<li>Test communication between Pods and ClusterIP:</li>
+</ul>
+<blockquote>
+<p>~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping ${CLUSTER_IP} -c 1</p>
+</blockquote>
+<h3 id="test-north-south-connectivity">Test North-South Connectivity</h3>
+<h4 id="test-egress-traffic-from-pods-to-external-destinations">Test egress traffic from Pods to external destinations</h4>
+<p>With the <a href="./#aws-environment">AWS NAT gateway</a> created in the previous section, our VPC's private network can now be accessed from the internet.</p>
+<blockquote>
+<p>~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- curl www.baidu.com -I</p>
+</blockquote>
+<h4 id="load-balancer-ingress-access-optional">Load Balancer Ingress Access (Optional)</h4>
+<h5 id="deploy-aws-load-balancer-controller">Deploy AWS Load Balancer Controller</h5>
+<p>The AWS Load Balancer product offers two modes: NLB (Network Load Balancer) and ALB (Application Load Balancer), corresponding to Layer 4 and Layer 7, respectively. The aws-load-balancer-controller is an AWS-provided component that integrates Kubernetes with AWS Load Balancer, enabling Kubernetes Service LoadBalancer and Ingress functionality. We will use this component to facilitate load balancing ingress access with AWS infrastructure. The installation demo is based on version <code>v2.6</code>. You can follow the steps below and refer to the <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/">aws-load-balancer-controller documentation</a> for aws-load-balancer-controller deployment:</p>
+<ol>
+<li>
+<p>Configure <code>providerID</code> for cluster nodes.</p>
+<p>It is necessary to set the <code>providerID</code> for each Node in Kubernetes. You can achieve this in either of the following ways:</p>
+<ul>
+<li>Find the Instance ID for each instance directly in the AWS EC2 dashboard.</li>
+<li>Use the AWS CLI to query the Instance ID: <code>aws ec2 describe-instances --query 'Reservations[*].Instances[*].{Instance:InstanceId}'</code>.</li>
+</ul>
+</li>
+<li>
+<p>Add necessary IAM role policy for AWS EC2 instances</p>
+<blockquote>
+<ol>
+<li>The aws-load-balancer-controller runs on each node and requires access to AWS NLB/ALB APIs. Therefore, it needs authorization to make requests related to NLB/ALB through AWS IAM. As we are deploying a self-managed cluster, we need to leverage the IAM Role of the nodes themselves to grant this authorization. For more details, refer to the <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/">aws-load-balancer-controller IAM</a>.</li>
+<li><code>curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.0/docs/install/iam_policy.json</code></li>
+<li>Create a new policy in the AWS IAM Dashboard by using the obtained JSON content and associate it with the IAM Role of your virtual machine instance.</li>
+</ol>
+</blockquote>
+<p><img alt="aws-iam-policy" src="../../../../images/aws/aws-iam-policy.png" /></p>
+<p><img alt="aws-iam-role" src="../../../../images/aws/aws-iam-role.png" /></p>
+</li>
+<li>
+<p>Create a public subnet for the availability zone where your AWS EC2 instances are located and apply an auto-discoverable tag.</p>
+<ul>
+<li>For ALB, you need at least two subnets across different availability zones. For NLB, at least one subnet is required. Refer to the <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/deploy/subnet_discovery/">Subnet Discovery</a> for more details.</li>
+<li>To enable LB with public access, add the <code>kubernetes.io/role/elb:1</code> tag to the public subnet in the availability zone where the instances reside. Regarding cross-VPC access for LB, create a private subnet and apply the <code>kubernetes.io/role/internal-elb:1</code> tag. Use the <a href="./#aws-environment">AWS environment</a> to create the necessary subnets:</li>
+</ul>
+<blockquote>
+<ul>
+<li>To create a public subnet for an internet-exposed load balancer, go to the AWS VPC Dashboard, select "Create subnet" in the Subnets section, and choose the same availability zone as the EC2 instance, and associate the subnet with the Main route table (make sure the default 0.0.0.0/0 route in the Main route table has the Internet Gateway as the next hop; if not, create this route rule).</li>
+<li>Create a new route table in the AWS VPC Dashboard and configure the 0.0.0.0/0 route with the NAT Gateway as the next hop, and the ::/0 route with the Internet Gateway as the next hop.</li>
+<li>To create a private subnet for LB with cross-VPC access, go to the AWS VPC Dashboard Subnets section, select "Create subnet," choose the same availability zone as the EC2 instance, and associate it with the route table created in the previous step.</li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>Install aws-load-balancer-controller v2.6 using Helm.</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>eks<span class="w"> </span>https://aws.github.io/eks-charts
+
+kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master&quot;</span>
+
+helm<span class="w"> </span>install<span class="w"> </span>aws-load-balancer-controller<span class="w"> </span>eks/aws-load-balancer-controller<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span><span class="nv">clusterName</span><span class="o">=</span>&lt;cluster-name&gt;
+</code></pre></div>
+</li>
+<li>
+<p>Check if  aws-load-balancer-controller has been installed already</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>aws-load-balancer-controller
+NAME<span class="w">                                            </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">       </span>AGE
+aws-load-balancer-controller-5984487f57-q6qcq<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">              </span>30s
+aws-load-balancer-controller-5984487f57-wdkxl<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">              </span>30s
+</code></pre></div>
+</li>
+</ol>
+<h5 id="create-a-loadbalancer-for-application-access">Create a LoadBalancer for Application Access</h5>
+<p>To provide access to the application created in the previous section <a href="./#create-applications">Create Applications</a>, we will create a Kubernetes Service of type LoadBalancer. If you have a dual-stack requirement, add the annotation  <code>service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack</code>:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: nginx-svc-lb-1</span>
+<span class="s">  labels:</span>
+<span class="s">    run: nginx-lb-1</span>
+<span class="s">  annotations:</span>
+<span class="s">    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip</span>
+<span class="s">    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing</span>
+<span class="s">    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true</span>
+<span class="s">    # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack </span>
+<span class="s">spec:</span>
+<span class="s">  type: LoadBalancer</span>
+<span class="s">  ports:</span>
+<span class="s">  - port: 80</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">  selector:</span>
+<span class="s">    run: nginx-lb-1</span>
+
+<span class="s">EOF</span>
+</code></pre></div>
+<p><img alt="aws-network-load-balancer" src="../../../../images/aws/aws-lb.png" /></p>
+<p>As shown in the AWS EC2 Load Balancing dashboard, an NLB has been created and is accessible.</p>
+<blockquote>
+<ul>
+<li>NLB also supports creating LB in instance mode by just modifying the annotation <code>service.beta.kubernetes.io/aws-load-balancer-nlb-target-type</code>. However, instance mode does not support node drift when using <code>service.spec.externalTraffic=Local</code>, so it is not recommended.</li>
+<li>Use the annotation <code>service.beta.kubernetes.io/load-balancer-source-ranges</code> to restrict the source IP addresses that can access the NLB. This feature is associated with the annotation <code>service.beta.kubernetes.io/aws-load-balancer-ip-address-type</code>. If the default mode is IPv4, the value is <code>0.0.0.0/0</code>. For dualstack, the default is <code>0.0.0.0/0, ::/0</code>.</li>
+<li>Use the annotation <code>service.beta.kubernetes.io/aws-load-balancer-scheme</code> to specify whether the NLB should be exposed for public access or restricted to cross-VPC communication. The default value is <code>internal</code> for cross-VPC communication.</li>
+<li>The annotation <code>service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true</code> enables client source IP preservation ability.</li>
+</ul>
+</blockquote>
+<h5 id="create-an-ingress-for-application-access">Create an Ingress for Application Access</h5>
+<p>Next, we will create a Kubernetes Ingress resource using the second network interface bound in AWS EC2. If you have a dual-stack requirement, add the annotation <code>alb.ingress.kubernetes.io/ip-address-type: dualstack</code>:</p>
+<div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx-ingress
+spec:
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>run:<span class="w"> </span>nginx-ingress
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">2</span>
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span><span class="s2">&quot;default/ipvlan-ens6&quot;</span>
+<span class="w">      </span>labels:
+<span class="w">        </span>run:<span class="w"> </span>nginx-ingress
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>name:<span class="w"> </span>nginx-ingress
+<span class="w">        </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>containerPort:<span class="w"> </span><span class="m">80</span>
+---
+apiVersion:<span class="w"> </span>v1
+kind:<span class="w"> </span>Service
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx-svc-ingress
+<span class="w">  </span>labels:
+<span class="w">    </span>run:<span class="w"> </span>nginx-ingress
+spec:
+<span class="w">  </span>type:<span class="w"> </span>NodePort
+<span class="w">  </span>ports:
+<span class="w">  </span>-<span class="w"> </span>port:<span class="w"> </span><span class="m">80</span>
+<span class="w">    </span>protocol:<span class="w"> </span>TCP
+<span class="w">  </span>selector:
+<span class="w">    </span>run:<span class="w"> </span>nginx-ingress
+---
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>echoserver
+spec:
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>echoserver
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">2</span>
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span><span class="s2">&quot;default/ipvlan-ens6&quot;</span>
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>echoserver
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>image:<span class="w"> </span>k8s.gcr.io/e2e-test-images/echoserver:2.5
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>Always
+<span class="w">        </span>name:<span class="w"> </span>echoserver
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>containerPort:<span class="w"> </span><span class="m">8080</span>
+---
+apiVersion:<span class="w"> </span>v1
+kind:<span class="w"> </span>Service
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>echoserver
+spec:
+<span class="w">  </span>ports:
+<span class="w">    </span>-<span class="w"> </span>port:<span class="w"> </span><span class="m">80</span>
+<span class="w">      </span>targetPort:<span class="w"> </span><span class="m">8080</span>
+<span class="w">      </span>protocol:<span class="w"> </span>TCP
+<span class="w">  </span>type:<span class="w"> </span>NodePort
+<span class="w">  </span>selector:
+<span class="w">    </span>app:<span class="w"> </span>echoserver
+---
+apiVersion:<span class="w"> </span>networking.k8s.io/v1
+kind:<span class="w"> </span>Ingress
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>k8s-app-ingress
+<span class="w">  </span>annotations:
+<span class="w">    </span>alb.ingress.kubernetes.io/target-type:<span class="w"> </span>ip
+<span class="w">    </span>alb.ingress.kubernetes.io/scheme:<span class="w"> </span>internet-facing
+<span class="w">    </span><span class="c1"># alb.ingress.kubernetes.io/ip-address-type: dualstack</span>
+spec:
+<span class="w">  </span>ingressClassName:<span class="w"> </span>alb
+<span class="w">  </span>rules:
+<span class="w">    </span>-<span class="w"> </span>http:
+<span class="w">        </span>paths:
+<span class="w">          </span>-<span class="w"> </span>path:<span class="w"> </span>/
+<span class="w">            </span>pathType:<span class="w"> </span>Exact
+<span class="w">            </span>backend:
+<span class="w">              </span>service:
+<span class="w">                </span>name:<span class="w"> </span>nginx-svc-ingress
+<span class="w">                </span>port:
+<span class="w">                  </span>number:<span class="w"> </span><span class="m">80</span>
+<span class="w">    </span>-<span class="w"> </span>http:
+<span class="w">        </span>paths:
+<span class="w">          </span>-<span class="w"> </span>path:<span class="w"> </span>/echo
+<span class="w">            </span>pathType:<span class="w"> </span>Exact
+<span class="w">            </span>backend:
+<span class="w">              </span>service:
+<span class="w">                </span>name:<span class="w"> </span>echoserver
+<span class="w">                </span>port:
+<span class="w">                  </span>number:<span class="w"> </span><span class="m">80</span>
+</code></pre></div>
+<p><img alt="aws-application-load-balancer" src="../../../../images/aws/aws-ingress.png" /></p>
+<p>As shown in the AWS EC2 Load Balancing dashboard, an ALB has been created and is accessible.</p>
+<blockquote>
+<ul>
+<li>ALB also supports creating LB in instance mode by just modifying the annotation <code>alb.ingress.kubernetes.io/target-type</code>. However, instance mode does not support node drift when using <code>service.spec.externalTraffic=Local</code>, so it is not recommended.</li>
+<li>When using ALB in instance mode, specify the service as NodePort mode.</li>
+<li>Use the annotation <code>alb.ingress.kubernetes.io/inbound-cidrs</code> to restrict the source IP addresses that can access the NLB. This feature is associated with the annotation <code>alb.ingress.kubernetes.io/ip-address-type</code>. If the default mode is IPv4, the value is <code>0.0.0.0/0</code>. For dualstack, the default is <code>0.0.0.0/0, ::/0</code>.</li>
+<li>Use the annotation <code>alb.ingress.kubernetes.io/scheme</code> to specify whether the ALB should be exposed for public access or restricted to cross-VPC communication. The default value is <code>internal</code> for cross-VPC communication.</li>
+<li>To integrate multiple Ingress resources and share the same entry point, configure the annotation <code>alb.ingress.kubernetes.io/group.name</code> to specify a name. Ingress resources without this annotation are treated as an "implicit IngressGroup" composed by the Ingress itself.</li>
+<li>To specify the host for the Ingress, refer to<a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/guide/integrations/external_dns/">Configuring externalDNS</a> to enable it.</li>
+</ul>
+</blockquote>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>

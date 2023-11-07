@@ -1,0 +1,11 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: test-ns-ipv4-ippool
+spec:
+  subnet: 172.18.41.0/24
+  ips:
+    - 172.18.41.40-172.18.41.41
+  namespaceAffinity:
+    matchLabels:
+      kubernetes.io/metadata.name: test-ns

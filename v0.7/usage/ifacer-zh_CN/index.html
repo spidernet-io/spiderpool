@@ -625,6 +625,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-affinity/" class="md-nav__link">
+        Spider Affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Multiple interfaces
       </a>
@@ -1344,7 +1358,7 @@
         
           <li class="md-nav__item">
   <a href="#vlan" class="md-nav__link">
-    动态的创建 Vlan 子接口
+    动态创建 VLAN 子接口
   </a>
   
 </li>
@@ -1387,24 +1401,26 @@
 <h1 id="cni-meta-plugin-ifacer">CNI meta-plugin: ifacer</h1>
 <p><a href="../ifacer/"><strong>English</strong></a> | <strong>简体中文</strong></p>
 <h2 id="_1">介绍</h2>
-<p>当 Pod 使用 Vlan 网络时，我们可能需要网络管理员提前在节点配置各种 Vlan 或 Bond 接口, 这一过程需要人工参与，配置繁琐且易出错。Spiderpool 提供一个名为 <code>ifacer</code>的 CNI meta-plugins,
-该插件可在创建 Pod 时，根据提供的 <code>ifacer</code> 插件配置, 动态的在节点创建 Vlan 子接口 或 Bond 接口，极大的简化了网络管理员的配置工作。下面我们将会详细介绍这个插件。</p>
+<p>当 Pod 使用 VLAN 网络时，我们可能需要网络管理员提前在节点配置各种 VLAN 或 Bond 接口, 这一过程需要人工参与，配置繁琐且易出错。Spiderpool 提供一个名为 <code>ifacer</code>的 CNI meta-plugin,
+该插件可在创建 Pod 时，根据提供的 <code>ifacer</code> 插件配置, 动态的在节点创建 VLAN 子接口 或 Bond 接口，极大的简化了网络管理员的配置工作。下面我们将会详细介绍这个插件。</p>
 <h2 id="_2">功能</h2>
 <p>该插件支持:</p>
 <ul>
-<li>支持动态的创建 Vlan 子接口</li>
+<li>支持动态的创建 VLAN 子接口</li>
 <li>支持动态的创建 Bond 接口</li>
 </ul>
-<p>注意:</p>
 <blockquote>
-<p>通过该插件创建的 Vlan/Bond 接口，当节点重启时会丢失，但 Pod 重启后会自动创建
-插件不支持删除已创建的 Vlan/Bond 接口
-插件不支持在创建时配置 Vlan/Bond 接口的地址</p>
+<p>通过该插件创建的 VLAN/Bond 接口，当节点重启时会丢失，但 Pod 重启后会自动创建
+插件不支持删除已创建的 VLAN/Bond 接口
+插件不支持在创建时配置 VLAN/Bond 接口的地址</p>
 </blockquote>
 <h2 id="_3">使用要求</h2>
 <p>使用该插件无特殊的限制: 包括 Kubernetes、Kernel 版本等。安装 Spiderpool 时，会自动安装该插件到每个主机的 <code>/opt/cni/bin/</code> 路径下, 您可以通过检测每个主机该路径下是否存在 <code>ifacer</code> 二进制确认安装成功。</p>
 <h2 id="_4">如何使用</h2>
 <p>我们通过两个例子来展示如何使用 <code>ifacer</code> 插件。在介绍例子之前，我们需要创建两个 IP 池用于测试:</p>
+<ul>
+<li>vlan100：动态创建 VLAN 子接口</li>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
 apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
 kind:<span class="w"> </span>SpiderIPPool
@@ -1419,9 +1435,9 @@ spec:
 <span class="w">  </span>vlan:<span class="w"> </span><span class="m">100</span>
 EOF
 </code></pre></div>
-<blockquote>
-<p>vlan100 用于动态创建 Vlan 子接口的例子</p>
-</blockquote>
+<ul>
+<li>vlan200：动态创建 Bond 接口</li>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
 apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
 kind:<span class="w"> </span>SpiderIPPool
@@ -1436,10 +1452,7 @@ spec:
 <span class="w">  </span>vlan:<span class="w"> </span><span class="m">200</span>
 EOF
 </code></pre></div>
-<blockquote>
-<p>vlan200 用于动态创建 Bond 接口的例子</p>
-</blockquote>
-<h3 id="vlan">动态的创建 Vlan 子接口</h3>
+<h3 id="vlan">动态创建 VLAN 子接口</h3>
 <p>我们通过 <code>SpiderMultusConfig</code> 为 <code>ifacer</code>生成一个对应的 Multus network-attachment-definition 配置:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f - </span>
 apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
@@ -1491,10 +1504,10 @@ spidermultusconfig.spiderpool.spidernet.io/macvlan-conf<span class="w"> </span>c
 </code></pre></div>
 <p>从配置可以看到:</p>
 <blockquote>
-<p>ifacer 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，ifacer 将基于 <code>ens192</code> 创建一个 vlan tag 为: 100 的子接口
-main cni: macvlan 的 master 字段的值为: <code>ens192.100</code>, 也就是通过 <code>ifacer</code> 创建的 Vlan 子接口: <code>ens192.100</code></p>
+<p><code>ifacer</code> 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，<code>ifacer</code> 将基于 <code>ens192</code> 创建一个 VLAN tag 为: 100 的子接口
+main CNI: Macvlan 的 master 字段的值为: <code>ens192.100</code>, 也就是通过 <code>ifacer</code> 创建的 VLAN 子接口: <code>ens192.100</code></p>
 </blockquote>
-<p>如果节点上已经创建好 Vlan 子接口，不需要使用 <code>ifacer</code> 。我们可以直接配置 master 字段为: <code>ens192.100</code>，并且不配置 vlanID 即可, 如下:</p>
+<p>如果节点上已经创建好 VLAN 子接口，不需要使用 <code>ifacer</code> 。我们可以直接配置 master 字段为: <code>ens192.100</code>，并且不配置 VLAN ID 即可, 如下:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1537,7 +1550,7 @@ spec:
 <span class="w">          </span>protocol:<span class="w"> </span>TCP
 EOF
 </code></pre></div>
-<p>当 Pod 成功的被创建，我们可以查看该节点一个名为 <code>ens192.100</code> 的 Vlan 子接口被成功创建:</p>
+<p>当 Pod 成功的被创建，我们可以查看该节点一个名为 <code>ens192.100</code> 的 VLAN 子接口被成功创建:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide | grep nginx</span>
 nginx-5d6dc85ff4-gdvkh<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>32s<span class="w">    </span><span class="m">172</span>.100.0.163<span class="w">    </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 <span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip l show type vlan</span>
@@ -1607,8 +1620,8 @@ spidermultusconfig.spiderpool.spidernet.io/macvlan-conf<span class="w"> </span>c
 </code></pre></div>
 <p>配置说明:</p>
 <blockquote>
-<p>ifacer 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，ifacer 将基于 ["ens192","ens160"] 创建一个名为 <code>bond0</code> 的 bond 接口，mode 为 1(active-backup)。然后再基于 <code>bond0</code> 创建名为 <code>bond0.200</code>的 Vlan 子接口, Vlan tag 为 200
-main cni: macvlan 的 master 字段的值为: <code>bond0.200</code>
+<p><code>ifacer</code> 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，<code>ifacer</code> 将基于 ["ens192","ens160"] 创建一个名为 <code>bond0</code> 的 bond 接口，mode 为 1(active-backup)。然后再基于 <code>bond0</code> 创建名为 <code>bond0.200</code>的 VLAN 子接口, VLAN tag 为 200
+main CNI: Macvlan 的 master 字段的值为: <code>bond0.200</code>
 创建 Bond 如果需要更高级的配置，可以通过配置 SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options 实现. 输入格式为: "primary=ens160;arp_interval=1",多个参数用";"连接</p>
 </blockquote>
 <p>接下来我们创建测试的业务 Pod:</p>
@@ -1639,7 +1652,7 @@ spec:
 <span class="w">          </span>protocol:<span class="w"> </span>TCP
 EOF
 </code></pre></div>
-<p>当 Pod 成功的被创建，我们可以查看该节点一个名为 <code>bond0</code> 的 Bond 接口 和 <code>bond0.100</code> 的 Vlan 子接口 被成功创建:</p>
+<p>当 Pod 成功的被创建，我们可以查看该节点一个名为 <code>bond0</code> 的 Bond 接口 和 <code>bond0.100</code> 的 VLAN 子接口 被成功创建:</p>
 <div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide | grep nginx</span>
 nginx-1c8wcv2sg5-jcwla<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>32s<span class="w">    </span><span class="m">172</span>.200.0.163<span class="w">    </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 <span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip --details link show type bond</span>

@@ -625,6 +625,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-affinity/" class="md-nav__link">
+        Spider Affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Multiple interfaces
       </a>
@@ -1431,7 +1445,7 @@
 <ul>
 <li>一个集群，但集群的节点分布在不同地区或数据中心，一些节点的区域只能使用子网 10.6.1.0/24，一些节点的区域只能使用子网 172.16.2.0/24。</li>
 </ul>
-<p>在上诉的场景下，当一个应用跨子网部署副本时，要求 IPAM 能够在不同的节点上，为同一个应用下的不同 Pod 分配出与子网匹配的 IP 地址，Spiderpool 的 CR：<code>SpiderIPPool</code> 提供了 nodeName 字段，实现 IP 池与节点之间的亲和性，让 Pod 被调度到某一节点时，能从节点所在的 Underlay 子网中获得 IP 地址，实现节点拓扑的功能，</p>
+<p>在上述的场景下，当一个应用跨子网部署副本时，要求 IPAM 能够在不同的节点上，为同一个应用下的不同 Pod 分配出与子网匹配的 IP 地址，Spiderpool 的 CR：<code>SpiderIPPool</code> 提供了 nodeName 字段，实现 IP 池与节点之间的亲和性，让 Pod 被调度到某一节点时，能从节点所在的 Underlay 子网中获得 IP 地址，实现节点拓扑的功能.</p>
 <h2 id="_3">实施要求</h2>
 <ol>
 <li>已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a>。</li>

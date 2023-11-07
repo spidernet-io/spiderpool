@@ -52,6 +52,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_LOG_LEVEL", logutils.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil, nil},
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnableMetric, nil},
 	{"SPIDERPOOL_ENABLED_DEBUG_METRIC", "false", false, nil, &agentContext.Cfg.EnableDebugLevelMetric, nil},
+	{"SPIDERPOOL_POD_NAMESPACE", "", true, &agentContext.Cfg.AgentPodNamespace, nil, nil},
+	{"SPIDERPOOL_POD_NAME", "", true, &agentContext.Cfg.AgentPodName, nil, nil},
 	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil, nil},
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
@@ -77,6 +79,8 @@ type Config struct {
 	LogLevel               string
 	EnableMetric           bool
 	EnableDebugLevelMetric bool
+	AgentPodNamespace      string
+	AgentPodName           string
 
 	HttpPort         string
 	MetricHttpPort   string
@@ -90,16 +94,12 @@ type Config struct {
 	MultusClusterNetwork string
 
 	// configmap
-	IpamUnixSocketPath                string   `yaml:"ipamUnixSocketPath"`
-	EnableIPv4                        bool     `yaml:"enableIPv4"`
-	EnableIPv6                        bool     `yaml:"enableIPv6"`
-	EnableStatefulSet                 bool     `yaml:"enableStatefulSet"`
-	EnableSpiderSubnet                bool     `yaml:"enableSpiderSubnet"`
-	ClusterDefaultIPv4IPPool          []string `yaml:"clusterDefaultIPv4IPPool"`
-	ClusterDefaultIPv6IPPool          []string `yaml:"clusterDefaultIPv6IPPool"`
-	ClusterDefaultIPv4Subnet          []string `yaml:"clusterDefaultIPv4Subnet"`
-	ClusterDefaultIPv6Subnet          []string `yaml:"clusterDefaultIPv6Subnet"`
-	ClusterSubnetDefaultFlexibleIPNum int      `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+	IpamUnixSocketPath                string `yaml:"ipamUnixSocketPath"`
+	EnableIPv4                        bool   `yaml:"enableIPv4"`
+	EnableIPv6                        bool   `yaml:"enableIPv6"`
+	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
+	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
+	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 
 type AgentContext struct {

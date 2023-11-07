@@ -19,12 +19,10 @@ import (
 	. "github.com/onsi/gomega"
 	frame "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/e2eframework/tools"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 
-	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -308,39 +306,6 @@ func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolName
 		}
 		return false, false, true, nil
 	}
-}
-
-func GetClusterDefaultIppool(f *frame.Framework) (v4IppoolList, v6IppoolList []string, e error) {
-	if f == nil {
-		return nil, nil, errors.New("wrong input")
-	}
-
-	configMap, e := f.GetConfigmap(SpiderPoolConfigmapName, SpiderPoolConfigmapNameSpace)
-	if e != nil {
-		return nil, nil, e
-	}
-	GinkgoWriter.Printf("configmap: %+v \n", configMap.Data)
-
-	data, ok := configMap.Data["conf.yml"]
-	if !ok || len(data) == 0 {
-		return nil, nil, errors.New("failed to find cluster default ippool")
-	}
-
-	conf := cmd.Config{}
-	if err := yaml.Unmarshal([]byte(data), &conf); nil != err {
-		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
-		return nil, nil, errors.New("failed to find cluster default ippool")
-	}
-	GinkgoWriter.Printf("yaml config: %v \n", conf)
-
-	if conf.EnableIPv4 && len(conf.ClusterDefaultIPv4IPPool) == 0 {
-		return nil, nil, errors.New("IPv4 IPPool is not specified when IPv4 is enabled")
-	}
-	if conf.EnableIPv6 && len(conf.ClusterDefaultIPv6IPPool) == 0 {
-		return nil, nil, errors.New("IPv6 IPPool is not specified when IPv6 is enabled")
-	}
-
-	return conf.ClusterDefaultIPv4IPPool, conf.ClusterDefaultIPv6IPPool, nil
 }
 
 func GetNamespaceDefaultIppool(f *frame.Framework, namespace string) (v4IppoolList, v6IppoolList []string, e error) {

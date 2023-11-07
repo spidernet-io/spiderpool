@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/subnets: |-
+         [
+            {
+              "interface": "eth0",
+              "ipv4": [
+                "subnet-test-ens192"
+              ]
+            },{
+              "interface": "net1",
+              "ipv4": [
+                "subnet-test-ens224"
+              ]
+            }
+         ]
+        ipam.spidernet.io/ippool-ip-number: '+1'
+        v1.multus-cni.io/default-network: kube-system/macvlan-conf-ens192
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-conf-ens224
+      labels:
+        app: test-app
+    spec:
+      containers:
+        - name: test-app
+          image: nginx
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP

@@ -20,11 +20,11 @@ SpiderIPPool 资源代表 Spiderpool 为 Pod 分配 IP 的 IP 地址范围。 �
 
 Spiderpool 支持 IPv4-only, IPv6-only, 双栈这三种 IP 地址分配方式，可通过 [configmap](./../reference/configmap.md) 配置来控制。
 
-> 通过 Helm 安装时可配置参数来指定： `--set ipam.enableIPv4=true --set ipam.enableIPv6=true`。
+> 通过 Helm 安装时可配置参数来指定：`--set ipam.enableIPv4=true --set ipam.enableIPv6=true`。
 
 当我们 Spiderpool 环境开启双栈配置后，我们可以手动指定使用哪些 IPv4 和 IPv6 池来分配 IP 地址：
 
-> 在双栈环境下，你也可为pod只分配IPv4/IPv6的IP，如: `ipam.spidernet.io/ippool: '{"ipv4": ["custom-ipv4-ippool"]}'`
+> 在双栈环境下，你也可为 Pod 只分配 IPv4/IPv6 的IP，如: `ipam.spidernet.io/ippool: '{"ipv4": ["custom-ipv4-ippool"]}'`
 
 ```yaml
 apiVersion: apps/v1
@@ -58,7 +58,7 @@ spec:
 
 > 对于以下指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-zh_CN.md#获取候选池)
 
-#### 使用 Pod Annotation 指定使用IP池
+#### 使用 Pod Annotation 指定使用 IP 池
 
 我们可借助注解 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 标记在 Pod 的 Annotation上来指定 Pod 使用哪些 IP 池, 注解 `ipam.spidernet.io/ippools` 多用于多网卡指定。此外我们可以指定多个 IP 池以供备选，当某个池的 IP 被用完后，可继续从你指定的其他池中分配地址。
 
@@ -87,9 +87,9 @@ ipam.spidernet.io/ippools: |-
 
 #### 使用 Namespace 注解指定池
 
-我们可以为 Namespace 打上注解 `ipam.spidernet.io/default-ipv4-ippool` 和 `ipam.spidernet.io/default-ipv6-ippool`, 当应用部署的时，可从应用所在 Namespace 的注解中选择 IP 池使用：
+我们可以为 Namespace 打上注解 `ipam.spidernet.io/default-ipv4-ippool` 和 `ipam.spidernet.io/default-ipv6-ippool`, 当应用部署时，可从应用所在 Namespace 的注解中选择 IP 池使用：
 
-> 注意：未使用 Pod Annotation 指定使用IP池时，优先使用此处 Namespace 注解规则。
+> 未使用 Pod Annotation 指定使用 IP 池时，优先使用此处 Namespace 注解规则。
 
 ```yaml
 
@@ -107,7 +107,7 @@ metadata:
 
 我们可以在 CNI 配置文件中，指定缺省的 IPv4 和 IPv6 池以供应用选择该 CNI 配置时使用，具体可参照 [CNI配置](./../reference/plugin-ipam.md)
 
-> 注意：未使用 Pod Annotation 指定使用IP池，且没有通过 Namespace 注解指定 IP 池时，将优先使用此处 CNI 配置文件指定池规则。
+> 未使用 Pod Annotation 指定使用 IP 池，且没有通过 Namespace 注解指定 IP 池时，将优先使用此处 CNI 配置文件指定池规则。
 
 ```yaml
 {
@@ -126,10 +126,8 @@ metadata:
 
 在 [SpiderIPPool CRD](./../reference/crd-spiderippool.md) 中我们可以看到 `spec.default` 字段是一个 bool 类型，当我们没有通过 Annotation 或 CNI 配置文件指定 IPPool 时，系统会根据该字段挑选出集群默认池使用:
 
-> 注意：
->
 > - 未使用 Pod Annotation 指定使用IP池，没有通过 Namespace 注解指定 IP 池时，且未在 CNI 配置文件中指定 IP 池时，此处会生效。
-> - 可为多个 IPPool 资源设置为集群默认级别。 
+> - 可为多个 IPPool 资源设置为集群默认级别。
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
@@ -151,7 +149,7 @@ spec:
 
 因此 Pod 会拿到基于网关的默认路由，以及此 IP 池上的自定义路由。(若 IP 池不设置网关，则不会生效默认路由)
 
-### 命令行工作(kubectl)查看扩展字段
+### 命令行工作 (kubectl) 查看扩展字段
 
 为了更简单方便的查看 SpiderIPPool 资源的相关属性，我们补充了一些扩展字段可让用户通过 `kubectl get sp -o wide` 查看:
 

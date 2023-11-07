@@ -1,0 +1,111 @@
+# Coordinator
+
+[**English**](coordinator.md) | **简体中文**
+
+Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:
+
+- 解决 underlay Pod 无法访问 ClusterIP 的问题
+- 在 Pod 多网卡时，调谐 Pod 的路由，确保数据包来回路径一致
+- 支持检测 Pod 的 IP 是否冲突
+- 支持检测 Pod 的网关是否可达
+- 支持固定 Pod 的 Mac 地址前缀
+
+下面我们将详细的介绍 `coordinator` 如何解决或实现这些功能。
+
+> 如果您通过 `SpinderMultusConfig CR`  帮助创建 NetworkAttachmentDefinition CR，您可以在 `SpinderMultusConfig` 中配置 `coordinator` (所有字段)。参考: [SpinderMultusConfig](../reference/crd-spidermultusconfig.md)。
+>
+> `Spidercoordinators CR` 作为 `coordinator` 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 `Spidercoordinator CR` 作为缺省值。更多详情参考: [Spidercoordinator](../reference/crd-spidercoordinator.md)。
+
+## 解决 underlay Pod 无法访问 ClusterIP 的问题
+
+我们在使用一些如 Macvlan、IPvlan、SR-IOV 等 Underlay CNI时，会遇到其 Pod 无法访问 ClusterIP 的问题，这常常是因为 underlay Pod 访问 CLusterIP 需要经过在交换机的网关，但网关上并没有去往
+ClusterIP 的路由，导致无法访问。
+
+关于 Underlay Pod 无法访问 ClusterIP 的问题，请参考 [Underlay-CNI访问 Service](../usage/underlay_cni_service-zh_CN.md)
+
+## 支持检测 Pod 的 IP 是否冲突( alpha 阶段)
+
+对于 Underlay 网络，IP 冲突是无法接受的，这可能会造成严重的问题。在创建 Pod 时，我们可借助 `coordinator` 检测 Pod 的 IP 是否冲突，支持同时检测 IPv4 和 IPv6 地址。通过发送 ARP 或 NDP 探测报文，
+如果发现回复报文的 Mac 地址不是 Pod 本身，那我们认为这个 IP 是冲突的，并拒绝 IP 冲突的 Pod 被创建: 
+
+我们可以通过 Spidermultusconfig 配置它:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: detect-ip
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  coordinator:
+    detectIPConflict: true    # Enable detectIPConflict
+```
+
+## 支持检测 Pod 的网关是否可达(alpha)
+
+在 Underlay 网络下，Pod 访问外部需要通过网关转发。如果网关不可达，那么在外界看来，这个 Pod 实际是失联的。有时候我们希望创建 Pod 时，其网关是可达的。 我们可借助 `coordinator` 检测 Pod 的网关是否可达，
+支持检测 IPv4 和 IPv6 的网关地址。我们通过发送 ICMP 报文，探测网关地址是否可达。如果网关不可达，将会阻止 Pod 创建:
+
+我们可以通过 Spidermultusconfig 配置它:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: detect-gateway
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    detectGateway: true    # Enable detectGateway
+```
+
+> 注意: 有一些交换机不允许被 arp 探测，否则会发出告警，在这种情况下，我们需要设置 detectGateway 为 false
+
+## 支持固定 Pod 的 Mac 地址前缀(alpha)
+
+有一些传统应用可能需要通过固定的 Mac 地址或者 IP 地址来耦合应用的行为。比如 License Server 可能需要应用固定的 Mac 地址或 IP 地址为应用颁发 License。如果 Pod 的 Mac 地址发生改变，已颁发的 License 可能无效。
+所以需要固定 Pod 的 Mac 地址。 Spiderpool 可通过 `coordinator` 固定应用的 Mac 地址，固定的规则是配置 Mac 地址前缀(2字节) + 转化 Pod 的 IP(4字节) 组成。
+
+注意:
+
+> 目前支持修改 Macvlan 和 SR-IOV 作为 CNI 的 Pod。 IPVlan L2 模式下主接口与子接口 Mac 地址一致，不支持修改
+> 
+> 固定的规则是配置 Mac 地址前缀(2字节) + 转化 Pod 的 IP(4字节) 组成。一个 IPv4 地址长度 4 字节，可以完全转换为2 个 16 进制数。对于 IPv6 地址，只取最后 4 个字节。
+
+我们可以通过 Spidermultusconfig 配置它:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: overwrite-mac
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    podMACPrefix: "0a:1b"    # Enable detectGateway
+```
+
+当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"
+
+## 已知问题
+
+- underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败
+
+    此问题是因为数据包来回路径不一致导致，发出的请求报文匹配源Pod 侧的路由，会通过 `veth0` 转发到主机侧，再由主机侧转发至目标 Pod。 目标 Pod 看见数据包的源 IP 为 源 Pod 的 Underlay IP，直接走 Underlay 网络而不会经过源 Pod 所在主机。
+    在该主机看来这是一个非法的数据包(意外的收到 TCP 的第二次握手报文，认为是 conntrack table invalid), 所以被 kube-proxy 的一条 iptables 规则显式的 drop 。 目前可以通过切换 kube-proxy 的模式为 ipvs 规避。这个问题预计在 k8s 1.29 修复。
+    当 sysctl `nf_conntrack_tcp_be_liberal` 设置为 1 时，kube-proxy 将不会下发这条 DROP 规则。
+
+- overlay 模式下, 当 Pod 附加多张网卡时。如果集群的缺省CNI 为 Cilium, Pod 的 underlay 网卡 无法与节点通信。
+
+    我们借助缺省CNI创建 Veth 设备，实现 Pod 的 underlay IP 与节点通信(正常情况下，macvlan 在 bridge 模式下， 其父子接口无法直接)，但 Cilium 不允许非 Cilium 子网的 IP 从 Veth 设备转发。

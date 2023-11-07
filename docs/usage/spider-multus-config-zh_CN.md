@@ -26,7 +26,7 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 - 完善的 Webhook 机制，提前规避一些人为错误，降低后续排障成本。
 
-- 支持 Spiderpool 的 CNI plugin：[ifacer](./ifacer-zh_CN.md) 、[coordinator](coordinator-zh_CN.md) ，提高了 Spiderpool 的 CNI plugin 的配置体验。
+- 支持 Spiderpool 的 CNI plugin：[ifacer](./ifacer-zh_CN.md) 、[coordinator](../concepts/coordinator-zh_CN.md) ，提高了 Spiderpool 的 CNI plugin 的配置体验。
 
 > 在已存在 Multus CR 实例时，创建与其同名 Spidermultusconfig CR ，Multus CR 实例将会被纳管，其配置内容将会被覆盖。如果不想发生被覆盖的情况，请避免创建与存量 Multus CR 实例同名的 Spidermultusconfig CR 实例或者在 Spidermultusconfig CR 中指定 `multus.spidernet.io/cr-name` 以更改自动生成的 Multus CR 的名字。
 

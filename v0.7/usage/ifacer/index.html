@@ -61,6 +61,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#cni-meta-plugin-ifacer" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -622,6 +627,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-affinity/" class="md-nav__link">
+        Spider Affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Multiple interfaces
       </a>
@@ -796,10 +815,84 @@
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Plugin ifacer
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         Plugin ifacer
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature" class="md-nav__link">
+    Feature
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisite" class="md-nav__link">
+    Prerequisite
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-use" class="md-nav__link">
+    How to use
+  </a>
+  
+    <nav class="md-nav" aria-label="How to use">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dynamically-create-vlan-sub-interfaces" class="md-nav__link">
+    Dynamically create VLAN sub-interfaces
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamically-create-bond-interfaces" class="md-nav__link">
+    Dynamically create Bond interfaces
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1309,6 +1402,64 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature" class="md-nav__link">
+    Feature
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisite" class="md-nav__link">
+    Prerequisite
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-use" class="md-nav__link">
+    How to use
+  </a>
+  
+    <nav class="md-nav" aria-label="How to use">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dynamically-create-vlan-sub-interfaces" class="md-nav__link">
+    Dynamically create VLAN sub-interfaces
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamically-create-bond-interfaces" class="md-nav__link">
+    Dynamically create Bond interfaces
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1331,9 +1482,270 @@
   </a>
 
 
-  <h1>Plugin ifacer</h1>
-
-
+<h1 id="cni-meta-plugin-ifacer">CNI meta-plugin: ifacer</h1>
+<p><strong>English</strong> | <a href="../ifacer-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="introduction">Introduction</h2>
+<p>When Pods use VLAN networks, network administrators may need to manually configure various VLAN or Bond interfaces on the nodes in advance. This process can be tedious and error-prone. Spiderpool provides a CNI meta-plugin called <code>ifacer</code>.
+This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the nodes during Pod creation, based on the provided <code>ifacer</code> configuration, greatly simplifying the configuration workload. In the following sections, we will delve into this plugin.</p>
+<h2 id="feature">Feature</h2>
+<ul>
+<li>Support dynamic creation of VLAN sub-interfaces</li>
+<li>Support dynamic creation of Bond interfaces</li>
+</ul>
+<blockquote>
+<p>The VLAN/Bond interfaces created by this plugin will be lost when the node restarts, but they will be automatically recreated upon the Pod restarts
+Deleting existed VLAN/Bond interfaces is not supported
+Configuring the address of VLAN/Bond interfaces during creation is not supported</p>
+</blockquote>
+<h2 id="prerequisite">Prerequisite</h2>
+<p>There are no specific requirements including Kubernetes or Kernel versions for using this plugin. During the installation of Spiderpool, the plugin will be automatically installed in the <code>/opt/cni/bin/</code> directory on each host. You can verify by checking for the presence of the <code>ifacer</code> binary in that directory on each host.</p>
+<h2 id="how-to-use">How to use</h2>
+<p>We will provide two examples to illustrate how to use <code>ifacer</code>. But before that, we need to create two IP pools for testing:</p>
+<ul>
+<li>vlan100: dynamically create VLAN sub-interfaces</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderIPPool
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>vlan100
+spec:
+<span class="w">  </span>gateway:<span class="w"> </span><span class="m">172</span>.100.0.1
+<span class="w">  </span>ipVersion:<span class="w"> </span><span class="m">4</span>
+<span class="w">  </span>ips:
+<span class="w">  </span>-<span class="w"> </span><span class="m">172</span>.100.0.100-172.100.0.200
+<span class="w">  </span>subnet:<span class="w"> </span><span class="m">172</span>.100.0.0/16
+<span class="w">  </span>vlan:<span class="w"> </span><span class="m">100</span>
+EOF
+</code></pre></div>
+<ul>
+<li>vlan200：dynamically create Bond interfaces</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderIPPool
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>vlan200
+spec:
+<span class="w">  </span>gateway:<span class="w"> </span><span class="m">172</span>.200.0.1
+<span class="w">  </span>ipVersion:<span class="w"> </span><span class="m">4</span>
+<span class="w">  </span>ips:
+<span class="w">  </span>-<span class="w"> </span><span class="m">172</span>.200.0.100-172.200.0.200
+<span class="w">  </span>subnet:<span class="w"> </span><span class="m">172</span>.200.0.0/16
+<span class="w">  </span>vlan:<span class="w"> </span><span class="m">200</span>
+EOF
+</code></pre></div>
+<h3 id="dynamically-create-vlan-sub-interfaces">Dynamically create VLAN sub-interfaces</h3>
+<p>Generate a Multus network-attachment-definition configuration for <code>ifacer</code> using <code>SpiderMultusConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f - </span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderMultusConfig
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>macvlan-conf
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+spec:
+<span class="w">  </span>cniType:<span class="w"> </span>macvlan
+<span class="w">  </span>coordinator:
+<span class="w">    </span>mode:<span class="w"> </span>underlay
+<span class="w">  </span>macvlan:
+<span class="w">    </span>master:
+<span class="w">    </span>-<span class="w"> </span>ens192
+<span class="w">    </span>vlanID:<span class="w"> </span><span class="m">100</span>
+<span class="w">    </span>ippools:
+<span class="w">      </span>ipv4:<span class="w"> </span>
+<span class="w">      </span>-<span class="w"> </span>vlan100
+EOF
+spidermultusconfig.spiderpool.spidernet.io/macvlan-conf<span class="w"> </span>created
+</code></pre></div>
+<p>After creation, you can view the corresponding Multus network-attachment-definition:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o=jsonpath=&#39;{.spec.config}&#39; | jq</span>
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan-conf1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ifacer&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;interfaces&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="s2">&quot;ens192&quot;</span>
+<span class="w">      </span><span class="o">]</span>,
+<span class="w">      </span><span class="s2">&quot;vlanID&quot;</span>:<span class="w"> </span><span class="m">100</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;default_ipv4_ippool&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;vlan100&quot;</span><span class="o">]</span>
+<span class="w">      </span><span class="o">}</span>,
+<span class="w">      </span><span class="s2">&quot;master&quot;</span>:<span class="w"> </span><span class="s2">&quot;ens192.100&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="s2">&quot;bridge&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;coordinator&quot;</span>,
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<blockquote>
+<p><code>ifacer</code> is the first one to be invoked in the CNI chain. As per the provided configuration, <code>ifacer</code> creates a sub-interface with a VLAN tag of 100 based on <code>ens192</code>.
+main CNI: Macvlan's master field is <code>ens192.100</code>, namely the VLAN sub-interface created by <code>ifacer</code></p>
+</blockquote>
+<p><code>ifacer</code> is not required if the VLAN sub-interface has already been created on the node. In that case, you can directly configure the master field as <code>ens192.100</code> without specifying a VLAN ID, as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-conf</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">master</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ens192.100</span>
+<span class="w">    </span><span class="nt">ippools</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vlan100</span>
+</code></pre></div>
+<p>Next, create a Pod for testing:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">1</span>
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>nginx
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span>macvlan-conf
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>nginx
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>name:<span class="w"> </span>nginx
+<span class="w">        </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>name:<span class="w"> </span>http
+<span class="w">          </span>containerPort:<span class="w"> </span><span class="m">80</span>
+<span class="w">          </span>protocol:<span class="w"> </span>TCP
+EOF
+</code></pre></div>
+<p>Upon successful creation of the Pod, we can verify that a VLAN sub-interface named <code>ens192.100</code> has been created on the node:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide | grep nginx</span>
+nginx-5d6dc85ff4-gdvkh<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>32s<span class="w">    </span><span class="m">172</span>.100.0.163<span class="w">    </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip l show type vlan</span>
+<span class="m">135508</span>:<span class="w"> </span>ens192.100@ens192:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>mode<span class="w"> </span>DEFAULT<span class="w"> </span>group<span class="w"> </span>default
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:3c:82<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</code></pre></div>
+<p>After testing, the Pod shows normal connectivity in various aspects.</p>
+<h3 id="dynamically-create-bond-interfaces">Dynamically create Bond interfaces</h3>
+<p>Generate a Multus network-attachment-definition configuration for <code>ifacer</code> using <code>SpiderMultusConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f - </span>
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderMultusConfig
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>macvlan-conf
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+spec:
+<span class="w">  </span>cniType:<span class="w"> </span>macvlan
+<span class="w">  </span>coordinator:
+<span class="w">    </span>mode:<span class="w"> </span>underlay
+<span class="w">  </span>macvlan:
+<span class="w">    </span>master:
+<span class="w">    </span>-<span class="w"> </span>ens192
+<span class="w">    </span>-<span class="w"> </span>ens160
+<span class="w">    </span>vlanID:<span class="w"> </span><span class="m">200</span>
+<span class="w">    </span>ippools:
+<span class="w">      </span>ipv4:
+<span class="w">      </span>-<span class="w"> </span>vlan200
+<span class="w">    </span>bond:
+<span class="w">      </span>name:<span class="w"> </span>bond0
+<span class="w">      </span>mode:<span class="w"> </span><span class="m">1</span>
+<span class="w">      </span>options:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+EOF
+spidermultusconfig.spiderpool.spidernet.io/macvlan-conf<span class="w"> </span>created
+</code></pre></div>
+<p>Upon successful creation, view the associated Multus network-attachment-definition:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o jsonpath=&#39;{.spec.config}&#39; | jq</span>
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan-conf&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ifacer&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;interfaces&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="s2">&quot;ens192&quot;</span>
+<span class="w">        </span><span class="s2">&quot;ens160&quot;</span>
+<span class="w">      </span><span class="o">]</span>,
+<span class="w">      </span><span class="s2">&quot;vlanID&quot;</span>:<span class="w"> </span><span class="m">200</span>,
+<span class="w">      </span><span class="s2">&quot;bond&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;bond0&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="m">1</span>
+<span class="w">      </span><span class="o">}</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;macvlan&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;default_ipv4_ippool&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;vlan100&quot;</span><span class="o">]</span>
+<span class="w">      </span><span class="o">}</span>,
+<span class="w">      </span><span class="s2">&quot;master&quot;</span>:<span class="w"> </span><span class="s2">&quot;bond0.200&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="s2">&quot;bridge&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;coordinator&quot;</span>,
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>Configuration Explanation:</p>
+<blockquote>
+<p><code>ifacer</code> is the first one to be invoked in the CNI chain. As per the provided configuration, <code>ifacer</code> creates a bond interface named <code>bond0</code> using ["ens192","ens160"], with the mode of 1 (active-backup). Additionally, a VLAN sub-interface named <code>bond0.200</code> is created based on <code>bond0</code>, with a VLAN tag of 200.
+main CNI: Macvlan's master field is <code>bond0.200</code>
+If advanced configuration options are required for bond creation, you can achieve this by configuring <code>SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options</code>. The input format should be as follows: "primary=ens160;arp_interval=1". Multiple parameters can be connected using ";" as a delimiter.</p>
+</blockquote>
+<p>Create a Pod for testing:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | kubectl apply -f -</span>
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">1</span>
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>nginx
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span>macvlan-conf
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>nginx
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>name:<span class="w"> </span>nginx
+<span class="w">        </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>name:<span class="w"> </span>http
+<span class="w">          </span>containerPort:<span class="w"> </span><span class="m">80</span>
+<span class="w">          </span>protocol:<span class="w"> </span>TCP
+EOF
+</code></pre></div>
+<p>Upon successful creation of the Pod, we can verify that a Bond interface named <code>bond0</code> and a VLAN sub-interface named <code>bond0.100</code> have been created on the node:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide | grep nginx</span>
+nginx-1c8wcv2sg5-jcwla<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>32s<span class="w">    </span><span class="m">172</span>.200.0.163<span class="w">    </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip --details link show type bond</span>
+<span class="m">135510</span>:<span class="w"> </span>bond0:<span class="w"> </span>&lt;BROADCAST,MULTICAST,MASTER,UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>mode<span class="w"> </span>DEFAULT<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:8f:14<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff<span class="w"> </span>promiscuity<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>bond<span class="w"> </span>mode<span class="w"> </span>active-backup<span class="w"> </span>miimon<span class="w"> </span><span class="m">0</span><span class="w"> </span>updelay<span class="w"> </span><span class="m">0</span><span class="w"> </span>downdelay<span class="w"> </span><span class="m">0</span><span class="w"> </span>use_carrier<span class="w"> </span><span class="m">1</span><span class="w"> </span>arp_interval<span class="w"> </span><span class="m">1</span><span class="w"> </span>arp_validate<span class="w"> </span>none<span class="w"> </span>arp_all_targets<span class="w"> </span>any<span class="w"> </span>primary<span class="w"> </span>ens192<span class="w"> </span>primary_reselect<span class="w"> </span>always<span class="w"> </span>fail_over_mac<span class="w"> </span>none<span class="w"> </span>xmit_hash_policy<span class="w"> </span>layer2<span class="w"> </span>resend_igmp<span class="w"> </span><span class="m">1</span><span class="w"> </span>num_grat_arp<span class="w"> </span><span class="m">1</span><span class="w"> </span>all_slaves_active<span class="w"> </span><span class="m">0</span><span class="w"> </span>min_links<span class="w"> </span><span class="m">0</span><span class="w"> </span>lp_interval<span class="w"> </span><span class="m">1</span><span class="w"> </span>packets_per_slave<span class="w"> </span><span class="m">1</span><span class="w"> </span>lacp_rate<span class="w"> </span>slow<span class="w"> </span>ad_select<span class="w"> </span>stable<span class="w"> </span>tlb_dynamic_lb<span class="w"> </span><span class="m">1</span><span class="w"> </span>addrgenmode<span class="w"> </span>eui64<span class="w"> </span>numtxqueues<span class="w"> </span><span class="m">16</span><span class="w"> </span>numrxqueues<span class="w"> </span><span class="m">16</span><span class="w"> </span>gso_max_size<span class="w"> </span><span class="m">65536</span><span class="w"> </span>gso_max_segs<span class="w"> </span><span class="m">65535</span>
+<span class="o">[</span>root@worker1<span class="w"> </span>~<span class="o">]</span><span class="c1"># ip link show type vlan</span>
+<span class="m">135508</span>:<span class="w"> </span>bond0.100@ens192:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>mode<span class="w"> </span>DEFAULT<span class="w"> </span>group<span class="w"> </span>default
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:3c:82<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</code></pre></div>
+<p>After testing, the Pod shows normal connectivity in various aspects.</p>
 
 
 

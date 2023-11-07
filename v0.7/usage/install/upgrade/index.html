@@ -610,6 +610,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#upgrade" class="md-nav__link">
+    Upgrade
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upgrade-steps" class="md-nav__link">
+    Upgrade steps
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -703,6 +723,20 @@
     <li class="md-nav__item">
       <a href="../../ippool-namespace/" class="md-nav__link">
         Default IPPool at namespace
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../spider-affinity/" class="md-nav__link">
+        Spider Affinity of IPPool
       </a>
     </li>
   
@@ -1457,6 +1491,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#upgrade" class="md-nav__link">
+    Upgrade
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upgrade-steps" class="md-nav__link">
+    Upgrade steps
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1525,6 +1579,82 @@ Please consult the segments from your current release until now before upgrading
 </li>
 <li>
 <p>Replace the subresource SpiderEndpoint.Status.OwnerControllerType property from <code>None</code> to <code>Pod</code></p>
+</li>
+</ol>
+<h2 id="upgrade">Upgrade</h2>
+<p>This upgrade guide is intended for Spiderpool running on Kubernetes. If you have questions, feel free to ping us on the <a href="https://app.slack.com/client/T08PSQ7BQ/C05JPU3M48P">Slack channel</a>.</p>
+<p>NOTE: Read the full upgrade guide to understand all the necessary steps before performing them.</p>
+<h3 id="upgrade-steps">Upgrade steps</h3>
+<p>The following steps will describe how to upgrade all of the components from one stable release to a later stable release.</p>
+<ol>
+<li>
+<p>Setup the Helm repository and update:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+...Successfully<span class="w"> </span>got<span class="w"> </span>an<span class="w"> </span>update<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span><span class="w"> </span>chart<span class="w"> </span>repository
+Update<span class="w"> </span>Complete.<span class="w"> </span>⎈Happy<span class="w"> </span>Helming!⎈
+</code></pre></div>
+</li>
+<li>
+<p>If the spiderpool-init pod exists it needs to be removed</p>
+<p>Spiderpool-init Pod will help us initialize some environment information. It is very useful to delete it before upgrading.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-init
+NAME<span class="w">              </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE
+spiderpool-init<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>49m
+~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-init
+pod<span class="w"> </span><span class="s2">&quot;spiderpool-init&quot;</span><span class="w"> </span>deleted
+</code></pre></div>
+</li>
+<li>
+<p>Update version via helm</p>
+<p>(Optional) Spiderpool chart version has changed, you can get the latest stable version with the following command, unzip the chart package and apply all crds.</p>
+<p>```bash
+~# helm search repo spiderpool --versions
+...
+~# helm fetch spiderpool/spiderpool --version <upgraded-version>
+...
+~# tar -xvf spiderpool-<upgraded-version>.tgz &amp;&amp; cd spiderpool/crds
+~# ls | grep '.yaml$' | xargs -I {} kubectl apply -f {}
+<div class="highlight"><pre><span></span><code>To upgrade spiderpool using Helm, you can change `&lt;upgraded-version&gt;` to any stable version.
+
+```bash
+helm upgrade --install spiderpool spiderpool/spiderpool --wait --debug --version &lt;upgraded-version&gt; \
+    -n kube-system \
+</code></pre></div></p>
+<p>Running the previous command will overwrite the existing cluster's ConfigMap, so it is important to retain any existing options, either by setting them on the command line or storing them in a YAML file, similar to:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cm<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-conf<span class="w"> </span>-oyaml<span class="w"> </span>&gt;<span class="w"> </span>my-config.yaml
+</code></pre></div>
+<p>The <code>--reuse-values</code> flag may only be safely used if the Spiderpool chart version remains unchanged, for example when helm upgrade is used to apply configuration changes without upgrading Spiderpool. Instead, if you want to reuse the values from your existing installation, save the old values in a values file, check the file for any renamed or deprecated values, and then pass it to the helm upgrade command as described above. You can retrieve and save the values from an existing installation with the following command:</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>spiderpool<span class="w"> </span>--namespace<span class="o">=</span>kube-system<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>old-values.yaml
+</code></pre></div>
+<p>Helm Optional:</p>
+<blockquote>
+<p>Spider v0.7.0 brings some changes. Can be adapted through <code>--set</code></p>
+<ol>
+<li>In version 0.7.0, spiderpool integrates multus. If you have installed multus, pass <code>--set multus.multusCNI.install=false</code> to disable the installation when upgrading.</li>
+<li>In version 0.7.0, the ipam.enableIPv6 value is changed to true by default. Determine the status of this value in your cluster configuration. If it is false, please change it through <code>--set ipam.enableIPv6=false</code>.</li>
+<li>In version 0.7.0, the default value of ipam.enableSpiderSubnet was changed to false. Determine the status of this value in your cluster configuration. If it is true, change it with <code>--set ipam.enableSpiderSubnet=true</code>.</li>
+</ol>
+</blockquote>
+</li>
+<li>
+<p>verify</p>
+<p>You can verify that the upgraded version matches by running the following command.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>list<span class="w"> </span>-A
+NAME<span class="w">        </span>NAMESPACE<span class="w">   </span>REVISION<span class="w">    </span>UPDATED<span class="w">                                 </span>STATUS<span class="w">      </span>CHART<span class="w">                           </span>APP<span class="w"> </span>VERSION
+spiderpool<span class="w">  </span>kube-system<span class="w"> </span><span class="m">3</span><span class="w">           </span><span class="m">2023</span>-08-31<span class="w"> </span><span class="m">23</span>:29:28.884386053<span class="w"> </span>+0800<span class="w"> </span>CST<span class="w"> </span>deployed<span class="w">    </span>spiderpool-&lt;upgraded-version&gt;<span class="w">   </span>&lt;upgraded-version&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+spiderpool-agent-22z7f<span class="w">                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
+spiderpool-agent-cjps5<span class="w">                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
+spiderpool-agent-mwpsp<span class="w">                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
+spiderpool-controller-647888ff-g5q4n<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
+spiderpool-init<span class="w">                        </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">                </span>3m
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-controller-647888ff-g5q4n<span class="w"> </span>-oyaml<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>image
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-agent-cjps5<span class="w"> </span>-oyaml<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>image
+</code></pre></div>
 </li>
 </ol>
 

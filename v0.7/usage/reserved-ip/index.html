@@ -627,6 +627,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-affinity/" class="md-nav__link">
+        Spider Affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Multiple interfaces
       </a>
@@ -759,37 +773,58 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#ippool-excludeips" class="md-nav__link">
-    IPPool excludeIPs
+  <a href="#introduction" class="md-nav__link">
+    Introduction
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-spiderreservedip" class="md-nav__link">
-    Use SpiderReservedIP
+  <a href="#features-of-reserved-ip" class="md-nav__link">
+    Features of Reserved IP
   </a>
   
-    <nav class="md-nav" aria-label="Use SpiderReservedIP">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#set-up-spiderpool" class="md-nav__link">
-    Set up Spiderpool
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#get-started" class="md-nav__link">
-    Get Started
+  <a href="#install-cni" class="md-nav__link">
+    Install CNI
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#clean-up" class="md-nav__link">
-    Clean up
+  <a href="#create-reserved-ips" class="md-nav__link">
+    Create reserved IPs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-an-ip-pool" class="md-nav__link">
+    Create an IP pool
   </a>
   
 </li>
@@ -800,8 +835,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#a-trap" class="md-nav__link">
-    A Trap
+  <a href="#conclusion" class="md-nav__link">
+    Conclusion
   </a>
   
 </li>
@@ -1398,37 +1433,58 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#ippool-excludeips" class="md-nav__link">
-    IPPool excludeIPs
+  <a href="#introduction" class="md-nav__link">
+    Introduction
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-spiderreservedip" class="md-nav__link">
-    Use SpiderReservedIP
+  <a href="#features-of-reserved-ip" class="md-nav__link">
+    Features of Reserved IP
   </a>
   
-    <nav class="md-nav" aria-label="Use SpiderReservedIP">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#set-up-spiderpool" class="md-nav__link">
-    Set up Spiderpool
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#get-started" class="md-nav__link">
-    Get Started
+  <a href="#install-cni" class="md-nav__link">
+    Install CNI
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#clean-up" class="md-nav__link">
-    Clean up
+  <a href="#create-reserved-ips" class="md-nav__link">
+    Create reserved IPs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-an-ip-pool" class="md-nav__link">
+    Create an IP pool
   </a>
   
 </li>
@@ -1439,8 +1495,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#a-trap" class="md-nav__link">
-    A Trap
+  <a href="#conclusion" class="md-nav__link">
+    Conclusion
   </a>
   
 </li>
@@ -1469,139 +1525,175 @@
 
 
 <h1 id="reserved-ip">Reserved IP</h1>
-<p><em>Spiderpool reserve some IP addresses for the whole Kubernetes cluster, which will not be used by any IPAM allocation results. Typically, these IP addresses are external IP addresses or cannot be used for network communication (e.g. broadcast address).</em></p>
-<h2 id="ippool-excludeips">IPPool excludeIPs</h2>
-<p>You may have observed that there is a field <code>excludeIPs</code> in SpiderIPPool CRD. To some extent, it is also a mechanism for reserving IP addresses, but its main function is not like this. Field <code>excludeIPs</code> is more of a <strong>syntax sugar</strong>, so that users can more flexibly define the IP address ranges of the IPPool.</p>
-<p>For example, create an IPPool without using <code>excludeIPs</code>, which contains two IP ranges: <code>172.18.41.40-172.18.41.44</code> and <code>172.18.41.46-172.18.41.50</code>, you should define the <code>ips</code> as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not-use-excludeips</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.0/24</span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.40-172.18.41.44</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.46-172.18.41.50</span>
-</code></pre></div>
-<p>But in fact, this semantics can be more succinctly described through <code>excludeIPs</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">use-excludeips</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.0/24</span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.40-172.18.41.50</span>
-<span class="w">  </span><span class="nt">excludeIPs</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.41.45</span>
-</code></pre></div>
-<p>Field <code>excludeIPs</code> will make sure that any Pod that allocates IP addresses from this IPPool will not use these excluded IP addresses. However, it should be noted that this mechanism only has an effect on the <strong>IPPool itself</strong> with <code>excludeIPs</code> defined.</p>
-<h2 id="use-spiderreservedip">Use SpiderReservedIP</h2>
-<p>Unlike configuring field <code>excluedIPs</code> in SpiderIPPool CR, creating a SpiderReservedIP CR is really a way to define the global reserved IP address rules of a Kubernetes cluster. The IP addresses defined in ReservedIP cannot be used by any Pod in the cluster, regardless of whether some IPPools have inadvertently defined them. More details refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/reference/crd-spiderreservedip.md">definition of SpiderReservedIP</a>.</p>
-<h3 id="set-up-spiderpool">Set up Spiderpool</h3>
-<p>If you have not deployed Spiderpool yet, follow the guide <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/install.md">installation</a> for instructions on how to deploy and easily configure Spiderpool.</p>
-<h3 id="get-started">Get Started</h3>
-<p>To understand how it works, let's do such a test. First, create an ReservedIP which reserves 9 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.49</code>.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderReservedIP</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-ipv4-reservedip</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.42.41-172.18.42.49</span>
-</code></pre></div>
-<p>At the same time, create an IPPool with 10 IP addresses from <code>172.18.42.41</code> to <code>172.18.42.50</code>. Yes, we deliberately make it hold one more IP address than the ReservedIP above.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-ipv4-ippool</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.42.0/24</span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.42.41-172.18.42.50</span>
-</code></pre></div>
-<p>Then, create a Deployment with 3 replicas and allocate IP addresses to its Pods from the IPPool above.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reservedip-deploy</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reservedip-deploy</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">          </span><span class="no">{</span>
-<span class="w">            </span><span class="no">&quot;ipv4&quot;: [&quot;test-ipv4-ippool&quot;]</span>
-<span class="w">          </span><span class="no">}</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reservedip-deploy</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reservedip-deploy</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">busybox</span>
-<span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;trap</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">TERM</span><span class="nv"> </span><span class="s">INT;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">infinity</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">wait&quot;</span><span class="p p-Indicator">]</span>
-</code></pre></div>
-<p>After a while, only one of these Pods using IP <code>172.18.42.50</code> can run successfully because "all IP used out".</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>reservedip-deploy<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">                                 </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE
-reservedip-deploy-6cf9858886-cm7bp<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>35s<span class="w">   </span>&lt;none&gt;<span class="w">         </span>spider-worker
-reservedip-deploy-6cf9858886-lb7cr<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>35s<span class="w">   </span>&lt;none&gt;<span class="w">         </span>spider-worker
-reservedip-deploy-6cf9858886-pkcfl<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>35s<span class="w">   </span><span class="m">172</span>.18.42.50<span class="w">   </span>spider-worker
-</code></pre></div>
-<p>But when you delete this ReservedIP, everything will return to normal.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml
-</code></pre></div>
-<p>Another interesting question is that what happens if an IP address to be reserved has been allocated before ReservedIP is created? Of course, we dare not stop this running Pod and recycle its IP addresses, but ReservedIP will still ensure that when the Pod is terminated, no other Pods can continue to use the reserved IP address.</p>
-<blockquote>
-<p>Therefore, ReservedIPs should be confirmed as early as possible before network planning, rather than being supplemented at the end of all work.</p>
-</blockquote>
-<h3 id="clean-up">Clean up</h3>
-<p>Clean the relevant resources so that you can run this tutorial again.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span><span class="se">\</span>
--f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-reservedip.yaml<span class="w"> </span><span class="se">\</span>
--f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/test-ipv4-ippool.yaml<span class="w"> </span><span class="se">\</span>
--f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/example/reserved-ip/reservedip-deploy.yaml<span class="w"> </span><span class="se">\</span>
---ignore-not-found<span class="o">=</span><span class="nb">true</span>
-</code></pre></div>
-<h2 id="a-trap">A Trap</h2>
-<p>So, can you use IPPool's field <code>excludeIPs</code> to achieve the same effect as ReservedIP? The answer is <strong>NO</strong>! Look at such a case, now you want to reserve an IP <code>172.18.43.31</code> for an external application of the Kubernetes cluster, which may be a Redis node. To achieve this, you created such an IPPool:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">already-in-use</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.43.0/24</span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.43.1-172.18.43.31</span>
-<span class="w">  </span><span class="nt">excludeIPs</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.43.31</span>
-</code></pre></div>
-<p>I believe that if there is only one IPPool under the subnet <code>172.18.43.0/24</code> network segment in cluster, there will be no problem and it can even work perfectly. Unfortunately, your friends may not know about it, and then he/she created such an IPPool:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">created-by-someone-else</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.43.0/24</span>
-<span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.18.43.31-172.18.43.50</span>
+<p><strong>English</strong> ｜ <a href="../reserved-ip-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="introduction">Introduction</h2>
+<p><em>Spiderpool reserve some IP addresses for the whole Kubernetes cluster through the ReservedIP CR, ensuring that these addresses are not allocated by IPAM.</em></p>
+<h2 id="features-of-reserved-ip">Features of Reserved IP</h2>
+<p>To avoid IP conflicts when it is known that an IP address is being used externally to the cluster, it can be a time-consuming and labor-intensive task to remove that IP address from existing IPPool instances. Furthermore, network administrators want to ensure that this IP address is not allocated from any current or future IPPool resources. To address these concerns, the ReservedIP CR allows for the specification of IP addresses that should not be utilized by the cluster. Even if an IPPool instance includes those IP addresses, the IPAM plugin will refrain from assigning them to Pods.</p>
+<p>The IP addresses specified in the ReservedIP CR serve two purposes:</p>
+<ul>
+<li>
+<p>Clearly identify those IP addresses already in use by hosts outside the cluster.</p>
+</li>
+<li>
+<p>Explicitly prevent the utilization of those IP addresses for network communication, such as subnet IPs or broadcast IPs.</p>
+</li>
+</ul>
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+<li>
+<p>A ready Kubernetes kubernetes.</p>
+</li>
+<li>
+<p><a href="https://helm.sh/docs/intro/install/">Helm</a> has been already installed.</p>
+</li>
+</ol>
+<h2 id="steps">Steps</h2>
+<h3 id="install-spiderpool">Install Spiderpool</h3>
+<ol>
+<li>
+<p>Install Spiderpool through Helm:</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w">  </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-ens192&quot;</span><span class="w"> </span>
 </code></pre></div>
 <blockquote>
-<p>Different IPPools allow to define the same field <code>subnet</code>, more details refer to <a href="TODO">validation of IPPool</a>.</p>
+<p>For users in the Chinese mainland, it is recommended to specify the spec <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to accelerate image pulling.</p>
+<p>You can specify the Multus clusterNetwork for your cluster using <code>multus.multusCNI.defaultCniCRName</code>. The clusterNetwork is a specific field of the Multus plugin that defines the default network interface for Pods.</p>
 </blockquote>
-<p>After a period of time, a Pod may be allocated with IP <code>172.18.43.31</code> from the IPPool <code>created-by-someone-else</code>, and then it holds the same IP address as your Redis node. After that, the Redis may not work as well.</p>
-<p>So, if you really want to reserve an IP address instead of excluding an IP address, SpiderReservedIP makes life better.</p>
+</li>
+<li>
+<p>Check if the installation is successful.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+NAME<span class="w">                                     </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
+spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-multus-7vkm2<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+spiderpool-multus-rwzjn<span class="w">                  </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>13m
+</code></pre></div>
+</li>
+</ol>
+<h3 id="install-cni">Install CNI</h3>
+<p>To simplify the creation of JSON-formatted Multus CNI configurations, Spiderpool introduces the SpiderMultusConfig CR, which automates the management of Multus NetworkAttachmentDefinition CRs. Here is an example of creating a Macvlan SpiderMultusConfig:</p>
+<ul>
+<li>master：the interface <code>ens192</code> is used as the spec for master.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
+<span class="nv">MACVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${MACVLAN_MULTUS_NAME}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${MACVLAN_MASTER_INTERFACE}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>With the provided configuration, we create a Macvlan SpiderMultusConfig that will automatically generate the corresponding Multus NetworkAttachmentDefinition CR.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+NAME<span class="w">             </span>AGE
+macvlan-ens192<span class="w">   </span>26m
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+NAME<span class="w">             </span>AGE
+macvlan-ens192<span class="w">   </span>27m
+</code></pre></div>
+<h3 id="create-reserved-ips">Create reserved IPs</h3>
+<p>To create reserved IPs, use the following YAML to specify <code>spec.ips</code> as <code>10.6.168.131-10.6.168.132</code>:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderReservedIP</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-reservedip</span>
+<span class="s">spec:</span>
+<span class="s">  ips:</span>
+<span class="s">  - 10.6.168.131-10.6.168.132</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<h3 id="create-an-ip-pool">Create an IP pool</h3>
+<p>Create an IP pool with <code>spec.ips</code> set to <code>10.6.168.131-10.6.168.133</code>, containing a total of 3 IP addresses. However, given the previously created reserved IPs, only 1 IP address is available in this IP pool.</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-ippool</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 10.6.0.0/16</span>
+<span class="s">  ips:</span>
+<span class="s">  - 10.6.168.131-10.6.168.133</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>To allocate IP addresses from this IP pool, use the following YAML to create a Deployment with 2 replicas:</p>
+<ul>
+<li><code>ipam.spidernet.io/ippool</code>: specify the IP pool for assigning IP addresses to the application</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
+<span class="s">            {      </span>
+<span class="s">              &quot;ipv4&quot;: [&quot;test-ippool&quot;]</span>
+<span class="s">            }</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>Because both IP addresses in the IP pool are reserved by the ReservedIP CR, only one IP address is available in the pool. This means that only one Pod of the application can run successfully, while the other Pod fails to create due to the "all IPs have been exhausted" error.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-67dd9f645-dv8xz<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span>&lt;none&gt;<span class="w">         </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<p>If a Pod of the application already has been assigned a reserved IP, adding that IP address to the ReservedIP CR will result in the replica failing to run after restarting. Use the following command to add the Pod's allocated IP address to the ReservedIP CR, and then restart the Pod. As expected, the Pod will fail to start due to the "all IPs have been exhausted" error.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spiderreservedip<span class="w"> </span>test-reservedip<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;ips&quot;:[&quot;10.6.168.131-10.6.168.133&quot;]}}&#39;</span><span class="w"> </span>--type<span class="o">=</span>merge
+
+～#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>po<span class="w"> </span>test-app-67dd9f645-dv8xz<span class="w"> </span>
+pod<span class="w"> </span><span class="s2">&quot;test-app-67dd9f645-dv8xz&quot;</span><span class="w"> </span>deleted
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">       </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>9s<span class="w">      </span>&lt;none&gt;<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>2m18s<span class="w">   </span>&lt;none&gt;<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<p>Once the reserved IP is removed, the Pod can obtain an IP address and run successfully.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>sr<span class="w"> </span>test-reservedip
+spiderreservedip.spiderpool.spidernet.io<span class="w"> </span><span class="s2">&quot;test-reservedip&quot;</span><span class="w"> </span>deleted
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4m23s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6m14s<span class="w">   </span><span class="m">10</span>.6.168.131<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<h2 id="conclusion">Conclusion</h2>
+<p>SpiderReservedIP simplifies network planning for infrastructure administrators.</p>
 
 
 

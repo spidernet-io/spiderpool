@@ -625,6 +625,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../spider-affinity/" class="md-nav__link">
+        Spider Affinity of IPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../multi-interfaces-annotation/" class="md-nav__link">
         Multiple interfaces
       </a>
@@ -1402,7 +1416,7 @@
 </ul>
 <p>下面我们将详细的介绍 coordinator 如何解决或实现这些功能。</p>
 <blockquote>
-<p>注意: </p>
+<p>注意:</p>
 <p>如果您通过 <code>SpinderMultusConfig CR</code>  帮助创建 NetworkAttachmentDefinition CR，您可以在 <code>SpinderMultusConfig</code> 中配置 <code>coordinator</code> (所有字段)。参考: <a href="../../reference/crd-spidermultusconfig/">SpinderMultusConfig</a>。</p>
 <p><code>Spidercoordinators CR</code> 作为 <code>coordinator</code> 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 <code>Spidercoordinators CR</code> 作为缺省值。更多详情参考: <a href="../../reference/crd-spidercoordinator/">Spidercoordinator</a>。</p>
 </blockquote>
@@ -1421,7 +1435,7 @@ ClusterIP 的路由，导致无法访问。</p>
 <li>能够利用底层网络设备对 Pod 做访问控制</li>
 <li>不依赖隧道技术，Pod 网络通信的性能得到显著提高</li>
 </ul>
-<p>使用注意: </p>
+<p>使用注意:</p>
 <ul>
 <li>Pod 访问集群东西向流量(ClusterIP)时，流量会先跳给本地宿主机，本地宿主机使用自己的IP去访问目的pod，因此，流量的转发可能借助外部路由器进行三层跳转，因此，请确保相关三层网络的通达。</li>
 </ul>

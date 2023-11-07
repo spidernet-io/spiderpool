@@ -11,15 +11,12 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool-agent/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/lock"
-	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
-	"gopkg.in/yaml.v3"
-
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -443,39 +440,6 @@ OUTER_FOR:
 	wg.Wait()
 	Expect(len(subnetNameList)).To(Equal(subnetNums))
 	return subnetNameList, nil
-}
-
-func GetClusterDefaultSubnet(f *frame.Framework) (v4SubnetList, v6SubnetList []string, e error) {
-	if f == nil {
-		return nil, nil, errors.New("wrong input")
-	}
-
-	configMap, e := f.GetConfigmap(SpiderPoolConfigmapName, SpiderPoolConfigmapNameSpace)
-	if e != nil {
-		return nil, nil, e
-	}
-	GinkgoWriter.Printf("configmap: %+v \n", configMap.Data)
-
-	data, ok := configMap.Data["conf.yml"]
-	if !ok || len(data) == 0 {
-		return nil, nil, errors.New("failed to find cluster default subnet")
-	}
-
-	conf := cmd.Config{}
-	if err := yaml.Unmarshal([]byte(data), &conf); nil != err {
-		GinkgoWriter.Printf("failed to decode yaml config: %v \n", data)
-		return nil, nil, errors.New("failed to find cluster default subnet")
-	}
-	GinkgoWriter.Printf("yaml config: %v \n", conf)
-
-	if conf.EnableIPv4 && len(conf.ClusterDefaultIPv4Subnet) != 0 {
-		v4SubnetList = conf.ClusterDefaultIPv4Subnet
-	}
-	if conf.EnableIPv6 && len(conf.ClusterDefaultIPv6Subnet) != 0 {
-		v6SubnetList = conf.ClusterDefaultIPv6Subnet
-	}
-
-	return v4SubnetList, v6SubnetList, nil
 }
 
 func GetAllSubnet(f *frame.Framework, opts ...client.ListOption) (*spiderpool.SpiderSubnetList, error) {

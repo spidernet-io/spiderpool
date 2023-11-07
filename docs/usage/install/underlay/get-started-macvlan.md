@@ -71,6 +71,9 @@ To simplify writing Multus CNI configuration in JSON format, Spiderpool provides
 
 * Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface --eth0.
 
+    > * If there is a VLAN requirement, you can specify the VLAN ID in the `spec.vlanID` field. We will create the corresponding VLAN sub-interface for the network card.
+    > * We also provide support for network card bonding. Just specify the name of the bond network card and its mode in the `spec.bond.name` and `spec.bond.mode` respectively. We will automatically combine multiple network cards into one bonded network card for you.
+
     ```shell
     MACVLAN_MASTER_INTERFACE="eth0"
     cat <<EOF | kubectl apply -f -

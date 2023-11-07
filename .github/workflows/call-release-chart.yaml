@@ -20,6 +20,10 @@ on:
       submit:
         required: true
         type: string
+    outputs:
+      artifact:
+        description: "name of artifact"
+        value: chart_package_artifact
   workflow_dispatch:
     inputs:
       ref:

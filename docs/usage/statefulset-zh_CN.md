@@ -4,11 +4,17 @@
 
 ## 介绍
 
-*Spiderpool 能保证 StatefulSet 的 Pod 在重启、重建场景下，持续获取到相同的 IP 地址。*
+*由于 StatefulSet 多用在有状态的服务中，因此对网络稳定的标识信息有了更高的要求。Spiderpool 能保证 StatefulSet 的 Pod 在重启、重建场景下，持续获取到相同的 IP 地址。*
 
-## StatefulSet 功能
+## StatefulSet 固定地址
 
-Deployment 和 StatefulSet 控制器，对于 IP 地址固定的需求是不一样的：
+StatefulSet 会在以下一些场景中会出现固定地址的使用：
+
+1. StatefulSet 对应的 Pod 出现的故障重建的情况
+
+2. StatefulSet 在副本数量不变的情况下，删除 Pod 使其重启的情况
+
+此外，StatefulSet 和 Deployment 控制器，对于 IP 地址固定的需求是不一样的：
 
 - 对于 StatefulSet，Pod 副本重启前后，其 Pod 名保持不变，但是 Pod UUID 发生了变化，其是有状态的，应用管理员希望该 Pod 重启前后，仍能分配到相同的 IP 地址。
 

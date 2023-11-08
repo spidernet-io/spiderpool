@@ -51,9 +51,10 @@ nav:
       - Underlay Installation:
           - Calico: usage/install/underlay/get-started-calico.md
           - Weave: usage/install/underlay/get-started-weave.md
-          - Macvlan: usage/install/underlay/get-started-kind.md
+          - Macvlan: usage/install/underlay/get-started-macvlan.md
           - Ovs: usage/install/underlay/get-started-ovs.md
           - SR-IOV: usage/install/underlay/get-started-sriov.md
+          - Kind: usage/install/underlay/get-started-kind.md
       - Overlay Installation:
           - Calico: usage/install/overlay/get-started-calico.md
           - Cilium: usage/install/overlay/get-started-cilium.md

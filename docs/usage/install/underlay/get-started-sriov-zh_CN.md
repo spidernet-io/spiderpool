@@ -51,7 +51,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     ```shell
     kubectl label node $NodeName node-role.kubernetes.io/worker=""
     ```
-   
+
 3. 在节点上创建 VF
 
     使用如下命令查看节点上的可用网卡
@@ -83,7 +83,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
     > 如果 SriovNetworkNodeState CRs 的状态为 `InProgress`, 说明 sriov-operator 正在同步节点状态，等待状态为 `Succeeded` 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。
 
-    从上面可知，节点 `node-1` 上的网卡具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs，使得这些节点上的这些网卡创建出 VF:
+    从上面可知，节点 node-1 上的网卡 `enp4s0f0np0` 具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。下面我们将通过创建 SriovNetworkNodePolicy CRs 并通过 `nicSelector.pfNames` 指定 PF (Physical function, 物理网卡)，使得这些节点上的这些网卡创建出 VF(Virtual Function):
 
     ```shell
     $ cat << EOF | kubectl apply -f -
@@ -97,10 +97,8 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
       nodeSelector:
         kubernetes.io/os: "linux"
       nicSelector:
-        deviceID: "1017"
-        rootDevices:
-          - 0000:04:00.0
-        vendor: "15b3"
+        pfNames:
+          - enp4s0f0np0
       numVfs: 8 # 渴望的 VFs 数量
       resourceName: sriov_netdevice
     EOF

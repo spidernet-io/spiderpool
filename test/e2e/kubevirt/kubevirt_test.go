@@ -115,7 +115,10 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 		Expect(vmInterfaces).Should(Equal(tmpVMInterfaces))
 	})
 
-	It("Succeed to keep static IP for the kubevirt VM live migration", Label("F00002"), func() {
+	// kubevirt has released a new version. There may be some bugs. Use cases are pending for now.
+	// After resolving the issue, reopen it.
+	// refer to: https://github.com/spidernet-io/spiderpool/issues/2571
+	PIt("Succeed to keep static IP for the kubevirt VM live migration", Label("F00002"), func() {
 		// 1. create a kubevirt vm with masquerade mode (At present, it seems like the live migration only supports masquerade mode)
 		virtualMachine.Spec.Template.Spec.Networks = []kubevirtv1.Network{
 			{

@@ -889,20 +889,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../ifacer/" class="md-nav__link">
-        Plugin ifacer
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../network-topology/" class="md-nav__link">
         Node-based Topology
       </a>
@@ -1279,22 +1265,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1664,10 +1636,10 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
 <p>For stateful applications, each Pod can be allocated a persistent fixed IP address. It also provides control over the IP range used by all Pods during scaling operations. Refer to the <a href="../statefulset/">example</a> for details.</p>
 </li>
 <li>
-<p>Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the <a href="../kubevirt-zh_CN/">example</a> for details.</p>
+<p>Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the <a href="../kubevirt/">example</a> for details.</p>
 </li>
 <li>
-<p>Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the <a href="../spider-affinity/">example</a> for details.</p>
+<p>Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the <a href="../network-topology/">example</a> for details.</p>
 </li>
 <li>
 <p>The Subnet feature separates responsibilities between infrastructure administrators and application ones.
@@ -1720,7 +1692,7 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
-<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>. This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the <a href="../service-zh_CN/">example</a> for details.</p>
+<a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>. This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the <a href="../service/">example</a> for details.</p>
 </li>
 <li>
 <p>Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the <a href="../../concepts/coordinator/">example</a> for details.</p>
@@ -1729,7 +1701,7 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
 <h3 id="operations-and-management">Operations and Management</h3>
 <ul>
 <li>
-<p>Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a> and <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>. Check out the <a href="../ifacer/">example</a> for implementation details.</p>
+<p>Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a> and <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>. Check out the <a href="../../reference/plugin-ifacer/">example</a> for implementation details.</p>
 </li>
 <li>
 <p>Convenient generation of <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus</a> NetworkAttachmentDefinition instances with optimized CNI configurations. Spiderpool ensures correct JSON formatting to enhance user experience. See the <a href="../spider-multus-config/">example</a> for details.</p>

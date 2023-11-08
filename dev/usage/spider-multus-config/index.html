@@ -691,6 +691,33 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ifacer-configurations" class="md-nav__link">
+    Ifacer Configurations
+  </a>
+  
+    <nav class="md-nav" aria-label="Ifacer Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifacer-create-vlan-interface" class="md-nav__link">
+    Ifacer create vlan interface
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ifacer-create-bond-interface" class="md-nav__link">
+    Ifacer create bond interface
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#other-cni-configurations" class="md-nav__link">
     Other CNI Configurations
@@ -858,20 +885,6 @@
     <li class="md-nav__item">
       <a href="../service/" class="md-nav__link">
         Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1260,22 +1273,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1490,6 +1489,33 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ifacer-configurations" class="md-nav__link">
+    Ifacer Configurations
+  </a>
+  
+    <nav class="md-nav" aria-label="Ifacer Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifacer-create-vlan-interface" class="md-nav__link">
+    Ifacer create vlan interface
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ifacer-create-bond-interface" class="md-nav__link">
+    Ifacer create bond interface
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#other-cni-configurations" class="md-nav__link">
     Other CNI Configurations
@@ -1569,7 +1595,7 @@
 <p>A robust webhook mechanism is involved to proactively detect and prevent human errors, reducing troubleshooting efforts.</p>
 </li>
 <li>
-<p>Spiderpool's CNI plugins, including <a href="../ifacer/">ifacer</a> and <a href="../../concepts/coordinator/">coordinator</a> are integrated, enhancing the overall configuration experience.</p>
+<p>Spiderpool's CNI plugins, including <a href="../../reference/plugin-ifacer/">ifacer</a> and <a href="../../concepts/coordinator/">coordinator</a> are integrated, enhancing the overall configuration experience.</p>
 </li>
 </ul>
 <blockquote>
@@ -1697,6 +1723,161 @@ metadata:
 spec:
 <span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;ipvlan-ens192&quot;,&quot;plugins&quot;:[{&quot;type&quot;:&quot;ipvlan&quot;,&quot;master&quot;:&quot;ens192&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
 </code></pre></div>
+<h3 id="ifacer-configurations">Ifacer Configurations</h3>
+<p>The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when creating a pod to undertake the pod's underlying network. For more information, refer to <a href="../../reference/plugin-ifacer/">Ifacer</a>.</p>
+<h4 id="ifacer-create-vlan-interface">Ifacer create vlan interface</h4>
+<p>If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig 
+so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The <code>ifacer</code> plug-in will dynamically create a VLAN interface on the host when the pod is created, 
+which is used to undertake the pod's underlay network.</p>
+<p>The following is an example of CNI as IPVlan, IPVLAN_MASTER_INTERFACE as ens192, and vlanID as 100.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IPVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
+~#<span class="w"> </span><span class="nv">IPVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
+~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ipvlan-ens192-vlan100</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE}</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>When the Spidermultuconfig object is created, view the corresponding Multus network-attachment-definition object:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>macvlan-conf<span class="w"> </span>-o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.config}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;ipvlan-ens192-vlan100&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ifacer&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;interfaces&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="s2">&quot;ens192&quot;</span>
+<span class="w">      </span><span class="o">]</span>,
+<span class="w">      </span><span class="s2">&quot;vlanID&quot;</span>:<span class="w"> </span><span class="m">100</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ipvlan&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
+<span class="w">      </span><span class="o">}</span>,
+<span class="w">      </span><span class="s2">&quot;master&quot;</span>:<span class="w"> </span><span class="s2">&quot;ens192.100&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="s2">&quot;bridge&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;coordinator&quot;</span>,
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<blockquote>
+<p><code>ifacer</code> is called first in the CNI chaining sequence. Depending on the configuration, <code>ifacer</code> will create a sub-interface with a VLAN tag of 100 named ens192.100 based on <code>ens192</code>.</p>
+<p>main CNI: The value of the master field of IPVlan is: <code>ens192.100</code>, which is the VLAN sub-interface created by 'ifacer': <code>ens192.100</code>.</p>
+<p>Note: The NIC created by <code>ifacer</code> is not persistent, and will be lost if the node is restarted or manually deleted. Restarting the pod is automatically added back.</p>
+</blockquote>
+<p>Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use <code>ifacer</code> to create the VLAN sub-interface. We can directly configure the master 
+field as: <code>ens192.100</code> and not configure the VLAN ID, as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan-conf</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">master</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ens192.100</span>
+<span class="w">    </span><span class="nt">ippools</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vlan100</span>
+</code></pre></div>
+<h4 id="ifacer-create-bond-interface">Ifacer create bond interface</h4>
+<p>If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in 
+Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The <code>ifacer'</code> plug-in will dynamically create a bond interface on the host 
+when the pod is created, which is used to undertake the underlying network of the pod.</p>
+<p>The following is an example of CNI as IPVlan, host interface ens192, and ens224 as slave to create a bond interface:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f - </span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ipvlan-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ens192</span>
+<span class="s">    - ens224</span>
+<span class="s">    bond:</span>
+<span class="s">      name: bond0</span>
+<span class="s">      mode: 1</span>
+<span class="s">      options: &quot;&quot;</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>When the Spidermultuconfig object is created, view the corresponding Multus network-attachment-definition object:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>ipvlan-conf<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.config}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;cniVersion&quot;</span>:<span class="w"> </span><span class="s2">&quot;0.3.1&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;ipvlan-conf&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;plugins&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ifacer&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;interfaces&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">        </span><span class="s2">&quot;ens192&quot;</span>
+<span class="w">        </span><span class="s2">&quot;ens224&quot;</span>
+<span class="w">      </span><span class="o">]</span>,
+<span class="w">      </span><span class="s2">&quot;bond&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;bond0&quot;</span>,
+<span class="w">        </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="m">1</span>
+<span class="w">      </span><span class="o">}</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;ipvlan&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;ipam&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
+<span class="w">      </span><span class="o">}</span>,
+<span class="w">      </span><span class="s2">&quot;master&quot;</span>:<span class="w"> </span><span class="s2">&quot;bond0&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;mode&quot;</span>:<span class="w"> </span><span class="s2">&quot;bridge&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;coordinator&quot;</span>,
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>
+<p>Configuration description:</p>
+<blockquote>
+<p><code>ifacer</code> is called first in the CNI chaining sequence. Depending on the configuration, <code>ifacer</code> will create a bond interface named 'bond0' based on ["ens192","ens224"] with mode 1 (active-backup).</p>
+<p>main CNI: The value of the master field of IPvlan is: <code>bond0</code>, bond0 takes over the network traffic of the pod.</p>
+<p>Create a Bond If you need a more advanced configuration, you can do so by configuring SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options. The input format is: "primary=ens160; arp_interval=1", use ";" for multiple parameters.</p>
+</blockquote>
+<p>If we need to create a VLAN sub-interface based on the created BOND NIC: bond0, so that the VLAN sub-interface undertakes the underlying network of the pod, we can refer to the following configuration:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f - </span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ipvlan-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ens192</span>
+<span class="s">    - ens224</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">    bond:</span>
+<span class="s">      name: bond0</span>
+<span class="s">      mode: 1</span>
+<span class="s">      options: &quot;&quot;</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p>When creating a pod with the above configuration, <code>ifacer</code> will create a bond NIC bond0 and a VLAN NIC bond0.100 on the host.</p>
+</blockquote>
 <h4 id="other-cni-configurations">Other CNI Configurations</h4>
 <p>To create other types of CNI configurations, such as SR-IOV and OVS, refer to <a href="../install/underlay/get-started-sriov/">SR-IOV</a> and <a href="../install/underlay/get-started-ovs/">Ovs</a>.</p>
 <h2 id="conclusion">Conclusion</h2>

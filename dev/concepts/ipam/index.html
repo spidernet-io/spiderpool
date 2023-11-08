@@ -752,20 +752,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/ifacer/" class="md-nav__link">
-        Plugin ifacer
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../usage/network-topology/" class="md-nav__link">
         Node-based Topology
       </a>
@@ -1300,22 +1286,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1810,7 +1782,6 @@ For some CNIs, it runs an interval job to find the IP with this issue and not re
 <h3 id="solution">Solution</h3>
 <p>For some CNIs, its IP CIDR is big enough, so the leaked IP issue is not urgent.
 For Spiderpool, all IP resources are managed by administrator, and an application will be bound to a fixed IP, so the IP reclaim can be finished in time.</p>
-<p>The spiderpool controller takes charge of this responsibility. For more details, please refer to <a href="https://github.com/spidernet-io/spiderpool/blob/main/docs/usage/gc.md">IP GC</a>.</p>
 <h3 id="spiderippool-garbage-collection">SpiderIPPool garbage collection</h3>
 <p>To prevent IP from leaking when the ippool resource is deleted, Spiderpool has some rules:</p>
 <ul>

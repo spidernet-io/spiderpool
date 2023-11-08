@@ -740,20 +740,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../network-topology/" class="md-nav__link">
         Node-based Topology
       </a>
@@ -1678,10 +1664,10 @@ Accept-Ranges:<span class="w"> </span>bytes
 </code></pre></div>
 <p>Open another terminal, enter the network space of the pod, and use the <code>tcpdump</code> tool to see that when the packet accessing the service is sent from the pod network namespace, 
 the destination address has been resolved to the target pod address:</p>
-<div class="highlight"><pre><span></span><code>~# tcpdump -nnev -i eth0 tcp and port 80
-tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
-10.6.185.218.43550 &gt; 10.6.185.210.80: Flags [S], cksum 0x87e7 (incorrect -&gt; 0xe534), seq 1391704016, win 64240, options [mss 1460,sackOK,TS val 2667940841 ecr 0,nop,wscale 7], length 0
-10.6.185.210.80 &gt; 10.6.185.218.43550: Flags [S.], cksum 0x9d1a (correct), seq 2119742376, ack 1391704017, win 65160, options [mss 1460,sackOK,TS val 3827707465 ecr 2667940841,nop,wscale 7], length 0 
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>tcpdump<span class="w"> </span>-nnev<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>tcp<span class="w"> </span>and<span class="w"> </span>port<span class="w"> </span><span class="m">80</span>
+tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="w"> </span>eth0,<span class="w"> </span>link-type<span class="w"> </span>EN10MB<span class="w"> </span><span class="o">(</span>Ethernet<span class="o">)</span>,<span class="w"> </span>capture<span class="w"> </span>size<span class="w"> </span><span class="m">262144</span><span class="w"> </span>bytes
+<span class="m">10</span>.6.185.218.43550<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.210.80:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x87e7<span class="w"> </span><span class="o">(</span>incorrect<span class="w"> </span>-&gt;<span class="w"> </span>0xe534<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">1391704016</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">64240</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">2667940841</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">0</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span>
+<span class="m">10</span>.6.185.210.80<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.218.43550:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S.<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x9d1a<span class="w"> </span><span class="o">(</span>correct<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">2119742376</span>,<span class="w"> </span>ack<span class="w"> </span><span class="m">1391704017</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">65160</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">3827707465</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">2667940841</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span><span class="w"> </span>
 </code></pre></div>
 <p><code>10.6.185.218</code> is the IP of the source pod and <code>10.6.185.210</code> is the IP of the destination pod. Before and after using the <code>sockperf</code> tool to test the Cilium acceleration, the data comparison of pods accessing ClusterIP across nodes is obtained:</p>
 <table>

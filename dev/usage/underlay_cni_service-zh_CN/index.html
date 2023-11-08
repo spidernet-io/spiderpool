@@ -738,20 +738,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../network-topology/" class="md-nav__link">
         Node-based Topology
       </a>
@@ -1450,7 +1436,7 @@ default<span class="w"> </span>via<span class="w"> </span><span class="m">169</s
 ~#<span class="w"> </span>iptables-save<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>KUBE<span class="w"> </span><span class="p">|</span><span class="w"> </span>iptables-restore
 </code></pre></div>
 <p>也可以使用 kubeadm 安装一个新集群, 注意不要安装 kube-proxy:</p>
-<div class="highlight"><pre><span></span><code>~# kubeadm init --skip-phases=addon/kube-proxy
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubeadm<span class="w"> </span>init<span class="w"> </span>--skip-phases<span class="o">=</span>addon/kube-proxy
 </code></pre></div>
 <p>安装 Cilium 组件，注意开启 kube-proxy replacement 功能</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium<span class="w"> </span>https://helm.cilium.io

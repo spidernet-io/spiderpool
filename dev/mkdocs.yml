@@ -75,7 +75,6 @@ nav:
       - MultipleInterfaces: usage/multi-interfaces-annotation.md
       - Egress Policy: usage/egress.md
       - Route Support: usage/route.md
-      - Service Support: usage/service.md
       - Node-based Topology: usage/network-topology.md
       - RDMA: usage/rdma.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md

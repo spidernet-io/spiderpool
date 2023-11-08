@@ -153,7 +153,6 @@ kind: SpiderIPPool
 metadata:
   name: master-v4-ens5
 spec:
-  ipVersion: 4
   subnet: 172.31.16.0/20
   ips:
     - 172.31.16.4-172.31.16.8
@@ -167,7 +166,6 @@ kind: SpiderIPPool
 metadata:
   name: master-v4-ens6
 spec:
-  ipVersion: 4
   subnet: 210.22.16.0/24
   ips:
     - 210.22.16.11-210.22.16.15
@@ -181,7 +179,6 @@ kind: SpiderIPPool
 metadata:
   name: worker1-v4-ens5
 spec:
-  ipVersion: 4
   subnet: 180.17.16.0/24
   ips:
     - 180.17.16.11-180.17.16.15
@@ -195,7 +192,6 @@ kind: SpiderIPPool
 metadata:
   name: worker1-v4-ens6
 spec:
-  ipVersion: 4
   subnet: 210.22.32.0/24
   ips:
     - 210.22.32.11-210.22.32.15

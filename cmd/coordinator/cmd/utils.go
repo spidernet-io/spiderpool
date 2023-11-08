@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/cilium/cilium/pkg/mac"
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
@@ -133,11 +134,29 @@ func (c *coordinator) mustGetRuleNumber(spiderNics []string) int {
 
 // setupVeth sets up a pair of virtual ethernet devices. move one to the host and other
 // one to container.
-func (c *coordinator) setupVeth(containerID string) error {
+func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
+	// systemd 242+ tries to set a "persistent" MAC addr for any virtual device
+	// by default (controlled by MACAddressPolicy). As setting happens
+	// asynchronously after a device has been created, ep.Mac and ep.HostMac
+	// can become stale which has a serious consequence - the kernel will drop
+	// any packet sent to/from the endpoint. However, we can trick systemd by
+	// explicitly setting MAC addrs for both veth ends. This sets
+	// addr_assign_type for NET_ADDR_SET which prevents systemd from changing
+	// the addrs.
+	podVethMAC, err := mac.GenerateRandMAC()
+	if err != nil {
+		return fmt.Errorf("unable to generate podVeth mac addr: %s", err)
+	}
+
+	hostVethMac, err := mac.GenerateRandMAC()
+	if err != nil {
+		return fmt.Errorf("unable to generate hostVeth mac addr: %s", err)
+	}
+
 	var containerInterface net.Interface
-	err := c.netns.Do(func(hostNS ns.NetNS) error {
-		var err error
-		_, containerInterface, err = ip.SetupVethWithName(c.podVethName, getHostVethName(containerID), 1500, "", hostNS)
+	hostVethName := getHostVethName(containerID)
+	err = c.netns.Do(func(hostNS ns.NetNS) error {
+		_, containerInterface, err = ip.SetupVethWithName(c.podVethName, hostVethName, 1500, podVethMAC.String(), hostNS)
 		if err != nil {
 			return err
 		}
@@ -153,6 +172,16 @@ func (c *coordinator) setupVeth(containerID string) error {
 		return nil
 	})
 
+	hostVethLink, err := netlink.LinkByName(hostVethName)
+	if err != nil {
+		return err
+	}
+
+	if err = netlink.LinkSetHardwareAddr(hostVethLink, net.HardwareAddr(hostVethMac)); err != nil {
+		return fmt.Errorf("failed to set host veth mac: %v", err)
+	}
+
+	logger.Debug("Successfully to set veth mac", zap.String("podVethMac", podVethMAC.String()), zap.String("hostVethMac", hostVethMac.String()))
 	return err
 }
 

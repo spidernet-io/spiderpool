@@ -16,9 +16,9 @@ Please refer to the following examples for installation:
 
 - [Create a cluster using ovs](./install/underlay/get-started-ovs.md)
 
-- [Create a cluster:  using calico CNI for fixed IP addresses](./install/underlay/get-started-calico.md)
+- [Create a cluster: using calico CNI for fixed IP addresses](./install/underlay/get-started-calico.md)
 
-- [Create a cluster:  using weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
+- [Create a cluster: using weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
 
 - [Create a cluster: using underlay CNI for RDMA communication](./rdma.md)
 
@@ -79,9 +79,9 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - For stateful applications, each Pod can be allocated a persistent fixed IP address. It also provides control over the IP range used by all Pods during scaling operations. Refer to the [example](./statefulset.md) for details.
 
-- Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the [example](./kubevirt-zh_CN.md) for details.
+- Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the [example](./kubevirt.md) for details.
 
-- Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the [example](./spider-affinity.md) for details.
+- Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the [example](./network-topology.md) for details.
 
 - The Subnet feature separates responsibilities between infrastructure administrators and application ones.
   It automates IP pool management for applications with fixed IP requirements, enabling automatic creation, scaling, and deletion of fixed IP pools.
@@ -95,7 +95,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Custom routing can be achieved through IP pools, Pod annotations, and other methods. Refer to the [example](./route.md) for details.
 
-- Multiple IP pools can be configured by applications to provide redundancy for IP resources. Refer to the [example](./ippool-multi.md) for details..
+- Multiple IP pools can be configured by applications to provide redundancy for IP resources. Refer to the [example](./spider-ippool.md) for details..
 
 - Global reserved IP addresses can be specified to prevent IPAM from allocating those addresses, thereby avoiding conflicts with externally used IPs. Refer to the [example](./reserved-ip.md) for details.
 
@@ -115,19 +115,19 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [example](./rdma.md).
 
-- coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](./coordinator.md#fix-mac-address-prefix-for-pods) for further information.
+- coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](../concepts/coordinator.md#fix-mac-address-prefix-for-pods) for further information.
 
 - Spiderpool enables access to ClusterIP through kube-proxy and eBPF kube-proxy replacement for plugins such as [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./service-zh_CN.md) for details.
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./underlay_cni_service.md) for details.
 
-- Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](./coordinator.md) for details.
+- Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 
 ### Operations and Management
 
-- Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) and [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan). Check out the [example](./ifacer.md) for implementation details.
+- Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) and [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan). Check out the [example](../reference/plugin-ifacer.md) for implementation details.
 
 - Convenient generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition instances with optimized CNI configurations. Spiderpool ensures correct JSON formatting to enhance user experience. See the [example](./spider-multus-config.md) for details.
 
@@ -137,4 +137,4 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Support for AMD64 and ARM64 architectures
 
-- All features are compatible with ipv4-only, ipv6-only, and dual-stack scenarios. Refer to the [example](./ipv6.md) for use cases.
+- All features are compatible with ipv4-only, ipv6-only, and dual-stack scenarios. Refer to the [example](./spider-ippool.md) for use cases.

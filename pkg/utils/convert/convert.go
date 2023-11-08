@@ -245,7 +245,7 @@ func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv2beta1.
 		IPPool:  ipPool.Name,
 		Nic:     &nic,
 		Version: ipPool.Spec.IPVersion,
-		Vlan:    *ipPool.Spec.Vlan,
+		//Vlan:    *ipPool.Spec.Vlan,
 	}
 }
 

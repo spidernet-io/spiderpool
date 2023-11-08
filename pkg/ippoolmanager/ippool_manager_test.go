@@ -342,7 +342,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipVersion := constant.IPv4
 				allocatedIP := "172.18.40.40/24"
 				gateway := "172.18.40.1"
-				vlan := int64(0)
 
 				ip, ipNet, err := net.ParseCIDR(allocatedIP)
 				Expect(err).NotTo(HaveOccurred())
@@ -351,7 +350,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
 				ipPoolT.Spec.Gateway = pointer.String(gateway)
-				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
 
 				err = fakeClient.Create(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -365,7 +363,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(*res.Address).To(Equal(allocatedIP))
 				Expect(res.IPPool).To(Equal(ipPoolT.Name))
 				Expect(res.Gateway).To(Equal(gateway))
-				Expect(res.Vlan).To(Equal(vlan))
 			})
 
 			It("allocate IP address with kubevirt vm pod", func() {
@@ -386,7 +383,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
 				ipPoolT.Spec.Gateway = pointer.String(gateway)
-				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
 
 				err = fakeClient.Create(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -431,7 +427,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
 				ipPoolT.Spec.Gateway = pointer.String(gateway)
-				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
 
 				key, err := cache.MetaNamespaceKeyFunc(podT)
 				Expect(err).NotTo(HaveOccurred())
@@ -577,7 +572,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("updates the allocated IP record from non-existent IPPool", func() {
-				err := ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{})
+				err := ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{})
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			})
 
@@ -589,7 +584,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: uid}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: uid}})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -606,7 +601,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -623,8 +618,25 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
 				Expect(err).To(MatchError(constant.ErrRetriesExhausted))
+			})
+
+			It("failed to update IPPool due to data broken", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
+				defer patches.Reset()
+
+				data, err := convert.MarshalIPPoolAllocatedIPs(records)
+				Expect(err).NotTo(HaveOccurred())
+
+				ipPoolT.Status.AllocatedIPs = data
+				err = fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+				err = tracker.Add(ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/abc", []spiderpooltypes.IPAndUID{{IP: ip, UID: string(uuid.NewUUID())}})
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("updates the allocated IP record", func() {
@@ -638,7 +650,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				newUID := string(uuid.NewUUID())
-				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: newUID}})
+				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: newUID}})
 				Expect(err).NotTo(HaveOccurred())
 
 				var ipPool spiderpoolv2beta1.SpiderIPPool

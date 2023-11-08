@@ -508,7 +508,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		It("valid fields succeed to create subnet. ", Label("I00001", "I00002", "I00005"), func() {
 			var v4Ipversion, v6Ipversion = new(types.IPVersion), new(types.IPVersion)
-			var ipv4Vlan, ipv6Vlan = new(types.Vlan), new(types.Vlan)
 			var v4Object, v6Object *spiderpool.SpiderSubnet
 			var v4RouteValue, v6RouteValue []spiderpool.Route
 
@@ -519,9 +518,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			subnetAnno := types.AnnoSubnetItem{}
 			if frame.Info.IpV4Enabled {
 				*v4Ipversion = int64(4)
-				if i, err := strconv.Atoi(common.GenerateRandomNumber(4094)); err != nil {
-					*ipv4Vlan = int64(i)
-				}
 				subnetAnno.IPv4 = []string{v4SubnetName}
 				v4RouteValue = []spiderpool.Route{
 					{
@@ -529,7 +525,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 						Gw:  ipv4Gw,
 					},
 				}
-				v4SubnetObject.Spec.Vlan = ipv4Vlan
 				v4SubnetObject.Spec.Routes = v4RouteValue
 				v4SubnetObject.Spec.Gateway = &ipv4Gw
 				GinkgoWriter.Printf("Specify routes, gateways, etc. and then create subnets %v \n", v4SubnetName)
@@ -538,7 +533,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				v4Object, err = common.GetSubnetByName(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(v4Object.Spec.IPVersion).To(Equal(v4Ipversion))
-				Expect(v4Object.Spec.Vlan).To(Equal(ipv4Vlan))
 				Expect(v4Object.Spec.Routes[0].Dst).To(Equal(v4Dst))
 				Expect(v4Object.Spec.Routes[0].Gw).To(Equal(ipv4Gw))
 				Expect(v4Object.Spec.Gateway).To(Equal(&ipv4Gw))
@@ -546,9 +540,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			if frame.Info.IpV6Enabled {
 				*v6Ipversion = int64(6)
-				if i, err := strconv.Atoi(common.GenerateRandomNumber(4094)); err != nil {
-					*ipv6Vlan = int64(i)
-				}
 				subnetAnno.IPv6 = []string{v6SubnetName}
 				v6RouteValue = []spiderpool.Route{
 					{
@@ -556,7 +547,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 						Gw:  ipv6Gw,
 					},
 				}
-				v6SubnetObject.Spec.Vlan = ipv6Vlan
 				v6SubnetObject.Spec.Routes = v6RouteValue
 				v6SubnetObject.Spec.Gateway = &ipv6Gw
 				GinkgoWriter.Printf("Specify routes, gateways, etc. and then create subnets %v \n", v6SubnetName)
@@ -565,7 +555,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				v6Object, err = common.GetSubnetByName(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(v6Object.Spec.IPVersion).To(Equal(v6Ipversion))
-				Expect(v6Object.Spec.Vlan).To(Equal(ipv6Vlan))
 				Expect(v6Object.Spec.Routes[0].Dst).To(Equal(v6Dst))
 				Expect(v6Object.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
 				Expect(v6Object.Spec.Gateway).To(Equal(&ipv6Gw))
@@ -595,7 +584,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				v4poolList, err := common.GetIppoolsInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				for _, pool := range v4poolList.Items {
-					Expect(pool.Spec.Vlan).To(Equal(ipv4Vlan))
 					Expect(pool.Spec.Routes[0].Dst).To(Equal(v4Dst))
 					Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv4Gw))
 					Expect(pool.Spec.Gateway).To(Equal(&ipv4Gw))
@@ -674,7 +662,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				GinkgoWriter.Println("Older pools are not affected.")
 				for _, pool := range v4poolList.Items {
 					if pool.Name != v4PoolName {
-						Expect(pool.Spec.Vlan).To(Equal(ipv4Vlan))
 						Expect(pool.Spec.Routes[0].Dst).To(Equal(v4Dst))
 						Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv4Gw))
 						Expect(pool.Spec.Gateway).To(Equal(&ipv4Gw))
@@ -691,7 +678,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				v6poolList, err := common.GetIppoolsInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				for _, pool := range v6poolList.Items {
-					Expect(pool.Spec.Vlan).To(Equal(ipv6Vlan))
 					Expect(pool.Spec.Routes[0].Dst).To(Equal(v6Dst))
 					Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
 					Expect(pool.Spec.Gateway).To(Equal(&ipv6Gw))
@@ -770,7 +756,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				GinkgoWriter.Println("Older pools are not affected.")
 				for _, pool := range v6poolList.Items {
 					if pool.Name != v6PoolName {
-						Expect(pool.Spec.Vlan).To(Equal(ipv6Vlan))
 						Expect(pool.Spec.Routes[0].Dst).To(Equal(v6Dst))
 						Expect(pool.Spec.Routes[0].Gw).To(Equal(ipv6Gw))
 						Expect(pool.Spec.Gateway).To(Equal(&ipv6Gw))
@@ -1324,7 +1309,8 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Get the default subnet
 			// and verify that the default subnet functions properly
 			By("get cluster default subnet")
-			ClusterDefaultV4SubnetList, ClusterDefaultV6SubnetList, err = common.GetClusterDefaultSubnet(frame)
+			// TODO(ty-dc), Default subnet to be determined for now
+			// ClusterDefaultV4SubnetList, ClusterDefaultV6SubnetList, err = common.GetClusterDefaultSubnet(frame)
 			Expect(err).NotTo(HaveOccurred())
 			if frame.Info.IpV4Enabled && len(ClusterDefaultV4SubnetList) == 0 {
 				Skip("v4 Default Subnet function is not enabled")

@@ -4,11 +4,17 @@
 
 ## Introduction
 
-*Spiderpool ensures that StatefulSet Pods consistently retain the same IP address, even in scenarios such as restarts or rebuilds.*
+*Due to StatefulSet being commonly used for stateful services, there is a higher demand for stable network identifiers. Spiderpool ensures that StatefulSet Pods consistently retain the same IP address, even in scenarios such as restarts or rebuilds.*
 
 ## StatefulSet features
 
-The requirements for fixed IP address differ between Deployment and StatefulSet:
+StatefulSet utilizes fixed addresses in the following scenarios:
+
+- When a StatefulSet Pod fails and needs to be reconstructed.
+
+- Once a Pod is deleted and needs to be restarted and the replicas of the StatefulSet remains unchanged.
+
+The requirements for fixed IP address differ between StatefulSet and Deployment:
 
 - For StatefulSet, the Pod's name remains the same throughout Pod restarts despite its changed UUID. As the Pod is stateful, application administrators hope that each Pod continues to be assigned the same IP address after restarts.
 

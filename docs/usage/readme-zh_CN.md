@@ -28,9 +28,9 @@
 
 - [创建集群：基于 kind 集群的双网络](./install/underlay/get-started-kind-zh_CN.md)
 
-- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico.md)
+- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
 
-- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium.md)
+- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
 
 ### 在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool
 
@@ -69,38 +69,38 @@
 
 ### IPAM 功能
 
-- 应用可以共享一个 IP 池，可参考[例子](./spider-affinity.md)。
+- 应用可以共享一个 IP 池，可参考[例子](./spider-affinity-zh_CN.md)。
 
-- 对于无状态应用，可以独享一个 IP 地址池，并固定所有 Pod 的 IP 使用范围。 可参考[例子](./spider-subnet.md)。
+- 对于无状态应用，可以独享一个 IP 地址池，并固定所有 Pod 的 IP 使用范围。 可参考[例子](./spider-subnet-zh_CN.md)。
 
 - 对于有状态应用，支持为每一个 Pod 持久化分配固定 IP 地址，同时在扩缩时可控制所有 Pod 所使用的 IP 范围，可参考[例子](./statefulset-zh_CN.md)。
 
 - 支持为 kubevirt 提供 underlay 网络，固定虚拟机的 IP 地址，可参考 [例子](./kubevirt-zh_CN.md)
 
-- 对于一个跨子网部署的应用，支持为其不同副本分配不同子网的 IP 地址，可参考[例子](./spider-affinity.md)。
+- 对于一个跨子网部署的应用，支持为其不同副本分配不同子网的 IP 地址，可参考[例子](./network-topology-zh_CN.md)。
 
 - Subnet 功能，一方面，能够实现基础设施管理员和应用管理员的职责分离，
   另一方面，能够为有固定 IP 需求的应用自动管理 IP 池，包括自动创建、扩缩容 IP、删除 固定 IP 池，
-  这能够减少大量的运维负担，可参考[例子](./spider-subnet.md)。
+  这能够减少大量的运维负担，可参考[例子](./spider-subnet-zh_CN.md)。
 
   该功能除了支持 K8S 原生的应用控制器，同时支持基于 operator 实现的第三方应用控制器。
-  可参考[例子](./third-party-controller.md)。
+  可参考[例子](./third-party-controller-zh_CN.md)。
 
 - 可以设置集群级别的默认 IP 池，也可租户级别的默认 IP 池。同时，IP 池既可以被整个集群共享，
-  也可被限定为被一个租户使用。可参考[例子](./spider-affinity.md)。
+  也可被限定为被一个租户使用。可参考[例子](./spider-affinity-zh_CN.md)。
 
 - 基于节点拓扑的 IP 池功能，满足每个节点精细化的子网规划需求，可参考[例子](./network-topology-zh_CN.md)
 
-- 可以通过 IP 池和 Pod annotaiton 等多种方式定制自定义路由，可参考[例子](./route.md)。
+- 可以通过 IP 池和 Pod annotaiton 等多种方式定制自定义路由，可参考[例子](./route-zh_CN.md)。
 
-- 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考[例子](./ippool-multi.md)。
+- 应用可设置多个 IP 池，实现 IP 资源的备用效果。可参考[例子](./spider-ippool-zh_CN.md)。
 
 - 设置全局的预留 IP，让 IPAM 不分配出这些 IP 地址，这样能避免与集群外部的已用 IP 冲突。
-  可参考[例子](./reserved-ip.md)。
+  可参考[例子](./reserved-ip-zh_CN.md)。
 
 - 分配和释放 IP 地址的高效性能，可参考[报告](../concepts/ipam-performance-zh_CN.md)。
 
-- 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](../concepts/ipam.md)。
+- 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](../concepts/ipam-zh_CN.md)。
 
 ### 多网卡功能
 
@@ -108,13 +108,13 @@
 
   对于 Pod 具备多个 underlay CNI 网卡场景，可参考[例子](./multi-interfaces-annotation.md)。
 
-  对于 Pod 具备一个 overlay 网卡和多个 underlay CNI 网卡场景，可参考[例子](./install/overlay/get-started-calico.md)。
+  对于 Pod 具备一个 overlay 网卡和多个 underlay CNI 网卡场景，可参考[例子](./install/overlay/get-started-calico-zh_cn.md)。
 
 ### 连通性功能
 
 - 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./rdma-zh_CN.md)
 
-- coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](./coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
+- coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](../concepts/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
 
 - 对 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
   [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
@@ -122,16 +122,16 @@
   [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni) 等，
   提供了基于 kube-proxy 和 eBPF kube-proxy replacement 访问 ClusterIP 访问，并联通 Pod 和宿主机通信，解决 Pod 健康检查问题。
-  可参考[例子](./service-zh_CN.md)。
+  可参考[例子](./underlay_cni_service-zh_CN.md)。
 
-- 能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](./coordinator.md)。
+- 能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](../concepts/coordinator.md)。
 
 ### 运维管理功能
 
 - 在 Pod 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助
   [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
   和 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
-  准备 master 接口。可参考[例子](./ifacer.md)。
+  准备 master 接口。可参考[例子](../reference/plugin-ifacer.md)。
 
 - 以最佳实践的 CNI 配置来便捷地生成 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)
   NetworkAttachmentDefinition 实例，并且保证其正确的 JSON 格式来提高使用体验。
@@ -143,4 +143,4 @@
 
 - 支持 AMD64 和 ARM64
 
-- 所有的功能都能够在 ipv4-only、ipv6-only、dual-stack 场景下工作。可参考[例子](./ipv6.md)。
+- 所有的功能都能够在 ipv4-only、ipv6-only、dual-stack 场景下工作。可参考[例子](./spider-ippool-zh_CN.md)。

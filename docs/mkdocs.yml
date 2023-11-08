@@ -51,41 +51,40 @@ nav:
       - Underlay Installation:
           - Calico: usage/install/underlay/get-started-calico.md
           - Weave: usage/install/underlay/get-started-weave.md
-          - Macvlan: usage/install/underlay/get-started-kind.md
+          - Macvlan: usage/install/underlay/get-started-macvlan.md
           - Ovs: usage/install/underlay/get-started-ovs.md
           - SR-IOV: usage/install/underlay/get-started-sriov.md
+          - Kind: usage/install/underlay/get-started-kind.md
       - Overlay Installation:
           - Calico: usage/install/overlay/get-started-calico.md
           - Cilium: usage/install/overlay/get-started-cilium.md
       - Public Cloud Installation:
           - Alibaba Cloud: usage/install/cloud/get-started-alibaba.md
+          - AWS Cloud: usage/install/cloud/get-started-aws.md
           - VWware vSphere: usage/install/cloud/get-started-vmware.md
           - OpenStack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
-      - IPAM of IPPool Namespace: usage/ippool-namespace.md
+      - IPAM of SpiderIPPool: usage/spider-ippool.md
       - IPAM of IPPool Affinity: usage/spider-affinity.md
-      - IPAM of Backup IPPool: usage/ippool-multi.md
       - IPAM of SpiderSubnet: usage/spider-subnet.md
       - IPAM for custom controllers: usage/third-party-controller.md
       - IPAM for StatefulSet: usage/statefulset.md
       - IPAM of Reserved IP: usage/reserved-ip.md
       - MultipleInterfaces: usage/multi-interfaces-annotation.md
       - Egress Policy: usage/egress.md
-      - IPv6 Support: usage/ipv6.md
       - Route Support: usage/route.md
-      - Service Support: usage/service.md
-      - Plugin coordinator: usage/coordinator.md
-      - Plugin ifacer: usage/ifacer.md
       - Node-based Topology: usage/network-topology.md
       - RDMA: usage/rdma.md
+      - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Kubevirt: usage/kubevirt.md
       - FAQ: usage/debug.md
   - Concepts:
       - Architecture: concepts/arch.md
       - IPAM: concepts/ipam.md
       - IPAM Performance: concepts/ipam-performance.md
+      - Plugin coordinator: concepts/coordinator.md
       - I/O Performance: concepts/io-performance.md
       - Blogs: concepts/blog.md
   - Reference:
@@ -100,8 +99,7 @@ nav:
       - CRD Spidercoordinator: reference/crd-spidercoordinator.md
       - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
       - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
-      - Coordinatorr plugin: reference/plugin-coordinator.md
-      - ifacer plugin: reference/plugin-ifacer.md
+      - Ifacer plugin: reference/plugin-ifacer.md
       - IPAM plugin: reference/plugin-ipam.md
   - Development:
       - Contribution Guide: develop/contributing.md

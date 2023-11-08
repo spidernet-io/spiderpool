@@ -78,7 +78,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     metadata:
       name: ippool-test
     spec:
-      ipVersion: 4
       ips:
       - "172.18.30.131-172.18.30.140"
       subnet: 172.18.0.0/16

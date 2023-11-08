@@ -83,3 +83,7 @@ For details on configuring SpiderIPPool namespaceAffinity or namespaceName, plea
 
 For details on configuring SpiderIPPool nodeAffinity or nodeName, please read the [Node Affinity of IPPool](../usage/spider-affinity.md) and [Network topology allocation](./../usage/network-topology.md).
 > Notice: `nodeName` has higher priority than `nodeAffinity`.
+
+### Multus Affinity
+
+For details on configuring SpiderIPPool multusName, please read the [multus Affinity of IPPool](../usage/spider-affinity.md).

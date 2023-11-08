@@ -83,7 +83,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
     > If the status of SriovNetworkNodeState CRs is `InProgress`,  it indicates that the sriov-operator is currently synchronizing the node state. Wait for the status to become `Succeeded` to confirm that the synchronization is complete. Check the CR to ensure that the sriov-network-operator has discovered the network interfaces on the node that support SR-IOV.
 
-    Based on the given information, it is known that the network interface on the node `node-1` supports SR-IOV capability with a maximum of 8 VFs. Now, let's create SriovNetworkNodePolicy CRs to generate VFs on these network interfaces of the respective nodes:
+    Based on the given information, it is known that the network interface's `enp4s0f0np0` on the node `node-1` supports SR-IOV capability with a maximum of 8 VFs. Now, let's create SriovNetworkNodePolicy CRs and specify PF (Physical function, physical network interface) through `nicSelector.pfNames` to generate VFs(Virtual Function) on these network interfaces of the respective nodes:
 
     ```shell
     $ cat << EOF | kubectl apply -f -
@@ -97,10 +97,8 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
       nodeSelector:
         kubernetes.io/os: "linux"
       nicSelector:
-        deviceID: "1017"
-        rootDevices:
-          - 0000:04:00.0
-        vendor: "15b3"
+        pfNames:
+          - enp4s0f0np0
       numVfs: 8 # desired number of VFs
       resourceName: sriov_netdevice
     EOF

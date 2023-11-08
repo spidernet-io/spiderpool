@@ -73,6 +73,9 @@ Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 Spide
 
 * 确认 Macvlan 所需的宿主机父接口，本例子以宿主机 eth0 网卡为例，从该网卡创建 Macvlan 子接口给 Pod 使用
 
+    > * 若有 vlan 的需求，可在 `spec.vlanID` 字段中指定 vlan 号，我们将会为网卡创建对应的 vlan 子接口
+    > * 我们还提供对网卡 bond 的支持，只需在 `spec.bond.name` 和 `spec.bond.mode` 里指定 bond 网卡的名字和模式即可。随后我们会自动为你实现多张网卡 bond 成一张网卡。
+
     ```shell
     MACVLAN_MASTER_INTERFACE="eth0"
     cat <<EOF | kubectl apply -f -

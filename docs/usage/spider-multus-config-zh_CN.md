@@ -26,7 +26,7 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 - 完善的 Webhook 机制，提前规避一些人为错误，降低后续排障成本。
 
-- 支持 Spiderpool 的 CNI plugin：[ifacer](./ifacer-zh_CN.md) 、[coordinator](coordinator-zh_CN.md) ，提高了 Spiderpool 的 CNI plugin 的配置体验。
+- 支持 Spiderpool 的 CNI plugin：[ifacer](../reference/plugin-ifacer.md) 、[coordinator](../concepts/coordinator-zh_CN.md) ，提高了 Spiderpool 的 CNI plugin 的配置体验。
 
 > 在已存在 Multus CR 实例时，创建与其同名 Spidermultusconfig CR ，Multus CR 实例将会被纳管，其配置内容将会被覆盖。如果不想发生被覆盖的情况，请避免创建与存量 Multus CR 实例同名的 Spidermultusconfig CR 实例或者在 Spidermultusconfig CR 中指定 `multus.spidernet.io/cr-name` 以更改自动生成的 Multus CR 的名字。
 
@@ -161,6 +161,184 @@ metadata:
 spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
+
+### Ifacer 使用配置
+
+Ifacer 插件可以帮助我们在创建 Pod 时，自动创建 Bond 网卡 或者 Vlan 网卡，用于承接 Pod 底层网络。更多信息参考 [Ifacer](../reference/plugin-ifacer.md)。
+
+#### **自动创建 Vlan 接口**
+
+如果我们需要 Vlan 子接口承接 Pod 的底层网络，并且该接口在节点尚未被创建。我们可以在 Spidermultusconfig 中注入 vlanID 的配置，这样生成对应的 Multus NetworkAttachmentDefinition CR 时，就会注入
+`ifacer` 插件对应的配置，该插件将会在 Pod 创建时，动态的在主机创建 Vlan 接口，用于承接 Pod 的底层网络。
+
+下面我们以 CNI 为 IPVlan，IPVLAN_MASTER_INTERFACE 为 ens192，vlanID 为 100 为配置例子:
+
+```shell
+~# IPVLAN_MASTER_INTERFACE="ens192"
+~# IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
+~# cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-ens192-vlan100
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  enableCoordinator: true
+  ipvlan:
+    master:
+    - ${IPVLAN_MASTER_INTERFACE}
+    vlanID: 100
+EOF
+```
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o=jsonpath='{.spec.config}' | jq
+{
+  "cniVersion": "0.3.1",
+  "name": "ipvlan-ens192-vlan100",
+  "plugins": [
+    {
+      "type": "ifacer",
+      "interfaces": [
+        "ens192"
+      ],
+      "vlanID": 100
+    },
+    {
+      "type": "ipvlan",
+      "ipam": {
+        "type": "spiderpool"
+      },
+      "master": "ens192.100",
+      "mode": "bridge"
+    },
+    {
+      "type": "coordinator",
+    }
+  ]
+}
+```
+
+> `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，`ifacer` 将基于 `ens192` 创建一个 VLAN tag 为 100 的子接口, 名为 ens192.100
+> 
+> main CNI: IPVlan 的 master 字段的值为: `ens192.100`, 也就是通过 `ifacer` 创建的 VLAN 子接口: `ens192.100`
+> 
+> 注意: 通过 `ifacer` 创建的网卡不是持久化的，重启节点或者人为删除将会被丢失。重启 Pod 会自动添加回来。
+
+有时候网络管理员已经创建好 VLAN 子接口，我们不需要使用 `ifacer` 创建 Vlan 子接口 。我们可以直接配置 master 字段为: `ens192.100`，并且不配置 VLAN ID , 如下:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-conf
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192.100
+    ippools:
+      ipv4: 
+        - vlan100
+```
+
+#### **自动创建 Bond 网卡**
+
+如果我们需要 Bond 接口承接 Pod 的底层网络，并且该 Bond 接口在节点尚未被创建。我们可以在 Spidermultusconfig 中配置多个 master 接口，这样生成对应的 Multus NetworkAttachmentDefinition CR 时，就会注入
+`ifacer` 插件对应的配置，该插件将会在 Pod 创建时，动态的在主机创建 Bond 接口，用于承接 Pod 的底层网络。
+
+下面我们以 CNI 为 IPVlan，主机接口 ens192, ens224 为 slave 创建 Bond 接口为例子:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-conf
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  macvlan:
+    master:
+    - ens192
+    - ens224
+    bond:
+      name: bond0
+      mode: 1
+      options: ""
+EOF
+```
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system ipvlan-conf -o jsonpath='{.spec.config}' | jq
+{
+  "cniVersion": "0.3.1",
+  "name": "ipvlan-conf",
+  "plugins": [
+    {
+      "type": "ifacer",
+      "interfaces": [
+        "ens192"
+        "ens224"
+      ],
+      "bond": {
+        "name": "bond0",
+        "mode": 1
+      }
+    },
+    {
+      "type": "ipvlan",
+      "ipam": {
+        "type": "spiderpool"
+      },
+      "master": "bond0",
+      "mode": "bridge"
+    },
+    {
+      "type": "coordinator",
+    }
+  ]
+}
+```
+
+配置说明:
+
+> `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，`ifacer` 将基于 ["ens192","ens224"] 创建一个名为 `bond0` 的 bond 接口，mode 为 1(active-backup)。
+>
+> IPVlan 作为 main CNI，其 master 字段的值为: `bond0`， bond0 承接 Pod 的网络流量。
+> 
+> 创建 Bond 如果需要更高级的配置，可以通过配置 SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options 实现。 输入格式为: "primary=ens160;arp_interval=1",多个参数用";"连接
+
+如果我们需要基于已创建的 Bond 网卡 bond0 创建 Vlan 子接口，以此 Vlan 子接口承接 Pod 的底层网络，可参考以下的配置:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-conf
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  macvlan:
+    master:
+    - ens192
+    - ens224
+    vlanID: 100
+    bond:
+      name: bond0
+      mode: 1
+      options: ""
+EOF
+```
+
+> 当使用以上配置创建 Pod，`ifacer` 会在主机上创建一张 bond 网卡  bond0 以及一张 Vlan 网卡 bond0.100 。
 
 #### 其他 CNI 配置
 

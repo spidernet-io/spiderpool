@@ -40,7 +40,6 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		defer cancel()
 		if frame.Info.IpV4Enabled {
 			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
-			iPv4PoolObj.Spec.Vlan = pointer.Int64(int64(vlanInterface))
 			if frame.Info.SpiderSubnetEnabled {
 				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, len(frame.Info.KindNodeList))
 				Expect(v4SubnetObject).NotTo(BeNil())
@@ -54,7 +53,6 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 
 		if frame.Info.IpV6Enabled {
 			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(len(frame.Info.KindNodeList))
-			iPv6PoolObj.Spec.Vlan = pointer.Int64(int64(vlanInterface))
 			if frame.Info.SpiderSubnetEnabled {
 				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, len(frame.Info.KindNodeList))
 				Expect(v6SubnetObject).NotTo(BeNil())

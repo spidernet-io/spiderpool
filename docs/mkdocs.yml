@@ -60,6 +60,7 @@ nav:
           - Cilium: usage/install/overlay/get-started-cilium.md
       - Public Cloud Installation:
           - Alibaba Cloud: usage/install/cloud/get-started-alibaba.md
+          - AWS Cloud: usage/install/cloud/get-started-aws.md
           - VWware vSphere: usage/install/cloud/get-started-vmware.md
           - OpenStack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md

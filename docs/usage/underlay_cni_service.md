@@ -138,7 +138,6 @@ Prepare a cluster without the kube-proxy component installed in advance. If kube
 
 To install the Cilium component, make sure to enable the kube-proxy replacement feature:
 
-
 ```shell
 ~# helm repo add cilium https://helm.cilium.io
 ~# helm repo update
@@ -287,7 +286,7 @@ Accept-Ranges: bytes
 Open another terminal, enter the network space of the pod, and use the `tcpdump` tool to see that when the packet accessing the service is sent from the pod network namespace, 
 the destination address has been resolved to the target pod address:
 
-```
+```shell
 ~# tcpdump -nnev -i eth0 tcp and port 80
 tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
 10.6.185.218.43550 > 10.6.185.210.80: Flags [S], cksum 0x87e7 (incorrect -> 0xe534), seq 1391704016, win 64240, options [mss 1460,sackOK,TS val 2667940841 ecr 0,nop,wscale 7], length 0

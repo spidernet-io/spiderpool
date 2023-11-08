@@ -161,11 +161,11 @@ cilium-operator-5ff9f86dfd-sb695         1/1     Running     0              15m
     --set  coordinator.podCIDRType=none
 ```
 
-  > 设置 coordinator.podCIDRType=none, spiderpool 将不会获取集群的 ServiceCIDR。在创建 Pod 时也就不会注入 Service 相关路由
-  > 
-  > 这样访问 Service 完全依赖 Cilium kube-proxy Replacement。
-  > 
-  > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+> 设置 coordinator.podCIDRType=none, spiderpool 将不会获取集群的 ServiceCIDR。在创建 Pod 时也就不会注入 Service 相关路由
+>
+> 这样访问 Service 完全依赖 Cilium kube-proxy Replacement。
+>
+> 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
 完成后，安装的组件如下:
 
@@ -287,7 +287,7 @@ tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 byt
 ```
 
 > `10.6.185.218` 是源 Pod 的 IP, `10.6.185.210` 是目标 Pod 的 IP，可以确认 Cilium 解析了 Service 的 IP。 
-   
+
 使用 sockperf 工具测试使用 Cilium 加速前后， 测得 Pod 跨节点访问 ClusterIP 的数据对比:
 
 |   | latency(usec) | RPS |

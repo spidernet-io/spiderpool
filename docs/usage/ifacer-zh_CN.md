@@ -36,7 +36,6 @@ metadata:
   name: vlan100
 spec:
   gateway: 172.100.0.1
-  ipVersion: 4
   ips:
   - 172.100.0.100-172.100.0.200
   subnet: 172.100.0.0/16
@@ -54,7 +53,6 @@ metadata:
   name: vlan200
 spec:
   gateway: 172.200.0.1
-  ipVersion: 4
   ips:
   - 172.200.0.100-172.200.0.200
   subnet: 172.200.0.0/16

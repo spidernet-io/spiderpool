@@ -99,7 +99,6 @@ metadata:
 spec:
   disable: false
   gateway: 10.6.0.1
-  ipVersion: 4
   ips:
   - 10.6.212.100-10.6.212.200
   subnet: 10.6.0.0/16

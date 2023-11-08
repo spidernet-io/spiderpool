@@ -157,7 +157,6 @@ test-unmatch-labels-699755574-9ncp7   0/1     ContainerCreating   0          16s
     metadata:
       name: shared-static-ipv4-ippool
     spec:
-      ipVersion: 4
       subnet: 172.18.41.0/24
       ips:
         - 172.18.41.44-172.18.41.47

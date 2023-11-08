@@ -342,7 +342,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipVersion := constant.IPv4
 				allocatedIP := "172.18.40.40/24"
 				gateway := "172.18.40.1"
-				vlan := int64(0)
 
 				ip, ipNet, err := net.ParseCIDR(allocatedIP)
 				Expect(err).NotTo(HaveOccurred())
@@ -351,7 +350,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
 				ipPoolT.Spec.Gateway = pointer.String(gateway)
-				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
 
 				err = fakeClient.Create(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -365,7 +363,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(*res.Address).To(Equal(allocatedIP))
 				Expect(res.IPPool).To(Equal(ipPoolT.Name))
 				Expect(res.Gateway).To(Equal(gateway))
-				Expect(res.Vlan).To(Equal(vlan))
 			})
 
 			It("allocate IP address with kubevirt vm pod", func() {
@@ -386,7 +383,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
 				ipPoolT.Spec.Gateway = pointer.String(gateway)
-				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
 
 				err = fakeClient.Create(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -431,7 +427,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
 				ipPoolT.Spec.Gateway = pointer.String(gateway)
-				ipPoolT.Spec.Vlan = pointer.Int64(vlan)
 
 				key, err := cache.MetaNamespaceKeyFunc(podT)
 				Expect(err).NotTo(HaveOccurred())

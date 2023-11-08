@@ -196,13 +196,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		var (
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
-			ipv4vlan, ipv6vlan       = new(types.Vlan), new(types.Vlan)
 			err                      error
 			ipNum                    int = 2
 		)
-		// Different VLAN for ipv4 and ipv6 Pool
-		*ipv4vlan = 10
-		*ipv6vlan = 20
 
 		// The case relies on a Dual-stack
 		if !frame.Info.IpV6Enabled || !frame.Info.IpV4Enabled {
@@ -211,7 +207,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		// Create IPv4Pool and IPv6Pool
 		v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
-		iPv4PoolObj.Spec.Vlan = ipv4vlan
 		GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
 		if frame.Info.SpiderSubnetEnabled {
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -223,7 +218,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to create ipv4pool %v \n", v4PoolName)
 
 		v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
-		iPv6PoolObj.Spec.Vlan = ipv6vlan
 		GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
 		if frame.Info.SpiderSubnetEnabled {
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)

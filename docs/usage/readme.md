@@ -127,7 +127,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 ### Operations and Management
 
-- Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) and [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan). Check out the [example](./ifacer.md) for implementation details.
+- Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) and [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan). Check out the [example](../reference/plugin-ifacer.md) for implementation details.
 
 - Convenient generation of [Multus](https://github.com/k8snetworkplumbingwg/multus-cni) NetworkAttachmentDefinition instances with optimized CNI configurations. Spiderpool ensures correct JSON formatting to enhance user experience. See the [example](./spider-multus-config.md) for details.
 

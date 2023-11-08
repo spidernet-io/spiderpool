@@ -26,7 +26,7 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 - A robust webhook mechanism is involved to proactively detect and prevent human errors, reducing troubleshooting efforts.
 
-- Spiderpool's CNI plugins, including [ifacer](./ifacer.md) and [coordinator](../concepts/coordinator.md) are integrated, enhancing the overall configuration experience.
+- Spiderpool's CNI plugins, including [ifacer](../reference/plugin-ifacer.md) and [coordinator](../concepts/coordinator.md) are integrated, enhancing the overall configuration experience.
 
 > It is important to note that when creating a SpiderMultusConfig CR with the same name as an existing Multus CR, the Multus CR instance will be managed by SpiderMultusConfig, and its configuration will be overwritten. To avoid overwriting existing Multus CR instances, it is recommended to either refrain from creating SpiderMultusConfig CR instances with the same name or specify a different name for the generated Multus CR using the `multus.spidernet.io/cr-name` annotation in the SpiderMultusConfig CR.
 
@@ -161,6 +161,187 @@ metadata:
 spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
+
+### Ifacer Configurations
+
+The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when creating a pod to undertake the pod's underlying network. For more information, refer to [Ifacer](../reference/plugin-ifacer.md).
+
+#### Ifacer create vlan interface
+
+If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig 
+so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The `ifacer` plug-in will dynamically create a VLAN interface on the host when the pod is created, 
+which is used to undertake the pod's underlay network.
+
+The following is an example of CNI as IPVlan, IPVLAN_MASTER_INTERFACE as ens192, and vlanID as 100.
+
+```shell
+~# IPVLAN_MASTER_INTERFACE="ens192"
+~# IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
+~# cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-ens192-vlan100
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  enableCoordinator: true
+  ipvlan:
+    master:
+    - ${IPVLAN_MASTER_INTERFACE}
+    vlanID: 100
+EOF
+```
+
+When the Spidermultuconfig object is created, view the corresponding Multus network-attachment-definition object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o=jsonpath='{.spec.config}' | jq
+{
+  "cniVersion": "0.3.1",
+  "name": "ipvlan-ens192-vlan100",
+  "plugins": [
+    {
+      "type": "ifacer",
+      "interfaces": [
+        "ens192"
+      ],
+      "vlanID": 100
+    },
+    {
+      "type": "ipvlan",
+      "ipam": {
+        "type": "spiderpool"
+      },
+      "master": "ens192.100",
+      "mode": "bridge"
+    },
+    {
+      "type": "coordinator",
+    }
+  ]
+}
+```
+
+> `ifacer` is called first in the CNI chaining sequence. Depending on the configuration, `ifacer` will create a sub-interface with a VLAN tag of 100 named ens192.100 based on `ens192`.
+>
+> main CNI: The value of the master field of IPVlan is: `ens192.100`, which is the VLAN sub-interface created by 'ifacer': `ens192.100`.
+>
+> Note: The NIC created by `ifacer` is not persistent, and will be lost if the node is restarted or manually deleted. Restarting the pod is automatically added back.
+
+Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use `ifacer` to create the VLAN sub-interface. We can directly configure the master 
+field as: `ens192.100` and not configure the VLAN ID, as follows:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-conf
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192.100
+    ippools:
+      ipv4: 
+        - vlan100
+```
+
+#### Ifacer create bond interface
+
+If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in 
+Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The `ifacer'` plug-in will dynamically create a bond interface on the host 
+when the pod is created, which is used to undertake the underlying network of the pod.
+
+The following is an example of CNI as IPVlan, host interface ens192, and ens224 as slave to create a bond interface:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-conf
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  macvlan:
+    master:
+    - ens192
+    - ens224
+    bond:
+      name: bond0
+      mode: 1
+      options: ""
+EOF
+```
+
+When the Spidermultuconfig object is created, view the corresponding Multus network-attachment-definition object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system ipvlan-conf -o jsonpath='{.spec.config}' | jq
+{
+  "cniVersion": "0.3.1",
+  "name": "ipvlan-conf",
+  "plugins": [
+    {
+      "type": "ifacer",
+      "interfaces": [
+        "ens192"
+        "ens224"
+      ],
+      "bond": {
+        "name": "bond0",
+        "mode": 1
+      }
+    },
+    {
+      "type": "ipvlan",
+      "ipam": {
+        "type": "spiderpool"
+      },
+      "master": "bond0",
+      "mode": "bridge"
+    },
+    {
+      "type": "coordinator",
+    }
+  ]
+}
+```
+
+Configuration description:
+
+> `ifacer` is called first in the CNI chaining sequence. Depending on the configuration, `ifacer` will create a bond interface named 'bond0' based on ["ens192","ens224"] with mode 1 (active-backup).
+>
+> main CNI: The value of the master field of IPvlan is: `bond0`, bond0 takes over the network traffic of the pod.
+>
+> Create a Bond If you need a more advanced configuration, you can do so by configuring SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options. The input format is: "primary=ens160; arp_interval=1", use ";" for multiple parameters.
+
+If we need to create a VLAN sub-interface based on the created BOND NIC: bond0, so that the VLAN sub-interface undertakes the underlying network of the pod, we can refer to the following configuration:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-conf
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  macvlan:
+    master:
+    - ens192
+    - ens224
+    vlanID: 100
+    bond:
+      name: bond0
+      mode: 1
+      options: ""
+EOF
+```
+
+> When creating a pod with the above configuration, `ifacer` will create a bond NIC bond0 and a VLAN NIC bond0.100 on the host.
 
 #### Other CNI Configurations
 

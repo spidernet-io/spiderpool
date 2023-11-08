@@ -131,7 +131,7 @@
 - 在 Pod 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助
   [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)
   和 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan)
-  准备 master 接口。可参考[例子](./ifacer.md)。
+  准备 master 接口。可参考[例子](../reference/plugin-ifacer.md)。
 
 - 以最佳实践的 CNI 配置来便捷地生成 [Multus](https://github.com/k8snetworkplumbingwg/multus-cni)
   NetworkAttachmentDefinition 实例，并且保证其正确的 JSON 格式来提高使用体验。

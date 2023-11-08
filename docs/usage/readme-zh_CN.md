@@ -28,9 +28,9 @@
 
 - [创建集群：基于 kind 集群的双网络](./install/underlay/get-started-kind-zh_CN.md)
 
-- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico.md)
+- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
 
-- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium.md)
+- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
 
 ### 在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool
 
@@ -122,7 +122,7 @@
   [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
   [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni) 等，
   提供了基于 kube-proxy 和 eBPF kube-proxy replacement 访问 ClusterIP 访问，并联通 Pod 和宿主机通信，解决 Pod 健康检查问题。
-  可参考[例子](./service-zh_CN.md)。
+  可参考[例子](./underlay_cni_service-zh_CN.md)。
 
 - 能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](../concepts/coordinator.md)。
 

@@ -121,7 +121,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./service.md) for details.
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./underlay_cni_service.md) for details.
 
 - Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 

@@ -130,7 +130,7 @@ The following steps demonstrate how to accelerate access to a Service on a clust
 
 Prepare a cluster without the kube-proxy component installed in advance. If kube-proxy is already installed, you can refer to the following commands to remove the kube-proxy component:
 
-```
+```shell
 ~# kubectl delete ds -n kube-system kube-proxy
 ~# # run the command on every node
 ~# iptables-save | grep -v KUBE | iptables-restore
@@ -139,7 +139,7 @@ Prepare a cluster without the kube-proxy component installed in advance. If kube
 To install the Cilium component, make sure to enable the kube-proxy replacement feature:
 
 
-```
+```shell
 ~# helm repo add cilium https://helm.cilium.io
 ~# helm repo update
 ~# API_SERVER_IP=<your_api_server_ip>
@@ -154,7 +154,7 @@ To install the Cilium component, make sure to enable the kube-proxy replacement 
 
 The installation is complete, check the pod's state:
 
-```
+```shell
 ～# kubectl  get po -n kube-system | grep cilium
 cilium-2r6s5                             1/1     Running     0              15m
 cilium-lr9lx                             1/1     Running     0              15m
@@ -164,7 +164,7 @@ cilium-operator-5ff9f86dfd-sb695         1/1     Running     0              15m
 
 To install Spiderpool, see [Install](./install/underlay/get-started-macvlan-zh_CN.md) to install Spiderpool:
 
-```
+```shell
 ~# helm install spiderpool spiderpool/spiderpool -n kube-system \
   --set multus.multusCNI.defaultCniCRName="macvlan-conf" \
   --set  coordinator.podCIDRType=none
@@ -176,7 +176,7 @@ To install Spiderpool, see [Install](./install/underlay/get-started-macvlan-zh_C
 
 show the installation of Spiderpool:
 
-```
+```shell
 ~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
@@ -186,7 +186,7 @@ spiderpool-init                                0/1     Completed   0          1m
 
 Create a MacVLAN-related Multus configuration and create a companion IPPools resource:
 
-```
+```shell
 cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
@@ -220,7 +220,7 @@ EOF
 
 Create a set of cross-node DaemonSet apps for testing:
 
-```
+```shell
 ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens192"
 NAME=ipvlan
 cat <<EOF | kubectl apply -f -
@@ -269,7 +269,7 @@ EOF
 
 Verify the connectivity of the access service and see if the performance is improved:
 
-```
+```shell
 ~# kubectl exec -it ipvlan-test-55c97ccfd8-kd4vj sh
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
 / # curl 10.233.42.25 -I

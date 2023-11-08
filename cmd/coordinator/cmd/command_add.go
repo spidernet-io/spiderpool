@@ -123,7 +123,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		c.podVethName = defaultUnderlayVethName
 		c.hostVethName = getHostVethName(args.ContainerID)
 		if c.firstInvoke {
-			err = c.setupVeth(args.ContainerID)
+			err = c.setupVeth(logger, args.ContainerID)
 			if err != nil {
 				logger.Error("failed to create veth-pair device", zap.Error(err))
 				return err

@@ -2,7 +2,7 @@
 
 **简体中文** | [**English**](./ipam-performance.md)
 
-*[Spiderpool](https://github.com/spidernet-io/spiderpool) 是一个适用于 underlay 网络的高性能 IPAM CNI 插件，此文将对比其与市面上主流的 underlay IPAM CNI 插件（如 [Whereabouts](https://github.com/k8snetworkplumbingwg/whereabouts)，[Kube-OVN](https://github.com/kubeovn/kube-ovn)）以及被广泛使用的 overlay IPAM CNI 插件 [calico-ipam](https://github.com/projectcalico/calico) 在 ”1000 Pod“ 场景下的性能表现。*
+*[Spiderpool](https://github.com/spidernet-io/spiderpool) 是一个 underlay 网络解决方案，它提供了丰富的 IPAM 和 CNI 整合能力，此文将对比其与市面上主流运行在 underlay 场景下的 IPAM CNI 插件（如 [Whereabouts](https://github.com/k8snetworkplumbingwg/whereabouts)，[Kube-OVN](https://github.com/kubeovn/kube-ovn)）以及被广泛使用的 overlay IPAM CNI 插件 [calico-ipam](https://github.com/projectcalico/calico)、[cilium](https://github.com/cilium/cilium) 在 `1000 Pod` 场景下的性能表现。*
 
 ## 背景
 
@@ -14,101 +14,74 @@
 
 ## 环境
 
-- Kubernetes: `v1.25.4`
-- container runtime: `containerd 1.6.12`
-- OS: `CentOS Linux 8`
-- kernel: `4.18.0-348.7.1.el8_5.x86_64`
+- Kubernetes: `v1.26.7`
+- container runtime: `containerd v1.7.2`
+- OS: `Ubuntu 22.04 LTS`
+- kernel: `5.15.0-33-generic`
 
-| Node     | Role          | CPU | Memory |
-| -------- | ------------- | --- | ------ |
-| master1  | control-plane | 4C  | 8Gi    |
-| master2  | control-plane | 4C  | 8Gi    |
-| master3  | control-plane | 4C  | 8Gi    |
-| worker4  |               | 3C  | 8Gi    |
-| worker5  |               | 3C  | 8Gi    |
-| worker6  |               | 3C  | 8Gi    |
-| worker7  |               | 3C  | 8Gi    |
-| worker8  |               | 3C  | 8Gi    |
-| worker9  |               | 3C  | 8Gi    |
-| worker10 |               | 3C  | 8Gi    |
+| Node     | Role                  | CPU | Memory |
+| -------- | --------------------- | --- | ------ |
+| master1  | control-plane, worker | 3C  | 8Gi    |
+| master2  | control-plane, worker | 3C  | 8Gi    |
+| master3  | control-plane, worker | 3C  | 8Gi    |
+| worker4  | worker                | 3C  | 8Gi    |
+| worker5  | worker                | 3C  | 8Gi    |
+| worker6  | worker                | 3C  | 8Gi    |
+| worker7  | worker                | 3C  | 8Gi    |
+| worker8  | worker                | 3C  | 8Gi    |
+| worker9  | worker                | 3C  | 8Gi    |
+| worker10 | worker                | 3C  | 8Gi    |
 
 ## 测试对象
 
-本次测试基于 `0.3.1` 版本的 [CNI Specification](https://www.cni.dev/docs/spec/)，以 [macvlan](https://www.cni.dev/plugins/current/main/macvlan/) 搭配 Spiderpool 作为测试方案，并选择了开源社区中其它几种对接 underlay 网络的方案作为对比：
+本次测试基于 `0.3.1` 版本的 [CNI Specification](https://www.cni.dev/docs/spec/)，以 [macvlan](https://www.cni.dev/plugins/current/main/macvlan/) 搭配 Spiderpool 作为测试方案，并选择了开源社区中其它几种常见的网络方案作为对比：
 
-| Main CNI            | Main CNI 版本 | IPAM CNI                  | IPAM CNI 版本 | 特点                                                                                                                                                                                                                                                               |
-| ------------------- | ------------- | ------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| macvlan             | `v1.1.1`      | Spiderpool                | `v0.4.1`      | 集群中存在多个 IP 池，每个池中的 IP 地址都可以被集群中的任意一个节点上的 Pod 所使用，当集群中的多个 Pod 并发的从同一个池中分配 IP 地址时，存在竞争。支持托管 IP 池的全生命流程，使其同步的与工作负载创建、扩缩容、删除，弱化了过大的共享池所带来的并发或存储问题。 |
-| macvlan             | `v1.1.1`      | Whereabouts (CRD backend) | `v0.6.1`      | 各节点可以定义各自可用的 IP 池范围，若节点间存在重复定义的 IP 地址，那么这些 IP 地址上升为一种共享资源。                                                                                                                                                           |
-| Kube-OVN (underlay) | `v1.11.3`     | Kube-OVN                  | `v1.11.3`     | 以子网来组织 IP 地址，每个 Namespace 可以归属于特定的子网， Namespace 下的 Pod 会自动从所属的子网中获取 IP 地址。子网也是一种集群资源，同一个子网的 IP 地址可以分布在任意一个节点上。                                                                              |
-| Calico              | `v3.23.3`     | calico-ipam (CRD backend) | `v3.23.3`     | 每个节点独享一个或多个 IP block，各节点上的 Pod 仅使用本地 IP block 中的 IP 地址，节点间无任何竞争与冲突，分配的效率非常高。                                                                                                                                       |
+| 测试对象                       |      版本     |
+| ----------------------------- | ------------ |
+| Spiderpool based on macvlan   | `v0.8.0`     |
+| Whereabouts based on macvlan  | `v0.6.2`     |
+| Kube-OVN                      | `v1.12.2`    |
+| Cilium                        | `v1.14.3`    |
+| Calico                        | `v3.26.3`    |
 
 ## 方案
 
-测试期间，我们会遵循如下约定：
+测试思路主要是：
 
-- 测试 IPv4 单栈和 IPv4/IPv6 双栈场景。
-- 测试 underlay IPAM CNI 插件时，尽最大可能的确保可用的 IP 地址数量与 Pod 数量为 **1:1**。例如，接下来我们计划创建 1000 个 Pod，那么应当限制可用的 IPv4/IPv6 地址数量均为 1000 个。
+1. Underlay IP 资源有限，IP 的泄露和分配重复，容易造成干扰 ，因此 IP 分配的准确性非常重要。
+2. 在大量 Pod 启动时竞争分配 IP，IPAM 的分配算法要高效，才能保障 Pod 快速发布成功。
 
-具体的，我们会尝试以如下两种方式在上述 Kubenetes 集群上来启动总计 1000 个 Pod，并记录所有 Pod 均达到 `Running` 的耗时：
+因此，设计了 IP 资源和 Pod 资源数量相同的极限测试，计时 Pod 从创建到 Running 的时间，来变相测试 IPAM 的精确性和健壮性。测试的条件如下：
 
-- 仅创建一个 Deployment，其副本数为 1000。
+- IPv4 单栈和 IPv4/IPv6 双栈场景。
 - 创建 100 个 Deployment，每个 Deployment 的副本数为 10。
 
-然后，我们会使用如下命令一次性的删除这 1000 个 Pod，记录被重建的 1000 个 Pod 全部 `Running` 的耗时：
+## 测试结果
+
+如下展示了 IPAM 性能测试结果，其中，包含了 `限制 IP 与 Pod 等量` 和 `不限制 IP 数量` 两种场景，来分别测试每个 CNI ，而 Calico 和 Cilium 等是基于 IP block 预分配机制分配 IP，因此没法相对 "公平" 的进行 `限制 IP 与 Pod 等量` 测试，只进行 `不限制 IP 数量` 场景测试。
+
+  |       测试对象                |   限制 IP 与 Pod 等量    |   不限制 IP 数量  |
+  | ---------------------------  | ---------------------- | --------------- |
+  | Spiderpool based on macvlan  |          207s          |       182       |
+  | Whereabouts based on macvlan |          失败           |       2529s    |
+  | Kube-OVN                     |          405s          |       343s      |
+  | Cilium                       |           NA           |       215s      |
+  | Calico                       |           NA           |       322s      |
+
+## 分析
+
+Spiderpool 的 IPAM 分配原理，是整个集群节点的所有 Pod 都从同一个 CIDR 中分配 IP，所以 IP 分配和释放需要面临激烈的竞争，IP 分配性能的挑战会更大；Whereabouts 和 Calico 、Cilium的 IPAM 分配原理，是每个节点都有一个小的 IP 集合，所以 IP 分配的竞争比较小，IP 分配性能的挑战会小。但从上述实验数据上看，虽然 Spdierpool 的 IPAM 原理是 "吃亏" 的，但是分配 IP 的性能却是很好的。
+
+在测试过程中，遇到如下现象：
+
+Whereabouts based on macvlan：在`限制 IP 与 Pod 等量`场景下，在 300s 内 261 个 Pod 以较为匀速的状态达到了 `Running` 状态，在 1080s 时，分配 768 个 IP 地址。自此之后的 Pod 增长速率大幅降低，在 2280s 时达到 845 个，后续 Whereabouts 就基本不工作了，耗时类比于正无穷。由于 IP 地址数量与 Pod 数等量，如果 IPAM 组件未能正确的回收 IP，新 Pod 将因为缺少 IP 资源，且无法获取到可用的 IP，从而无法启动。并且观察到在启动失败的 Pod 中，出现了如下的一些错误：
 
 ```bash
-kubectl get pod | grep "prefix" | awk '{print $1}' | xargs kubectl delete pod
+[default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network]: error adding container to network "k8s-pod-network": error at storage engine: time limit exceeded while waiting to become leader
+
+name "whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1" is reserved for "38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175"
 ```
 
-接下来，将所有节点下电后再上电，模拟故障恢复，记录 1000 个 Pod 再次达到 `Running` 的耗时。
+## 总结
 
-最后，我们删除所有的 Deployment，记录所有 Pod 完全消失的耗时。
-
-## 结果
-
-### IPv4/IPv6 双栈
-
-- 单个 1000 副本的 Deployment：
-
-  | CNI                   | 创建   | 重建  | 故障恢复 | 删除  |
-  | --------------------- | ------ | ----- | -------- | ----- |
-  | macvlan + Spiderpool  | 2m35s  | 9m50s | 3m4s     | 1m50s |
-  | macvlan + Whereabouts | 25m18s | 失败  | 失败     | 3m5s  |
-  | Kube-OVN              | 3m55s  | 7m20s | 11m6s    | 2m13s |
-  | Calico + calico-ipam  | 1m56s  | 4m6s  | 3m42s    | 1m36s |
-
-  > 在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 `Running` 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 `Running` 状态。至于重建的场景，在 55 个 Pod 达到 `Running` 状态后，Whereabouts 就基本不工作了，耗时类比于正无穷。
-
-- 100 个 10 副本的 Deployment：
-
-  | CNI                   | 创建   | 重建  | 故障恢复 | 删除  |
-  | --------------------- | ------ | ----- | -------- | ----- |
-  | macvlan + Spiderpool  | 1m37s  | 3m27s | 3m3s     | 1m22s |
-  | macvlan + Whereabouts | 21m49s | 失败  | 失败     | 2m9s  |
-  | Kube-OVN              | 4m6s   | 7m46s | 10m22s   | 2m8s  |
-  | Calico + calico-ipam  | 1m57s  | 3m58s | 4m16s    | 1m35s |
-
-### IPv4 单栈
-
-- 单个 1000 副本的 Deployment：
-
-  | CNI                   | 创建  | 重建  | 故障恢复 | 删除  |
-  | --------------------- | ----- | ----- | -------- | ----- |
-  | macvlan + Spiderpool  | 2m18s | 6m41s | 3m1s     | 1m37s |
-  | macvlan + Whereabouts | 8m16s | 失败  | 失败     | 2m7s  |
-  | Kube-OVN              | 3m32s | 7m7s  | 9m41s    | 1m47s |
-  | Calico + calico-ipam  | 1m41s | 3m33s | 3m42s    | 1m27s |
-
-- 100 个 10 副本的 Deployment：
-
-  | CNI                   | 创建  | 重建  | 故障恢复 | 删除  |
-  | --------------------- | ----- | ----- | -------- | ----- |
-  | macvlan + Spiderpool  | 1m4s  | 3m23s | 3m3s     | 1m23s |
-  | macvlan + Whereabouts | 8m13s | 失败  | 失败     | 2m7s  |
-  | Kube-OVN              | 3m36s | 7m14s | 8m52s    | 1m41s |
-  | Calico + calico-ipam  | 1m39s | 3m25s | 4m24s    | 1m27s |
-
-## 小结
-
-虽然 Spiderpool 是一种适用于 underlay 网络的 IPAM CNI 插件，其相较于主流的 overlay IPAM CNI 插件，面临着更多的复杂的 IP 地址抢占与冲突的问题，但它在大多数场景下的性能表现亦不逊色于后者。
+虽然 Spiderpool 是一种适用于 Underlay 网络的解决方案，但其提供了强大的 IPAM 能力，其 IP 分配以及回收的特点相较于主流 Overlay CNI 的 IPAM 插件，面临着更多的、复杂的 IP 地址抢占与冲突的问题，但它的性能表现领先于后者。

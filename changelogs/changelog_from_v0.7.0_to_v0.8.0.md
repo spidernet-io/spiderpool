@@ -31,6 +31,8 @@
 
 * coordinator: fix the eth0 source IP for the packet going through veth0 : [PR 2489](https://github.com/spidernet-io/spiderpool/pull/2489)
 
+* remove crd subnet/ippool deprecated property vlan default value : [PR 2576](https://github.com/spidernet-io/spiderpool/pull/2576)
+
 
 
 ***
@@ -51,12 +53,14 @@
 
 * fix multusName usage bug with wrong net-attach-def namespace : [PR 2514](https://github.com/spidernet-io/spiderpool/pull/2514)
 
+* coordinator: set random mac addres for veth device when creating it : [PR 2580](https://github.com/spidernet-io/spiderpool/pull/2580)
+
 
 
 ***
 
 ## Totoal 
 
-Pull request number: 116
+Pull request number: 134
 
 [ Commits ](https://github.com/spidernet-io/spiderpool/compare/v0.7.0...v0.8.0)

@@ -339,7 +339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../underlay/get-started-kind/" class="md-nav__link">
+      <a href="../underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -369,6 +369,20 @@
     <li class="md-nav__item">
       <a href="../underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -477,6 +491,20 @@
     <li class="md-nav__item">
       <a href="../cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -808,34 +836,6 @@
     <li class="md-nav__item">
       <a href="../../route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1224,22 +1224,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1567,19 +1553,17 @@ pod<span class="w"> </span><span class="s2">&quot;spiderpool-init&quot;</span><s
 <li>
 <p>Update version via helm</p>
 <p>(Optional) Spiderpool chart version has changed, you can get the latest stable version with the following command, unzip the chart package and apply all crds.</p>
-<p>```bash
-~# helm search repo spiderpool --versions
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>spiderpool<span class="w"> </span>--versions
 ...
-~# helm fetch spiderpool/spiderpool --version <upgraded-version>
+~#<span class="w"> </span>helm<span class="w"> </span>fetch<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--version<span class="w"> </span>&lt;upgraded-version&gt;
 ...
-~# tar -xvf spiderpool-<upgraded-version>.tgz &amp;&amp; cd spiderpool/crds
-~# ls | grep '.yaml$' | xargs -I {} kubectl apply -f {}
-<div class="highlight"><pre><span></span><code>To upgrade spiderpool using Helm, you can change `&lt;upgraded-version&gt;` to any stable version.
-
-```bash
-helm upgrade --install spiderpool spiderpool/spiderpool --wait --debug --version &lt;upgraded-version&gt; \
-    -n kube-system \
-</code></pre></div></p>
+~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>spiderpool-&lt;upgraded-version&gt;.tgz<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>spiderpool/crds
+~#<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;\.yaml$&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-I<span class="w"> </span><span class="o">{}</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span><span class="o">{}</span>
+</code></pre></div>
+<p>To upgrade spiderpool using Helm, you can change <code>&lt;upgraded-version&gt;</code> to any stable version.</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--wait<span class="w"> </span>--debug<span class="w"> </span>--version<span class="w"> </span>&lt;upgraded-version&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</code></pre></div>
 <p>Running the previous command will overwrite the existing cluster's ConfigMap, so it is important to retain any existing options, either by setting them on the command line or storing them in a YAML file, similar to:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cm<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-conf<span class="w"> </span>-oyaml<span class="w"> </span>&gt;<span class="w"> </span>my-config.yaml
 </code></pre></div>

@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -710,34 +738,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ifacer/" class="md-nav__link">
-        Plugin ifacer
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../usage/network-topology/" class="md-nav__link">
         Node-based Topology
       </a>
@@ -938,25 +938,12 @@
     Result
   </a>
   
-    <nav class="md-nav" aria-label="Result">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ipv4ipv6-dual-stack" class="md-nav__link">
-    IPv4/IPv6 dual-stack
-  </a>
-  
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#ipv4-stack" class="md-nav__link">
-    IPv4 stack
+      
+        <li class="md-nav__item">
+  <a href="#analyze" class="md-nav__link">
+    analyze
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1212,22 +1199,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1417,25 +1390,12 @@
     Result
   </a>
   
-    <nav class="md-nav" aria-label="Result">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ipv4ipv6-dual-stack" class="md-nav__link">
-    IPv4/IPv6 dual-stack
-  </a>
-  
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#ipv4-stack" class="md-nav__link">
-    IPv4 stack
+      
+        <li class="md-nav__item">
+  <a href="#analyze" class="md-nav__link">
+    analyze
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1471,7 +1431,7 @@
 
 <h1 id="ipam-performance-testing">IPAM Performance Testing</h1>
 <p><strong>English</strong> | <a href="../ipam-performance-zh_CN/"><strong>简体中文</strong></a></p>
-<p><em><a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> is a high-performance IPAM CNI plugin for underlay networks. This report will compare its performance with the mainstream underlay IPAM CNI plugins (such as  <a href="https://github.com/k8snetworkplumbingwg/whereabouts">Whereabouts</a>, <a href="https://github.com/kubeovn/kube-ovn">Kube-OVN</a>) and the widely used overlay IPAM CNI plugin <a href="https://github.com/projectcalico/calico">calico-ipam</a> under the "1000 Pod" scenario.</em></p>
+<p><em><a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> is an underlay networking solution that provides rich IPAM and CNI integration capabilities, this article will compare it with the mainstream IPAM CNI plug-ins (e.g. <a href="https://github.com/spidernet-io/spiderpool">Whereabouts</a>, <a href="https://github.com/spidernet-io/spiderpool">Kube-OVN</a>) and the widely used IPAM CNI plug-ins that are running in underlay scenarios. This article will compare it with the mainstream IPAM CNI plug-ins running in underlay scenarios (e.g., <a href="https://github.com/k8snetworkplumbingwg/whereabouts">Whereabouts</a>, <a href="https://github.com/kubeovn/kube-ovn">Kube-OVN</a>) and the widely-used overlay IPAM CNI plugins <a href="https://github.com/projectcalico/calico">calico-ipam</a>、<a href="https://github.com/cilium/cilium">cilium</a> in <code>1000 Pod</code> scenarios.</em></p>
 <h2 id="background">Background</h2>
 <p>Why do we need to do performance testing on the underlay IPAM CNI plugin?</p>
 <ol>
@@ -1481,10 +1441,10 @@
 </ol>
 <h2 id="env">ENV</h2>
 <ul>
-<li>Kubernetes: <code>v1.25.4</code></li>
-<li>container runtime: <code>containerd 1.6.12</code></li>
-<li>OS: <code>CentOS Linux 8</code></li>
-<li>kernel: <code>4.18.0-348.7.1.el8_5.x86_64</code></li>
+<li>Kubernetes: <code>v1.26.7</code></li>
+<li>container runtime: <code>containerd v1.7.2</code></li>
+<li>OS: <code>Ubuntu 22.04 LTS</code></li>
+<li>kernel: <code>5.15.0-33-generic</code></li>
 </ul>
 <table>
 <thead>
@@ -1498,309 +1458,157 @@
 <tbody>
 <tr>
 <td>master1</td>
-<td>control-plane</td>
-<td>4C</td>
+<td>control-plane, worker</td>
+<td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>master2</td>
-<td>control-plane</td>
-<td>4C</td>
+<td>control-plane, worker</td>
+<td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>master3</td>
-<td>control-plane</td>
-<td>4C</td>
+<td>control-plane, worker</td>
+<td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker4</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker5</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker6</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker7</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker8</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker9</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker10</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 </tbody>
 </table>
 <h2 id="objects">Objects</h2>
-<p>This test is based on the <a href="https://www.cni.dev/docs/spec/">CNI Specification</a> <code>0.3.1</code>, using <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan</a>with Spiderpool, and selecting several other underlay network solutions in the open source community for comparison:</p>
+<p>This test is based on the <code>0.3.1</code> version of <a href="https://www.cni.dev/docs/spec/">CNI Specification</a>, with <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan</a> and Spiderpool as the test object, and selected several other common network solutions in the open source community as a comparison:</p>
 <table>
 <thead>
 <tr>
-<th>Main CNI</th>
-<th>Main CNI Version</th>
-<th>IPAM CNI</th>
-<th>IPAM CNI Version</th>
-<th>Features</th>
+<th>test object</th>
+<th>version</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>macvlan</td>
-<td><code>v1.1.1</code></td>
-<td>Spiderpool</td>
-<td><code>v0.4.1</code></td>
-<td>There are multiple IP pools in a cluster, and the IP addresses in each pool can be used by Pods on any Node in the cluster. Competition occurs when multiple Pods in a cluster allocate IP addresses from the same pool. Support hosting the entire lifecycle of an IP pool, synchronizing it with workload creation, scaling, deletion, and reducing concurrency or storage issues caused by overly large shared pools.</td>
+<td>Spiderpool based on macvlan</td>
+<td><code>v0.8.0</code></td>
 </tr>
 <tr>
-<td>macvlan</td>
-<td><code>v1.1.1</code></td>
-<td>Whereabouts (CRD backend)</td>
-<td><code>v0.6.1</code></td>
-<td>Each Node can define its own available IP pool ranges. If there are duplicate IP addresses defined between Nodes, these IP addresses are promoted as a shared resource.</td>
+<td>Whereabouts based on macvlan</td>
+<td><code>v0.6.2</code></td>
 </tr>
 <tr>
-<td>Kube-OVN (underlay)</td>
-<td><code>v1.11.3</code></td>
 <td>Kube-OVN</td>
-<td><code>v1.11.3</code></td>
-<td>IP addresses are organized by Subnet. Each Namespace can belong to a specific Subnet. Pods under the Namespace will automatically obtain IP addresses from the Subnet they belong to. Subnets are also a cluster resource, and the IP addresses of the same Subnet can be distributed on any Node.</td>
+<td><code>v1.12.2</code></td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td><code>v1.14.3</code></td>
 </tr>
 <tr>
 <td>Calico</td>
-<td><code>v3.23.3</code></td>
-<td>calico-ipam (CRD backend)</td>
-<td><code>v3.23.3</code></td>
-<td>Each Node has one or more IP blocks exclusively, and the Pods on each Node only use the IP addresses in the local IP block. There is no competition or conflict between Nodes, and the allocation efficiency is very high.</td>
+<td><code>v3.26.3</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="plan">Plan</h2>
-<p>During the testing, we will follow the following agreement:</p>
+<p>The test ideas are mainly:</p>
+<ol>
+<li>Underlay IP resources are limited, IP leakage and duplication of IP allocation can easily cause interference, so the accuracy of IP allocation is very important. 2.</li>
+<li>When a large number of Pods start up and compete for IP allocation, the IPAM allocation algorithm should be efficient in order to ensure that the Pods are released quickly and successfully.</li>
+</ol>
+<p>Therefore, we designed a limit test with the same number of IP resources and Pod resources, and timed the time from Pod creation to Running to test the accuracy and robustness of IPAM in disguise. The test conditions are as follows:</p>
 <ul>
-<li>Testing under IPv4 stack and IPv4/IPv6 dual-stack.</li>
-<li>When testing the underlay IPAM CNI plugins, ensure that the number of available IP addresses is <strong>1:1</strong> to the number of Pods as much as possible. For example, if we plan to create 1000 Pods in the next step, we should limit the number of available IPv4/IPv6 addresses to 1000.</li>
+<li>IPv4 single-stack and IPv4/IPv6 dual-stack scenarios.</li>
+<li>Create 100 Deployments, each with 10 replicas.</li>
 </ul>
-<p>Specifically, we will attempt to create a total of 1000 Pods on the Kubernetes cluster in the following two ways, and record the time taken for all Pods to become <code>Running</code>:</p>
-<ul>
-<li>Create only one Deployment with 1000 replicas.</li>
-<li>Create 100 Deployments with 10 replicas per Deployment.</li>
-</ul>
-<p>Then, we will use the following command to delete these 1000 Pods at once, and record the time it took for all Pods to become <code>Running</code>:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;prefix&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>pod
-</code></pre></div>
-<p>Next, power down all nodes and then power up, simulate fault recovery, and record the time it took for all Pods to become <code>Running</code> again.</p>
-<p>Finally, we delete all Deployments and record the time taken for all Pods to completely disappear.</p>
 <h2 id="result">Result</h2>
-<h3 id="ipv4ipv6-dual-stack">IPv4/IPv6 dual-stack</h3>
-<ul>
-<li>1 Deployment with 1000 replicas:</li>
-</ul>
+<p>The following shows the results of the IPAM performance test, which includes two scenarios, <code>The number of IPs is equal to the number of Pods</code> and <code>IP sufficient</code>, to test each CNI, whereas Calico and Cilium, for example, are based on the IP block pre-allocation mechanism to allocate IPs, and therefore can't perform the <code>The number of IPs is equal to the number of Pods</code> test in a relatively <code>fair</code> way, and only perform the <code>IP sufficient</code> scenario. We can only test <code>unlimited IPs</code> scenarios.</p>
 <table>
 <thead>
 <tr>
-<th>CNI</th>
-<th>Creation</th>
-<th>Re-creation</th>
-<th>Recovery</th>
-<th>Deletion</th>
+<th>test object</th>
+<th>Limit IP to Pod Equivalents</th>
+<th>IP sufficient</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>macvlan + Spiderpool</td>
-<td>2m35s</td>
-<td>9m50s</td>
-<td>3m4s</td>
-<td>1m50s</td>
+<td>Spiderpool based on macvlan</td>
+<td>207s</td>
+<td>182</td>
 </tr>
 <tr>
-<td>macvlan + Whereabouts</td>
-<td>25m18s</td>
+<td>Whereabouts based on macvlan</td>
 <td>failure</td>
-<td>failure</td>
-<td>3m5s</td>
+<td>2529s</td>
 </tr>
 <tr>
 <td>Kube-OVN</td>
-<td>3m55s</td>
-<td>7m20s</td>
-<td>11m6s</td>
-<td>2m13s</td>
+<td>405s</td>
+<td>343s</td>
 </tr>
 <tr>
-<td>Calico + calico-ipam</td>
-<td>1m56s</td>
-<td>4m6s</td>
-<td>3m42s</td>
-<td>1m36s</td>
+<td>Cilium</td>
+<td>NA</td>
+<td>215s</td>
+</tr>
+<tr>
+<td>Calico</td>
+<td>NA</td>
+<td>322s</td>
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p>During the testing of macvlan + Whereabouts, in the creation scenario, 922 Pods became <code>Running</code> at a relatively uniform rate within 14m25s. After that, the growth rate of Pods significantly decreased, and ultimately it took 25m18s for 1000 Pods to become <code>Running</code>. As for the re-creation scenario, after 55 Pods became <code>Running</code>, Whereabouts basically stopped working, and the time consumption was close to infinity.</p>
-</blockquote>
-<ul>
-<li>100 Deployments with 10 replicas:</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>Creation</th>
-<th>Re-creation</th>
-<th>Recovery</th>
-<th>Deletion</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>1m37s</td>
-<td>3m27s</td>
-<td>3m3s</td>
-<td>1m22s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>21m49s</td>
-<td>failure</td>
-<td>failure</td>
-<td>2m9s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>4m6s</td>
-<td>7m46s</td>
-<td>10m22s</td>
-<td>2m8s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m57s</td>
-<td>3m58s</td>
-<td>4m16s</td>
-<td>1m35s</td>
-</tr>
-</tbody>
-</table>
-<h3 id="ipv4-stack">IPv4 stack</h3>
-<ul>
-<li>1 Deployment with 1000 replicas:</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>Creation</th>
-<th>Re-creation</th>
-<th>Recovery</th>
-<th>Deletion</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>2m18s</td>
-<td>6m41s</td>
-<td>3m1s</td>
-<td>1m37s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>8m16s</td>
-<td>failure</td>
-<td>failure</td>
-<td>2m7s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>3m32s</td>
-<td>7m7s</td>
-<td>9m41s</td>
-<td>1m47s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m41s</td>
-<td>3m33s</td>
-<td>3m42s</td>
-<td>1m27s</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>100 Deployments with 10 replicas per Deployment:</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>Creation</th>
-<th>Re-creation</th>
-<th>Recovery</th>
-<th>Deletion</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>1m4s</td>
-<td>3m23s</td>
-<td>3m3s</td>
-<td>1m23s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>8m13s</td>
-<td>failure</td>
-<td>failure</td>
-<td>2m7s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>3m36s</td>
-<td>7m14s</td>
-<td>8m52s</td>
-<td>1m41s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m39s</td>
-<td>3m25s</td>
-<td>4m24s</td>
-<td>1m27s</td>
-</tr>
-</tbody>
-</table>
+<h2 id="analyze">analyze</h2>
+<p>Spiderpool allocate IP addresses from the same CIDR range to all Pods in the whole cluster. Consequently, IP allocation and release face intense competition, presenting larger challenges in terms of IP allocation performance. By comparison, Whereabouts, Calico, and Cilium adopt an IPAM allocation principle where each node has a small IP address pool. This reduces the competition for IP allocation and mitigates the associated performance challenges. However, experimental data shows that despite Spiderpool's "lossy" IPAM principle, its IP allocation performance is actually quite good.</p>
+<p>During testing, the following phenomenon was encountered:</p>
+<p>Whereabouts based on macvlan：We tested the combination of macvlan and Whereabouts in a scenario where the available number of IP addresses matches the number of Pods in a 1:1 ratio. Within 300 seconds, 261 Pods reached the "Running" state at a relatively steady pace. By the 1080-second mark, 768 IP addresses were allocated. Afterward, the growth rate of Pods significantly slowed down, reaching 845 Pods by 2280 seconds. Subsequently, Whereabouts essentially stopped working, resulting in a positively near-infinite amount of time needed for further allocation. In our testing scenario, where the number of IP addresses matches the number of Pods in a 1:1 ratio, if the IPAM component fails to properly reclaim IP addresses, new Pods will fail to start due to a lack of available IP resources. And observed some of the following errors in the Pod that failed to start:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network<span class="o">]</span>:<span class="w"> </span>error<span class="w"> </span>adding<span class="w"> </span>container<span class="w"> </span>to<span class="w"> </span>network<span class="w"> </span><span class="s2">&quot;k8s-pod-network&quot;</span>:<span class="w"> </span>error<span class="w"> </span>at<span class="w"> </span>storage<span class="w"> </span>engine:<span class="w"> </span><span class="nb">time</span><span class="w"> </span>limit<span class="w"> </span>exceeded<span class="w"> </span><span class="k">while</span><span class="w"> </span>waiting<span class="w"> </span>to<span class="w"> </span>become<span class="w"> </span>leader
+
+name<span class="w"> </span><span class="s2">&quot;whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1&quot;</span><span class="w"> </span>is<span class="w"> </span>reserved<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s2">&quot;38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175&quot;</span>
+</code></pre></div>
 <h2 id="summary">Summary</h2>
-<p>Although Spiderpool is an IPAM CNI plugin suitable for underlay networks, it faces more complex IP address preemption and conflict issues than mainstream overlay IPAM CNI plugins, but its performance in most scenarios is not inferior to the latter.</p>
+<p>Although Spiderpool is primarily designed for underlay networks, it provides powerful IPAM capabilities. Its IP allocation and reclamation features face more intricate challenges, including IP address contention and conflicts, compared to the popular Overlay CNI IPAM plugins. However, Spiderpool's performance is ahead of the latter.</p>
 
 
 

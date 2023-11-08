@@ -13,7 +13,7 @@
     
     
       
-        <title>ifacer plugin - spiderpool</title>
+        <title>Ifacer plugin - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#meta-plugin-ifacer-configuration" class="md-skip">
+        <a href="#cni-meta-plugin-ifacer" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ifacer plugin
+              Ifacer plugin
             
           </span>
         </div>
@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -698,34 +726,6 @@
     <li class="md-nav__item">
       <a href="../../usage/route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1114,20 +1114,6 @@
               
   
   
-  
-    <li class="md-nav__item">
-      <a href="../plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
     
   
   
@@ -1140,12 +1126,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          ifacer plugin
+          Ifacer plugin
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        ifacer plugin
+        Ifacer plugin
       </a>
       
         
@@ -1164,15 +1150,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#create-a-vlan-sub-interface-base-on-master-interface" class="md-nav__link">
-    Create a vlan sub-interface base on master interface
+  <a href="#introduction" class="md-nav__link">
+    Introduction
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-a-bond-device" class="md-nav__link">
-    Create a bond device
+  <a href="#feature" class="md-nav__link">
+    Feature
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisite" class="md-nav__link">
+    Prerequisite
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-use" class="md-nav__link">
+    How to use
   </a>
   
 </li>
@@ -1337,15 +1337,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#create-a-vlan-sub-interface-base-on-master-interface" class="md-nav__link">
-    Create a vlan sub-interface base on master interface
+  <a href="#introduction" class="md-nav__link">
+    Introduction
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-a-bond-device" class="md-nav__link">
-    Create a bond device
+  <a href="#feature" class="md-nav__link">
+    Feature
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisite" class="md-nav__link">
+    Prerequisite
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-use" class="md-nav__link">
+    How to use
   </a>
   
 </li>
@@ -1373,102 +1387,24 @@
   </a>
 
 
-<h1 id="meta-plugin-ifacer-configuration">Meta plugin: Ifacer Configuration</h1>
-<p>The ifacer plugin helps users create VLAN sub-interfaces or bond devices based on the provided CNI configuration file. Here are some examples to show how to configure it:</p>
-<h2 id="create-a-vlan-sub-interface-base-on-master-interface">Create a vlan sub-interface base on master interface</h2>
-<p>The CR of multus's net-atta-def is configured like this:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ifacer-vlan120-underlay</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">    </span><span class="no">{</span>
-<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
-<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-vlan120&quot;,</span>
-<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
-<span class="w">            </span><span class="no">{</span>
-<span class="w">                </span><span class="no">&quot;type&quot;: &quot;ifacer&quot;,</span>
-<span class="w">                </span><span class="no">&quot;interfaces&quot;: [&quot;ens160&quot;],</span>
-<span class="w">                </span><span class="no">&quot;vlanID&quot;: 120</span>
-<span class="w">            </span><span class="no">},</span>
-<span class="w">            </span><span class="no">{</span>
-<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
-<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160.120&quot;,</span>
-<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
-<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
-<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
-<span class="w">                </span><span class="no">}</span>
-<span class="w">            </span><span class="no">},{</span>
-<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
-<span class="w">                </span><span class="no">&quot;tune_mode&quot;: &quot;underlay&quot;</span>
-<span class="w">            </span><span class="no">}</span>
-<span class="w">        </span><span class="no">]</span>
-<span class="w">    </span><span class="no">}</span>
-</code></pre></div>
-<p>Fields description:</p>
+<h1 id="cni-meta-plugin-ifacer">CNI meta-plugin: ifacer</h1>
+<h2 id="introduction">Introduction</h2>
+<p>When Pods use VLAN networks, network administrators may need to manually configure various VLAN or Bond interfaces on the nodes in advance. This process can be tedious and error-prone. Spiderpool provides a CNI meta-plugin called <code>ifacer</code>.
+This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the nodes during Pod creation, based on the provided <code>ifacer</code> configuration, greatly simplifying the configuration workload. In the following sections, we will delve into this plugin.</p>
+<h2 id="feature">Feature</h2>
 <ul>
-<li>plugins[0].type(string, required): ifacer, the name of plugin.</li>
-<li>plugins[0].interfaces([]string,required): ifacer create VLAN sub-interfaces based on this master interface. Note: When creating a VLAN sub-interface, the elements of the array must have only one master interface. And the interface exists on the host.</li>
-<li>plugins[0].vlanID: The VLAN tag of the VLAN sub-interface. Note: the value must be in range: [0,4094]. and "0" indicates that no VLAN sub-interfaces will be created.</li>
+<li>Support dynamic creation of VLAN sub-interfaces</li>
+<li>Support dynamic creation of Bond interfaces</li>
 </ul>
-<p>Note: </p>
-<ul>
-<li>The name of the created vlan sub-interface is spliced from the master interface and vlanId. The format is: "<master>.<vlanID>".</li>
-<li>If a VLAN sub-interface with the same name already exists on the node, ifacer checks if the interface is in the UP state. if not, sets to UP and exits.</li>
-</ul>
-<h2 id="create-a-bond-device">Create a bond device</h2>
-<p>The CR of multus's net-atta-def is configured like this:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ifacer-bond0-underlay</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">    </span><span class="no">{</span>
-<span class="w">        </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
-<span class="w">        </span><span class="no">&quot;name&quot;: &quot;macvlan-bond0&quot;,</span>
-<span class="w">        </span><span class="no">&quot;plugins&quot;: [</span>
-<span class="w">            </span><span class="no">{</span>
-<span class="w">                </span><span class="no">&quot;type&quot;: &quot;ifacer&quot;,</span>
-<span class="w">                </span><span class="no">&quot;interfaces&quot;: [&quot;ens160&quot;,&quot;ens192&quot;],</span>
-<span class="w">                </span><span class="no">&quot;vlanID&quot;: 120,</span>
-<span class="w">                </span><span class="no">&quot;bond&quot;: {</span>
-<span class="w">                   </span><span class="no">&quot;name&quot;: &quot;bond0&quot;,</span>
-<span class="w">                   </span><span class="no">&quot;mode&quot;: 0,</span>
-<span class="w">                   </span><span class="no">&quot;options&quot;: &quot;primary=ens160&quot;</span>
-<span class="w">                 </span><span class="no">}</span>
-<span class="w">            </span><span class="no">},</span>
-<span class="w">            </span><span class="no">{</span>
-<span class="w">                </span><span class="no">&quot;type&quot;: &quot;macvlan&quot;,</span>
-<span class="w">                </span><span class="no">&quot;master&quot;: &quot;ens160.120&quot;,</span>
-<span class="w">                </span><span class="no">&quot;mode&quot;: &quot;bridge&quot;,</span>
-<span class="w">                </span><span class="no">&quot;ipam&quot;: {</span>
-<span class="w">                    </span><span class="no">&quot;type&quot;: &quot;spiderpool&quot;</span>
-<span class="w">                </span><span class="no">}</span>
-<span class="w">            </span><span class="no">},{</span>
-<span class="w">                </span><span class="no">&quot;type&quot;: &quot;coordinator&quot;,</span>
-<span class="w">                </span><span class="no">&quot;tune_mode&quot;: &quot;underlay&quot;</span>
-<span class="w">            </span><span class="no">}</span>
-<span class="w">        </span><span class="no">]</span>
-<span class="w">    </span><span class="no">}</span>
-</code></pre></div>
-<p>Fields description:</p>
-<ul>
-<li>plugins[0].type(string, required): ifacer, the name of plugin.</li>
-<li>plugins[0].interfaces([]string,required): ifacer create VLAN sub-interfaces based on this master interface. Note: When creating a VLAN sub-interface, the elements of the array must have only one master interface. And the interface exists on the host.</li>
-<li>plugins[0].vlanID(int,optional): The VLAN tag of the VLAN sub-interface created based on the bond device. Note: the value must be in range: [0,4094]. and "0" indicates that no VLAN sub-interfaces will be created.</li>
-<li>plugins[0].bond.name(string,optional): the name of bond device, If not specified, the default is sp_bond0.</li>
-<li>plugins[0].bond.mode(string,optional): bond mode, the value must be in range: [0,6].</li>
-<li>plugins[0].bond.options(string,optional), bond options for the bonding driver are supplied as parameters to the bonding module at load time, or are specified via sysfs. Multiple parameters separated by ";"，input-formatted: "primary=ens160;arp_interval=1". More details see <a href="https://www.kernel.org/doc/Documentation/networking/bonding.txt">https://www.kernel.org/doc/Documentation/networking/bonding.txt</a>.</li>
-</ul>
-<p>Note:</p>
-<ul>
-<li>If a bond device with the same name already exists on the node, ifacer checks if the interface is bond type and in the UP state. if not bond type, return error; if not in UP state,sets to UP and exits.</li>
-<li>If a VLAN sub-interface created base on the bond device with the same name already exists on the node, ifacer checks if the interface is in the UP state. if not, sets to UP and exits.</li>
-</ul>
+<blockquote>
+<p>The VLAN/Bond interfaces created by this plugin will be lost when the node restarts, but they will be automatically recreated upon the Pod restarts
+Deleting existed VLAN/Bond interfaces is not supported
+Configuring the address of VLAN/Bond interfaces during creation is not supported</p>
+</blockquote>
+<h2 id="prerequisite">Prerequisite</h2>
+<p>There are no specific requirements including Kubernetes or Kernel versions for using this plugin. During the installation of Spiderpool, the plugin will be automatically installed in the <code>/opt/cni/bin/</code> directory on each host. You can verify by checking for the presence of the <code>ifacer</code> binary in that directory on each host.</p>
+<h2 id="how-to-use">How to use</h2>
+<p>Examples please see <a href="../../usage/spider-multus-config/#Ifacer-Configurations">Ifacer Configuration</a></p>
 
 
 
@@ -1494,7 +1430,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../plugin-coordinator/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Coordinatorr plugin" rel="prev">
+        <a href="../crd-spiderreservedip/" class="md-footer__link md-footer__link--prev" aria-label="Previous: CRD SpiderReservedIP" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1503,7 +1439,7 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Coordinatorr plugin
+              CRD SpiderReservedIP
             </div>
           </div>
         </a>

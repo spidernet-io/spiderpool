@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../get-started-kind/" class="md-nav__link">
+      <a href="../get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../../cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -698,34 +726,6 @@
     <li class="md-nav__item">
       <a href="../../../route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1114,22 +1114,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1414,7 +1400,7 @@ status:
 <blockquote>
 <p>如果 SriovNetworkNodeState CRs 的状态为 <code>InProgress</code>, 说明 sriov-operator 正在同步节点状态，等待状态为 <code>Succeeded</code> 说明同步完成。查看 CR, 确认 sriov-network-operator 已经发现节点上支持 SR-IOV 功能的网卡。</p>
 </blockquote>
-<p>从上面可知，节点 <code>node-1</code> 上的网卡具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。 下面我们将通过创建 SriovNetworkNodePolicy CRs，使得这些节点上的这些网卡创建出 VF:</p>
+<p>从上面可知，节点 node-1 上的网卡 <code>enp4s0f0np0</code> 具有 SR-IOV 功能，并且支持的最大 VF 数量为 8。下面我们将通过创建 SriovNetworkNodePolicy CRs 并通过 <code>nicSelector.pfNames</code> 指定 PF (Physical function, 物理网卡)，使得这些节点上的这些网卡创建出 VF(Virtual Function):</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: sriovnetwork.openshift.io/v1</span>
 <span class="s">kind: SriovNetworkNodePolicy</span>
@@ -1426,10 +1412,8 @@ status:
 <span class="s">  nodeSelector:</span>
 <span class="s">    kubernetes.io/os: &quot;linux&quot;</span>
 <span class="s">  nicSelector:</span>
-<span class="s">    deviceID: &quot;1017&quot;</span>
-<span class="s">    rootDevices:</span>
-<span class="s">      - 0000:04:00.0</span>
-<span class="s">    vendor: &quot;15b3&quot;</span>
+<span class="s">    pfNames:</span>
+<span class="s">      - enp4s0f0np0</span>
 <span class="s">  numVfs: 8 # 渴望的 VFs 数量</span>
 <span class="s">  resourceName: sriov_netdevice</span>
 <span class="s">EOF</span>

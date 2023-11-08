@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -710,34 +738,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ifacer/" class="md-nav__link">
-        Plugin ifacer
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../usage/network-topology/" class="md-nav__link">
         Node-based Topology
       </a>
@@ -909,9 +909,82 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          I/O Performance
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         I/O Performance
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    ENV
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-object" class="md-nav__link">
+    Test object
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sockperf-network-latency-test" class="md-nav__link">
+    sockperf network latency test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#netperf-performance-test" class="md-nav__link">
+    netperf performance test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iperf-network-performance-test" class="md-nav__link">
+    iperf network performance test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redis-benchmark-performance-test" class="md-nav__link">
+    redis-benchmark performance test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1126,22 +1199,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1292,6 +1351,63 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    ENV
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-object" class="md-nav__link">
+    Test object
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sockperf-network-latency-test" class="md-nav__link">
+    sockperf network latency test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#netperf-performance-test" class="md-nav__link">
+    netperf performance test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iperf-network-performance-test" class="md-nav__link">
+    iperf network performance test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redis-benchmark-performance-test" class="md-nav__link">
+    redis-benchmark performance test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1315,6 +1431,372 @@
 
 <h1 id="network-io-performance">Network I/O Performance</h1>
 <p><strong>English</strong> | <a href="../io-performance-zh_CN/"><strong>简体中文</strong></a></p>
+<p><em><a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> can be used with Macvlan, SR-IOV, and IPvlan to implement a complete network solution. This article will compare it with the mainstream network CNI plug-ins on the market ( Such as <a href="https://github.com/cilium/cilium">cilium</a>, <a href="https://github.com/projectcalico/calico">calico</a>) Network <code>Latency</code> and <code>Throughput</code> in various scenarios</em></p>
+<h2 id="env">ENV</h2>
+<p>This test contains performance benchmark data for various scenarios. All tests were performed between containers running on two different bare metal nodes with 10 Gbit/s network interfaces.</p>
+<ul>
+<li>Kubernetes: <code>v1.28.2</code></li>
+<li>container runtime: <code>containerd 1.6.24</code></li>
+<li>OS: <code>ubuntu 23.04</code></li>
+<li>kernel: <code>6.2.0-35-generic</code></li>
+<li>NIC: <code>Mellanox Technologies MT27800 Family [ConnectX-5]</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Role</th>
+<th>CPU</th>
+<th>Memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master1</td>
+<td>control-plane, worker</td>
+<td>56C</td>
+<td>125Gi</td>
+</tr>
+<tr>
+<td>worker1</td>
+<td>worker</td>
+<td>56C</td>
+<td>125Gi</td>
+</tr>
+</tbody>
+</table>
+<h2 id="test-object">Test object</h2>
+<p>This test uses <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan</a> with Spiderpool as the test solution, and selected <a href="https://github.com/projectcalico/calico">Calico</a>, <a href="https://github.com/cilium/cilium">Cilium</a> For comparison, two common network solutions are as follows. The following is the relevant version and other information:</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>illustrate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spiderpool based macvlan datapath</td>
+<td>Spiderpool version v0.8.0</td>
+</tr>
+<tr>
+<td>Calico</td>
+<td>Calico version v3.26.1, based on iptables datapath and no tunnels</td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td>Cilium version v1.14.3, based on full eBPF acceleration and no tunneling</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sockperf-network-latency-test">sockperf network latency test</h2>
+<p>Sockperf is a network benchmarking tool that can be used to measure network latency. It allows you to evaluate the performance of your network by testing the latency between two endpoints. We can use it to separately test Pod's cross-node access to Pod and Service. When testing access to Service's cluster IP, there are two scenarios: <code>kube-proxy</code> or <code>cilium + kube-proxy replacement</code>.</p>
+<ul>
+<li>Cross-node Pod latency testing for Pod IP purposes.</li>
+</ul>
+<p>Use <code>sockperf pp --tcp -i &lt;Pod IP&gt; -p 12345 -t 30</code> to test the latency of cross-node Pod access to the Pod IP. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>51.3 usec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>29.1 usec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod on the same subnet based on macvlan</td>
+<td>24.3 usec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod across subnets based on macvlan</td>
+<td>26.2 usec</td>
+</tr>
+<tr>
+<td>node to node</td>
+<td>32.2 usec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Cross-node Pod latency test for cluster IP purpose.</li>
+</ul>
+<p>Use <code>sockperf pp --tcp -i &lt;Cluster IP&gt; -p 12345 -t 30</code> to test the latency of cross-node Pod access to the cluster IP. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>51.9 usec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>30.2 usec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and kube-proxy</td>
+<td>36.8 usec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated</td>
+<td>27.7 usec</td>
+</tr>
+<tr>
+<td>node to node</td>
+<td>32.2 usec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="netperf-performance-test">netperf performance test</h2>
+<p>netperf is a widely used network performance testing tool that allows you to measure various aspects of network performance, such as throughput. We can use netperf to test Pod's cross-node access to Pod and Service respectively. When testing access to Service's cluster IP, there are two scenarios: <code>kube-proxy</code> or <code>cilium + kube-proxy replacement</code>.</p>
+<ul>
+<li>Netperf testing of cross-node Pods for Pod IP purposes.</li>
+</ul>
+<p>Use <code>netperf -H &lt;Pod IP&gt; -l 10 -c -t TCP_RR -- -r100,100</code> to test the throughput of cross-node Pod access to Pod IP. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>9985.7 sec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>17571.3 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod on the same subnet based on macvlan</td>
+<td>19793.9 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod across subnets based on macvlan</td>
+<td>19215.2 sec</td>
+</tr>
+<tr>
+<td>node to node</td>
+<td>47560.5 sec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Netperf testing across node Pods for cluster IP purposes.</li>
+</ul>
+<p>Use <code>netperf -H &lt;cluster IP&gt; -l 10 -c -t TCP_RR -- -r100,100</code> to test the throughput of cross-node Pods accessing the cluster IP. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>9782.2 sec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>17236.5 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and kube-proxy</td>
+<td>16002.3 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated</td>
+<td>18992.9 sec</td>
+</tr>
+<tr>
+<td>node to node</td>
+<td>47560.5 sec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="iperf-network-performance-test">iperf network performance test</h2>
+<p>iperf is a popular network performance testing tool that allows you to measure network bandwidth between two endpoints. It is widely used to evaluate the bandwidth and performance of network connections. In this chapter, we use it to test Pod's cross-node access to Pod and Service. When testing access to Service's cluster IP, there are two scenarios: <code>kube-proxy</code> or <code>cilium + kube-proxy replacement</code>.</p>
+<ul>
+<li>iperf testing of cross-node Pods for Pod IP purposes.</li>
+</ul>
+<p>Use <code>iperf3 -c &lt;Pod IP&gt; -d -P 1</code> to test the performance of cross-node Pod access to Pod IP. Use the -P parameter to specify threads 1, 2, and 4 respectively. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>Number of threads 1</th>
+<th>Number of threads 2</th>
+<th>Number of threads 4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>3.26 Gbits/sec</td>
+<td>4.56 Gbits/sec</td>
+<td>8.05 Gbits/sec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>9.35 Gbits/sec</td>
+<td>9.36 Gbits/sec</td>
+<td>9.39 Gbits/sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod on the same subnet based on macvlan</td>
+<td>9.36 Gbits/sec</td>
+<td>9.37 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod across subnets based on macvlan</td>
+<td>9.36 Gbits/sec</td>
+<td>9.37 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+</tr>
+<tr>
+<td>node to node</td>
+<td>9.41 Gbits/sec</td>
+<td>9.40 Gbits/sec</td>
+<td>9.42 Gbits/sec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>iperf testing of cross-node Pods for cluster IP purposes.</li>
+</ul>
+<p>Use <code>iperf3 -c &lt;cluster IP&gt; -d -P 1</code> to test the performance of cross-node Pod access to cluster IP. Use the -P parameter to specify threads 1, 2, and 4 respectively. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>Number of threads 1</th>
+<th>Number of threads 2</th>
+<th>Number of threads 4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>3.06 Gbits/sec</td>
+<td>4.63 Gbits/sec</td>
+<td>8.02 Gbits/sec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>9.35 Gbits/sec</td>
+<td>9.35 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and kube-proxy</td>
+<td>3.42 Gbits/sec</td>
+<td>6.75 Gbits/sec</td>
+<td>9.24 Gbits/sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated</td>
+<td>9.36 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+<td>9.39 Gbits/sec</td>
+</tr>
+<tr>
+<td>node to node</td>
+<td>9.41 Gbits/sec</td>
+<td>9.40 Gbits/sec</td>
+<td>9.42 Gbits/sec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="redis-benchmark-performance-test">redis-benchmark performance test</h2>
+<p>redis-benchmark is designed to measure the performance and throughput of a Redis server by simulating multiple clients and executing various Redis commands. We used redis-benchmark to test Pod's cross-node access to the Pod and Service where the Redis service is deployed. When testing access to Service's cluster IP, there are two scenarios: <code>kube-proxy</code> or <code>cilium + kube-proxy replacement</code>.</p>
+<ul>
+<li>Cross-node Pod redis-benchmark testing based on Pod IP.</li>
+</ul>
+<p>Use <code>redis-benchmark -h &lt;Pod IP&gt; -p 6379 -d 1000 -t get,set</code> to test the performance of cross-node Pod access to Pod IP. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>get</th>
+<th>set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>45682.96 sec</td>
+<td>46992.48 sec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>59737.16 sec</td>
+<td>59988.00 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod on the same subnet based on macvlan</td>
+<td>66357.00 sec</td>
+<td>66800.27 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod across subnets based on macvlan</td>
+<td>67444.45 sec</td>
+<td>67783.67 sec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Cross-node Pod redis-benchmark testing for cluster IP purposes.</li>
+</ul>
+<p>Use <code>redis-benchmark -h &lt;cluster IP&gt; -p 6379 -d 1000 -t get,set</code> to test the performance of cross-node Pod access to cluster IP. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>get</th>
+<th>set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico based on iptables datapath and tunnelless</td>
+<td>46082.95 sec</td>
+<td>46728.97 sec</td>
+</tr>
+<tr>
+<td>Cilium based on full eBPF acceleration and no tunneling</td>
+<td>60496.07 sec</td>
+<td>58927.52 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and kube-proxy</td>
+<td>45578.85 sec</td>
+<td>46274.87 sec</td>
+</tr>
+<tr>
+<td>Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated</td>
+<td>63211.12 sec</td>
+<td>64061.50 sec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="summary">Summary</h2>
+<p>When Spiderpool is used as an underlay network solution, its IO performance is ahead of Calico and Cilium in most scenarios.</p>
 
 
 

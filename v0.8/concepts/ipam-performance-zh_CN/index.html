@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -698,34 +726,6 @@
     <li class="md-nav__item">
       <a href="../../usage/route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1114,22 +1114,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1316,34 +1302,21 @@
       
         <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
-    结果
+    测试结果
   </a>
-  
-    <nav class="md-nav" aria-label="结果">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ipv4ipv6" class="md-nav__link">
-    IPv4/IPv6 双栈
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ipv4" class="md-nav__link">
-    IPv4 单栈
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#_6" class="md-nav__link">
-    小结
+    分析
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    总结
   </a>
   
 </li>
@@ -1373,7 +1346,7 @@
 
 <h1 id="ipam">IPAM 性能测试</h1>
 <p><strong>简体中文</strong> | <a href="../ipam-performance/"><strong>English</strong></a></p>
-<p><em><a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> 是一个适用于 underlay 网络的高性能 IPAM CNI 插件，此文将对比其与市面上主流的 underlay IPAM CNI 插件（如 <a href="https://github.com/k8snetworkplumbingwg/whereabouts">Whereabouts</a>，<a href="https://github.com/kubeovn/kube-ovn">Kube-OVN</a>）以及被广泛使用的 overlay IPAM CNI 插件 <a href="https://github.com/projectcalico/calico">calico-ipam</a> 在 ”1000 Pod“ 场景下的性能表现。</em></p>
+<p><em><a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> 是一个 underlay 网络解决方案，它提供了丰富的 IPAM 和 CNI 整合能力，此文将对比其与市面上主流运行在 underlay 场景下的 IPAM CNI 插件（如 <a href="https://github.com/k8snetworkplumbingwg/whereabouts">Whereabouts</a>，<a href="https://github.com/kubeovn/kube-ovn">Kube-OVN</a>）以及被广泛使用的 overlay IPAM CNI 插件 <a href="https://github.com/projectcalico/calico">calico-ipam</a>、<a href="https://github.com/cilium/cilium">cilium</a> 在 <code>1000 Pod</code> 场景下的性能表现。</em></p>
 <h2 id="_1">背景</h2>
 <p>为什么要做 underlay IPAM CNI 插件的性能测试？</p>
 <ol>
@@ -1383,10 +1356,10 @@
 </ol>
 <h2 id="_2">环境</h2>
 <ul>
-<li>Kubernetes: <code>v1.25.4</code></li>
-<li>container runtime: <code>containerd 1.6.12</code></li>
-<li>OS: <code>CentOS Linux 8</code></li>
-<li>kernel: <code>4.18.0-348.7.1.el8_5.x86_64</code></li>
+<li>Kubernetes: <code>v1.26.7</code></li>
+<li>container runtime: <code>containerd v1.7.2</code></li>
+<li>OS: <code>Ubuntu 22.04 LTS</code></li>
+<li>kernel: <code>5.15.0-33-generic</code></li>
 </ul>
 <table>
 <thead>
@@ -1400,309 +1373,157 @@
 <tbody>
 <tr>
 <td>master1</td>
-<td>control-plane</td>
-<td>4C</td>
+<td>control-plane, worker</td>
+<td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>master2</td>
-<td>control-plane</td>
-<td>4C</td>
+<td>control-plane, worker</td>
+<td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>master3</td>
-<td>control-plane</td>
-<td>4C</td>
+<td>control-plane, worker</td>
+<td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker4</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker5</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker6</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker7</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker8</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker9</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 <tr>
 <td>worker10</td>
-<td></td>
+<td>worker</td>
 <td>3C</td>
 <td>8Gi</td>
 </tr>
 </tbody>
 </table>
 <h2 id="_3">测试对象</h2>
-<p>本次测试基于 <code>0.3.1</code> 版本的 <a href="https://www.cni.dev/docs/spec/">CNI Specification</a>，以 <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan</a> 搭配 Spiderpool 作为测试方案，并选择了开源社区中其它几种对接 underlay 网络的方案作为对比：</p>
+<p>本次测试基于 <code>0.3.1</code> 版本的 <a href="https://www.cni.dev/docs/spec/">CNI Specification</a>，以 <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan</a> 搭配 Spiderpool 作为测试方案，并选择了开源社区中其它几种常见的网络方案作为对比：</p>
 <table>
 <thead>
 <tr>
-<th>Main CNI</th>
-<th>Main CNI 版本</th>
-<th>IPAM CNI</th>
-<th>IPAM CNI 版本</th>
-<th>特点</th>
+<th>测试对象</th>
+<th>版本</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>macvlan</td>
-<td><code>v1.1.1</code></td>
-<td>Spiderpool</td>
-<td><code>v0.4.1</code></td>
-<td>集群中存在多个 IP 池，每个池中的 IP 地址都可以被集群中的任意一个节点上的 Pod 所使用，当集群中的多个 Pod 并发的从同一个池中分配 IP 地址时，存在竞争。支持托管 IP 池的全生命流程，使其同步的与工作负载创建、扩缩容、删除，弱化了过大的共享池所带来的并发或存储问题。</td>
+<td>Spiderpool based on macvlan</td>
+<td><code>v0.8.0</code></td>
 </tr>
 <tr>
-<td>macvlan</td>
-<td><code>v1.1.1</code></td>
-<td>Whereabouts (CRD backend)</td>
-<td><code>v0.6.1</code></td>
-<td>各节点可以定义各自可用的 IP 池范围，若节点间存在重复定义的 IP 地址，那么这些 IP 地址上升为一种共享资源。</td>
+<td>Whereabouts based on macvlan</td>
+<td><code>v0.6.2</code></td>
 </tr>
 <tr>
-<td>Kube-OVN (underlay)</td>
-<td><code>v1.11.3</code></td>
 <td>Kube-OVN</td>
-<td><code>v1.11.3</code></td>
-<td>以子网来组织 IP 地址，每个 Namespace 可以归属于特定的子网， Namespace 下的 Pod 会自动从所属的子网中获取 IP 地址。子网也是一种集群资源，同一个子网的 IP 地址可以分布在任意一个节点上。</td>
+<td><code>v1.12.2</code></td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td><code>v1.14.3</code></td>
 </tr>
 <tr>
 <td>Calico</td>
-<td><code>v3.23.3</code></td>
-<td>calico-ipam (CRD backend)</td>
-<td><code>v3.23.3</code></td>
-<td>每个节点独享一个或多个 IP block，各节点上的 Pod 仅使用本地 IP block 中的 IP 地址，节点间无任何竞争与冲突，分配的效率非常高。</td>
+<td><code>v3.26.3</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="_4">方案</h2>
-<p>测试期间，我们会遵循如下约定：</p>
+<p>测试思路主要是：</p>
+<ol>
+<li>Underlay IP 资源有限，IP 的泄露和分配重复，容易造成干扰 ，因此 IP 分配的准确性非常重要。</li>
+<li>在大量 Pod 启动时竞争分配 IP，IPAM 的分配算法要高效，才能保障 Pod 快速发布成功。</li>
+</ol>
+<p>因此，设计了 IP 资源和 Pod 资源数量相同的极限测试，计时 Pod 从创建到 Running 的时间，来变相测试 IPAM 的精确性和健壮性。测试的条件如下：</p>
 <ul>
-<li>测试 IPv4 单栈和 IPv4/IPv6 双栈场景。</li>
-<li>测试 underlay IPAM CNI 插件时，尽最大可能的确保可用的 IP 地址数量与 Pod 数量为 <strong>1:1</strong>。例如，接下来我们计划创建 1000 个 Pod，那么应当限制可用的 IPv4/IPv6 地址数量均为 1000 个。</li>
-</ul>
-<p>具体的，我们会尝试以如下两种方式在上述 Kubenetes 集群上来启动总计 1000 个 Pod，并记录所有 Pod 均达到 <code>Running</code> 的耗时：</p>
-<ul>
-<li>仅创建一个 Deployment，其副本数为 1000。</li>
+<li>IPv4 单栈和 IPv4/IPv6 双栈场景。</li>
 <li>创建 100 个 Deployment，每个 Deployment 的副本数为 10。</li>
 </ul>
-<p>然后，我们会使用如下命令一次性的删除这 1000 个 Pod，记录被重建的 1000 个 Pod 全部 <code>Running</code> 的耗时：</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;prefix&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>pod
+<h2 id="_5">测试结果</h2>
+<p>如下展示了 IPAM 性能测试结果，其中，包含了 <code>限制 IP 与 Pod 等量</code> 和 <code>不限制 IP 数量</code> 两种场景，来分别测试每个 CNI ，而 Calico 和 Cilium 等是基于 IP block 预分配机制分配 IP，因此没法相对 "公平" 的进行 <code>限制 IP 与 Pod 等量</code> 测试，只进行 <code>不限制 IP 数量</code> 场景测试。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>限制 IP 与 Pod 等量</th>
+<th>不限制 IP 数量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spiderpool based on macvlan</td>
+<td>207s</td>
+<td>182</td>
+</tr>
+<tr>
+<td>Whereabouts based on macvlan</td>
+<td>失败</td>
+<td>2529s</td>
+</tr>
+<tr>
+<td>Kube-OVN</td>
+<td>405s</td>
+<td>343s</td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td>NA</td>
+<td>215s</td>
+</tr>
+<tr>
+<td>Calico</td>
+<td>NA</td>
+<td>322s</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_6">分析</h2>
+<p>Spiderpool 的 IPAM 分配原理，是整个集群节点的所有 Pod 都从同一个 CIDR 中分配 IP，所以 IP 分配和释放需要面临激烈的竞争，IP 分配性能的挑战会更大；Whereabouts 和 Calico 、Cilium的 IPAM 分配原理，是每个节点都有一个小的 IP 集合，所以 IP 分配的竞争比较小，IP 分配性能的挑战会小。但从上述实验数据上看，虽然 Spdierpool 的 IPAM 原理是 "吃亏" 的，但是分配 IP 的性能却是很好的。</p>
+<p>在测试过程中，遇到如下现象：</p>
+<p>Whereabouts based on macvlan：在<code>限制 IP 与 Pod 等量</code>场景下，在 300s 内 261 个 Pod 以较为匀速的状态达到了 <code>Running</code> 状态，在 1080s 时，分配 768 个 IP 地址。自此之后的 Pod 增长速率大幅降低，在 2280s 时达到 845 个，后续 Whereabouts 就基本不工作了，耗时类比于正无穷。由于 IP 地址数量与 Pod 数等量，如果 IPAM 组件未能正确的回收 IP，新 Pod 将因为缺少 IP 资源，且无法获取到可用的 IP，从而无法启动。并且观察到在启动失败的 Pod 中，出现了如下的一些错误：</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network<span class="o">]</span>:<span class="w"> </span>error<span class="w"> </span>adding<span class="w"> </span>container<span class="w"> </span>to<span class="w"> </span>network<span class="w"> </span><span class="s2">&quot;k8s-pod-network&quot;</span>:<span class="w"> </span>error<span class="w"> </span>at<span class="w"> </span>storage<span class="w"> </span>engine:<span class="w"> </span><span class="nb">time</span><span class="w"> </span>limit<span class="w"> </span>exceeded<span class="w"> </span><span class="k">while</span><span class="w"> </span>waiting<span class="w"> </span>to<span class="w"> </span>become<span class="w"> </span>leader
+
+name<span class="w"> </span><span class="s2">&quot;whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1&quot;</span><span class="w"> </span>is<span class="w"> </span>reserved<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s2">&quot;38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175&quot;</span>
 </code></pre></div>
-<p>接下来，将所有节点下电后再上电，模拟故障恢复，记录 1000 个 Pod 再次达到 <code>Running</code> 的耗时。</p>
-<p>最后，我们删除所有的 Deployment，记录所有 Pod 完全消失的耗时。</p>
-<h2 id="_5">结果</h2>
-<h3 id="ipv4ipv6">IPv4/IPv6 双栈</h3>
-<ul>
-<li>单个 1000 副本的 Deployment：</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>创建</th>
-<th>重建</th>
-<th>故障恢复</th>
-<th>删除</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>2m35s</td>
-<td>9m50s</td>
-<td>3m4s</td>
-<td>1m50s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>25m18s</td>
-<td>失败</td>
-<td>失败</td>
-<td>3m5s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>3m55s</td>
-<td>7m20s</td>
-<td>11m6s</td>
-<td>2m13s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m56s</td>
-<td>4m6s</td>
-<td>3m42s</td>
-<td>1m36s</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p>在测试 macvlan + Whereabouts 这个组合期间，创建的场景中 922 个 Pod 在 14m25s 内以较为均匀的速率达到 <code>Running</code> 状态，自此之后的 Pod 增长速率大幅降低，最终 1000 个 Pod 花了 25m18s 达到 <code>Running</code> 状态。至于重建的场景，在 55 个 Pod 达到 <code>Running</code> 状态后，Whereabouts 就基本不工作了，耗时类比于正无穷。</p>
-</blockquote>
-<ul>
-<li>100 个 10 副本的 Deployment：</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>创建</th>
-<th>重建</th>
-<th>故障恢复</th>
-<th>删除</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>1m37s</td>
-<td>3m27s</td>
-<td>3m3s</td>
-<td>1m22s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>21m49s</td>
-<td>失败</td>
-<td>失败</td>
-<td>2m9s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>4m6s</td>
-<td>7m46s</td>
-<td>10m22s</td>
-<td>2m8s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m57s</td>
-<td>3m58s</td>
-<td>4m16s</td>
-<td>1m35s</td>
-</tr>
-</tbody>
-</table>
-<h3 id="ipv4">IPv4 单栈</h3>
-<ul>
-<li>单个 1000 副本的 Deployment：</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>创建</th>
-<th>重建</th>
-<th>故障恢复</th>
-<th>删除</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>2m18s</td>
-<td>6m41s</td>
-<td>3m1s</td>
-<td>1m37s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>8m16s</td>
-<td>失败</td>
-<td>失败</td>
-<td>2m7s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>3m32s</td>
-<td>7m7s</td>
-<td>9m41s</td>
-<td>1m47s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m41s</td>
-<td>3m33s</td>
-<td>3m42s</td>
-<td>1m27s</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>100 个 10 副本的 Deployment：</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>CNI</th>
-<th>创建</th>
-<th>重建</th>
-<th>故障恢复</th>
-<th>删除</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>macvlan + Spiderpool</td>
-<td>1m4s</td>
-<td>3m23s</td>
-<td>3m3s</td>
-<td>1m23s</td>
-</tr>
-<tr>
-<td>macvlan + Whereabouts</td>
-<td>8m13s</td>
-<td>失败</td>
-<td>失败</td>
-<td>2m7s</td>
-</tr>
-<tr>
-<td>Kube-OVN</td>
-<td>3m36s</td>
-<td>7m14s</td>
-<td>8m52s</td>
-<td>1m41s</td>
-</tr>
-<tr>
-<td>Calico + calico-ipam</td>
-<td>1m39s</td>
-<td>3m25s</td>
-<td>4m24s</td>
-<td>1m27s</td>
-</tr>
-</tbody>
-</table>
-<h2 id="_6">小结</h2>
-<p>虽然 Spiderpool 是一种适用于 underlay 网络的 IPAM CNI 插件，其相较于主流的 overlay IPAM CNI 插件，面临着更多的复杂的 IP 地址抢占与冲突的问题，但它在大多数场景下的性能表现亦不逊色于后者。</p>
+<h2 id="_7">总结</h2>
+<p>虽然 Spiderpool 是一种适用于 Underlay 网络的解决方案，但其提供了强大的 IPAM 能力，其 IP 分配以及回收的特点相较于主流 Overlay CNI 的 IPAM 插件，面临着更多的、复杂的 IP 地址抢占与冲突的问题，但它的性能表现领先于后者。</p>
 
 
 

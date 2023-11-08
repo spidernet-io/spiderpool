@@ -13,7 +13,7 @@
     
     
       
-        <title>网络 IP 性能 - spiderpool</title>
+        <title>网络 IO 性能 - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ip" class="md-skip">
+        <a href="#io" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              网络 IP 性能
+              网络 IO 性能
             
           </span>
         </div>
@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../../usage/install/cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -698,34 +726,6 @@
     <li class="md-nav__item">
       <a href="../../usage/route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1114,22 +1114,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1280,6 +1266,63 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    环境
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    测试对象
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sockperf" class="md-nav__link">
+    sockperf 网络延时测试
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#netperf" class="md-nav__link">
+    netperf 性能测试
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iperf" class="md-nav__link">
+    iperf 网络性能测试
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redis-benchmark" class="md-nav__link">
+    redis-benchmark 性能测试
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    总结
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1301,8 +1344,374 @@
   </a>
 
 
-<h1 id="ip">网络 IP 性能</h1>
+<h1 id="io">网络 IO 性能</h1>
 <p><strong>简体中文</strong> | <a href="../io-performance/"><strong>English</strong></a></p>
+<p><em><a href="https://github.com/spidernet-io/spiderpool">Spiderpool</a> 搭配 Macvlan、SR-IOV、IPvlan 可以实现一套完整的网络方案，此文将对比其与市面上主流的网络 CNI 插件（如 <a href="https://github.com/cilium/cilium">cilium</a>，<a href="https://github.com/projectcalico/calico">calico</a>） 在多种场景下的网络<code>延时</code>和<code>吞吐量</code></em></p>
+<h2 id="_1">环境</h2>
+<p>本次测试包含各种场景的性能基准数据。所有测试均通过在 10 Gbit/s 网络接口的两个不同裸机节点上运行的容器之间执行。</p>
+<ul>
+<li>Kubernetes: <code>v1.28.2</code></li>
+<li>container runtime: <code>containerd 1.6.24</code></li>
+<li>OS: <code>ubuntu 23.04</code></li>
+<li>kernel: <code>6.2.0-35-generic</code></li>
+<li>NIC: <code>Mellanox Technologies MT27800 Family [ConnectX-5]</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Role</th>
+<th>CPU</th>
+<th>Memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master1</td>
+<td>control-plane, worker</td>
+<td>56C</td>
+<td>125Gi</td>
+</tr>
+<tr>
+<td>worker1</td>
+<td>worker</td>
+<td>56C</td>
+<td>125Gi</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_2">测试对象</h2>
+<p>本次测试以 <a href="https://www.cni.dev/plugins/current/main/macvlan/">macvlan</a> 搭配 Spiderpool 作为测试方案，并选择了开源社区中的 <a href="https://github.com/projectcalico/calico">Calico</a>、<a href="https://github.com/cilium/cilium">Cilium</a> 两种常见的网络方案作为对比，如下是相关的版本等信息：</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spiderpool based macvlan datapath</td>
+<td>Spiderpool 版本 v0.8.0</td>
+</tr>
+<tr>
+<td>Calico</td>
+<td>Calico 版本 v3.26.1，基于 iptables datapath 和无隧道</td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td>Cilium 版本 v1.14.3，基于全量 eBPF 加速和无隧道</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sockperf">sockperf 网络延时测试</h2>
+<p>Sockperf 是一个网络基准测试工具，可用于测量网络延迟，它允许您通过测试两个端点之间的延迟来评估网络的性能。我们可以通过它来分别测试 Pod 跨节点访问 Pod 和 Service。其中测试访问 Service 的 cluster IP 时，分为 <code>kube-proxy</code> 或者 <code>cilium + kube-proxy replacement</code> 两种场景。</p>
+<ul>
+<li>以 Pod IP 为目的的跨节点 Pod 延时测试。</li>
+</ul>
+<p>通过 <code>sockperf pp --tcp -i &lt;Pod IP&gt; -p 12345 -t 30</code> 测试跨节点 Pod 访问 Pod IP 的延时，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>延时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和无隧道的 Calico</td>
+<td>51.3 usec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速和无隧道的 cilium</td>
+<td>29.1 usec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网的 Spiderpool Pod</td>
+<td>24.3 usec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的跨子网的 Spiderpool Pod</td>
+<td>26.2 usec</td>
+</tr>
+<tr>
+<td>节点到节点</td>
+<td>32.2 usec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>以 cluster IP 为目的的跨节点 Pod 延时测试。</li>
+</ul>
+<p>通过 <code>sockperf pp --tcp -i &lt;Cluster IP&gt; -p 12345 -t 30</code> 测试跨节点 Pod 访问 cluster IP 的延时，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>延时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和无隧道的 Calico</td>
+<td>51.9 usec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速和无隧道的 cilium</td>
+<td>30.2 usec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod</td>
+<td>36.8 usec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod</td>
+<td>27.7 usec</td>
+</tr>
+<tr>
+<td>节点到节点</td>
+<td>32.2 usec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="netperf">netperf 性能测试</h2>
+<p>netperf 是一种广泛使用的网络性能测试工具，可让您测量网络性能的各个方面，例如吞吐量。我们可以通过 netperf 来分别测试 Pod 跨节点访问 Pod 和 Service 。其中测试访问 Service 的 cluster IP 时，分为 <code>kube-proxy</code> 或者 <code>cilium + kube-proxy replacement</code> 两种场景。</p>
+<ul>
+<li>以 Pod IP 为目的的跨节点 Pod 的 netperf 测试。</li>
+</ul>
+<p>通过 <code>netperf -H &lt;Pod IP&gt; -l 10  -c -t TCP_RR -- -r100,100</code> 测试跨节点 Pod 访问 Pod IP 的吞吐量，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和 无隧道 的 Calico</td>
+<td>9985.7 sec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速 和 无隧道 的 cilium</td>
+<td>17571.3 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网的 Spiderpool Pod</td>
+<td>19793.9 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的跨子网的 Spiderpool Pod</td>
+<td>19215.2 sec</td>
+</tr>
+<tr>
+<td>节点到节点</td>
+<td>47560.5 sec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>以 cluster IP 为目的的跨节点 Pod 的 netperf 测试。</li>
+</ul>
+<p>通过 <code>netperf -H &lt;cluster IP&gt; -l 10  -c -t TCP_RR -- -r100,100</code> 测试跨节点 Pod 访问 cluster IP 的吞吐量，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和 无隧道 的 Calico</td>
+<td>9782.2 sec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速 和 无隧道 的 cilium</td>
+<td>17236.5 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod</td>
+<td>16002.3 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod</td>
+<td>18992.9 sec</td>
+</tr>
+<tr>
+<td>节点到节点</td>
+<td>47560.5 sec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="iperf">iperf 网络性能测试</h2>
+<p>iperf 是一种流行的网络性能测试工具，可让您测量两个端点之间的网络带宽。它广泛用于评估网络连接的带宽和性能。在本章节中，我们通过它分别来测试 Pod 跨节点访问 Pod 和 Service。其中测试访问 Service 的 cluster IP 时，分为 <code>kube-proxy</code> 或者 <code>cilium + kube-proxy replacement</code> 两种场景。</p>
+<ul>
+<li>以 Pod IP 为目的的跨节点 Pod 的 iperf 测试。</li>
+</ul>
+<p>通过 <code>iperf3 -c &lt;Pod IP&gt; -d -P 1</code> 测试跨节点 Pod 访问 Pod IP 的性能，通过 —P 参数分别指定线程为 1，2，4，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>线程数 1</th>
+<th>线程数 2</th>
+<th>线程数 4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和 无隧道 的 Calico</td>
+<td>3.26 Gbits/sec</td>
+<td>4.56 Gbits/sec</td>
+<td>8.05 Gbits/sec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速 和 无隧道 的 cilium</td>
+<td>9.35 Gbits/sec</td>
+<td>9.36 Gbits/sec</td>
+<td>9.39 Gbits/sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网的 Spiderpool Pod</td>
+<td>9.36 Gbits/sec</td>
+<td>9.37 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的跨子网的 Spiderpool Pod</td>
+<td>9.36 Gbits/sec</td>
+<td>9.37 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+</tr>
+<tr>
+<td>节点到节点</td>
+<td>9.41 Gbits/sec</td>
+<td>9.40 Gbits/sec</td>
+<td>9.42 Gbits/sec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>以 cluster IP 为目的的跨节点 Pod 的 iperf 测试。</li>
+</ul>
+<p>通过 <code>iperf3 -c &lt;cluster IP&gt; -d -P 1</code> 测试跨节点 Pod 访问 cluster IP 的性能，通过 —P 参数分别指定线程为 1，2，4，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>线程数 1</th>
+<th>线程数 2</th>
+<th>线程数 4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和 无隧道 的 Calico</td>
+<td>3.06 Gbits/sec</td>
+<td>4.63 Gbits/sec</td>
+<td>8.02 Gbits/sec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速 和 无隧道 的 cilium</td>
+<td>9.35 Gbits/sec</td>
+<td>9.35 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod</td>
+<td>3.42 Gbits/sec</td>
+<td>6.75 Gbits/sec</td>
+<td>9.24 Gbits/sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod</td>
+<td>9.36 Gbits/sec</td>
+<td>9.38 Gbits/sec</td>
+<td>9.39 Gbits/sec</td>
+</tr>
+<tr>
+<td>节点到节点</td>
+<td>9.41 Gbits/sec</td>
+<td>9.40 Gbits/sec</td>
+<td>9.42 Gbits/sec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="redis-benchmark">redis-benchmark 性能测试</h2>
+<p>redis-benchmark 旨在通过模拟多个客户端并执行各种 Redis 命令来测量 Redis 服务器的性能和吞吐量。我们通过 redis-benchmark 分别测试 Pod 跨节点访问部署了 Redis 服务的 Pod 和 Service。其中测试访问 Service 的 cluster IP 时，分为 <code>kube-proxy</code> 或者 <code>cilium + kube-proxy replacement</code> 两种场景。</p>
+<ul>
+<li>以 Pod IP 为目的的跨节点 Pod 的 redis-benchmark 测试。</li>
+</ul>
+<p>通过 <code>redis-benchmark -h &lt;Pod IP&gt; -p 6379 -d 1000 -t get,set</code> 测试跨节点 Pod 访问 Pod IP 的性能，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>get</th>
+<th>set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和 无隧道 的 Calico</td>
+<td>45682.96 sec</td>
+<td>46992.48 sec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速 和 无隧道 的 cilium</td>
+<td>59737.16 sec</td>
+<td>59988.00 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网的 Spiderpool Pod</td>
+<td>66357.00 sec</td>
+<td>66800.27 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的跨子网的 Spiderpool Pod</td>
+<td>67444.45 sec</td>
+<td>67783.67 sec</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>以 cluster IP 为目的的跨节点 Pod 的 redis-benchmark 测试。</li>
+</ul>
+<p>通过 <code>redis-benchmark -h &lt;cluster IP&gt; -p 6379 -d 1000 -t get,set</code> 测试跨节点 Pod 访问 cluster IP 的性能，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>get</th>
+<th>set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基于 iptables datapath 和 无隧道 的 Calico</td>
+<td>46082.95 sec</td>
+<td>46728.97 sec</td>
+</tr>
+<tr>
+<td>基于全量 eBPF 加速 和 无隧道 的 cilium</td>
+<td>60496.07 sec</td>
+<td>58927.52 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod</td>
+<td>45578.85 sec</td>
+<td>46274.87 sec</td>
+</tr>
+<tr>
+<td>基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod</td>
+<td>63211.12 sec</td>
+<td>64061.50 sec</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_3">总结</h2>
+<p>Spiderpool 做为 Underlay 网络解决方案时，其 IO 性能在大部分场景下都领先于 Calico、Cilium。</p>
 
 
 

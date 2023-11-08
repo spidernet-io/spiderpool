@@ -341,7 +341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../get-started-kind/" class="md-nav__link">
+      <a href="../get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -427,6 +427,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-kind/" class="md-nav__link">
+        Kind
+      </a>
     </li>
   
 
@@ -534,6 +548,20 @@
     <li class="md-nav__item">
       <a href="../../cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -757,34 +785,6 @@
     <li class="md-nav__item">
       <a href="../../../route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1173,22 +1173,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1473,7 +1459,7 @@ status:
 <blockquote>
 <p>If the status of SriovNetworkNodeState CRs is <code>InProgress</code>,  it indicates that the sriov-operator is currently synchronizing the node state. Wait for the status to become <code>Succeeded</code> to confirm that the synchronization is complete. Check the CR to ensure that the sriov-network-operator has discovered the network interfaces on the node that support SR-IOV.</p>
 </blockquote>
-<p>Based on the given information, it is known that the network interface on the node <code>node-1</code> supports SR-IOV capability with a maximum of 8 VFs. Now, let's create SriovNetworkNodePolicy CRs to generate VFs on these network interfaces of the respective nodes:</p>
+<p>Based on the given information, it is known that the network interface's <code>enp4s0f0np0</code> on the node <code>node-1</code> supports SR-IOV capability with a maximum of 8 VFs. Now, let's create SriovNetworkNodePolicy CRs and specify PF (Physical function, physical network interface) through <code>nicSelector.pfNames</code> to generate VFs(Virtual Function) on these network interfaces of the respective nodes:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: sriovnetwork.openshift.io/v1</span>
 <span class="s">kind: SriovNetworkNodePolicy</span>
@@ -1485,10 +1471,8 @@ status:
 <span class="s">  nodeSelector:</span>
 <span class="s">    kubernetes.io/os: &quot;linux&quot;</span>
 <span class="s">  nicSelector:</span>
-<span class="s">    deviceID: &quot;1017&quot;</span>
-<span class="s">    rootDevices:</span>
-<span class="s">      - 0000:04:00.0</span>
-<span class="s">    vendor: &quot;15b3&quot;</span>
+<span class="s">    pfNames:</span>
+<span class="s">      - enp4s0f0np0</span>
 <span class="s">  numVfs: 8 # desired number of VFs</span>
 <span class="s">  resourceName: sriov_netdevice</span>
 <span class="s">EOF</span>
@@ -1741,13 +1725,13 @@ Accept-Ranges:<span class="w"> </span>bytes
       
       
         
-        <a href="../../overlay/get-started-calico/" class="md-footer__link md-footer__link--next" aria-label="Next: Calico" rel="next">
+        <a href="../get-started-kind/" class="md-footer__link md-footer__link--next" aria-label="Next: Kind" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Calico
+              Kind
             </div>
           </div>
           <div class="md-footer__button md-icon">

@@ -337,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../install/underlay/get-started-macvlan/" class="md-nav__link">
         Macvlan
       </a>
     </li>
@@ -367,6 +367,20 @@
     <li class="md-nav__item">
       <a href="../install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/underlay/get-started-kind/" class="md-nav__link">
+        Kind
       </a>
     </li>
   
@@ -475,6 +489,20 @@
     <li class="md-nav__item">
       <a href="../install/cloud/get-started-alibaba/" class="md-nav__link">
         Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
       </a>
     </li>
   
@@ -700,34 +728,6 @@
     <li class="md-nav__item">
       <a href="../route/" class="md-nav__link">
         Route Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../service/" class="md-nav__link">
-        Service Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ifacer/" class="md-nav__link">
-        Plugin ifacer
       </a>
     </li>
   
@@ -1198,22 +1198,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/plugin-coordinator/" class="md-nav__link">
-        Coordinatorr plugin
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
-        ifacer plugin
+        Ifacer plugin
       </a>
     </li>
   
@@ -1546,142 +1532,142 @@ under the Underlay CNI through it.</p>
 <p>NOTE: Please ensure that the kernel version of the cluster nodes is at least greater than 4.19</p>
 </blockquote>
 <p>Prepare a cluster without the kube-proxy component installed in advance. If kube-proxy is already installed, you can refer to the following commands to remove the kube-proxy component:</p>
-<div class="highlight"><pre><span></span><code>~# kubectl delete ds -n kube-system kube-proxy
-~# # run the command on every node
-~# iptables-save | grep -v KUBE | iptables-restore
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>ds<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>kube-proxy
+~#<span class="w"> </span><span class="c1"># run the command on every node</span>
+~#<span class="w"> </span>iptables-save<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>KUBE<span class="w"> </span><span class="p">|</span><span class="w"> </span>iptables-restore
 </code></pre></div>
 <p>To install the Cilium component, make sure to enable the kube-proxy replacement feature:</p>
-<div class="highlight"><pre><span></span><code>~# helm repo add cilium https://helm.cilium.io
-~# helm repo update
-~# API_SERVER_IP=&lt;your_api_server_ip&gt;
-~# # Kubeadm default is 6443
-~# API_SERVER_PORT=&lt;your_api_server_port&gt;
-~# helm install cilium cilium/cilium --version 1.14.3 \
-  --namespace kube-system \
-  --set kubeProxyReplacement=true \
-  --set k8sServiceHost=${API_SERVER_IP} \
-  --set k8sServicePort=${API_SERVER_PORT}
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium<span class="w"> </span>https://helm.cilium.io
+~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
+~#<span class="w"> </span><span class="nv">API_SERVER_IP</span><span class="o">=</span>&lt;your_api_server_ip&gt;
+~#<span class="w"> </span><span class="c1"># Kubeadm default is 6443</span>
+~#<span class="w"> </span><span class="nv">API_SERVER_PORT</span><span class="o">=</span>&lt;your_api_server_port&gt;
+~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.14.3<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--set<span class="w"> </span><span class="nv">kubeProxyReplacement</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--set<span class="w"> </span><span class="nv">k8sServiceHost</span><span class="o">=</span><span class="si">${</span><span class="nv">API_SERVER_IP</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--set<span class="w"> </span><span class="nv">k8sServicePort</span><span class="o">=</span><span class="si">${</span><span class="nv">API_SERVER_PORT</span><span class="si">}</span>
 </code></pre></div>
 <p>The installation is complete, check the pod's state:</p>
-<div class="highlight"><pre><span></span><code>～# kubectl  get po -n kube-system | grep cilium
-cilium-2r6s5                             1/1     Running     0              15m
-cilium-lr9lx                             1/1     Running     0              15m
-cilium-operator-5ff9f86dfd-lrk6r         1/1     Running     0              15m
-cilium-operator-5ff9f86dfd-sb695         1/1     Running     0              15m
+<div class="highlight"><pre><span></span><code>～#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cilium
+cilium-2r6s5<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+cilium-lr9lx<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+cilium-operator-5ff9f86dfd-lrk6r<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+cilium-operator-5ff9f86dfd-sb695<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
 </code></pre></div>
 <p>To install Spiderpool, see <a href="../install/underlay/get-started-macvlan-zh_CN/">Install</a> to install Spiderpool:</p>
-<div class="highlight"><pre><span></span><code>~# helm install spiderpool spiderpool/spiderpool -n kube-system \
-  --set multus.multusCNI.defaultCniCRName=&quot;macvlan-conf&quot; \
-  --set  coordinator.podCIDRType=none
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--set<span class="w">  </span>coordinator.podCIDRType<span class="o">=</span>none
 </code></pre></div>
 <blockquote>
 <p>set coordinator.podCIDRType=none, the spiderpool will not get the cluster's ServiceCIDR. Service-related routes are also not injected when pods are created.</p>
 <p>Access to the Service in this way is entirely dependent on Cilium kube-proxy Replacement.</p>
 </blockquote>
 <p>show the installation of Spiderpool:</p>
-<div class="highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
-spiderpool-agent-9sllh                         1/1     Running     0          1m
-spiderpool-agent-h92bv                         1/1     Running     0          1m
-spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
-spiderpool-init                                0/1     Completed   0          1m
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system
+spiderpool-agent-9sllh<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+spiderpool-agent-h92bv<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+spiderpool-controller-7df784cdb7-bsfwv<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>1m
 </code></pre></div>
 <p>Create a MacVLAN-related Multus configuration and create a companion IPPools resource:</p>
-<div class="highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: v4-pool
-spec:
-  gateway: 172.81.0.1
-  ips:
-  - 172.81.0.100-172.81.0.120
-  subnet: 172.81.0.0/16
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: macvlan-ens192
-  namespace: kube-system
-spec:
-  cniType: macvlan
-  enableCoordinator: true
-  macvlan:
-    master:
-    - &quot;ens192&quot;
-    ippools:
-      ipv4: [&quot;v4-pool&quot;]
-EOF
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: v4-pool</span>
+<span class="s">spec:</span>
+<span class="s">  gateway: 172.81.0.1</span>
+<span class="s">  ips:</span>
+<span class="s">  - 172.81.0.100-172.81.0.120</span>
+<span class="s">  subnet: 172.81.0.0/16</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: macvlan-ens192</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - &quot;ens192&quot;</span>
+<span class="s">    ippools:</span>
+<span class="s">      ipv4: [&quot;v4-pool&quot;]</span>
+<span class="s">EOF</span>
 </code></pre></div>
 <blockquote>
 <p>needs to ensure that ens192 exists on the cluster nodes</p>
 <p>recommends setting enableCoordinator to true, which can resolve issues with pod health detection</p>
 </blockquote>
 <p>Create a set of cross-node DaemonSet apps for testing:</p>
-<div class="highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/macvlan-ens192&quot;
-NAME=ipvlan
-cat &lt;&lt;EOF | kubectl apply -f -
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: ${NAME}
-  labels:
-    app: $NAME
-spec:
-  selector:
-    matchLabels:
-      app: $NAME
-  template:
-    metadata:
-      name: $NAME
-      labels:
-        app: $NAME
-      annotations:
-        ${ANNOTATION_MULTUS}
-    spec:
-      containers:
-      - name: test-app
-        image: nginx
-        imagePullPolicy: IfNotPresent
-        ports:
-        - name: http
-          containerPort: 80
-          protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ${NAME}
-spec:
-  - ports:
-    name: http
-    port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app: ${NAME}
-  type: ClusterIP
-EOF
+<div class="highlight"><pre><span></span><code><span class="nv">ANNOTATION_MULTUS</span><span class="o">=</span><span class="s2">&quot;v1.multus-cni.io/default-network: kube-system/macvlan-ens192&quot;</span>
+<span class="nv">NAME</span><span class="o">=</span>ipvlan
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: DaemonSet</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${NAME}</span>
+<span class="s">  labels:</span>
+<span class="s">    app: $NAME</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: $NAME</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      name: $NAME</span>
+<span class="s">      labels:</span>
+<span class="s">        app: $NAME</span>
+<span class="s">      annotations:</span>
+<span class="s">        ${ANNOTATION_MULTUS}</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: test-app</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">---</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${NAME}</span>
+<span class="s">spec:</span>
+<span class="s">  - ports:</span>
+<span class="s">    name: http</span>
+<span class="s">    port: 80</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">    targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: ${NAME}</span>
+<span class="s">  type: ClusterIP</span>
+<span class="s">EOF</span>
 </code></pre></div>
 <p>Verify the connectivity of the access service and see if the performance is improved:</p>
-<div class="highlight"><pre><span></span><code>~# kubectl exec -it ipvlan-test-55c97ccfd8-kd4vj sh
-kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
-/ # curl 10.233.42.25 -I
-HTTP/1.1 200 OK
-Server: nginx
-Date: Fri, 20 Oct 2023 07:52:13 GMT
-Content-Type: text/html
-Content-Length: 4055
-Last-Modified: Thu, 02 Mar 2023 10:57:12 GMT
-Connection: keep-alive
-ETag: &quot;64008108-fd7&quot;
-Accept-Ranges: bytes
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>ipvlan-test-55c97ccfd8-kd4vj<span class="w"> </span>sh
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
+/<span class="w"> </span><span class="c1"># curl 10.233.42.25 -I</span>
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+Server:<span class="w"> </span>nginx
+Date:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">20</span><span class="w"> </span>Oct<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">07</span>:52:13<span class="w"> </span>GMT
+Content-Type:<span class="w"> </span>text/html
+Content-Length:<span class="w"> </span><span class="m">4055</span>
+Last-Modified:<span class="w"> </span>Thu,<span class="w"> </span><span class="m">02</span><span class="w"> </span>Mar<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">10</span>:57:12<span class="w"> </span>GMT
+Connection:<span class="w"> </span>keep-alive
+ETag:<span class="w"> </span><span class="s2">&quot;64008108-fd7&quot;</span>
+Accept-Ranges:<span class="w"> </span>bytes
 </code></pre></div>
 <p>Open another terminal, enter the network space of the pod, and use the <code>tcpdump</code> tool to see that when the packet accessing the service is sent from the pod network namespace, 
 the destination address has been resolved to the target pod address:</p>
-<div class="highlight"><pre><span></span><code>~# tcpdump -nnev -i eth0 tcp and port 80
-tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
-10.6.185.218.43550 &gt; 10.6.185.210.80: Flags [S], cksum 0x87e7 (incorrect -&gt; 0xe534), seq 1391704016, win 64240, options [mss 1460,sackOK,TS val 2667940841 ecr 0,nop,wscale 7], length 0
-10.6.185.210.80 &gt; 10.6.185.218.43550: Flags [S.], cksum 0x9d1a (correct), seq 2119742376, ack 1391704017, win 65160, options [mss 1460,sackOK,TS val 3827707465 ecr 2667940841,nop,wscale 7], length 0 
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>tcpdump<span class="w"> </span>-nnev<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>tcp<span class="w"> </span>and<span class="w"> </span>port<span class="w"> </span><span class="m">80</span>
+tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="w"> </span>eth0,<span class="w"> </span>link-type<span class="w"> </span>EN10MB<span class="w"> </span><span class="o">(</span>Ethernet<span class="o">)</span>,<span class="w"> </span>capture<span class="w"> </span>size<span class="w"> </span><span class="m">262144</span><span class="w"> </span>bytes
+<span class="m">10</span>.6.185.218.43550<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.210.80:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x87e7<span class="w"> </span><span class="o">(</span>incorrect<span class="w"> </span>-&gt;<span class="w"> </span>0xe534<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">1391704016</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">64240</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">2667940841</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">0</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span>
+<span class="m">10</span>.6.185.210.80<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.218.43550:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S.<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x9d1a<span class="w"> </span><span class="o">(</span>correct<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">2119742376</span>,<span class="w"> </span>ack<span class="w"> </span><span class="m">1391704017</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">65160</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">3827707465</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">2667940841</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span><span class="w"> </span>
 </code></pre></div>
 <p><code>10.6.185.218</code> is the IP of the source pod and <code>10.6.185.210</code> is the IP of the destination pod. Before and after using the <code>sockperf</code> tool to test the Cilium acceleration, the data comparison of pods accessing ClusterIP across nodes is obtained:</p>
 <table>

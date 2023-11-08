@@ -860,7 +860,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				)
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.40.10")
 				subnetT.Spec.Gateway = pointer.String("172.18.40.1")
-				subnetT.Spec.Vlan = pointer.Int64(0)
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
@@ -884,7 +883,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				)
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "abcd:1234::a")
 				subnetT.Spec.Gateway = pointer.String("abcd:1234::1")
-				subnetT.Spec.Vlan = pointer.Int64(0)
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
@@ -1445,7 +1443,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.2-172.18.40.3")
-				subnetT.Spec.Vlan = pointer.Int64(0)
 
 				newSubnetT := subnetT.DeepCopy()
 				newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "172.18.40.10")
@@ -1467,7 +1464,6 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs, "abcd:1234::2-abcd:1234::3")
-				subnetT.Spec.Vlan = pointer.Int64(0)
 
 				newSubnetT := subnetT.DeepCopy()
 				newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "abcd:1234::a")

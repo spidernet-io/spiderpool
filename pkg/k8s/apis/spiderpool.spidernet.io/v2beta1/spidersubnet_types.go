@@ -26,7 +26,6 @@ type SubnetSpec struct {
 	Gateway *string `json:"gateway,omitempty"`
 
 	// DEPRECATED: Vlan is deprecated.
-	// +kubebuilder:default=0
 	// +kubebuilder:validation:Maximum=4094
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional

@@ -526,7 +526,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 				v4PoolObj.Spec.Subnet = spiderPoolIPv4SubnetVlan200.Spec.Subnet
 				v4PoolObj.Spec.Gateway = spiderPoolIPv4SubnetVlan200.Spec.Gateway
-				v4PoolObj.Spec.Vlan = spiderPoolIPv4SubnetVlan200.Spec.Vlan
 
 				// Do not use the gateway address as the conflicting ip, and the use case will remove the IP address in the subsequent steps.
 				// If the gateway address is removed, it will affect the connectivity of other use cases.
@@ -558,7 +557,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
 				v6PoolObj.Spec.Subnet = spiderPoolIPv6SubnetVlan200.Spec.Subnet
 				v6PoolObj.Spec.Gateway = spiderPoolIPv6SubnetVlan200.Spec.Gateway
-				v6PoolObj.Spec.Vlan = spiderPoolIPv6SubnetVlan200.Spec.Vlan
 				// Do not use the gateway address as the conflicting ip, and the use case will remove the IP address in the subsequent steps.
 				// If the gateway address is removed, it will affect the connectivity of other use cases.
 				var v6RandNum int

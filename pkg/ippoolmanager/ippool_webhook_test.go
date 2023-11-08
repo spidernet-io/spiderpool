@@ -542,7 +542,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				)
 
 				subnetT.Spec.Gateway = pointer.String("172.18.50.0")
-				subnetT.Spec.Vlan = pointer.Int64(50)
 				subnetT.Spec.Routes = []spiderpoolv2beta1.Route{
 					{
 						Dst: "0.0.0.0/0",
@@ -565,7 +564,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				Expect(v).To(Equal(subnetName))
 
 				Expect(ipPoolT.Spec.Gateway).To(Equal(subnetT.Spec.Gateway))
-				Expect(ipPoolT.Spec.Vlan).To(Equal(subnetT.Spec.Vlan))
 				Expect(ipPoolT.Spec.Routes).To(Equal(subnetT.Spec.Routes))
 			})
 		})
@@ -1317,7 +1315,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				)
 				ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.10")
 				ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
-				ipPoolT.Spec.Vlan = pointer.Int64(0)
 				ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
@@ -1359,7 +1356,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				)
 				ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "abcd:1234::a")
 				ipPoolT.Spec.Gateway = pointer.String("abcd:1234::1")
-				ipPoolT.Spec.Vlan = pointer.Int64(0)
 				ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
@@ -2095,7 +2091,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.2-172.18.40.3")
-				ipPoolT.Spec.Vlan = pointer.Int64(0)
 
 				newIPPoolT := ipPoolT.DeepCopy()
 				newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
@@ -2134,7 +2129,6 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
 				ipPoolT.Spec.Subnet = "abcd:1234::/120"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "abcd:1234::2-abcd:1234::3")
-				ipPoolT.Spec.Vlan = pointer.Int64(0)
 
 				newIPPoolT := ipPoolT.DeepCopy()
 				newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "abcd:1234::a")

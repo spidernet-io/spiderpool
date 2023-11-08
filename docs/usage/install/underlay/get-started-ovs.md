@@ -80,7 +80,6 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
     metadata:
       name: ippool-test
     spec:
-      ipVersion: 4
       ips:
       - "172.18.30.131-172.18.30.140"
       subnet: 172.18.0.0/16

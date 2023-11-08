@@ -30,10 +30,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ${{ secrets.GITHUB_TOKEN }} is forbidden to create or approve pull requests
       - name: cherry pick
         env:
-          GITHUB_TOKEN: ${{ secrets.WELAN_PAT}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JSON: ${{ toJSON(github) }}
         run: |
           set -x
@@ -41,7 +40,7 @@ jobs:
           if ${{ github.event_name == 'workflow_dispatch' }}; then
                 PR_NUMBER=${{ github.event.inputs.prNumber }}
           else
-                    grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
+                grep -Eio "Merge pull request #[0-9]+ " <<< "${JSON}" || true
                 echo "try to get PR from commit"
                 COMMIT=` echo "${JSON}" | jq '.event.commits[0].id' | tr -d '"' ` || true
                 if [ -n "${COMMIT}" ]; then

@@ -82,7 +82,7 @@ The following steps will describe how to upgrade all of the components from one 
 
     (Optional) Spiderpool chart version has changed, you can get the latest stable version with the following command, unzip the chart package and apply all crds.
 
-     ```bash
+    ```bash
     ~# helm search repo spiderpool --versions
     ...
     ~# helm fetch spiderpool/spiderpool --version <upgraded-version>

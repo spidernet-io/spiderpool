@@ -1,4 +1,4 @@
-# Underlay CNI 访问 Service 
+# Underlay CNI 访问 Service
 
 **简体中文** | [**English**](./underlay_cni_service.md)
 
@@ -115,7 +115,7 @@ default via 169.254.1.1 dev eth0
 > 注意: 需要确保集群节点的内核版本至少大于 4.19
 
 提前准备好一个未安装 kube-proxy 组件的集群，如果已经安装 kube-proxy 可参考一下命令删除 kube-proxy 组件
-   
+
 ```shell
 ~# kubectl delete ds -n kube-system kube-proxy
 ~# # 在每个节点上运行
@@ -124,7 +124,7 @@ default via 169.254.1.1 dev eth0
 
 也可以使用 kubeadm 安装一个新集群, 注意不要安装 kube-proxy:
 
-```
+```shell
 ~# kubeadm init --skip-phases=addon/kube-proxy
 ```
 
@@ -144,7 +144,7 @@ default via 169.254.1.1 dev eth0
 ```
 
 安装完成，检查安装状态：
-      
+
 ```shell
 ~# kubectl  get po -n kube-system | grep cilium
 cilium-2r6s5                             1/1     Running     0              15m

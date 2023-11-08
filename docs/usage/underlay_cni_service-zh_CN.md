@@ -53,7 +53,7 @@ default via 10.6.0.1 dev eth0
 > 
 > 如果 Pod 的 underlay 子网与集群的 clusterCIDR 相同，那我们必须要设置 `masqueradeAll` 为 true。
 
-### 对于 `coordinator` 运行在 Underlay 模式
+### 对于 `coordinator` 运行在 Overlay 模式
 
 配置 `coordinator` 为 Overlay 模式同样也能解决 Underlay CNI 访问 Service 的问题。 传统的 Overlay 类型(如 [Calico](https://github.com/projectcalico/calico) 和 [Cilium](https://github.com/cilium/cilium) 等)的
 CNI 已经完美解决了访问 Service 的问题。 我们可以借助它，帮助 Underlay Pod 访问 Service。 我们可以为 Pod 附加多张网卡，`eth0` 为 Overlay CNI 创建，用于转发集群东西向流量。`net1` 为 Underlay CNI 创建，用于转发 Pod 南北向流量。
@@ -116,7 +116,7 @@ default via 169.254.1.1 dev eth0
 
 提前准备好一个未安装 kube-proxy 组件的集群，如果已经安装 kube-proxy 可参考一下命令删除 kube-proxy 组件
    
-```
+```shell
 ~# kubectl delete ds -n kube-system kube-proxy
 ~# # 在每个节点上运行
 ~# iptables-save | grep -v KUBE | iptables-restore
@@ -130,7 +130,7 @@ default via 169.254.1.1 dev eth0
 
 安装 Cilium 组件，注意开启 kube-proxy replacement 功能
 
-```
+```shell
 ~# helm repo add cilium https://helm.cilium.io
 ~# helm repo update
 ~# API_SERVER_IP=<your_api_server_ip>
@@ -145,8 +145,8 @@ default via 169.254.1.1 dev eth0
 
 安装完成，检查安装状态：
       
-```
-～# kubectl  get po -n kube-system | grep cilium
+```shell
+~# kubectl  get po -n kube-system | grep cilium
 cilium-2r6s5                             1/1     Running     0              15m
 cilium-lr9lx                             1/1     Running     0              15m
 cilium-operator-5ff9f86dfd-lrk6r         1/1     Running     0              15m
@@ -155,7 +155,7 @@ cilium-operator-5ff9f86dfd-sb695         1/1     Running     0              15m
 
 安装 Spiderpool, 可参考 [安装](./install/underlay/get-started-macvlan-zh_CN.md) 安装 Spiderpool:
 
-```
+```shell
 ~# helm install spiderpool spiderpool/spiderpool -n kube-system \
     --set multus.multusCNI.defaultCniCRName="macvlan-conf" \
     --set  coordinator.podCIDRType=none
@@ -169,18 +169,18 @@ cilium-operator-5ff9f86dfd-sb695         1/1     Running     0              15m
 
 完成后，安装的组件如下:
 
-```
+```shell
 ~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
-  ```
+```
 
 创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源: 
 
-```
-~#cat <<EOF | kubectl apply -f -
+```shell
+~# cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -213,7 +213,7 @@ EOF
 
 创建一组跨节点的 DaemonSet 应用用于测试：
 
-```
+```yaml
 ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens192"
 NAME=ipvlan
 cat <<EOF | kubectl apply -f -
@@ -262,7 +262,7 @@ EOF
 
 验证访问 Service 的联通性，并查看性能是否提升
 
-```
+```shell
 ~# kubectl exec -it ipvlan-test-55c97ccfd8-kd4vj sh
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
 / # curl 10.233.42.25 -I
@@ -279,7 +279,7 @@ Accept-Ranges: bytes
 
 另开一个终端，进入到 Pod 的网络命名空间，通过 tcpdump 工具查看到访问 Service 的数据包从 Pod 网络命名空间发出时，目标地址已经被解析为目标 Pod 地址:
 
-```
+```shell
 ~# tcpdump -nnev -i eth0 tcp and port 80
 tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
 10.6.185.218.43550 > 10.6.185.210.80: Flags [S], cksum 0x87e7 (incorrect -> 0xe534), seq 1391704016, win 64240, options [mss 1460,sackOK,TS val 2667940841 ecr 0,nop,wscale 7], length 0

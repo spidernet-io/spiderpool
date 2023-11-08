@@ -16,9 +16,9 @@ Please refer to the following examples for installation:
 
 - [Create a cluster using ovs](./install/underlay/get-started-ovs.md)
 
-- [Create a cluster:  using calico CNI for fixed IP addresses](./install/underlay/get-started-calico.md)
+- [Create a cluster: using calico CNI for fixed IP addresses](./install/underlay/get-started-calico.md)
 
-- [Create a cluster:  using weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
+- [Create a cluster: using weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
 
 - [Create a cluster: using underlay CNI for RDMA communication](./rdma.md)
 

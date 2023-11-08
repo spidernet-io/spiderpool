@@ -79,9 +79,9 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - For stateful applications, each Pod can be allocated a persistent fixed IP address. It also provides control over the IP range used by all Pods during scaling operations. Refer to the [example](./statefulset.md) for details.
 
-- Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the [example](./kubevirt-zh_CN.md) for details.
+- Underlay networking support is available for kubevirt, allowing fixed IP addresses for virtual machines. Refer to the [example](./kubevirt.md) for details.
 
-- Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the [example](./spider-affinity.md) for details.
+- Applications deployed across subnets can be assigned different subnet IP addresses for each replica. Refer to the [example](./network-topology.md) for details.
 
 - The Subnet feature separates responsibilities between infrastructure administrators and application ones.
   It automates IP pool management for applications with fixed IP requirements, enabling automatic creation, scaling, and deletion of fixed IP pools.
@@ -121,7 +121,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./service-zh_CN.md) for details.
+[ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./service.md) for details.
 
 - Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 

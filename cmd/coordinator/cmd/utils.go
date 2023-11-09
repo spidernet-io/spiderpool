@@ -413,33 +413,41 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 // tunePodRoutes make sure that move all routes of podDefaultRouteNIC interface to main table, and move original routes
 // in main table to new table
 func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC string) error {
-	if configDefaultRouteNIC == "" {
-		// by default, We always think currentInterface as pod default router interface
-		configDefaultRouteNIC = c.currentInterface
-	}
-
-	exist, err := networking.CheckInterfaceExist(c.netns, configDefaultRouteNIC)
-	if err != nil {
-		logger.Error("failed to CheckInterfaceExist", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
-		return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
-	}
-
-	if !exist {
-		return fmt.Errorf("podDefaultRouteNIC: %s don't exist in pod", configDefaultRouteNIC)
-	}
-
-	podDefaultRouteNIC, err := networking.GetDefaultRouteInterface(c.ipFamily, c.currentInterface, c.netns)
+	var err error
+	var podDefaultRouteNIC, moveRouteInterface string
+	podDefaultRouteNIC, err = networking.GetDefaultRouteInterface(c.ipFamily, c.currentInterface, c.netns)
 	if err != nil {
 		logger.Error("failed to GetDefaultRouteInterface", zap.Error(err))
 		return fmt.Errorf("failed to GetDefaultRouteInterface: %v", err)
 	}
 
 	if podDefaultRouteNIC == "" {
-		// TODO(cyclinder): should we be return?
+		// the current interface's default route no found, we can keep all routes of
+		// this nic in main table, and don't tune the routes
 		logger.Warn("podDefaultRouteNIC no found in pod, ignore tuneRoutes")
 		return nil
 	}
-	logger.Sugar().Infof("podDefaultRouteNIC: %v", podDefaultRouteNIC)
+
+	if configDefaultRouteNIC == "" || configDefaultRouteNIC == podDefaultRouteNIC {
+		// configDefaultRouteNIC is empty by default, and we always keep the all routes of the
+		// first NIC is in main and move the all routes of non-first NIC to policy routing table.
+		// see https://github.com/spidernet-io/spiderpool/issues/2176.
+		configDefaultRouteNIC = podDefaultRouteNIC
+		moveRouteInterface = c.currentInterface
+	} else {
+		exist, err := networking.CheckInterfaceExist(c.netns, configDefaultRouteNIC)
+		if err != nil {
+			logger.Error("failed to CheckInterfaceExist", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
+			return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
+		}
+
+		if !exist {
+			return fmt.Errorf("podDefaultRouteNIC: %s don't exist in pod", configDefaultRouteNIC)
+		}
+		moveRouteInterface = podDefaultRouteNIC
+	}
+
+	logger.Debug("Start Move Pod's routes", zap.String("configDefaultRouteNIC", configDefaultRouteNIC), zap.String("moveRouteInterface", moveRouteInterface))
 
 	// make sure that traffic sent from current interface to lookup table <ruleTable>
 	// eq: ip rule add from <currentInterfaceIPAddress> lookup <ruleTable>
@@ -452,38 +460,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 
 		logger.Sugar().Infof("defaultInterfaceAddress: %v", defaultInterfaceAddress)
 
-		// get all routes of current interface
-		currentInterfaceRoutes, err := networking.GetRoutesByName(c.currentInterface, c.ipFamily)
-		if err != nil {
-			logger.Error("failed to GetRoutesByName", zap.Error(err))
-			return fmt.Errorf("failed to GetRoutesByName: %v", err)
-		}
-
-		logger.Sugar().Infof("currentInterfaceRoutes: %v", currentInterfaceRoutes)
-
-		// get all routes of default route interface
-		defaultInterfaceRoutes, err := networking.GetRoutesByName(podDefaultRouteNIC, c.ipFamily)
-		if err != nil {
-			logger.Error("failed to GetRoutesByName", zap.Error(err))
-			return fmt.Errorf("failed to GetRoutesByName: %v", err)
-		}
-
-		logger.Sugar().Infof("defaultInterfaceRoutes: %v", defaultInterfaceRoutes)
-
 		if configDefaultRouteNIC == c.currentInterface {
-			for idx, route := range defaultInterfaceRoutes {
-				zeroIPAddress := net.IPv4zero
-				if defaultInterfaceRoutes[idx].Family == netlink.FAMILY_V6 {
-					zeroIPAddress = net.IPv6zero
-				}
-				if !route.Dst.IP.Equal(zeroIPAddress) {
-					if err := networking.AddToRuleTable(defaultInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
-						logger.Error("failed to AddToRuleTable", zap.Error(err))
-						return fmt.Errorf("failed to AddToRuleTable: %v", err)
-					}
-				}
-			}
-
 			for idx := range defaultInterfaceAddress {
 				ipNet := networking.ConvertMaxMaskIPNet(defaultInterfaceAddress[idx].IP)
 				err = networking.AddFromRuleTable(ipNet, c.currentRuleTable)
@@ -492,55 +469,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 					return err
 				}
 			}
-
-			// move all routes of the specified interface to a new route table
-			if err = networking.MoveRouteTable(logger, podDefaultRouteNIC, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily); err != nil {
-				return err
-			}
-
-		} else if configDefaultRouteNIC == podDefaultRouteNIC {
-			for idx, route := range currentInterfaceRoutes {
-				zeroIPAddress := net.IPv4zero
-				if defaultInterfaceRoutes[idx].Family == netlink.FAMILY_V6 {
-					zeroIPAddress = net.IPv6zero
-				}
-				if !route.Dst.IP.Equal(zeroIPAddress) {
-					if err := networking.AddToRuleTable(currentInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
-						logger.Error("failed to AddToRuleTable", zap.Error(err))
-						return fmt.Errorf("failed to AddToRuleTable: %v", err)
-					}
-				}
-			}
-
-			for idx := range c.currentAddress {
-				ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
-				err = networking.AddFromRuleTable(ipNet, c.currentRuleTable)
-				if err != nil {
-					logger.Error("failed to AddFromRuleTable", zap.Error(err))
-					return err
-				}
-			}
-
-			// move all routes of the specified interface from src rule table to dst route table
-			if err = networking.MoveRouteTable(logger, c.currentInterface, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily); err != nil {
-				return err
-			}
 		} else {
-			// that's mean there are more than 2 interfaces in pod, and
-			// configDefaultRouteNIC's routes in a new rule table
-			// we should move configDefaultRouteNIC's routes to main and
-			// move currentInterface's routes to new rule table
-
-			// move current interface's routes to new rule table
-			for idx, route := range currentInterfaceRoutes {
-				if route.Dst != nil {
-					if err := networking.AddToRuleTable(currentInterfaceRoutes[idx].Dst, c.currentRuleTable); err != nil {
-						logger.Error("failed to AddToRuleTable", zap.Error(err))
-						return fmt.Errorf("failed to AddToRuleTable: %v", err)
-					}
-				}
-			}
-
 			for idx := range c.currentAddress {
 				ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
 				err = networking.AddFromRuleTable(ipNet, c.currentRuleTable)
@@ -548,66 +477,19 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 					logger.Error("failed to AddFromRuleTable", zap.Error(err))
 					return err
 				}
-			}
-
-			// move current interface's routes to new rule table
-			if err = networking.MoveRouteTable(logger, c.currentInterface, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily); err != nil {
-				return err
-			}
-
-			routes, err := networking.GetRoutesByName(configDefaultRouteNIC, c.ipFamily)
-			if err != nil {
-				return fmt.Errorf("failed to GetRoutesByName for configDefaultRouteNIC: %v", err)
-			}
-
-			address, err := networking.GetAddersByName(configDefaultRouteNIC, c.ipFamily)
-			if err != nil {
-				return fmt.Errorf("failed to GetAddrs for configDefaultRouteNIC: %v", err)
-			}
-
-			ruleTable := c.mustGetRuleNumber(c.podNics)
-			if ruleTable < 0 {
-				return fmt.Errorf("coordinator must be working with spiderpool: no spiderendpoint records found")
-			}
-
-			// 1. cleanup ip rule to cidr for configDefaultRouteNIC interface
-			for idx := range routes {
-				if routes[idx].Dst != nil {
-					if err = networking.DelToRuleTable(routes[idx].Dst, ruleTable); err != nil {
-						return fmt.Errorf("failed to DelToRuleTable: %v", err)
-					}
-				}
-			}
-
-			// 2. cleanup ip rule from cidr for configDefaultRouteNIC interface
-			for idx := range address {
-				if routes[idx].Dst != nil {
-					if err = networking.DelFromRuleTable(address[idx].IPNet, ruleTable); err != nil {
-						return fmt.Errorf("failed to DelToRuleTable: %v", err)
-					}
-				}
-			}
-
-			// 3. move configDefaultRouteNIC interface's routes to main table
-			if err = networking.MoveRouteTable(logger, configDefaultRouteNIC, ruleTable, unix.RT_TABLE_MAIN, c.ipFamily); err != nil {
-				return err
 			}
 		}
+		// move all routes of the specified interface to a new route table
+		if err = networking.MoveRouteTable(logger, moveRouteInterface, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily); err != nil {
+			return err
+		}
 
-		// for idx, _ := range c.hostIPRouteForPod {
-		//	ipNet := networking.ConvertMaxMaskIPNet(c.hostIPRouteForPod[idx])
-		//	if err = networking.DelToRuleTable(ipNet, c.hostRuleTable); err != nil {
-		//		logger.Error("failed to AddToRuleTable", zap.String("Dst", ipNet.String()), zap.Error(err))
-		//		// return fmt.Errorf("failed to AddToRuleTable: %v", err)
-		//	}
-		// }
-
-		logger.Info("tunePodRoutes successfully", zap.String("configDefaultRouteInterface", configDefaultRouteNIC), zap.String("currentDefaultRouteInterface", podDefaultRouteNIC))
+		logger.Info("tunePodRoutes successfully")
 		return nil
 	})
 
 	if err != nil {
-		logger.Error("failed to moveRouteTable for routeMoveInterface", zap.String("routeMoveInterface", configDefaultRouteNIC), zap.Error(err))
+		logger.Error("failed to moveRouteTable for routeMoveInterface", zap.Error(err))
 		return err
 	}
 

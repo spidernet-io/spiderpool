@@ -295,7 +295,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 					defer cancel()
 
-					// In this use case, the default routing NIC is specified as eth0 (originally the default is net1) through `CoordinatorSpec.PodDefaultRouteNIC`
+					// In this use case, the default routing NIC is specified as eth0 through `CoordinatorSpec.PodDefaultRouteNIC`
 					// ip r get <address outside the cluster>, should flow out from the correct NIC(eth0).
 					GinkgoWriter.Println("ip -4 r get <address outside the cluster>")
 					runGetIPString := "ip -4 r get '8.8.8.8' "
@@ -733,7 +733,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			})
 		})
 
-		It("In the default scenario, the `ip rules` should be as expected and the default route should be on net1", Label("C00011"), func() {
+		It("In the default scenario, the `ip rules` should be as expected and the default route should be on eth0", Label("C00011"), func() {
 			podIppoolsAnno := types.AnnoPodIPPoolsValue{
 				types.AnnoIPPoolItem{
 					NIC: common.NIC2,
@@ -777,7 +777,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					executeCommandResult, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
 					GinkgoWriter.Println("Execute command result: ", string(executeCommandResult))
 					Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
-					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC2)
 
 					// ip r get <IP in eth0 subnet>, should flow out from eth0
 					GinkgoWriter.Println("ip -4 r get <IP in eth0 subnet>")
@@ -819,7 +819,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					executeCommandResult, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, runGetIPString, ctx)
 					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
 					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
-					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC2), "Expected NIC %v mismatch", common.NIC2)
+					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC2)
 
 					// ip r get <IP in eth0 subnet>, should flow out from eth0
 					GinkgoWriter.Println("ip -6 r get <IP in eth0 subnet>")

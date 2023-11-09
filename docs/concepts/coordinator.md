@@ -19,7 +19,7 @@ Let's delve into how coordinator implements these features.
 | type      | The name of this Spidercoordinators resource      | string | required   |coordinator     |
 | mode      | the mode in which the coordinator run. "auto": Automatically determine if it's overlay or underlay; "underlay": All NICs for pods are underlay NICs, and in this case the coordinator will create veth-pairs device to solve the problem of underlay pods accessing services; "overlay": The coordinator does not create veth-pair devices, but the first NIC of the pod cannot be an underlay NIC, which is created by overlay CNI (e.g. calico, cilium). Solve the problem of pod access to service through the first NIC; "disable": The coordinator does nothing and exits directly            | string | optional   | auto |
 | tunePodRoutes | Tune the pod's routing tables while a pod is in multi-NIC mode | bool | optional | true |
-| podDefaultRouteNic | Configure the default routed NIC for the pod while a pod is in multi-NIC mode | string | optional | "" |
+| podDefaultRouteNic | Configure the default routed NIC for the pod while a pod is in multi-NIC mode, The default value is 0, indicate that the first network interface of the pod has the default route. | string | optional | "" |
 | podDefaultCniNic | The name of the pod's first NIC defaults to eth0 in kubernetes | bool | optional | eth0 |
 | detectGateway | Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable | bool | optional | false |
 | detectIPConflict | Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting | bool | optional | false |

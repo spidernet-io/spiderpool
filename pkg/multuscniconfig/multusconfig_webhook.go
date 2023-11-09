@@ -31,11 +31,28 @@ func (mcw *MultusConfigWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error 
 
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&spiderpoolv2beta1.SpiderMultusConfig{}).
+		WithDefaulter(mcw).
 		WithValidator(mcw).
 		Complete()
 }
 
 var _ webhook.CustomValidator = &MultusConfigWebhook{}
+
+// Default implements admission.CustomDefaulter.
+func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) error {
+	smc := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
+
+	mutateLogger := logger.Named("Mutating").With(
+		zap.String("Spidermultusconfig", smc.Name))
+	mutateLogger.Sugar().Debugf("Request Spidermultusconfig: %+v", *smc)
+
+	if err := mutateSpiderMultusConfig(logutils.IntoContext(ctx, mutateLogger), smc); err != nil {
+		mutateLogger.Sugar().Errorf("Failed to mutate Spidermultusconfig: %v", err)
+	}
+
+	mutateLogger.Sugar().Debugf("Finish Spidermultusconfig: %+v", smc)
+	return nil
+}
 
 func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	multusConfig := obj.(*spiderpoolv2beta1.SpiderMultusConfig)

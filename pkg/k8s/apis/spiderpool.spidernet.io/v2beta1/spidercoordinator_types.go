@@ -11,7 +11,7 @@ import (
 type CoordinatorSpec struct {
 	// +kubebuilder:validation:Enum=auto;underlay;overlay;disabled
 	// +kubebuilder:validation:Optional
-	Mode *string `json:"mode,omitempty"`
+	Mode *string `json:"mode"`
 
 	// CoordinatorSpec is used by SpiderCoordinator and SpiderMultusConfig
 	// in spidermultusconfig CRD , podCIDRType should not be required, which could be merged from SpiderCoordinator CR
@@ -21,16 +21,16 @@ type CoordinatorSpec struct {
 	PodCIDRType *string `json:"podCIDRType,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	HijackCIDR []string `json:"hijackCIDR,omitempty"`
+	HijackCIDR []string `json:"hijackCIDR"`
 
 	// +kubebuilder:validation:Optional
-	PodMACPrefix *string `json:"podMACPrefix,omitempty"`
+	PodMACPrefix *string `json:"podMACPrefix"`
 
 	// +kubebuilder:validation:Optional
-	TunePodRoutes *bool `json:"tunePodRoutes,omitempty"`
+	TunePodRoutes *bool `json:"tunePodRoutes"`
 
 	// +kubebuilder:validation:Optional
-	PodDefaultRouteNIC *string `json:"podDefaultRouteNIC,omitempty"`
+	PodDefaultRouteNIC *string `json:"podDefaultRouteNIC"`
 
 	// +kubebuilder:validation:Optional
 	HostRuleTable *int `json:"hostRuleTable,omitempty"`
@@ -39,10 +39,10 @@ type CoordinatorSpec struct {
 	HostRPFilter *int `json:"hostRPFilter,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	DetectIPConflict *bool `json:"detectIPConflict,omitempty"`
+	DetectIPConflict *bool `json:"detectIPConflict"`
 
 	// +kubebuilder:validation:Optional
-	DetectGateway *bool `json:"detectGateway,omitempty"`
+	DetectGateway *bool `json:"detectGateway"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

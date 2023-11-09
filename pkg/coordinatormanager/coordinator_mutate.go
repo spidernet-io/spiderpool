@@ -6,12 +6,14 @@ package coordinatormanager
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"net/netip"
 	"strings"
 
+	"k8s.io/utils/pointer"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	coordinator_cmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -22,7 +24,7 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 	logger.Info("Start to mutate Coordinator")
 
 	if coord.Spec.Mode == nil {
-		coord.Spec.Mode = pointer.String("underlay")
+		coord.Spec.Mode = pointer.String(string(coordinator_cmd.ModeAuto))
 	}
 	if coord.Spec.TunePodRoutes == nil {
 		coord.Spec.TunePodRoutes = pointer.Bool(true)

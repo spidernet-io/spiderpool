@@ -57,12 +57,12 @@ default via 10.6.0.1 dev eth0
 - **10.6.212.101 dev veth0 scope link**: `10.6.212.101` is the node's IP, which ensure where the Pod access the same node via `veth0`.
 - **10.233.64.0/18 via 10.6.212.101 dev veth0**: 10.233.64.0/18 is cluster service subnet, which ensure the Pod access ClusterIP via `veth0`.
 
-This solution heavily relies on the `MASQUERADE` of kube-proxy, otherwise the reply packets will be directly forwarded to the source Pod, 
-and if they pass through some security devices, the packets will be dropped. Therefore, in some special scenarios, we need to set `masqueradeAll` 
+This solution heavily relies on the `MASQUERADE` of kube-proxy, otherwise the reply packets will be directly forwarded to the source Pod,
+and if they pass through some security devices, the packets will be dropped. Therefore, in some special scenarios, we need to set `masqueradeAll`
 of kube-proxy to true.
 
 > By default, the underlay subnet of a Pod is different from the clusterCIDR of the cluster, so there is no need to enable `masqueradeAll`, and access between them will be SNATed.
-> 
+>
 > If the underlay subnet of a Pod is the same as the clusterCIDR of the cluster, then we must set `masqueradeAll` to true.
 
 ### coordinator run in overlay
@@ -300,9 +300,8 @@ tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 byt
 | with kube-proxy | 36.763 | 72254.34 |
 | without kube-proxy | 27.743 | 107066.38 |
 
-According to the results, after Cilium kube-proxy replacement, access to the service is accelerated by about 30%.
+According to the results, after Cilium kube-proxy replacement, access to the service is accelerated by about 30%. For more test data, please refer to [Network I/O Performance](../concepts/io-performance.md)
 
 ## Conclusion
 
-There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. Cilium Without Kube-Proxy provides an alternative option for Underlay CNI to access the Service, 
-and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.
+There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. Cilium Without Kube-Proxy provides an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.

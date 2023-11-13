@@ -14,7 +14,7 @@ type DeltaMutexProfiler struct {
 // are done because The proto expects count and time (nanoseconds) instead of count
 // and the number of cycles for block, contention profiles.
 // Possible 'scaler' functions are scaleBlockProfile and scaleMutexProfile.
-func (d *DeltaMutexProfiler) PrintCountCycleProfile(w io.Writer, countName, cycleName string, scaler func(int64, float64) (int64, float64), records []runtime.BlockProfileRecord) error {
+func (d *DeltaMutexProfiler) PrintCountCycleProfile(w io.Writer, countName, cycleName string, scaler MutexProfileScaler, records []runtime.BlockProfileRecord) error {
 	// Output profile in protobuf form.
 	b := newProfileBuilder(w)
 	b.pbValueType(tagProfile_PeriodType, countName, "count")
@@ -27,7 +27,7 @@ func (d *DeltaMutexProfiler) PrintCountCycleProfile(w io.Writer, countName, cycl
 	values := []int64{0, 0}
 	var locs []uint64
 	for _, r := range records {
-		count, nanosec := scaler(r.Count, float64(r.Cycles)/cpuGHz)
+		count, nanosec := scaleMutexProfile(scaler, r.Count, float64(r.Cycles)/cpuGHz)
 		inanosec := int64(nanosec)
 
 		// do the delta

@@ -223,6 +223,9 @@ github.com/go-task/slim-sprig
 # github.com/gobuffalo/flect v0.3.0
 ## explicit; go 1.16
 github.com/gobuffalo/flect
+# github.com/godbus/dbus v4.1.0+incompatible
+## explicit
+github.com/godbus/dbus
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
 github.com/gogo/protobuf/gogoproto
@@ -274,15 +277,14 @@ github.com/google/uuid
 # github.com/gorilla/handlers v1.5.1
 ## explicit; go 1.14
 github.com/gorilla/handlers
-# github.com/grafana/pyroscope-go v1.0.2
+# github.com/grafana/pyroscope-go v1.0.4
 ## explicit; go 1.17
 github.com/grafana/pyroscope-go
-github.com/grafana/pyroscope-go/internal/alignedticker
 github.com/grafana/pyroscope-go/internal/flameql
 github.com/grafana/pyroscope-go/internal/sortedmap
 github.com/grafana/pyroscope-go/upstream
 github.com/grafana/pyroscope-go/upstream/remote
-# github.com/grafana/pyroscope-go/godeltaprof v0.1.3
+# github.com/grafana/pyroscope-go/godeltaprof v0.1.4
 ## explicit; go 1.16
 github.com/grafana/pyroscope-go/godeltaprof
 github.com/grafana/pyroscope-go/godeltaprof/internal/pprof
@@ -1291,6 +1293,9 @@ k8s.io/gengo/generator
 k8s.io/gengo/namer
 k8s.io/gengo/parser
 k8s.io/gengo/types
+# k8s.io/klog v1.0.0
+## explicit; go 1.12
+k8s.io/klog
 # k8s.io/klog/v2 v2.100.1
 ## explicit; go 1.13
 k8s.io/klog/v2
@@ -1320,8 +1325,9 @@ k8s.io/kube-openapi/pkg/validation/spec
 # k8s.io/kubectl v0.26.3
 ## explicit; go 1.19
 k8s.io/kubectl/pkg/util/podutils
-# k8s.io/kubernetes v1.27.4
-## explicit; go 1.20
+# k8s.io/kubernetes v1.15.0-alpha.0
+## explicit
+k8s.io/kubernetes/pkg/util/dbus
 k8s.io/kubernetes/pkg/util/iptables
 # k8s.io/utils v0.0.0-20230505201702-9f6742963106
 ## explicit; go 1.18

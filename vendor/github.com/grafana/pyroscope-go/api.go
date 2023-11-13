@@ -70,7 +70,7 @@ func Start(cfg Config) (*Profiler, error) {
 
 	if cfg.UploadRate == 0 {
 		// For backward compatibility.
-		cfg.UploadRate = 10 * time.Second
+		cfg.UploadRate = 15 * time.Second
 	}
 
 	sc := SessionConfig{

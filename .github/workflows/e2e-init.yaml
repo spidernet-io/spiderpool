@@ -27,10 +27,14 @@ on:
       e2e_labels:
         required: false
         type: string
+      os:
+        required: false
+        type: string
+        default: ubuntu-latest
 
 jobs:
   call_e2e:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +48,13 @@ jobs:
           - e2e_init_mode: e2e_init_cilium
             e2e_test_mode: e2e_test_cilium
     steps:
+      - name: Show system kernel
+        run: |
+          echo "=========Current os version================="
+          echo ${{ inputs.os }}
+          echo "=========Current system kernel================="
+          uname -r
+
       - name: Free disk space
         # https://github.com/actions/virtual-environments/issues/709
         run: |

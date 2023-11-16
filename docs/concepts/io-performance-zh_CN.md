@@ -65,25 +65,25 @@ netperf 是一种广泛使用的网络性能测试工具，可让您测量网络
   
   通过 `netperf -H <Pod IP> -l 10  -c -t TCP_RR -- -r100,100` 测试跨节点 Pod 访问 Pod IP 的吞吐量，数据如下。
 
-  | 测试对象                                     |       Throughput     |
-  | ------------------------------------------ | --------------------- |
-  | 基于 iptables datapath 和 无隧道 的 Calico    |       9985.7 sec      |
-  | 基于全量 eBPF 加速 和 无隧道 的 cilium         |       17571.3 sec     |
-  | 基于 macvlan 的同子网的 Spiderpool Pod        |       19793.9 sec     |
-  | 基于 macvlan 的跨子网的 Spiderpool Pod        |       19215.2 sec     |
-  | 节点到节点                                   |       47560.5 sec     |
+  | 测试对象                                     |  Throughput (rps) |
+  | ------------------------------------------ | ------------------ |
+  | 基于 iptables datapath 和 无隧道 的 Calico    |       9985.7      |
+  | 基于全量 eBPF 加速 和 无隧道 的 cilium         |       17571.3     |
+  | 基于 macvlan 的同子网的 Spiderpool Pod        |       19793.9     |
+  | 基于 macvlan 的跨子网的 Spiderpool Pod        |       19215.2     |
+  | 节点到节点                                   |       47560.5     |
 
 - 以 cluster IP 为目的的跨节点 Pod 的 netperf 测试。
 
   通过 `netperf -H <cluster IP> -l 10  -c -t TCP_RR -- -r100,100` 测试跨节点 Pod 访问 cluster IP 的吞吐量，数据如下。
 
-  | 测试对象                                              |      Throughput     |
-  | --------------------------------------------------- | -------------------- |
-  | 基于 iptables datapath 和 无隧道 的 Calico             |      9782.2 sec     |
-  | 基于全量 eBPF 加速 和 无隧道 的 cilium                  |      17236.5 sec    |
-  | 基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod   |      16002.3 sec    |
-  | 基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod   |     18992.9 sec    |
-  | 节点到节点                                            |      47560.5 sec    |
+  | 测试对象                                              |  Throughput (rps) |
+  | --------------------------------------------------- | ------------------ |
+  | 基于 iptables datapath 和 无隧道 的 Calico             |     9782.2 rps    |
+  | 基于全量 eBPF 加速 和 无隧道 的 cilium                  |     17236.5 rps   |
+  | 基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod   |     16002.3 rps   |
+  | 基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod   |    18992.9 rps   |
+  | 节点到节点                                            |     47560.5 rps   |
 
 ## iperf 网络性能测试
 
@@ -123,10 +123,10 @@ redis-benchmark 旨在通过模拟多个客户端并执行各种 Redis 命令来
 
   | 测试对象                                 |        get           |        set           |
   | --------------------------------------- | -------------------- | -------------------- |
-  | 基于 iptables datapath 和 无隧道 的 Calico |      45682.96 sec   |      46992.48 sec    |
-  | 基于全量 eBPF 加速 和 无隧道 的 cilium      |      59737.16 sec    |      59988.00 sec   |
-  | 基于 macvlan 的同子网的 Spiderpool Pod     |      66357.00 sec    |      66800.27 sec   |
-  | 基于 macvlan 的跨子网的 Spiderpool Pod     |      67444.45 sec    |      67783.67 sec   |
+  | 基于 iptables datapath 和 无隧道 的 Calico |      45682.96 rps   |      46992.48 rps    |
+  | 基于全量 eBPF 加速 和 无隧道 的 cilium      |      59737.16 rps    |      59988.00 rps   |
+  | 基于 macvlan 的同子网的 Spiderpool Pod     |      66357.00 rps    |      66800.27 rps   |
+  | 基于 macvlan 的跨子网的 Spiderpool Pod     |      67444.45 rps    |      67783.67 rps   |
 
 - 以 cluster IP 为目的的跨节点 Pod 的 redis-benchmark 测试。
 
@@ -134,10 +134,10 @@ redis-benchmark 旨在通过模拟多个客户端并执行各种 Redis 命令来
 
   | 测试对象                                            |        get            |        set           |
   | -------------------------------------------------- | --------------------- | -------------------- |
-  | 基于 iptables datapath 和 无隧道 的 Calico           |       46082.95 sec     |      46728.97 sec    |
-  | 基于全量 eBPF 加速 和 无隧道 的 cilium                 |       60496.07 sec    |      58927.52 sec    |
-  | 基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod  |       45578.85 sec    |      46274.87 sec    |
-  | 基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod  |       63211.12 sec    |      64061.50 sec    |
+  | 基于 iptables datapath 和 无隧道 的 Calico           |       46082.95 rps     |      46728.97 rps    |
+  | 基于全量 eBPF 加速 和 无隧道 的 cilium                 |       60496.07 rps    |      58927.52 rps    |
+  | 基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod  |       45578.85 rps    |      46274.87 rps    |
+  | 基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod  |       63211.12 rps    |      64061.50 rps    |
 
 ## 总结
 

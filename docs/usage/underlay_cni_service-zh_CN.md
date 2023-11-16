@@ -295,9 +295,8 @@ tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 byt
 | with kube-proxy | 36.763 | 72254.34 |
 | without kube-proxy | 27.743 | 107066.38 |
 
-根据结果显示，经过 Cilium kube-proxy replacement 之后，访问 Service 大约加速 30%。
+根据结果显示，经过 Cilium kube-proxy replacement 之后，访问 Service 大约加速 30%。更多测试数据参考[网络 IO 性能](../concepts/io-performance-zh_CN.md)
 
 ## 结论
 
-Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 Cilium Without Kube-Proxy 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，
-尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。
+Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 Cilium Without Kube-Proxy 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。

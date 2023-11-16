@@ -224,7 +224,7 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=false " ; \
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
-		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=120 " ; \
+		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=30 " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
 			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \

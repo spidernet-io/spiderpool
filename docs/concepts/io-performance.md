@@ -65,25 +65,25 @@ netperf is a widely used network performance testing tool that allows you to mea
   
   Use `netperf -H <Pod IP> -l 10 -c -t TCP_RR -- -r100,100` to test the throughput of cross-node Pod access to Pod IP. The data is as follows.
 
-  | Test object                                              |     Throughput      |
-  | -------------------------------------------------------- | ------------------- |
-  | Calico based on iptables datapath and tunnelless         |     9985.7 sec      |
-  | Cilium based on full eBPF acceleration and no tunneling  |     17571.3 sec     |
-  | Spiderpool Pod on the same subnet based on macvlan       |     19793.9 sec     |
-  | Spiderpool Pod across subnets based on macvlan           |     19215.2 sec     |
-  | node to node                                             |     47560.5 sec     |
+  | Test object                                              |  Throughput (rps) |
+  | -------------------------------------------------------- | ----------------- |
+  | Calico based on iptables datapath and tunnelless         |     9985.7        |
+  | Cilium based on full eBPF acceleration and no tunneling  |     17571.3       |
+  | Spiderpool Pod on the same subnet based on macvlan       |     19793.9       |
+  | Spiderpool Pod across subnets based on macvlan           |     19215.2       |
+  | node to node                                             |     47560.5       |
 
 - Netperf testing across node Pods for cluster IP purposes.
 
   Use `netperf -H <cluster IP> -l 10 -c -t TCP_RR -- -r100,100` to test the throughput of cross-node Pods accessing the cluster IP. The data is as follows.
 
-  | Test object                                                                    |      Throughput    |
-  | ------------------------------------------------------------------------------ | ------------------ |
-  | Calico based on iptables datapath and tunnelless                               |     9782.2 sec     |
-  | Cilium based on full eBPF acceleration and no tunneling                        |     17236.5 sec    |
-  | Spiderpool Pod based on macvlan on the same subnet and kube-proxy              |     16002.3 sec    |
-  | Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated  |     18992.9 sec    |
-  | node to node                                                                   |     47560.5 sec    |
+  | Test object                                                                    | Throughput (rps) |
+  | ------------------------------------------------------------------------------ | ---------------- |
+  | Calico based on iptables datapath and tunnelless                               |     9782.2       |
+  | Cilium based on full eBPF acceleration and no tunneling                        |     17236.5      |
+  | Spiderpool Pod based on macvlan on the same subnet and kube-proxy              |     16002.3      |
+  | Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated  |     18992.9      |
+  | node to node                                                                   |     47560.5      |
 
 ## iperf network performance test
 
@@ -123,10 +123,10 @@ redis-benchmark is designed to measure the performance and throughput of a Redis
 
   | Test object                                               |         get          |        set         |
   | --------------------------------------------------------- | -------------------- | ------------------ |
-  | Calico based on iptables datapath and tunnelless          |      45682.96 sec    |     46992.48 sec   |
-  | Cilium based on full eBPF acceleration and no tunneling   |      59737.16 sec    |     59988.00 sec   |
-  | Spiderpool Pod on the same subnet based on macvlan        |      66357.00 sec    |     66800.27 sec   |
-  | Spiderpool Pod across subnets based on macvlan            |      67444.45 sec    |     67783.67 sec   |
+  | Calico based on iptables datapath and tunnelless          |      45682.96 rps    |     46992.48 rps   |
+  | Cilium based on full eBPF acceleration and no tunneling   |      59737.16 rps    |     59988.00 rps   |
+  | Spiderpool Pod on the same subnet based on macvlan        |      66357.00 rps    |     66800.27 rps   |
+  | Spiderpool Pod across subnets based on macvlan            |      67444.45 rps    |     67783.67 rps   |
 
 - Cross-node Pod redis-benchmark testing for cluster IP purposes.
 
@@ -134,10 +134,10 @@ redis-benchmark is designed to measure the performance and throughput of a Redis
 
   | Test object                                                                    |        get            |        set           |
   | ------------------------------------------------------------------------------ | --------------------- | -------------------- |
-  | Calico based on iptables datapath and tunnelless                               |       46082.95 sec    |      46728.97 sec    |
-  | Cilium based on full eBPF acceleration and no tunneling                        |       60496.07 sec    |      58927.52 sec    |
-  | Spiderpool Pod based on macvlan on the same subnet and kube-proxy              |       45578.85 sec    |      46274.87 sec    |
-  | Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated  |       63211.12 sec    |      64061.50 sec    |
+  | Calico based on iptables datapath and tunnelless                               |       46082.95 rps    |      46728.97 rps    |
+  | Cilium based on full eBPF acceleration and no tunneling                        |       60496.07 rps    |      58927.52 rps    |
+  | Spiderpool Pod based on macvlan on the same subnet and kube-proxy              |       45578.85 rps    |      46274.87 rps    |
+  | Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated  |       63211.12 rps    |      64061.50 rps    |
 
 ## Summary
 

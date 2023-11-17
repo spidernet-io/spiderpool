@@ -9,7 +9,6 @@ OS=$(uname | tr 'A-Z' 'a-z')
 MISS_FLAG=""
 
 # kubectl
-
 if ! kubectl help &>/dev/null  ; then
     echo "fail   'kubectl' miss"
     if [ -z "$JUST_CLI_CHECK" ] ; then
@@ -99,6 +98,26 @@ if ! p2ctl --version &>/dev/null ; then
     MISS_FLAG="true"
 else
     echo "pass   'p2ctl' installed:  $( p2ctl --version 2>&1 ) "
+fi
+
+# Install yq
+if ! yq --version &>/dev/null ; then
+    echo "fail   'yq' miss"
+    if [ -z "$JUST_CLI_CHECK" ] ; then
+      echo "try to install it"
+      if [ -z $http_proxy ]; then
+        curl -Lo /tmp/yq.tar.gz https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64.tar.gz
+      else
+        curl -x $http_proxy -Lo /tmp/yq.tar.gz https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64.tar.gz
+      fi
+      tar -C /usr/local/bin -xzf /tmp/yq.tar.gz
+      mv /usr/local/bin/yq_linux_amd64 /usr/local/bin/yq
+      chmod +x /usr/local/bin/yq
+      ! yq -V &>/dev/null && echo "error, failed to install yq" && exit 1
+    fi
+    MISS_FLAG="true"
+else
+    echo "pass   'yq' installed:  $( yq -V 2>&1 ) "
 fi
 
 [ -n "$JUST_CLI_CHECK" ] &&  [ -n "$MISS_FLAG" ] && exit 1

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -79,7 +80,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		}
 	} else {
 		logger.Debug("Try to retrieve the existing IP allocation")
-		addResp, err := i.retrieveExistingIPAllocation(ctx, string(pod.UID), *addArgs.IfName, endpoint)
+		addResp, err := i.retrieveExistingIPAllocation(ctx, string(pod.UID), *addArgs.IfName, endpoint, IsMultipleNicWithNoName(pod.Annotations))
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve the existing IP allocation: %w", err)
 		}
@@ -113,7 +114,7 @@ func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *
 	}
 
 	logger.Info("Refresh the current IP allocation of the Endpoint")
-	if err := i.endpointManager.ReallocateCurrentIPAllocation(ctx, string(pod.UID), pod.Spec.NodeName, endpoint); err != nil {
+	if err := i.endpointManager.ReallocateCurrentIPAllocation(ctx, string(pod.UID), pod.Spec.NodeName, nic, endpoint, IsMultipleNicWithNoName(pod.Annotations)); err != nil {
 		return nil, fmt.Errorf("failed to refresh the current IP allocation of %s: %w", endpoint.Status.OwnerControllerType, err)
 	}
 
@@ -122,7 +123,12 @@ func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *
 		Ips:    ips,
 		Routes: routes,
 	}
-	logger.Sugar().Infof("Succeed to retrieve the IP allocation of %s: %+v", endpoint.Status.OwnerControllerType, *addResp)
+	result, err := addResp.MarshalBinary()
+	if nil != err {
+		logger.Sugar().Infof("Succeed to retrieve the IP allocation of %s: %+v", endpoint.Status.OwnerControllerType, *addResp)
+	} else {
+		logger.Sugar().Infof("Succeed to retrieve the IP allocation of %s: %s", endpoint.Status.OwnerControllerType, string(result))
+	}
 
 	return addResp, nil
 }
@@ -177,7 +183,7 @@ func (i *ipam) reallocateIPPoolIPRecords(ctx context.Context, uid string, endpoi
 	return nil
 }
 
-func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint) (*models.IpamAddResponse, error) {
+func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
 
 	// Create -> Delete -> Create a Pod with the same namespace and name in
@@ -193,18 +199,33 @@ func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string
 		return nil, nil
 	}
 
+	// update Endpoint NIC name in multiple NIC with no name mode by annotation "ipam.spidernet.io/ippools"
+	if isMultipleNicWithNoName {
+		var err error
+		allocation, err = i.endpointManager.UpdateAllocationNICName(ctx, endpoint, nic)
+		if nil != err {
+			return nil, fmt.Errorf("failed to update SpiderEndpoint allocation details NIC name %s, error: %v", nic, err)
+		}
+	}
+
 	ips, routes := convert.ConvertIPDetailsToIPConfigsAndAllRoutes(allocation.IPs)
 	addResp := &models.IpamAddResponse{
 		Ips:    ips,
 		Routes: routes,
 	}
-	logger.Sugar().Infof("Succeed to retrieve the IP allocation: %+v", *addResp)
+	result, err := addResp.MarshalBinary()
+	if nil != err {
+		logger.Sugar().Infof("Succeed to retrieve the IP allocation: %+v", *addResp)
+	} else {
+		logger.Sugar().Infof("Succeed to retrieve the IP allocation: %s", string(result))
+	}
 
 	return addResp, nil
 }
 
 func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podController types.PodTopController) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
+	isMultipleNicWithNoName := IsMultipleNicWithNoName(pod.Annotations)
 
 	logger.Debug("Parse custom routes")
 	customRoutes, err := getCustomRoutes(pod)
@@ -220,7 +241,7 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 
 	var results []*types.AllocationResult
 	defer func() {
-		if err != nil {
+		if err != nil && !isMultipleNicWithNoName {
 			if len(results) != 0 {
 				i.failure.addFailureIPs(string(pod.UID), results)
 			}
@@ -241,16 +262,50 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	}
 
 	logger.Debug("Patch IP allocation results to Endpoint")
-	if err = i.endpointManager.PatchIPAllocationResults(ctx, results, endpoint, pod, podController); err != nil {
+	if err = i.endpointManager.PatchIPAllocationResults(ctx, results, endpoint, pod, podController, isMultipleNicWithNoName); err != nil {
 		return nil, fmt.Errorf("failed to patch IP allocation results to Endpoint: %v", err)
 	}
 
+	// sort the results in order by NIC sequence in multiple NIC with no name specified mode
+	if isMultipleNicWithNoName {
+		sort.Slice(results, func(i, j int) bool {
+			pre, err := strconv.Atoi(*results[i].IP.Nic)
+			if nil != err {
+				return false
+			}
+			latter, err := strconv.Atoi(*results[j].IP.Nic)
+			if nil != err {
+				return false
+			}
+			return pre < latter
+		})
+		for index := range results {
+			if *results[index].IP.Nic == strconv.Itoa(0) {
+				// replace the first NIC name from "0" to "eth0"
+				*results[index].IP.Nic = constant.ClusterDefaultInterfaceName
+
+				// replace the routes NIC name from "0" to "eth0"
+				for j := range results[index].Routes {
+					*results[index].Routes[j].IfName = constant.ClusterDefaultInterfaceName
+				}
+			}
+		}
+	}
+
 	resIPs, resRoutes := convert.ConvertResultsToIPConfigsAndAllRoutes(results)
+
+	// Actually in allocate Standard Mode, we just need the current turn NIC allocation result,
+	// but here are the all NICs results
 	addResp := &models.IpamAddResponse{
 		Ips:    resIPs,
 		Routes: resRoutes,
 	}
-	logger.Sugar().Infof("Succeed to allocate: %+v", *addResp)
+	result, err := addResp.MarshalBinary()
+	if nil != err {
+		logger.Sugar().Infof("Succeed to allocate: %+v", *addResp)
+	} else {
+		logger.Sugar().Infof("Succeed to allocate: %s", string(result))
+	}
 
 	return addResp, nil
 }
@@ -353,6 +408,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 		return results, utilerrors.NewAggregate(errs)
 	}
 
+	// the results are not in order by the NIC sequence right now
 	return results, nil
 }
 
@@ -537,7 +593,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 
 		podAnno := pod.GetAnnotations()
 		// the first NIC
-		if nic == constant.ClusterDefaultInterfaceName {
+		if nic == constant.ClusterDefaultInterfaceName || nic == strconv.Itoa(0) {
 			// default net-attach-def specified in the annotations
 			defaultMultusObj := podAnno[constant.MultusDefaultNetAnnot]
 			if len(defaultMultusObj) == 0 {
@@ -572,7 +628,9 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 					networkSelectionElements[idx].InterfaceRequest = fmt.Sprintf("net%d", idx+1)
 				}
 
-				if nic == networkSelectionElements[idx].InterfaceRequest {
+				// We regard the NIC name was specified by the user for the previous judgement.
+				// For the latter judgement(multiple NIC with no name specified mode), we just need to check whether the sequence is same with the net-attach-def resource
+				if (nic == networkSelectionElements[idx].InterfaceRequest) || (nic == strconv.Itoa(idx+1)) {
 					multusNS = networkSelectionElements[idx].Namespace
 					multusName = networkSelectionElements[idx].Name
 					isFound = true

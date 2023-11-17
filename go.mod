@@ -33,7 +33,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
-	github.com/spidernet-io/e2eframework v0.0.0-20230724150324-2eee77078275
+	github.com/spidernet-io/e2eframework v0.0.0-20231122092103-bfaf2546ded3
 	github.com/spidernet-io/spiderdoctor v0.3.0
 	github.com/tigera/operator v1.30.5
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739

@@ -245,7 +245,7 @@ func (f *Framework) GetPodListByLabel(label map[string]string) (*corev1.PodList,
 }
 
 func (f *Framework) CheckPodListRunning(podList *corev1.PodList) bool {
-	if podList == nil {
+	if podList == nil || len(podList.Items) == 0 {
 		return false
 	}
 	for _, item := range podList.Items {

@@ -433,7 +433,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 				records := spiderpoolv2beta1.PoolIPAllocations{
 					ip.String(): spiderpoolv2beta1.PoolIPAllocation{
-						NIC:            nic,
 						NamespacedName: key,
 						PodUID:         string(podT.UID),
 					},
@@ -473,7 +472,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				uid = string(uuid.NewUUID())
 				records = spiderpoolv2beta1.PoolIPAllocations{
 					ip: spiderpoolv2beta1.PoolIPAllocation{
-						NIC:            "eth0",
 						NamespacedName: "default/pod",
 						PodUID:         uid,
 					},
@@ -564,7 +562,6 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				uid = string(uuid.NewUUID())
 				records = spiderpoolv2beta1.PoolIPAllocations{
 					ip: spiderpoolv2beta1.PoolIPAllocation{
-						NIC:            "eth0",
 						NamespacedName: "default/pod",
 						PodUID:         uid,
 					},

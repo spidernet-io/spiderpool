@@ -79,13 +79,29 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 			endpointT.Status.Current = allocationT
 
 			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic2, endpointT, false)
+			Expect(allocation).NotTo(BeNil())
 			Expect(*allocation).To(Equal(allocationT))
 		})
 
-		It("retrieves the IP allocation of StatefulSet", func() {
+		It("retrieves the IP allocation of Static IP", func() {
 			endpointT.Status.Current = allocationT
 
 			allocation := workloadendpointmanager.RetrieveIPAllocation(string(uuid.NewUUID()), nic2, endpointT, true)
+			Expect(allocation).NotTo(BeNil())
+			Expect(*allocation).To(Equal(allocationT))
+		})
+
+		It("retrieves the IP allocation of empty nic", func() {
+			allocationT.IPs = append(allocationT.IPs, spiderpoolv2beta1.IPAllocationDetail{
+				NIC:      "",
+				Vlan:     pointer.Int64(0),
+				IPv4:     pointer.String("10.60.1.2/24"),
+				IPv4Pool: pointer.String("ipv4-ippool-3"),
+			})
+
+			endpointT.Status.Current = allocationT
+			allocation := workloadendpointmanager.RetrieveIPAllocation(uid, "net2", endpointT, false)
+			Expect(allocation).NotTo(BeNil())
 			Expect(*allocation).To(Equal(allocationT))
 		})
 	})

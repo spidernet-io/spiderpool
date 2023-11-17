@@ -6,6 +6,7 @@ package workloadendpointmanager
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,8 +28,9 @@ type WorkloadEndpointManager interface {
 	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderEndpointList, error)
 	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
 	RemoveFinalizer(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
-	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error
-	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
+	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error
+	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) error
+	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error)
 }
 
 type workloadEndpointManager struct {
@@ -110,7 +112,7 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, endpoint
 	return nil
 }
 
-func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController) error {
+func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error {
 	if pod == nil {
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
 	}
@@ -127,7 +129,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 				Current: spiderpoolv2beta1.PodIPAllocation{
 					UID:  string(pod.UID),
 					Node: pod.Spec.NodeName,
-					IPs:  convert.ConvertResultsToIPDetails(results),
+					IPs:  convert.ConvertResultsToIPDetails(results, isMultipleNicWithNoName),
 				},
 				OwnerControllerType: podController.Kind,
 				OwnerControllerName: podController.Name,
@@ -151,6 +153,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		}
 
 		controllerutil.AddFinalizer(endpoint, constant.SpiderFinalizer)
+		logger.Sugar().Infof("try to create SpiderEndpoint %s", endpoint)
 		return em.client.Create(ctx, endpoint)
 	}
 
@@ -159,21 +162,65 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 	}
 
 	// TODO(iiiceoo): Only append records with different NIC.
-	endpoint.Status.Current.IPs = append(endpoint.Status.Current.IPs, convert.ConvertResultsToIPDetails(results)...)
+	endpoint.Status.Current.IPs = append(endpoint.Status.Current.IPs, convert.ConvertResultsToIPDetails(results, isMultipleNicWithNoName)...)
+	logger.Sugar().Infof("try to update SpiderEndpoint %s", endpoint)
 	return em.client.Update(ctx, endpoint)
 }
 
-func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
 	}
 
-	if endpoint.Status.Current.UID == uid {
+	log := logutils.FromContext(ctx)
+	deepCopy := endpoint.DeepCopy()
+	deepCopy.Status.Current.UID = uid
+	deepCopy.Status.Current.Node = nodeName
+
+	if isMultipleNicWithNoName {
+		for index := range deepCopy.Status.Current.IPs {
+			if deepCopy.Status.Current.IPs[index].NIC != "" {
+				if deepCopy.Status.Current.IPs[index].NIC == nic {
+					log.Sugar().Debugf("no need to update Endpoint Current IPs %s due to same NIC %s", deepCopy.Status.Current.IPs[index].String(), nic)
+					break
+				}
+			} else {
+				// For the multiple NICs allocation with no NIC name specified,
+				// we'll allocate all NICs IPs in the first allocation and record the details in the Endpoint resource.
+				// This is NIC must be "eth0" and others with empty NIC name, we reset the real NIC name for the empties in the retrieve actions.
+				log.Sugar().Debugf("update Endpoint Current IPs %s with NIC %s", deepCopy.Status.Current.IPs[index].String(), nic)
+				deepCopy.Status.Current.IPs[index].NIC = nic
+				break
+			}
+		}
+	}
+
+	if reflect.DeepEqual(deepCopy, endpoint) {
 		return nil
 	}
 
-	endpoint.Status.Current.UID = uid
-	endpoint.Status.Current.Node = nodeName
-
+	deepCopy.DeepCopyInto(endpoint)
+	log.Sugar().Infof("try to update Endpoint %s", endpoint)
 	return em.client.Update(ctx, endpoint)
+}
+
+func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error) {
+	for index := range endpoint.Status.Current.IPs {
+		if endpoint.Status.Current.IPs[index].NIC != "" {
+			if endpoint.Status.Current.IPs[index].NIC == nic {
+				return &endpoint.Status.Current, nil
+			}
+		} else {
+			// the SpiderEndpoint status allocation is already in order by NIC sequence
+			endpoint.Status.Current.IPs[index].NIC = nic
+			break
+		}
+	}
+
+	err := em.client.Update(ctx, endpoint)
+	if nil != err {
+		return nil, err
+	}
+
+	return &endpoint.Status.Current, nil
 }

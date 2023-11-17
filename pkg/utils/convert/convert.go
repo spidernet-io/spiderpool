@@ -6,9 +6,12 @@ package convert
 import (
 	"encoding/json"
 	"net"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -27,7 +30,10 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 			var ipv4Gateway string
 			if d.IPv4Gateway != nil {
 				ipv4Gateway = *d.IPv4Gateway
-				routes = append(routes, genDefaultRoute(nic, ipv4Gateway))
+				// don't set default route if we have cleangateway
+				if !(d.CleanGateway != nil && *d.CleanGateway) {
+					routes = append(routes, genDefaultRoute(nic, ipv4Gateway))
+				}
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv4,
@@ -44,7 +50,10 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 			var ipv6Gateway string
 			if d.IPv6Gateway != nil {
 				ipv6Gateway = *d.IPv6Gateway
-				routes = append(routes, genDefaultRoute(nic, ipv6Gateway))
+				// don't set default route if we have cleangateway
+				if !(d.CleanGateway != nil && *d.CleanGateway) {
+					routes = append(routes, genDefaultRoute(nic, ipv6Gateway))
+				}
 			}
 			ips = append(ips, &models.IPConfig{
 				Address: d.IPv6,
@@ -104,16 +113,14 @@ func genDefaultRoute(nic, gateway string) *models.Route {
 	return route
 }
 
-func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv2beta1.IPAllocationDetail {
+func ConvertResultsToIPDetails(results []*types.AllocationResult, isMultipleNicWithNoName bool) []spiderpoolv2beta1.IPAllocationDetail {
 	nicToDetail := map[string]*spiderpoolv2beta1.IPAllocationDetail{}
 	for _, r := range results {
 		var gateway *string
 		var cleanGateway *bool
 		if r.IP.Gateway != "" {
-			gateway = new(string)
-			cleanGateway = new(bool)
-			*gateway = r.IP.Gateway
-			*cleanGateway = r.CleanGateway
+			gateway = pointer.String(r.IP.Gateway)
+			cleanGateway = pointer.Bool(r.CleanGateway)
 		}
 
 		address := *r.IP.Address
@@ -123,15 +130,15 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv2
 
 		if d, ok := nicToDetail[*r.IP.Nic]; ok {
 			if *r.IP.Version == constant.IPv4 {
-				d.IPv4 = &address
-				d.IPv4Pool = &pool
-				d.IPv4Gateway = gateway
-				d.Routes = append(d.Routes, routes...)
+				(*d).IPv4 = &address
+				(*d).IPv4Pool = &pool
+				(*d).IPv4Gateway = gateway
+				(*d).Routes = append(d.Routes, routes...)
 			} else {
-				d.IPv6 = r.IP.Address
-				d.IPv6Pool = &r.IP.IPPool
-				d.IPv6Gateway = gateway
-				d.Routes = append(d.Routes, routes...)
+				(*d).IPv6 = r.IP.Address
+				(*d).IPv6Pool = &r.IP.IPPool
+				(*d).IPv6Gateway = gateway
+				(*d).Routes = append(d.Routes, routes...)
 			}
 			continue
 		}
@@ -162,6 +169,30 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult) []spiderpoolv2
 	details := []spiderpoolv2beta1.IPAllocationDetail{}
 	for _, d := range nicToDetail {
 		details = append(details, *d)
+	}
+
+	// If no NIC name, sort the results with NIC and specify the first NIC name with "eth0", the others with empty.
+	// For the other NIC allocation, we'll retrieve the results from the Endpoint resource and update the Endpoint resource with real NIC name for the no NIC name set.
+	if isMultipleNicWithNoName {
+		sort.Slice(details, func(i, j int) bool {
+			pre, err := strconv.Atoi(details[i].NIC)
+			if nil != err {
+				return false
+			}
+			latter, err := strconv.Atoi(details[j].NIC)
+			if nil != err {
+				return false
+			}
+			return pre < latter
+		})
+
+		for index := range details {
+			if index == 0 {
+				details[index].NIC = constant.ClusterDefaultInterfaceName
+			} else {
+				details[index].NIC = ""
+			}
+		}
 	}
 
 	return details
@@ -245,7 +276,6 @@ func GenIPConfigResult(allocateIP net.IP, nic string, ipPool *spiderpoolv2beta1.
 		IPPool:  ipPool.Name,
 		Nic:     &nic,
 		Version: ipPool.Spec.IPVersion,
-		//Vlan:    *ipPool.Spec.Vlan,
 	}
 }
 

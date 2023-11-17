@@ -109,7 +109,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 		}
 
 		logger.Debug("Generate a random IP address")
-		allocatedIP, err := im.genRandomIP(ctx, nic, ipPool, pod, podController)
+		allocatedIP, err := im.genRandomIP(ctx, ipPool, pod, podController)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 	return ipConfig, nil
 }
 
-func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, error) {
+func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, error) {
 	logger := logutils.FromContext(ctx)
 
 	var tmpPod *corev1.Pod
@@ -182,7 +182,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 	if len(availableIPs) == 0 {
 		// traverse the usedIPs to find the previous allocated IPs if there be
 		// reference issue: https://github.com/spidernet-io/spiderpool/issues/2517
-		allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, nic, key, string(pod.UID))
+		allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
 		if !hasFound {
 			return nil, constant.ErrIPUsedOut
 		}
@@ -199,7 +199,6 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, nic string, ipPool *sp
 		allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{}
 	}
 	allocatedRecords[resIP.String()] = spiderpoolv2beta1.PoolIPAllocation{
-		NIC:            nic,
 		NamespacedName: key,
 		PodUID:         string(pod.UID),
 	}

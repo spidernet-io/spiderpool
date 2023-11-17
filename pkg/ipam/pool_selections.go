@@ -49,7 +49,7 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippools".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
-		return getPoolFromPodAnnoPools(ctx, anno, *addArgs.IfName)
+		return getPoolFromPodAnnoPools(ctx, anno)
 	}
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippool".
@@ -312,7 +312,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 	return pool, nil
 }
 
-func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) (ToBeAllocateds, error) {
+func getPoolFromPodAnnoPools(ctx context.Context, anno string) (ToBeAllocateds, error) {
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
@@ -322,23 +322,11 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno, nic string) (ToBeAllocat
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
 	}
-	if len(annoPodIPPools) == 0 {
-		return nil, fmt.Errorf("%w: value requires at least one item", errPrefix)
-	}
 
-	nicSet := map[string]struct{}{}
-	for _, v := range annoPodIPPools {
-		if v.NIC == "" {
-			return nil, fmt.Errorf("%w: interface must be specified", errPrefix)
-		}
-		if _, ok := nicSet[v.NIC]; ok {
-			return nil, fmt.Errorf("%w: duplicate interface %s", errPrefix, v.NIC)
-		}
-		nicSet[v.NIC] = struct{}{}
-	}
-
-	if _, ok := nicSet[nic]; !ok {
-		return nil, fmt.Errorf("%w: interfaces do not contain that requested by runtime", errPrefix)
+	// validate and mutate the IPPools annotation value
+	err = validateAndMutateMultipleNICAnnotations(annoPodIPPools)
+	if nil != err {
+		return nil, fmt.Errorf("%w: %v", errPrefix, err)
 	}
 
 	var tt ToBeAllocateds

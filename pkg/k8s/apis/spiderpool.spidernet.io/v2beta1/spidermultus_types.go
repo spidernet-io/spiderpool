@@ -52,7 +52,7 @@ type MultusCNIConfigSpec struct {
 	DisableIPAM *bool `json:"disableIPAM"`
 
 	// +kubebuilder:validation:Optional
-	CoordinatorConfig *CoordinatorSpec `json:"coordinator,omitempty"`
+	CoordinatorConfig *CoordinatorSpec `json:"coordinator"`
 
 	// OtherCniTypeConfig only used for CniType custom, valid json format, can be empty
 	// +kubebuilder:validation:Optional
@@ -66,13 +66,13 @@ type SpiderMacvlanCniConfig struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
-	VlanID *int32 `json:"vlanID,omitempty"`
+	VlanID *int32 `json:"vlanID"`
 
 	// +kubebuilder:validation:Optional
-	Bond *BondConfig `json:"bond,omitempty"`
+	Bond *BondConfig `json:"bond"`
 
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools"`
 }
 
 type SpiderIPvlanCniConfig struct {
@@ -82,13 +82,13 @@ type SpiderIPvlanCniConfig struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
-	VlanID *int32 `json:"vlanID,omitempty"`
+	VlanID *int32 `json:"vlanID"`
 
 	// +kubebuilder:validation:Optional
-	Bond *BondConfig `json:"bond,omitempty"`
+	Bond *BondConfig `json:"bond"`
 
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools"`
 }
 
 type SpiderSRIOVCniConfig struct {
@@ -98,14 +98,14 @@ type SpiderSRIOVCniConfig struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
-	VlanID *int32 `json:"vlanID,omitempty"`
+	VlanID *int32 `json:"vlanID"`
 
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
 	EnableRdma bool `json:"enableRdma"`
 
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools"`
 }
 
 type SpiderOvsCniConfig struct {
@@ -119,7 +119,7 @@ type SpiderOvsCniConfig struct {
 	// PCI address of a VF in valid sysfs format
 	DeviceID string `json:"deviceID"`
 	// +kubebuilder:validation:Optional
-	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools"`
 }
 
 type Trunk struct {
@@ -147,16 +147,16 @@ type BondConfig struct {
 	Mode int32 `json:"mode"`
 
 	// +kubebuilder:validation:Optional
-	Options *string `json:"options,omitempty"`
+	Options *string `json:"options"`
 }
 
 // SpiderpoolPools could specify the IPAM spiderpool CNI configuration default IPv4&IPv6 pools.
 type SpiderpoolPools struct {
 	// +kubebuilder:validation:Optional
-	IPv4IPPool []string `json:"ipv4,omitempty"`
+	IPv4IPPool []string `json:"ipv4"`
 
 	// +kubebuilder:validation:Optional
-	IPv6IPPool []string `json:"ipv6,omitempty"`
+	IPv6IPPool []string `json:"ipv6"`
 }
 
 func init() {

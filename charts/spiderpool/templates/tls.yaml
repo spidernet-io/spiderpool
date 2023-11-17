@@ -36,6 +36,34 @@ webhooks:
     resources:
     - spidersubnets
   sideEffects: None
+{{- if .Values.multus.enableMultusConfig }}
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate-spiderpool-spidernet-io-v2beta1-spidermultusconfig
+      port: {{ .Values.spiderpoolController.webhookPort }}
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
+    {{- else if (eq .Values.spiderpoolController.tls.method "auto") }}
+    caBundle: {{ .ca.Cert | b64enc }}
+    {{- end }}
+  failurePolicy: Fail
+  name: spidermultusconfig.spiderpool.spidernet.io
+  rules:
+  - apiGroups:
+    - spiderpool.spidernet.io
+    apiVersions:
+    - v2beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - spidermultusconfigs
+  sideEffects: None
+{{- end }}
 - admissionReviewVersions:
   - v1
   clientConfig:

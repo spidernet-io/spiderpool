@@ -147,3 +147,11 @@ const (
 	ResourceNameAnnot            = "k8s.v1.cni.cncf.io/resourceName"
 	ResourceNameOvsCniValue      = "ovs-cni.network.kubevirt.io"
 )
+
+const (
+	MacvlanCNI = "macvlan"
+	IPVlanCNI  = "ipvlan"
+	SriovCNI   = "sriov"
+	OvsCNI     = "ovs"
+	CustomCNI  = "custom"
+)

@@ -10,6 +10,8 @@ import (
 	"net"
 	"sort"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -395,6 +397,15 @@ func NewLabelsFromModel(base []string) Labels {
 	return lbls
 }
 
+// FromSlice creates labels from a slice of labels.
+func FromSlice(labels []Label) Labels {
+	lbls := make(Labels, len(labels))
+	for _, lbl := range labels {
+		lbls[lbl.Key] = lbl
+	}
+	return lbls
+}
+
 // NewLabelsFromSortedList returns labels based on the output of SortedList()
 func NewLabelsFromSortedList(list string) Labels {
 	return NewLabelsFromModel(strings.Split(list, ";"))
@@ -487,7 +498,7 @@ func (l Labels) SortedList() []byte {
 	for k := range l {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	b := make([]byte, 0, len(keys)*2)
 	buf := bytes.NewBuffer(b)

@@ -222,7 +222,7 @@ jobs:
       - name: Update Badge For Dual-stack
         if: ${{ inputs.run_e2e == 'true' && env.PERFORMANCE_RESULT != '' && inputs.ip_family == 'dual' }}
         continue-on-error: true
-        uses: schneegans/dynamic-badges-action@v1.6.0
+        uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.WELAN_PAT }}
           gistID: 38d00a872e830eedb46870c886549561

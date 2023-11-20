@@ -15,7 +15,7 @@ import (
 
 func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.SpiderMultusConfig) error {
 	logger := logutils.FromContext(ctx)
-	logger.Info("Start to mutate Spidermulutconfig")
+	logger.Info("Start to mutate SpiderMultusConfig")
 
 	switch smc.Spec.CniType {
 	case constant.MacvlanCNI:
@@ -45,7 +45,9 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 		macvlanConfig.VlanID = pointer.Int32(0)
 	}
 
-	macvlanConfig.Bond = setBondDefaultConfig(macvlanConfig.Bond)
+	if macvlanConfig.Bond != nil {
+		macvlanConfig.Bond = setBondDefaultConfig(macvlanConfig.Bond)
+	}
 
 	if macvlanConfig.SpiderpoolConfigPools == nil {
 		macvlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
@@ -56,14 +58,6 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 }
 
 func setBondDefaultConfig(bond *spiderpoolv2beta1.BondConfig) *spiderpoolv2beta1.BondConfig {
-	if bond == nil {
-		return &spiderpoolv2beta1.BondConfig{
-			Name:    "",
-			Mode:    0,
-			Options: pointer.String(""),
-		}
-	}
-
 	if bond.Options == nil {
 		bond.Options = pointer.String("")
 	}
@@ -79,7 +73,9 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 		ipvlanConfig.VlanID = pointer.Int32(0)
 	}
 
-	ipvlanConfig.Bond = setBondDefaultConfig(ipvlanConfig.Bond)
+	if ipvlanConfig.Bond != nil {
+		ipvlanConfig.Bond = setBondDefaultConfig(ipvlanConfig.Bond)
+	}
 
 	if ipvlanConfig.SpiderpoolConfigPools == nil {
 		ipvlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
@@ -140,7 +136,7 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		coordinator.Mode = pointer.String(string(coordinator_cmd.ModeAuto))
 	}
 
-	if len(coordinator.HijackCIDR) == 0 {
+	if coordinator.HijackCIDR == nil {
 		coordinator.HijackCIDR = []string{}
 	}
 

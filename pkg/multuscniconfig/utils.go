@@ -55,10 +55,14 @@ type IPvlanNetConf struct {
 }
 
 type SRIOVNetConf struct {
-	Vlan     *int32                    `json:"vlan,omitempty"`
-	Type     string                    `json:"type"`
-	DeviceID string                    `json:"deviceID,omitempty"`
-	IPAM     *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+	Vlan *int32 `json:"vlan,omitempty"`
+	// Mbps, 0 = disable rate limiting
+	MinTxRate *int `json:"minTxRate,omitempty"`
+	// Mbps, 0 = disable rate limiting
+	MaxTxRate *int                      `json:"maxTxRate,omitempty"`
+	Type      string                    `json:"type"`
+	DeviceID  string                    `json:"deviceID,omitempty"`
+	IPAM      *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type RdmaNetConf struct {

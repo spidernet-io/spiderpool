@@ -241,6 +241,12 @@ spec:
                           type: string
                         type: array
                     type: object
+                  maxTxRateMbps:
+                    minimum: 0
+                    type: integer
+                  minTxRateMbps:
+                    minimum: 0
+                    type: integer
                   resourceName:
                     type: string
                   vlanID:

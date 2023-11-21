@@ -162,6 +162,145 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
+### 创建 Sriov 配置
+
+如下是创建 Sriov SpiderMultusConfig 配置的示例：
+
+- 一个基础的例子
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-demo
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+EOF
+```
+
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-demo -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-demo
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-demo
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+  resourceVersion: "153002297"
+  uid: 4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-demo","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
+更多信息可参考 [Sriov-cni 使用](./install/underlay/get-started-sriov-zh_CN.md)
+
+- 配置启用 RDMA 功能
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-rdma
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    enableRdma: true
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+EOF
+```
+
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-rdma
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-rdma
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+  resourceVersion: "153002297"
+  uid: 4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+更多信息可参考 [Sriov-rdma 使用](rdma-zh_CN.md)
+
+- 配置 Sriov 网络带宽
+
+我们可通过 SpiderMultusConfig 配置 Sriov 的网络带宽:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-bandwidth
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+    minTxRateMbps: 100
+    MaxTxRateMbps: 1000
+EOF
+```
+
+> `minTxRateMbps` 和 `MaxTxRateMbps` 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]
+
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-bandwidth
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-bandwidth
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
 ### Ifacer 使用配置
 
 Ifacer 插件可以帮助我们在创建 Pod 时，自动创建 Bond 网卡 或者 Vlan 网卡，用于承接 Pod 底层网络。更多信息参考 [Ifacer](../reference/plugin-ifacer.md)。
@@ -342,7 +481,7 @@ EOF
 
 #### 其他 CNI 配置
 
-创建其他 CNI 配置，如：SRIOV 与 Ovs，参考 [创建 SR-IOV](./install/underlay/get-started-sriov-zh_CN.md)、[创建 Ovs](./install/underlay/get-started-ovs-zh_CN.md)
+创建其他 CNI 配置，如 Ovs: 参考 [创建 Ovs](./install/underlay/get-started-ovs-zh_CN.md)
 
 ## 总结
 

@@ -162,6 +162,145 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
+### Create Sriov Configuration
+
+Here is an example of creating Sriov SpiderMultusConfig configuration:
+
+- Basic example
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-demo
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+EOF
+```
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-demo -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-demo
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-demo
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+  resourceVersion: "153002297"
+  uid: 4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-demo","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
+For more information, refer to [sriov-cni usage](./install/underlay/get-started-sriov.md)
+
+- Enable RDMA feature
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-rdma
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    enableRdma: true
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+EOF
+```
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-rdma
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-rdma
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+  resourceVersion: "153002297"
+  uid: 4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+For more information, refer to [Sriov-rdma usage](rdma.md)
+
+- Configure Sriov-CNI Network Bandwidth
+
+We can configure the network bandwidth of Sriov through SpiderMultusConfig:
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-bandwidth
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+    minTxRateMbps: 100
+    MaxTxRateMbps: 1000
+EOF
+```
+
+> minTxRateMbps and MaxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-bandwidth
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-bandwidth
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
 ### Ifacer Configurations
 
 The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when creating a pod to undertake the pod's underlying network. For more information, refer to [Ifacer](../reference/plugin-ifacer.md).
@@ -343,9 +482,9 @@ EOF
 
 > When creating a pod with the above configuration, `ifacer` will create a bond NIC bond0 and a VLAN NIC bond0.100 on the host.
 
-#### Other CNI Configurations
+#### Other CNI Configurationsi
 
-To create other types of CNI configurations, such as SR-IOV and OVS, refer to [SR-IOV](./install/underlay/get-started-sriov.md) and [Ovs](./install/underlay/get-started-ovs.md).
+To create other types of CNI configurations, such OVS, refer to [Ovs](./install/underlay/get-started-ovs.md).
 
 ## Conclusion
 

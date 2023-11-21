@@ -25,7 +25,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     helm repo update spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system --set multus.multusCNI.defaultCniCRName="macvlan-conf" 
     ```
-    
+
     > If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
     >
     > If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for Spiderpool.

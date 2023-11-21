@@ -74,9 +74,9 @@ var (
 	SpiderPoolIPv4SubnetVlan200 string = "vlan200-v4"
 	SpiderPoolIPv6SubnetVlan200 string = "vlan200-v6"
 
-	MultusNs                = "kube-system"
-	SpiderDoctorAgentNs     = "kube-system"
-	SpiderDoctorAgentDSName = "spiderdoctor-agent"
+	MultusNs           = "kube-system"
+	KDoctorAgentNs     = "kube-system"
+	KDoctorAgentDSName = "kdoctor-agent"
 
 	// gateway and check for ip conflicting machines
 	VlanGatewayContainer = "vlan-gateway"

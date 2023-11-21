@@ -78,6 +78,11 @@ func (o *GetIpamHealthyOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get ipam healthy o k response
+func (o *GetIpamHealthyOK) Code() int {
+	return 200
+}
+
 func (o *GetIpamHealthyOK) Error() string {
 	return fmt.Sprintf("[GET /ipam/healthy][%d] getIpamHealthyOK ", 200)
 }
@@ -127,6 +132,11 @@ func (o *GetIpamHealthyInternalServerError) IsServerError() bool {
 // IsCode returns true when this get ipam healthy internal server error response a status code equal to that given
 func (o *GetIpamHealthyInternalServerError) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the get ipam healthy internal server error response
+func (o *GetIpamHealthyInternalServerError) Code() int {
+	return 500
 }
 
 func (o *GetIpamHealthyInternalServerError) Error() string {

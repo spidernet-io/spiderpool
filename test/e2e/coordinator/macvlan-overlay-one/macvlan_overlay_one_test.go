@@ -15,7 +15,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	spiderdoctorV1 "github.com/spidernet-io/spiderdoctor/pkg/k8s/apis/spiderdoctor.spidernet.io/v1"
+	kdoctorV1beta1 "github.com/kdoctor-io/kdoctor/pkg/k8s/apis/kdoctor.io/v1beta1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -39,12 +39,11 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			defer GinkgoRecover()
 			var annotations = make(map[string]string)
 
-			task = new(spiderdoctorV1.Nethttp)
-			plan = new(spiderdoctorV1.SchedulePlan)
-			target = new(spiderdoctorV1.NethttpTarget)
-			targetAgent = new(spiderdoctorV1.TargetAgentSepc)
-			request = new(spiderdoctorV1.NethttpRequest)
-			condition = new(spiderdoctorV1.NetSuccessCondition)
+			task = new(kdoctorV1beta1.NetReach)
+			targetAgent = new(kdoctorV1beta1.NetReachTarget)
+			request = new(kdoctorV1beta1.NetHttpRequest)
+			schedule = new(kdoctorV1beta1.SchedulePlan)
+			condition = new(kdoctorV1beta1.NetSuccessCondition)
 			name = "one-macvlan-overlay-" + tools.RandomName()
 
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100)
@@ -56,17 +55,17 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				annotations[constant.AnnoPodIPPool] = `{"interface": "net1", "ipv6": ["vlan100-v6"]}`
 			}
 
-			GinkgoWriter.Printf("update spiderdoctoragent annotation: %v/%v annotation: %v \n", common.SpiderDoctorAgentNs, common.SpiderDoctorAgentDSName, annotations)
-			spiderDoctorAgent, err = frame.GetDaemonSet(common.SpiderDoctorAgentDSName, common.SpiderDoctorAgentNs)
+			GinkgoWriter.Printf("update kdoctoragent annotation: %v/%v annotation: %v \n", common.KDoctorAgentNs, common.KDoctorAgentDSName, annotations)
+			kdoctorAgent, err = frame.GetDaemonSet(common.KDoctorAgentDSName, common.KDoctorAgentNs)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(spiderDoctorAgent).NotTo(BeNil())
+			Expect(kdoctorAgent).NotTo(BeNil())
 
-			GinkgoWriter.Printf("remove old spiderdoctor %v/%v \n", common.SpiderDoctorAgentNs, common.SpiderDoctorAgentDSName)
-			err = frame.DeleteDaemonSet(common.SpiderDoctorAgentDSName, common.SpiderDoctorAgentNs)
+			GinkgoWriter.Printf("remove old kdoctor %v/%v \n", common.KDoctorAgentNs, common.KDoctorAgentDSName)
+			err = frame.DeleteDaemonSet(common.KDoctorAgentDSName, common.KDoctorAgentNs)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
-				spiderDoctorAgentPodList, err := frame.GetPodListByLabel(spiderDoctorAgent.Spec.Template.Labels)
+				spiderDoctorAgentPodList, err := frame.GetPodListByLabel(kdoctorAgent.Spec.Template.Labels)
 				if err != nil {
 					GinkgoWriter.Printf("failed to get pod list %v,error is: %v \n", err)
 					return false
@@ -78,13 +77,13 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
 			// issue: the object has been modified; please apply your changes to the latest version and try again
-			spiderDoctorAgent.ResourceVersion = ""
-			spiderDoctorAgent.CreationTimestamp = v1.Time{}
-			spiderDoctorAgent.UID = apitypes.UID("")
-			spiderDoctorAgent.Spec.Template.Annotations = annotations
+			kdoctorAgent.ResourceVersion = ""
+			kdoctorAgent.CreationTimestamp = v1.Time{}
+			kdoctorAgent.UID = apitypes.UID("")
+			kdoctorAgent.Spec.Template.Annotations = annotations
 
-			GinkgoWriter.Printf("create spiderdoctor %v/%v \n", common.SpiderDoctorAgentNs, common.SpiderDoctorAgentDSName)
-			err = frame.CreateDaemonSet(spiderDoctorAgent)
+			GinkgoWriter.Printf("create kdoctor %v/%v \n", common.KDoctorAgentNs, common.KDoctorAgentDSName)
+			err = frame.CreateDaemonSet(kdoctorAgent)
 			Expect(err).NotTo(HaveOccurred())
 
 			nodeList, err := frame.GetNodeList()
@@ -92,45 +91,53 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 			defer cancel()
-			err = frame.WaitPodListRunning(spiderDoctorAgent.Spec.Selector.MatchLabels, len(nodeList.Items), ctx)
+			err = frame.WaitPodListRunning(kdoctorAgent.Spec.Selector.MatchLabels, len(nodeList.Items), ctx)
 			Expect(err).NotTo(HaveOccurred())
+
+			// Updated network configuration for kdoctor pod. After the pod is fully running,
+			// we still need to wait for a certain amount of time for the routing to complete synchronization.
+			// Otherwise kdoctor may fail to detect it.
+			time.Sleep(10 * time.Second)
 		})
 
-		It("spiderdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
 
-			// create task spiderdoctor crd
+			enable := true
+			disable := false
+			// create task kdoctor crd
 			task.Name = name
-			// schedule
-			plan.StartAfterMinute = 0
-			plan.RoundNumber = 2
-			plan.IntervalMinute = 2
-			plan.TimeoutMinute = 2
-			task.Spec.Schedule = plan
+			GinkgoWriter.Printf("Start the netreach task: %v", task.Name)
 			// target
-			targetAgent.TestIngress = false
-			targetAgent.TestEndpoint = true
-			targetAgent.TestClusterIp = true
-			targetAgent.TestMultusInterface = frame.Info.MultusEnabled
-			targetAgent.TestNodePort = true
+			targetAgent.Ingress = &disable
+			targetAgent.Endpoint = &enable
+			targetAgent.ClusterIP = &enable
+			targetAgent.MultusInterface = &frame.Info.MultusEnabled
+			targetAgent.NodePort = &enable
+			targetAgent.EnableLatencyMetric = true
 
-			targetAgent.TestIPv4 = &frame.Info.IpV4Enabled
+			targetAgent.IPv4 = &frame.Info.IpV4Enabled
 			if common.CheckCiliumFeatureOn() {
 				// TODO(tao.yang), set testIPv6 to false, reference issue: https://github.com/spidernet-io/spiderpool/issues/2007
-				testIPv6 := false
-				targetAgent.TestIPv6 = &testIPv6
+				targetAgent.IPv6 = &disable
 			} else {
-				targetAgent.TestIPv6 = &frame.Info.IpV6Enabled
+				targetAgent.IPv6 = &frame.Info.IpV6Enabled
 			}
 
-			GinkgoWriter.Printf("targetAgent for spiderdoctor %+v", targetAgent)
-			target.TargetAgent = targetAgent
-			task.Spec.Target = target
+			GinkgoWriter.Printf("targetAgent for kdoctor %+v", targetAgent)
+			task.Spec.Target = targetAgent
 
 			// request
 			request.DurationInSecond = 5
 			request.QPS = 1
-			request.PerRequestTimeoutInMS = 15000
+			request.PerRequestTimeoutInMS = 7000
 			task.Spec.Request = request
+
+			// Schedule
+			crontab := "0 1"
+			schedule.Schedule = &crontab
+			schedule.RoundNumber = 1
+			schedule.RoundTimeoutMinute = 1
+			task.Spec.Schedule = schedule
 
 			// success condition
 			condition.SuccessRate = &successRate
@@ -138,12 +145,12 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.SuccessCondition = condition
 
 			taskCopy := task
-			GinkgoWriter.Printf("spiderdoctor task: %+v", task)
+			GinkgoWriter.Printf("kdoctor task: %+v", task)
 			err := frame.CreateResource(task)
-			Expect(err).NotTo(HaveOccurred(), " spiderdoctor nethttp crd create failed")
+			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd create failed")
 
 			err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-			Expect(err).NotTo(HaveOccurred(), " spiderdoctor nethttp crd get failed")
+			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
 
 			ctx, cancel := context.WithTimeout(context.Background(), common.KdoctorCheckTime)
 			defer cancel()
@@ -152,13 +159,13 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				select {
 				case <-ctx.Done():
 					run = false
-					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running spiderdoctor task timeout")
+					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
 				default:
 					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), "spiderdoctor nethttp crd get failed,err is %v", err)
+					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %v", err)
 
 					if taskCopy.Status.Finish == true {
-						GinkgoWriter.Printf("spiderdoctor's nethttp execution result %+v", taskCopy)
+						GinkgoWriter.Printf("kdoctor's nethttp execution result %+v", taskCopy)
 						for _, v := range taskCopy.Status.History {
 							if v.Status != "succeed" {
 								err = errors.New("error has occurred")

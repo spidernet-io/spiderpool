@@ -14,6 +14,7 @@ echo "Using ARCH: $ARCH"
 echo "all images: $IMAGE_LIST"
 
 #=================================
+
 for image in $IMAGE_LIST ; do
     PREFIX_IMAGE=$(echo $image | awk -F ':' '{print $1}')
     SUFFIX_IMAGE=$(echo $image | awk -F ':' '{print $2}')

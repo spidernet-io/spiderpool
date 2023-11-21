@@ -15,13 +15,14 @@ require (
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/go-openapi/swag v0.22.4
 	github.com/go-openapi/validate v0.22.1
-	github.com/go-swagger/go-swagger v0.30.3
+	github.com/go-swagger/go-swagger v0.30.4
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/google/gops v0.3.27
 	github.com/grafana/pyroscope-go v1.0.2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
+	github.com/kdoctor-io/kdoctor v0.2.0
 	github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/ndp v1.0.1
@@ -34,7 +35,6 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spidernet-io/e2eframework v0.0.0-20231122092103-bfaf2546ded3
-	github.com/spidernet-io/spiderdoctor v0.3.0
 	github.com/tigera/operator v1.30.5
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
 	go.opentelemetry.io/otel v1.20.0
@@ -46,7 +46,7 @@ require (
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
-	golang.org/x/net v0.13.0
+	golang.org/x/net v0.17.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.14.0
 	golang.org/x/tools v0.11.0
@@ -73,8 +73,8 @@ require (
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.1.1 // indirect
-	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -163,12 +163,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.uber.org/dig v1.17.0 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/oauth2 v0.10.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

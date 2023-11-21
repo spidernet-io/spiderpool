@@ -19,7 +19,6 @@ kind-init: check_env prepare
 	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME)  \
 		E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
-		INSTALL_NETTOOLS=$(INSTALL_NETTOOLS) \
 		E2E_VLAN_GATEWAY_IMAGE=$(E2E_VLAN_GATEWAY_IMAGE) \
 		VLAN_GATEWAY_CONTAINER=$(VLAN_GATEWAY_CONTAINER) \
 		$(QUIET) bash scripts/config-network.sh
@@ -46,8 +45,7 @@ ifeq ($(INSTALL_OVERLAY_CNI),true)
 endif
 	@echo -e "\033[35m [Step 7] Install Spiderpool \033[0m"
 	@ make setup_spiderpool
-ifeq ($(INSTALL_MULTUS),true)
-	@echo -e "\033[35m [Step 8] Install Multus \033[0m"
+	@echo -e "\033[35m [Step 8] Install Multus CR and IPPool CR \033[0m"
 	@ IMAGE_MULTUS=$(IMAGE_MULTUS_NAME) \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
@@ -65,21 +63,20 @@ ifeq ($(INSTALL_MULTUS),true)
 		CLUSTER_PATH=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME) \
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
-endif
 ifeq ($(INSTALL_KRUISE),true)
 	@echo -e "\033[35m [Step 9] Install third-party controllers: kurise \033[0m"
 	@ make setup_kurise
 endif
-ifeq ($(INSTALL_SPIDERDOCTOR),true)
-	@echo -e "\033[35m [Step 10] Install SpiderDoctor \033[0m"
+ifeq ($(INSTALL_KDOCTOR),true)
+	@echo -e "\033[35m [Step 10] Install kdoctor \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
-		SPIDERDOCTOR_VERSION=$(SPIDERDOCTOR_VERSION) \
-		SPIDERDOCTOR_REPORT_PATH=$(SPIDERDOCTOR_REPORT_PATH) \
-		E2E_SPIDERDOCTOR_IMAGE_REPO=$(E2E_SPIDERDOCTOR_IMAGE_REPO) \
+		KDOCTOR_VERSION=$(KDOCTOR_VERSION) \
+		KDOCTOR_REPORT_PATH=$(KDOCTOR_REPORT_PATH) \
+		E2E_KDOCTOR_IMAGE_REPO=$(E2E_KDOCTOR_IMAGE_REPO) \
 		HTTP_PROXY=$(HTTP_PROXY) \
-		$(QUIET) bash scripts/install-spiderdoctor.sh
+		$(QUIET) bash scripts/install-kdoctor.sh
 endif
 ifeq ($(INSTALL_KUBEVIRT),true)
 	@echo -e "\033[35m [Step 10] Install kubevirt \033[0m"
@@ -95,7 +92,7 @@ endif
 		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
-		scripts/installTestPod.sh $(E2E_KUBECONFIG) $(INSTALL_MULTUS)
+		scripts/installTestPod.sh $(E2E_KUBECONFIG)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"
@@ -201,22 +198,18 @@ setup_spiderpool:
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		if [ "$(INSTALL_MULTUS)" == "true" ] ; then \
-		    HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
-		    HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
-		    HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
-		    if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
-			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
-		    else \
-			HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
-		    fi ; \
-			if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
-				HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
-			else \
-				HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
-			fi ; \
+		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
+		HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
+		HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
+		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
+		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
 		else \
-		    HELM_OPTION+=" --set multus.multusCNI.install=false " ; \
+		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
+			HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
+		else \
+			HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
 		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=true " ; \

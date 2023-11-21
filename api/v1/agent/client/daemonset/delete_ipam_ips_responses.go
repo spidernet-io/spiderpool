@@ -81,6 +81,11 @@ func (o *DeleteIpamIpsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the delete ipam ips o k response
+func (o *DeleteIpamIpsOK) Code() int {
+	return 200
+}
+
 func (o *DeleteIpamIpsOK) Error() string {
 	return fmt.Sprintf("[DELETE /ipam/ips][%d] deleteIpamIpsOK ", 200)
 }
@@ -131,6 +136,11 @@ func (o *DeleteIpamIpsFailure) IsServerError() bool {
 // IsCode returns true when this delete ipam ips failure response a status code equal to that given
 func (o *DeleteIpamIpsFailure) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the delete ipam ips failure response
+func (o *DeleteIpamIpsFailure) Code() int {
+	return 500
 }
 
 func (o *DeleteIpamIpsFailure) Error() string {

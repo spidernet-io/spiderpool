@@ -78,6 +78,11 @@ func (o *GetRuntimeStartupOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get runtime startup o k response
+func (o *GetRuntimeStartupOK) Code() int {
+	return 200
+}
+
 func (o *GetRuntimeStartupOK) Error() string {
 	return fmt.Sprintf("[GET /runtime/startup][%d] getRuntimeStartupOK ", 200)
 }
@@ -127,6 +132,11 @@ func (o *GetRuntimeStartupInternalServerError) IsServerError() bool {
 // IsCode returns true when this get runtime startup internal server error response a status code equal to that given
 func (o *GetRuntimeStartupInternalServerError) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the get runtime startup internal server error response
+func (o *GetRuntimeStartupInternalServerError) Code() int {
+	return 500
 }
 
 func (o *GetRuntimeStartupInternalServerError) Error() string {

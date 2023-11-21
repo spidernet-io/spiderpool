@@ -12,7 +12,6 @@ const (
 	ENV_INSTALL_OVERLAY          = "INSTALL_OVERLAY_CNI"
 	E2E_SPIDERPOOL_ENABLE_SUBNET = "E2E_SPIDERPOOL_ENABLE_SUBNET"
 	INSTALL_CILIUM               = "INSTALL_CILIUM"
-	INSTALL_MULTUS               = "INSTALL_MULTUS"
 )
 
 func checkBoolEnv(name string) bool {
@@ -34,8 +33,4 @@ func CheckSubnetFeatureOn() bool {
 
 func CheckCiliumFeatureOn() bool {
 	return checkBoolEnv(INSTALL_CILIUM)
-}
-
-func CheckMultusFeatureOn() bool {
-	return checkBoolEnv(INSTALL_MULTUS)
 }

@@ -42,9 +42,6 @@ var _ = BeforeSuite(func() {
 	if common.CheckRunOverlayCNI() {
 		Skip("overlay CNI is installed , ignore this suite")
 	}
-	if !common.CheckMultusFeatureOn() {
-		Skip("multus is not installed , ignore this suite")
-	}
 
 	var err error
 	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme, kubevirtv1.AddToScheme})

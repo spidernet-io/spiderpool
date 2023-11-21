@@ -78,6 +78,11 @@ func (o *PutIpamIPOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the put ipam Ip o k response
+func (o *PutIpamIPOK) Code() int {
+	return 200
+}
+
 func (o *PutIpamIPOK) Error() string {
 	return fmt.Sprintf("[PUT /ipam/ip][%d] putIpamIpOK ", 200)
 }
@@ -127,6 +132,11 @@ func (o *PutIpamIPInternalServerError) IsServerError() bool {
 // IsCode returns true when this put ipam Ip internal server error response a status code equal to that given
 func (o *PutIpamIPInternalServerError) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the put ipam Ip internal server error response
+func (o *PutIpamIPInternalServerError) Code() int {
+	return 500
 }
 
 func (o *PutIpamIPInternalServerError) Error() string {

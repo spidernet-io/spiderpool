@@ -386,7 +386,8 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		macvlanCNIConf := generateMacvlanCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{macvlanCNIConf}, plugins...)
-		if len(multusConfSpec.MacvlanConfig.Master) > 0 || (multusConfSpec.MacvlanConfig.VlanID != nil && *multusConfSpec.MacvlanConfig.VlanID != 0) {
+		if (multusConfSpec.MacvlanConfig.VlanID != nil && *multusConfSpec.MacvlanConfig.VlanID != 0) ||
+			len(multusConfSpec.MacvlanConfig.Master) >= 2 {
 			// we need to set Subvlan as first at the CNI plugin chain
 			subVlanCNIConf := generateIfacer(multusConfSpec.MacvlanConfig.Master,
 				*multusConfSpec.MacvlanConfig.VlanID,
@@ -402,7 +403,8 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		ipvlanCNIConf := generateIPvlanCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{ipvlanCNIConf}, plugins...)
-		if len(multusConfSpec.IPVlanConfig.Master) > 0 || (multusConfSpec.IPVlanConfig.VlanID != nil && *multusConfSpec.IPVlanConfig.VlanID != 0) {
+		if (multusConfSpec.IPVlanConfig.VlanID != nil && *multusConfSpec.IPVlanConfig.VlanID != 0) ||
+			len(multusConfSpec.IPVlanConfig.Master) >= 2 {
 			// we need to set Subvlan as first at the CNI plugin chain
 			subVlanCNIConf := generateIfacer(multusConfSpec.IPVlanConfig.Master,
 				*multusConfSpec.IPVlanConfig.VlanID,

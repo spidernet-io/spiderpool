@@ -50,7 +50,7 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 
 * CRD-based dual-stack IPAM capability
 
-    Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns [wonderful IPAM performance](./concepts/ipam-performance.md) .
+    Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns [wonderful IPAM performance](./docs/concepts/ipam-performance.md) .
 
 * Multiple network interface access for Pods
 

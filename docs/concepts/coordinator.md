@@ -40,6 +40,7 @@ Let's delve into how coordinator implements these features.
 | hijackCIDR | The CIDR that need to be forwarded via the host network, For example, the address of nodelocaldns(169.254.20.10/32 by default) | []stirng | optional | []string{} |
 | hostRuleTable | The routes on the host that communicates with the pod's underlay IPs will belong to this routing table number | int | optional | 500 |
 | hostRPFilter | Set the rp_filter sysctl parameter on the host, which is recommended to be set to 0 | int | optional | 0 |
+| txQueueLen | set txqueuelen(Transmit Queue Length) of the pod's interface | int | optional | 0 |
 | detectOptions | The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s) | obejct | optional | nil |
 | logOptions | The configuration of logging, including logLevel(default is debug) and logFile(default is /var/log/spidernet/coordinator.log) |  obejct | optional | nil |
 
@@ -127,6 +128,27 @@ spec:
 ```
 
 You can check if the MAC address prefix of the Pod starts with "0a:1b" after a Pod is created.
+
+## Configure the transmit queue length(txQueueLen)
+
+The Transmit Queue Length (txqueuelen) is a TCP/IP stack network interface value that sets the number of packets allowed per kernel transmit queue of a network interface device. If the txqueuelen is too small, it may cause packet loss in pod communication. we can configure it if we needs.
+
+We can configure it via Spidermultusconfig:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: txqueue-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    txQueueLen: 2000 
+```
 
 ## Known issues
 

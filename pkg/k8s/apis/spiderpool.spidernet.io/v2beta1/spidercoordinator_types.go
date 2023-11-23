@@ -39,6 +39,9 @@ type CoordinatorSpec struct {
 	HostRPFilter *int `json:"hostRPFilter,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	TxQueueLen *int `json:"txQueueLen,omitempty"`
+
+	// +kubebuilder:validation:Optional
 	DetectIPConflict *bool `json:"detectIPConflict,omitempty"`
 
 	// +kubebuilder:validation:Optional

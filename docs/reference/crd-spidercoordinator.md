@@ -21,6 +21,7 @@ spec:
   podDefaultRouteNIC: eth0
   podMACPrefix: ""
   tunePodRoutes: true
+  txQueueLen: 0
 status:
   overlayPodCIDR:
   - 10.233.64.0/18
@@ -54,6 +55,7 @@ This is the Spidercoordinators spec for users to configure.
 | podMACPrefix       | fix the pod's mac address with this prefix + 4 bytes IP                           | string               | optional   | a invalid mac address prefix | ""                           |                                          
 | hostRPFilter       | sysctls: rp_filter in host                                    | int                  | required   | 0,1,2;suggest to be 0                         | 0                            |
 | hostRuleTable      | The directly routing table of the host accessing the pod's underlay IP will be placed in this policy routing table                                    | int                  | required   | int                          | 500                          |
+| txQueueLen         | The Transmit Queue Length (txqueuelen) is a TCP/IP stack network interface value that sets the number of packets allowed per kernel transmit queue of a network interface device | int | optional | >= 0, default to 0, it's mean to don't set it | 
 
 ### Status (subresource)
 

@@ -50,7 +50,7 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 
 * CRD-based dual-stack IPAM capability
 
-    Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage.
+    Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns [wonderful IPAM performance](./concepts/ipam-performance.md) .
 
 * Multiple network interface access for Pods
 
@@ -62,7 +62,7 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 
 * eBPF enhancements
 
-    The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node.
+    The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput.
 
 * RDMA support
 
@@ -71,6 +71,10 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 * Dual-stack network support
 
     Spiderpool supports IPv4-only, IPv6-only, and dual-stack environments.
+
+* Good network performance of latency and throughput
+
+    Spiderpool performs better than overlay CNI on network latency and throughput, referring to [performance report](./docs/concepts/io-performance.md)
 
 * Metrics
 

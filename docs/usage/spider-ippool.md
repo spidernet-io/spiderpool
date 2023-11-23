@@ -55,7 +55,7 @@ spec:
 
 ### Specify IPPool to Allocate IP Addresses to Applications
 
-> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam.md#candidate-pool-acquisition).
+> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam-des.md#candidate-pool-acquisition).
 
 #### Use Pod Annotation to Specify IP Pool
 

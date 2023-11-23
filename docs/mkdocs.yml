@@ -82,7 +82,7 @@ nav:
       - FAQ: usage/debug.md
   - Concepts:
       - Architecture: concepts/arch.md
-      - IPAM: concepts/ipam.md
+      - IPAM: concepts/ipam-des.md
       - IPAM Performance: concepts/ipam-performance.md
       - Plugin coordinator: concepts/coordinator.md
       - I/O Performance: concepts/io-performance.md

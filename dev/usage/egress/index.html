@@ -721,9 +721,102 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Egress Policy
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Egress Policy
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features-of-egressgateway" class="md-nav__link">
+    Features of EgressGateway
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-egressgateway" class="md-nav__link">
+    Install EgressGateway
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-an-instance-of-egressgateway" class="md-nav__link">
+    Creating an instance of EgressGateway
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-applications-and-egress-policies" class="md-nav__link">
+    Create Applications and Egress Policies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-results" class="md-nav__link">
+    Test Results
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1278,6 +1371,83 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features-of-egressgateway" class="md-nav__link">
+    Features of EgressGateway
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    Steps
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-egressgateway" class="md-nav__link">
+    Install EgressGateway
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-an-instance-of-egressgateway" class="md-nav__link">
+    Creating an instance of EgressGateway
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-applications-and-egress-policies" class="md-nav__link">
+    Create Applications and Egress Policies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-results" class="md-nav__link">
+    Test Results
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1301,6 +1471,243 @@
 
 <h1 id="egress-policy">Egress Policy</h1>
 <p><strong>English</strong> | <a href="../egress-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="introduction">Introduction</h2>
+<p>Spiderpool is an Underlay networking solution for Kubernetes, but the egress IP address is not fixed in a Kubernetes cluster when a Pod accesses an external service. In an Overlay network, the egress IP address is the address of the node on which the Pod resides, whereas in an Underlay network, the Pod communicates directly with the outside world using its own IP address. Therefore, when a Pod undergoes new scheduling, the IP address of the Pod when communicating with the outside world will change regardless of the network mode. This instability creates IP address management challenges for system maintainers. Especially when the cluster scale increases and network troubleshooting is required, it is difficult to control the egress traffic based on the Pod's original egress IP outside the cluster. Spiderpool can be used with the component <a href="https://github.com/spidernet-io/egressgateway">EgressGateway</a> to solve the problem of Pod egress traffic management in Underlay network.</p>
+<h2 id="features-of-egressgateway">Features of EgressGateway</h2>
+<p>EgressGateway is an open source Egress gateway designed to solve the problem of exporting Egress IP addresses in different CNI network modes (Spiderpool, Calico, Flannel, Weave). By flexibly configuring and managing egress policies, Egress IP is set for tenant-level or cluster-level workloads, so that when a Pod accesses an external network, the system will uniformly use this set Egress IP as the egress address, thus providing a stable egress traffic management solution. However, all EgressGateway rules are effective on the host's network namespace. To make the EgressGateway policy effective, the traffic of Pods accessing the outside of the cluster has to go through the host's network namespace. Therefore, you can configure the subnet routes forwarded from the host via the <code>spec.hijackCIDR</code> field of <code>spidercoordinators</code> in Spiderpool, and then configure the subnet routes forwarded from the host via <a href="../../concepts/coordinator/">coordinator</a> to forward matching traffic from the veth pair to the host. This enables egress traffic management on an underlay network by allowing access to external traffic to be matched by EgressGateway rules.</p>
+<p>Some of the features and benefits of Spiderpool with EgressGateway are as follows:</p>
+<ul>
+<li>Solve IPv4 IPv6 dual-stack connectivity,ensuring seamless communication across different protocol stacks.</li>
+<li>Solve the high availability of Egress Nodes, ensuring network connectivity remains unaffected by single-point failures.</li>
+<li>Support finer-grained policy control, allowing flexible filtering of Pods' Egress policies, including Destination CIDR.</li>
+<li>Support application-level control, allowing EgressGateway to filter Egress applications (Pods) for precise management of specific application outbound traffic.</li>
+<li>Support multiple egress gateways instance,capable of handling communication between multiple network partitions or clusters.</li>
+<li>Support namespaced egress IP.</li>
+<li>Support automatic detection of cluster traffic for egress gateways policies.</li>
+<li>Support namespace default egress instances.</li>
+<li>Can be used in low kernel version, making EgressGateway suitable for various Kubernetes deployment environments.</li>
+</ul>
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+<li>
+<p>A ready Kubernetes kubernetes.</p>
+</li>
+<li>
+<p><a href="https://helm.sh/docs/intro/install/">Helm</a> has been already installed.</p>
+</li>
+</ol>
+<h2 id="steps">Steps</h2>
+<h3 id="install-spiderpool">Install Spiderpool</h3>
+<p>Refer to <a href="../readme/">Installation</a> to install Spiderpool and create SpiderMultusConfig CR and IPPool CR.</p>
+<p>After installing Spiderpool, Add the service addresses outside the cluster to the 'hijackCIDR' field in the 'default' object of spiderpool.spidercoordinators. This ensures that when Pods access these external services, the traffic is routed through the host where the Pod is located, allowing the EgressGateway rules to match.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># For running Pods, you need to restart them for these routing rules to take effect within the Pods.</span>
+~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spidercoordinators<span class="w"> </span>default<span class="w">  </span>--type<span class="o">=</span><span class="s1">&#39;merge&#39;</span><span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;: {&quot;hijackCIDR&quot;: [&quot;10.6.168.63/32&quot;]}}&#39;</span>
+</code></pre></div>
+<h3 id="install-egressgateway">Install EgressGateway</h3>
+<p>Installing EgressGateway via helm</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>egressgateway<span class="w"> </span>https://spidernet-io.github.io/egressgateway/
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>egressgateway
+helm<span class="w"> </span>install<span class="w"> </span>egressgateway<span class="w"> </span>egressgateway/egressgateway<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>feature.tunnelIpv4Subnet<span class="o">=</span><span class="s2">&quot;192.200.0.1/16&quot;</span><span class="w"> </span>--set<span class="w"> </span>feature.enableGatewayReplyRoute<span class="o">=</span><span class="nb">true</span><span class="w">  </span>--wait<span class="w"> </span>--debug
+</code></pre></div>
+<blockquote>
+<p>If IPv6 is required, enable it with the option <code>-set feature.enableIPv6=true</code> and set <code>feature.tunnelIpv6Subnet</code>, it is worth noting that when configuring IPv4 or IPv6 segments via <code>feature.tunnelIpv4Subnet</code> and <code>feature. tunnelIpv6Subnet</code>, it is worth noting that when configuring IPv4 or IPv6 segments via <code>feature.tunnelIpv4Subnet</code> and <code>feature.tunnelIpv6Subnet</code>, you need to make sure that the segments don't conflict with any other addresses in the cluster.
+<code>feature.enableGatewayReplyRoute</code> is true to enable return routing rules on gateway nodes, which must be enabled when pairing with Spiderpool to support underlay CNI.</p>
+<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for EgressGateway.</p>
+</blockquote>
+<p>Verifying EgressGateway Installation</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>egressgateway
+egressgateway-agent-4s8lt<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
+egressgateway-agent-thzth<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
+egressgateway-controller-77698899df-tln7j<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
+</code></pre></div>
+<p>For more installation details, refer to <a href="https://github.com/spidernet-io/egressgateway/blob/main/docs/usage/Install.en.md">EgressGateway Installation</a></p>
+<h3 id="creating-an-instance-of-egressgateway">Creating an instance of EgressGateway</h3>
+<p>An EgressGateway defines a set of nodes that act as an egress gateway for the cluster, through which egress traffic within the cluster will be forwarded out of the cluster. Therefore, an EgressGateway instance needs to be pre-defined. The following example Yaml creates an EgressGateway instance.</p>
+<ul>
+<li>
+<p><code>spec.ippools.ipv4</code>: defines a set of egress egress IP addresses, which need to be adjusted according to the actual situation of the specific environment. The CIDR of <code>spec.ippools.ipv4</code> should be the same as the subnet of the egress NIC on the gateway node (usually the NIC of the default route), or else the egress access may not work.</p>
+</li>
+<li>
+<p><code>spec.nodeSelector</code>: the node affinity method provided by EgressGateway, when <code>selector.matchLabels</code> matches with a node, the node will be used as the egress gateway for the cluster, when <code>selector.matchLabels</code> does not match with a node, the When <code>selector.matchLabels</code> does not match with a node, the EgressGateway skips that node and it will not be used as an egress gateway for the cluster, which supports selecting multiple nodes for high availability.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: egressgateway.spidernet.io/v1beta1</span>
+<span class="s">kind: EgressGateway</span>
+<span class="s">metadata:</span>
+<span class="s">  name: default</span>
+<span class="s">spec:</span>
+<span class="s">  ippools:</span>
+<span class="s">    ipv4:</span>
+<span class="s">    - &quot;10.6.168.201-10.6.168.205&quot;</span>
+<span class="s">  nodeSelector:</span>
+<span class="s">    selector:</span>
+<span class="s">      matchLabels:</span>
+<span class="s">        egressgateway: &quot;true&quot;</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>Label the node with the Label specified in <code>nodeSelector.selector.matchLabels</code> above so that the node can be selected by the EgressGateway to act as an egress gateway.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>node
+NAME<span class="w">                </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
+controller-node-1<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>5d17h<span class="w">   </span>v1.26.7
+worker-node-1<span class="w">       </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>5d17h<span class="w">   </span>v1.26.7
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>label<span class="w"> </span>node<span class="w"> </span>worker-node-1<span class="w"> </span><span class="nv">egressgateway</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+</code></pre></div>
+<p>When creation is complete, check the EgressGateway status.</p>
+<ul>
+<li>
+<p><code>spec.ippools.ipv4DefaultEIP</code> represents the default VIP of the EgressGateway for the group, which is an IP address that will be randomly selected from <code>spec.ippools.ipv4</code>, and its function is: when creating an EgressPolicy object for an application, if no VIP address is specified, the is used if no VIP address is specified when creating an EgressPolicy object for the application.</p>
+</li>
+<li>
+<p><code>status.nodeList</code> represents the status of the nodes identified as matching the <code>spec.nodeSelector</code> and the corresponding EgressTunnel object for that node.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressGateway<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
+...
+spec:
+<span class="w">  </span>ippools:
+<span class="w">    </span>ipv4DefaultEIP:<span class="w"> </span><span class="m">10</span>.6.168.201
+...
+status:
+<span class="w">  </span>nodeList:
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span>worker-node-1
+<span class="w">    </span>status:<span class="w"> </span>Ready
+</code></pre></div>
+<h3 id="create-applications-and-egress-policies">Create Applications and Egress Policies</h3>
+<p>Create an application that will be used to test Pod access for external cluster purposes and label it to be associated with the EgressPolicy, as shown in the following example Yaml.</p>
+<ul>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>: used to specify the subnet used by the application, the Multus CR corresponding to this value needs to be created in advance by referring to the <a href="../readme/">installation</a> document to create it in advance.</p>
+</li>
+<li>
+<p><code>ipam.spidernet.io/ippool</code>: Specify which SpiderIPPool resources are used by the Pod, the corresponding SpiderIPPool CR should be created in advance by referring to the <a href="../readme/">Installation</a>.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app</span>
+<span class="s">  name: test-app</span>
+<span class="s">  namespace: default</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 1</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      app: test-app</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      labels:</span>
+<span class="s">        app: test-app</span>
+<span class="s">      annotations:</span>
+<span class="s">        ipam.spidernet.io/ippool: |-</span>
+<span class="s">            {      </span>
+<span class="s">              &quot;ipv4&quot;: [&quot;v4-pool&quot;],</span>
+<span class="s">            }</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-conf</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        name: test-app</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>The EgressPolicy instance is used to define which Pods' egress traffic is to be forwarded through the EgressGateway node, as well as other configuration details. The following is an example of creating an EgressPolicy CR object for an application.</p>
+<ul>
+<li>
+<p><code>spec.egressGatewayName</code> is used to specify which set of EgressGateways to use.</p>
+</li>
+<li>
+<p><code>spec.appliedTo.podSelector</code> is used to specify on which Pods within the cluster this policy takes effect.</p>
+</li>
+<li>
+<p><code>namespace</code> is used to specify the tenant where the EgressPolicy object resides. Because EgressPolicy is tenant-level, it must be created under the same namespace as the associated application, so that when the matching Pod accesses any address outside the cluster, it can be forwarded by the EgressGateway Node.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: egressgateway.spidernet.io/v1beta1</span>
+<span class="s">kind: EgressPolicy</span>
+<span class="s">metadata:</span>
+<span class="s"> name: test</span>
+<span class="s"> namespace: default</span>
+<span class="s">spec:</span>
+<span class="s"> egressGatewayName: default</span>
+<span class="s"> appliedTo:</span>
+<span class="s">  podSelector:</span>
+<span class="s">   matchLabels:</span>
+<span class="s">    app: &quot;test-app&quot;</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>When creation is complete, check the status of the EgressPolicy.</p>
+<ul>
+<li>
+<p><code>status.eip</code> shows the egress IP address used by the group when applying out of the cluster.</p>
+</li>
+<li>
+<p><code>status.node</code> shows which EgressGateway node is responsible for forwarding traffic out of the EgressPolicy.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressPolicy<span class="w"> </span>-A
+NAMESPACE<span class="w">   </span>NAME<span class="w">   </span>GATEWAY<span class="w">   </span>IPV4<span class="w">           </span>IPV6<span class="w">   </span>EGRESSNODE
+default<span class="w">     </span><span class="nb">test</span><span class="w">   </span>default<span class="w">   </span><span class="m">10</span>.6.168.201<span class="w">          </span>worker-node-1
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressPolicy<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>egressgateway.spidernet.io/v1beta1
+kind:<span class="w"> </span>EgressPolicy
+metadata:
+<span class="w">  </span>name:<span class="w"> </span><span class="nb">test</span>
+<span class="w">  </span>namespace:<span class="w"> </span>default
+spec:
+<span class="w">  </span>appliedTo:
+<span class="w">    </span>podSelector:
+<span class="w">      </span>matchLabels:
+<span class="w">        </span>app:<span class="w"> </span>test-app
+<span class="w">  </span>egressIP:
+<span class="w">    </span>allocatorPolicy:<span class="w"> </span>default
+<span class="w">    </span>useNodeIP:<span class="w"> </span><span class="nb">false</span>
+status:
+<span class="w">  </span>eip:
+<span class="w">    </span>ipv4:<span class="w"> </span><span class="m">10</span>.6.168.201
+<span class="w">  </span>node:<span class="w"> </span>worker-node-1
+</code></pre></div>
+<p>After creating the EgressPolicy object, an EgressEndpointSlices object containing a collection of IP addresses of all the applications will be generated according to the application selected by the EgressPolicy, so that you can check whether the IP addresses in the EgressEndpointSlices object are normal or not when the application cannot be accessed by export.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>egressendpointslices<span class="w"> </span>-A
+NAMESPACE<span class="w">   </span>NAME<span class="w">         </span>AGE
+default<span class="w">     </span>test-4vbqf<span class="w">   </span>41s
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>egressendpointslices<span class="w"> </span>test-kvlp6<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>egressgateway.spidernet.io/v1beta1
+endpoints:
+-<span class="w"> </span>ipv4:
+<span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.6.168.208
+<span class="w">  </span>node:<span class="w"> </span>worker-node-1
+<span class="w">  </span>ns:<span class="w"> </span>default
+<span class="w">  </span>pod:<span class="w"> </span>test-app-f44846544-8dnzp
+kind:<span class="w"> </span>EgressEndpointSlice
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>test-4vbqf
+<span class="w">  </span>namespace:<span class="w"> </span>default
+</code></pre></div>
+<h3 id="test-results">Test Results</h3>
+<p>Deploy the application <code>nettools</code> outside the cluster to emulate a service outside the cluster, and <code>nettools</code> will return the source IP address of the requester in the http reply.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>ghcr.io/spidernet-io/egressgateway-nettools:latest<span class="w"> </span>/usr/bin/nettools-server<span class="w"> </span>-protocol<span class="w"> </span>web<span class="w"> </span>-webPort<span class="w"> </span><span class="m">8080</span>
+</code></pre></div>
+<p>Verifying the effect of egress traffic in a test app within the cluster: test-app, we can see that the source IP returned by <code>nettools</code> complies with <code>EgressPolicy.status.eip</code> when accessing an external service in the Pod corresponding to this app.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-owide
+NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">      </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-f44846544-8dnzp<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">             </span>4m27s<span class="w">   </span><span class="m">10</span>.6.168.208<span class="w">    </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+
+~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>test-app-f44846544-8dnzp<span class="w"> </span>bash
+
+~#<span class="w"> </span>curl<span class="w"> </span><span class="m">10</span>.6.168.63:8080<span class="w"> </span><span class="c1"># IP address of the node outside the cluster + webPort</span>
+Remote<span class="w"> </span>IP:<span class="w"> </span><span class="m">10</span>.6.168.201
+</code></pre></div>
 
 
 

@@ -1596,10 +1596,9 @@ tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="
 </tr>
 </tbody>
 </table>
-<p>根据结果显示，经过 Cilium kube-proxy replacement 之后，访问 Service 大约加速 30%。</p>
+<p>根据结果显示，经过 Cilium kube-proxy replacement 之后，访问 Service 大约加速 30%。更多测试数据参考<a href="../../concepts/io-performance-zh_CN/">网络 IO 性能</a></p>
 <h2 id="_2">结论</h2>
-<p>Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 Cilium Without Kube-Proxy 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，
-尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。</p>
+<p>Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 Cilium Without Kube-Proxy 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。</p>
 
 
 

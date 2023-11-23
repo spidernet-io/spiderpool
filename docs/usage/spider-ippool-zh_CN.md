@@ -55,7 +55,7 @@ spec:
 
 ### 指定 IPPool 为应用分配 IP 地址
 
-> 对于以下指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-zh_CN.md#获取候选池)
+> 对于以下指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-des-zh_CN.md#获取候选池)
 
 #### 使用 Pod Annotation 指定使用 IP 池
 

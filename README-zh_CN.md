@@ -47,7 +47,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 
 * 基于 CRD 的双栈 IPAM 能力
 
-    提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。
+    提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 [IPAM 分配性能](./docs/concepts/ipam-performance-zh_CN.md) 。
 
 * Pod 接入多网卡
 
@@ -69,6 +69,10 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 * 网络双栈支持
 
     Spiderpool 组件和其提供的所有功能，支持 ipv4-only、ipv6-only、dual-stack 场景。
+
+* 优秀的网络延时和吞吐量性能
+
+    Spiderpool 在网络延时和吞吐量方面表现出色，超过了 overlay CNI，可参考 [性能报告](./docs/concepts/io-performance-zh_CN.md)
 
 * 指标
 

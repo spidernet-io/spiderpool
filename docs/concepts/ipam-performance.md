@@ -70,6 +70,8 @@ The following shows the results of the IPAM performance test, which includes two
 
 ## analyze
 
+![performance](../images/ipam-performance.png)
+
 Spiderpool allocate IP addresses from the same CIDR range to all Pods in the whole cluster. Consequently, IP allocation and release face intense competition, presenting larger challenges in terms of IP allocation performance. By comparison, Whereabouts, Calico, and Cilium adopt an IPAM allocation principle where each node has a small IP address pool. This reduces the competition for IP allocation and mitigates the associated performance challenges. However, experimental data shows that despite Spiderpool's "lossy" IPAM principle, its IP allocation performance is actually quite good.
 
 During testing, the following phenomenon was encountered:

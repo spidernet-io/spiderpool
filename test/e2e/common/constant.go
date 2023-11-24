@@ -67,6 +67,8 @@ var (
 	KubevirtPoolIPv6Vlan40      string = "kubevirt-vlan40-v6"
 	SpiderPoolIPv4SubnetDefault string = "default-v4-subnet"
 	SpiderPoolIPv6SubnetDefault string = "default-v6-subnet"
+	SpiderPoolIPv4PoolDefault   string = "default-v4-ippool"
+	SpiderPoolIPv6PoolDefault   string = "default-v6-ippool"
 	SpiderPoolIPv4SubnetVlan100 string = "vlan100-v4"
 	SpiderPoolIPv6SubnetVlan100 string = "vlan100-v6"
 	SpiderPoolIPv4SubnetVlan200 string = "vlan200-v4"

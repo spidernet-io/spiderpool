@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/utils/pointer"
+	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -322,7 +323,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			})
 
 			It("inputs nil Pod", func() {
-				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, nil, spiderpooltypes.PodTopController{}, false)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
@@ -330,7 +331,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyFuncReturn(controllerutil.SetOwnerReference, constant.ErrUnknown)
 				defer patches.Reset()
 
-				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{}, false)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -338,7 +339,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				patches := gomonkey.ApplyMethodReturn(fakeClient, "Create", constant.ErrUnknown)
 				defer patches.Reset()
 
-				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, nil, podT, spiderpooltypes.PodTopController{}, false)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -358,6 +359,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 						UID: podT.UID,
 						APP: podT,
 					},
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -386,6 +388,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 						UID: uuid.NewUUID(),
 						APP: &appsv1.StatefulSet{},
 					},
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -398,11 +401,42 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
 			})
 
-			It("patches IP allocation results with different Pod UID", func() {
+			It("creates Endpoint for KubeVirt Pod", func() {
+				vmiName := fmt.Sprintf("%s-vm", endpointName)
+
+				err := endpointManager.PatchIPAllocationResults(
+					ctx,
+					[]*spiderpooltypes.AllocationResult{},
+					nil,
+					podT,
+					spiderpooltypes.PodTopController{
+						AppNamespacedName: spiderpooltypes.AppNamespacedName{
+							APIVersion: kubevirtv1.SchemeGroupVersion.String(),
+							Kind:       constant.KindKubevirtVMI,
+							Namespace:  namespace,
+							Name:       vmiName,
+						},
+						UID: uuid.NewUUID(),
+						APP: &appsv1.StatefulSet{},
+					},
+					false,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: vmiName}, &endpoint)
+				Expect(err).NotTo(HaveOccurred())
+
+				owners := endpoint.GetOwnerReferences()
+				Expect(owners).To(BeEmpty())
+				Expect(controllerutil.ContainsFinalizer(&endpoint, constant.SpiderFinalizer))
+			})
+
+			It("patches IP allocation results with different Pod UID and node name", func() {
 				podT.SetUID(uuid.NewUUID())
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{}, false)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -414,7 +448,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				podT.SetUID(uid)
 				endpointT.Status.Current.UID = string(uid)
 
-				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{})
+				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{}, false)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
@@ -422,15 +456,18 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 		Describe("ReallocateCurrentIPAllocation", func() {
 			It("inputs nil Endpoint", func() {
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node1", nil)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node1", "eth0", nil, false)
 				Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			})
 
 			It("re-allocates the current IP allocation with the same Pod UID", func() {
 				uid := uuid.NewUUID()
-				endpointT.Status.Current.UID = string(uid)
+				nodeName := "master"
 
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uid), "node", endpointT)
+				endpointT.Status.Current.UID = string(uid)
+				endpointT.Status.Current.Node = nodeName
+
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uid), nodeName, "eth0", endpointT, false)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -440,13 +477,18 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 
-				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node", endpointT)
+				err := endpointManager.ReallocateCurrentIPAllocation(ctx, string(uuid.NewUUID()), "node", "eth0", endpointT, false)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 
 			It("updates the current IP allocation", func() {
+				nic := "eth0"
+
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{NIC: nic},
+				}
 
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
@@ -454,10 +496,86 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				uid := string(uuid.NewUUID())
 				nodeName := "new-node"
 
-				err = endpointManager.ReallocateCurrentIPAllocation(ctx, uid, nodeName, endpointT)
+				err = endpointManager.ReallocateCurrentIPAllocation(ctx, uid, nodeName, nic, endpointT, true)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointT.Status.Current.UID).To(Equal(uid))
 				Expect(endpointT.Status.Current.Node).To(Equal(nodeName))
+				Expect(endpointT.Status.Current.IPs).To(HaveLen(1))
+				Expect(endpointT.Status.Current.IPs[0].NIC).To(Equal(nic))
+			})
+
+			It("update the current IP allocation with new NIC name for empty nic field", func() {
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
+				endpointT.Status.Current.Node = "old-node"
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{{NIC: ""}}
+
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				uid := string(uuid.NewUUID())
+				nodeName := "new-node"
+				nic := "eth0"
+
+				err = endpointManager.ReallocateCurrentIPAllocation(ctx, uid, nodeName, nic, endpointT, true)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(endpointT.Status.Current.UID).To(Equal(uid))
+				Expect(endpointT.Status.Current.Node).To(Equal(nodeName))
+				Expect(endpointT.Status.Current.IPs).To(HaveLen(1))
+				Expect(endpointT.Status.Current.IPs[0].NIC).To(Equal(nic))
+			})
+		})
+
+		Describe("UpdateAllocationNICName", func() {
+			It("update the Endpoint status current IPs with new NIC name for empty nic filed", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				defer patches.Reset()
+
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
+				endpointT.Status.Current.Node = "old-node"
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{NIC: ""},
+				}
+
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				nic := "eth0"
+				_, err = endpointManager.UpdateAllocationNICName(ctx, endpointT, nic)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("failed to update the Endpoint status current IPs with new NIC name for empty nic filed", func() {
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
+				endpointT.Status.Current.Node = "old-node"
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{NIC: ""},
+				}
+
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				nic := "eth0"
+				podIPAllocation, err := endpointManager.UpdateAllocationNICName(ctx, endpointT, nic)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(podIPAllocation.IPs).To(HaveLen(1))
+				Expect(podIPAllocation.IPs[0].NIC).To(Equal(nic))
+			})
+
+			It("just return the PodIPAllocation due to the same NIC name", func() {
+				nic := "eth0"
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
+				endpointT.Status.Current.Node = "old-node"
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{NIC: nic},
+				}
+
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				podIPAllocation, err := endpointManager.UpdateAllocationNICName(ctx, endpointT, nic)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(podIPAllocation.IPs).To(HaveLen(1))
+				Expect(podIPAllocation.IPs[0].NIC).To(Equal(nic))
 			})
 		})
 	})

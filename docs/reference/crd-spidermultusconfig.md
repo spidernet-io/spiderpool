@@ -85,6 +85,8 @@ This is the SpiderReservedIP spec for users to configure.
 |--------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|
 | resourceName | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                         | required   |
 | vlanID       | vlan ID                                                                                   | int                                                            | optional   |
+| minTxRateMbps    | change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be <= max_tx_rate. Support of this feature depends on NICs and drivers | int | optional |
+| maxTxRateMbps    | change the allowed maximum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting | int | optional |
 | ippools      | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
 | enableRdma   | enable rdma chain cni to isolate the rdma device                                          | bool                                                           | optional   |
 

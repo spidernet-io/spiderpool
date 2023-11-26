@@ -557,6 +557,14 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 		netConf.Vlan = multusConfSpec.SriovConfig.VlanID
 	}
 
+	if multusConfSpec.SriovConfig.MaxTxRateMbps != nil {
+		netConf.MaxTxRate = multusConfSpec.SriovConfig.MaxTxRateMbps
+	}
+
+	if multusConfSpec.SriovConfig.MinTxRateMbps != nil {
+		netConf.MinTxRate = multusConfSpec.SriovConfig.MinTxRateMbps
+	}
+
 	// set default IPPools for spiderpool cni configuration
 	if multusConfSpec.SriovConfig.SpiderpoolConfigPools != nil {
 		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv4IPPool

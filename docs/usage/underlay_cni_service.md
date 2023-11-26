@@ -85,30 +85,25 @@ When creating a Pod in Overlay mode and entering the Pod network command space, 
 ```shell
 root@controller:~# kubectl exec -it macvlan-overlay-97bf89fdd-kdgrb sh
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
-#
+
 # ip rule
 0: from all lookup local
-32759: from 10.233.105.154 lookup 100
-32761: from all to 169.254.1.1 lookup 100
-32762: from all to 10.233.64.0/18 lookup 100
-32763: from all to 10.233.0.0/18 lookup 100
-32765: from all to 10.6.212.102 lookup 100
+32765: from 10.6.212.227 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 # ip r
-default via 10.6.0.1 dev net1
-10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
-# ip r show table 100
 default via 169.254.1.1 dev eth0
 10.6.212.102 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.102 dev eth0
 10.233.64.0/18 via 10.6.212.102 dev eth0
 169.254.1.1 dev eth0 scope link
+# ip r show table 100
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
 ```
 
-- **32759: from 10.233.105.154 lookup 100**: Ensure that packets sent from `eth0` (calico network card) go through table 100
 - **32762: from all to 10.233.64.0/18 lookup 100**: Ensure that when Pods access ClusterIP, they go through table 100 and are forwarded out from `eth0`.
-- By default, all subnet routes of net1 are reserved in the Main table; subnet routes of `eth0` are reserved in Table 100.
+- In the default configuration: Except for the default route, all routes are retained in the Main table, but the default route for 'net1' is moved to table 100.
 
 These policy routes ensure that Underlay Pods can also normally access Service in multi-network card scenarios.
 

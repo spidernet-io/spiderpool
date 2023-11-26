@@ -76,26 +76,21 @@ kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future versi
 # ip rule
 0: from all lookup local
 32759: from 10.233.105.154 lookup 100
-32761: from all to 169.254.1.1 lookup 100
-32762: from all to 10.233.64.0/18 lookup 100
-32763: from all to 10.233.0.0/18 lookup 100
-32765: from all to 10.6.212.102 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 # ip r
-default via 10.6.0.1 dev net1
-10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
-# ip r show table 100
 default via 169.254.1.1 dev eth0
 10.6.212.102 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.102 dev eth0
 10.233.64.0/18 via 10.6.212.102 dev eth0
 169.254.1.1 dev eth0 scope link
+# ip r show table 100
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
 ```
 
-- **32759: from 10.233.105.154 lookup 100**: 确保从 `eth0` (calico 网卡)发出的数据包走 table 100
-- **32762: from all to 10.233.64.0/18 lookup 100**: 确保 Pod 访问 ClusterIP 时走 table 100，从 `eth0` 转发出去。
-- 默认情况下，net1 的所有子网路由保留在 Main 表; `eth0` 的子网路由保留在 Table 100。
+- **32759: from 10.233.105.154 lookup 100**: 确保从 `eth0` (calico 网卡)发出的数据包走 table 100。
+- 默认情况下: 除了默认路由，所有路由都保留在 Main 表，但会把 net1 的默认路由移动到 table 100。
 
 这些策略路由确保多网卡场景下，Underlay Pod 也能够正常访问 Service。
 

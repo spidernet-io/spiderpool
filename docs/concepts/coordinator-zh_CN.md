@@ -10,6 +10,16 @@ Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI �
 - 支持检测 Pod 的网关是否可达
 - 支持固定 Pod 的 Mac 地址前缀
 
+注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora、Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 `coordinator` 创建的 Veth 虚拟接口，影响通信:
+
+```shell
+~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
+> [keyfile]
+> unmanaged-devices=interface-name:^veth*
+> EOF
+~# systemctl restart NetworkManager
+```
+
 下面我们将详细的介绍 `coordinator` 如何解决或实现这些功能。
 
 ## CNI 配置字段说明

@@ -155,7 +155,8 @@ rdma:
 
     ## @skip rdma.rdmaSharedDevicePlugin.tolerations
     tolerations:
-      - operator: Exists
+      - effect: NoSchedule
+        operator: Exists
 
     ## @param rdma.rdmaSharedDevicePlugin.podAnnotations the additional annotations
     podAnnotations: {}
@@ -559,7 +560,8 @@ spiderpoolController:
 
   ## @skip spiderpoolController.tolerations
   tolerations:
-    - operator: Exists
+    - effect: NoSchedule
+      operator: Exists
 
   ## @param spiderpoolController.priorityClassName the priority Class Name for spiderpoolController
   priorityClassName: "system-node-critical"
@@ -777,7 +779,8 @@ spiderpoolInit:
 
   ## @skip spiderpoolInit.tolerations
   tolerations:
-    - operator: Exists
+    - effect: NoSchedule
+      operator: Exists
 
   ## @skip spiderpoolInit.nodeSelector.kubernetes.io/os
   nodeSelector:
@@ -836,7 +839,8 @@ sriov:
 
   ## @skip sriov.tolerations
   tolerations:
-    - operator: Exists
+    - effect: NoSchedule
+      operator: Exists
 
   ## @skip sriov.nodeSelector.kubernetes.io/os
   nodeSelector:

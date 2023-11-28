@@ -18,6 +18,8 @@ SpiderSubnet 资源代表 IP 地址的集合，当需要为应用分配固定的
 
 SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考[示例](./third-party-controller.md)
 
+> 注意：在 v0.7.0 版本之前，在启动 SpiderSubnet 功能下你必须得先创建一个 SpiderSubnet 资源才可以创建 SpiderIPPool 资源。在v0.7.0版本开始，支持创建一个独立的 SpiderIPPool 资源而不依赖于 SpiderSubnet 资源。
+
 ## 实施要求
 
 1. 一套 Kubernetes 集群。

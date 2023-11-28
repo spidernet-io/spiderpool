@@ -82,6 +82,11 @@ func (o *PostIpamIPOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the post ipam Ip o k response
+func (o *PostIpamIPOK) Code() int {
+	return 200
+}
+
 func (o *PostIpamIPOK) Error() string {
 	return fmt.Sprintf("[POST /ipam/ip][%d] postIpamIpOK  %+v", 200, o.Payload)
 }
@@ -143,6 +148,11 @@ func (o *PostIpamIPFailure) IsServerError() bool {
 // IsCode returns true when this post ipam Ip failure response a status code equal to that given
 func (o *PostIpamIPFailure) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the post ipam Ip failure response
+func (o *PostIpamIPFailure) Code() int {
+	return 500
 }
 
 func (o *PostIpamIPFailure) Error() string {

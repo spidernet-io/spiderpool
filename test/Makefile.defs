@@ -39,9 +39,7 @@ E2E_DISABLE_DEFAULT_CNI ?= true
 
 INSTALL_MACVLAN ?= true
 
-INSTALL_MULTUS ?= true
-
-INSTALL_KRUISE ?= true
+INSTALL_KRUISE ?= false
 
 INSTALL_OVERLAY_CNI ?= false
 
@@ -51,9 +49,7 @@ INSTALL_CILIUM ?= true
 
 DISABLE_KUBE_PROXY ?= false
 
-INSTALL_NETTOOLS ?= false
-
-INSTALL_SPIDERDOCTOR ?= true
+INSTALL_KDOCTOR ?= false
 
 INSTALL_KUBEVIRT ?= false
 
@@ -150,16 +146,16 @@ endif
 
 CILIUM_VERSION ?=
 
-#================= spiderdoctor
-SPIDERDOCTOR_VERSION ?= v0.3.0
+#================= kdoctor
+KDOCTOR_VERSION ?= v0.2.0
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
-    E2E_SPIDERDOCTOR_IMAGE_REPO ?= ghcr.m.daocloud.io
+    E2E_KDOCTOR_IMAGE_REPO ?= ghcr.m.daocloud.io
 else
-    E2E_SPIDERDOCTOR_IMAGE_REPO ?= ghcr.io
+    E2E_KDOCTOR_IMAGE_REPO ?= ghcr.io
 endif
 
-SPIDERDOCTOR_REPORT_PATH=/var/log/spiderdoctor/controller
+KDOCTOR_REPORT_PATH=/var/log/kdoctor/controller
 
 #====== pyroscope
 PYROSCOPE_CONTAINER_NAME := e2e-pyroscope

@@ -22,6 +22,21 @@ Kind is a tool for running local Kubernetes clusters using Docker container "nod
 
 * Execute `make dev-doctor` to check that the development tools on the local host meet the conditions for deploying a Kind cluster with Spiderpool, and that the components are automatically installed for you if they are missing.
 
+* If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
+
+    1. If you are using Underlay mode, the `coordinator` will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.
+
+    2. If you create VLAN and Bond interfaces through Ifacer, NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.
+
+        ```shell
+        ~# IFACER_INTERFACE="<NAME>"
+        ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
+        > [keyfile]
+        > unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
+        > EOF
+        ~# systemctl restart NetworkManager
+        ```
+
 ## Various installation modes supported by Spiderpool script
 
 If you are mainland user who is not available to access ghcr.io, Additional parameter `-e E2E_CHINA_IMAGE_REGISTRY=true` can be specified during installation to help you pull images faster.

@@ -21,6 +21,21 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
     ~# sudo systemctl start openvswitch-switch
     ```
 
+4. If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
+
+    * If you are using Underlay mode, the `coordinator` will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.
+
+    * If you create VLAN and Bond interfaces through Ifacer, NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.
+
+      ```shell
+      ~# IFACER_INTERFACE="<NAME>"
+      ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
+      > [keyfile]
+      > unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
+      > EOF
+      ~# systemctl restart NetworkManager
+      ```
+      
 ## Install Spiderpool
 
 1. Install Spiderpool.

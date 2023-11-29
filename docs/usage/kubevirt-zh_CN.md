@@ -50,11 +50,13 @@ KubeVirt VM 会在以下一些场景中会出现固定地址的使用：
 
 ### 创建 KubeVirt VM 应用
 
-以下的示例 Yaml 中， 会创建 1 个 KubeVirt VM 应用 ，其中：
+#### underlay 单网卡场景
+
+以下的示例 Yaml 中，会创建 1 个使用 KubeVirt passt 网络模式搭配 macvlan 的 KubeVirt VM 应用，其中：
 
 - `v1.multus-cni.io/default-network`：为应用选择一张默认网卡的 CNI 配置。
 
-```bash
+```yaml
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -167,6 +169,91 @@ Last-Modified: Tue, 17 Oct 2023 06:40:53 GMT
 Connection: keep-alive
 ETag: "652e2c75-ffa"
 Accept-Ranges: bytes
+```
+
+#### underlay 多网卡场景
+
+以下的示例 Yaml 中，会创建 1 个使用 KubeVirt bridge 网络模式搭配 [ovs-cni](./install/underlay/get-started-ovs-zh_CN.md) 的 KubeVirt VM 应用，其中：
+
+- `ipam.spidernet.io/ippools`: 为应用指定每张网卡选择使用哪些 IP 池。(你也可使用 multus 实例中指定的 CNI 配置文件级别默认 IP 池)
+- 要求 multus 实例 `kube-system/ovs-vlan30` 和 `kube-system/ovs-vlan40` 启用 coordinator 插件来协调多网卡默认路由。
+- ovs-cni 不支持 clusterIP 访问。
+
+```yaml
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-centos
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippools: |-
+          [{
+             "ipv4": ["vlan30-v4-ippool"],
+             "ipv6": ["vlan30-v6-ippool"]
+           },{
+             "ipv4": ["vlan40-v4-ippool"],
+             "ipv6": ["vlan40-v6-ippool"]
+          }]
+    spec:
+      architecture: amd64
+      domain:
+        cpu:
+          cores: 1
+          model: host-model
+          sockets: 2
+          threads: 1
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: containerdisk
+          - disk:
+              bus: virtio
+            name: cloudinitdisk
+          interfaces:
+          - bridge: {}
+            name: ovs-bridge1
+          - bridge: {}
+            name: ovs-bridge2
+        features:
+          acpi:
+            enabled: true
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - multus:
+          default: true
+          networkName: kube-system/ovs-vlan30
+        name: ovs-bridge1
+      - multus:
+          networkName: kube-system/ovs-vlan40
+        name: ovs-bridge2
+      volumes:
+      - name: containerdisk
+        containerDisk:
+          image: release-ci.daocloud.io/virtnest/system-images/centos-7.9-x86_64:v1
+      - cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              eth0:
+                dhcp4: true
+              eth1:
+                dhcp4: true
+          userData: |
+            #cloud-config
+            ssh_pwauth: true
+            disable_root: false
+            chpasswd: {"list": "root:dangerous", expire: False}
+            runcmd:
+              - sed -i "/#\?PermitRootLogin/s/^.*$/PermitRootLogin yes/g" /etc/ssh/sshd_config
+        name: cloudinitdisk
 ```
 
 ## 总结

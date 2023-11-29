@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Authors of Spider
 
-set -o errexit -o nounset -o pipefail
+set -o errexit -o nounset -o pipefail -o xtrace
 
 CURRENT_FILENAME=$( basename $0 )
 
@@ -13,6 +13,11 @@ if [ -z "${KUBEVIRT_VERSION}" ] ; then
   KUBEVIRT_VERSION=$( curl --retry 10 -s https://api.github.com/repos/kubevirt/kubevirt/releases/latest | jq '.tag_name' | tr -d '"' )
 fi
 [ -z "$KUBEVIRT_VERSION" ] && echo "error, miss KUBEVIRT_VERSION" && exit 1
+
+# if network issues that make we get "null", just use 'v1.1.0' as default
+if [ ${KUBEVIRT_VERSION} == "null" ]; then
+  KUBEVIRT_VERSION="v1.1.0"
+fi
 
 echo "$CURRENT_FILENAME : KUBEVIRT_VERSION $KUBEVIRT_VERSION "
 

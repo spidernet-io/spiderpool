@@ -12,6 +12,7 @@
 |                          | default namespace ippool                                                                                                             | v0.4.0        | v0.5.0       |            |
 |                          | default CNI ippool                                                                                                                   | v0.4.0        | v0.4.0       |            |
 |                          | annotation ippool                                                                                                                    | v0.2.0        | v0.5.0       |            |
+|                          | annotation multiple ippool with no interface name specified                                                                          | v0.9.0        | v0.9.0       |            |
 |                          | annotation route                                                                                                                     | v0.2.0        | v0.5.0       |            |
 | subnet                   | automatically create ippool                                                                                                          | v0.4.0        |              |            |
 |                          | automatically scaling and deletion ip according to application                                                                       | v0.4.0        |              |            |
@@ -60,3 +61,4 @@
 |                          | support ipoib CNI for infiniband device                                                                                              | In plan       |              |            |
 |                          | support ib-sriov CNI for infiniband device                                                                                           | In plan       |              |            |
 | egressGateway            | egressGateway                                                                                                                        | v0.8.0        |              |            |
+| ovs-cni                  | support clusterIP access                                                                                                             | In plan       |              |            |

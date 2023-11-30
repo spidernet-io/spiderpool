@@ -21,6 +21,8 @@ kind-init: check_env prepare
 		E2E_VLAN_GATEWAY_IMAGE=$(E2E_VLAN_GATEWAY_IMAGE) \
 		VLAN_GATEWAY_CONTAINER=$(VLAN_GATEWAY_CONTAINER) \
 		$(QUIET) bash scripts/config-network.sh
+ifeq ($(INSTALL_OVS),true)
+	@echo -e "\033[35m [Step 5] Install openvswitch \033[0m"
 	DOCKER_ADDITIONAL_NETWORK=$(DOCKER_ADDITIONAL_NETWORK) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME)  \
 		HOST_ADDITIONAL_INTERFACE=$(HOST_ADDITIONAL_INTERFACE) \
@@ -28,8 +30,9 @@ kind-init: check_env prepare
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		HTTP_PROXY=$(HTTP_PROXY) \
 		$(QUIET) bash scripts/install-ovs.sh
+endif
 ifeq ($(INSTALL_OVERLAY_CNI),true)
-	@echo -e "\033[35m [Step 5] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
+	@echo -e "\033[35m [Step 6] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
@@ -49,9 +52,9 @@ ifeq ($(INSTALL_OVERLAY_CNI),true)
 		HTTP_PROXY=$(HTTP_PROXY) \
 		$(QUIET) bash scripts/install-default-cni.sh
 endif
-	@echo -e "\033[35m [Step 6] Install Spiderpool \033[0m"
+	@echo -e "\033[35m [Step 7] Install Spiderpool \033[0m"
 	@ make setup_spiderpool
-	@echo -e "\033[35m [Step 7] Install Multus \033[0m"
+	@echo -e "\033[35m [Step 8] Install Multus \033[0m"
 	@ E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		MULTUS_DEFAULT_CNI_VLAN100=$(MULTUS_DEFAULT_CNI_VLAN100) \
@@ -64,11 +67,11 @@ endif
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 ifeq ($(INSTALL_KRUISE),true)
-	@echo -e "\033[35m [Step 8] Install third-party controllers: kurise \033[0m"
+	@echo -e "\033[35m [Step 9] Install third-party controllers: kurise \033[0m"
 	@ make setup_kurise
 endif
 ifeq ($(INSTALL_KDOCTOR),true)
-	@echo -e "\033[35m [Step 9] Install kdoctor \033[0m"
+	@echo -e "\033[35m [Step 10] Install kdoctor \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
@@ -79,7 +82,7 @@ ifeq ($(INSTALL_KDOCTOR),true)
 		$(QUIET) bash scripts/install-kdoctor.sh
 endif
 ifeq ($(INSTALL_KUBEVIRT),true)
-	@echo -e "\033[35m [Step 10] Install kubevirt \033[0m"
+	@echo -e "\033[35m [Step 11] Install kubevirt \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
 		HTTP_PROXY=$(HTTP_PROXY) \

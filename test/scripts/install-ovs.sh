@@ -63,7 +63,7 @@ for NODE in $KIND_NODES ; do
   docker network connect ${DOCKER_ADDITIONAL_NETWORK} ${NODE}
 
   echo "=========install openvswitch"
-  docker exec ${NODE} apt-get update > /dev/null
+  # docker exec ${NODE} apt-get update > /dev/null
   docker exec ${NODE} apt-get install -y openvswitch-switch > /dev/null
   docker exec ${NODE} systemctl start openvswitch-switch
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}

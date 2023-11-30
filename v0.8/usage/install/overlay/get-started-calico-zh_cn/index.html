@@ -1366,7 +1366,7 @@
 </code></pre></div>
 <blockquote>
 <p>如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 <code>--set plugins.installCNI=true</code> 安装 Macvlan 到每个节点。</p>
-<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
 </blockquote>
 <p>等待安装完成，查看 Spiderpool 组件状态:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool

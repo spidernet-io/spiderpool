@@ -1345,6 +1345,24 @@
 <li>
 <p>已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a></p>
 </li>
+<li>
+<p>如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:</p>
+<ul>
+<li>
+<p>如果你使用 Underlay 模式，<code>coordinator</code> 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+</li>
+<li>
+<p>如果你通过 <code>Iface</code>r 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IFACER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;&lt;NAME&gt;&quot;</span>
+~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
 </ol>
 <h2 id="spiderpool">安装 Spiderpool</h2>
 <ol>
@@ -1359,7 +1377,7 @@ helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class
 <blockquote>
 <p>如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 <code>--set plugins.installCNI=true</code> 安装 Macvlan 到每个节点。</p>
 <p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
-<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
 </blockquote>
 </li>
 <li>

@@ -93,10 +93,6 @@ metadata:
   namespace: kube-system
 spec:
   cniType: macvlan
-  coordinator:
-    mode: underlay
-    tunePodRoutes: true
-    podCIDRType: cluster
   enableCoordinator: true
   macvlan:
     master:

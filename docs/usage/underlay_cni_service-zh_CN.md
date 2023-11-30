@@ -50,7 +50,7 @@ default via 10.6.0.1 dev eth0
 这个方案强烈依赖与 kube-proxy 的 MASQUERADE , 否则回复报文将直接转发给源 Pod, 如果经过一些安全设备，将会丢弃数据包。所以在一些特殊的场景下，我们需要设置 kube-proxy 的 `masqueradeAll` 为 true。
 
 > 在默认情况下，Pod 的 underlay 子网与集群的 clusterCIDR 不同， 无需开启 `masqueradeAll`, 它们之间的访问将会被 SNAT。
-> 
+>
 > 如果 Pod 的 underlay 子网与集群的 clusterCIDR 相同，那我们必须要设置 `masqueradeAll` 为 true。
 
 ### 对于 `coordinator` 运行在 Overlay 模式

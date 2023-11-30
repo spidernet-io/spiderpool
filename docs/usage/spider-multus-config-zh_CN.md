@@ -362,9 +362,9 @@ EOF
 ```
 
 > `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，`ifacer` 将基于 `ens192` 创建一个 VLAN tag 为 100 的子接口, 名为 ens192.100
-> 
+>
 > main CNI: IPVlan 的 master 字段的值为: `ens192.100`, 也就是通过 `ifacer` 创建的 VLAN 子接口: `ens192.100`
-> 
+>
 > 注意: 通过 `ifacer` 创建的网卡不是持久化的，重启节点或者人为删除将会被丢失。重启 Pod 会自动添加回来。
 
 有时候网络管理员已经创建好 VLAN 子接口，我们不需要使用 `ifacer` 创建 Vlan 子接口 。我们可以直接配置 master 字段为: `ens192.100`，并且不配置 VLAN ID , 如下:

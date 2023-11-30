@@ -502,7 +502,7 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 - `spec.default` 字段设置为 `true`, 以此减少为应用打上 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 注解，让体验更为简单。
 
-- `spec.multusName` 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认视属于 spiderpool 安装时的命名空间)
+- `spec.multusName` 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认将其视为属于 spiderpool 安装时的命名空间)
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1

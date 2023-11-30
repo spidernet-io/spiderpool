@@ -1371,6 +1371,22 @@
 <li>
 <p>执行 <code>make dev-doctor</code>，检查本地主机上的开发工具是否满足部署 Kind 集群与 Spiderpool 的条件，如果缺少组件会为您自动安装。</p>
 </li>
+<li>
+<p>如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:</p>
+</li>
+<li>
+<p>如果你使用 Underlay 模式，<code>coordinator</code> 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+</li>
+<li>
+<p>如果你通过 <code>Iface</code>r 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IFACER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;&lt;NAME&gt;&quot;</span>
+~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
 </ul>
 <h2 id="spiderpool">Spiderpool 脚本支持的多种安装模式</h2>
 <p>如果您在中国大陆，安装时可以额外指定参数 <code>-e E2E_CHINA_IMAGE_REGISTRY=true</code> ，以帮助您更快的拉取镜像。</p>

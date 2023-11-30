@@ -1347,6 +1347,13 @@
 <li>支持检测 Pod 的网关是否可达</li>
 <li>支持固定 Pod 的 Mac 地址前缀</li>
 </ul>
+<p>注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora、Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 <code>coordinator</code> 创建的 Veth 虚拟接口，影响通信:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
 <p>下面我们将详细的介绍 <code>coordinator</code> 如何解决或实现这些功能。</p>
 <h2 id="cni">CNI 配置字段说明</h2>
 <table>

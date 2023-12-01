@@ -93,7 +93,7 @@ Spiderpool, powered by underlay CNI, offers unparalleled network performance com
 
 ## Quick start
 
-Refer to [Quick start](./usage/readme.md) to explore Spiderpool quickly.
+Refer to [Quick start](./usage/install/underlay/get-started-kind.md) to explore Spiderpool quickly.
 
 ## Spiderpool Architecture
 

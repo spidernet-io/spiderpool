@@ -53,6 +53,8 @@ INSTALL_KDOCTOR ?= false
 
 INSTALL_KUBEVIRT ?= false
 
+INSTALL_OVS ?= true
+
 #============ ginkgo-custom-flag ====================
 E2E_CLUSTER_NAME ?= spider
 

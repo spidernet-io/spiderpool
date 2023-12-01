@@ -74,6 +74,7 @@ nav:
       - IPAM of Reserved IP: usage/reserved-ip.md
       - MultipleInterfaces: usage/multi-interfaces-annotation.md
       - Egress Policy: usage/egress.md
+      - Network Policy Support: usage/cilium-chaining.md
       - Route Support: usage/route.md
       - Node-based Topology: usage/network-topology.md
       - RDMA: usage/rdma.md

@@ -63,7 +63,7 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
 * eBPF enhancements
 
-  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput]((./docs/concepts/io-performance.md)).
+  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput]((./concepts/io-performance.md)).
 
 * RDMA support
 

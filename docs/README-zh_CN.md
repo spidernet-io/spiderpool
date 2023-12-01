@@ -13,9 +13,7 @@
 
 [**English**](./README.md) | **简体中文**
 
-Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category) 。
-
-![CNCF](./images/cncf-cloud-gophers-transparent.png)
+**作为一个 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)，Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 它能运行在裸金属、虚拟机和公有云上**
 
 ## Spiderpool 介绍
 

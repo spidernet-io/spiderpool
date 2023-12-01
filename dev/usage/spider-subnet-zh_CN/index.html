@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../debug/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/ipam/" class="md-nav__link">
+      <a href="../../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1408,6 +1408,9 @@
 </li>
 </ul>
 <p>SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考<a href="../third-party-controller/">示例</a></p>
+<blockquote>
+<p>注意：在 v0.7.0 版本之前，在启动 SpiderSubnet 功能下你必须得先创建一个 SpiderSubnet 资源才可以创建 SpiderIPPool 资源。在v0.7.0版本开始，支持创建一个独立的 SpiderIPPool 资源而不依赖于 SpiderSubnet 资源。</p>
+</blockquote>
 <h2 id="_2">实施要求</h2>
 <ol>
 <li>

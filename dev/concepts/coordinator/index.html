@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/debug/" class="md-nav__link">
+      <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -858,7 +858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ipam/" class="md-nav__link">
+      <a href="../ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1425,6 +1425,14 @@
 <li>Check the reachability of Pod gateways</li>
 <li>Support fixed Mac address prefixes for Pods</li>
 </ul>
+<p>Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at <code>/etc/NetworkManager/conf.d/spidernet.conf</code> to 
+prevent interference from NetworkManager with veth interfaces created through <code>coordinator</code>:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
 <p>Let's delve into how coordinator implements these features.</p>
 <h2 id="cni-fields-description">CNI fields description</h2>
 <table>
@@ -1461,7 +1469,7 @@
 </tr>
 <tr>
 <td>podDefaultRouteNic</td>
-<td>Configure the default routed NIC for the pod while a pod is in multi-NIC mode</td>
+<td>Configure the default routed NIC for the pod while a pod is in multi-NIC mode, The default value is 0, indicate that the first network interface of the pod has the default route.</td>
 <td>string</td>
 <td>optional</td>
 <td>""</td>

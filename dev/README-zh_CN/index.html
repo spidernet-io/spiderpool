@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/debug/" class="md-nav__link">
+      <a href="../usage/faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../concepts/ipam/" class="md-nav__link">
+      <a href="../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1413,7 +1413,7 @@
 <ul>
 <li>基于 CRD 的双栈 IPAM 能力</li>
 </ul>
-<p>提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。</p>
+<p>提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 <a href="../concepts/ipam-performance-zh_CN/">IPAM 分配性能</a>。</p>
 <ul>
 <li>Pod 接入多网卡</li>
 </ul>
@@ -1435,6 +1435,10 @@
 <li>网络双栈支持</li>
 </ul>
 <p>Spiderpool 组件和其提供的所有功能，支持 ipv4-only、ipv6-only、dual-stack 场景。</p>
+<ul>
+<li>优秀的网络延时和吞吐量性能</li>
+</ul>
+<p>Spiderpool 在网络延时和吞吐量方面表现出色，超过了 overlay CNI，可参考 <a href="../concepts/io-performance-zh_CN/">性能报告</a></p>
 <ul>
 <li>指标</li>
 </ul>

@@ -898,7 +898,7 @@
   
   
     <li class="md-nav__item">
-      <a href="usage/debug/" class="md-nav__link">
+      <a href="usage/faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -960,7 +960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="concepts/ipam/" class="md-nav__link">
+      <a href="concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1519,7 +1519,7 @@
 <ul>
 <li>CRD-based dual-stack IPAM capability</li>
 </ul>
-<p>Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage.</p>
+<p>Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns <a href="concepts/ipam-performance/">wonderful IPAM performance</a>.</p>
 <ul>
 <li>Multiple network interface access for Pods</li>
 </ul>
@@ -1540,6 +1540,10 @@
 <li>Dual-stack network support</li>
 </ul>
 <p>Spiderpool supports IPv4-only, IPv6-only, and dual-stack environments.</p>
+<ul>
+<li>Good network performance of latency and throughput</li>
+</ul>
+<p>Spiderpool performs better than overlay CNI on network latency and throughput, referring to <a href="concepts/io-performance/">performance report</a></p>
 <ul>
 <li>Metrics</li>
 </ul>

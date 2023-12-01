@@ -79,10 +79,10 @@ nav:
       - RDMA: usage/rdma.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Kubevirt: usage/kubevirt.md
-      - FAQ: usage/debug.md
+      - FAQ: usage/faq.md
   - Concepts:
       - Architecture: concepts/arch.md
-      - IPAM: concepts/ipam.md
+      - IPAM: concepts/ipam-des.md
       - IPAM Performance: concepts/ipam-performance.md
       - Plugin coordinator: concepts/coordinator.md
       - I/O Performance: concepts/io-performance.md

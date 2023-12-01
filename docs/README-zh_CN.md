@@ -25,6 +25,8 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 
 **为什么 Spiderpool 选择 macvlan、ipvlan、SR-IOV 为 datapath ？**
 
+* macvlan、ipvlan、SR-IOV 是承载 RDMA 网络加速的重要技术，RDMA 能为 AI 应用、延时敏感型应用、网络 I/O 密集型应用带来极大的性能提升，其网络性能大幅超过 overlay 网络解决方案。
+
 * 区别于基于 veth 虚拟网卡的 CNI 解决方案，underlay 网络数据包避免了宿主机的三层网络转发，没有隧道封装开销，因此，它们能为应用提供了优秀的网络性能，包括优秀的网络吞吐量、低延时，节省了 CPU 的网络转发开销。
 
 * 可直接对接 underlay 二层 VLAN 网络，应用可进行二层、三层网络通信，可进行组播、多播通信，数据包可受防火墙管控。
@@ -32,8 +34,6 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 * 数据包携带 Pod 的真正 IP 地址，应用可直接基于 Pod IP 进行南北向通信，多云网络天然联通。
 
 * underlay CNI 可基于宿主机不同的父网卡来创建虚拟机接口，因此可为存储、观测性等网络开销大的应用提供隔离的子网。
-
-* macvlan、ipvlan、SR-IOV 是承载 RDMA 网络加速的重要技术，RDMA 能为延时敏感型应用、网络 I/O 密集型应用带来极大的性能提升，其网络性能大幅超过 overlay 网络解决方案。
 
 <div style="text-align:center">
   <img src="./images/arch.png" alt="Your Image Description">

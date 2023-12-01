@@ -108,7 +108,7 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 |----------------------------------|----------|----|-----------|
 | service by kubeproxy             | Beta     |  Beta | Beta      |
 | service by kubeproxy replacement | Alpha    |  Alpha | Alpha     |
-| network policy                   | In-plan  |   In-plan | In-plan   |
+| network policy                   | In-plan  |  Alpha | In-plan   |
 | bandwidth                        | In-plan  | In-plan  | In-plan    |
 | RDMA                             | Alpha    | Alpha | Alpha     |
 | IPAM                             | Beta     | Beta | Beta      |

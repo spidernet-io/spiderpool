@@ -62,7 +62,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 
     kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。
 
-* RDMA 
+* RDMA
 
     提供了基于 RoCE、infiniband 技术下的 RDMA 解决方案。
 
@@ -108,7 +108,7 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 |----------------------------------|----------|----|-----------|
 | service by kubeproxy             | Beta     |  Beta | Beta      |
 | service by kubeproxy replacement | Alpha    |  Alpha | Alpha     |
-| network policy                   | In-plan  |   In-plan | In-plan   |
+| network policy                   | In-plan  |  Alpha | In-plan   |
 | bandwidth                        | In-plan  | In-plan  | In-plan    |
 | RDMA                             | Alpha    | Alpha | Alpha     |
 | IPAM                             | Beta     | Beta | Beta      |

@@ -47,8 +47,8 @@ markdown_extensions:
 nav:
   - README.md
   - Get Started: usage/install/underlay/get-started-kind.md
+  - Index: usage/readme.md
   - Installation:
-      Index: usage/readme.md
       - Underlay Installation:
           - Calico: usage/install/underlay/get-started-calico.md
           - Weave: usage/install/underlay/get-started-weave.md

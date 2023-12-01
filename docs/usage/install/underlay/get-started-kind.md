@@ -17,7 +17,7 @@ Kind is a tool for running local Kubernetes clusters using Docker container "nod
 * Get the latest image tag of Spiderpool.
 
     ```bash
-    ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
+    ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name' | head -n 1)
     ```
 
 * Execute `make dev-doctor` to check that the development tools on the local host meet the conditions for deploying a Kind cluster with Spiderpool, and that the components are automatically installed for you if they are missing.

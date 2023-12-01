@@ -724,6 +724,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../route/" class="md-nav__link">
         Route Support
       </a>
@@ -1837,7 +1851,7 @@ test-ns2<span class="w">    </span>test-other-ns-56cc9b7d95-hx4b5<span class="w"
 <p><code>spec.default</code> 字段设置为 <code>true</code>, 以此减少为应用打上 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 注解，让体验更为简单。</p>
 </li>
 <li>
-<p><code>spec.multusName</code> 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认视属于 spiderpool 安装时的命名空间)</p>
+<p><code>spec.multusName</code> 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认将其视为属于 spiderpool 安装时的命名空间)</p>
 </li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>

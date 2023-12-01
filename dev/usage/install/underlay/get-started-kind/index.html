@@ -451,8 +451,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#install-spiderpool-on-cilium-overlay-cni-cluster" class="md-nav__link">
-    Install Spiderpool on Cilium Overlay CNI cluster
+  <a href="#install-spiderpool-in-cilium-cluster-with-kube-proxy-enabled" class="md-nav__link">
+    Install Spiderpool in Cilium cluster with kube-proxy enabled
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installing-spiderpool-in-cilium-cluster-with-ebpf-enabled" class="md-nav__link">
+    Installing Spiderpool in Cilium cluster with ebpf enabled
   </a>
   
 </li>
@@ -805,6 +812,20 @@
     <li class="md-nav__item">
       <a href="../../../egress/" class="md-nav__link">
         Egress Policy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
       </a>
     </li>
   
@@ -1400,8 +1421,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#install-spiderpool-on-cilium-overlay-cni-cluster" class="md-nav__link">
-    Install Spiderpool on Cilium Overlay CNI cluster
+  <a href="#install-spiderpool-in-cilium-cluster-with-kube-proxy-enabled" class="md-nav__link">
+    Install Spiderpool in Cilium cluster with kube-proxy enabled
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installing-spiderpool-in-cilium-cluster-with-ebpf-enabled" class="md-nav__link">
+    Installing Spiderpool in Cilium cluster with ebpf enabled
   </a>
   
 </li>
@@ -1491,8 +1519,17 @@
 <h3 id="install-spiderpool-on-calico-overlay-cni-cluster">Install Spiderpool on Calico Overlay CNI cluster</h3>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>e2e_init_overlay_calico<span class="w"> </span>-e<span class="w"> </span><span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
 </code></pre></div>
-<h2 id="install-spiderpool-on-cilium-overlay-cni-cluster">Install Spiderpool on Cilium Overlay CNI cluster</h2>
+<h2 id="install-spiderpool-in-cilium-cluster-with-kube-proxy-enabled">Install Spiderpool in Cilium cluster with kube-proxy enabled</h2>
+<ul>
+<li>Confirm whether the operating system Kernel version number is &gt;= 4.9.17. If the kernel is too low, the installation will fail. Kernel 5.10+ is recommended.</li>
+</ul>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>e2e_init_overlay_cilium<span class="w"> </span>-e<span class="w"> </span><span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
+</code></pre></div>
+<h2 id="installing-spiderpool-in-cilium-cluster-with-ebpf-enabled">Installing Spiderpool in Cilium cluster with ebpf enabled</h2>
+<ul>
+<li>Confirm whether the operating system Kernel version number is &gt;= 4.9.17. If the kernel is too low, the installation will fail. Kernel 5.10+ is recommended.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>e2e_init_cilium_with_ebpf<span class="w"> </span>-e<span class="w"> </span><span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
 </code></pre></div>
 <h2 id="check-that-everything-is-working">Check that everything is working</h2>
 <p>Execute the following command in the root directory of the Spiderpool project to configure KUBECONFIG for the Kind cluster for kubectl.</p>

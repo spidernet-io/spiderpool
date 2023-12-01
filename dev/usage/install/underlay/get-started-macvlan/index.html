@@ -790,6 +790,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../route/" class="md-nav__link">
         Route Support
       </a>
@@ -1458,7 +1472,7 @@ helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class
 <span class="s">  subnet: 172.18.0.0/16</span>
 <span class="s">  gateway: 172.18.0.1</span>
 <span class="s">  multusName: </span>
-<span class="s">  - macvlan-conf</span>
+<span class="s">  - kube-system/macvlan-conf</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>
@@ -1532,6 +1546,7 @@ macvlan-conf<span class="w">   </span>10m
 <span class="s">          {</span>
 <span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
 <span class="s">          }</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-conf</span>
 <span class="s">      labels:</span>
 <span class="s">        app: test-app</span>
 <span class="s">    spec:</span>

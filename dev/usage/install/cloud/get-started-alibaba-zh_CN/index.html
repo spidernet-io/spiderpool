@@ -724,6 +724,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../route/" class="md-nav__link">
         Route Support
       </a>
@@ -1503,10 +1517,6 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</spa
 <span class="s">  namespace: kube-system</span>
 <span class="s">spec:</span>
 <span class="s">  cniType: ipvlan</span>
-<span class="s">  coordinator:</span>
-<span class="s">    mode: underlay</span>
-<span class="s">    tunePodRoutes: true</span>
-<span class="s">    podCIDRType: cluster</span>
 <span class="s">  enableCoordinator: true</span>
 <span class="s">  ipvlan:</span>
 <span class="s">    master:</span>
@@ -1519,10 +1529,6 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</spa
 <span class="s">  namespace: kube-system</span>
 <span class="s">spec:</span>
 <span class="s">  cniType: ipvlan</span>
-<span class="s">  coordinator:</span>
-<span class="s">    mode: underlay</span>
-<span class="s">    tunePodRoutes: true</span>
-<span class="s">    podCIDRType: cluster</span>
 <span class="s">  enableCoordinator: true</span>
 <span class="s">  ipvlan:</span>
 <span class="s">    master:</span>

@@ -724,6 +724,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../route/" class="md-nav__link">
         Route Support
       </a>
@@ -1302,8 +1316,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#spiderpool-cilium-overlay-cni" class="md-nav__link">
-    安装 Spiderpool 在 Cilium Overlay CNI 集群
+  <a href="#kube-proxy-cilium-spiderpool" class="md-nav__link">
+    在启用了 kube-proxy 的 Cilium 集群中安装 Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ebpf-cilium-spiderpool" class="md-nav__link">
+    在启用了 ebpf 的 Cilium 集群中安装 Spiderpool
   </a>
   
 </li>
@@ -1396,8 +1417,17 @@
 <h3 id="spiderpool-calico-overlay-cni">安装 Spiderpool 在 Calico Overlay CNI 集群</h3>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>e2e_init_overlay_calico<span class="w"> </span>-e<span class="w"> </span><span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
 </code></pre></div>
-<h3 id="spiderpool-cilium-overlay-cni">安装 Spiderpool 在 Cilium Overlay CNI 集群</h3>
+<h3 id="kube-proxy-cilium-spiderpool">在启用了 kube-proxy 的 Cilium 集群中安装 Spiderpool</h3>
+<ul>
+<li>确认操作系统 Kernel 版本号是是否 &gt;= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。</li>
+</ul>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>e2e_init_overlay_cilium<span class="w"> </span>-e<span class="w"> </span><span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
+</code></pre></div>
+<h3 id="ebpf-cilium-spiderpool">在启用了 ebpf 的 Cilium 集群中安装 Spiderpool</h3>
+<ul>
+<li>确认操作系统 Kernel 版本号是是否 &gt;= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>e2e_init_cilium_with_ebpf<span class="w"> </span>-e<span class="w"> </span><span class="nv">E2E_SPIDERPOOL_TAG</span><span class="o">=</span><span class="nv">$SPIDERPOOL_LATEST_IMAGE_TAG</span>
 </code></pre></div>
 <h2 id="_2">验证安装</h2>
 <p>在 Spiderpool 工程的根目录下执行如下命令，为 kubectl 配置 Kind 集群的 KUBECONFIG。</p>

@@ -30,7 +30,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
       > EOF
       ~# systemctl restart NetworkManager
       ```
-      
+
 ## Install Spiderpool
 
 1. Install Spiderpool.
@@ -63,7 +63,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
       multusName: 
-      - macvlan-conf
+      - kube-system/macvlan-conf
     EOF
     ```
 
@@ -139,6 +139,7 @@ macvlan-conf   10m
               {
                 "ipv4": ["ippool-test"]
               }
+            v1.multus-cni.io/default-network: kube-system/macvlan-conf
           labels:
             app: test-app
         spec:

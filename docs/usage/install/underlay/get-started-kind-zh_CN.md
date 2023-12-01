@@ -53,10 +53,20 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
   ~# make e2e_init_overlay_calico -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
-### 安装 Spiderpool 在 Cilium Overlay CNI 集群
+### 在启用了 kube-proxy 的 Cilium 集群中安装 Spiderpool
+
+* 确认操作系统 Kernel 版本号是是否 >= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。
 
   ```bash
   ~# make e2e_init_overlay_cilium -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
+
+### 在启用了 ebpf 的 Cilium 集群中安装 Spiderpool
+
+* 确认操作系统 Kernel 版本号是是否 >= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。
+
+  ```bash
+  ~# make e2e_init_cilium_with_ebpf -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
 ## 验证安装

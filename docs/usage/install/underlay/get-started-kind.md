@@ -53,10 +53,20 @@ If you are mainland user who is not available to access ghcr.io, Additional para
   ~# make e2e_init_overlay_calico -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
-## Install Spiderpool on Cilium Overlay CNI cluster
+## Install Spiderpool in Cilium cluster with kube-proxy enabled
+
+* Confirm whether the operating system Kernel version number is >= 4.9.17. If the kernel is too low, the installation will fail. Kernel 5.10+ is recommended.
 
   ```bash
   ~# make e2e_init_overlay_cilium -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
+
+## Installing Spiderpool in Cilium cluster with ebpf enabled
+
+* Confirm whether the operating system Kernel version number is >= 4.9.17. If the kernel is too low, the installation will fail. Kernel 5.10+ is recommended.
+
+  ```bash
+  ~# make e2e_init_cilium_with_ebpf -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
 ## Check that everything is working

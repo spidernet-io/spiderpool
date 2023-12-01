@@ -75,10 +75,6 @@ metadata:
   namespace: kube-system
 spec:
   cniType: ipvlan
-  coordinator:
-    mode: underlay
-    tunePodRoutes: true
-    podCIDRType: cluster
   enableCoordinator: true
   ipvlan:
     master:
@@ -91,10 +87,6 @@ metadata:
   namespace: kube-system
 spec:
   cniType: ipvlan
-  coordinator:
-    mode: underlay
-    tunePodRoutes: true
-    podCIDRType: cluster
   enableCoordinator: true
   ipvlan:
     master:

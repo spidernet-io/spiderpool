@@ -35,7 +35,7 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
       > EOF
       ~# systemctl restart NetworkManager
       ```
-      
+
 ## Install Spiderpool
 
 1. Install Spiderpool.
@@ -100,7 +100,7 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
       multusName: 
-      - ovs-conf
+      - kube-system/ovs-conf
     EOF
     ```
 
@@ -162,6 +162,7 @@ spec:
           {
             "ipv4": ["ippool-test"]
           }
+        v1.multus-cni.io/default-network: kube-system/ovs-conf
       labels:
         app: test-app
     spec:

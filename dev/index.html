@@ -268,6 +268,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-architecture" class="md-nav__link">
     Spiderpool Architecture
   </a>
@@ -277,13 +284,6 @@
         <li class="md-nav__item">
   <a href="#major-features" class="md-nav__link">
     Major Features
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    Quick start
   </a>
   
 </li>
@@ -1398,6 +1398,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-architecture" class="md-nav__link">
     Spiderpool Architecture
   </a>
@@ -1407,13 +1414,6 @@
         <li class="md-nav__item">
   <a href="#major-features" class="md-nav__link">
     Major Features
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    Quick start
   </a>
   
 </li>
@@ -1502,9 +1502,13 @@
 <h2 id="introduction">Introduction</h2>
 <p>Spiderpool is a Kubernetes underlay network solution that enhances the capabilities of <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
-<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>.It fulfills various networking needs and enables the utilization of underlay network solutions in <strong>bare metal, virtual machine, and public cloud environments</strong>. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like storage, middleware, and AI.</p>
+<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>.It fulfills various networking needs and enables the utilization of underlay network solutions in <strong>bare metal, virtual machine, and public cloud environments</strong>. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like <strong>storage, middleware, and AI</strong>.
+It could refer to <a href="https://spidernet-io.github.io/spiderpool/">website</a> for more details.</p>
 <p><strong>Why does Spiderpool select macvlan, ipvlan, and SR-IOV as datapaths?</strong></p>
 <ul>
+<li>
+<p>macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for AI applicaitons, latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.</p>
+</li>
 <li>
 <p>Unlike CNI solutions based on veth virtual interfaces, underlay networks eliminate layer 3 network forwarding on the host, avoiding tunnel encapsulation overhead. This translates to excellent network performance with high throughput, low latency, and reduced CPU utilization for network forwarding.</p>
 </li>
@@ -1516,9 +1520,6 @@
 </li>
 <li>
 <p>Underlay CNI can create virtual interfaces using different parent network interfaces on the host, providing isolated subnets for applications with high network overhead, such as storage and observability.</p>
-</li>
-<li>
-<p>macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.</p>
 </li>
 </ul>
 <div style="text-align:center">
@@ -1537,7 +1538,7 @@
 <ul>
 <li>Multiple network interface access for Pods</li>
 </ul>
-<p>Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns.</p>
+<p>Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns. It could strengthen <a href="https://github.com/cilium/cilium">cilium</a>, <a href="https://github.com/projectcalico/calico">calico</a>, <a href="https://github.com/kubevirt/kubevirt">kubevirt</a> .</p>
 <ul>
 <li>Enhanced network connectivity</li>
 </ul>
@@ -1577,6 +1578,8 @@
 <p>Latency-sensitive application.</p>
 </li>
 </ul>
+<h2 id="quick-start">Quick start</h2>
+<p>Refer to <a href="usage/readme/">Quick start</a> to explore Spiderpool quickly.</p>
 <h2 id="spiderpool-architecture">Spiderpool Architecture</h2>
 <p>Spiderpool features a well-designed and comprehensive architecture that caters to various application scenarios, including:</p>
 <ul>
@@ -1620,7 +1623,7 @@
 <tr>
 <td>Network policy</td>
 <td>In-plan</td>
-<td>In-plan</td>
+<td>Alpha</td>
 <td>In-plan</td>
 </tr>
 <tr>
@@ -1662,8 +1665,6 @@
 </tbody>
 </table>
 <p>For detailed information about all the planned features, please refer to the <a href="develop/roadmap/">roadmap</a>.</p>
-<h2 id="quick-start">Quick start</h2>
-<p>Refer to <a href="usage/readme/">Quick start</a> to explore Spiderpool quickly.</p>
 <h2 id="blogs">Blogs</h2>
 <p>Refer to <a href="concepts/blog/">Blogs</a></p>
 <h2 id="governance">Governance</h2>

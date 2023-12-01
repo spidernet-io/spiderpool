@@ -91,6 +91,10 @@ Spiderpool, powered by underlay CNI, offers unparalleled network performance com
 
 * Latency-sensitive application.
 
+## Quick start
+
+Refer to [Quick start](./docs/usage/readme.md) to explore Spiderpool quickly.
+
 ## Spiderpool Architecture
 
 Spiderpool features a well-designed and comprehensive architecture that caters to various application scenarios, including:
@@ -120,10 +124,6 @@ For more detailed information, please refer to [Spiderpool Architecture](./docs/
 | Applied scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
 
 For detailed information about all the planned features, please refer to the [roadmap](./docs/develop/roadmap.md).
-
-## Quick start
-
-Refer to [Quick start](./docs/usage/readme.md) to explore Spiderpool quickly.
 
 ## Blogs
 

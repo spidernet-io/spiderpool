@@ -88,6 +88,10 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 * 网络延时敏感型应用
 
+## 快速开始
+
+可参考 [快速搭建](./docs/usage/readme-zh_CN.md) 来使用 Spiderpool
+
 ## Spiderpool 架构
 
 Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
@@ -117,10 +121,6 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 | 适用场景                             | 裸金属      | 裸金属和虚拟机 | 裸金属       |
 
 关于所有的功能规划，具体可参考 [roadmap](./docs/develop/roadmap.md)
-
-## 快速开始
-
-可参考 [快速搭建](./docs/usage/readme-zh_CN.md) 来使用 Spiderpool
 
 ## Blogs
 

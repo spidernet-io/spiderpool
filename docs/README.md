@@ -29,6 +29,8 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
 **Why does Spiderpool select macvlan, ipvlan, and SR-IOV as datapaths?**
 
+* macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for AI applicaitons, latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.
+
 * Unlike CNI solutions based on veth virtual interfaces, underlay networks eliminate layer 3 network forwarding on the host, avoiding tunnel encapsulation overhead. This translates to excellent network performance with high throughput, low latency, and reduced CPU utilization for network forwarding.
 
 * Connecting seamlessly with underlay layer 2 VLAN networks enables both layer 2 and layer 3 communication for applications. It supports multicast and broadcast communication, while allowing packets to be controlled by firewalls.
@@ -36,8 +38,6 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 * Data packages carry the actual IP addresses of Pods, enabling direct north-south communication based on Pod IPs. This connectivity across multi-cloud networks enhances flexibility and ease of use.
 
 * Underlay CNI can create virtual interfaces using different parent network interfaces on the host, providing isolated subnets for applications with high network overhead, such as storage and observability.
-
-* macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.
 
 <div style="text-align:center">
   <img src="./images/arch.png" alt="Your Image Description">

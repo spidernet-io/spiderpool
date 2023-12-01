@@ -60,7 +60,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 
 * eBPF 增强
 
-    kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。
+    kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。相比 kube proxy 解析方式，[网络延时有最大 25% 的改善，网络吞吐有 50% 的提高]((./docs/concepts/io-performance-zh_CN.md))。
 
 * RDMA
 

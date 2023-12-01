@@ -783,6 +783,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../route/" class="md-nav__link">
         Route Support
       </a>
@@ -1466,7 +1480,7 @@ ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
 <span class="s">  subnet: 172.18.0.0/16</span>
 <span class="s">  gateway: 172.18.0.1</span>
 <span class="s">  multusName: </span>
-<span class="s">  - ovs-conf</span>
+<span class="s">  - kube-system/ovs-conf</span>
 <span class="s">EOF</span>
 </code></pre></div>
 </li>
@@ -1526,6 +1540,7 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</spa
 <span class="s">          {</span>
 <span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
 <span class="s">          }</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/ovs-conf</span>
 <span class="s">      labels:</span>
 <span class="s">        app: test-app</span>
 <span class="s">    spec:</span>

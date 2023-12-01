@@ -726,6 +726,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../route/" class="md-nav__link">
         Route Support
       </a>
@@ -1430,28 +1444,28 @@
 <h1 id="access-to-service-for-underlay-cni">Access to service for underlay CNI</h1>
 <p><strong>English</strong> | <a href="../underlay_cni_service-zh_CN/"><strong>简体中文</strong></a></p>
 <h2 id="introduction">Introduction</h2>
-<p>At present, most Underlay-type CNIs (such as Macvlan, IPVlan, Sriov-CNI, etc.) In the community are 
+<p>At present, most Underlay-type CNIs (such as Macvlan, IPVlan, Sriov-CNI, etc.) In the community are
 generally connected to the underlying network, and often do not natively support accessing the Service of the cluster.
 This is mostly because underlay Pod access to the Service needs to be forwarded through the gateway of the switch.
-However, there is no route to the Service on the gateway, so the packets accessing the Service cannot be routed 
-correctly, resulting in packet loss. </p>
-<p>Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service: </p>
+However, there is no route to the Service on the gateway, so the packets accessing the Service cannot be routed
+correctly, resulting in packet loss.</p>
+<p>Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:</p>
 <ul>
 <li>Underlay CNI access Service via <code>Spiderpool coordinator</code> + <code>kube-proxy</code></li>
-<li>Use <code>Cilium Without Kube-proxy</code> to access Underlay CNI Service </li>
+<li>Use <code>Cilium Without Kube-proxy</code> to access Underlay CNI Service</li>
 </ul>
-<p>Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is 
-somewhat different. </p>
+<p>Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is
+somewhat different.</p>
 <p>Below we will introduce these two ways:</p>
 <h2 id="underlay-cni-access-service-via-spiderpool-coordinator-kube-proxy">Underlay CNI access Service via <code>Spiderpool coordinator</code> + <code>kube-proxy</code></h2>
-<p>Spiderpool has a built-in plugin called <code>coordinator</code>, which helps us seamlessly integrate with <code>kube-proxy</code> to achieve Underlay CNI access to Service. 
-Depending on different scenarios, the <code>coordinator</code> can run in either <code>underlay</code> or <code>overlay</code> mode. Although the implementation methods are slightly different, 
+<p>Spiderpool has a built-in plugin called <code>coordinator</code>, which helps us seamlessly integrate with <code>kube-proxy</code> to achieve Underlay CNI access to Service.
+Depending on different scenarios, the <code>coordinator</code> can run in either <code>underlay</code> or <code>overlay</code> mode. Although the implementation methods are slightly different,
 the core principle is to hijack the traffic of Pods accessing Services onto the host network protocol stack and then forward it through the IPtables rules created by Kube-proxy.</p>
 <p>The following is a brief introduction to the data forwarding process flowchart:</p>
 <p><img alt="service_kube_proxy" src="../../images/spiderpool_service_kube_proxy.png" /></p>
 <h3 id="coordinator-run-in-underlay">coordinator run in underlay</h3>
 <p>Under this mode, the coordinator plugin will create a pair of Veth devices, with one end placed in the host and the other end placed in the network namespace of the Pod.
-Then set some routing rules inside the Pod to forward access to ClusterIP from the veth device. The coordinator defaults to auto mode, which will automatically determine 
+Then set some routing rules inside the Pod to forward access to ClusterIP from the veth device. The coordinator defaults to auto mode, which will automatically determine
 whether to run in underlay or overlay mode. You only need to inject an annotation into the Pod: <code>v1.multus-cni.io/default-network: kube-system/&lt;Multus_CR_NAME&gt;</code>.</p>
 <p>After creating a Pod in Underlay mode, we enter the Pod and check the routing information:</p>
 <div class="highlight"><pre><span></span><code>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-underlay-5496bb9c9b-c7rnp<span class="w"> </span>sh
@@ -1480,9 +1494,9 @@ of kube-proxy to true.</p>
 <p>If the underlay subnet of a Pod is the same as the clusterCIDR of the cluster, then we must set <code>masqueradeAll</code> to true.</p>
 </blockquote>
 <h3 id="coordinator-run-in-overlay">coordinator run in overlay</h3>
-<p>Configuring <code>coordinator</code> as Overlay mode can also solve the problem of Underlay CNI accessing Service. The traditional Overlay type (such as <a href="https://github.com/projectcalico/calico">Calico</a> 
+<p>Configuring <code>coordinator</code> as Overlay mode can also solve the problem of Underlay CNI accessing Service. The traditional Overlay type (such as <a href="https://github.com/projectcalico/calico">Calico</a>
 and <a href="https://github.com/cilium/cilium">Cilium</a> etc.) CNI has perfectly solved the access to Service problem. We can use it to help Underlay Pods access Service. We can attach multiple network cards to the Pod,
-<code>eth0</code> for creating by Overlay CNI, <code>net1</code> for creating by Underlay CNI, and set up policy routing table items through <code>coordinator</code> to ensure that when a Pod accesses Service, it forwards from <code>eth0</code>, and 
+<code>eth0</code> for creating by Overlay CNI, <code>net1</code> for creating by Underlay CNI, and set up policy routing table items through <code>coordinator</code> to ensure that when a Pod accesses Service, it forwards from <code>eth0</code>, and
 replies are also forwarded to <code>eth0</code>.</p>
 <blockquote>
 <p>By default, the value of mode is auto(spidercoordinator CR spec.mode is auto), <code>coordinator</code> will automatically determine whether the current CNI call is not <code>eth0</code>. If it's not, confirm that there is no <code>veth0</code> network card in the Pod, then automatically determine it as overlay mode.</p>
@@ -1518,8 +1532,8 @@ default<span class="w"> </span>via<span class="w"> </span><span class="m">10</sp
 <p>In Spiderpool, we hijack the traffic of Pods accessing Services through a <code>coordinator</code> that forwards it to the host and then through the iptables rules set up by the host's Kube-proxy.
 This can solve the problem but may extend the data access path and cause some performance loss.</p>
 <p>The open-source CNI project, Cilium, supports replacing the kube-proxy system component entirely with eBPF technology. It can help us resolve Service addresses. When pod accessing a Service,
-the Service address will be directly resolved by the eBPF program mounted by Cilium on the target Pod, so that the source Pod can directly initiate access to the target Pod without going through 
-the host's network protocol stack. This greatly shortens the access path and achieves acceleration in accessing Service. With the power of Cilium, we can also implement acceleration in accessing Service 
+the Service address will be directly resolved by the eBPF program mounted by Cilium on the target Pod, so that the source Pod can directly initiate access to the target Pod without going through
+the host's network protocol stack. This greatly shortens the access path and achieves acceleration in accessing Service. With the power of Cilium, we can also implement acceleration in accessing Service
 under the Underlay CNI through it.</p>
 <p><img alt="cilium_kube_proxy" src="../../images/withou_kube_proxy.png" /></p>
 <p>The following steps demonstrate how to accelerate access to a Service on a cluster with 2 nodes based on Macvlan CNI + Cilium:</p>
@@ -1657,7 +1671,7 @@ Connection:<span class="w"> </span>keep-alive
 ETag:<span class="w"> </span><span class="s2">&quot;64008108-fd7&quot;</span>
 Accept-Ranges:<span class="w"> </span>bytes
 </code></pre></div>
-<p>Open another terminal, enter the network space of the pod, and use the <code>tcpdump</code> tool to see that when the packet accessing the service is sent from the pod network namespace, 
+<p>Open another terminal, enter the network space of the pod, and use the <code>tcpdump</code> tool to see that when the packet accessing the service is sent from the pod network namespace,
 the destination address has been resolved to the target pod address:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>tcpdump<span class="w"> </span>-nnev<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>tcp<span class="w"> </span>and<span class="w"> </span>port<span class="w"> </span><span class="m">80</span>
 tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="w"> </span>eth0,<span class="w"> </span>link-type<span class="w"> </span>EN10MB<span class="w"> </span><span class="o">(</span>Ethernet<span class="o">)</span>,<span class="w"> </span>capture<span class="w"> </span>size<span class="w"> </span><span class="m">262144</span><span class="w"> </span>bytes

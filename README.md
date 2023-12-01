@@ -112,11 +112,11 @@ For more detailed information, please refer to [Spiderpool Architecture](./docs/
 ## Major Features
 
 | Features                               | macvlan    | ipvlan | SR-IOV      |
-|----------------------------------|------------|----|-------------|
+|----------------------------------|------------|--|-------------|
 | Service by kubeproxy             | Beta       |  Beta | Beta        |
 | Service by kubeproxy replacement | Alpha      |  Alpha | Alpha       |
 | Network policy                   | In-plan    |  Alpha | In-plan     |
-| Bandwidth                        | In-plan    | In-plan | In-plan     |
+| Bandwidth                        | In-plan    | Alpha | In-plan     |
 | RDMA                             | Alpha      | Alpha | Alpha       |
 | IPAM                             | Beta       | Beta | Beta        |
 | Egress policy                    | Alpha      | Alpha | Alpha       |

@@ -24,9 +24,12 @@ Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mo
 
 Spiderpool is a Kubernetes underlay network solution that enhances the capabilities of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni).It fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like storage, middleware, and AI.
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni).It fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like **storage, middleware, and AI**.
+It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more details.
 
 **Why does Spiderpool select macvlan, ipvlan, and SR-IOV as datapaths?**
+
+* macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for AI applicaitons, latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.
 
 * Unlike CNI solutions based on veth virtual interfaces, underlay networks eliminate layer 3 network forwarding on the host, avoiding tunnel encapsulation overhead. This translates to excellent network performance with high throughput, low latency, and reduced CPU utilization for network forwarding.
 
@@ -35,8 +38,6 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 * Data packages carry the actual IP addresses of Pods, enabling direct north-south communication based on Pod IPs. This connectivity across multi-cloud networks enhances flexibility and ease of use.
 
 * Underlay CNI can create virtual interfaces using different parent network interfaces on the host, providing isolated subnets for applications with high network overhead, such as storage and observability.
-
-* macvlan, ipvlan, and SR-IOV is crucial for supporting RDMA network acceleration. RDMA significantly enhances performance for latency-sensitive and network I/O-intensive applications, surpassing overlay network solutions in terms of network performance.
 
 <div style="text-align:center">
   <img src="./images/arch.png" alt="Your Image Description">
@@ -54,7 +55,7 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 
 * Multiple network interface access for Pods
 
-  Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns.
+  Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns. It could strengthen [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), [kubevirt](https://github.com/kubevirt/kubevirt) .
 
 * Enhanced network connectivity
 
@@ -90,6 +91,10 @@ Spiderpool, powered by underlay CNI, offers unparalleled network performance com
 
 * Latency-sensitive application.
 
+## Quick start
+
+Refer to [Quick start](./usage/readme.md) to explore Spiderpool quickly.
+
 ## Spiderpool Architecture
 
 Spiderpool features a well-designed and comprehensive architecture that caters to various application scenarios, including:
@@ -119,10 +124,6 @@ For more detailed information, please refer to [Spiderpool Architecture](./conce
 | Applied scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
 
 For detailed information about all the planned features, please refer to the [roadmap](./develop/roadmap.md).
-
-## Quick start
-
-Refer to [Quick start](./usage/readme.md) to explore Spiderpool quickly.
 
 ## Blogs
 

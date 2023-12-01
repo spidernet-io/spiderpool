@@ -24,7 +24,8 @@ Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mo
 
 Spiderpool is a Kubernetes underlay network solution that enhances the capabilities of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni).It fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like storage, middleware, and AI.
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni).It fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like **storage, middleware, and AI**.
+It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more details.
 
 **Why does Spiderpool select macvlan, ipvlan, and SR-IOV as datapaths?**
 
@@ -54,7 +55,7 @@ Spiderpool is a Kubernetes underlay network solution that enhances the capabilit
 
 * Multiple network interface access for Pods
 
-  Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns.
+  Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns. It could strengthen [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), [kubevirt](https://github.com/kubevirt/kubevirt) .
 
 * Enhanced network connectivity
 

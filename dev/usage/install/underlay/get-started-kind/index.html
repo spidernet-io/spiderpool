@@ -887,7 +887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../debug/" class="md-nav__link">
+      <a href="../../../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -949,7 +949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../concepts/ipam/" class="md-nav__link">
+      <a href="../../../../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1463,6 +1463,24 @@
 </li>
 <li>
 <p>Execute <code>make dev-doctor</code> to check that the development tools on the local host meet the conditions for deploying a Kind cluster with Spiderpool, and that the components are automatically installed for you if they are missing.</p>
+</li>
+<li>
+<p>If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:</p>
+<ol>
+<li>
+<p>If you are using Underlay mode, the <code>coordinator</code> will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.</p>
+</li>
+<li>
+<p>If you create VLAN and Bond interfaces through Ifacer, NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IFACER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;&lt;NAME&gt;&quot;</span>
+~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
+</ol>
 </li>
 </ul>
 <h2 id="various-installation-modes-supported-by-spiderpool-script">Various installation modes supported by Spiderpool script</h2>

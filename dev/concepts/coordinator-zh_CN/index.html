@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/debug/" class="md-nav__link">
+      <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ipam/" class="md-nav__link">
+      <a href="../ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1347,6 +1347,13 @@
 <li>支持检测 Pod 的网关是否可达</li>
 <li>支持固定 Pod 的 Mac 地址前缀</li>
 </ul>
+<p>注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora、Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 <code>coordinator</code> 创建的 Veth 虚拟接口，影响通信:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
 <p>下面我们将详细的介绍 <code>coordinator</code> 如何解决或实现这些功能。</p>
 <h2 id="cni">CNI 配置字段说明</h2>
 <table>
@@ -1383,7 +1390,7 @@
 </tr>
 <tr>
 <td>podDefaultRouteNic</td>
-<td>配置 Pod 的默认路由网卡</td>
+<td>Pod 多网卡时，配置 Pod 的默认路由网卡。默认为 "", 其 value 实际为 Pod 第一张拥有默认路由的网卡</td>
 <td>字符串</td>
 <td>optional</td>
 <td>""</td>

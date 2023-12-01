@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../debug/" class="md-nav__link">
+      <a href="../../../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../concepts/ipam/" class="md-nav__link">
+      <a href="../../../../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1351,6 +1351,24 @@ Capabilities:<span class="w"> </span><span class="o">[</span><span class="m">180
 </li>
 </ul>
 </li>
+<li>
+<p>如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:</p>
+<ul>
+<li>
+<p>如果你使用 Underlay 模式，<code>coordinator</code> 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+</li>
+<li>
+<p>如果你通过 <code>Ifacer</code> 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IFACER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;&lt;NAME&gt;&quot;</span>
+~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
 </ol>
 <h2 id="spiderpool">安装 Spiderpool</h2>
 <ol>
@@ -1489,6 +1507,13 @@ status:
 </li>
 <li>
 <p>创建 SpiderMultusConfig 实例。</p>
+<p>注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 <code>coordinator</code> 创建的 Veth 虚拟接口，影响通信:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
+<span class="s">&gt; [keyfile]</span>
+<span class="s">&gt; unmanaged-devices=interface-name:^veth*</span>
+<span class="s">&gt; EOF</span>
+~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 <span class="s">kind: SpiderMultusConfig</span>

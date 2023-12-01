@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../debug/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/ipam/" class="md-nav__link">
+      <a href="../../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1336,6 +1336,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#sriov" class="md-nav__link">
+    创建 Sriov 配置
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ifacer" class="md-nav__link">
     Ifacer 使用配置
   </a>
@@ -1564,6 +1571,129 @@ metadata:
 spec:
 <span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;ipvlan-ens192&quot;,&quot;plugins&quot;:[{&quot;type&quot;:&quot;ipvlan&quot;,&quot;master&quot;:&quot;ens192&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
 </code></pre></div>
+<h3 id="sriov">创建 Sriov 配置</h3>
+<p>如下是创建 Sriov SpiderMultusConfig 配置的示例：</p>
+<ul>
+<li>一个基础的例子</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: sriov-demo</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: sriov</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  sriov:</span>
+<span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>创建后，查看对应的 Multus NetworkAttachmentDefinition CR:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-demo<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+kind:<span class="w"> </span>NetworkAttachmentDefinition
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>sriov-demo
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+<span class="w">  </span>annotations:
+<span class="w">    </span>k8s.v1.cni.cncf.io/resourceName:<span class="w"> </span>spidernet.io/sriov_netdeivce<span class="w"> </span>
+<span class="w">  </span>ownerReferences:
+<span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+<span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+<span class="w">    </span>name:<span class="w"> </span>sriov-demo
+<span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+<span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;153002297&quot;</span>
+<span class="w">  </span>uid:<span class="w"> </span>4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-demo&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+</code></pre></div>
+<p>更多信息可参考 <a href="../install/underlay/get-started-sriov-zh_CN/">Sriov-cni 使用</a></p>
+<ul>
+<li>配置启用 RDMA 功能</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: sriov-rdma</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: sriov</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  sriov:</span>
+<span class="s">    enableRdma: true</span>
+<span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>创建后，查看对应的 Multus NetworkAttachmentDefinition CR:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-rdma<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+kind:<span class="w"> </span>NetworkAttachmentDefinition
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>sriov-rdma
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+<span class="w">  </span>annotations:
+<span class="w">    </span>k8s.v1.cni.cncf.io/resourceName:<span class="w"> </span>spidernet.io/sriov_netdeivce<span class="w"> </span>
+<span class="w">  </span>ownerReferences:
+<span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+<span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+<span class="w">    </span>name:<span class="w"> </span>sriov-rdma
+<span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+<span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;153002297&quot;</span>
+<span class="w">  </span>uid:<span class="w"> </span>4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-rdma&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+</code></pre></div>
+<p>更多信息可参考 <a href="../rdma-zh_CN/">Sriov-rdma 使用</a></p>
+<ul>
+<li>配置 Sriov 网络带宽</li>
+</ul>
+<p>我们可通过 SpiderMultusConfig 配置 Sriov 的网络带宽:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: sriov-bandwidth</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: sriov</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  sriov:</span>
+<span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">    minTxRateMbps: 100</span>
+<span class="s">    MaxTxRateMbps: 1000</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p><code>minTxRateMbps</code> 和 <code>MaxTxRateMbps</code> 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]</p>
+</blockquote>
+<p>创建后，查看对应的 Multus NetworkAttachmentDefinition CR:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-rdma<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+kind:<span class="w"> </span>NetworkAttachmentDefinition
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>sriov-bandwidth
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+<span class="w">  </span>annotations:
+<span class="w">    </span>k8s.v1.cni.cncf.io/resourceName:<span class="w"> </span>spidernet.io/sriov_netdeivce<span class="w"> </span>
+<span class="w">  </span>ownerReferences:
+<span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+<span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+<span class="w">    </span>name:<span class="w"> </span>sriov-bandwidth
+<span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-bandwidth&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;minTxRate&quot;: 100, &quot;maxTxRate&quot;: 1000,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+</code></pre></div>
 <h3 id="ifacer">Ifacer 使用配置</h3>
 <p>Ifacer 插件可以帮助我们在创建 Pod 时，自动创建 Bond 网卡 或者 Vlan 网卡，用于承接 Pod 底层网络。更多信息参考 <a href="../../reference/plugin-ifacer/">Ifacer</a>。</p>
 <h4 id="vlan"><strong>自动创建 Vlan 接口</strong></h4>
@@ -1717,7 +1847,7 @@ spec:
 <p>当使用以上配置创建 Pod，<code>ifacer</code> 会在主机上创建一张 bond 网卡  bond0 以及一张 Vlan 网卡 bond0.100 。</p>
 </blockquote>
 <h4 id="cni_1">其他 CNI 配置</h4>
-<p>创建其他 CNI 配置，如：SRIOV 与 Ovs，参考 <a href="../install/underlay/get-started-sriov-zh_CN/">创建 SR-IOV</a>、<a href="../install/underlay/get-started-ovs-zh_CN/">创建 Ovs</a></p>
+<p>创建其他 CNI 配置，如 Ovs: 参考 <a href="../install/underlay/get-started-ovs-zh_CN/">创建 Ovs</a></p>
 <h2 id="_4">总结</h2>
 <p>SpiderMultusConfig CR 自动管理 Multus NetworkAttachmentDefinition CR，提升了创建体验，降低了运维成本。</p>
 

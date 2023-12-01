@@ -697,6 +697,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#create-sriov-configuration" class="md-nav__link">
+    Create Sriov Configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ifacer-configurations" class="md-nav__link">
     Ifacer Configurations
   </a>
@@ -719,8 +726,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#other-cni-configurations" class="md-nav__link">
-    Other CNI Configurations
+  <a href="#other-cni-configurationsi" class="md-nav__link">
+    Other CNI Configurationsi
   </a>
   
 </li>
@@ -939,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../debug/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -1001,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/ipam/" class="md-nav__link">
+      <a href="../../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1481,6 +1488,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#create-sriov-configuration" class="md-nav__link">
+    Create Sriov Configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ifacer-configurations" class="md-nav__link">
     Ifacer Configurations
   </a>
@@ -1503,8 +1517,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#other-cni-configurations" class="md-nav__link">
-    Other CNI Configurations
+  <a href="#other-cni-configurationsi" class="md-nav__link">
+    Other CNI Configurationsi
   </a>
   
 </li>
@@ -1709,6 +1723,129 @@ metadata:
 spec:
 <span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;ipvlan-ens192&quot;,&quot;plugins&quot;:[{&quot;type&quot;:&quot;ipvlan&quot;,&quot;master&quot;:&quot;ens192&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
 </code></pre></div>
+<h3 id="create-sriov-configuration">Create Sriov Configuration</h3>
+<p>Here is an example of creating Sriov SpiderMultusConfig configuration:</p>
+<ul>
+<li>Basic example</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: sriov-demo</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: sriov</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  sriov:</span>
+<span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>After creation, check the corresponding Multus NetworkAttachmentDefinition CR:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-demo<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+kind:<span class="w"> </span>NetworkAttachmentDefinition
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>sriov-demo
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+<span class="w">  </span>annotations:
+<span class="w">    </span>k8s.v1.cni.cncf.io/resourceName:<span class="w"> </span>spidernet.io/sriov_netdeivce<span class="w"> </span>
+<span class="w">  </span>ownerReferences:
+<span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+<span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+<span class="w">    </span>name:<span class="w"> </span>sriov-demo
+<span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+<span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;153002297&quot;</span>
+<span class="w">  </span>uid:<span class="w"> </span>4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-demo&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+</code></pre></div>
+<p>For more information, refer to <a href="../install/underlay/get-started-sriov/">sriov-cni usage</a></p>
+<ul>
+<li>Enable RDMA feature</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: sriov-rdma</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: sriov</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  sriov:</span>
+<span class="s">    enableRdma: true</span>
+<span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>After creation, check the corresponding Multus NetworkAttachmentDefinition CR:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-rdma<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+kind:<span class="w"> </span>NetworkAttachmentDefinition
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>sriov-rdma
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+<span class="w">  </span>annotations:
+<span class="w">    </span>k8s.v1.cni.cncf.io/resourceName:<span class="w"> </span>spidernet.io/sriov_netdeivce<span class="w"> </span>
+<span class="w">  </span>ownerReferences:
+<span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+<span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+<span class="w">    </span>name:<span class="w"> </span>sriov-rdma
+<span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+<span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;153002297&quot;</span>
+<span class="w">  </span>uid:<span class="w"> </span>4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-rdma&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+</code></pre></div>
+<p>For more information, refer to <a href="../rdma/">Sriov-rdma usage</a></p>
+<ul>
+<li>Configure Sriov-CNI Network Bandwidth</li>
+</ul>
+<p>We can configure the network bandwidth of Sriov through SpiderMultusConfig:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: sriov-bandwidth</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: sriov</span>
+<span class="s">  enableCoordinator: true</span>
+<span class="s">  sriov:</span>
+<span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
+<span class="s">    vlanID: 100</span>
+<span class="s">    minTxRateMbps: 100</span>
+<span class="s">    MaxTxRateMbps: 1000</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
+<p>minTxRateMbps and MaxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].</p>
+</blockquote>
+<p>After creation, check the corresponding Multus NetworkAttachmentDefinition CR:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-rdma<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+kind:<span class="w"> </span>NetworkAttachmentDefinition
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>sriov-bandwidth
+<span class="w">  </span>namespace:<span class="w"> </span>kube-system
+<span class="w">  </span>annotations:
+<span class="w">    </span>k8s.v1.cni.cncf.io/resourceName:<span class="w"> </span>spidernet.io/sriov_netdeivce<span class="w"> </span>
+<span class="w">  </span>ownerReferences:
+<span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+<span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+<span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+<span class="w">    </span>name:<span class="w"> </span>sriov-bandwidth
+<span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-bandwidth&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;minTxRate&quot;: 100, &quot;maxTxRate&quot;: 1000,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+</code></pre></div>
 <h3 id="ifacer-configurations">Ifacer Configurations</h3>
 <p>The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when creating a pod to undertake the pod's underlying network. For more information, refer to <a href="../../reference/plugin-ifacer/">Ifacer</a>.</p>
 <h4 id="ifacer-create-vlan-interface">Ifacer create vlan interface</h4>
@@ -1864,8 +2001,8 @@ when the pod is created, which is used to undertake the underlying network of th
 <blockquote>
 <p>When creating a pod with the above configuration, <code>ifacer</code> will create a bond NIC bond0 and a VLAN NIC bond0.100 on the host.</p>
 </blockquote>
-<h4 id="other-cni-configurations">Other CNI Configurations</h4>
-<p>To create other types of CNI configurations, such as SR-IOV and OVS, refer to <a href="../install/underlay/get-started-sriov/">SR-IOV</a> and <a href="../install/underlay/get-started-ovs/">Ovs</a>.</p>
+<h4 id="other-cni-configurationsi">Other CNI Configurationsi</h4>
+<p>To create other types of CNI configurations, such OVS, refer to <a href="../install/underlay/get-started-ovs/">Ovs</a>.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>SpiderMultusConfig CR automates the management of Multus NetworkAttachmentDefinition CRs, improving the experience of creating configurations and reducing operational costs.</p>
 

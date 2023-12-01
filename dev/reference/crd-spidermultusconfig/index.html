@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/debug/" class="md-nav__link">
+      <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/ipam/" class="md-nav__link">
+      <a href="../../concepts/ipam-des/" class="md-nav__link">
         IPAM
       </a>
     </li>
@@ -1798,6 +1798,18 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <tr>
 <td>vlanID</td>
 <td>vlan ID</td>
+<td>int</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>minTxRateMbps</td>
+<td>change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be &lt;= max_tx_rate. Support of this feature depends on NICs and drivers</td>
+<td>int</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>maxTxRateMbps</td>
+<td>change the allowed maximum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting</td>
 <td>int</td>
 <td>optional</td>
 </tr>

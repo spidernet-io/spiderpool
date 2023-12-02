@@ -29,7 +29,7 @@ Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI �
 | type      | CNI 的类型     | 字符串 | required   |coordinator     |
 | mode      | coordinator 运行的模式. "auto": coordinator 自动判断运行在 Underlay 或者 Overlay; "underlay": 为 Pod 创建一对 Veth 设备，用于转发集群东西向流量。由 Pod 的 Underlay 网卡转发南北向流量; "overlay": 不额外创建 veth 设备，运行在多网卡模式。由 overlay 类型的 CNI(calico，cilium) 转发集群东西向流量，由 underlay 网卡转发南北向流量; "disable": 禁用 coordinator           | 字符串 | optional   | auto |
 | tunePodRoutes | Pod 多网卡模式下，是否调协 Pod 的路由，解决访问来回路径不一致的问题 | 布尔型 | optional | true |
-| podDefaultRouteNic | 配置 Pod 的默认路由网卡 | 字符串 | optional | "" |
+| podDefaultRouteNic | Pod 多网卡时，配置 Pod 的默认路由网卡。默认为 "", 其 value 实际为 Pod 第一张拥有默认路由的网卡| 字符串 | optional | "" |
 | podDefaultCniNic | K8s 中 Pod 默认的第一张网卡 | 布尔型 | optional | eth0 |
 | detectGateway | 创建 Pod 时是否检查网关是否可达 | 布尔型 | optional | false |
 | detectIPConflict | 创建 Pod 时是否检查 Pod 的 IP 是否可达  | 布尔型 | optional | false |

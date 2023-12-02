@@ -14,28 +14,13 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
     git clone https://github.com/spidernet-io/spiderpool.git && cd spiderpool
     ```
 
-* 通过以下方式获取 Spiderpool 的最新镜像。
+* 通过以下方式获取 Spiderpool 的最新镜像 tag
 
     ```bash
-    ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name | select(("^v1.[0-9]*.[0-9]*$"))' | head -n 1)
+    ~# SPIDERPOOL_LATEST_IMAGE_TAG=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | jq -r '.[].tag_name' | head -n 1)
     ```
 
 * 执行 `make dev-doctor`，检查本地主机上的开发工具是否满足部署 Kind 集群与 Spiderpool 的条件，如果缺少组件会为您自动安装。
-
-* 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
-
-  1. 如果你使用 Underlay 模式，`coordinator` 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
-
-  2. 如果你通过 `Iface`r 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
-
-      ```shell
-      ~# IFACER_INTERFACE="<NAME>"
-      ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
-      > [keyfile]
-      > unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
-      > EOF
-      ~# systemctl restart NetworkManager
-      ```
 
 ## Spiderpool 脚本支持的多种安装模式
 
@@ -53,10 +38,20 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
   ~# make e2e_init_overlay_calico -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
-### 安装 Spiderpool 在 Cilium Overlay CNI 集群
+### 在启用了 kube-proxy 的 Cilium 集群中安装 Spiderpool
+
+* 确认操作系统 Kernel 版本号是是否 >= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。
 
   ```bash
   ~# make e2e_init_overlay_cilium -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
+  ```
+
+### 在启用了 ebpf 的 Cilium 集群中安装 Spiderpool
+
+* 确认操作系统 Kernel 版本号是是否 >= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。
+
+  ```bash
+  ~# make e2e_init_cilium_with_ebpf -e E2E_SPIDERPOOL_TAG=$SPIDERPOOL_LATEST_IMAGE_TAG
   ```
 
 ## 验证安装

@@ -20,7 +20,7 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 - Support for various CNIs, such as Macvlan, IPvlan, Ovs, and SR-IOV.
 
-- The annotation `multus.spidernet.io/cr-name` allows users to define a custom name for Multus CR. 
+- The annotation `multus.spidernet.io/cr-name` allows users to define a custom name for Multus CR.
 
 - The annotation `multus.spidernet.io/cni-version` enables specifying a specific CNI version.
 
@@ -162,14 +162,153 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
+### Create Sriov Configuration
+
+Here is an example of creating Sriov SpiderMultusConfig configuration:
+
+- Basic example
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-demo
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+EOF
+```
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-demo -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-demo
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-demo
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+  resourceVersion: "153002297"
+  uid: 4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-demo","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
+For more information, refer to [sriov-cni usage](./install/underlay/get-started-sriov.md)
+
+- Enable RDMA feature
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-rdma
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    enableRdma: true
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+EOF
+```
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-rdma
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-rdma
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+  resourceVersion: "153002297"
+  uid: 4413e1fa-ce15-4acf-bce8-48b5028c0568
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+For more information, refer to [Sriov-rdma usage](rdma.md)
+
+- Configure Sriov-CNI Network Bandwidth
+
+We can configure the network bandwidth of Sriov through SpiderMultusConfig:
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-bandwidth
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+    minTxRateMbps: 100
+    MaxTxRateMbps: 1000
+EOF
+```
+
+> minTxRateMbps and MaxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-bandwidth
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-bandwidth
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
 ### Ifacer Configurations
 
 The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when creating a pod to undertake the pod's underlying network. For more information, refer to [Ifacer](../reference/plugin-ifacer.md).
 
 #### Ifacer create vlan interface
 
-If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig 
-so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The `ifacer` plug-in will dynamically create a VLAN interface on the host when the pod is created, 
+If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig
+so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The `ifacer` plug-in will dynamically create a VLAN interface on the host when the pod is created,
 which is used to undertake the pod's underlay network.
 
 The following is an example of CNI as IPVlan, IPVLAN_MASTER_INTERFACE as ens192, and vlanID as 100.
@@ -229,7 +368,7 @@ When the Spidermultuconfig object is created, view the corresponding Multus netw
 >
 > Note: The NIC created by `ifacer` is not persistent, and will be lost if the node is restarted or manually deleted. Restarting the pod is automatically added back.
 
-Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use `ifacer` to create the VLAN sub-interface. We can directly configure the master 
+Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use `ifacer` to create the VLAN sub-interface. We can directly configure the master
 field as: `ens192.100` and not configure the VLAN ID, as follows:
 
 ```yaml
@@ -250,8 +389,8 @@ spec:
 
 #### Ifacer create bond interface
 
-If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in 
-Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The `ifacer'` plug-in will dynamically create a bond interface on the host 
+If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in
+Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The `ifacer'` plug-in will dynamically create a bond interface on the host
 when the pod is created, which is used to undertake the underlying network of the pod.
 
 The following is an example of CNI as IPVlan, host interface ens192, and ens224 as slave to create a bond interface:
@@ -343,9 +482,9 @@ EOF
 
 > When creating a pod with the above configuration, `ifacer` will create a bond NIC bond0 and a VLAN NIC bond0.100 on the host.
 
-#### Other CNI Configurations
+#### Other CNI Configurationsi
 
-To create other types of CNI configurations, such as SR-IOV and OVS, refer to [SR-IOV](./install/underlay/get-started-sriov.md) and [Ovs](./install/underlay/get-started-ovs.md).
+To create other types of CNI configurations, such OVS, refer to [Ovs](./install/underlay/get-started-ovs.md).
 
 ## Conclusion
 

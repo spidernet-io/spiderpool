@@ -85,6 +85,8 @@ netperf 是一种广泛使用的网络性能测试工具，可让您测量网络
   | 基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod   |    18992.9 rps   |
   | 节点到节点                                            |     47560.5 rps   |
 
+![performance](../images/performance-sockperf.png)
+
 ## iperf 网络性能测试
 
 iperf 是一种流行的网络性能测试工具，可让您测量两个端点之间的网络带宽。它广泛用于评估网络连接的带宽和性能。在本章节中，我们通过它分别来测试 Pod 跨节点访问 Pod 和 Service。其中测试访问 Service 的 cluster IP 时，分为 `kube-proxy` 或者 `cilium + kube-proxy replacement` 两种场景。
@@ -138,6 +140,8 @@ redis-benchmark 旨在通过模拟多个客户端并执行各种 Redis 命令来
   | 基于全量 eBPF 加速 和 无隧道 的 cilium                 |       60496.07 rps    |      58927.52 rps    |
   | 基于 macvlan 的同子网和 kube-proxy 的 Spiderpool Pod  |       45578.85 rps    |      46274.87 rps    |
   | 基于 macvlan 的同子网且全量 eBPF 加速的 Spiderpool Pod  |       63211.12 rps    |      64061.50 rps    |
+
+![performance](../images/performance-redis.png)
 
 ## 总结
 

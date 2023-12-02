@@ -46,7 +46,8 @@ markdown_extensions:
 
 nav:
   - README.md
-  - Get Started: usage/readme.md
+  - Get Started: usage/install/underlay/get-started-kind.md
+  - Index: usage/readme.md
   - Installation:
       - Underlay Installation:
           - Calico: usage/install/underlay/get-started-calico.md
@@ -74,15 +75,16 @@ nav:
       - IPAM of Reserved IP: usage/reserved-ip.md
       - MultipleInterfaces: usage/multi-interfaces-annotation.md
       - Egress Policy: usage/egress.md
+      - Network Policy Support: usage/cilium-chaining.md
       - Route Support: usage/route.md
       - Node-based Topology: usage/network-topology.md
       - RDMA: usage/rdma.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Kubevirt: usage/kubevirt.md
-      - FAQ: usage/debug.md
+      - FAQ: usage/faq.md
   - Concepts:
       - Architecture: concepts/arch.md
-      - IPAM: concepts/ipam.md
+      - IPAM: concepts/ipam-des.md
       - IPAM Performance: concepts/ipam-performance.md
       - Plugin coordinator: concepts/coordinator.md
       - I/O Performance: concepts/io-performance.md

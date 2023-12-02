@@ -28,6 +28,7 @@ jobs:
     outputs:
       ref: ${{ env.REF }}
       skip_all_job: ${{ env.SKIP_ALL_JOB }}
+      doc_tag: ${{ env.DOCS_TAG }}
     steps:
       - name: Get Ref
         id: get_ref
@@ -161,8 +162,8 @@ jobs:
         id: create_pr
         uses: peter-evans/create-pull-request@v5.0.2
         with:
-          title: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
-          commit-message: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
+          title: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
+          commit-message: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           branch-suffix: timestamp
           branch: robot/update_doc
           delete-branch: true

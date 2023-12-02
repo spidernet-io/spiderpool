@@ -1,6 +1,6 @@
 # IPAM
 
-**English** | [**简体中文**](./ipam-zh_CN.md)
+**English** | [**简体中文**](./ipam-des-zh_CN.md)
 
 ## IPAM for Underlay and overlay network solutions
 

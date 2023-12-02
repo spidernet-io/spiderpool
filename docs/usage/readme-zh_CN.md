@@ -100,7 +100,7 @@
 
 - 分配和释放 IP 地址的高效性能，可参考[报告](../concepts/ipam-performance-zh_CN.md)。
 
-- 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](../concepts/ipam-zh_CN.md)。
+- 合理的 IP 回收机制设计，使得集群或应用在故障恢复过程中，能够及时分配到 IP 地址。可参考[例子](../concepts/ipam-des-zh_CN.md)。
 
 ### 多网卡功能
 

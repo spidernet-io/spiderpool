@@ -55,7 +55,7 @@ spec:
 
 ### Specify IPPool to Allocate IP Addresses to Applications
 
-> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam.md#candidate-pool-acquisition).
+> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam-des.md#candidate-pool-acquisition).
 
 #### Use Pod Annotation to Specify IP Pool
 
@@ -67,6 +67,22 @@ ipam.spidernet.io/ippool: |-
     "ipv4": ["demo-v4-ippool1", "backup-ipv4-ippool"],
     "ipv6": ["demo-v6-ippool1", "backup-ipv6-ippool"]
   }
+```
+
+When using the annotation `ipam.spidernet.io/ippools` for specifying multiple network interfaces, you can explicitly indicate the interface name by specifying the `interface` field. Alternatively, you can use **array ordering** to determine which IP pools are assigned to which network interfaces. Additionally, the `cleangateway` field indicates whether a default route should be generated based on the `gateway` field of the IPPool. When `cleangateway` is set to true, it means that no default route needs to be generated (default is false).
+
+> In scenarios with multiple network interfaces, it is generally not possible to generate two or more default routes in the `main` routing table. The plugin `Coordinator` already solved this problem and you can ignore `clengateway` field. If you want to use Spiderpool IPAM plugin alone, you can use `cleangateway: true` to indicate that a default route should not be generated based on the IPPool `gateway` field.
+
+```yaml
+ipam.spidernet.io/ippools: |-
+  [{
+      "ipv4": ["demo-v4-ippool1"],
+      "ipv6": ["demo-v6-ippool1"],
+   },{
+      "ipv4": ["demo-v4-ippool2"],
+      "ipv6": ["demo-v6-ippool2"],
+      "cleangateway": true
+  }]
 ```
 
 ```yaml

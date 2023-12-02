@@ -101,7 +101,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Efficient performance in IP address allocation and release is ensured. Refer to the [report](../concepts/ipam-performance.md) for details..
 
-- Well-designed IP reclamation mechanisms promptly allocate IP addresses during cluster or application recovery processes. Refer to the [example](../concepts/ipam.md) for details.
+- Well-designed IP reclamation mechanisms promptly allocate IP addresses during cluster or application recovery processes. Refer to the [example](../concepts/ipam-des.md) for details.
 
 ### Multiple Network Interfaces Features
 

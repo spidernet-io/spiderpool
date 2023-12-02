@@ -57,6 +57,8 @@ Sockperf is a network benchmarking tool that can be used to measure network late
   | Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated |   27.7 usec    |
   | node to node                                                                  |   32.2 usec    |
 
+![performance](../images/performance-sockperf.png)
+
 ## netperf performance test
 
 netperf is a widely used network performance testing tool that allows you to measure various aspects of network performance, such as throughput. We can use netperf to test Pod's cross-node access to Pod and Service respectively. When testing access to Service's cluster IP, there are two scenarios: `kube-proxy` or `cilium + kube-proxy replacement`.
@@ -138,6 +140,8 @@ redis-benchmark is designed to measure the performance and throughput of a Redis
   | Cilium based on full eBPF acceleration and no tunneling                        |       60496.07 rps    |      58927.52 rps    |
   | Spiderpool Pod based on macvlan on the same subnet and kube-proxy              |       45578.85 rps    |      46274.87 rps    |
   | Spiderpool Pod based on macvlan on the same subnet and fully eBPF accelerated  |       63211.12 rps    |      64061.50 rps    |
+
+![performance](../images/performance-redis.png)
 
 ## Summary
 

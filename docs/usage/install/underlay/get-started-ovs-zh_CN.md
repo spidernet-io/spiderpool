@@ -99,7 +99,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
       multusName: 
-      - ovs-conf
+      - kube-system/ovs-conf
     EOF
     ```
 
@@ -161,6 +161,7 @@ spec:
           {
             "ipv4": ["ippool-test"]
           }
+        v1.multus-cni.io/default-network: kube-system/ovs-conf
       labels:
         app: test-app
     spec:

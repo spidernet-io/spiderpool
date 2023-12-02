@@ -53,10 +53,9 @@ spec:
           command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
 ```
 
-
 ### 指定 IPPool 为应用分配 IP 地址
 
-> 对于以下指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-zh_CN.md#获取候选池)
+> 对于以下指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-des-zh_CN.md#获取候选池)
 
 #### 使用 Pod Annotation 指定使用 IP 池
 
@@ -68,6 +67,22 @@ ipam.spidernet.io/ippool: |-
     "ipv4": ["demo-v4-ippool1", "backup-ipv4-ippool"],
     "ipv6": ["demo-v6-ippool1", "backup-ipv6-ippool"]
   }
+```
+
+在使用注解 `ipam.spidernet.io/ippools` 用于多网卡指定时，你可显式的通过指定 `interface` 字段标明网卡名，也可以通过**数组顺序排列**让第几张卡用哪些 IP 池。另外，字段 `cleangateway` 标明是否需要根据 IP 池中的 `gateway` 字段生成一条默认路由，当 `cleangateway` 为 `true` 标明无需生成默认路由。(默认为false)
+
+> 多网卡场景下，一般无法为路由表 `main` 表生成两条及以上的默认路由。搭配 `Coordinator` 插件可为你处理好该问题，因此你可以忽略 `cleangateway` 字段。或者在单独使用 Spiderpool IPAM 插件时，可借助 `cleangateway: true` 来标明不根据 IP 池 gateway 字段生成默认路由。
+
+```yaml
+ipam.spidernet.io/ippools: |-
+  [{
+      "ipv4": ["demo-v4-ippool1"],
+      "ipv6": ["demo-v6-ippool1"],
+   },{
+      "ipv4": ["demo-v4-ippool2"],
+      "ipv6": ["demo-v6-ippool2"],
+      "cleangateway": true
+  }]
 ```
 
 ```yaml

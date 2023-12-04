@@ -42,7 +42,7 @@ func TestIPPoolManager(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "IPPoolManager Suite", Label("ippoolmanager", "unitest"))
+	RunSpecs(t, "IPPoolManager Suite", Label("ippoolmanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

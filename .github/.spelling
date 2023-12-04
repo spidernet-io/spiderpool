@@ -39,7 +39,7 @@ golangci-lint
 gofmt
 codeql
 gokart
-unitest
+unittest
 codecov
 openapi.yaml
 vXX.XX.XX

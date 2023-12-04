@@ -47,7 +47,6 @@ GIT_BRANCH = $(shell git branch --show-current)
 GIT_TAG ?= dev
 
 FULL_BUILD_VERSION = $(VERSION) $(GIT_COMMIT_VERSION)
-
 E2E_SPIDERPOOL_TAG := $(GIT_COMMIT_VERSION)
 
 #------------------

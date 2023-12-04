@@ -27,7 +27,7 @@ var podManager podmanager.PodManager
 
 func TestPodManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "PodManager Suite", Label("podmanager", "unitest"))
+	RunSpecs(t, "PodManager Suite", Label("podmanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

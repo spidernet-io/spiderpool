@@ -4,7 +4,6 @@
 # Copyright Authors of Spider
 
 E2E_KUBECONFIG="$1"
-E2E_MULTUS_ENABLED="$2"
 
 CURRENT_FILENAME=$( basename $0 )
 CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
@@ -40,8 +39,8 @@ spec:
   template:
     metadata:
       annotations:
-        $(if [[ "${E2E_MULTUS_ENABLED}" == "true" ]];then
-        echo "v1.multus-cni.io/default-network: ${RELEASE_NAMESPACE}/${MULTUS_DEFAULT_CNI_NAME}"
+        $(if [[ "${INSTALL_OVERLAY_CNI}" == "true" ]];then
+        echo "k8s.v1.cni.cncf.io/networks: ${RELEASE_NAMESPACE}/${MULTUS_DEFAULT_CNI_NAME}"
         fi)
       name: $NAME
       labels:

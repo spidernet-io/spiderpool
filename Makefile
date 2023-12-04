@@ -273,12 +273,12 @@ check_test_label:
 		echo "each test.go is labeled right"
 
 
-.PHONY: unitest-tests
-unitest-tests: check_test_label
-	@echo "run unitest-tests"
+.PHONY: unittest-tests
+unittest-tests: check_test_label
+	@echo "run unittest-tests"
 	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
 		--cover --coverprofile=./coverage.out --covermode set \
-		--json-report unitestreport.json \
+		--json-report unittestreport.json \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
@@ -305,6 +305,17 @@ e2e_init:
 		 done
 	$(QUIET)  make -C test kind-init
 
+.PHONY: setup_singleCni_macvlan
+setup_singleCni_macvlan:
+	$(QUIET)  make -C test init_env_with_release -e INSTALL_OVERLAY_CNI=false
+
+.PHONY: setup_dualCni_calico
+setup_dualCni_calico:
+	$(QUIET)  make -C test init_env_with_release -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false
+
+.PHONY: setup_dualCni_cilium
+setup_dualCni_cilium:
+	$(QUIET)  make -C test init_env_with_release -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true DISABLE_KUBE_PROXY=true
 
 .PHONY: e2e_init_underlay
 e2e_init_underlay:
@@ -400,8 +411,6 @@ check_doc:
 	@ [ -f "$(PROJECT_DOC_DIR)/$(OUTPUT_TAR)" ] || { echo "failed to build site to $(PROJECT_DOC_DIR)/$(OUTPUT_TAR) " ; exit 1 ; }
 	-@ rm -f ./docs/$(OUTPUT_TAR)
 	@ echo "all doc is ok "
-
-
 
 # ==========================
 

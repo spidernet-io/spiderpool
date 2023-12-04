@@ -33,7 +33,7 @@ It will use [OpenKruise](https://openkruise.io/zh/docs/) to demonstrate how Spid
 
 ### Set up Spiderpool
 
-See [installation](./install/underlay/get-started-kind.md) for more details.
+See [installation](./install/get-started-kind.md) for more details.
 
 ### Set up OpenKruise
 

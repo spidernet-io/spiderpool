@@ -13,7 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("DeploymentInformer", Label("unitest"), func() {
+var _ = Describe("DeploymentInformer", Label("unittest"), func() {
 	Context("UT deployment_informer", Serial, func() {
 		deploy1 := &appv1.Deployment{}
 		deploy2 := &appv1.Deployment{}

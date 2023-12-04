@@ -27,7 +27,7 @@ var stsManager statefulsetmanager.StatefulSetManager
 
 func TestStatefulSetManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "StatefulSetManager Suite", Label("statefulsetmanager", "unitest"))
+	RunSpecs(t, "StatefulSetManager Suite", Label("statefulsetmanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

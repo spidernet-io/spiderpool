@@ -6,6 +6,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -13,7 +15,6 @@ import (
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"time"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -162,20 +163,19 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 				logger.Error("failed to GetDefaultGatewayByName", zap.Error(err))
 				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
 			}
+
+			logger.Debug("Get GetDefaultGatewayByName", zap.Strings("Gws", gws))
+			for _, gw := range gws {
+				p, err := gwconnection.NewPinger(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, gw, logger)
+				if err != nil {
+					return fmt.Errorf("failed to run NewPinger: %v", err)
+				}
+				errg.Go(p.DetectGateway)
+			}
 			return nil
 		})
 		if err != nil {
 			return err
-		}
-
-		logger.Debug("Get GetDefaultGatewayByName", zap.Strings("Gws", gws))
-
-		for _, gw := range gws {
-			p, err := gwconnection.NewPinger(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, gw, logger)
-			if err != nil {
-				return fmt.Errorf("failed to run NewPinger: %v", err)
-			}
-			errg.Go(p.DetectGateway)
 		}
 	} else {
 		logger.Debug("disable detect gateway")
@@ -194,7 +194,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if err = errg.Wait(); err != nil {
 		logger.Error("failed to ip checking", zap.Error(err))
-		return fmt.Errorf("failed to ip checking: %w", err)
+		return err
 	}
 
 	// overwrite mac address

@@ -11,7 +11,7 @@ Then run a Pod with two NICs with IP in different subnets.
 
 ### Set up Spiderpool
 
-Follow the guide [installation](./install/underlay/get-started-kind.md) to install Spiderpool.
+Follow the guide [installation](./install/get-started-kind.md) to install Spiderpool.
 
 ### Set up Multus Configuration
 

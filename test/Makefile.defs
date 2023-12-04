@@ -39,8 +39,6 @@ E2E_DISABLE_DEFAULT_CNI ?= true
 
 INSTALL_MACVLAN ?= true
 
-INSTALL_KRUISE ?= false
-
 INSTALL_OVERLAY_CNI ?= false
 
 INSTALL_CALICO ?= true
@@ -49,11 +47,17 @@ INSTALL_CILIUM ?= true
 
 DISABLE_KUBE_PROXY ?= false
 
+INSTALL_KRUISE ?= false
+
 INSTALL_KDOCTOR ?= false
 
 INSTALL_KUBEVIRT ?= false
 
-INSTALL_OVS ?= true
+INSTALL_OVS ?= false
+
+INSTALL_SRIOV ?= false
+
+INSTALL_RDMA ?= false
 
 #============ ginkgo-custom-flag ====================
 E2E_CLUSTER_NAME ?= spider
@@ -70,7 +74,7 @@ E2E_TIMEOUT ?= 60m
 
 E2E_GINKGO_PROCS ?= 4
 
-E2E_SPIDERPOOL_ENABLE_SUBNET ?= true # consistent with open source, closed by default
+E2E_SPIDERPOOL_ENABLE_SUBNET ?= true
 E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
 E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG ?= true
 
@@ -169,6 +173,7 @@ PYROSCOPE_LOCAL_PORT := 4040
 DOWNLOAD_DIR := $(ROOT_DIR)/test/.download
 CLUSTER_DIR := $(ROOT_DIR)/test/.cluster
 E2E_KUBECONFIG := $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/.kube/config
+GLOBAL_KIND_CONFIG_PATH := $(ROOT_DIR)/test/yamls/global-kind.yaml
 
 #=============http_proxy=============
 http_proxy ?=

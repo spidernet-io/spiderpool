@@ -16,7 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 )
 
-var _ = Describe("Debug lock", Label("unitest", "lock_test"), func() {
+var _ = Describe("Debug lock", Label("unittest", "lock_test"), func() {
 	var buffer *gbytes.Buffer
 	var selfishTimeout time.Duration
 

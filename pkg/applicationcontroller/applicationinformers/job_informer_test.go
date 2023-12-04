@@ -13,7 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("JobInformer", Label("unitest"), func() {
+var _ = Describe("JobInformer", Label("unittest"), func() {
 	Context("UT job_informer", Serial, func() {
 		job1 := &batchv1.Job{}
 		job2 := &batchv1.Job{}

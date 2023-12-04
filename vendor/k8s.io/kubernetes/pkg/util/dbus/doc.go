@@ -1,7 +1,5 @@
-// +build !linux
-
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,17 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package iptables
-
-import (
-	"fmt"
-	"os"
-)
-
-func grabIptablesLocks(lockfilePath string) (iptablesLocker, error) {
-	return nil, fmt.Errorf("iptables unsupported on this platform")
-}
-
-func grabIptablesFileLock(f *os.File) error {
-	return fmt.Errorf("iptables unsupported on this platform")
-}
+// Package dbus provides an injectable interface and implementations for D-Bus communication
+package dbus // import "k8s.io/kubernetes/pkg/util/dbus"

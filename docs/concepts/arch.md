@@ -4,23 +4,21 @@
 
 ## Architecture
 
-![arch](../images/spiderpool-arch.jpg)
+![arch](../images/spiderpool_arch.png)
 
 Spiderpool consists of the following components:
 
-* Spiderpool controller: a set of deployments that manage CRD validation, status updates, IP recovery, and automated IP pools
+* Spiderpool-controller: A set of deployments that interact with the API Server, managing multiple CRD resources such as SpiderIPPool, SpiderSubnet, SpiderMultusConfig, etc. It implements validation, creation, and status updates for these CRDs. Additionally, it responds to requests from Spiderpool-agent Pods, performing functions like allocation, release, reclamation, and managing automatic IP pools.
 
-* Spiderpool agent: a set of daemonsets that help Spiderpool plugin by performing IP allocation and coordinator plugin for information synchronization.
-
-* Spiderpool plugin: a binary plugin on each host that CNI can utilize to implement IP allocation.
+* Spiderpool-agent: A set of daemonsets running on each node, assisting in the installation of plugins such as Multus, Coordinator, IPAM, and CNI on each node. It responds to CNI requests for IP allocation during Pod creation and interacts with Spiderpool-controller to handle Pod IP allocation and release. It also interacts with Coordinator, assisting the Spiderpool plugin in implementing IP allocation and helping the coordinator plugin with configuration synchronization.
 
 * CNI plugins include:
 
-  * Spiderpool IPAM plugin: a main CNI used to handle IP allocation.
+  * Spiderpool IPAM plugin: a main CNI used to handle IP allocation. refer to [IPAM plugin](../reference/plugin-ipam.md)
 
-  * coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses.
+  * coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses. refer to [coordinator](../concepts/coordinator.md)
 
-  * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan.
+  * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan. refer to [Ifacer 插件](../reference/plugin-ifacer.md)
 
   * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): a scheduler for other CNI plugins.
 
@@ -35,11 +33,32 @@ Spiderpool consists of the following components:
 
 * SR-IOV related components:
 
-  * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)
+  * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin): Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI. Refer to [RDMA Usage](../usage/rdma.md) for more information.
 
-  * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni)
+  * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): refer to [RDMA Usage](../usage/rdma.md).
 
-  * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator)
+  * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator): Facilitates the installation and configuration of sriov-cni. For more details, refer to [sriov-cni usage](../usage/install/underlay/get-started-sriov.md).
+
+## Use case: Pod with one overlay interface and multiple underlay interfaces
+
+![arch_underlay](../images/spiderpool-overlay.jpg)
+
+In overlay networks, Spiderpool uses Multus to add an overlay NIC (such as [Calico](https://github.com/projectcalico/calico) or [Cilium](https://github.com/cilium/cilium)) and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod. This offers several benefits:
+
+* Rich IPAM features for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation, and dual-stack support.
+
+* Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods, ensuring the consistent request and reply data paths for smooth communication.
+
+* Use the overlay NIC as the default one with route coordination and enable local host connectivity to enable clusterIP access, local health checks of applications, and forwarding overlay network traffic through overlay networks while forwarding underlay network traffic through underlay networks.
+
+The integration of Multus CNI and Spiderpool IPAM enables the collaboration of an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes of varying network capabilities, Pods on bare-metal nodes can access both overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only serving east-west services are connected to the Overlay NIC.
+This approach provides several benefits:
+
+* Applications providing east-west services can be restricted to being allocated only the overlay NIC while those providing north-south services can simultaneously access overlay and underlay NICs. This results in reduced Underlay IP resource usage, lower manual maintenance costs, and preserved pod connectivity within the cluster.
+
+* Fully integrate resources from virtual machines and bare-metal nodes.
+
+![overlay](../images/overlay.jpg)
 
 ## Use case: Pod with multiple underlay CNI interfaces
 
@@ -66,27 +85,6 @@ By simultaneously deploying multiple underlay CNIs through Multus CNI configurat
 ![underlay](../images/underlay.jpg)
 
 For example, as shown in the above diagram, different nodes with varying networking capabilities in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards, Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted network access (e.g., VMware virtual machines with limited layer 2 network forwarding).
-
-## Use case: Pod with one overlay interface and multiple underlay interfaces
-
-![arch_underlay](../images/spiderpool-overlay.jpg)
-
-In overlay networks, Spiderpool uses Multus to add an overlay NIC (such as [Calico](https://github.com/projectcalico/calico) or [Cilium](https://github.com/cilium/cilium)) and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod. This offers several benefits:
-
-* Rich IPAM features for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation, and dual-stack support.
-
-* Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods, ensuring the consistent request and reply data paths for smooth communication.
-
-* Use the overlay NIC as the default one with route coordination and enable local host connectivity to enable clusterIP access, local health checks of applications, and forwarding overlay network traffic through overlay networks while forwarding underlay network traffic through underlay networks.
-
-The integration of Multus CNI and Spiderpool IPAM enables the collaboration of an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes of varying network capabilities, Pods on bare-metal nodes can access both overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only serving east-west services are connected to the Overlay NIC.
-This approach provides several benefits:
-
-* Applications providing east-west services can be restricted to being allocated only the overlay NIC while those providing north-south services can simultaneously access overlay and underlay NICs. This results in reduced Underlay IP resource usage, lower manual maintenance costs, and preserved pod connectivity within the cluster.
-
-* Fully integrate resources from virtual machines and bare-metal nodes.
-
-![overlay](../images/overlay.jpg)
 
 ## Use case: underlay CNI on public cloud and VM
 
